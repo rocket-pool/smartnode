@@ -5,6 +5,7 @@ import (
     "log"
     "os"
     "strconv"
+    "strings"
 
     "github.com/urfave/cli"
 )
@@ -40,10 +41,18 @@ func main() {
             Category:  "Deposits",
             Action: func(c *cli.Context) error {
 
+                // Check argument count
+                if len(c.Args()) != 2 {
+                    return cli.NewExitError("USAGE:" + "\n\n" + c.Command.UsageText, 1);
+                }
+
+                // Validation messages
+                messages := make([]string, 0)
+
                 // Parse amount
                 amount, err := strconv.ParseFloat(c.Args().Get(0), 64)
                 if err != nil {
-                    return cli.NewExitError("Invalid amount - must be a decimal number", 1)
+                    messages = append(messages, "Invalid amount - must be a decimal number")
                 }
 
                 // Parse unit
@@ -51,7 +60,12 @@ func main() {
                 switch unit {
                     case "rpl":
                     default:
-                        return cli.NewExitError("Invalid unit - valid units are 'rpl'", 1)
+                        messages = append(messages, "Invalid unit - valid units are 'rpl'")
+                }
+
+                // Return validation error
+                if len(messages) > 0 {
+                    return cli.NewExitError(strings.Join(messages, "\n"), 1)
                 }
 
                 // Run command
