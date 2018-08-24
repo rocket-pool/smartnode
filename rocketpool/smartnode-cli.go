@@ -10,6 +10,7 @@ import (
     "github.com/urfave/cli"
 )
 
+
 func main() {
 
     // Initialise application
@@ -47,31 +48,31 @@ func main() {
                                "- valid units are 'rpl'",
                     Action: func(c *cli.Context) error {
 
-                        // Check argument count
-                        if len(c.Args()) != 2 {
-                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
-                        }
+                        // Arguments
+                        var amount float64
+                        var unit string
 
-                        // Validation messages
-                        messages := make([]string, 0)
+                        // Validate arguments
+                        err := validateArgs(c, 2, func(messages *[]string) {
+                            var err error
 
-                        // Parse amount
-                        amount, err := strconv.ParseFloat(c.Args().Get(0), 64)
+                            // Parse amount
+                            amount, err = strconv.ParseFloat(c.Args().Get(0), 64)
+                            if err != nil {
+                                *messages = append(*messages, "Invalid amount - must be a decimal number")
+                            }
+
+                            // Parse unit
+                            unit = c.Args().Get(1)
+                            switch unit {
+                                case "rpl":
+                                default:
+                                    *messages = append(*messages, "Invalid unit - valid units are 'rpl'")
+                            }
+
+                        });
                         if err != nil {
-                            messages = append(messages, "Invalid amount - must be a decimal number")
-                        }
-
-                        // Parse unit
-                        unit := c.Args().Get(1)
-                        switch unit {
-                            case "rpl":
-                            default:
-                                messages = append(messages, "Invalid unit - valid units are 'rpl'")
-                        }
-
-                        // Return validation error
-                        if len(messages) > 0 {
-                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                            return err;
                         }
 
                         // Run command
@@ -89,9 +90,10 @@ func main() {
                     UsageText: "rocketpool deposit list",
                     Action: func(c *cli.Context) error {
 
-                        // Check argument count
-                        if len(c.Args()) != 0 {
-                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+                        // Validate arguments
+                        err := validateArgs(c, 0, nil)
+                        if err != nil {
+                            return err;
                         }
 
                         // Run command
@@ -110,23 +112,22 @@ func main() {
                                "- deposit id must match the id of an available listed deposit",
                     Action: func(c *cli.Context) error {
 
-                        // Check argument count
-                        if len(c.Args()) != 1 {
-                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
-                        }
+                        // Arguments
+                        var depositId uint64
 
-                        // Validation messages
-                        messages := make([]string, 0)
+                        // Validate arguments
+                        err := validateArgs(c, 1, func(messages *[]string) {
+                            var err error
 
-                        // Parse deposit id
-                        depositId, err := strconv.ParseUint(c.Args().Get(0), 10, 64)
+                            // Parse deposit id
+                            depositId, err = strconv.ParseUint(c.Args().Get(0), 10, 64)
+                            if err != nil {
+                                *messages = append(*messages, "Invalid deposit id - must be an integer")
+                            }
+
+                        });
                         if err != nil {
-                            messages = append(messages, "Invalid deposit id - must be an integer")
-                        }
-
-                        // Return validation error
-                        if len(messages) > 0 {
-                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                            return err;
                         }
 
                         // Run command
@@ -155,26 +156,24 @@ func main() {
                                "- valid types are 'eth' and 'rpl'",
                     Action: func(c *cli.Context) error {
 
-                        // Check argument count
-                        if len(c.Args()) != 1 {
-                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
-                        }
+                        // Arguments
+                        var resourceType string
 
-                        // Validation messages
-                        messages := make([]string, 0)
+                        // Validate arguments
+                        err := validateArgs(c, 1, func(messages *[]string) {
 
-                        // Parse type
-                        resourceType := c.Args().Get(0)
-                        switch resourceType {
-                            case "eth":
-                            case "rpl":
-                            default:
-                                messages = append(messages, "Invalid type - valid types are 'eth' and 'rpl'")
-                        }
+                            // Parse type
+                            resourceType = c.Args().Get(0)
+                            switch resourceType {
+                                case "eth":
+                                case "rpl":
+                                default:
+                                    *messages = append(*messages, "Invalid type - valid types are 'eth' and 'rpl'")
+                            }
 
-                        // Return validation error
-                        if len(messages) > 0 {
-                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                        });
+                        if err != nil {
+                            return err;
                         }
 
                         // Run command
@@ -193,26 +192,24 @@ func main() {
                                "- valid types are 'eth' and 'rpl'",
                     Action: func(c *cli.Context) error {
 
-                        // Check argument count
-                        if len(c.Args()) != 1 {
-                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
-                        }
+                        // Arguments
+                        var resourceType string
 
-                        // Validation messages
-                        messages := make([]string, 0)
+                        // Validate arguments
+                        err := validateArgs(c, 1, func(messages *[]string) {
 
-                        // Parse type
-                        resourceType := c.Args().Get(0)
-                        switch resourceType {
-                            case "eth":
-                            case "rpl":
-                            default:
-                                messages = append(messages, "Invalid type - valid types are 'eth' and 'rpl'")
-                        }
+                            // Parse type
+                            resourceType = c.Args().Get(0)
+                            switch resourceType {
+                                case "eth":
+                                case "rpl":
+                                default:
+                                    *messages = append(*messages, "Invalid type - valid types are 'eth' and 'rpl'")
+                            }
 
-                        // Return validation error
-                        if len(messages) > 0 {
-                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                        });
+                        if err != nil {
+                            return err;
                         }
 
                         // Run command
@@ -231,25 +228,23 @@ func main() {
                                "- valid types are 'rpl'",
                     Action: func(c *cli.Context) error {
 
-                        // Check argument count
-                        if len(c.Args()) != 1 {
-                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
-                        }
+                        // Arguments
+                        var resourceType string
 
-                        // Validation messages
-                        messages := make([]string, 0)
+                        // Validate arguments
+                        err := validateArgs(c, 1, func(messages *[]string) {
 
-                        // Parse type
-                        resourceType := c.Args().Get(0)
-                        switch resourceType {
-                            case "rpl":
-                            default:
-                                messages = append(messages, "Invalid type - valid types are 'rpl'")
-                        }
+                            // Parse type
+                            resourceType = c.Args().Get(0)
+                            switch resourceType {
+                                case "rpl":
+                                default:
+                                    *messages = append(*messages, "Invalid type - valid types are 'rpl'")
+                            }
 
-                        // Return validation error
-                        if len(messages) > 0 {
-                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                        });
+                        if err != nil {
+                            return err;
                         }
 
                         // Run command
@@ -271,3 +266,27 @@ func main() {
     }
 
 }
+
+
+// Validate a command's arguments
+func validateArgs(c *cli.Context, count int, validate func(*[]string)) error {
+
+    // Check argument count
+    if len(c.Args()) != count {
+        return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+    }
+
+    // Validate
+    messages := make([]string, 0)
+    if validate != nil {
+        validate(&messages)
+    }
+
+    // Return validation error or nil
+    if len(messages) > 0 {
+        return cli.NewExitError(strings.Join(messages, "\n"), 1)
+    }
+    return nil;
+
+}
+
