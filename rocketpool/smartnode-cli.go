@@ -41,7 +41,7 @@ func main() {
                 cli.Command{
                     Name:      "new",
                     Aliases:   []string{"n"},
-                    Usage:     "Deposit RPL into the node",
+                    Usage:     "Deposit resources into the node",
                     UsageText: "rocketpool deposit new [amount, unit]" + "\n   " +
                                "- amount must be a decimal number" + "\n   " +
                                "- valid units are 'rpl'",
@@ -95,7 +95,7 @@ func main() {
                         }
 
                         // Run command
-                        fmt.Println("Deposits: []")
+                        fmt.Println("Deposits:")
                         return nil
 
                     },
@@ -136,21 +136,87 @@ func main() {
                     },
                 },
 
-                // Check for free Ether & RPL assigned to the node
+            },
+        },
+
+        // Resource management commands
+        cli.Command{
+            Name:      "resource",
+            Aliases:   []string{"r"},
+            Usage:     "Manage resources",
+            Subcommands: []cli.Command{
+
+                // Check free resources assigned to the node
                 cli.Command{
                     Name:      "free",
                     Aliases:   []string{"f"},
-                    Usage:     "Check for free Ether & RPL assigned to the node",
-                    UsageText: "rocketpool deposit free",
+                    Usage:     "Check free resources assigned to the node",
+                    UsageText: "rocketpool resource free [type]" + "\n   " +
+                               "- valid types are 'eth' and 'rpl'",
                     Action: func(c *cli.Context) error {
 
                         // Check argument count
-                        if len(c.Args()) != 0 {
+                        if len(c.Args()) != 1 {
                             return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
                         }
 
+                        // Validation messages
+                        messages := make([]string, 0)
+
+                        // Parse type
+                        resourceType := c.Args().Get(0)
+                        switch resourceType {
+                            case "eth":
+                            case "rpl":
+                            default:
+                                messages = append(messages, "Invalid type - valid types are 'eth' and 'rpl'")
+                        }
+
+                        // Return validation error
+                        if len(messages) > 0 {
+                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                        }
+
                         // Run command
-                        fmt.Println("Free Ether / RPL:")
+                        fmt.Printf("Free %v: 0\n", resourceType)
+                        return nil
+
+                    },
+                },
+
+                // Check used resources assigned to the node
+                cli.Command{
+                    Name:      "used",
+                    Aliases:   []string{"u"},
+                    Usage:     "Check used resources assigned to the node",
+                    UsageText: "rocketpool resource used [type]" + "\n   " +
+                               "- valid types are 'eth' and 'rpl'",
+                    Action: func(c *cli.Context) error {
+
+                        // Check argument count
+                        if len(c.Args()) != 1 {
+                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+                        }
+
+                        // Validation messages
+                        messages := make([]string, 0)
+
+                        // Parse type
+                        resourceType := c.Args().Get(0)
+                        switch resourceType {
+                            case "eth":
+                            case "rpl":
+                            default:
+                                messages = append(messages, "Invalid type - valid types are 'eth' and 'rpl'")
+                        }
+
+                        // Return validation error
+                        if len(messages) > 0 {
+                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                        }
+
+                        // Run command
+                        fmt.Printf("Used %v: 0\n", resourceType)
                         return nil
 
                     },
