@@ -16,7 +16,7 @@ func main() {
     app := cli.NewApp()
 
     // Configure application
-    app.Name     = "Rocket Pool"
+    app.Name     = "rocketpool"
     app.Usage    = "Rocket Pool node operator utilities"
     app.Version  = "0.0.1"
     app.Authors  = []cli.Author{
@@ -30,47 +30,77 @@ func main() {
     // Register commands
     app.Commands = []cli.Command{
 
-        // Deposit RPL
+        // Deposit commands
         cli.Command{
             Name:      "deposit",
             Aliases:   []string{"d"},
-            Usage:     "Deposit RPL into the node registration contract",
-            UsageText: "rocketpool deposit [amount, unit]" + "\n   " +
-                       "- amount must be a decimal number" + "\n   " +
-                       "- valid units are 'rpl'",
+            Usage:     "Manage node deposits",
             Category:  "Deposits",
-            Action: func(c *cli.Context) error {
+            Subcommands: []cli.Command{
 
-                // Check argument count
-                if len(c.Args()) != 2 {
-                    return cli.NewExitError("USAGE:" + "\n\n" + c.Command.UsageText, 1);
-                }
+                // New deposit
+                cli.Command{
+                    Name:      "new",
+                    Aliases:   []string{"n"},
+                    Usage:     "Deposit RPL into the node registration contract",
+                    UsageText: "rocketpool deposit new [amount, unit]" + "\n   " +
+                               "- amount must be a decimal number" + "\n   " +
+                               "- valid units are 'rpl'",
+                    Action: func(c *cli.Context) error {
 
-                // Validation messages
-                messages := make([]string, 0)
+                        // Check argument count
+                        if len(c.Args()) != 2 {
+                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+                        }
 
-                // Parse amount
-                amount, err := strconv.ParseFloat(c.Args().Get(0), 64)
-                if err != nil {
-                    messages = append(messages, "Invalid amount - must be a decimal number")
-                }
+                        // Validation messages
+                        messages := make([]string, 0)
 
-                // Parse unit
-                unit := c.Args().Get(1)
-                switch unit {
-                    case "rpl":
-                    default:
-                        messages = append(messages, "Invalid unit - valid units are 'rpl'")
-                }
+                        // Parse amount
+                        amount, err := strconv.ParseFloat(c.Args().Get(0), 64)
+                        if err != nil {
+                            messages = append(messages, "Invalid amount - must be a decimal number")
+                        }
 
-                // Return validation error
-                if len(messages) > 0 {
-                    return cli.NewExitError(strings.Join(messages, "\n"), 1)
-                }
+                        // Parse unit
+                        unit := c.Args().Get(1)
+                        switch unit {
+                            case "rpl":
+                            default:
+                                messages = append(messages, "Invalid unit - valid units are 'rpl'")
+                        }
 
-                // Run command
-                fmt.Println("Depositing:", amount, unit)
-                return nil
+                        // Return validation error
+                        if len(messages) > 0 {
+                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                        }
+
+                        // Run command
+                        fmt.Println("Depositing:", amount, unit)
+                        return nil
+
+                    },
+                },
+
+                // List deposits
+                cli.Command{
+                    Name:      "list",
+                    Aliases:   []string{"l"},
+                    Usage:     "List all deposits with the node",
+                    UsageText: "rocketpool deposit list",
+                    Action: func(c *cli.Context) error {
+
+                        // Check argument count
+                        if len(c.Args()) != 0 {
+                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+                        }
+
+                        // Run command
+                        fmt.Println("Deposits: []")
+                        return nil
+
+                    },
+                },
 
             },
         },
