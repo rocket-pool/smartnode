@@ -15,27 +15,29 @@ func main() {
     app := cli.NewApp()
 
     // Configure application
-    app.Name = "Rocket Pool"
-    app.Version = "0.0.1"
-    app.Authors = []cli.Author{
+    app.Name     = "Rocket Pool"
+    app.Usage    = "Rocket Pool node operator utilities"
+    app.Version  = "0.0.1"
+    app.Authors  = []cli.Author{
         cli.Author{
             Name:  "Jake Pospischil",
             Email: "jake@rocketpool.net",
         },
     }
     app.Copyright = "(c) 2018 Rocket Pool Pty Ltd"
-    app.Usage = "Rocket Pool node operator utilities"
 
     // Register commands
     app.Commands = []cli.Command{
 
         // Deposit RPL
         cli.Command{
-            Name:        "deposit",
-            Aliases:     []string{"d"},
-            Category:    "Deposits",
-            Usage:       "Deposit RPL into the node registration contract",
-            ArgsUsage:   "[amount unit]",
+            Name:      "deposit",
+            Aliases:   []string{"d"},
+            Usage:     "Deposit RPL into the node registration contract",
+            UsageText: "rocketpool deposit [amount, unit]" + "\n   " +
+                       "- amount must be a decimal number" + "\n   " +
+                       "- valid units are 'rpl'",
+            Category:  "Deposits",
             Action: func(c *cli.Context) error {
 
                 // Parse amount
@@ -53,7 +55,7 @@ func main() {
                 }
 
                 // Run command
-                fmt.Println("Deposit!", amount, unit)
+                fmt.Println("Depositing:", amount, unit)
                 return nil
 
             },
