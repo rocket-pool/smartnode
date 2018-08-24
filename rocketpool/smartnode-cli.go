@@ -35,14 +35,13 @@ func main() {
             Name:      "deposit",
             Aliases:   []string{"d"},
             Usage:     "Manage node deposits",
-            Category:  "Deposits",
             Subcommands: []cli.Command{
 
                 // New deposit
                 cli.Command{
                     Name:      "new",
                     Aliases:   []string{"n"},
-                    Usage:     "Deposit RPL into the node registration contract",
+                    Usage:     "Deposit RPL into the node",
                     UsageText: "rocketpool deposit new [amount, unit]" + "\n   " +
                                "- amount must be a decimal number" + "\n   " +
                                "- valid units are 'rpl'",
@@ -97,6 +96,61 @@ func main() {
 
                         // Run command
                         fmt.Println("Deposits: []")
+                        return nil
+
+                    },
+                },
+
+                // Withdraw a deposit by ID
+                cli.Command{
+                    Name:      "withdraw",
+                    Aliases:   []string{"w"},
+                    Usage:     "Withdraw a specific available deposit",
+                    UsageText: "rocketpool deposit withdraw [deposit id]" + "\n   " +
+                               "- deposit id must match the id of an available listed deposit",
+                    Action: func(c *cli.Context) error {
+
+                        // Check argument count
+                        if len(c.Args()) != 1 {
+                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+                        }
+
+                        // Validation messages
+                        messages := make([]string, 0)
+
+                        // Parse deposit id
+                        depositId, err := strconv.ParseUint(c.Args().Get(0), 10, 64)
+                        if err != nil {
+                            messages = append(messages, "Invalid deposit id - must be an integer")
+                        }
+
+                        // Return validation error
+                        if len(messages) > 0 {
+                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                        }
+
+                        // Run command
+                        fmt.Println("Withdrawing:", depositId)
+                        return nil
+
+                    },
+                },
+
+                // Check for free Ether & RPL assigned to the node
+                cli.Command{
+                    Name:      "free",
+                    Aliases:   []string{"f"},
+                    Usage:     "Check for free Ether & RPL assigned to the node",
+                    UsageText: "rocketpool deposit free",
+                    Action: func(c *cli.Context) error {
+
+                        // Check argument count
+                        if len(c.Args()) != 0 {
+                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+                        }
+
+                        // Run command
+                        fmt.Println("Free Ether / RPL:")
                         return nil
 
                     },
