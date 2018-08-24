@@ -57,10 +57,6 @@ func main() {
                 return nil
 
             },
-            OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-                fmt.Fprintf(c.App.Writer, "Incorrect usage\n")
-                return err
-            },
         },
 
     }
