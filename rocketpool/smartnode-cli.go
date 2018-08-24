@@ -101,7 +101,7 @@ func main() {
                     },
                 },
 
-                // Withdraw a deposit by ID
+                // Withdraw a deposit
                 cli.Command{
                     Name:      "withdraw",
                     Aliases:   []string{"w"},
@@ -146,7 +146,7 @@ func main() {
             Usage:     "Manage resources",
             Subcommands: []cli.Command{
 
-                // Check free resources assigned to the node
+                // Check free resources
                 cli.Command{
                     Name:      "free",
                     Aliases:   []string{"f"},
@@ -184,7 +184,7 @@ func main() {
                     },
                 },
 
-                // Check used resources assigned to the node
+                // Check used resources
                 cli.Command{
                     Name:      "used",
                     Aliases:   []string{"u"},
@@ -217,6 +217,43 @@ func main() {
 
                         // Run command
                         fmt.Printf("Used %v: 0\n", resourceType)
+                        return nil
+
+                    },
+                },
+
+                // Check resources required
+                cli.Command{
+                    Name:      "required",
+                    Aliases:   []string{"r"},
+                    Usage:     "Check resources required based on current network utilisation",
+                    UsageText: "rocketpool resource required [type]" + "\n   " +
+                               "- valid types are 'rpl'",
+                    Action: func(c *cli.Context) error {
+
+                        // Check argument count
+                        if len(c.Args()) != 1 {
+                            return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+                        }
+
+                        // Validation messages
+                        messages := make([]string, 0)
+
+                        // Parse type
+                        resourceType := c.Args().Get(0)
+                        switch resourceType {
+                            case "rpl":
+                            default:
+                                messages = append(messages, "Invalid type - valid types are 'rpl'")
+                        }
+
+                        // Return validation error
+                        if len(messages) > 0 {
+                            return cli.NewExitError(strings.Join(messages, "\n"), 1)
+                        }
+
+                        // Run command
+                        fmt.Printf("Required %v: 0\n", resourceType)
                         return nil
 
                     },
