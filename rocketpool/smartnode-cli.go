@@ -35,12 +35,13 @@ func main() {
             Aliases:     []string{"d"},
             Category:    "Deposits",
             Usage:       "Deposit RPL into the node registration contract",
+            ArgsUsage:   "[amount unit]",
             Action: func(c *cli.Context) error {
 
                 // Parse amount
-                amount, err := strconv.ParseUint(c.Args().Get(0), 10, 64)
+                amount, err := strconv.ParseFloat(c.Args().Get(0), 64)
                 if err != nil {
-                    return cli.NewExitError("Invalid amount", 1)
+                    return cli.NewExitError("Invalid amount - must be a decimal number", 1)
                 }
 
                 // Parse unit
@@ -48,7 +49,7 @@ func main() {
                 switch unit {
                     case "rpl":
                     default:
-                        return cli.NewExitError("Invalid unit", 1)
+                        return cli.NewExitError("Invalid unit - valid units are 'rpl'", 1)
                 }
 
                 // Run command
