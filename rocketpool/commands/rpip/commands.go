@@ -153,10 +153,59 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Usage:     "Manage RPIP votes",
                 Subcommands: []cli.Command{
 
+                    // Cast a vote on a proposal
+                    cli.Command{
+                        Name:      "cast",
+                        Aliases:   []string{"c"},
+                        Usage:     "Cast a vote on a Rocket Pool Improvement Proposal (commits vote and reveals at a later time)",
+                        UsageText: "rocketpool rpip vote cast [proposal id, vote]" + "\n   " +
+                                   "- proposal id must match the id of a current proposal" + "\n   " +
+                                   "- valid vote values are 'yes', 'y', 'no', and 'n'",
+                        Action: func(c *cli.Context) error {
+
+                            // Arguments
+                            var proposalId uint64
+                            var vote bool
+
+                            // Validate arguments
+                            err := commands.ValidateArgs(c, 2, func(messages *[]string) {
+                                var err error
+
+                                // Parse proposal id
+                                proposalId, err = strconv.ParseUint(c.Args().Get(0), 10, 64)
+                                if err != nil {
+                                    *messages = append(*messages, "Invalid proposal id - must be an integer")
+                                }
+
+                                // Parse vote
+                                switch c.Args().Get(1) {
+                                    case "yes":
+                                        vote = true
+                                    case "y":
+                                        vote = true
+                                    case "no":
+                                        vote = false
+                                    case "n":
+                                        vote = false
+                                    default:
+                                        *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
+                                }
+
+                            });
+                            if err != nil {
+                                return err;
+                            }
+
+                            // Run command
+                            fmt.Println("Casting vote:", proposalId, vote)
+                            return nil
+
+                        },
+                    },
+
                     // Commit a vote on a proposal
                     cli.Command{
                         Name:      "commit",
-                        Aliases:   []string{"c"},
                         Usage:     "Commit a vote on a Rocket Pool Improvement Proposal",
                         UsageText: "rocketpool rpip vote commit [proposal id, vote]" + "\n   " +
                                    "- proposal id must match the id of a current proposal" + "\n   " +
@@ -206,8 +255,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Check vote on a proposal
                     cli.Command{
                         Name:      "check",
-                        Usage:     "Check your vote on a Rocket Pool Improvement Proposal",
-                        UsageText: "rocketpool rpip vote commit [proposal id]" + "\n   " +
+                        Usage:     "Check your committed vote on a Rocket Pool Improvement Proposal",
+                        UsageText: "rocketpool rpip vote check [proposal id]" + "\n   " +
                                    "- proposal id must match the id of a current proposal",
                         Action: func(c *cli.Context) error {
 
@@ -239,7 +288,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Reveal a vote on a proposal
                     cli.Command{
                         Name:      "reveal",
-                        Aliases:   []string{"r"},
                         Usage:     "Reveal a vote on a Rocket Pool Improvement Proposal",
                         UsageText: "rocketpool rpip vote reveal [proposal id, vote]" + "\n   " +
                                    "- proposal id must match the id of a current proposal" + "\n   " +
