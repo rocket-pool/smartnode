@@ -73,7 +73,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            err = Subscribe(email)
+                            err = AlertsSubscribe(email)
                             if err != nil {
                                 return cli.NewExitError("The email address could not be subscribed", 1)
                             }
@@ -100,7 +100,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            email, err := GetSubscribed()
+                            email, err := AlertsGetSubscribed()
                             if err != nil {
                                 return cli.NewExitError("The alert subscription could not be retrieved", 1)
                             }
@@ -131,7 +131,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            err = Unsubscribe()
+                            err = AlertsUnsubscribe()
                             if err != nil {
                                 return cli.NewExitError("The email address could not be unsubscribed", 1)
                             }

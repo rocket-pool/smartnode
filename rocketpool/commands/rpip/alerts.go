@@ -6,7 +6,7 @@ import (
 
 
 // Subscribe to alerts
-func Subscribe(email string) error {
+func AlertsSubscribe(email string) error {
 
     // Open storage
     store, err := storage.Open();
@@ -22,7 +22,7 @@ func Subscribe(email string) error {
 
 
 // Get subscribed address
-func GetSubscribed() (string, error) {
+func AlertsGetSubscribed() (string, error) {
 
     // Open storage
     store, err := storage.Open();
@@ -40,7 +40,7 @@ func GetSubscribed() (string, error) {
 
 
 // Unsubscribe from alerts
-func Unsubscribe() error {
+func AlertsUnsubscribe() error {
 
     // Open storage
     store, err := storage.Open();
