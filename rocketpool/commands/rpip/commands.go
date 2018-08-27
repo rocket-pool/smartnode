@@ -73,7 +73,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            fmt.Printf("Subscribing %v to RPIP alerts...\n", email)
+                            err = Subscribe(email)
+                            if err != nil {
+                                return cli.NewExitError("The email address could not be subscribed", 1)
+                            }
+
+                            // Return
+                            fmt.Printf("%v was successfully subscribed to new RPIP alerts\n", email)
                             return nil
 
                         },
@@ -94,7 +100,17 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            fmt.Println("Checking RPIP alerts...")
+                            email, err := GetSubscribed()
+                            if err != nil {
+                                return cli.NewExitError("The alert subscription could not be retrieved", 1)
+                            }
+
+                            // Return
+                            if email == "" {
+                                fmt.Println("Not subscribed")
+                            } else {
+                                fmt.Println("Subscribed:", email)
+                            }
                             return nil
 
                         },
@@ -115,7 +131,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            fmt.Println("Unsubscribing from RPIP alerts...")
+                            err = Unsubscribe()
+                            if err != nil {
+                                return cli.NewExitError("The email address could not be unsubscribed", 1)
+                            }
+
+                            // Return
+                            fmt.Println("Unsubscribed from new RPIP alerts")
                             return nil
 
                         },
