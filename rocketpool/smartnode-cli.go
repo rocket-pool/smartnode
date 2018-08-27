@@ -516,52 +516,145 @@ func main() {
                     },
                 },
 
-                // Vote on a proposal
+                // RPIP vote commands
                 cli.Command{
                     Name:      "vote",
                     Aliases:   []string{"v"},
-                    Usage:     "Vote on a Rocket Pool Improvement Proposal",
-                    UsageText: "rocketpool rpip vote [proposal id, vote]" + "\n   " +
-                               "- proposal id must match the id of a current proposal" + "\n   " +
-                               "- valid vote values are 'yes', 'y', 'no', and 'n'",
-                    Action: func(c *cli.Context) error {
+                    Usage:     "Manage RPIP votes",
+                    Subcommands: []cli.Command{
 
-                        // Arguments
-                        var proposalId uint64
-                        var vote bool
+                        // Commit a vote on a proposal
+                        cli.Command{
+                            Name:      "commit",
+                            Aliases:   []string{"c"},
+                            Usage:     "Commit a vote on a Rocket Pool Improvement Proposal",
+                            UsageText: "rocketpool rpip vote commit [proposal id, vote]" + "\n   " +
+                                       "- proposal id must match the id of a current proposal" + "\n   " +
+                                       "- valid vote values are 'yes', 'y', 'no', and 'n'",
+                            Action: func(c *cli.Context) error {
 
-                        // Validate arguments
-                        err := validateArgs(c, 2, func(messages *[]string) {
-                            var err error
+                                // Arguments
+                                var proposalId uint64
+                                var vote bool
 
-                            // Parse proposal id
-                            proposalId, err = strconv.ParseUint(c.Args().Get(0), 10, 64)
-                            if err != nil {
-                                *messages = append(*messages, "Invalid proposal id - must be an integer")
-                            }
+                                // Validate arguments
+                                err := validateArgs(c, 2, func(messages *[]string) {
+                                    var err error
 
-                            // Parse vote
-                            switch c.Args().Get(1) {
-                                case "yes":
-                                    vote = true
-                                case "y":
-                                    vote = true
-                                case "no":
-                                    vote = false
-                                case "n":
-                                    vote = false
-                                default:
-                                    *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
-                            }
+                                    // Parse proposal id
+                                    proposalId, err = strconv.ParseUint(c.Args().Get(0), 10, 64)
+                                    if err != nil {
+                                        *messages = append(*messages, "Invalid proposal id - must be an integer")
+                                    }
 
-                        });
-                        if err != nil {
-                            return err;
-                        }
+                                    // Parse vote
+                                    switch c.Args().Get(1) {
+                                        case "yes":
+                                            vote = true
+                                        case "y":
+                                            vote = true
+                                        case "no":
+                                            vote = false
+                                        case "n":
+                                            vote = false
+                                        default:
+                                            *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
+                                    }
 
-                        // Run command
-                        fmt.Println("Voting:", proposalId, vote)
-                        return nil
+                                });
+                                if err != nil {
+                                    return err;
+                                }
+
+                                // Run command
+                                fmt.Println("Committing vote:", proposalId, vote)
+                                return nil
+
+                            },
+                        },
+
+                        // Check vote on a proposal
+                        cli.Command{
+                            Name:      "check",
+                            Usage:     "Check your vote on a Rocket Pool Improvement Proposal",
+                            UsageText: "rocketpool rpip vote commit [proposal id]" + "\n   " +
+                                       "- proposal id must match the id of a current proposal",
+                            Action: func(c *cli.Context) error {
+
+                                // Arguments
+                                var proposalId uint64
+
+                                // Validate arguments
+                                err := validateArgs(c, 1, func(messages *[]string) {
+                                    var err error
+
+                                    // Parse proposal id
+                                    proposalId, err = strconv.ParseUint(c.Args().Get(0), 10, 64)
+                                    if err != nil {
+                                        *messages = append(*messages, "Invalid proposal id - must be an integer")
+                                    }
+
+                                });
+                                if err != nil {
+                                    return err;
+                                }
+
+                                // Run command
+                                fmt.Println("Checking vote:", proposalId)
+                                return nil
+
+                            },
+                        },
+
+                        // Reveal a vote on a proposal
+                        cli.Command{
+                            Name:      "reveal",
+                            Aliases:   []string{"r"},
+                            Usage:     "Reveal a vote on a Rocket Pool Improvement Proposal",
+                            UsageText: "rocketpool rpip vote reveal [proposal id, vote]" + "\n   " +
+                                       "- proposal id must match the id of a current proposal" + "\n   " +
+                                       "- valid vote values are 'yes', 'y', 'no', and 'n'",
+                            Action: func(c *cli.Context) error {
+
+                                // Arguments
+                                var proposalId uint64
+                                var vote bool
+
+                                // Validate arguments
+                                err := validateArgs(c, 2, func(messages *[]string) {
+                                    var err error
+
+                                    // Parse proposal id
+                                    proposalId, err = strconv.ParseUint(c.Args().Get(0), 10, 64)
+                                    if err != nil {
+                                        *messages = append(*messages, "Invalid proposal id - must be an integer")
+                                    }
+
+                                    // Parse vote
+                                    switch c.Args().Get(1) {
+                                        case "yes":
+                                            vote = true
+                                        case "y":
+                                            vote = true
+                                        case "no":
+                                            vote = false
+                                        case "n":
+                                            vote = false
+                                        default:
+                                            *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
+                                    }
+
+                                });
+                                if err != nil {
+                                    return err;
+                                }
+
+                                // Run command
+                                fmt.Println("Revealing vote:", proposalId, vote)
+                                return nil
+
+                            },
+                        },
 
                     },
                 },
