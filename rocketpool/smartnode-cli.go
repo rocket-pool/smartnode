@@ -291,7 +291,7 @@ func main() {
             Usage:     "Manage user fees",
             Subcommands: []cli.Command{
 
-                // Display
+                // Display fee
                 cli.Command{
                     Name:      "display",
                     Aliases:   []string{"d"},
@@ -312,7 +312,7 @@ func main() {
                     },
                 },
 
-                // Vote
+                // Vote on fee
                 cli.Command{
                     Name:      "vote",
                     Aliases:   []string{"v"},
@@ -344,6 +344,110 @@ func main() {
 
                         // Run command
                         fmt.Println("Voting:", feePercent)
+                        return nil
+
+                    },
+                },
+
+            },
+        },
+
+        // User commands
+        cli.Command{
+            Name:      "user",
+            Aliases:   []string{"u"},
+            Usage:     "Manage users",
+            Subcommands: []cli.Command{
+
+                // List users
+                cli.Command{
+                    Name:      "list",
+                    Aliases:   []string{"l"},
+                    Usage:     "List minipools and users assigned to the node",
+                    UsageText: "rocketpool user list",
+                    Action: func(c *cli.Context) error {
+
+                        // Validate arguments
+                        err := validateArgs(c, 0, nil)
+                        if err != nil {
+                            return err;
+                        }
+
+                        // Run command
+                        fmt.Println("Users:")
+                        return nil
+
+                    },
+                },
+
+            },
+        },
+
+        // Node commands
+        cli.Command{
+            Name:      "node",
+            Aliases:   []string{"n"},
+            Usage:     "Manage node state",
+            Subcommands: []cli.Command{
+
+                // Pause node
+                cli.Command{
+                    Name:      "pause",
+                    Aliases:   []string{"p"},
+                    Usage:     "'Pause' the node; stop receiving new minipools",
+                    UsageText: "rocketpool node pause",
+                    Action: func(c *cli.Context) error {
+
+                        // Validate arguments
+                        err := validateArgs(c, 0, nil)
+                        if err != nil {
+                            return err;
+                        }
+
+                        // Run command
+                        fmt.Println("Pausing...")
+                        return nil
+
+                    },
+                },
+
+                // Resume node
+                cli.Command{
+                    Name:      "resume",
+                    Aliases:   []string{"r"},
+                    Usage:     "'Resume' the node; start receiving new minipools again",
+                    UsageText: "rocketpool node resume",
+                    Action: func(c *cli.Context) error {
+
+                        // Validate arguments
+                        err := validateArgs(c, 0, nil)
+                        if err != nil {
+                            return err;
+                        }
+
+                        // Run command
+                        fmt.Println("Resuming...")
+                        return nil
+
+                    },
+                },
+
+                // Exit node
+                cli.Command{
+                    Name:      "exit",
+                    Aliases:   []string{"e"},
+                    Usage:     "'Exit' the node from Rocket Pool permanently; node is paused instead if it has assigned minipools",
+                    UsageText: "rocketpool node exit",
+                    Action: func(c *cli.Context) error {
+
+                        // Validate arguments
+                        err := validateArgs(c, 0, nil)
+                        if err != nil {
+                            return err;
+                        }
+
+                        // Run command
+                        fmt.Println("Exiting...")
                         return nil
 
                     },
