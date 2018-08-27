@@ -13,6 +13,16 @@ import (
 
 func main() {
 
+    // Add logo to help template
+    cli.AppHelpTemplate = fmt.Sprintf(
+        "______           _        _    ______           _ " + "\n" +
+        "| ___ \\         | |      | |   | ___ \\         | |" + "\n" +
+        "| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |" + "\n" +
+        "|    // _ \\ / __| |/ / _ \\ __| |  __/ _ \\ / _ \\| |" + "\n" +
+        "| |\\ \\ (_) | (__|   <  __/ |_  | | | (_) | (_) | |" + "\n" +
+        "\\_| \\_\\___/ \\___|_|\\_\\___|\\__| \\_|  \\___/ \\___/|_|" + "\n\n" +
+    "%s", cli.AppHelpTemplate)
+
     // Initialise application
     app := cli.NewApp()
 
@@ -21,6 +31,14 @@ func main() {
     app.Usage    = "Rocket Pool node operator utilities"
     app.Version  = "0.0.1"
     app.Authors  = []cli.Author{
+        cli.Author{
+            Name:  "Darren Langley",
+            Email: "darren@rocketpool.net",
+        },
+        cli.Author{
+            Name:  "David Rugendyke",
+            Email: "david@rocketpool.net",
+        },
         cli.Author{
             Name:  "Jake Pospischil",
             Email: "jake@rocketpool.net",
