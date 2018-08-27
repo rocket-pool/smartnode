@@ -42,9 +42,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                 *messages = append(*messages, "Invalid type - valid types are 'eth' and 'rpl'")
                         }
 
-                    });
+                    })
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command
@@ -78,9 +78,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                 *messages = append(*messages, "Invalid type - valid types are 'eth' and 'rpl'")
                         }
 
-                    });
+                    })
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command
@@ -122,9 +122,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             *messages = append(*messages, "Invalid ether amount - must be a decimal number")
                         }
 
-                    });
+                    })
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command

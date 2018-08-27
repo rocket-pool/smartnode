@@ -12,7 +12,7 @@ func ValidateArgs(c *cli.Context, count int, validate func(*[]string)) error {
 
     // Check argument count
     if len(c.Args()) != count {
-        return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1);
+        return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1)
     }
 
     // Validate
@@ -25,7 +25,7 @@ func ValidateArgs(c *cli.Context, count int, validate func(*[]string)) error {
     if len(messages) > 0 {
         return cli.NewExitError(strings.Join(messages, "\n"), 1)
     }
-    return nil;
+    return nil
 
 }
 

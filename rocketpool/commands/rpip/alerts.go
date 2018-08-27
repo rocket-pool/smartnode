@@ -9,11 +9,11 @@ import (
 func SubscribeToAlerts(email string) error {
 
     // Open storage
-    store, err := storage.Open();
+    store, err := storage.Open()
     if err != nil {
         return err
     }
-    defer store.Close();
+    defer store.Close()
 
     // Store email address
     return store.Put("alert.subscription.address", email)
@@ -25,11 +25,11 @@ func SubscribeToAlerts(email string) error {
 func GetAlertsSubscription() (string, error) {
 
     // Open storage
-    store, err := storage.Open();
+    store, err := storage.Open()
     if err != nil {
         return "", err
     }
-    defer store.Close();
+    defer store.Close()
 
     // Get email address
     var email string = ""
@@ -43,11 +43,11 @@ func GetAlertsSubscription() (string, error) {
 func UnsubscribeFromAlerts() error {
 
     // Open storage
-    store, err := storage.Open();
+    store, err := storage.Open()
     if err != nil {
         return err
     }
-    defer store.Close();
+    defer store.Close()
 
     // Delete email address
     store.Delete("alert.subscription.address")

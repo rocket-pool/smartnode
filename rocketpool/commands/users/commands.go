@@ -28,7 +28,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Validate arguments
                     err := commands.ValidateArgs(c, 0, nil)
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command

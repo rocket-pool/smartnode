@@ -50,9 +50,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                 *messages = append(*messages, "Invalid unit - valid units are 'rpl'")
                         }
 
-                    });
+                    })
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command
@@ -73,7 +73,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Validate arguments
                     err := commands.ValidateArgs(c, 0, nil)
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command
@@ -105,9 +105,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             *messages = append(*messages, "Invalid deposit id - must be an integer")
                         }
 
-                    });
+                    })
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command

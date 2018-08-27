@@ -30,7 +30,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Validate arguments
                     err := commands.ValidateArgs(c, 0, nil)
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command
@@ -67,9 +67,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                     *messages = append(*messages, "Invalid email address")
                                 }
 
-                            });
+                            })
                             if err != nil {
-                                return err;
+                                return err
                             }
 
                             // Run command
@@ -96,7 +96,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             // Validate arguments
                             err := commands.ValidateArgs(c, 0, nil)
                             if err != nil {
-                                return err;
+                                return err
                             }
 
                             // Run command
@@ -127,7 +127,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             // Validate arguments
                             err := commands.ValidateArgs(c, 0, nil)
                             if err != nil {
-                                return err;
+                                return err
                             }
 
                             // Run command
@@ -191,9 +191,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                         *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
                                 }
 
-                            });
+                            })
                             if err != nil {
-                                return err;
+                                return err
                             }
 
                             // Run command
@@ -240,9 +240,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                         *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
                                 }
 
-                            });
+                            })
                             if err != nil {
-                                return err;
+                                return err
                             }
 
                             // Run command
@@ -273,9 +273,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                     *messages = append(*messages, "Invalid proposal id - must be an integer")
                                 }
 
-                            });
+                            })
                             if err != nil {
-                                return err;
+                                return err
                             }
 
                             // Run command
@@ -322,9 +322,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                         *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
                                 }
 
-                            });
+                            })
                             if err != nil {
-                                return err;
+                                return err
                             }
 
                             // Run command

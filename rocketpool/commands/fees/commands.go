@@ -29,7 +29,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Validate arguments
                     err := commands.ValidateArgs(c, 0, nil)
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command
@@ -64,9 +64,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             *messages = append(*messages, "Invalid fee percentage - must be between 0 and 100")
                         }
 
-                    });
+                    })
                     if err != nil {
-                        return err;
+                        return err
                     }
 
                     // Run command
