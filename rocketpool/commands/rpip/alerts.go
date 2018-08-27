@@ -16,7 +16,7 @@ func SubscribeToAlerts(email string) error {
     defer store.Close()
 
     // Store email address
-    return store.Put("alert.subscription.address", email)
+    return store.Put("rpip.alerts.subscription", email)
 
 }
 
@@ -33,7 +33,7 @@ func GetAlertsSubscription() (string, error) {
 
     // Get email address
     var email string = ""
-    store.Get("alert.subscription.address", &email)
+    store.Get("rpip.alerts.subscription", &email)
     return email, nil
 
 }
@@ -50,7 +50,7 @@ func UnsubscribeFromAlerts() error {
     defer store.Close()
 
     // Delete email address
-    store.Delete("alert.subscription.address")
+    store.Delete("rpip.alerts.subscription")
     return nil
 
 }
