@@ -40,34 +40,86 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
-            // Subscribe to alerts
+            // RPIP alert commands
             cli.Command{
                 Name:      "alert",
                 Aliases:   []string{"a"},
-                Usage:     "Subscribe an email address to new RPIP alerts",
-                UsageText: "rocketpool rpip alert [email address]",
-                Action: func(c *cli.Context) error {
+                Usage:     "Manage RPIP email alerts",
+                Subcommands: []cli.Command{
 
-                    // Arguments
-                    var email string
+                    // Subscribe to alerts
+                    cli.Command{
+                        Name:      "subscribe",
+                        Aliases:   []string{"s"},
+                        Usage:     "Subscribe an email address to new RPIP alerts",
+                        UsageText: "rocketpool rpip alert subscribe [email address]",
+                        Action: func(c *cli.Context) error {
 
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 1, func(messages *[]string) {
+                            // Arguments
+                            var email string
 
-                        // Parse email address
-                        email = c.Args().Get(0)
-                        if !regexp.MustCompile("^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$").MatchString(email) {
-                            *messages = append(*messages, "Invalid email address")
-                        }
+                            // Validate arguments
+                            err := commands.ValidateArgs(c, 1, func(messages *[]string) {
 
-                    });
-                    if err != nil {
-                        return err;
-                    }
+                                // Parse email address
+                                email = c.Args().Get(0)
+                                if !regexp.MustCompile("^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$").MatchString(email) {
+                                    *messages = append(*messages, "Invalid email address")
+                                }
 
-                    // Run command
-                    fmt.Printf("Subscribing %v to alerts...\n", email)
-                    return nil
+                            });
+                            if err != nil {
+                                return err;
+                            }
+
+                            // Run command
+                            fmt.Printf("Subscribing %v to RPIP alerts...\n", email)
+                            return nil
+
+                        },
+                    },
+
+                    // Check alert subscription
+                    cli.Command{
+                        Name:      "check",
+                        Aliases:   []string{"c"},
+                        Usage:     "Check for new RPIP alert subscriptions",
+                        UsageText: "rocketpool rpip alert check",
+                        Action: func(c *cli.Context) error {
+
+                            // Validate arguments
+                            err := commands.ValidateArgs(c, 0, nil)
+                            if err != nil {
+                                return err;
+                            }
+
+                            // Run command
+                            fmt.Println("Checking RPIP alerts...")
+                            return nil
+
+                        },
+                    },
+
+                    // Unsubscribe from alerts
+                    cli.Command{
+                        Name:      "unsubscribe",
+                        Aliases:   []string{"u"},
+                        Usage:     "Unsubscribe from new RPIP alerts",
+                        UsageText: "rocketpool rpip alert unsubscribe",
+                        Action: func(c *cli.Context) error {
+
+                            // Validate arguments
+                            err := commands.ValidateArgs(c, 0, nil)
+                            if err != nil {
+                                return err;
+                            }
+
+                            // Run command
+                            fmt.Println("Unsubscribing from RPIP alerts...")
+                            return nil
+
+                        },
+                    },
 
                 },
             },
