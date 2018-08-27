@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "os"
+    "regexp"
     "strconv"
     "strings"
 
@@ -448,6 +449,118 @@ func main() {
 
                         // Run command
                         fmt.Println("Exiting...")
+                        return nil
+
+                    },
+                },
+
+            },
+        },
+
+        // RPIP commands
+        cli.Command{
+            Name:      "rpip",
+            Usage:     "Manage Rocket Pool Improvement Proposals",
+            Subcommands: []cli.Command{
+
+                // List proposals
+                cli.Command{
+                    Name:      "list",
+                    Aliases:   []string{"l"},
+                    Usage:     "List current Rocket Pool Improvement Proposals",
+                    UsageText: "rocketpool rpip list",
+                    Action: func(c *cli.Context) error {
+
+                        // Validate arguments
+                        err := validateArgs(c, 0, nil)
+                        if err != nil {
+                            return err;
+                        }
+
+                        // Run command
+                        fmt.Println("Proposals:")
+                        return nil
+
+                    },
+                },
+
+                // Subscribe to alerts
+                cli.Command{
+                    Name:      "alert",
+                    Aliases:   []string{"a"},
+                    Usage:     "Subscribe an email address to new RPIP alerts",
+                    UsageText: "rocketpool rpip alert [email address]",
+                    Action: func(c *cli.Context) error {
+
+                        // Arguments
+                        var email string
+
+                        // Validate arguments
+                        err := validateArgs(c, 1, func(messages *[]string) {
+
+                            // Parse email address
+                            email = c.Args().Get(0)
+                            if !regexp.MustCompile("^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$").MatchString(email) {
+                                *messages = append(*messages, "Invalid email address")
+                            }
+
+                        });
+                        if err != nil {
+                            return err;
+                        }
+
+                        // Run command
+                        fmt.Printf("Subscribing %v to alerts...\n", email)
+                        return nil
+
+                    },
+                },
+
+                // Vote on a proposal
+                cli.Command{
+                    Name:      "vote",
+                    Aliases:   []string{"v"},
+                    Usage:     "Vote on a Rocket Pool Improvement Proposal",
+                    UsageText: "rocketpool rpip vote [proposal id, vote]" + "\n   " +
+                               "- proposal id must match the id of a current proposal" + "\n   " +
+                               "- valid vote values are 'yes', 'y', 'no', and 'n'",
+                    Action: func(c *cli.Context) error {
+
+                        // Arguments
+                        var proposalId uint64
+                        var vote bool
+
+                        // Validate arguments
+                        err := validateArgs(c, 2, func(messages *[]string) {
+                            var err error
+
+                            // Parse proposal id
+                            proposalId, err = strconv.ParseUint(c.Args().Get(0), 10, 64)
+                            if err != nil {
+                                *messages = append(*messages, "Invalid proposal id - must be an integer")
+                            }
+
+                            // Parse vote
+                            switch c.Args().Get(1) {
+                                case "yes":
+                                    vote = true
+                                case "y":
+                                    vote = true
+                                case "no":
+                                    vote = false
+                                case "n":
+                                    vote = false
+                                default:
+                                    *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
+                            }
+
+                        });
+                        if err != nil {
+                            return err;
+                        }
+
+                        // Run command
+                        fmt.Println("Voting:", proposalId, vote)
                         return nil
 
                     },
