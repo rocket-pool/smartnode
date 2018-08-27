@@ -6,7 +6,7 @@ import (
 
 
 // Config
-var storagePath = "/Users/moles/.rocketpool/cli.db";
+var storagePath = "/var/tmp/rocketpool-cli.db";
 
 
 // Open storage
