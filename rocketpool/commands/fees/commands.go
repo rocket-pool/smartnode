@@ -11,9 +11,9 @@ import (
 
 
 // Register fee commands
-func RegisterCommands(app *cli.App, aliases []string) {
+func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
-        Name:      "fee",
+        Name:      name,
         Aliases:   aliases,
         Usage:     "Manage user fees",
         Subcommands: []cli.Command{

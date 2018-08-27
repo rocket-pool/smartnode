@@ -10,9 +10,9 @@ import (
 
 
 // Register user commands
-func RegisterCommands(app *cli.App, aliases []string) {
+func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
-        Name:      "user",
+        Name:      name,
         Aliases:   aliases,
         Usage:     "Manage users",
         Subcommands: []cli.Command{

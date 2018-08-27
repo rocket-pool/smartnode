@@ -12,9 +12,9 @@ import (
 
 
 // Register rpip commands
-func RegisterCommands(app *cli.App, aliases []string) {
+func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
-        Name:      "rpip",
+        Name:      name,
         Aliases:   aliases,
         Usage:     "Manage Rocket Pool Improvement Proposals",
         Subcommands: []cli.Command{

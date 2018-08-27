@@ -11,9 +11,9 @@ import (
 
 
 // Register deposit commands
-func RegisterCommands(app *cli.App, aliases []string) {
+func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
-        Name:      "deposit",
+        Name:      name,
         Aliases:   aliases,
         Usage:     "Manage node deposits",
         Subcommands: []cli.Command{

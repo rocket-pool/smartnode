@@ -10,9 +10,9 @@ import (
 
 
 // Register node commands
-func RegisterCommands(app *cli.App, aliases []string) {
+func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
-        Name:      "node",
+        Name:      name,
         Aliases:   aliases,
         Usage:     "Manage node state",
         Subcommands: []cli.Command{

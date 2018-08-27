@@ -11,9 +11,9 @@ import (
 
 
 // Register resource commands
-func RegisterCommands(app *cli.App, aliases []string) {
+func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
-        Name:      "resource",
+        Name:      name,
         Aliases:   aliases,
         Usage:     "Manage resources",
         Subcommands: []cli.Command{
