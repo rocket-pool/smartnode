@@ -53,12 +53,12 @@ func main() {
     app.Copyright = "(c) 2018 Rocket Pool Pty Ltd"
 
     // Register commands
-    deposits.RegisterCommands(app, "deposit", []string{"d"})
-    fees.RegisterCommands(app, "fee", []string{"f"})
-    node.RegisterCommands(app, "node", []string{"n"})
+     deposits.RegisterCommands(app, "deposit",  []string{"d"})
+         fees.RegisterCommands(app, "fee",      []string{"f"})
+         node.RegisterCommands(app, "node",     []string{"n"})
     resources.RegisterCommands(app, "resource", []string{"r"})
-    rpip.RegisterCommands(app, "rpip", nil)
-    users.RegisterCommands(app, "user", []string{"u"})
+         rpip.RegisterCommands(app, "rpip",     nil)
+        users.RegisterCommands(app, "user",     []string{"u"})
 
     // Run application
     err := app.Run(os.Args)
