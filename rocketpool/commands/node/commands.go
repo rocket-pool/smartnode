@@ -32,7 +32,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    fmt.Println("Pausing...")
+                    fmt.Println("Node pausing...")
                     return nil
 
                 },
@@ -53,7 +53,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    fmt.Println("Resuming...")
+                    fmt.Println("Node resuming...")
                     return nil
 
                 },
@@ -74,7 +74,17 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    fmt.Println("Exiting...")
+                    exited, err := ExitNode()
+                    if err != nil {
+                        return cli.NewExitError("The node could not be exited from the network", 1)
+                    }
+
+                    // Return
+                    if exited {
+                        fmt.Println("The node successfully exited from the network")
+                    } else {
+                        fmt.Println("The node paused receiving new minipools and will exit when able")
+                    }
                     return nil
 
                 },
