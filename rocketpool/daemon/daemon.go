@@ -32,11 +32,11 @@ func checkRPIPs(interval string) {
         log.Fatal("Couldn't parse check RPIPs interval: ", err)
     }
 
-    // Load rocket pool contracts on interval
+    // Check RPIPs on interval
     ticker := time.NewTicker(duration)
     defer ticker.Stop()
     for _ = range ticker.C {
-        fmt.Println("Checking RPIPS...")
+        fmt.Println("Checking RPIPs...")
     }
 
 }
