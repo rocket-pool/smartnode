@@ -14,6 +14,10 @@ func Run() {
     go startCheckNodeExit()
     go checkNodeExit()
 
+    // Check for RPIP alerts on new proposal
+    go startCheckRPIPAlerts()
+    go checkRPIPAlerts()
+
     // Check RPIP votes periodically
     go startCheckRPIPVotes(checkRPIPVoteInterval)
     go checkRPIPVotes()
