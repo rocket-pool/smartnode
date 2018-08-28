@@ -73,7 +73,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            err = SubscribeToAlerts(email)
+                            err = subscribeToAlerts(email)
                             if err != nil {
                                 return cli.NewExitError("The email address could not be subscribed", 1)
                             }
@@ -100,7 +100,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            email, err := GetAlertsSubscription()
+                            email, err := getAlertsSubscription()
                             if err != nil {
                                 return cli.NewExitError("The alert subscription could not be retrieved", 1)
                             }
@@ -131,7 +131,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            err = UnsubscribeFromAlerts()
+                            err = unsubscribeFromAlerts()
                             if err != nil {
                                 return cli.NewExitError("The email address could not be unsubscribed", 1)
                             }
@@ -197,7 +197,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            err = CommitVote(proposalId, vote)
+                            err = commitVote(proposalId, vote)
                             if err != nil {
                                 return cli.NewExitError("The vote could not be committed", 1)
                             }
@@ -236,7 +236,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            vote, err := CheckVote(proposalId)
+                            vote, err := checkVote(proposalId)
                             if err != nil {
                                 return cli.NewExitError("The vote details could not be retrieved", 1)
                             }

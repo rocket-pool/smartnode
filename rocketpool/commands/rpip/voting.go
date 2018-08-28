@@ -8,7 +8,7 @@ import (
 
 
 // Commit a vote on a proposal
-func CommitVote(proposalId uint64, vote string) error {
+func commitVote(proposalId uint64, vote string) error {
 
     // Commit vote
     // TODO: implement
@@ -27,7 +27,7 @@ func CommitVote(proposalId uint64, vote string) error {
 
 
 // Check a vote on a proposal
-func CheckVote(proposalId uint64) (string, error) {
+func checkVote(proposalId uint64) (string, error) {
 
     // Open storage
     store, err := storage.Open()
@@ -45,7 +45,7 @@ func CheckVote(proposalId uint64) (string, error) {
 
 
 // Reveal a vote on a proposal
-func RevealVote(proposalId uint64, vote string) error {
+func revealVote(proposalId uint64, vote string) error {
 
     // Reveal vote
     // TODO: implement

@@ -6,7 +6,7 @@ import (
 
 
 // Exit node from network
-func ExitNode() (bool, error) {
+func exitNode() (bool, error) {
 
     // Attempt to exit node
     exited := attemptExitNode()

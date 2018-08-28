@@ -74,7 +74,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    exited, err := ExitNode()
+                    exited, err := exitNode()
                     if err != nil {
                         return cli.NewExitError("The node could not be exited from the network", 1)
                     }

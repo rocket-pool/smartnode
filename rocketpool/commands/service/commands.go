@@ -32,8 +32,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run command
                     daemon.Run()
-                    
-                    // Return
                     return nil
 
                 },
