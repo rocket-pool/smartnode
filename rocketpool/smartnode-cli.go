@@ -12,6 +12,7 @@ import (
     "github.com/rocket-pool/smartnode-cli/rocketpool/commands/node"
     "github.com/rocket-pool/smartnode-cli/rocketpool/commands/resources"
     "github.com/rocket-pool/smartnode-cli/rocketpool/commands/rpip"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/commands/service"
     "github.com/rocket-pool/smartnode-cli/rocketpool/commands/users"
 )
 
@@ -58,6 +59,7 @@ func main() {
          node.RegisterCommands(app, "node",     []string{"n"})
     resources.RegisterCommands(app, "resource", []string{"r"})
          rpip.RegisterCommands(app, "rpip",     nil)
+      service.RegisterCommands(app, "service",  []string{"s"})
         users.RegisterCommands(app, "user",     []string{"u"})
 
     // Run application
