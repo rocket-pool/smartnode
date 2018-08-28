@@ -256,7 +256,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     cli.Command{
                         Name:      "reveal",
                         Aliases:   []string{"r"},
-                        Usage:     "Reveal a vote on a Rocket Pool Improvement Proposal; for manual advanced use only",
+                        Usage:     "Reveal a vote on a Rocket Pool Improvement Proposal; for manual / advanced use only",
                         UsageText: "rocketpool rpip vote reveal [proposal id, vote]" + "\n   " +
                                    "- proposal id must match the id of a current proposal" + "\n   " +
                                    "- valid vote values are 'yes', 'y', 'no', and 'n'",
