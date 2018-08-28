@@ -153,60 +153,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Usage:     "Manage RPIP votes",
                 Subcommands: []cli.Command{
 
-                    // Cast a vote on a proposal
-                    cli.Command{
-                        Name:      "cast",
-                        Aliases:   []string{"c"},
-                        Usage:     "Cast a vote on a Rocket Pool Improvement Proposal (commits vote and reveals at a later time)",
-                        UsageText: "rocketpool rpip vote cast [proposal id, vote]" + "\n   " +
-                                   "- proposal id must match the id of a current proposal" + "\n   " +
-                                   "- valid vote values are 'yes', 'y', 'no', and 'n'",
-                        Action: func(c *cli.Context) error {
-
-                            // Arguments
-                            var proposalId uint64
-                            var vote bool
-
-                            // Validate arguments
-                            err := commands.ValidateArgs(c, 2, func(messages *[]string) {
-                                var err error
-
-                                // Parse proposal id
-                                proposalId, err = strconv.ParseUint(c.Args().Get(0), 10, 64)
-                                if err != nil {
-                                    *messages = append(*messages, "Invalid proposal id - must be an integer")
-                                }
-
-                                // Parse vote
-                                switch c.Args().Get(1) {
-                                    case "yes":
-                                        vote = true
-                                    case "y":
-                                        vote = true
-                                    case "no":
-                                        vote = false
-                                    case "n":
-                                        vote = false
-                                    default:
-                                        *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
-                                }
-
-                            })
-                            if err != nil {
-                                return err
-                            }
-
-                            // Run command
-                            fmt.Println("Casting vote:", proposalId, vote)
-                            return nil
-
-                        },
-                    },
-
                     // Commit a vote on a proposal
                     cli.Command{
                         Name:      "commit",
-                        Usage:     "Commit a vote on a Rocket Pool Improvement Proposal",
+                        Aliases:   []string{"c"},
+                        Usage:     "Commit a vote on a Rocket Pool Improvement Proposal; stores vote details for automatic reveal in future",
                         UsageText: "rocketpool rpip vote commit [proposal id, vote]" + "\n   " +
                                    "- proposal id must match the id of a current proposal" + "\n   " +
                                    "- valid vote values are 'yes', 'y', 'no', and 'n'",
@@ -214,7 +165,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                             // Arguments
                             var proposalId uint64
-                            var vote bool
+                            var vote string
 
                             // Validate arguments
                             err := commands.ValidateArgs(c, 2, func(messages *[]string) {
@@ -229,13 +180,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                 // Parse vote
                                 switch c.Args().Get(1) {
                                     case "yes":
-                                        vote = true
+                                        vote = "yes"
                                     case "y":
-                                        vote = true
+                                        vote = "yes"
                                     case "no":
-                                        vote = false
+                                        vote = "no"
                                     case "n":
-                                        vote = false
+                                        vote = "no"
                                     default:
                                         *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
                                 }
@@ -246,7 +197,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            fmt.Println("Committing vote:", proposalId, vote)
+                            err = CommitVote(proposalId, vote)
+                            if err != nil {
+                                return cli.NewExitError("The vote could not be committed", 1)
+                            }
+
+                            // Return
+                            fmt.Printf("Successfully committed vote on RPIP #%v\n", proposalId)
                             return nil
 
                         },
@@ -255,7 +212,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Check vote on a proposal
                     cli.Command{
                         Name:      "check",
-                        Usage:     "Check your committed vote on a Rocket Pool Improvement Proposal",
+                        Usage:     "Check your stored committed vote details on a Rocket Pool Improvement Proposal",
                         UsageText: "rocketpool rpip vote check [proposal id]" + "\n   " +
                                    "- proposal id must match the id of a current proposal",
                         Action: func(c *cli.Context) error {
@@ -279,7 +236,17 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             }
 
                             // Run command
-                            fmt.Println("Checking vote:", proposalId)
+                            vote, err := CheckVote(proposalId)
+                            if err != nil {
+                                return cli.NewExitError("The vote details could not be retrieved", 1)
+                            }
+
+                            // Return
+                            if vote == "" {
+                                fmt.Printf("RPIP #%v vote not found\n", proposalId)
+                            } else {
+                                fmt.Printf("RPIP #%v vote: %v\n", proposalId, vote)
+                            }
                             return nil
 
                         },
@@ -288,7 +255,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Reveal a vote on a proposal
                     cli.Command{
                         Name:      "reveal",
-                        Usage:     "Reveal a vote on a Rocket Pool Improvement Proposal",
+                        Aliases:   []string{"r"},
+                        Usage:     "Reveal a vote on a Rocket Pool Improvement Proposal; for manual advanced use only",
                         UsageText: "rocketpool rpip vote reveal [proposal id, vote]" + "\n   " +
                                    "- proposal id must match the id of a current proposal" + "\n   " +
                                    "- valid vote values are 'yes', 'y', 'no', and 'n'",
@@ -296,7 +264,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                             // Arguments
                             var proposalId uint64
-                            var vote bool
+                            var vote string
 
                             // Validate arguments
                             err := commands.ValidateArgs(c, 2, func(messages *[]string) {
@@ -311,13 +279,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                 // Parse vote
                                 switch c.Args().Get(1) {
                                     case "yes":
-                                        vote = true
+                                        vote = "yes"
                                     case "y":
-                                        vote = true
+                                        vote = "yes"
                                     case "no":
-                                        vote = false
+                                        vote = "no"
                                     case "n":
-                                        vote = false
+                                        vote = "no"
                                     default:
                                         *messages = append(*messages, "Invalid vote - valid values are 'yes', 'y', 'no', and 'n'")
                                 }
