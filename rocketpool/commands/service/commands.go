@@ -1,6 +1,8 @@
 package service
 
 import (
+    "os"
+
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/commands"
@@ -16,11 +18,174 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Usage:     "Manage smartnode daemon service",
         Subcommands: []cli.Command{
 
+            // Install daemon service
+            cli.Command{
+                Name:      "install",
+                Aliases:   []string{"i"},
+                Usage:     "Install smartnode daemon service (using systemd); must be run as root",
+                UsageText: "rocketpool service install",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := commands.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Check user ID
+                    id := os.Geteuid()
+                    if id != 0 {
+                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service install'", 1)
+                    }
+
+                    // Run command
+                    err = daemon.Install()
+                    if err != nil {
+                        return cli.NewExitError("The smartnode daemon service could not be installed: " + err.Error(), 1)
+                    }
+                    return nil
+
+                },
+            },
+
+            // Uninstall daemon service
+            cli.Command{
+                Name:      "uninstall",
+                Aliases:   []string{"u"},
+                Usage:     "Uninstall smartnode daemon service (using systemd); must be run as root",
+                UsageText: "rocketpool service uninstall",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := commands.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Check user ID
+                    id := os.Geteuid()
+                    if id != 0 {
+                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service uninstall'", 1)
+                    }
+
+                    // Run command
+                    err = daemon.Uninstall()
+                    if err != nil {
+                        return cli.NewExitError("The smartnode daemon service could not be uninstalled: " + err.Error(), 1)
+                    }
+                    return nil
+
+                },
+            },
+
+            // Enable daemon service
+            cli.Command{
+                Name:      "enable",
+                Aliases:   []string{"e"},
+                Usage:     "Enable smartnode daemon service to start at boot (using systemd); must be run as root",
+                UsageText: "rocketpool service enable",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := commands.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Check user ID
+                    id := os.Geteuid()
+                    if id != 0 {
+                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service enable'", 1)
+                    }
+
+                    // Run command
+                    return nil
+
+                },
+            },
+
+            // Disable daemon service
+            cli.Command{
+                Name:      "disable",
+                Aliases:   []string{"d"},
+                Usage:     "Disable smartnode daemon service from starting at boot (using systemd); must be run as root",
+                UsageText: "rocketpool service disable",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := commands.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Check user ID
+                    id := os.Geteuid()
+                    if id != 0 {
+                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service disable'", 1)
+                    }
+
+                    // Run command
+                    return nil
+
+                },
+            },
+
+            // Start daemon service
+            cli.Command{
+                Name:      "start",
+                Aliases:   []string{"s"},
+                Usage:     "Start smartnode daemon service (using systemd); must be run as root",
+                UsageText: "rocketpool service start",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := commands.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Check user ID
+                    id := os.Geteuid()
+                    if id != 0 {
+                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service start'", 1)
+                    }
+
+                    // Run command
+                    return nil
+
+                },
+            },
+
+            // Stop daemon service
+            cli.Command{
+                Name:      "stop",
+                Usage:     "Stop smartnode daemon service (using systemd); must be run as root",
+                UsageText: "rocketpool service stop",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := commands.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Check user ID
+                    id := os.Geteuid()
+                    if id != 0 {
+                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service stop'", 1)
+                    }
+
+                    // Run command
+                    return nil
+
+                },
+            },
+
             // Run daemon
             cli.Command{
                 Name:      "run",
                 Aliases:   []string{"r"},
-                Usage:     "Run smartnode daemon service; for manual / advanced use only",
+                Usage:     "Run smartnode daemon; for manual / advanced use only",
                 UsageText: "rocketpool service run",
                 Action: func(c *cli.Context) error {
 

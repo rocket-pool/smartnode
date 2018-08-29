@@ -1,10 +1,62 @@
 package daemon
 
-import ()
+import (
+    "io/ioutil"
+    "os"
+    "os/exec"
+)
 
 
 // Config
+const servicePath string = "/lib/systemd/system/rocketpool.service"
+const daemonPath string = "/usr/bin/rocketpool"
 const checkRPIPVoteInterval string = "10s"
+
+
+// Install daemon
+func Install() error {
+
+    // Service config
+    config := []byte(
+        "[Unit]" + "\r\n" +
+        "Description=Rocket Pool smartnode daemon" + "\r\n" +
+        "After=network.target" + "\r\n" +
+        "\r\n" +
+        "[Service]" + "\r\n" +
+        "Type=simple" + "\r\n" +
+        "ExecStart=" + daemonPath + " service run" + "\r\n" +
+        "Restart=always" + "\r\n" +
+        "RestartSec=5" + "\r\n" +
+        "\r\n" +
+        "[Install]" + "\r\n" +
+        "WantedBy=multi-user.target" +
+    "\r\n")
+
+    // Write service config to systemd path
+    err := ioutil.WriteFile(servicePath, config, 0664)
+    if err != nil {
+        return err
+    }
+
+    // Reload systemd services
+    return exec.Command("systemctl", "daemon-reload").Run()
+
+}
+
+
+// Uninstall daemon
+func Uninstall() error {
+
+    // Delete service config at systemd path
+    err := os.Remove(servicePath)
+    if err != nil {
+        return err
+    }
+
+    // Reload systemd services
+    return exec.Command("systemctl", "daemon-reload").Run()
+
+}
 
 
 // Run daemon
