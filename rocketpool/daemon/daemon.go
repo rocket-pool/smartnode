@@ -85,7 +85,7 @@ func Status() string {
     _ = err
 
     // Return
-    return string(out[:len(out)])
+    return string(out[:])
 
 }
 
