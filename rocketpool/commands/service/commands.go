@@ -233,7 +233,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     status := daemon.Status()
 
                     // Return
-                    fmt.Println(status)
+                    fmt.Print(status)
                     return nil
 
                 },
