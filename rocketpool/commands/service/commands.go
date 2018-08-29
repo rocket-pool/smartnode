@@ -1,6 +1,7 @@
 package service
 
 import (
+    "fmt"
     "os"
 
     "github.com/urfave/cli"
@@ -43,6 +44,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     if err != nil {
                         return cli.NewExitError("The smartnode daemon service could not be installed: " + err.Error(), 1)
                     }
+
+                    // Return
+                    fmt.Println("The smartnode daemon service was successfully installed")
                     return nil
 
                 },
@@ -73,6 +77,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     if err != nil {
                         return cli.NewExitError("The smartnode daemon service could not be uninstalled: " + err.Error(), 1)
                     }
+
+                    // Return
+                    fmt.Println("The smartnode daemon service was successfully uninstalled")
                     return nil
 
                 },
