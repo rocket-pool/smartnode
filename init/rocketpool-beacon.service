@@ -1,10 +1,10 @@
 [Unit]
-Description=Rocket Pool smartnode daemon
+Description=Rocket Pool beacon daemon
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/rocketpool service run
+ExecStart=/usr/bin/rocketpool service beacon run
 Restart=always
 RestartSec=5
 

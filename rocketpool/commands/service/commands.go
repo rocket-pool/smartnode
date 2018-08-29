@@ -7,7 +7,9 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/commands"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/daemon"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/beacon"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/smartnode"
 )
 
 
@@ -16,251 +18,275 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
         Name:      name,
         Aliases:   aliases,
-        Usage:     "Manage smartnode daemon service",
+        Usage:     "Manage daemon services",
         Subcommands: []cli.Command{
 
-            // Install daemon service
+            // Smartnode service commands
             cli.Command{
-                Name:      "install",
-                Aliases:   []string{"i"},
-                Usage:     "Install smartnode daemon service (using systemd); must be run as root",
-                UsageText: "rocketpool service install",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
-                    if err != nil {
-                        return err
-                    }
-
-                    // Check user ID
-                    id := os.Geteuid()
-                    if id != 0 {
-                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service install'", 1)
-                    }
-
-                    // Run command
-                    err = daemon.Install()
-                    if err != nil {
-                        return cli.NewExitError("The smartnode daemon service could not be installed: " + err.Error(), 1)
-                    }
-
-                    // Return
-                    fmt.Println("The smartnode daemon service was successfully installed")
-                    return nil
-
-                },
-            },
-
-            // Uninstall daemon service
-            cli.Command{
-                Name:      "uninstall",
-                Aliases:   []string{"u"},
-                Usage:     "Uninstall smartnode daemon service (using systemd); must be run as root",
-                UsageText: "rocketpool service uninstall",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
-                    if err != nil {
-                        return err
-                    }
-
-                    // Check user ID
-                    id := os.Geteuid()
-                    if id != 0 {
-                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service uninstall'", 1)
-                    }
-
-                    // Run command
-                    err = daemon.Uninstall()
-                    if err != nil {
-                        return cli.NewExitError("The smartnode daemon service could not be uninstalled: " + err.Error(), 1)
-                    }
-
-                    // Return
-                    fmt.Println("The smartnode daemon service was successfully uninstalled")
-                    return nil
-
-                },
-            },
-
-            // Enable daemon service
-            cli.Command{
-                Name:      "enable",
-                Aliases:   []string{"e"},
-                Usage:     "Enable smartnode daemon service to start at boot (using systemd); must be run as root",
-                UsageText: "rocketpool service enable",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
-                    if err != nil {
-                        return err
-                    }
-
-                    // Check user ID
-                    id := os.Geteuid()
-                    if id != 0 {
-                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service enable'", 1)
-                    }
-
-                    // Run command
-                    err = daemon.Enable()
-                    if err != nil {
-                        return cli.NewExitError("The smartnode daemon service could not be enabled: " + err.Error(), 1)
-                    }
-
-                    // Return
-                    fmt.Println("The smartnode daemon service was successfully enabled to start at boot")
-                    return nil
-
-                },
-            },
-
-            // Disable daemon service
-            cli.Command{
-                Name:      "disable",
-                Aliases:   []string{"d"},
-                Usage:     "Disable smartnode daemon service from starting at boot (using systemd); must be run as root",
-                UsageText: "rocketpool service disable",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
-                    if err != nil {
-                        return err
-                    }
-
-                    // Check user ID
-                    id := os.Geteuid()
-                    if id != 0 {
-                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service disable'", 1)
-                    }
-
-                    // Run command
-                    err = daemon.Disable()
-                    if err != nil {
-                        return cli.NewExitError("The smartnode daemon service could not be disabled: " + err.Error(), 1)
-                    }
-
-                    // Return
-                    fmt.Println("The smartnode daemon service was successfully disabled from starting at boot")
-                    return nil
-
-                },
-            },
-
-            // Start daemon service
-            cli.Command{
-                Name:      "start",
+                Name:      "smartnode",
                 Aliases:   []string{"s"},
-                Usage:     "Start smartnode daemon service (using systemd); must be run as root",
-                UsageText: "rocketpool service start",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
-                    if err != nil {
-                        return err
-                    }
-
-                    // Check user ID
-                    id := os.Geteuid()
-                    if id != 0 {
-                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service start'", 1)
-                    }
-
-                    // Run command
-                    err = daemon.Start()
-                    if err != nil {
-                        return cli.NewExitError("The smartnode daemon service could not be started: " + err.Error(), 1)
-                    }
-
-                    // Return
-                    fmt.Println("The smartnode daemon service was successfully started")
-                    return nil
-
-                },
+                Usage:     "Manage smartnode daemon service",
+                Subcommands: serviceCommands("smartnode", smartnode.Run),
             },
 
-            // Stop daemon service
+            // Beacon service commands
             cli.Command{
-                Name:      "stop",
-                Usage:     "Stop smartnode daemon service (using systemd); must be run as root",
-                UsageText: "rocketpool service stop",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
-                    if err != nil {
-                        return err
-                    }
-
-                    // Check user ID
-                    id := os.Geteuid()
-                    if id != 0 {
-                        return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service stop'", 1)
-                    }
-
-                    // Run command
-                    err = daemon.Stop()
-                    if err != nil {
-                        return cli.NewExitError("The smartnode daemon service could not be stopped: " + err.Error(), 1)
-                    }
-
-                    // Return
-                    fmt.Println("The smartnode daemon service was successfully stopped")
-                    return nil
-
-                },
-            },
-
-            // Get daemon status
-            cli.Command{
-                Name:      "status",
-                Usage:     "Get smartnode daemon service status (using systemd)",
-                UsageText: "rocketpool service status",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
-                    if err != nil {
-                        return err
-                    }
-
-                    // Run command
-                    status := daemon.Status()
-
-                    // Return
-                    fmt.Print(status)
-                    return nil
-
-                },
-            },
-
-            // Run daemon
-            cli.Command{
-                Name:      "run",
-                Aliases:   []string{"r"},
-                Usage:     "Run smartnode daemon; for manual / advanced use only",
-                UsageText: "rocketpool service run",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
-                    if err != nil {
-                        return err
-                    }
-
-                    // Run command
-                    daemon.Run()
-                    return nil
-
-                },
+                Name:      "beacon",
+                Aliases:   []string{"b"},
+                Usage:     "Manage beacon daemon service",
+                Subcommands: serviceCommands("beacon", beacon.Run),
             },
 
         },
     })
+}
+
+
+// Get service commands
+func serviceCommands(name string, run func()) []cli.Command {
+    return []cli.Command{
+
+        // Install daemon service
+        cli.Command{
+            Name:      "install",
+            Aliases:   []string{"i"},
+            Usage:     "Install " + name + " daemon service (using systemd); must be run as root",
+            UsageText: "rocketpool service " + name + " install",
+            Action: func(c *cli.Context) error {
+
+                // Validate arguments
+                err := commands.ValidateArgs(c, 0, nil)
+                if err != nil {
+                    return err
+                }
+
+                // Check user ID
+                id := os.Geteuid()
+                if id != 0 {
+                    return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " install'", 1)
+                }
+
+                // Run command
+                err = daemons.Install(name)
+                if err != nil {
+                    return cli.NewExitError("The " + name + " daemon service could not be installed: " + err.Error(), 1)
+                }
+
+                // Return
+                fmt.Println("The " + name + " daemon service was successfully installed")
+                return nil
+
+            },
+        },
+
+        // Uninstall daemon service
+        cli.Command{
+            Name:      "uninstall",
+            Aliases:   []string{"u"},
+            Usage:     "Uninstall " + name + " daemon service (using systemd); must be run as root",
+            UsageText: "rocketpool service " + name + " uninstall",
+            Action: func(c *cli.Context) error {
+
+                // Validate arguments
+                err := commands.ValidateArgs(c, 0, nil)
+                if err != nil {
+                    return err
+                }
+
+                // Check user ID
+                id := os.Geteuid()
+                if id != 0 {
+                    return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " uninstall'", 1)
+                }
+
+                // Run command
+                err = daemons.Uninstall(name)
+                if err != nil {
+                    return cli.NewExitError("The " + name + " daemon service could not be uninstalled: " + err.Error(), 1)
+                }
+
+                // Return
+                fmt.Println("The " + name + " daemon service was successfully uninstalled")
+                return nil
+
+            },
+        },
+
+        // Enable daemon service
+        cli.Command{
+            Name:      "enable",
+            Aliases:   []string{"e"},
+            Usage:     "Enable " + name + " daemon service to start at boot (using systemd); must be run as root",
+            UsageText: "rocketpool service " + name + " enable",
+            Action: func(c *cli.Context) error {
+
+                // Validate arguments
+                err := commands.ValidateArgs(c, 0, nil)
+                if err != nil {
+                    return err
+                }
+
+                // Check user ID
+                id := os.Geteuid()
+                if id != 0 {
+                    return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " enable'", 1)
+                }
+
+                // Run command
+                err = daemons.Enable(name)
+                if err != nil {
+                    return cli.NewExitError("The " + name + " daemon service could not be enabled: " + err.Error(), 1)
+                }
+
+                // Return
+                fmt.Println("The " + name + " daemon service was successfully enabled to start at boot")
+                return nil
+
+            },
+        },
+
+        // Disable daemon service
+        cli.Command{
+            Name:      "disable",
+            Aliases:   []string{"d"},
+            Usage:     "Disable " + name + " daemon service from starting at boot (using systemd); must be run as root",
+            UsageText: "rocketpool service " + name + " disable",
+            Action: func(c *cli.Context) error {
+
+                // Validate arguments
+                err := commands.ValidateArgs(c, 0, nil)
+                if err != nil {
+                    return err
+                }
+
+                // Check user ID
+                id := os.Geteuid()
+                if id != 0 {
+                    return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " disable'", 1)
+                }
+
+                // Run command
+                err = daemons.Disable(name)
+                if err != nil {
+                    return cli.NewExitError("The " + name + " daemon service could not be disabled: " + err.Error(), 1)
+                }
+
+                // Return
+                fmt.Println("The " + name + " daemon service was successfully disabled from starting at boot")
+                return nil
+
+            },
+        },
+
+        // Start daemon service
+        cli.Command{
+            Name:      "start",
+            Aliases:   []string{"s"},
+            Usage:     "Start " + name + " daemon service (using systemd); must be run as root",
+            UsageText: "rocketpool service " + name + " start",
+            Action: func(c *cli.Context) error {
+
+                // Validate arguments
+                err := commands.ValidateArgs(c, 0, nil)
+                if err != nil {
+                    return err
+                }
+
+                // Check user ID
+                id := os.Geteuid()
+                if id != 0 {
+                    return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " start'", 1)
+                }
+
+                // Run command
+                err = daemons.Start(name)
+                if err != nil {
+                    return cli.NewExitError("The " + name + " daemon service could not be started: " + err.Error(), 1)
+                }
+
+                // Return
+                fmt.Println("The " + name + " daemon service was successfully started")
+                return nil
+
+            },
+        },
+
+        // Stop daemon service
+        cli.Command{
+            Name:      "stop",
+            Usage:     "Stop " + name + " daemon service (using systemd); must be run as root",
+            UsageText: "rocketpool service " + name + " stop",
+            Action: func(c *cli.Context) error {
+
+                // Validate arguments
+                err := commands.ValidateArgs(c, 0, nil)
+                if err != nil {
+                    return err
+                }
+
+                // Check user ID
+                id := os.Geteuid()
+                if id != 0 {
+                    return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " stop'", 1)
+                }
+
+                // Run command
+                err = daemons.Stop(name)
+                if err != nil {
+                    return cli.NewExitError("The " + name + " daemon service could not be stopped: " + err.Error(), 1)
+                }
+
+                // Return
+                fmt.Println("The " + name + " daemon service was successfully stopped")
+                return nil
+
+            },
+        },
+
+        // Get daemon status
+        cli.Command{
+            Name:      "status",
+            Usage:     "Get " + name + " daemon service status (using systemd)",
+            UsageText: "rocketpool service " + name + " status",
+            Action: func(c *cli.Context) error {
+
+                // Validate arguments
+                err := commands.ValidateArgs(c, 0, nil)
+                if err != nil {
+                    return err
+                }
+
+                // Run command
+                status := daemons.Status(name)
+
+                // Return
+                fmt.Print(status)
+                return nil
+
+            },
+        },
+
+        // Run daemon
+        cli.Command{
+            Name:      "run",
+            Aliases:   []string{"r"},
+            Usage:     "Run " + name + " daemon; for manual / advanced use only",
+            UsageText: "rocketpool service " + name + " run",
+            Action: func(c *cli.Context) error {
+
+                // Validate arguments
+                err := commands.ValidateArgs(c, 0, nil)
+                if err != nil {
+                    return err
+                }
+
+                // Run command
+                run()
+                return nil
+
+            },
+        },
+
+    }
 }
 

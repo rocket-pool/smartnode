@@ -1,0 +1,12 @@
+[Unit]
+Description=Rocket Pool smartnode daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rocketpool service smartnode run
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
