@@ -1,0 +1,12 @@
+[Unit]
+Description=Rocket Pool smartnode daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/ubuntu/go/bin/rocketpool service run
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
