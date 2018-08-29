@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/ubuntu/go/bin/rocketpool service run
+ExecStart=/usr/bin/rocketpool service run
 Restart=always
 RestartSec=5
 
