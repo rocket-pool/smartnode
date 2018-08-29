@@ -230,10 +230,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    status, err := daemon.Status()
-                    if err != nil {
-                        return cli.NewExitError("The smartnode daemon status could not be retrieved: " + err.Error(), 1)
-                    }
+                    status := daemon.Status()
 
                     // Return
                     fmt.Println(status)

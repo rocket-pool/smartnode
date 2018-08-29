@@ -78,8 +78,15 @@ func Stop() error {
 
 
 // Get daemon status
-func Status() ([]byte, error) {
-    return exec.Command("systemctl", "status", "rocketpool").Output()
+func Status() string {
+
+    // Get status
+    out, err := exec.Command("systemctl", "status", "rocketpool").Output()
+    _ = err
+
+    // Return
+    return string(out[:len(out)])
+
 }
 
 
