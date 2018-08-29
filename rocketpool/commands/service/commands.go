@@ -106,6 +106,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
+                    err = daemon.Enable()
+                    if err != nil {
+                        return cli.NewExitError("The smartnode daemon service could not be enabled: " + err.Error(), 1)
+                    }
+
+                    // Return
+                    fmt.Println("The smartnode daemon service was successfully enabled to start at boot")
                     return nil
 
                 },
@@ -132,6 +139,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
+                    err = daemon.Disable()
+                    if err != nil {
+                        return cli.NewExitError("The smartnode daemon service could not be disabled: " + err.Error(), 1)
+                    }
+
+                    // Return
+                    fmt.Println("The smartnode daemon service was successfully disabled from starting at boot")
                     return nil
 
                 },
@@ -158,6 +172,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
+                    err = daemon.Start()
+                    if err != nil {
+                        return cli.NewExitError("The smartnode daemon service could not be started: " + err.Error(), 1)
+                    }
+
+                    // Return
+                    fmt.Println("The smartnode daemon service was successfully started")
                     return nil
 
                 },
@@ -183,6 +204,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
+                    err = daemon.Stop()
+                    if err != nil {
+                        return cli.NewExitError("The smartnode daemon service could not be stopped: " + err.Error(), 1)
+                    }
+
+                    // Return
+                    fmt.Println("The smartnode daemon service was successfully stopped")
                     return nil
 
                 },

@@ -59,6 +59,24 @@ func Uninstall() error {
 }
 
 
+// Enable / disable daemon start at boot
+func Enable() error {
+    return exec.Command("systemctl", "enable", "rocketpool").Run()
+}
+func Disable() error {
+    return exec.Command("systemctl", "disable", "rocketpool").Run()
+}
+
+
+// Start / stop daemon
+func Start() error {
+    return exec.Command("systemctl", "start", "rocketpool").Run()
+}
+func Stop() error {
+    return exec.Command("systemctl", "stop", "rocketpool").Run()
+}
+
+
 // Run daemon
 func Run() {
 
