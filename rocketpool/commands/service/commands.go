@@ -216,6 +216,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Get daemon status
+            cli.Command{
+                Name:      "status",
+                Usage:     "Get smartnode daemon service status (using systemd)",
+                UsageText: "rocketpool service status",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := commands.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    status, err := daemon.Status()
+                    if err != nil {
+                        return cli.NewExitError("The smartnode daemon status could not be retrieved: " + err.Error(), 1)
+                    }
+
+                    // Return
+                    fmt.Println(status)
+                    return nil
+
+                },
+            },
+
             // Run daemon
             cli.Command{
                 Name:      "run",

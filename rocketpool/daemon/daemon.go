@@ -77,6 +77,12 @@ func Stop() error {
 }
 
 
+// Get daemon status
+func Status() ([]byte, error) {
+    return exec.Command("systemctl", "status", "rocketpool").Output()
+}
+
+
 // Run daemon
 func Run() {
 
