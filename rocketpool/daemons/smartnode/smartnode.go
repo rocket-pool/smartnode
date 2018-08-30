@@ -1,26 +1,57 @@
 package smartnode
 
-import ()
+import (
+    "context"
+    "log"
+
+    "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/ethereum/go-ethereum/core/types"
+
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
+)
 
 
 // Config
-const checkRPIPVoteInterval string = "10s"
+const clientUrl string = "ws://localhost:8545" // Ganache
+const checkRPIPVoteInterval int64 = 10 // Seconds
 
 
 // Run daemon
 func Run() {
 
-    // Check for node exit on minipool removed
-    go startCheckNodeExit()
-    go checkNodeExit()
+    // Initilise pubsub
+    publisher := messaging.NewPublisher()
 
-    // Check for RPIP alerts on new proposal
-    go startCheckRPIPAlerts()
-    go checkRPIPAlerts()
+    // Connect to ethereum node
+    client, err := ethclient.Dial(clientUrl)
+    if err != nil {
+        log.Fatal("Error connecting to ethereum node: ", err)
+    }
 
-    // Check RPIP votes periodically
-    go startCheckRPIPVotes(checkRPIPVoteInterval)
-    go checkRPIPVotes()
+    // Listen for new block headers and notify
+    go (func() {
+
+        // Subscribe to new headers
+        headers := make(chan *types.Header)
+        sub, err := client.SubscribeNewHead(context.Background(), headers)
+        if err != nil {
+            log.Fatal("Error subscribing to block headers: ", err)
+        }
+
+        // Receive headers and notify
+        for {
+            select {
+                case err := <-sub.Err():
+                    log.Fatal("Block header subscription error: ", err)
+                case header := <-headers:
+                    publisher.Notify("node.block.new", header)
+            }
+        }
+
+    })()
+
+    // Check RPIP votes on block timestamp
+    go startCheckRPIPVotes(publisher, checkRPIPVoteInterval)
 
     // Block thread
     select {}

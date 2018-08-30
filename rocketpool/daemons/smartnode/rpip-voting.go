@@ -1,26 +1,23 @@
 package smartnode
 
 import (
-    "fmt"
     "log"
-    "time"
+
+    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
 
 
-// Check RPIP votes periodically
-func startCheckRPIPVotes(interval string) {
+// Check RPIP votes on block timestamp
+func startCheckRPIPVotes(publisher *messaging.Publisher, interval int64) {
 
-    // Parse check interval
-    duration, err := time.ParseDuration(interval)
-    if err != nil {
-        log.Fatal("Couldn't parse check RPIP votes interval: ", err)
-    }
+    // Create block timestamp interval timer
+    timer := make(chan bool)
+    go daemons.BlockTimeInterval(publisher, interval, timer, true)
 
     // Check RPIP votes on interval
-    ticker := time.NewTicker(duration)
-    defer ticker.Stop()
-    for _ = range ticker.C {
-        go checkRPIPVotes()
+    for _ = range timer {
+        checkRPIPVotes()
     }
 
 }
@@ -37,7 +34,7 @@ func checkRPIPVotes() {
     //     - delete stored vote
 
     // Log
-    fmt.Println("Checking RPIP votes...")
+    log.Println("Checking RPIP votes...")
 
 }
 

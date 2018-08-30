@@ -1,29 +1,17 @@
 package smartnode
 
 import (
-    "fmt"
-    "time"
+    "log"
 )
 
 
 // Check for RPIP alerts on new proposal
 func startCheckRPIPAlerts() {
 
-    // Check for alerts on interval
-    // TODO: implement event listener instead
-    ticker := time.NewTicker(10 * time.Second)
-    defer ticker.Stop()
-    for _ = range ticker.C {
-
-        // TODO: implement
-        // - check for subscription; cancel if not set
-        // - get proposal
-        // - send alert
-
-        // Log
-        fmt.Println("Checking new RPIP for alert...")
-
-    }
+    // TODO: implement
+    // - check for subscription; cancel if not set
+    // - get proposal
+    // - send alert
 
 }
 
@@ -37,7 +25,7 @@ func checkRPIPAlerts() {
     // - for each new proposal, send alert
 
     // Log
-    fmt.Println("Checking for RPIP alerts...")
+    log.Println("Checking for RPIP alerts...")
 
 }
 
