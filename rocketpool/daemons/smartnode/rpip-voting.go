@@ -14,7 +14,7 @@ func startCheckRPIPVotes(publisher *messaging.Publisher, interval int64) {
 
     // Create block timestamp interval listener
     listener := make(chan *big.Int)
-    go daemons.BlockTimeInterval(publisher, big.NewInt(interval), true, listener)
+    go daemons.SendBlockTimeIntervals(publisher, big.NewInt(interval), true, listener)
 
     // Check RPIP votes on interval
     for _ = range listener {

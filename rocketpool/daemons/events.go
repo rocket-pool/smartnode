@@ -16,7 +16,7 @@ import (
 
 
 // Send logs in block by topic to a listener channel on found
-func BlockLog(publisher *messaging.Publisher, client *ethclient.Client, topic string, listener chan *types.Log) {
+func SendBlockLogs(publisher *messaging.Publisher, client *ethclient.Client, topic string, listener chan *types.Log) {
 
     // Subscribe to new block headers
     newBlockListener := make(chan interface{})
@@ -47,23 +47,23 @@ func BlockLog(publisher *messaging.Publisher, client *ethclient.Client, topic st
 
 
 // Send block timestamp to a listener channel at interval
-func BlockTimeInterval(publisher *messaging.Publisher, interval *big.Int, onInit bool, listener chan *big.Int) {
-    blockInterval(publisher, interval, onInit, listener, func(header *types.Header) *big.Int {
+func SendBlockTimeIntervals(publisher *messaging.Publisher, interval *big.Int, onInit bool, listener chan *big.Int) {
+    sendBlockIntervals(publisher, interval, onInit, listener, func(header *types.Header) *big.Int {
         return header.Time
     })
 }
 
 
 // Send block number to a listener channel at interval
-func BlockNumberInterval(publisher *messaging.Publisher, interval *big.Int, onInit bool, listener chan *big.Int) {
-    blockInterval(publisher, interval, onInit, listener, func(header *types.Header) *big.Int {
+func SendBlockNumberIntervals(publisher *messaging.Publisher, interval *big.Int, onInit bool, listener chan *big.Int) {
+    sendBlockIntervals(publisher, interval, onInit, listener, func(header *types.Header) *big.Int {
         return header.Number
     })
 }
 
 
 // Send to a listener channel at block intervals
-func blockInterval(publisher *messaging.Publisher, interval *big.Int, onInit bool, listener chan *big.Int, property func(*types.Header) *big.Int) {
+func sendBlockIntervals(publisher *messaging.Publisher, interval *big.Int, onInit bool, listener chan *big.Int, property func(*types.Header) *big.Int) {
 
     // Check details
     initialised := false
