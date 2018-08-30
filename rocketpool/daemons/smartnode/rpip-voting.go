@@ -2,6 +2,7 @@ package smartnode
 
 import (
     "log"
+    "math/big"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/daemons"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
@@ -11,12 +12,12 @@ import (
 // Check RPIP votes on block timestamp
 func startCheckRPIPVotes(publisher *messaging.Publisher, interval int64) {
 
-    // Create block timestamp interval timer
-    timer := make(chan bool)
-    go daemons.BlockTimeInterval(publisher, interval, timer, true)
+    // Create block timestamp interval listener
+    listener := make(chan *big.Int)
+    go daemons.BlockTimeInterval(publisher, big.NewInt(interval), true, listener)
 
     // Check RPIP votes on interval
-    for _ = range timer {
+    for _ = range listener {
         checkRPIPVotes()
     }
 
