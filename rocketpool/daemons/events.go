@@ -1,12 +1,49 @@
 package daemons
 
 import (
+    "context"
+    "log"
     "math/big"
 
+    "github.com/ethereum/go-ethereum"
+    "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
+    "github.com/ethereum/go-ethereum/ethclient"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
+
+
+// Send logs in block by topic to a listener channel on found
+func BlockLog(publisher *messaging.Publisher, client *ethclient.Client, topic string, listener chan *types.Log) {
+
+    // Subscribe to new block headers
+    newBlockListener := make(chan interface{})
+    publisher.AddSubscriber("node.block.new", newBlockListener)
+
+    // Receive headers
+    for h := range newBlockListener {
+        header := h.(*types.Header)
+
+        // Get logs in block by topic
+        logs, err := client.FilterLogs(context.Background(), ethereum.FilterQuery{
+            FromBlock: header.Number,
+            ToBlock: header.Number,
+            Topics: [][]common.Hash{{eth.KeccakStr(topic)}},
+        })
+        if err != nil {
+            log.Fatal("Error retrieving logs: ", err)
+        }
+
+        // Send logs
+        for _, logItem := range logs {
+            listener <- &logItem
+        }
+
+    }
+
+}
 
 
 // Send block timestamp to a listener channel at interval
