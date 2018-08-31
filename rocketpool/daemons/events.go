@@ -6,17 +6,21 @@ import (
     "math/big"
 
     "github.com/ethereum/go-ethereum"
+    "github.com/ethereum/go-ethereum/accounts/abi"
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/ethclient"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
 
 
-// Send logs in block by topic to a listener channel on found
-func SendBlockLogs(publisher *messaging.Publisher, client *ethclient.Client, topic string, listener chan *types.Log) {
+// Send events to a listener channel on found
+func SendEvents(publisher *messaging.Publisher, client *ethclient.Client, contractAddress *common.Address, contractAbi *abi.ABI, eventName string, eventPrototype interface{}, listener chan *interface{}) {
+
+    // Create contract instance
+    contract := bind.NewBoundContract(*contractAddress, *contractAbi, client, client, client)
 
     // Subscribe to new block headers
     newBlockListener := make(chan interface{})
@@ -26,19 +30,30 @@ func SendBlockLogs(publisher *messaging.Publisher, client *ethclient.Client, top
     for h := range newBlockListener {
         header := h.(*types.Header)
 
-        // Get logs in block by topic
+        // Get logs in block by contract address & event topic
         logs, err := client.FilterLogs(context.Background(), ethereum.FilterQuery{
             FromBlock: header.Number,
             ToBlock: header.Number,
-            Topics: [][]common.Hash{{eth.KeccakStr(topic)}},
+            Addresses: []common.Address{*contractAddress},
+            Topics: [][]common.Hash{{contractAbi.Events[eventName].Id()}},
         })
         if err != nil {
             log.Fatal("Error retrieving logs: ", err)
         }
 
-        // Send logs
+        // Process logs
         for _, logItem := range logs {
-            listener <- &logItem
+
+            // Unpack event data from log
+            event := eventPrototype
+            err := contract.UnpackLog(event, eventName, logItem)
+            if err != nil {
+                log.Fatal("Error unpacking event from log: ", err)
+            }
+
+            // Send event to listener
+            listener <- &event
+
         }
 
     }
