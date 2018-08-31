@@ -1,14 +1,8 @@
-package smartnode
+package node
 
 import (
     "log"
 )
-
-
-// Check for node exit on minipool removed
-func startCheckNodeExit() {
-
-}
 
 
 // Check for node exit

@@ -1,19 +1,8 @@
-package smartnode
+package rpip
 
 import (
     "log"
 )
-
-
-// Check for RPIP alerts on new proposal
-func startCheckRPIPAlerts() {
-
-    // TODO: implement
-    // - check for subscription; cancel if not set
-    // - get proposal
-    // - send alert
-
-}
 
 
 // Check for RPIP alerts

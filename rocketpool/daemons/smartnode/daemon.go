@@ -7,6 +7,7 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/ethereum/go-ethereum/core/types"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/smartnode/rpip"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
 
@@ -51,7 +52,7 @@ func Run() {
     })()
 
     // Check RPIP votes on block timestamp
-    go startCheckRPIPVotes(publisher, checkRPIPVoteInterval)
+    go rpip.StartCheckRPIPVotes(publisher, checkRPIPVoteInterval)
 
     // Block thread
     select {}
