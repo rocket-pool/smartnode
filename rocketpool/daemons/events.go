@@ -16,8 +16,8 @@ import (
 )
 
 
-// Send events to a listener channel on found
-func SendEvents(publisher *messaging.Publisher, client *ethclient.Client, contractAddress *common.Address, contractAbi *abi.ABI, eventName string, eventPrototype interface{}, listener chan *interface{}) {
+// Send contract events to a listener channel on found
+func SendContractEvents(publisher *messaging.Publisher, client *ethclient.Client, contractAddress *common.Address, contractAbi *abi.ABI, eventName string, eventPrototype interface{}, listener chan *interface{}, filter func(*interface{}) bool) {
 
     // Create contract instance
     contract := bind.NewBoundContract(*contractAddress, *contractAbi, client, client, client)
@@ -49,6 +49,11 @@ func SendEvents(publisher *messaging.Publisher, client *ethclient.Client, contra
             err := contract.UnpackLog(event, eventName, logItem)
             if err != nil {
                 log.Fatal("Error unpacking event from log: ", err)
+            }
+
+            // Filter event
+            if filter != nil && !filter(&event) {
+                continue
             }
 
             // Send event to listener
