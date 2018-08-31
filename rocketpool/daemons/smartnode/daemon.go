@@ -7,7 +7,7 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/ethereum/go-ethereum/core/types"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/smartnode/rpip"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/smartnode/modules/rpip"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
 
