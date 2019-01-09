@@ -1,6 +1,6 @@
 TODO: Add a complete list of CLI commands when available and detailed descriptions + link to docs. Add more detailed descriptions of the requirements, installation guide and a FAQ. Also include a list of benefits for running a Rocket Pool smart node.
 
-# Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool [![Build Status](https://travis-ci.org/rocket-pool/rocketpool.svg?branch=rocket-two)](https://travis-ci.org/rocket-pool/rocketpool)
+# Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool 
 
 *NOTE: The current version of Rocket Pool Smart Node CLI requires GoLang.
 
