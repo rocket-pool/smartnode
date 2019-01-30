@@ -51,7 +51,7 @@ func main() {
             Email: "jake@rocketpool.net",
         },
     }
-    app.Copyright = "(c) 2018 Rocket Pool Pty Ltd"
+    app.Copyright = "(c) 2019 Rocket Pool Pty Ltd"
 
     // Register commands
      deposits.RegisterCommands(app, "deposit",  []string{"d"})
