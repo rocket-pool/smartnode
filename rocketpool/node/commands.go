@@ -1,28 +1,28 @@
-package users
+package node
 
 import (
     "fmt"
 
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/commands"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/commands"
 )
 
 
-// Register user commands
+// Register node commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
         Name:      name,
         Aliases:   aliases,
-        Usage:     "Manage users",
+        Usage:     "Manage node registration & state",
         Subcommands: []cli.Command{
 
-            // List users
+            // Register node node
             cli.Command{
-                Name:      "list",
-                Aliases:   []string{"l"},
-                Usage:     "List minipools and users assigned to the node",
-                UsageText: "rocketpool user list",
+                Name:      "register",
+                Aliases:   []string{"r"},
+                Usage:     "Register the node on the Rocket Pool network",
+                UsageText: "rocketpool node register",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -32,7 +32,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    fmt.Println("Users:")
+                    fmt.Println("Registering node...")
                     return nil
 
                 },

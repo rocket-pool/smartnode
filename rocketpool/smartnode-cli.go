@@ -7,13 +7,7 @@ import (
 
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/commands/deposits"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/commands/fees"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/commands/node"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/commands/resources"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/commands/rpip"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/commands/service"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/commands/users"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/node"
 )
 
 
@@ -54,13 +48,7 @@ func main() {
     app.Copyright = "(c) 2019 Rocket Pool Pty Ltd"
 
     // Register commands
-     deposits.RegisterCommands(app, "deposit",  []string{"d"})
-         fees.RegisterCommands(app, "fee",      []string{"f"})
-         node.RegisterCommands(app, "node",     []string{"n"})
-    resources.RegisterCommands(app, "resource", []string{"r"})
-         rpip.RegisterCommands(app, "rpip",     nil)
-      service.RegisterCommands(app, "service",  []string{"s"})
-        users.RegisterCommands(app, "user",     []string{"u"})
+    node.RegisterCommands(app, "node", []string{"n"})
 
     // Run application
     err := app.Run(os.Args)
