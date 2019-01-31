@@ -8,8 +8,8 @@ import (
 // Register a node with Rocket Pool
 func registerNode(c *cli.Context) error {
 
-    // Initialise ethereum client & load node contracts
-    _, err := loadContracts(c)
+    // Initialise ethereum client & node contracts
+    _, _, err := initClient(c)
     if err != nil {
         return err
     }

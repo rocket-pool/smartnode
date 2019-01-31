@@ -8,21 +8,26 @@ import (
 )
 
 
-// Load Rocket Pool node contracts
-func loadContracts(c *cli.Context) (*rocketpool.ContractManager, error) {
+// Initialise ethereum client & node contracts
+func initClient(c *cli.Context) (*ethclient.Client, *rocketpool.ContractManager, error) {
 
     // Connect to ethereum node
     client, err := ethclient.Dial(c.GlobalString("powHost"))
     if err != nil {
-        return nil, err
+        return nil, nil, err
     }
 
-    // Load rocket Pool node contracts
-    contractManager := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
+    // Initialise Rocket Pool contract manager
+    contractManager, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
+    if err != nil {
+        return nil, nil, err
+    }
+
+    // Load Rocket Pool node contracts
     contractManager.LoadContracts([]string{"rocketNodeAPI"})
 
     // Return contract manager
-    return contractManager, nil
+    return client, contractManager, nil
 
 }
 

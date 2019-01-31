@@ -4,6 +4,7 @@ import (
     "bytes"
     "compress/zlib"
     "encoding/base64"
+    "errors"
     "log"
 
     "github.com/ethereum/go-ethereum/accounts/abi"
@@ -27,12 +28,12 @@ type ContractManager struct {
 /**
  * Create new contract manager
  */
-func NewContractManager(client *ethclient.Client, rocketStorageAddress string) *ContractManager {
+func NewContractManager(client *ethclient.Client, rocketStorageAddress string) (*ContractManager, error) {
 
     // Initialise RocketStorage contract
     rocketStorage, err := contracts.NewRocketStorage(common.HexToAddress(rocketStorageAddress), client)
     if err != nil {
-        log.Fatal("Error initialising RocketStorage: ", err)
+        return nil, errors.New("Error initialising RocketStorage: " + err.Error())
     }
 
     // Return
@@ -40,7 +41,7 @@ func NewContractManager(client *ethclient.Client, rocketStorageAddress string) *
         client: client,
         RocketStorage: rocketStorage,
         Contracts: make(map[string]*bind.BoundContract),
-    }
+    }, nil
 
 }
 
