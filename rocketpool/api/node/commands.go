@@ -1,8 +1,6 @@
 package node
 
 import (
-    "fmt"
-
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/commands"
@@ -17,7 +15,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Usage:     "Manage node registration & state",
         Subcommands: []cli.Command{
 
-            // Register node node
+            // Register node
             cli.Command{
                 Name:      "register",
                 Aliases:   []string{"r"},
@@ -32,8 +30,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    fmt.Println("Registering node...")
-                    return nil
+                    return registerNode(c)
 
                 },
             },

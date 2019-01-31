@@ -1,0 +1,635 @@
+// Code generated - DO NOT EDIT.
+// This file is a generated binding and any manual changes will be lost.
+
+package contracts
+
+import (
+	"math/big"
+	"strings"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+// RocketStorageABI is the input ABI used to generate the binding from.
+const RocketStorageABI = "[{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\",\"signature\":\"constructor\"},{\"constant\":true,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"getAddress\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\",\"signature\":\"0x21f8a721\"},{\"constant\":true,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"getUint\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\",\"signature\":\"0xbd02d0f5\"},{\"constant\":true,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"getString\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\",\"signature\":\"0x986e791a\"},{\"constant\":true,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"getBytes\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\",\"signature\":\"0xc031a180\"},{\"constant\":true,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"getBool\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\",\"signature\":\"0x7ae1cfca\"},{\"constant\":true,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"getInt\",\"outputs\":[{\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\",\"signature\":\"0xdc97d962\"},{\"constant\":true,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"getBytes32\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\",\"signature\":\"0xa6ed563e\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"},{\"name\":\"_value\",\"type\":\"address\"}],\"name\":\"setAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0xca446dd9\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"setUint\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0xe2a4853a\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"},{\"name\":\"_value\",\"type\":\"string\"}],\"name\":\"setString\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x6e899550\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"},{\"name\":\"_value\",\"type\":\"bytes\"}],\"name\":\"setBytes\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x2e28d084\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"},{\"name\":\"_value\",\"type\":\"bool\"}],\"name\":\"setBool\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0xabfdcced\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"},{\"name\":\"_value\",\"type\":\"int256\"}],\"name\":\"setInt\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x3e49bed0\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"},{\"name\":\"_value\",\"type\":\"bytes32\"}],\"name\":\"setBytes32\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x4e91db08\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"deleteAddress\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x0e14a376\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"deleteUint\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0xe2b202bf\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"deleteString\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0xf6bb3cc4\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"deleteBytes\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x616b59f6\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"deleteBool\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x2c62ff2d\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"deleteInt\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x8c160095\"},{\"constant\":false,\"inputs\":[{\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"deleteBytes32\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x0b9adc57\"}]"
+
+// RocketStorage is an auto generated Go binding around an Ethereum contract.
+type RocketStorage struct {
+	RocketStorageCaller     // Read-only binding to the contract
+	RocketStorageTransactor // Write-only binding to the contract
+	RocketStorageFilterer   // Log filterer for contract events
+}
+
+// RocketStorageCaller is an auto generated read-only Go binding around an Ethereum contract.
+type RocketStorageCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// RocketStorageTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type RocketStorageTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// RocketStorageFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type RocketStorageFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// RocketStorageSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type RocketStorageSession struct {
+	Contract     *RocketStorage    // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts     // Call options to use throughout this session
+	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
+}
+
+// RocketStorageCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type RocketStorageCallerSession struct {
+	Contract *RocketStorageCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts        // Call options to use throughout this session
+}
+
+// RocketStorageTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type RocketStorageTransactorSession struct {
+	Contract     *RocketStorageTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts        // Transaction auth options to use throughout this session
+}
+
+// RocketStorageRaw is an auto generated low-level Go binding around an Ethereum contract.
+type RocketStorageRaw struct {
+	Contract *RocketStorage // Generic contract binding to access the raw methods on
+}
+
+// RocketStorageCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type RocketStorageCallerRaw struct {
+	Contract *RocketStorageCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// RocketStorageTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type RocketStorageTransactorRaw struct {
+	Contract *RocketStorageTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewRocketStorage creates a new instance of RocketStorage, bound to a specific deployed contract.
+func NewRocketStorage(address common.Address, backend bind.ContractBackend) (*RocketStorage, error) {
+	contract, err := bindRocketStorage(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &RocketStorage{RocketStorageCaller: RocketStorageCaller{contract: contract}, RocketStorageTransactor: RocketStorageTransactor{contract: contract}, RocketStorageFilterer: RocketStorageFilterer{contract: contract}}, nil
+}
+
+// NewRocketStorageCaller creates a new read-only instance of RocketStorage, bound to a specific deployed contract.
+func NewRocketStorageCaller(address common.Address, caller bind.ContractCaller) (*RocketStorageCaller, error) {
+	contract, err := bindRocketStorage(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &RocketStorageCaller{contract: contract}, nil
+}
+
+// NewRocketStorageTransactor creates a new write-only instance of RocketStorage, bound to a specific deployed contract.
+func NewRocketStorageTransactor(address common.Address, transactor bind.ContractTransactor) (*RocketStorageTransactor, error) {
+	contract, err := bindRocketStorage(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &RocketStorageTransactor{contract: contract}, nil
+}
+
+// NewRocketStorageFilterer creates a new log filterer instance of RocketStorage, bound to a specific deployed contract.
+func NewRocketStorageFilterer(address common.Address, filterer bind.ContractFilterer) (*RocketStorageFilterer, error) {
+	contract, err := bindRocketStorage(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &RocketStorageFilterer{contract: contract}, nil
+}
+
+// bindRocketStorage binds a generic wrapper to an already deployed contract.
+func bindRocketStorage(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(RocketStorageABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_RocketStorage *RocketStorageRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _RocketStorage.Contract.RocketStorageCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_RocketStorage *RocketStorageRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _RocketStorage.Contract.RocketStorageTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_RocketStorage *RocketStorageRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _RocketStorage.Contract.RocketStorageTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_RocketStorage *RocketStorageCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+	return _RocketStorage.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_RocketStorage *RocketStorageTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _RocketStorage.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_RocketStorage *RocketStorageTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _RocketStorage.Contract.contract.Transact(opts, method, params...)
+}
+
+// GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
+//
+// Solidity: function getAddress(_key bytes32) constant returns(address)
+func (_RocketStorage *RocketStorageCaller) GetAddress(opts *bind.CallOpts, _key [32]byte) (common.Address, error) {
+	var (
+		ret0 = new(common.Address)
+	)
+	out := ret0
+	err := _RocketStorage.contract.Call(opts, out, "getAddress", _key)
+	return *ret0, err
+}
+
+// GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
+//
+// Solidity: function getAddress(_key bytes32) constant returns(address)
+func (_RocketStorage *RocketStorageSession) GetAddress(_key [32]byte) (common.Address, error) {
+	return _RocketStorage.Contract.GetAddress(&_RocketStorage.CallOpts, _key)
+}
+
+// GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
+//
+// Solidity: function getAddress(_key bytes32) constant returns(address)
+func (_RocketStorage *RocketStorageCallerSession) GetAddress(_key [32]byte) (common.Address, error) {
+	return _RocketStorage.Contract.GetAddress(&_RocketStorage.CallOpts, _key)
+}
+
+// GetBool is a free data retrieval call binding the contract method 0x7ae1cfca.
+//
+// Solidity: function getBool(_key bytes32) constant returns(bool)
+func (_RocketStorage *RocketStorageCaller) GetBool(opts *bind.CallOpts, _key [32]byte) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _RocketStorage.contract.Call(opts, out, "getBool", _key)
+	return *ret0, err
+}
+
+// GetBool is a free data retrieval call binding the contract method 0x7ae1cfca.
+//
+// Solidity: function getBool(_key bytes32) constant returns(bool)
+func (_RocketStorage *RocketStorageSession) GetBool(_key [32]byte) (bool, error) {
+	return _RocketStorage.Contract.GetBool(&_RocketStorage.CallOpts, _key)
+}
+
+// GetBool is a free data retrieval call binding the contract method 0x7ae1cfca.
+//
+// Solidity: function getBool(_key bytes32) constant returns(bool)
+func (_RocketStorage *RocketStorageCallerSession) GetBool(_key [32]byte) (bool, error) {
+	return _RocketStorage.Contract.GetBool(&_RocketStorage.CallOpts, _key)
+}
+
+// GetBytes is a free data retrieval call binding the contract method 0xc031a180.
+//
+// Solidity: function getBytes(_key bytes32) constant returns(bytes)
+func (_RocketStorage *RocketStorageCaller) GetBytes(opts *bind.CallOpts, _key [32]byte) ([]byte, error) {
+	var (
+		ret0 = new([]byte)
+	)
+	out := ret0
+	err := _RocketStorage.contract.Call(opts, out, "getBytes", _key)
+	return *ret0, err
+}
+
+// GetBytes is a free data retrieval call binding the contract method 0xc031a180.
+//
+// Solidity: function getBytes(_key bytes32) constant returns(bytes)
+func (_RocketStorage *RocketStorageSession) GetBytes(_key [32]byte) ([]byte, error) {
+	return _RocketStorage.Contract.GetBytes(&_RocketStorage.CallOpts, _key)
+}
+
+// GetBytes is a free data retrieval call binding the contract method 0xc031a180.
+//
+// Solidity: function getBytes(_key bytes32) constant returns(bytes)
+func (_RocketStorage *RocketStorageCallerSession) GetBytes(_key [32]byte) ([]byte, error) {
+	return _RocketStorage.Contract.GetBytes(&_RocketStorage.CallOpts, _key)
+}
+
+// GetBytes32 is a free data retrieval call binding the contract method 0xa6ed563e.
+//
+// Solidity: function getBytes32(_key bytes32) constant returns(bytes32)
+func (_RocketStorage *RocketStorageCaller) GetBytes32(opts *bind.CallOpts, _key [32]byte) ([32]byte, error) {
+	var (
+		ret0 = new([32]byte)
+	)
+	out := ret0
+	err := _RocketStorage.contract.Call(opts, out, "getBytes32", _key)
+	return *ret0, err
+}
+
+// GetBytes32 is a free data retrieval call binding the contract method 0xa6ed563e.
+//
+// Solidity: function getBytes32(_key bytes32) constant returns(bytes32)
+func (_RocketStorage *RocketStorageSession) GetBytes32(_key [32]byte) ([32]byte, error) {
+	return _RocketStorage.Contract.GetBytes32(&_RocketStorage.CallOpts, _key)
+}
+
+// GetBytes32 is a free data retrieval call binding the contract method 0xa6ed563e.
+//
+// Solidity: function getBytes32(_key bytes32) constant returns(bytes32)
+func (_RocketStorage *RocketStorageCallerSession) GetBytes32(_key [32]byte) ([32]byte, error) {
+	return _RocketStorage.Contract.GetBytes32(&_RocketStorage.CallOpts, _key)
+}
+
+// GetInt is a free data retrieval call binding the contract method 0xdc97d962.
+//
+// Solidity: function getInt(_key bytes32) constant returns(int256)
+func (_RocketStorage *RocketStorageCaller) GetInt(opts *bind.CallOpts, _key [32]byte) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _RocketStorage.contract.Call(opts, out, "getInt", _key)
+	return *ret0, err
+}
+
+// GetInt is a free data retrieval call binding the contract method 0xdc97d962.
+//
+// Solidity: function getInt(_key bytes32) constant returns(int256)
+func (_RocketStorage *RocketStorageSession) GetInt(_key [32]byte) (*big.Int, error) {
+	return _RocketStorage.Contract.GetInt(&_RocketStorage.CallOpts, _key)
+}
+
+// GetInt is a free data retrieval call binding the contract method 0xdc97d962.
+//
+// Solidity: function getInt(_key bytes32) constant returns(int256)
+func (_RocketStorage *RocketStorageCallerSession) GetInt(_key [32]byte) (*big.Int, error) {
+	return _RocketStorage.Contract.GetInt(&_RocketStorage.CallOpts, _key)
+}
+
+// GetString is a free data retrieval call binding the contract method 0x986e791a.
+//
+// Solidity: function getString(_key bytes32) constant returns(string)
+func (_RocketStorage *RocketStorageCaller) GetString(opts *bind.CallOpts, _key [32]byte) (string, error) {
+	var (
+		ret0 = new(string)
+	)
+	out := ret0
+	err := _RocketStorage.contract.Call(opts, out, "getString", _key)
+	return *ret0, err
+}
+
+// GetString is a free data retrieval call binding the contract method 0x986e791a.
+//
+// Solidity: function getString(_key bytes32) constant returns(string)
+func (_RocketStorage *RocketStorageSession) GetString(_key [32]byte) (string, error) {
+	return _RocketStorage.Contract.GetString(&_RocketStorage.CallOpts, _key)
+}
+
+// GetString is a free data retrieval call binding the contract method 0x986e791a.
+//
+// Solidity: function getString(_key bytes32) constant returns(string)
+func (_RocketStorage *RocketStorageCallerSession) GetString(_key [32]byte) (string, error) {
+	return _RocketStorage.Contract.GetString(&_RocketStorage.CallOpts, _key)
+}
+
+// GetUint is a free data retrieval call binding the contract method 0xbd02d0f5.
+//
+// Solidity: function getUint(_key bytes32) constant returns(uint256)
+func (_RocketStorage *RocketStorageCaller) GetUint(opts *bind.CallOpts, _key [32]byte) (*big.Int, error) {
+	var (
+		ret0 = new(*big.Int)
+	)
+	out := ret0
+	err := _RocketStorage.contract.Call(opts, out, "getUint", _key)
+	return *ret0, err
+}
+
+// GetUint is a free data retrieval call binding the contract method 0xbd02d0f5.
+//
+// Solidity: function getUint(_key bytes32) constant returns(uint256)
+func (_RocketStorage *RocketStorageSession) GetUint(_key [32]byte) (*big.Int, error) {
+	return _RocketStorage.Contract.GetUint(&_RocketStorage.CallOpts, _key)
+}
+
+// GetUint is a free data retrieval call binding the contract method 0xbd02d0f5.
+//
+// Solidity: function getUint(_key bytes32) constant returns(uint256)
+func (_RocketStorage *RocketStorageCallerSession) GetUint(_key [32]byte) (*big.Int, error) {
+	return _RocketStorage.Contract.GetUint(&_RocketStorage.CallOpts, _key)
+}
+
+// DeleteAddress is a paid mutator transaction binding the contract method 0x0e14a376.
+//
+// Solidity: function deleteAddress(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactor) DeleteAddress(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "deleteAddress", _key)
+}
+
+// DeleteAddress is a paid mutator transaction binding the contract method 0x0e14a376.
+//
+// Solidity: function deleteAddress(_key bytes32) returns()
+func (_RocketStorage *RocketStorageSession) DeleteAddress(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteAddress(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteAddress is a paid mutator transaction binding the contract method 0x0e14a376.
+//
+// Solidity: function deleteAddress(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactorSession) DeleteAddress(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteAddress(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteBool is a paid mutator transaction binding the contract method 0x2c62ff2d.
+//
+// Solidity: function deleteBool(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactor) DeleteBool(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "deleteBool", _key)
+}
+
+// DeleteBool is a paid mutator transaction binding the contract method 0x2c62ff2d.
+//
+// Solidity: function deleteBool(_key bytes32) returns()
+func (_RocketStorage *RocketStorageSession) DeleteBool(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteBool(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteBool is a paid mutator transaction binding the contract method 0x2c62ff2d.
+//
+// Solidity: function deleteBool(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactorSession) DeleteBool(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteBool(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteBytes is a paid mutator transaction binding the contract method 0x616b59f6.
+//
+// Solidity: function deleteBytes(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactor) DeleteBytes(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "deleteBytes", _key)
+}
+
+// DeleteBytes is a paid mutator transaction binding the contract method 0x616b59f6.
+//
+// Solidity: function deleteBytes(_key bytes32) returns()
+func (_RocketStorage *RocketStorageSession) DeleteBytes(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteBytes(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteBytes is a paid mutator transaction binding the contract method 0x616b59f6.
+//
+// Solidity: function deleteBytes(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactorSession) DeleteBytes(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteBytes(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteBytes32 is a paid mutator transaction binding the contract method 0x0b9adc57.
+//
+// Solidity: function deleteBytes32(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactor) DeleteBytes32(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "deleteBytes32", _key)
+}
+
+// DeleteBytes32 is a paid mutator transaction binding the contract method 0x0b9adc57.
+//
+// Solidity: function deleteBytes32(_key bytes32) returns()
+func (_RocketStorage *RocketStorageSession) DeleteBytes32(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteBytes32(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteBytes32 is a paid mutator transaction binding the contract method 0x0b9adc57.
+//
+// Solidity: function deleteBytes32(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactorSession) DeleteBytes32(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteBytes32(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteInt is a paid mutator transaction binding the contract method 0x8c160095.
+//
+// Solidity: function deleteInt(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactor) DeleteInt(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "deleteInt", _key)
+}
+
+// DeleteInt is a paid mutator transaction binding the contract method 0x8c160095.
+//
+// Solidity: function deleteInt(_key bytes32) returns()
+func (_RocketStorage *RocketStorageSession) DeleteInt(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteInt(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteInt is a paid mutator transaction binding the contract method 0x8c160095.
+//
+// Solidity: function deleteInt(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactorSession) DeleteInt(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteInt(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteString is a paid mutator transaction binding the contract method 0xf6bb3cc4.
+//
+// Solidity: function deleteString(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactor) DeleteString(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "deleteString", _key)
+}
+
+// DeleteString is a paid mutator transaction binding the contract method 0xf6bb3cc4.
+//
+// Solidity: function deleteString(_key bytes32) returns()
+func (_RocketStorage *RocketStorageSession) DeleteString(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteString(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteString is a paid mutator transaction binding the contract method 0xf6bb3cc4.
+//
+// Solidity: function deleteString(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactorSession) DeleteString(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteString(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteUint is a paid mutator transaction binding the contract method 0xe2b202bf.
+//
+// Solidity: function deleteUint(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactor) DeleteUint(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "deleteUint", _key)
+}
+
+// DeleteUint is a paid mutator transaction binding the contract method 0xe2b202bf.
+//
+// Solidity: function deleteUint(_key bytes32) returns()
+func (_RocketStorage *RocketStorageSession) DeleteUint(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteUint(&_RocketStorage.TransactOpts, _key)
+}
+
+// DeleteUint is a paid mutator transaction binding the contract method 0xe2b202bf.
+//
+// Solidity: function deleteUint(_key bytes32) returns()
+func (_RocketStorage *RocketStorageTransactorSession) DeleteUint(_key [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.DeleteUint(&_RocketStorage.TransactOpts, _key)
+}
+
+// SetAddress is a paid mutator transaction binding the contract method 0xca446dd9.
+//
+// Solidity: function setAddress(_key bytes32, _value address) returns()
+func (_RocketStorage *RocketStorageTransactor) SetAddress(opts *bind.TransactOpts, _key [32]byte, _value common.Address) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "setAddress", _key, _value)
+}
+
+// SetAddress is a paid mutator transaction binding the contract method 0xca446dd9.
+//
+// Solidity: function setAddress(_key bytes32, _value address) returns()
+func (_RocketStorage *RocketStorageSession) SetAddress(_key [32]byte, _value common.Address) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetAddress(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetAddress is a paid mutator transaction binding the contract method 0xca446dd9.
+//
+// Solidity: function setAddress(_key bytes32, _value address) returns()
+func (_RocketStorage *RocketStorageTransactorSession) SetAddress(_key [32]byte, _value common.Address) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetAddress(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetBool is a paid mutator transaction binding the contract method 0xabfdcced.
+//
+// Solidity: function setBool(_key bytes32, _value bool) returns()
+func (_RocketStorage *RocketStorageTransactor) SetBool(opts *bind.TransactOpts, _key [32]byte, _value bool) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "setBool", _key, _value)
+}
+
+// SetBool is a paid mutator transaction binding the contract method 0xabfdcced.
+//
+// Solidity: function setBool(_key bytes32, _value bool) returns()
+func (_RocketStorage *RocketStorageSession) SetBool(_key [32]byte, _value bool) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetBool(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetBool is a paid mutator transaction binding the contract method 0xabfdcced.
+//
+// Solidity: function setBool(_key bytes32, _value bool) returns()
+func (_RocketStorage *RocketStorageTransactorSession) SetBool(_key [32]byte, _value bool) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetBool(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetBytes is a paid mutator transaction binding the contract method 0x2e28d084.
+//
+// Solidity: function setBytes(_key bytes32, _value bytes) returns()
+func (_RocketStorage *RocketStorageTransactor) SetBytes(opts *bind.TransactOpts, _key [32]byte, _value []byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "setBytes", _key, _value)
+}
+
+// SetBytes is a paid mutator transaction binding the contract method 0x2e28d084.
+//
+// Solidity: function setBytes(_key bytes32, _value bytes) returns()
+func (_RocketStorage *RocketStorageSession) SetBytes(_key [32]byte, _value []byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetBytes(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetBytes is a paid mutator transaction binding the contract method 0x2e28d084.
+//
+// Solidity: function setBytes(_key bytes32, _value bytes) returns()
+func (_RocketStorage *RocketStorageTransactorSession) SetBytes(_key [32]byte, _value []byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetBytes(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetBytes32 is a paid mutator transaction binding the contract method 0x4e91db08.
+//
+// Solidity: function setBytes32(_key bytes32, _value bytes32) returns()
+func (_RocketStorage *RocketStorageTransactor) SetBytes32(opts *bind.TransactOpts, _key [32]byte, _value [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "setBytes32", _key, _value)
+}
+
+// SetBytes32 is a paid mutator transaction binding the contract method 0x4e91db08.
+//
+// Solidity: function setBytes32(_key bytes32, _value bytes32) returns()
+func (_RocketStorage *RocketStorageSession) SetBytes32(_key [32]byte, _value [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetBytes32(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetBytes32 is a paid mutator transaction binding the contract method 0x4e91db08.
+//
+// Solidity: function setBytes32(_key bytes32, _value bytes32) returns()
+func (_RocketStorage *RocketStorageTransactorSession) SetBytes32(_key [32]byte, _value [32]byte) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetBytes32(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetInt is a paid mutator transaction binding the contract method 0x3e49bed0.
+//
+// Solidity: function setInt(_key bytes32, _value int256) returns()
+func (_RocketStorage *RocketStorageTransactor) SetInt(opts *bind.TransactOpts, _key [32]byte, _value *big.Int) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "setInt", _key, _value)
+}
+
+// SetInt is a paid mutator transaction binding the contract method 0x3e49bed0.
+//
+// Solidity: function setInt(_key bytes32, _value int256) returns()
+func (_RocketStorage *RocketStorageSession) SetInt(_key [32]byte, _value *big.Int) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetInt(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetInt is a paid mutator transaction binding the contract method 0x3e49bed0.
+//
+// Solidity: function setInt(_key bytes32, _value int256) returns()
+func (_RocketStorage *RocketStorageTransactorSession) SetInt(_key [32]byte, _value *big.Int) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetInt(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetString is a paid mutator transaction binding the contract method 0x6e899550.
+//
+// Solidity: function setString(_key bytes32, _value string) returns()
+func (_RocketStorage *RocketStorageTransactor) SetString(opts *bind.TransactOpts, _key [32]byte, _value string) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "setString", _key, _value)
+}
+
+// SetString is a paid mutator transaction binding the contract method 0x6e899550.
+//
+// Solidity: function setString(_key bytes32, _value string) returns()
+func (_RocketStorage *RocketStorageSession) SetString(_key [32]byte, _value string) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetString(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetString is a paid mutator transaction binding the contract method 0x6e899550.
+//
+// Solidity: function setString(_key bytes32, _value string) returns()
+func (_RocketStorage *RocketStorageTransactorSession) SetString(_key [32]byte, _value string) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetString(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetUint is a paid mutator transaction binding the contract method 0xe2a4853a.
+//
+// Solidity: function setUint(_key bytes32, _value uint256) returns()
+func (_RocketStorage *RocketStorageTransactor) SetUint(opts *bind.TransactOpts, _key [32]byte, _value *big.Int) (*types.Transaction, error) {
+	return _RocketStorage.contract.Transact(opts, "setUint", _key, _value)
+}
+
+// SetUint is a paid mutator transaction binding the contract method 0xe2a4853a.
+//
+// Solidity: function setUint(_key bytes32, _value uint256) returns()
+func (_RocketStorage *RocketStorageSession) SetUint(_key [32]byte, _value *big.Int) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetUint(&_RocketStorage.TransactOpts, _key, _value)
+}
+
+// SetUint is a paid mutator transaction binding the contract method 0xe2a4853a.
+//
+// Solidity: function setUint(_key bytes32, _value uint256) returns()
+func (_RocketStorage *RocketStorageTransactorSession) SetUint(_key [32]byte, _value *big.Int) (*types.Transaction, error) {
+	return _RocketStorage.Contract.SetUint(&_RocketStorage.TransactOpts, _key, _value)
+}

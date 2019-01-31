@@ -7,7 +7,7 @@ import (
 
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/node"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/api/node"
 )
 
 
@@ -47,7 +47,21 @@ func main() {
     }
     app.Copyright = "(c) 2019 Rocket Pool Pty Ltd"
 
-    // Register commands
+    // Register global application options & defaults
+    app.Flags = []cli.Flag{
+        cli.StringFlag{
+            Name:   "powHost, p",
+            Usage:  "PoW chain host `url`",
+            Value:  "ws://localhost:8545",
+        },
+        cli.StringFlag{
+            Name:   "storageAddress, s",
+            Usage:  "PoW chain Rocket Pool storage contract `address`",
+            Value:  "0x70a5F2eB9e4C003B105399b471DAeDbC8d00B1c5", // Ganache
+        },
+    }
+
+    // Register api commands
     node.RegisterCommands(app, "node", []string{"n"})
 
     // Run application
