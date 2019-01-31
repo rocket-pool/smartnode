@@ -50,8 +50,13 @@ func main() {
     // Register global application options & defaults
     app.Flags = []cli.Flag{
         cli.StringFlag{
-            Name:   "powHost, p",
-            Usage:  "PoW chain host `url`",
+            Name:   "keychainPath, k",
+            Usage:  "PoW chain keychain `path`",
+            Value:  os.Getenv("HOME") + "/.rocketpool/accounts",
+        },
+        cli.StringFlag{
+            Name:   "powProvider, p",
+            Usage:  "PoW chain provider `url`",
             Value:  "ws://localhost:8545",
         },
         cli.StringFlag{

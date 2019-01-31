@@ -15,7 +15,27 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Usage:     "Manage node registration & state",
         Subcommands: []cli.Command{
 
-            // Register node
+            // Initialise the node with an account
+            cli.Command{
+                Name:      "init",
+                Aliases:   []string{"i"},
+                Usage:     "Initialize the node with an account",
+                UsageText: "rocketpool node initialize",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := commands.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return initNode(c)
+
+                },
+            },
+
+            // Register the node with Rocket Pool
             cli.Command{
                 Name:      "register",
                 Aliases:   []string{"r"},
