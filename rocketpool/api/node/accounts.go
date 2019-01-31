@@ -13,7 +13,7 @@ import (
 func initNode(c *cli.Context) error {
 
     // Initialise keystore
-    ks := keystore.NewKeyStore(c.GlobalString("keychainPath"), keystore.StandardScryptN, keystore.StandardScryptP)
+    ks := keystore.NewKeyStore(c.GlobalString("keychain"), keystore.StandardScryptN, keystore.StandardScryptP)
 
     // Check if node account exists
     if len(ks.Accounts()) > 0 {
