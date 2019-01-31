@@ -1,6 +1,8 @@
 package node
 
 import (
+    "errors"
+
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/urfave/cli"
 
@@ -14,7 +16,7 @@ func initClient(c *cli.Context) (*ethclient.Client, *rocketpool.ContractManager,
     // Connect to ethereum node
     client, err := ethclient.Dial(c.GlobalString("powHost"))
     if err != nil {
-        return nil, nil, err
+        return nil, nil, errors.New("Error connecting to ethereum node: " + err.Error())
     }
 
     // Initialise Rocket Pool contract manager
