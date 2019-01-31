@@ -5,7 +5,7 @@ import (
     "compress/zlib"
     "encoding/base64"
     "errors"
-    "log"
+    "strings"
 
     "github.com/ethereum/go-ethereum/accounts/abi"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -33,7 +33,7 @@ func NewContractManager(client *ethclient.Client, rocketStorageAddress string) (
     // Initialise RocketStorage contract
     rocketStorage, err := contracts.NewRocketStorage(common.HexToAddress(rocketStorageAddress), client)
     if err != nil {
-        return nil, errors.New("Error initialising RocketStorage: " + err.Error())
+        return nil, errors.New("Error initialising Rocket Pool storage contract: " + err.Error())
     }
 
     // Return
@@ -49,18 +49,32 @@ func NewContractManager(client *ethclient.Client, rocketStorageAddress string) (
 /**
  * Load and initialise contracts
  */
-func (contractManager *ContractManager) LoadContracts(contractNames []string) {
+func (contractManager *ContractManager) LoadContracts(contractNames []string) error {
 
     // Load contracts
     contractChannels := make(map[string]chan *bind.BoundContract)
+    errorChannels := make(map[string]chan error)
     for _, contractName := range contractNames {
         contractChannels[contractName] = make(chan *bind.BoundContract)
-        go loadContract(contractManager.client, contractManager.RocketStorage, contractName, contractChannels[contractName])
+        errorChannels[contractName] = make(chan error)
+        go loadContract(contractManager.client, contractManager.RocketStorage, contractName, contractChannels[contractName], errorChannels[contractName])
     }
 
     // Receive loaded contracts
+    errs := []string{"Error loading Rocket Pool contracts:"}
     for _, contractName := range contractNames {
-        contractManager.Contracts[contractName] = <-contractChannels[contractName]
+        select {
+            case contractManager.Contracts[contractName] = <-contractChannels[contractName]:
+            case err := <-errorChannels[contractName]:
+                errs = append(errs, "Error loading contract " + contractName + ": " + err.Error())
+        }
+    }
+
+    // Return
+    if len(errs) == 1 {
+        return nil
+    } else {
+        return errors.New(strings.Join(errs, "\n"))
     }
 
 }
@@ -69,7 +83,7 @@ func (contractManager *ContractManager) LoadContracts(contractNames []string) {
 /**
  * Load and initialise a contract from stored chain data
  */
-func loadContract(client bind.ContractBackend, rocketStorage *contracts.RocketStorage, name string, contract chan *bind.BoundContract) {
+func loadContract(client bind.ContractBackend, rocketStorage *contracts.RocketStorage, name string, contractChannel chan *bind.BoundContract, errorChannel chan error) {
 
     // Load contract address from storage
     contractAddress := make(chan common.Address)
@@ -77,32 +91,38 @@ func loadContract(client bind.ContractBackend, rocketStorage *contracts.RocketSt
 
         // Get contract address
         address, err := rocketStorage.GetAddress(nil, eth.KeccakStr("contract.name" + name))
-        if err != nil {
-            log.Fatal("Error retrieving contract address: ", err)
+        if err == nil {
+            contractAddress <- address
+        } else {
+            errorChannel <- errors.New("Error retrieving contract address: " + err.Error())
         }
-
-        // Send
-        contractAddress <- address
 
     })()
 
     // Load contract ABI from storage
-    contractAbi := make(chan abi.ABI)
+    contractAbi := make(chan *abi.ABI)
     go (func() {
 
         // Get contract ABI
         abiEncoded, err := rocketStorage.GetString(nil, eth.KeccakStr("contract.abi" + name))
-        if err != nil {
-            log.Fatal("Error retrieving contract ABI: ", err)
-        }
+        if err == nil {
 
-        // Decode, decompress, parse & send
-        contractAbi <- decodeAbi(abiEncoded)
+            // Decode, decompress, parse & send ABI
+            abi, err := decodeAbi(abiEncoded)
+            if err == nil {
+                contractAbi <- abi
+            } else {
+                errorChannel <- err
+            }
+
+        } else {
+            errorChannel <- errors.New("Error retrieving contract ABI: " + err.Error())
+        }
 
     })()
 
     // Initialise and send contract
-    contract <- bind.NewBoundContract(<-contractAddress, <-contractAbi, client, client, client)
+    contractChannel <- bind.NewBoundContract(<-contractAddress, *(<-contractAbi), client, client, client)
 
 }
 
@@ -110,29 +130,29 @@ func loadContract(client bind.ContractBackend, rocketStorage *contracts.RocketSt
 /**
  * Decode, decompress and parse zlib-compressed, base64-encoded ABI
  */
-func decodeAbi(abiEncoded string) abi.ABI {
+func decodeAbi(abiEncoded string) (*abi.ABI, error) {
 
     // Base 64 decode
     abiCompressed, err := base64.StdEncoding.DecodeString(abiEncoded)
     if err != nil {
-        log.Fatal("Error decoding ABI base64 string: ", err)
+        return nil, errors.New("Error decoding contract ABI base64 string: " + err.Error())
     }
 
     // Zlib decompress
     byteReader := bytes.NewReader(abiCompressed)
     zlibReader, err := zlib.NewReader(byteReader)
     if err != nil {
-        log.Fatal("Error decompressing ABI zlib data: ", err)
+        return nil, errors.New("Error decompressing contract ABI zlib data: " + err.Error())
     }
 
     // Parse ABI
     abiParsed, err := abi.JSON(zlibReader)
     if err != nil {
-        log.Fatal("Error parsing ABI JSON: ", err)
+        return nil, errors.New("Error parsing contract ABI JSON: " + err.Error())
     }
 
     // Return
-    return abiParsed
+    return &abiParsed, nil
 
 }
 

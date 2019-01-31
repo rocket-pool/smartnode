@@ -26,9 +26,12 @@ func initClient(c *cli.Context) (*ethclient.Client, *rocketpool.ContractManager,
     }
 
     // Load Rocket Pool node contracts
-    contractManager.LoadContracts([]string{"rocketNodeAPI"})
+    err = contractManager.LoadContracts([]string{"rocketNodeAPI"})
+    if err != nil {
+        return nil, nil, err
+    }
 
-    // Return contract manager
+    // Return
     return client, contractManager, nil
 
 }
