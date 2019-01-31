@@ -15,13 +15,13 @@ func initNode(c *cli.Context) error {
     // Initialise keystore
     ks := keystore.NewKeyStore(c.GlobalString("keychainPath"), keystore.StandardScryptN, keystore.StandardScryptP)
 
-    // Check if account exists
+    // Check if node account exists
     if len(ks.Accounts()) > 0 {
         log.Println("Node account already exists:", ks.Accounts()[0].Address.Hex())
         return nil
     }
 
-    // Create new account
+    // Create node account
     account, err := ks.NewAccount("")
     if err != nil {
         return errors.New("Error creating node account: " + err.Error())
