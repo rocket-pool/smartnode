@@ -1,3 +1,4 @@
 .DS_Store
+/scripts
 /rocketpool/contracts
 !/rocketpool/contracts/rocket-storage.go
