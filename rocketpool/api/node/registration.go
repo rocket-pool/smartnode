@@ -3,7 +3,10 @@ package node
 import (
     "bytes"
     "errors"
-    "log"
+    "fmt"
+    "os/exec"
+    "regexp"
+    "strings"
 
     "github.com/ethereum/go-ethereum/accounts/keystore"
     "github.com/ethereum/go-ethereum/common"
@@ -11,6 +14,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/commands"
 )
 
 
@@ -51,8 +55,35 @@ func registerNode(c *cli.Context) error {
         return errors.New("Error checking node registration: " + err.Error())
     }
     if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
-        log.Println("Node already registered with contract:", nodeContractAddress.Hex())
+        fmt.Println("Node already registered with contract:", nodeContractAddress.Hex())
         return nil
+    }
+
+    // Get system time zone
+    var timezone string
+    timeOutput, _ := exec.Command("timedatectl").Output()
+    if len(timeOutput) > 0 {
+        tzMatches := regexp.MustCompile("(?i)zone:\\s*(\\w*\\/\\w*)").FindStringSubmatch(string(timeOutput[:]))
+        if len(tzMatches) > 1 {
+            timezone = tzMatches[1]
+        }
+    }
+
+    // Confirm system time zone
+    if timezone != "" {
+        response := commands.Prompt(fmt.Sprintf("Your system timezone is '%s', would you like to register using this timezone? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        if strings.ToLower(response[:1]) == "n" {
+            timezone = ""
+        }
+    }
+
+    // Prompt for time zone
+    for timezone == "" {
+        timezone = commands.Prompt("Please enter a timezone to register with in the format 'Region/City':", "^\\w*\\/\\w*$", "Please enter a timezone in the format 'Region/City'")
+        response := commands.Prompt(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        if strings.ToLower(response[:1]) == "n" {
+            timezone = ""
+        }
     }
 
     // Register node
