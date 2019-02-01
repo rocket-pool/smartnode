@@ -2,7 +2,7 @@ package node
 
 import (
     "errors"
-    "log"
+    "fmt"
 
     "github.com/ethereum/go-ethereum/accounts/keystore"
     "github.com/urfave/cli"
@@ -17,7 +17,7 @@ func initNode(c *cli.Context) error {
 
     // Check if node account exists
     if len(ks.Accounts()) > 0 {
-        log.Println("Node account already exists:", ks.Accounts()[0].Address.Hex())
+        fmt.Println("Node account already exists:", ks.Accounts()[0].Address.Hex())
         return nil
     }
 
@@ -28,7 +28,7 @@ func initNode(c *cli.Context) error {
     }
 
     // Log & return
-    log.Println("Node account created successfully:", account.Address.Hex())
+    fmt.Println("Node account created successfully:", account.Address.Hex())
     return nil
 
 }
