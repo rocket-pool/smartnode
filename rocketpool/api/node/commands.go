@@ -3,7 +3,7 @@ package node
 import (
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/commands"
+    cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
 )
 
 
@@ -24,7 +24,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
+                    err := cliutils.ValidateArgs(c, 0, nil)
                     if err != nil {
                         return err
                     }
@@ -44,7 +44,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := commands.ValidateArgs(c, 0, nil)
+                    err := cliutils.ValidateArgs(c, 0, nil)
                     if err != nil {
                         return err
                     }
