@@ -1,7 +1,9 @@
 package node
 
 import (
+    "bytes"
     "errors"
+    "log"
 
     "github.com/ethereum/go-ethereum/accounts/keystore"
     "github.com/ethereum/go-ethereum/common"
@@ -31,23 +33,30 @@ func registerNode(c *cli.Context) error {
     }
 
     // Initialise Rocket Pool contract manager
-    contractManager, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
+    rp, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
     if err != nil {
         return err
     }
 
     // Load Rocket Pool node contracts
-    err = contractManager.LoadContracts([]string{"rocketNodeAPI"})
+    err = rp.LoadContracts([]string{"rocketNodeAPI"})
     if err != nil {
         return err
     }    
 
     // Check if node is already registered (contract exists)
     nodeContractAddress := new(common.Address)
-    err = contractManager.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address)
+    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address)
     if err != nil {
         return errors.New("Error checking node registration: " + err.Error())
     }
+    if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+        log.Println("Node already registered with contract:", nodeContractAddress.Hex())
+        return nil
+    }
+
+    // Register node
+    
 
     // Return
     return nil
