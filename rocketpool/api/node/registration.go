@@ -4,17 +4,19 @@ import (
     "bytes"
     "errors"
     "fmt"
+    "os"
     "os/exec"
     "regexp"
     "strings"
 
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/accounts/keystore"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/commands"
+    cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
 )
 
 
@@ -71,7 +73,7 @@ func registerNode(c *cli.Context) error {
 
     // Confirm system time zone
     if timezone != "" {
-        response := commands.Prompt(fmt.Sprintf("Your system timezone is '%s', would you like to register using this timezone? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        response := cliutils.Prompt(fmt.Sprintf("Your system timezone is '%s', would you like to register using this timezone? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             timezone = ""
         }
@@ -79,17 +81,40 @@ func registerNode(c *cli.Context) error {
 
     // Prompt for time zone
     for timezone == "" {
-        timezone = commands.Prompt("Please enter a timezone to register with in the format 'Region/City':", "^\\w*\\/\\w*$", "Please enter a timezone in the format 'Region/City'")
-        response := commands.Prompt(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Region/City':", "^\\w*\\/\\w*$", "Please enter a timezone in the format 'Region/City'")
+        response := cliutils.Prompt(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             timezone = ""
         }
     }
 
-    // Register node
-    
+    // Open node account file
+    nodeAccountFile, err := os.Open(nodeAccount.URL.Path)
+    if err != nil {
+        return errors.New("Error opening node account file: " + err.Error())
+    }
 
-    // Return
+    // Create node account transactor
+    nodeAccountTransactor, err := bind.NewTransactor(nodeAccountFile, "")
+    if err != nil {
+        return errors.New("Error creating node account transactor: " + err.Error())
+    }
+
+    // Register node
+    _, err = rp.Contracts["rocketNodeAPI"].Transact(nodeAccountTransactor, "add", timezone)
+    if err != nil {
+        return errors.New("Error registering node: " + err.Error())
+    }
+
+    // Get node contract address
+    nodeContractAddress = new(common.Address)
+    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address)
+    if err != nil {
+        return errors.New("Error retrieving node contract address: " + err.Error())
+    }
+
+    // Log & return
+    fmt.Println("Node registered successfully with contract:", nodeContractAddress.Hex())
     return nil
 
 }
