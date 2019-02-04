@@ -2,8 +2,10 @@ package node
 
 import (
     "bytes"
+    "context"
     "errors"
     "fmt"
+    "math/big"
     "os"
     "os/exec"
     "regexp"
@@ -45,7 +47,7 @@ func registerNode(c *cli.Context) error {
     }
 
     // Load Rocket Pool node contracts
-    err = rp.LoadContracts([]string{"rocketNodeAPI"})
+    err = rp.LoadContracts([]string{"rocketNodeAPI", "rocketNodeSettings"})
     if err != nil {
         return err
     }
@@ -59,6 +61,24 @@ func registerNode(c *cli.Context) error {
     if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
         fmt.Println("Node already registered with contract:", nodeContractAddress.Hex())
         return nil
+    }
+
+    // Get min required ether balance
+    minWeiBalance := new(*big.Int)
+    err = rp.Contracts["rocketNodeSettings"].Call(nil, minWeiBalance, "getEtherMin")
+    if err != nil {
+        return errors.New("Error retrieving minimum ether requirement: " + err.Error())
+    }
+    var minEtherBalance big.Int
+    minEtherBalance.Quo(*minWeiBalance, big.NewInt(1000000000000000000))
+
+    // Check node account balance
+    nodeAccountBalance, err := client.BalanceAt(context.Background(), nodeAccount.Address, nil)
+    if err != nil {
+        return errors.New("Error retrieving node account balance: " + err.Error())
+    }
+    if nodeAccountBalance.Cmp(*minWeiBalance) < 0 {
+        return errors.New(fmt.Sprintf("Node account requires a minimum balance of %s ETH to register", minEtherBalance.String()))
     }
 
     // Get system time zone
