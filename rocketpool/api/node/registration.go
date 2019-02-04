@@ -30,7 +30,8 @@ func registerNode(c *cli.Context) error {
 
     // Get node account
     if len(ks.Accounts()) == 0 {
-        return errors.New("Node account does not exist, please initialize with `rocketpool node init`")
+        fmt.Println("Node account does not exist, please initialize with `rocketpool node init`")
+        return nil
     }
     nodeAccount := ks.Accounts()[0]
 
@@ -63,6 +64,17 @@ func registerNode(c *cli.Context) error {
         return nil
     }
 
+    // Check node registrations are enabled
+    registrationsAllowed := new(bool)
+    err = rp.Contracts["rocketNodeSettings"].Call(nil, registrationsAllowed, "getNewAllowed")
+    if err != nil {
+        return errors.New("Error checking node registrations enabled status: " + err.Error())
+    }
+    if !*registrationsAllowed {
+        fmt.Println("Node registrations are currently disabled in Rocket Pool")
+        return nil
+    }
+
     // Get min required ether balance
     minWeiBalance := new(*big.Int)
     err = rp.Contracts["rocketNodeSettings"].Call(nil, minWeiBalance, "getEtherMin")
@@ -78,7 +90,8 @@ func registerNode(c *cli.Context) error {
         return errors.New("Error retrieving node account balance: " + err.Error())
     }
     if nodeAccountBalance.Cmp(*minWeiBalance) < 0 {
-        return errors.New(fmt.Sprintf("Node account requires a minimum balance of %s ETH to register", minEtherBalance.String()))
+        fmt.Println(fmt.Sprintf("Node account requires a minimum balance of %s ETH to register", minEtherBalance.String()))
+        return nil
     }
 
     // Get system time zone
