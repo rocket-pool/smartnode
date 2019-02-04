@@ -85,7 +85,7 @@ func registerNode(c *cli.Context) error {
     var timezone string
     timeOutput, _ := exec.Command("timedatectl").Output()
     if len(timeOutput) > 0 {
-        tzMatches := regexp.MustCompile("(?i)zone:\\s*(\\w*\\/\\w*)").FindStringSubmatch(string(timeOutput[:]))
+        tzMatches := regexp.MustCompile("(?i)zone:\\s*(\\w{2,}\\/\\w{2,})").FindStringSubmatch(string(timeOutput[:]))
         if len(tzMatches) > 1 {
             timezone = tzMatches[1]
         }
@@ -101,7 +101,7 @@ func registerNode(c *cli.Context) error {
 
     // Prompt for time zone
     for timezone == "" {
-        timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Region/City':", "^\\w*\\/\\w*$", "Please enter a timezone in the format 'Region/City'")
+        timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Region/City':", "^\\w{2,}\\/\\w{2,}$", "Please enter a timezone in the format 'Region/City'")
         response := cliutils.Prompt(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             timezone = ""
