@@ -48,7 +48,7 @@ func registerNode(c *cli.Context) error {
     err = rp.LoadContracts([]string{"rocketNodeAPI"})
     if err != nil {
         return err
-    }    
+    }
 
     // Check if node is already registered (contract exists)
     nodeContractAddress := new(common.Address)
