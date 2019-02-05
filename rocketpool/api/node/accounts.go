@@ -4,25 +4,26 @@ import (
     "errors"
     "fmt"
 
-    "github.com/ethereum/go-ethereum/accounts/keystore"
     "github.com/urfave/cli"
+
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
 )
 
 
 // Initialise the node with an account
 func initNode(c *cli.Context) error {
 
-    // Initialise keystore
-    ks := keystore.NewKeyStore(c.GlobalString("keychain"), keystore.StandardScryptN, keystore.StandardScryptP)
+    // Initialise account manager
+    am := accounts.NewAccountManager(c.GlobalString("keychain"))
 
     // Check if node account exists
-    if len(ks.Accounts()) > 0 {
-        fmt.Println("Node account already exists:", ks.Accounts()[0].Address.Hex())
+    if am.NodeAccountExists() {
+        fmt.Println("Node account already exists:", am.GetNodeAccount().Address.Hex())
         return nil
     }
 
     // Create node account
-    account, err := ks.NewAccount("")
+    account, err := am.CreateNodeAccount()
     if err != nil {
         return errors.New("Error creating node account: " + err.Error())
     }

@@ -6,17 +6,15 @@ import (
     "errors"
     "fmt"
     "math/big"
-    "os"
     "os/exec"
     "regexp"
     "strings"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/accounts/keystore"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
 )
@@ -25,15 +23,15 @@ import (
 // Register the node with Rocket Pool
 func registerNode(c *cli.Context) error {
 
-    // Initialise keystore
-    ks := keystore.NewKeyStore(c.GlobalString("keychain"), keystore.StandardScryptN, keystore.StandardScryptP)
+    // Initialise account manager
+    am := accounts.NewAccountManager(c.GlobalString("keychain"))
 
     // Get node account
-    if len(ks.Accounts()) == 0 {
+    if !am.NodeAccountExists() {
         fmt.Println("Node account does not exist, please initialize with `rocketpool node init`")
         return nil
     }
-    nodeAccount := ks.Accounts()[0]
+    nodeAccount := am.GetNodeAccount()
 
     // Connect to ethereum node
     client, err := ethclient.Dial(c.GlobalString("provider"))
@@ -121,16 +119,10 @@ func registerNode(c *cli.Context) error {
         }
     }
 
-    // Open node account file
-    nodeAccountFile, err := os.Open(nodeAccount.URL.Path)
+    // Get node account transactor
+    nodeAccountTransactor, err := am.GetNodeAccountTransactor()
     if err != nil {
-        return errors.New("Error opening node account file: " + err.Error())
-    }
-
-    // Create node account transactor
-    nodeAccountTransactor, err := bind.NewTransactor(nodeAccountFile, "")
-    if err != nil {
-        return errors.New("Error creating node account transactor: " + err.Error())
+        return err
     }
 
     // Register node
