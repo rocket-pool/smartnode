@@ -55,6 +55,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Set the node's timezone
+            cli.Command{
+                Name:      "timezone",
+                Aliases:   []string{"t"},
+                Usage:     "Set the node's timezone on the Rocket Pool network",
+                UsageText: "rocketpool node timezone",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := cliutils.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return setNodeTimezone(c)
+
+                },
+            },
+
         },
     })
 }
