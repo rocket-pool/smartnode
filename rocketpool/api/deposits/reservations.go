@@ -8,7 +8,7 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
-    "github.com/prysmaticlabs/prysm/shared/ssz"
+    //"github.com/prysmaticlabs/prysm/shared/ssz"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
@@ -125,6 +125,12 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     _,_ = hex.Decode(proofOfPossession, proofOfPossessionHex)
 
     // Build DepositInput
+    // :TODO: implement using SSZ once library is available
+    var depositInputLength [4]byte
+    depositInputLength[0] = byte(len(pubkey) + len(withdrawalCredentials) + len(proofOfPossession))
+    depositInput := bytes.Join([][]byte{depositInputLength[:], pubkey, withdrawalCredentials[:], proofOfPossession}, []byte{})
+
+    /*
     depositInputData := &DepositInput{}
     copy(depositInputData.pubkey[:], pubkey)
     copy(depositInputData.withdrawalCredentials[:], withdrawalCredentials[:])
@@ -134,6 +140,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if err != nil {
         return errors.New("Error encoding DepositInput for deposit reservation: " + err.Error())
     }
+    */
 
     // Create deposit reservation
 
