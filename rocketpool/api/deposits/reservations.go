@@ -161,8 +161,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if err != nil {
         return errors.New("Error retrieving deposit reservation ETH requirement: " + err.Error())
     }
-    var etherRequired big.Int
-    etherRequired.Quo(*etherRequiredWei, big.NewInt(1000000000000000000))
+    etherRequired := eth.WeiToEth(*etherRequiredWei)
 
     // Get deposit reservation RPL required
     rplRequiredWei := new(*big.Int)
@@ -170,8 +169,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if err != nil {
         return errors.New("Error retrieving deposit reservation RPL requirement: " + err.Error())
     }
-    var rplRequired big.Int
-    rplRequired.Quo(*rplRequiredWei, big.NewInt(1000000000000000000))
+    rplRequired := eth.WeiToEth(*rplRequiredWei)
 
     // Log & return
     fmt.Println(fmt.Sprintf("Deposit reservation made successfully, requiring %s ETH and %s RPL", etherRequired.String(), rplRequired.String()))

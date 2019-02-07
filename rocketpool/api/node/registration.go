@@ -13,6 +13,7 @@ import (
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -75,8 +76,7 @@ func registerNode(c *cli.Context) error {
     if err != nil {
         return errors.New("Error retrieving minimum ether requirement: " + err.Error())
     }
-    var minEtherBalance big.Int
-    minEtherBalance.Quo(*minWeiBalance, big.NewInt(1000000000000000000))
+    minEtherBalance := eth.WeiToEth(*minWeiBalance)
 
     // Check node account balance
     nodeAccountBalance, err := client.BalanceAt(context.Background(), nodeAccount.Address, nil)
