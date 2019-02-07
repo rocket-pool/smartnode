@@ -51,7 +51,25 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
-            // Cancel a node deposit
+            // Cancel a node deposit reservation
+            cli.Command{
+                Name:      "cancel",
+                Aliases:   []string{"c"},
+                Usage:     "Cancel a deposit reservation",
+                UsageText: "rocketpool deposit cancel",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := cliutils.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return cancelDepositReservation(c)
+
+                },
+            },
 
             // Finalise a node deposit
 
