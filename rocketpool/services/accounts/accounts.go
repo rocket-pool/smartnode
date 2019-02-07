@@ -11,7 +11,7 @@ import (
 
 
 // Keystore passphrase
-const passphrase = ""
+const PASSPHRASE = ""
 
 
 // Account manager
@@ -50,7 +50,7 @@ func (am *AccountManager) GetNodeAccount() accounts.Account {
  * Create the node account
  */
 func (am *AccountManager) CreateNodeAccount() (accounts.Account, error) {
-    return am.ks.NewAccount(passphrase)
+    return am.ks.NewAccount(PASSPHRASE)
 }
 
 
@@ -66,7 +66,7 @@ func (am *AccountManager) GetNodeAccountTransactor() (*bind.TransactOpts, error)
     }
 
     // Create node account transactor
-    transactor, err := bind.NewTransactor(nodeAccountFile, passphrase)
+    transactor, err := bind.NewTransactor(nodeAccountFile, PASSPHRASE)
     if err != nil {
         return nil, errors.New("Error creating node account transactor: " + err.Error())
     }
