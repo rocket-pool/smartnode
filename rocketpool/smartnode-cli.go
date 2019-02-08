@@ -7,7 +7,7 @@ import (
 
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/api/deposits"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/api/deposit"
     "github.com/rocket-pool/smartnode-cli/rocketpool/api/node"
 )
 
@@ -74,8 +74,8 @@ ______           _        _    ______           _
     }
 
     // Register api commands
-    deposits.RegisterCommands(app, "deposit", []string{"d"})
-        node.RegisterCommands(app, "node",    []string{"n"})
+    deposit.RegisterCommands(app, "deposit", []string{"d"})
+       node.RegisterCommands(app, "node",    []string{"n"})
 
     // Run application
     err := app.Run(os.Args)
