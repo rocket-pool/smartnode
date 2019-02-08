@@ -15,6 +15,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Usage:     "Manage node deposits",
         Subcommands: []cli.Command{
 
+            // Get the current deposit status
+            cli.Command{
+                Name:      "status",
+                Aliases:   []string{"s"},
+                Usage:     "Get the node's current deposit status",
+                UsageText: "rocketpool deposit status",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    err := cliutils.ValidateArgs(c, 0, nil)
+                    if err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return getDepositStatus(c)
+
+                },
+            },
+
             // Reserve a node deposit
             cli.Command{
                 Name:      "reserve",
@@ -71,7 +91,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
-            // Finalise a node deposit
+            // Complete a node deposit
 
         },
     })
