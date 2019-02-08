@@ -1,4 +1,4 @@
-package actions
+package deposit
 
 import (
     "bytes"
@@ -15,8 +15,8 @@ import (
 )
 
 
-// Get a node's current deposit status
-func GetDepositStatus(c *cli.Context) error {
+// Get the node's current deposit status
+func getDepositStatus(c *cli.Context) error {
 
     // Initialise account manager
     am := accounts.NewAccountManager(c.GlobalString("keychain"))

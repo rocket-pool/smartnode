@@ -3,7 +3,6 @@ package deposit
 import (
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/api/deposit/actions"
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
 )
 
@@ -30,8 +29,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         return err
                     }
 
-                    // Run action
-                    return actions.GetDepositStatus(c)
+                    // Run command
+                    return getDepositStatus(c)
 
                 },
             },
@@ -66,8 +65,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         return err
                     }
 
-                    // Run action
-                    return actions.ReserveDeposit(c, durationId)
+                    // Run command
+                    return reserveDeposit(c, durationId)
 
                 },
             },
@@ -86,8 +85,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         return err
                     }
 
-                    // Run action
-                    return actions.CancelDeposit(c)
+                    // Run command
+                    return cancelDeposit(c)
 
                 },
             },

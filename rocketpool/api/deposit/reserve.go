@@ -1,4 +1,4 @@
-package actions
+package deposit
 
 import (
     "bytes"
@@ -29,7 +29,7 @@ type DepositInput struct {
 
 
 // Reserve a node deposit
-func ReserveDeposit(c *cli.Context, durationId string) error {
+func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Initialise account manager
     am := accounts.NewAccountManager(c.GlobalString("keychain"))

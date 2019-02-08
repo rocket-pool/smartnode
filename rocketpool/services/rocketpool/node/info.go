@@ -48,6 +48,7 @@ func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
 
 
 // Get a node's deposit reservation details
+// Requires rocketNodeSettings contract to be loaded with contract manager
 func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.ContractManager) (*ReservationDetails, error) {
 
     // Reservation details

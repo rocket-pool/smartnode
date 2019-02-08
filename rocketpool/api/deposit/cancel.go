@@ -1,4 +1,4 @@
-package actions
+package deposit
 
 import (
     "bytes"
@@ -15,7 +15,7 @@ import (
 
 
 // Cancel a node deposit reservation
-func CancelDeposit(c *cli.Context) error {
+func cancelDeposit(c *cli.Context) error {
 
     // Initialise account manager
     am := accounts.NewAccountManager(c.GlobalString("keychain"))
