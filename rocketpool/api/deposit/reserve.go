@@ -55,7 +55,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
         return errors.New("Error retrieving deposit reservation status: " + err.Error())
     }
     if *hasReservation {
-        fmt.Println("Node has an existing deposit reservation, please cancel or complete it")
+        fmt.Println("Node has a current deposit reservation, please cancel or complete it")
         return nil
     }
 
