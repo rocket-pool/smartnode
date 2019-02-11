@@ -12,18 +12,20 @@ const WEI_PER_ETH = 1000000000000000000
 
 
 // Convert wei to eth
-func WeiToEth(wei *big.Int) big.Int {
+func WeiToEth(wei *big.Int) float64 {
     var eth big.Int
     eth.Quo(wei, big.NewInt(WEI_PER_ETH))
-    return eth
+    return float64(eth.Int64())
 }
 
 
 // Convert eth to wei
-func EthToWei(eth *big.Int) big.Int {
+func EthToWei(eth float64) *big.Int {
+    var weiFloat big.Float
     var wei big.Int
-    wei.Mul(eth, big.NewInt(WEI_PER_ETH))
-    return wei
+    weiFloat.Mul(big.NewFloat(eth), big.NewFloat(WEI_PER_ETH))
+    weiFloat.Int(&wei)
+    return &wei
 }
 
 

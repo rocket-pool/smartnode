@@ -6,6 +6,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -23,7 +24,7 @@ func getDepositStatus(c *cli.Context) error {
     }
 
     // Get node balances
-    etherBalance, rplBalance, err := node.GetBalances(nodeContract)
+    etherBalanceWei, rplBalanceWei, err := node.GetBalances(nodeContract)
     if err != nil {
         return err
     }
@@ -35,12 +36,12 @@ func getDepositStatus(c *cli.Context) error {
     }
 
     // Log status & return
-    fmt.Println(fmt.Sprintf("Node has a balance of %s ETH and %s RPL", etherBalance.String(), rplBalance.String()))
+    fmt.Println(fmt.Sprintf("Node has a balance of %.2f ETH and %.2f RPL", eth.WeiToEth(etherBalanceWei), eth.WeiToEth(rplBalanceWei)))
     if reservation.Exists {
         fmt.Println(fmt.Sprintf(
-            "Node has a deposit reservation requiring %s ETH and %s RPL, with a staking duration of %s and expiring at %s",
-            reservation.EtherRequired.String(),
-            reservation.RplRequired.String(),
+            "Node has a deposit reservation requiring %.2f ETH and %.2f RPL, with a staking duration of %s and expiring at %s",
+            eth.WeiToEth(reservation.EtherRequiredWei),
+            eth.WeiToEth(reservation.RplRequiredWei),
             reservation.StakingDurationID,
             reservation.ExpiryTime.Format("2006-01-02, 15:04 -0700 MST")))
     } else {

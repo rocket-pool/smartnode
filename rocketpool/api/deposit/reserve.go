@@ -122,9 +122,9 @@ func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Log & return
     fmt.Println(fmt.Sprintf(
-        "Deposit reservation made successfully, requiring %s ETH and %s RPL, with a staking duration of %s and expiring at %s",
-        reservation.EtherRequired.String(),
-        reservation.RplRequired.String(),
+        "Deposit reservation made successfully, requiring %.2f ETH and %.2f RPL, with a staking duration of %s and expiring at %s",
+        eth.WeiToEth(reservation.EtherRequiredWei),
+        eth.WeiToEth(reservation.RplRequiredWei),
         reservation.StakingDurationID,
         reservation.ExpiryTime.Format("2006-01-02, 15:04 -0700 MST")))
     return nil

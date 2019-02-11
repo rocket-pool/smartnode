@@ -76,7 +76,6 @@ func registerNode(c *cli.Context) error {
     if err != nil {
         return errors.New("Error retrieving minimum ether requirement: " + err.Error())
     }
-    minEtherBalance := eth.WeiToEth(*minWeiBalance)
 
     // Check node account balance
     nodeAccountBalance, err := client.BalanceAt(context.Background(), nodeAccount.Address, nil)
@@ -84,7 +83,7 @@ func registerNode(c *cli.Context) error {
         return errors.New("Error retrieving node account balance: " + err.Error())
     }
     if nodeAccountBalance.Cmp(*minWeiBalance) < 0 {
-        fmt.Println(fmt.Sprintf("Node account requires a minimum balance of %s ETH to register", minEtherBalance.String()))
+        fmt.Println(fmt.Sprintf("Node account requires a minimum balance of %.2f ETH to register", eth.WeiToEth(*minWeiBalance)))
         return nil
     }
 

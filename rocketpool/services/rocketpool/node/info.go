@@ -8,7 +8,6 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -16,8 +15,8 @@ import (
 type ReservationDetails struct {
     Exists bool
     StakingDurationID string
-    EtherRequired big.Int
-    RplRequired big.Int
+    EtherRequiredWei *big.Int
+    RplRequiredWei *big.Int
     ExpiryTime time.Time
 }
 
@@ -26,8 +25,8 @@ type ReservationDetails struct {
 func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
 
     // Balance channels
-    etherBalanceChannel := make(chan big.Int)
-    rplBalanceChannel := make(chan big.Int)
+    etherBalanceChannel := make(chan *big.Int)
+    rplBalanceChannel := make(chan *big.Int)
     errorChannel := make(chan error)
 
     // Get node ETH balance
@@ -37,7 +36,7 @@ func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
         if err != nil {
             errorChannel <- errors.New("Error retrieving node ETH balance: " + err.Error())
         } else {
-            etherBalanceChannel <- eth.WeiToEth(*etherBalanceWei)
+            etherBalanceChannel <- *etherBalanceWei
         }
     })()
 
@@ -48,18 +47,18 @@ func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
         if err != nil {
             errorChannel <- errors.New("Error retrieving node RPL balance: " + err.Error())
         } else {
-            rplBalanceChannel <- eth.WeiToEth(*rplBalanceWei)
+            rplBalanceChannel <- *rplBalanceWei
         }
     })()
 
     // Receive balances
-    var etherBalance big.Int
-    var rplBalance big.Int
+    var etherBalanceWei *big.Int
+    var rplBalanceWei *big.Int
     for received := 0; received < 2; {
         select {
-            case etherBalance = <-etherBalanceChannel:
+            case etherBalanceWei = <-etherBalanceChannel:
                 received++
-            case rplBalance = <-rplBalanceChannel:
+            case rplBalanceWei = <-rplBalanceChannel:
                 received++
             case err := <-errorChannel:
                 return nil, nil, err
@@ -67,7 +66,7 @@ func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
     }
 
     // Return
-    return &etherBalance, &rplBalance, nil
+    return etherBalanceWei, rplBalanceWei, nil
 
 }
 
@@ -92,8 +91,8 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
 
     // Reservation data channels
     durationIDChannel := make(chan string)
-    etherRequiredChannel := make(chan big.Int)
-    rplRequiredChannel := make(chan big.Int)
+    etherRequiredChannel := make(chan *big.Int)
+    rplRequiredChannel := make(chan *big.Int)
     reservedTimeChannel := make(chan *big.Int)
     reservationTimeChannel := make(chan *big.Int)
     errorChannel := make(chan error)
@@ -116,7 +115,7 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         if err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation ETH requirement: " + err.Error())
         } else {
-            etherRequiredChannel <- eth.WeiToEth(*etherRequiredWei)
+            etherRequiredChannel <- *etherRequiredWei
         }
     })()
 
@@ -127,7 +126,7 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         if err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation RPL requirement: " + err.Error())
         } else {
-            rplRequiredChannel <- eth.WeiToEth(*rplRequiredWei)
+            rplRequiredChannel <- *rplRequiredWei
         }
     })()
 
@@ -160,9 +159,9 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         select {
             case details.StakingDurationID = <-durationIDChannel:
                 received++
-            case details.EtherRequired = <-etherRequiredChannel:
+            case details.EtherRequiredWei = <-etherRequiredChannel:
                 received++
-            case details.RplRequired = <-rplRequiredChannel:
+            case details.RplRequiredWei = <-rplRequiredChannel:
                 received++
             case reservedTime = <-reservedTimeChannel:
                 received++
