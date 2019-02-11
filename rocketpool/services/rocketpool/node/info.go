@@ -25,21 +25,44 @@ type ReservationDetails struct {
 // Get a node's balances
 func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
 
+    // Balance channels
+    etherBalanceChannel := make(chan big.Int)
+    rplBalanceChannel := make(chan big.Int)
+    errorChannel := make(chan error)
+
     // Get node ETH balance
-    etherBalanceWei := new(*big.Int)
-    err := nodeContract.Call(nil, etherBalanceWei, "getBalanceETH")
-    if err != nil {
-        return nil, nil, errors.New("Error retrieving node ETH balance: " + err.Error())
-    }
-    etherBalance := eth.WeiToEth(*etherBalanceWei)
+    go (func() {
+        etherBalanceWei := new(*big.Int)
+        err := nodeContract.Call(nil, etherBalanceWei, "getBalanceETH")
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving node ETH balance: " + err.Error())
+        }
+        etherBalanceChannel <- eth.WeiToEth(*etherBalanceWei)
+    })()
 
     // Get node RPL balance
-    rplBalanceWei := new(*big.Int)
-    err = nodeContract.Call(nil, rplBalanceWei, "getBalanceRPL")
-    if err != nil {
-        return nil, nil, errors.New("Error retrieving node RPL balance: " + err.Error())
+    go (func() {
+        rplBalanceWei := new(*big.Int)
+        err := nodeContract.Call(nil, rplBalanceWei, "getBalanceRPL")
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving node RPL balance: " + err.Error())
+        }
+        rplBalanceChannel <- eth.WeiToEth(*rplBalanceWei)
+    })()
+
+    // Receive balances
+    var etherBalance big.Int
+    var rplBalance big.Int
+    for received := 0; received < 2; {
+        select {
+            case etherBalance = <-etherBalanceChannel:
+                received++
+            case rplBalance = <-rplBalanceChannel:
+                received++
+            case err := <-errorChannel:
+                return nil, nil, err
+        }
     }
-    rplBalance := eth.WeiToEth(*rplBalanceWei)
 
     // Return
     return &etherBalance, &rplBalance, nil
@@ -65,47 +88,87 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         return details, nil
     }
 
+    // Reservation data channels
+    durationIDChannel := make(chan string)
+    etherRequiredChannel := make(chan big.Int)
+    rplRequiredChannel := make(chan big.Int)
+    reservedTimeChannel := make(chan *big.Int)
+    reservationTimeChannel := make(chan *big.Int)
+    errorChannel := make(chan error)
+
     // Get deposit reservation duration ID
-    durationID := new(string)
-    err = nodeContract.Call(nil, durationID, "getDepositReserveDurationID")
-    if err != nil {
-        return nil, errors.New("Error retrieving deposit reservation staking duration ID: " + err.Error())
-    }
-    details.StakingDurationID = *durationID
+    go (func() {
+        durationID := new(string)
+        err = nodeContract.Call(nil, durationID, "getDepositReserveDurationID")
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving deposit reservation staking duration ID: " + err.Error())
+        }
+        durationIDChannel <- *durationID
+    })()
 
     // Get deposit reservation ETH required
-    etherRequiredWei := new(*big.Int)
-    err = nodeContract.Call(nil, etherRequiredWei, "getDepositReserveEtherRequired")
-    if err != nil {
-        return nil, errors.New("Error retrieving deposit reservation ETH requirement: " + err.Error())
-    }
-    details.EtherRequired = eth.WeiToEth(*etherRequiredWei)
+    go (func() {
+        etherRequiredWei := new(*big.Int)
+        err = nodeContract.Call(nil, etherRequiredWei, "getDepositReserveEtherRequired")
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving deposit reservation ETH requirement: " + err.Error())
+        }
+        etherRequiredChannel <- eth.WeiToEth(*etherRequiredWei)
+    })()
 
     // Get deposit reservation RPL required
-    rplRequiredWei := new(*big.Int)
-    err = nodeContract.Call(nil, rplRequiredWei, "getDepositReserveRPLRequired")
-    if err != nil {
-        return nil, errors.New("Error retrieving deposit reservation RPL requirement: " + err.Error())
-    }
-    details.RplRequired = eth.WeiToEth(*rplRequiredWei)
+    go (func() {
+        rplRequiredWei := new(*big.Int)
+        err = nodeContract.Call(nil, rplRequiredWei, "getDepositReserveRPLRequired")
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving deposit reservation RPL requirement: " + err.Error())
+        }
+        rplRequiredChannel <- eth.WeiToEth(*rplRequiredWei)
+    })()
 
     // Get deposit reservation reserved time
-    reservedTime := new(*big.Int)
-    err = nodeContract.Call(nil, reservedTime, "getDepositReservedTime")
-    if err != nil {
-        return nil, errors.New("Error retrieving deposit reservation reserved time: " + err.Error())
-    }
+    go (func() {
+        reservedTime := new(*big.Int)
+        err = nodeContract.Call(nil, reservedTime, "getDepositReservedTime")
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving deposit reservation reserved time: " + err.Error())
+        }
+        reservedTimeChannel <- *reservedTime
+    })()
 
     // Get reservation duration
-    reservationTime := new(*big.Int)
-    err = cm.Contracts["rocketNodeSettings"].Call(nil, reservationTime, "getDepositReservationTime")
-    if err != nil {
-        return nil, errors.New("Error retrieving node deposit reservation time setting: " + err.Error())
+    go (func() {
+        reservationTime := new(*big.Int)
+        err = cm.Contracts["rocketNodeSettings"].Call(nil, reservationTime, "getDepositReservationTime")
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving node deposit reservation time setting: " + err.Error())
+        }
+        reservationTimeChannel <- *reservationTime
+    })()
+
+    // Receive reservation data
+    var reservedTime *big.Int
+    var reservationTime *big.Int
+    for received := 0; received < 5; {
+        select {
+            case details.StakingDurationID = <-durationIDChannel:
+                received++
+            case details.EtherRequired = <-etherRequiredChannel:
+                received++
+            case details.RplRequired = <-rplRequiredChannel:
+                received++
+            case reservedTime = <-reservedTimeChannel:
+                received++
+            case reservationTime = <-reservationTimeChannel:
+                received++
+            case err := <-errorChannel:
+                return nil, err
+        }
     }
 
     // Get deposit reservation expiry time
     var expiryTimestamp big.Int
-    expiryTimestamp.Add(*reservedTime, *reservationTime)
+    expiryTimestamp.Add(reservedTime, reservationTime)
     details.ExpiryTime = time.Unix(expiryTimestamp.Int64(), 0)
 
     // Return
