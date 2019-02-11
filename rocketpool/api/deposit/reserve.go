@@ -28,7 +28,7 @@ type DepositInput struct {
 func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Command setup
-    am, rp, nodeContract, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"});
+    am, rp, nodeContract, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"})
     if message != "" {
         fmt.Println(message)
         return nil
@@ -37,26 +37,48 @@ func reserveDeposit(c *cli.Context, durationId string) error {
         return err
     }
 
-    // Check node deposits are enabled
-    depositsAllowed := new(bool)
-    err = rp.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed")
-    if err != nil {
-        return errors.New("Error checking node deposits enabled status: " + err.Error())
-    }
-    if !*depositsAllowed {
-        fmt.Println("Node deposits are currently disabled in Rocket Pool")
-        return nil
-    }
+    // Status channels
+    successChannel := make(chan bool)
+    messageChannel := make(chan string)
+    errorChannel := make(chan error)
 
     // Check node does not have current deposit reservation
-    hasReservation := new(bool)
-    err = nodeContract.Call(nil, hasReservation, "getHasDepositReservation")
-    if err != nil {
-        return errors.New("Error retrieving deposit reservation status: " + err.Error())
-    }
-    if *hasReservation {
-        fmt.Println("Node has a current deposit reservation, please cancel or complete it")
-        return nil
+    go (func() {
+        hasReservation := new(bool)
+        err = nodeContract.Call(nil, hasReservation, "getHasDepositReservation")
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
+        } else if *hasReservation {
+            messageChannel <- "Node has a current deposit reservation, please cancel or complete it"
+        } else {
+            successChannel <- true
+        }
+    })()
+
+    // Check node deposits are enabled
+    go (func() {
+        depositsAllowed := new(bool)
+        err = rp.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed")
+        if err != nil {
+            errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
+        } else if !*depositsAllowed {
+            messageChannel <- "Node deposits are currently disabled in Rocket Pool"
+        } else {
+            successChannel <- true
+        }
+    })()
+
+    // Receive status
+    for received := 0; received < 2; {
+        select {
+            case <-successChannel:
+                received++
+            case msg := <-messageChannel:
+                fmt.Println(msg)
+                return nil
+            case err := <-errorChannel:
+                return err
+        }
     }
 
     // Get node's validator pubkey
