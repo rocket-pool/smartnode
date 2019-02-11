@@ -11,6 +11,13 @@ import (
 )
 
 
+// Node balance data
+type Balances struct {
+    EtherBalanceWei *big.Int
+    RplBalanceWei *big.Int
+}
+
+
 // Reservation detail data
 type ReservationDetails struct {
     Exists bool
@@ -22,7 +29,10 @@ type ReservationDetails struct {
 
 
 // Get a node's balances
-func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
+func GetBalances(nodeContract *bind.BoundContract) (*Balances, error) {
+
+    // Node balances
+    balances := &Balances{}
 
     // Balance channels
     etherBalanceChannel := make(chan *big.Int)
@@ -52,21 +62,19 @@ func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
     })()
 
     // Receive balances
-    var etherBalanceWei *big.Int
-    var rplBalanceWei *big.Int
     for received := 0; received < 2; {
         select {
-            case etherBalanceWei = <-etherBalanceChannel:
+            case balances.EtherBalanceWei = <-etherBalanceChannel:
                 received++
-            case rplBalanceWei = <-rplBalanceChannel:
+            case balances.RplBalanceWei = <-rplBalanceChannel:
                 received++
             case err := <-errorChannel:
-                return nil, nil, err
+                return nil, err
         }
     }
 
     // Return
-    return etherBalanceWei, rplBalanceWei, nil
+    return balances, nil
 
 }
 

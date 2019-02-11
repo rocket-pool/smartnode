@@ -23,20 +23,47 @@ func getDepositStatus(c *cli.Context) error {
         return err
     }
 
+    // Status channels
+    balancesChannel := make(chan *node.Balances)
+    reservationChannel := make(chan *node.ReservationDetails)
+    errorChannel := make(chan error)
+
     // Get node balances
-    etherBalanceWei, rplBalanceWei, err := node.GetBalances(nodeContract)
-    if err != nil {
-        return err
-    }
+    go (func() {
+        balances, err := node.GetBalances(nodeContract)
+        if err != nil {
+            errorChannel <- err
+        } else {
+            balancesChannel <- balances
+        }
+    })()
 
     // Get node deposit reservation details
-    reservation, err := node.GetReservationDetails(nodeContract, rp)
-    if err != nil {
-        return err
+    go (func() {
+        reservation, err := node.GetReservationDetails(nodeContract, rp)
+        if err != nil {
+            errorChannel <- err
+        } else {
+            reservationChannel <- reservation
+        }
+    })()
+
+    // Receive status
+    var balances *node.Balances
+    var reservation *node.ReservationDetails
+    for received := 0; received < 2; {
+        select {
+            case balances = <-balancesChannel:
+                received++
+            case reservation = <-reservationChannel:
+                received++
+            case err := <-errorChannel:
+                return err
+        }
     }
 
     // Log status & return
-    fmt.Println(fmt.Sprintf("Node has a balance of %.2f ETH and %.2f RPL", eth.WeiToEth(etherBalanceWei), eth.WeiToEth(rplBalanceWei)))
+    fmt.Println(fmt.Sprintf("Node has a balance of %.2f ETH and %.2f RPL", eth.WeiToEth(balances.EtherBalanceWei), eth.WeiToEth(balances.RplBalanceWei)))
     if reservation.Exists {
         fmt.Println(fmt.Sprintf(
             "Node has a deposit reservation requiring %.2f ETH and %.2f RPL, with a staking duration of %s and expiring at %s",
