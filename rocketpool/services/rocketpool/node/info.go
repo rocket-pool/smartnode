@@ -13,8 +13,8 @@ import (
 
 // Node balance data
 type Balances struct {
-    EtherBalanceWei *big.Int
-    RplBalanceWei *big.Int
+    EtherWei *big.Int
+    RplWei *big.Int
 }
 
 
@@ -64,9 +64,9 @@ func GetBalances(nodeContract *bind.BoundContract) (*Balances, error) {
     // Receive balances
     for received := 0; received < 2; {
         select {
-            case balances.EtherBalanceWei = <-etherBalanceChannel:
+            case balances.EtherWei = <-etherBalanceChannel:
                 received++
-            case balances.RplBalanceWei = <-rplBalanceChannel:
+            case balances.RplWei = <-rplBalanceChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
@@ -115,9 +115,9 @@ func GetRequiredBalances(nodeContract *bind.BoundContract) (*Balances, error) {
     // Receive requirements
     for received := 0; received < 2; {
         select {
-            case required.EtherBalanceWei = <-etherRequiredChannel:
+            case required.EtherWei = <-etherRequiredChannel:
                 received++
-            case required.RplBalanceWei = <-rplRequiredChannel:
+            case required.RplWei = <-rplRequiredChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
@@ -207,8 +207,8 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
                 received++
             case requiredBalances := <-requiredBalancesChannel:
                 received++
-                details.EtherRequiredWei = requiredBalances.EtherBalanceWei
-                details.RplRequiredWei = requiredBalances.RplBalanceWei
+                details.EtherRequiredWei = requiredBalances.EtherWei
+                details.RplRequiredWei = requiredBalances.RplWei
             case reservedTime = <-reservedTimeChannel:
                 received++
             case reservationTime = <-reservationTimeChannel:
