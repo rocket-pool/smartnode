@@ -1,12 +1,16 @@
 package deposit
 
 import (
+    "context"
     "errors"
     "fmt"
+    "math/big"
+    "strings"
 
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
+    cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
@@ -15,7 +19,7 @@ import (
 func completeDeposit(c *cli.Context) error {
 
     // Command setup
-    am, rp, nodeContract, message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings"})
+    am, client, rp, nodeContract, message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings"})
     if message != "" {
         fmt.Println(message)
         return nil
@@ -109,14 +113,42 @@ func completeDeposit(c *cli.Context) error {
         }
     }
 
-    // Check node balances
-    if balances.EtherWei.Cmp(requiredBalances.EtherWei) < 0 {
-        fmt.Println(fmt.Sprintf("Node balance of %.2f ETH is not enough to cover requirement of %.2f ETH", eth.WeiToEth(balances.EtherWei), eth.WeiToEth(requiredBalances.EtherWei)))
-        return nil
-    }
+    // Check node RPL balance
     if balances.RplWei.Cmp(requiredBalances.RplWei) < 0 {
         fmt.Println(fmt.Sprintf("Node balance of %.2f RPL is not enough to cover requirement of %.2f RPL", eth.WeiToEth(balances.RplWei), eth.WeiToEth(requiredBalances.RplWei)))
         return nil
+    }
+
+    // Check node ether balance and get required transaction value
+    transactionValueWei := new(big.Int)
+    if balances.EtherWei.Cmp(requiredBalances.EtherWei) < 0 {
+
+        // Get remaining ether balance required
+        remainingEtherRequiredWei := new(big.Int)
+        remainingEtherRequiredWei.Sub(requiredBalances.EtherWei, balances.EtherWei)
+
+        // Get node account balance
+        nodeAccountBalance, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
+        if err != nil {
+            return errors.New("Error retrieving node account balance: " + err.Error())
+        }
+
+        // Check node account balance
+        if nodeAccountBalance.Cmp(remainingEtherRequiredWei) < 0 {
+            fmt.Println(fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH", eth.WeiToEth(balances.EtherWei), eth.WeiToEth(nodeAccountBalance), eth.WeiToEth(requiredBalances.EtherWei)))
+            return nil
+        }
+
+        // Confirm payment of remaining required ether
+        response := cliutils.Prompt(fmt.Sprintf("Node contract requires another %.2f ETH to complete deposit, would you like to pay now from your account? [y/n]", eth.WeiToEth(remainingEtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        if strings.ToLower(response[:1]) == "n" {
+            fmt.Println("Deposit not completed")
+            return nil
+        }
+
+        // Set transaction value
+        transactionValueWei.Set(remainingEtherRequiredWei)
+
     }
 
     // Get node account transactor
@@ -124,6 +156,7 @@ func completeDeposit(c *cli.Context) error {
     if err != nil {
         return err
     }
+    nodeAccountTransactor.Value = transactionValueWei
 
     // Complete deposit
     _, err = nodeContract.Transact(nodeAccountTransactor, "deposit")
