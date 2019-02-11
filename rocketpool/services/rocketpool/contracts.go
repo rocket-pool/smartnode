@@ -160,10 +160,10 @@ func loadContractAddress(rocketStorage *contracts.RocketStorage, name string, ad
 
     // Get contract address
     address, err := rocketStorage.GetAddress(nil, eth.KeccakStr("contract.name" + name))
-    if err == nil {
-        addressChannel <- address
-    } else {
+    if err != nil {
         errorChannel <- errors.New("Error retrieving contract address: " + err.Error())
+    } else {
+        addressChannel <- address
     }
 
 }
@@ -176,18 +176,18 @@ func loadContractABI(rocketStorage *contracts.RocketStorage, name string, abiCha
 
     // Get contract ABI
     abiEncoded, err := rocketStorage.GetString(nil, eth.KeccakStr("contract.abi" + name))
-    if err == nil {
+    if err != nil {
+        errorChannel <- errors.New("Error retrieving contract ABI: " + err.Error())
+    } else {
 
         // Decode, decompress, parse & send ABI
         abi, err := decodeAbi(abiEncoded)
-        if err == nil {
-            abiChannel <- abi
-        } else {
+        if err != nil {
             errorChannel <- err
+        } else {
+            abiChannel <- abi
         }
 
-    } else {
-        errorChannel <- errors.New("Error retrieving contract ABI: " + err.Error())
     }
 
 }

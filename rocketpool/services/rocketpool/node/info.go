@@ -36,8 +36,9 @@ func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
         err := nodeContract.Call(nil, etherBalanceWei, "getBalanceETH")
         if err != nil {
             errorChannel <- errors.New("Error retrieving node ETH balance: " + err.Error())
+        } else {
+            etherBalanceChannel <- eth.WeiToEth(*etherBalanceWei)
         }
-        etherBalanceChannel <- eth.WeiToEth(*etherBalanceWei)
     })()
 
     // Get node RPL balance
@@ -46,8 +47,9 @@ func GetBalances(nodeContract *bind.BoundContract) (*big.Int, *big.Int, error) {
         err := nodeContract.Call(nil, rplBalanceWei, "getBalanceRPL")
         if err != nil {
             errorChannel <- errors.New("Error retrieving node RPL balance: " + err.Error())
+        } else {
+            rplBalanceChannel <- eth.WeiToEth(*rplBalanceWei)
         }
-        rplBalanceChannel <- eth.WeiToEth(*rplBalanceWei)
     })()
 
     // Receive balances
@@ -102,8 +104,9 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         err = nodeContract.Call(nil, durationID, "getDepositReserveDurationID")
         if err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation staking duration ID: " + err.Error())
+        } else {
+            durationIDChannel <- *durationID
         }
-        durationIDChannel <- *durationID
     })()
 
     // Get deposit reservation ETH required
@@ -112,8 +115,9 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         err = nodeContract.Call(nil, etherRequiredWei, "getDepositReserveEtherRequired")
         if err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation ETH requirement: " + err.Error())
+        } else {
+            etherRequiredChannel <- eth.WeiToEth(*etherRequiredWei)
         }
-        etherRequiredChannel <- eth.WeiToEth(*etherRequiredWei)
     })()
 
     // Get deposit reservation RPL required
@@ -122,8 +126,9 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         err = nodeContract.Call(nil, rplRequiredWei, "getDepositReserveRPLRequired")
         if err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation RPL requirement: " + err.Error())
+        } else {
+            rplRequiredChannel <- eth.WeiToEth(*rplRequiredWei)
         }
-        rplRequiredChannel <- eth.WeiToEth(*rplRequiredWei)
     })()
 
     // Get deposit reservation reserved time
@@ -132,8 +137,9 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         err = nodeContract.Call(nil, reservedTime, "getDepositReservedTime")
         if err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation reserved time: " + err.Error())
+        } else {
+            reservedTimeChannel <- *reservedTime
         }
-        reservedTimeChannel <- *reservedTime
     })()
 
     // Get reservation duration
@@ -142,8 +148,9 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
         err = cm.Contracts["rocketNodeSettings"].Call(nil, reservationTime, "getDepositReservationTime")
         if err != nil {
             errorChannel <- errors.New("Error retrieving node deposit reservation time setting: " + err.Error())
+        } else {
+            reservationTimeChannel <- *reservationTime
         }
-        reservationTimeChannel <- *reservationTime
     })()
 
     // Receive reservation data
