@@ -13,9 +13,12 @@ const WEI_PER_ETH = 1000000000000000000
 
 // Convert wei to eth
 func WeiToEth(wei *big.Int) float64 {
-    var eth big.Int
-    eth.Quo(wei, big.NewInt(WEI_PER_ETH))
-    return float64(eth.Int64())
+    var weiFloat big.Float
+    var eth big.Float
+    weiFloat.SetInt(wei)
+    eth.Quo(&weiFloat, big.NewFloat(WEI_PER_ETH))
+    eth64, _ := eth.Float64()
+    return eth64
 }
 
 
