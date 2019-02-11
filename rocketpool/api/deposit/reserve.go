@@ -45,7 +45,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Check node does not have current deposit reservation
     go (func() {
         hasReservation := new(bool)
-        err = nodeContract.Call(nil, hasReservation, "getHasDepositReservation")
+        err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation")
         if err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
         } else if *hasReservation {
@@ -58,7 +58,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Check node deposits are enabled
     go (func() {
         depositsAllowed := new(bool)
-        err = rp.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed")
+        err := rp.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed")
         if err != nil {
             errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
         } else if !*depositsAllowed {
