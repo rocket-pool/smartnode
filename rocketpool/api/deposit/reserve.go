@@ -28,7 +28,7 @@ type DepositInput struct {
 func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Command setup
-    am, _, rp, nodeContract, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"})
+    am, _, rp, _, nodeContract, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"})
     if message != "" {
         fmt.Println(message)
         return nil

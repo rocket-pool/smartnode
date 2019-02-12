@@ -14,7 +14,7 @@ import (
 func getDepositStatus(c *cli.Context) error {
 
     // Command setup
-    _, _, rp, nodeContract, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"})
+    _, _, rp, _, nodeContract, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"})
     if message != "" {
         fmt.Println(message)
         return nil
