@@ -20,12 +20,11 @@ func setNodeTimezone(c *cli.Context) error {
     // Initialise account manager
     am := accounts.NewAccountManager(c.GlobalString("keychain"))
 
-    // Get node account
+    // Check node account
     if !am.NodeAccountExists() {
         fmt.Println("Node account does not exist, please initialize with `rocketpool node init`")
         return nil
     }
-    nodeAccount := am.GetNodeAccount()
 
     // Connect to ethereum node
     client, err := ethclient.Dial(c.GlobalString("provider"))
@@ -47,7 +46,7 @@ func setNodeTimezone(c *cli.Context) error {
 
     // Check node is registered (contract exists)
     nodeContractAddress := new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address)
+    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error checking node registration: " + err.Error())
     }
@@ -73,7 +72,7 @@ func setNodeTimezone(c *cli.Context) error {
 
     // Get node timezone
     nodeTimezone := new(string)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", nodeAccount.Address)
+    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error retrieving node timezone: " + err.Error())
     }

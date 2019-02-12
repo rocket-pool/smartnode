@@ -23,12 +23,11 @@ func registerNode(c *cli.Context) error {
     // Initialise account manager
     am := accounts.NewAccountManager(c.GlobalString("keychain"))
 
-    // Get node account
+    // Check node account
     if !am.NodeAccountExists() {
         fmt.Println("Node account does not exist, please initialize with `rocketpool node init`")
         return nil
     }
-    nodeAccount := am.GetNodeAccount()
 
     // Connect to ethereum node
     client, err := ethclient.Dial(c.GlobalString("provider"))
@@ -50,7 +49,7 @@ func registerNode(c *cli.Context) error {
 
     // Check if node is already registered (contract exists)
     nodeContractAddress := new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address)
+    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error checking node registration: " + err.Error())
     }
@@ -78,7 +77,7 @@ func registerNode(c *cli.Context) error {
     }
 
     // Check node account balance
-    nodeAccountBalance, err := client.BalanceAt(context.Background(), nodeAccount.Address, nil)
+    nodeAccountBalance, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
     if err != nil {
         return errors.New("Error retrieving node account balance: " + err.Error())
     }
@@ -104,7 +103,7 @@ func registerNode(c *cli.Context) error {
 
     // Get node contract address
     nodeContractAddress = new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address)
+    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error retrieving node contract address: " + err.Error())
     }
