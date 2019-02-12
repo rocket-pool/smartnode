@@ -56,24 +56,51 @@ func getNodeStatus(c *cli.Context) error {
         return errors.New("Error initialising node contract: " + err.Error())
     }
 
+    // Node details channels
+    timezoneChannel := make(chan string)
+    balancesChannel := make(chan *node.Balances)
+    errorChannel := make(chan error)
+
     // Get node timezone
-    nodeTimezone := new(string)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", am.GetNodeAccount().Address)
-    if err != nil {
-        return errors.New("Error retrieving node timezone: " + err.Error())
-    }
+    go (func() {
+        timezone := new(string)
+        err = rp.Contracts["rocketNodeAPI"].Call(nil, timezone, "getTimezoneLocation", am.GetNodeAccount().Address)
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving node timezone: " + err.Error())
+        } else {
+            timezoneChannel <- *timezone
+        }
+    })()
 
     // Get node contract balances
-    balances, err := node.GetBalances(nodeContract)
-    if err != nil {
-        return err
+    go (func() {
+        balances, err := node.GetBalances(nodeContract)
+        if err != nil {
+            errorChannel <- err
+        } else {
+            balancesChannel <- balances
+        }
+    })()
+
+    // Receive node details
+    var timezone string
+    var balances *node.Balances
+    for received := 0; received < 2; {
+        select {
+            case timezone = <-timezoneChannel:
+                received++
+            case balances = <-balancesChannel:
+                received++
+            case err := <-errorChannel:
+                return err
+        }
     }
 
     // Log & return
     fmt.Println(fmt.Sprintf(
         "Node registered with Rocket Pool with contract at %s, timezone %s and a balance of %.2f ETH and %.2f RPL",
         nodeContractAddress.Hex(),
-        *nodeTimezone,
+        timezone,
         eth.WeiToEth(balances.EtherWei),
         eth.WeiToEth(balances.RplWei)))
     return nil
