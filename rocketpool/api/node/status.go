@@ -6,11 +6,8 @@ import (
     "fmt"
 
     "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/ethclient"
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
@@ -19,33 +16,12 @@ import (
 // Get the node's status
 func getNodeStatus(c *cli.Context) error {
 
-    // Initialise account manager
-    am := accounts.NewAccountManager(c.GlobalString("keychain"))
-
-    // Check if node account is initialised
-    if !am.NodeAccountExists() {
-        fmt.Println("Node account has not been initialized")
+    // Command setup
+    am, client, rp, message, err := setup(c, []string{"rocketNodeAPI", "rocketPoolToken"}, []string{"rocketNodeContract"}, false)
+    if message != "" {
+        fmt.Println(message)
         return nil
     }
-
-    // Connect to ethereum node
-    client, err := ethclient.Dial(c.GlobalString("provider"))
-    if err != nil {
-        return errors.New("Error connecting to ethereum node: " + err.Error())
-    }
-
-    // Initialise Rocket Pool contract manager
-    rp, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
-    if err != nil {
-        return err
-    }
-
-    // Load Rocket Pool contracts
-    err = rp.LoadContracts([]string{"rocketNodeAPI", "rocketPoolToken"})
-    if err != nil {
-        return err
-    }
-    err = rp.LoadABIs([]string{"rocketNodeContract"})
     if err != nil {
         return err
     }

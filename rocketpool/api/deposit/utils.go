@@ -37,7 +37,7 @@ func setup(c *cli.Context, loadContracts []string) (*accounts.AccountManager, *e
         return nil, nil, nil, nil, "", err
     }
 
-    // Load Rocket Pool node contracts
+    // Load Rocket Pool contracts
     err = rp.LoadContracts(loadContracts)
     if err != nil {
         return nil, nil, nil, nil, "", err

@@ -1,13 +1,62 @@
 package node
 
 import (
+    "errors"
     "fmt"
     "os/exec"
     "regexp"
     "strings"
 
+    "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/urfave/cli"
+
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
 )
+
+
+// Shared command setup
+func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountRequired bool) (*accounts.AccountManager, *ethclient.Client, *rocketpool.ContractManager, string, error) {
+
+    // Initialise account manager
+    am := accounts.NewAccountManager(c.GlobalString("keychain"))
+
+    // Check node account
+    if !am.NodeAccountExists() {
+        if accountRequired {
+            return nil, nil, nil, "Node account does not exist, please initialize with `rocketpool node init`", nil
+        } else {
+            return nil, nil, nil, "Node account has not been initialized", nil
+        }
+    }
+
+    // Connect to ethereum node
+    client, err := ethclient.Dial(c.GlobalString("provider"))
+    if err != nil {
+        return nil, nil, nil, "", errors.New("Error connecting to ethereum node: " + err.Error())
+    }
+
+    // Initialise Rocket Pool contract manager
+    rp, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
+    if err != nil {
+        return nil, nil, nil, "", err
+    }
+
+    // Load Rocket Pool contracts
+    err = rp.LoadContracts(loadContracts)
+    if err != nil {
+        return nil, nil, nil, "", err
+    }
+    err = rp.LoadABIs(loadAbis)
+    if err != nil {
+        return nil, nil, nil, "", err
+    }
+
+    // Return
+    return am, client, rp, "", nil
+
+}
 
 
 // Prompt user for a time zone string

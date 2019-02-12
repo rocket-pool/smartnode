@@ -8,11 +8,8 @@ import (
     "math/big"
 
     "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/ethclient"
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
@@ -20,29 +17,12 @@ import (
 // Register the node with Rocket Pool
 func registerNode(c *cli.Context) error {
 
-    // Initialise account manager
-    am := accounts.NewAccountManager(c.GlobalString("keychain"))
-
-    // Check node account
-    if !am.NodeAccountExists() {
-        fmt.Println("Node account does not exist, please initialize with `rocketpool node init`")
+    // Command setup
+    am, client, rp, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{}, true)
+    if message != "" {
+        fmt.Println(message)
         return nil
     }
-
-    // Connect to ethereum node
-    client, err := ethclient.Dial(c.GlobalString("provider"))
-    if err != nil {
-        return errors.New("Error connecting to ethereum node: " + err.Error())
-    }
-
-    // Initialise Rocket Pool contract manager
-    rp, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
-    if err != nil {
-        return err
-    }
-
-    // Load Rocket Pool node contracts
-    err = rp.LoadContracts([]string{"rocketNodeAPI", "rocketNodeSettings"})
     if err != nil {
         return err
     }
