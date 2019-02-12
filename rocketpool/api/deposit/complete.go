@@ -128,19 +128,19 @@ func completeDeposit(c *cli.Context) error {
         remainingEtherRequiredWei.Sub(requiredBalances.EtherWei, balances.EtherWei)
 
         // Get node account balance
-        nodeAccountBalance, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
+        nodeAccountEtherBalanceWei, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
         if err != nil {
             return errors.New("Error retrieving node account balance: " + err.Error())
         }
 
         // Check node account balance
-        if nodeAccountBalance.Cmp(remainingEtherRequiredWei) < 0 {
-            fmt.Println(fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH", eth.WeiToEth(balances.EtherWei), eth.WeiToEth(nodeAccountBalance), eth.WeiToEth(requiredBalances.EtherWei)))
+        if nodeAccountEtherBalanceWei.Cmp(remainingEtherRequiredWei) < 0 {
+            fmt.Println(fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH", eth.WeiToEth(balances.EtherWei), eth.WeiToEth(nodeAccountEtherBalanceWei), eth.WeiToEth(requiredBalances.EtherWei)))
             return nil
         }
 
         // Confirm payment of remaining required ether
-        response := cliutils.Prompt(fmt.Sprintf("Node contract requires another %.2f ETH to complete deposit, would you like to pay now from your account? [y/n]", eth.WeiToEth(remainingEtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        response := cliutils.Prompt(fmt.Sprintf("Node contract requires another %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingEtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             fmt.Println("Deposit not completed")
             return nil

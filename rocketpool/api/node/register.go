@@ -69,20 +69,20 @@ func registerNode(c *cli.Context) error {
         return nil
     }
 
-    // Get min required ether balance
-    minWeiBalance := new(*big.Int)
-    err = rp.Contracts["rocketNodeSettings"].Call(nil, minWeiBalance, "getEtherMin")
+    // Get min required node account ether balance
+    minNodeAccountEtherBalanceWei := new(*big.Int)
+    err = rp.Contracts["rocketNodeSettings"].Call(nil, minNodeAccountEtherBalanceWei, "getEtherMin")
     if err != nil {
         return errors.New("Error retrieving minimum ether requirement: " + err.Error())
     }
 
-    // Check node account balance
-    nodeAccountBalance, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
+    // Check node account ether balance
+    nodeAccountEtherBalanceWei, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
     if err != nil {
         return errors.New("Error retrieving node account balance: " + err.Error())
     }
-    if nodeAccountBalance.Cmp(*minWeiBalance) < 0 {
-        fmt.Println(fmt.Sprintf("Node account requires a minimum balance of %.2f ETH to register", eth.WeiToEth(*minWeiBalance)))
+    if nodeAccountEtherBalanceWei.Cmp(*minNodeAccountEtherBalanceWei) < 0 {
+        fmt.Println(fmt.Sprintf("Node account requires a minimum balance of %.2f ETH to register", eth.WeiToEth(*minNodeAccountEtherBalanceWei)))
         return nil
     }
 
