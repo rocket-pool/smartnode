@@ -29,8 +29,6 @@ func completeDeposit(c *cli.Context) error {
     }
 
     // Status channels
-    balancesChannel := make(chan *node.Balances)
-    requiredBalancesChannel := make(chan *node.Balances)
     successChannel := make(chan bool)
     messageChannel := make(chan string)
     errorChannel := make(chan error)
@@ -74,6 +72,23 @@ func completeDeposit(c *cli.Context) error {
         }
     })()
 
+    // Receive status
+    for received := 0; received < 3; {
+        select {
+            case <-successChannel:
+                received++
+            case msg := <-messageChannel:
+                fmt.Println(msg)
+                return nil
+            case err := <-errorChannel:
+                return err
+        }
+    }
+
+    // Balance channels
+    balancesChannel := make(chan *node.Balances)
+    requiredBalancesChannel := make(chan *node.Balances)
+
     // Get node balances
     go (func() {
         balances, err := node.GetBalances(nodeContract)
@@ -94,20 +109,15 @@ func completeDeposit(c *cli.Context) error {
         }
     })()
 
-    // Receive status
+    // Receive balances
     var balances *node.Balances
     var requiredBalances *node.Balances
-    for received := 0; received < 5; {
+    for received := 0; received < 2; {
         select {
             case balances = <-balancesChannel:
                 received++
             case requiredBalances = <-requiredBalancesChannel:
                 received++
-            case <-successChannel:
-                received++
-            case msg := <-messageChannel:
-                fmt.Println(msg)
-                return nil
             case err := <-errorChannel:
                 return err
         }
@@ -119,8 +129,8 @@ func completeDeposit(c *cli.Context) error {
         return nil
     }
 
-    // Check node ether balance and get required transaction value
-    transactionValueWei := new(big.Int)
+    // Check node ether balance and get required deposit transaction value
+    depositTransactionValueWei := new(big.Int)
     if balances.EtherWei.Cmp(requiredBalances.EtherWei) < 0 {
 
         // Get remaining ether balance required
@@ -146,8 +156,8 @@ func completeDeposit(c *cli.Context) error {
             return nil
         }
 
-        // Set transaction value
-        transactionValueWei.Set(remainingEtherRequiredWei)
+        // Set deposit transaction value
+        depositTransactionValueWei.Set(remainingEtherRequiredWei)
 
     }
 
@@ -156,9 +166,9 @@ func completeDeposit(c *cli.Context) error {
     if err != nil {
         return err
     }
-    nodeAccountTransactor.Value = transactionValueWei
 
     // Complete deposit
+    nodeAccountTransactor.Value = depositTransactionValueWei
     _, err = nodeContract.Transact(nodeAccountTransactor, "deposit")
     if err != nil {
         return errors.New("Error canceling deposit reservation: " + err.Error())
