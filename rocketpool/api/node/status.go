@@ -98,7 +98,7 @@ func getNodeStatus(c *cli.Context) error {
 
     // Log & return
     fmt.Println(fmt.Sprintf(
-        "Node registered with Rocket Pool with contract at %s, timezone %s and a balance of %.2f ETH and %.2f RPL",
+        "Node registered with Rocket Pool with contract at %s, timezone '%s' and a balance of %.2f ETH and %.2f RPL",
         nodeContractAddress.Hex(),
         nodeTimezone,
         eth.WeiToEth(nodeBalances.EtherWei),
