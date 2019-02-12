@@ -27,43 +27,101 @@ func registerNode(c *cli.Context) error {
         return err
     }
 
+    // Status channels
+    successChannel := make(chan bool)
+    messageChannel := make(chan string)
+    errorChannel := make(chan error)
+
     // Check if node is already registered (contract exists)
-    nodeContractAddress := new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
-    if err != nil {
-        return errors.New("Error checking node registration: " + err.Error())
-    }
-    if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
-        fmt.Println("Node already registered with contract:", nodeContractAddress.Hex())
-        return nil
-    }
+    go (func() {
+        nodeContractAddress := new(common.Address)
+        err := rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
+        if err != nil {
+            errorChannel <- errors.New("Error checking node registration: " + err.Error())
+        } else if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+            messageChannel <- fmt.Sprintf("Node already registered with contract at %s", nodeContractAddress.Hex())
+        } else {
+            successChannel <- true
+        }
+    })()
 
     // Check node registrations are enabled
-    registrationsAllowed := new(bool)
-    err = rp.Contracts["rocketNodeSettings"].Call(nil, registrationsAllowed, "getNewAllowed")
-    if err != nil {
-        return errors.New("Error checking node registrations enabled status: " + err.Error())
-    }
-    if !*registrationsAllowed {
-        fmt.Println("Node registrations are currently disabled in Rocket Pool")
-        return nil
-    }
-
-    // Get min required node account ether balance
-    minNodeAccountEtherBalanceWei := new(*big.Int)
-    err = rp.Contracts["rocketNodeSettings"].Call(nil, minNodeAccountEtherBalanceWei, "getEtherMin")
-    if err != nil {
-        return errors.New("Error retrieving minimum ether requirement: " + err.Error())
-    }
+    go (func() {
+        registrationsAllowed := new(bool)
+        err := rp.Contracts["rocketNodeSettings"].Call(nil, registrationsAllowed, "getNewAllowed")
+        if err != nil {
+            errorChannel <- errors.New("Error checking node registrations enabled status: " + err.Error())
+        } else if !*registrationsAllowed {
+            messageChannel <- "Node registrations are currently disabled in Rocket Pool"
+        } else {
+            successChannel <- true
+        }
+    })()
 
     // Check node account ether balance
-    nodeAccountEtherBalanceWei, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
-    if err != nil {
-        return errors.New("Error retrieving node account balance: " + err.Error())
-    }
-    if nodeAccountEtherBalanceWei.Cmp(*minNodeAccountEtherBalanceWei) < 0 {
-        fmt.Println(fmt.Sprintf("Node account requires a minimum balance of %.2f ETH to register", eth.WeiToEth(*minNodeAccountEtherBalanceWei)))
-        return nil
+    go (func() {
+
+        // Balance data channels
+        minEtherBalanceChannel := make(chan *big.Int)
+        etherBalanceChannel := make(chan *big.Int)
+        balanceErrorChannel := make(chan error)
+
+        // Get min required node account ether balance
+        go (func() {
+            minNodeAccountEtherBalanceWei := new(*big.Int)
+            err := rp.Contracts["rocketNodeSettings"].Call(nil, minNodeAccountEtherBalanceWei, "getEtherMin")
+            if err != nil {
+                balanceErrorChannel <- errors.New("Error retrieving minimum ether requirement: " + err.Error())
+            } else {
+                minEtherBalanceChannel <- *minNodeAccountEtherBalanceWei
+            }
+        })()
+
+        // Get node account ether balance
+        go (func() {
+            nodeAccountEtherBalanceWei, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
+            if err != nil {
+                balanceErrorChannel <- errors.New("Error retrieving node account balance: " + err.Error())
+            } else {
+                etherBalanceChannel <- nodeAccountEtherBalanceWei
+            }
+        })()
+
+        // Receive balance data
+        var minNodeAccountEtherBalanceWei *big.Int
+        var nodeAccountEtherBalanceWei *big.Int
+        for received := 0; received < 2; {
+            select {
+                case minNodeAccountEtherBalanceWei = <-minEtherBalanceChannel:
+                    received++
+                case nodeAccountEtherBalanceWei = <-etherBalanceChannel:
+                    received++
+                case err := <-balanceErrorChannel:
+                    errorChannel <- err
+                    return
+            }
+        }
+
+        // Check node account ether balance
+        if nodeAccountEtherBalanceWei.Cmp(minNodeAccountEtherBalanceWei) < 0 {
+            messageChannel <- fmt.Sprintf("Node account requires a minimum balance of %.2f ETH to register", eth.WeiToEth(minNodeAccountEtherBalanceWei))
+        } else {
+            successChannel <- true
+        }
+
+    })()
+
+    // Receive status
+    for received := 0; received < 3; {
+        select {
+            case <-successChannel:
+                received++
+            case msg := <-messageChannel:
+                fmt.Println(msg)
+                return nil
+            case err := <-errorChannel:
+                return err
+        }
     }
 
     // Prompt user for timezone
@@ -82,7 +140,7 @@ func registerNode(c *cli.Context) error {
     }
 
     // Get node contract address
-    nodeContractAddress = new(common.Address)
+    nodeContractAddress := new(common.Address)
     err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error retrieving node contract address: " + err.Error())
