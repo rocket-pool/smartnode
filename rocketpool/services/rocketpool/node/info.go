@@ -1,11 +1,14 @@
 package node
 
 import (
+    "context"
     "errors"
     "math/big"
     "time"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/ethclient"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
 )
@@ -25,6 +28,57 @@ type ReservationDetails struct {
     EtherRequiredWei *big.Int
     RplRequiredWei *big.Int
     ExpiryTime time.Time
+}
+
+
+// Get a node account's balances
+// Requires rocketPoolToken contract to be loaded with contract manager
+func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Client, cm *rocketpool.ContractManager) (*Balances, error) {
+
+    // Account balances
+    balances := &Balances{}
+
+    // Balance data channels
+    etherBalanceChannel := make(chan *big.Int)
+    rplBalanceChannel := make(chan *big.Int)
+    errorChannel := make(chan error)
+
+    // Get node account ether balance
+    go (func() {
+        etherBalanceWei, err := client.BalanceAt(context.Background(), nodeAccountAddress, nil)
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving node account ether balance: " + err.Error())
+        } else {
+            etherBalanceChannel <- etherBalanceWei
+        }
+    })()
+
+    // Get node account RPL balance
+    go (func() {
+        rplBalanceWei := new(*big.Int)
+        err := cm.Contracts["rocketPoolToken"].Call(nil, rplBalanceWei, "balanceOf", nodeAccountAddress)
+        if err != nil {
+            errorChannel <- errors.New("Error retrieving node account RPL balance: " + err.Error())
+        } else {
+            rplBalanceChannel <- *rplBalanceWei
+        }
+    })()
+
+    // Receive balances
+    for received := 0; received < 2; {
+        select {
+            case balances.EtherWei = <-etherBalanceChannel:
+                received++
+            case balances.RplWei = <-rplBalanceChannel:
+                received++
+            case err := <-errorChannel:
+                return nil, err
+        }
+    }
+
+    // Return
+    return balances, nil
+
 }
 
 

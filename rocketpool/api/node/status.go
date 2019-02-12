@@ -2,10 +2,8 @@ package node
 
 import (
     "bytes"
-    "context"
     "errors"
     "fmt"
-    "math/big"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
@@ -52,25 +50,18 @@ func getNodeStatus(c *cli.Context) error {
         return err
     }
 
-    // Get node account ether balance
-    nodeAccountEtherBalanceWei, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
+    // Get node account balances
+    accountBalances, err := node.GetAccountBalances(am.GetNodeAccount().Address, client, rp)
     if err != nil {
-        return errors.New("Error retrieving node account ether balance: " + err.Error())
-    }
-
-    // Get node account RPL balance
-    nodeAccountRplBalanceWei := new(*big.Int)
-    err = rp.Contracts["rocketPoolToken"].Call(nil, nodeAccountRplBalanceWei, "balanceOf", am.GetNodeAccount().Address)
-    if err != nil {
-        return errors.New("Error retrieving node account RPL balance: " + err.Error())
+        return err
     }
 
     // Log
     fmt.Println(fmt.Sprintf(
         "Node account %s has a balance of %.2f ETH and %.2f RPL",
         am.GetNodeAccount().Address.Hex(),
-        eth.WeiToEth(nodeAccountEtherBalanceWei),
-        eth.WeiToEth(*nodeAccountRplBalanceWei)))
+        eth.WeiToEth(accountBalances.EtherWei),
+        eth.WeiToEth(accountBalances.RplWei)))
 
     // Check if node is registered & get node contract address
     nodeContractAddress := new(common.Address)
