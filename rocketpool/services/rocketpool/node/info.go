@@ -82,7 +82,7 @@ func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Cli
 }
 
 
-// Get a node's balances
+// Get a node contract's balances
 func GetBalances(nodeContract *bind.BoundContract) (*Balances, error) {
 
     // Node balances
