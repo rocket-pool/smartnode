@@ -64,7 +64,7 @@ func getNodeStatus(c *cli.Context) error {
     // Get node timezone
     go (func() {
         timezone := new(string)
-        err = rp.Contracts["rocketNodeAPI"].Call(nil, timezone, "getTimezoneLocation", am.GetNodeAccount().Address)
+        err := rp.Contracts["rocketNodeAPI"].Call(nil, timezone, "getTimezoneLocation", am.GetNodeAccount().Address)
         if err != nil {
             errorChannel <- errors.New("Error retrieving node timezone: " + err.Error())
         } else {

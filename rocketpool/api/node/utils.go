@@ -43,14 +43,36 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountReq
         return nil, nil, nil, "", err
     }
 
+    // Loading channels
+    successChannel := make(chan bool)
+    errorChannel := make(chan error)
+
     // Load Rocket Pool contracts
-    err = rp.LoadContracts(loadContracts)
-    if err != nil {
-        return nil, nil, nil, "", err
-    }
-    err = rp.LoadABIs(loadAbis)
-    if err != nil {
-        return nil, nil, nil, "", err
+    go (func() {
+        err := rp.LoadContracts(loadContracts)
+        if err != nil {
+            errorChannel <- err
+        } else {
+            successChannel <- true
+        }
+    })()
+    go (func() {
+        err := rp.LoadABIs(loadAbis)
+        if err != nil {
+            errorChannel <- err
+        } else {
+            successChannel <- true
+        }
+    })()
+
+    // Await loading
+    for received := 0; received < 2; {
+        select {
+            case <-successChannel:
+                received++
+            case err := <-errorChannel:
+                return nil, nil, nil, "", err
+        }
     }
 
     // Return
