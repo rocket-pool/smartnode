@@ -147,7 +147,7 @@ func registerNode(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Println("Node registered successfully with contract:", nodeContractAddress.Hex())
+    fmt.Println("Node registered successfully with contract at", nodeContractAddress.Hex())
     return nil
 
 }
