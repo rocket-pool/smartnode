@@ -1,7 +1,6 @@
 package deposit
 
 import (
-    "context"
     "errors"
     "fmt"
     "math/big"
@@ -19,7 +18,7 @@ import (
 func completeDeposit(c *cli.Context) error {
 
     // Command setup
-    am, client, rp, nodeContract, message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings"})
+    am, client, rp, nodeContractAddress, nodeContract, message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPoolToken"})
     if message != "" {
         fmt.Println(message)
         return nil
@@ -86,16 +85,27 @@ func completeDeposit(c *cli.Context) error {
     }
 
     // Balance channels
-    balancesChannel := make(chan *node.Balances)
+    accountBalancesChannel := make(chan *node.Balances)
+    nodeBalancesChannel := make(chan *node.Balances)
     requiredBalancesChannel := make(chan *node.Balances)
 
-    // Get node balances
+    // Get node account balances
     go (func() {
-        balances, err := node.GetBalances(nodeContract)
+        accountBalances, err := node.GetAccountBalances(am.GetNodeAccount().Address, client, rp)
         if err != nil {
             errorChannel <- err
         } else {
-            balancesChannel <- balances
+            accountBalancesChannel <- accountBalances
+        }
+    })()
+
+    // Get node balances
+    go (func() {
+        nodeBalances, err := node.GetBalances(nodeContract)
+        if err != nil {
+            errorChannel <- err
+        } else {
+            nodeBalancesChannel <- nodeBalances
         }
     })()
 
@@ -110,11 +120,14 @@ func completeDeposit(c *cli.Context) error {
     })()
 
     // Receive balances
-    var balances *node.Balances
+    var accountBalances *node.Balances
+    var nodeBalances *node.Balances
     var requiredBalances *node.Balances
-    for received := 0; received < 2; {
+    for received := 0; received < 3; {
         select {
-            case balances = <-balancesChannel:
+            case accountBalances = <-accountBalancesChannel:
+                received++
+            case nodeBalances = <-nodeBalancesChannel:
                 received++
             case requiredBalances = <-requiredBalancesChannel:
                 received++
@@ -123,33 +136,27 @@ func completeDeposit(c *cli.Context) error {
         }
     }
 
-    // Check node RPL balance
-    if balances.RplWei.Cmp(requiredBalances.RplWei) < 0 {
-        fmt.Println(fmt.Sprintf("Node balance of %.2f RPL is not enough to cover requirement of %.2f RPL", eth.WeiToEth(balances.RplWei), eth.WeiToEth(requiredBalances.RplWei)))
-        return nil
+    // Get node account transactor
+    nodeAccountTransactor, err := am.GetNodeAccountTransactor()
+    if err != nil {
+        return err
     }
 
     // Check node ether balance and get required deposit transaction value
     depositTransactionValueWei := new(big.Int)
-    if balances.EtherWei.Cmp(requiredBalances.EtherWei) < 0 {
+    if nodeBalances.EtherWei.Cmp(requiredBalances.EtherWei) < 0 {
 
         // Get remaining ether balance required
         remainingEtherRequiredWei := new(big.Int)
-        remainingEtherRequiredWei.Sub(requiredBalances.EtherWei, balances.EtherWei)
-
-        // Get node account balance
-        nodeAccountEtherBalanceWei, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil)
-        if err != nil {
-            return errors.New("Error retrieving node account balance: " + err.Error())
-        }
+        remainingEtherRequiredWei.Sub(requiredBalances.EtherWei, nodeBalances.EtherWei)
 
         // Check node account balance
-        if nodeAccountEtherBalanceWei.Cmp(remainingEtherRequiredWei) < 0 {
-            fmt.Println(fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH", eth.WeiToEth(balances.EtherWei), eth.WeiToEth(nodeAccountEtherBalanceWei), eth.WeiToEth(requiredBalances.EtherWei)))
+        if accountBalances.EtherWei.Cmp(remainingEtherRequiredWei) < 0 {
+            fmt.Println(fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH", eth.WeiToEth(nodeBalances.EtherWei), eth.WeiToEth(accountBalances.EtherWei), eth.WeiToEth(requiredBalances.EtherWei)))
             return nil
         }
 
-        // Confirm payment of remaining required ether
+        // Confirm transfer of remaining required ether
         response := cliutils.Prompt(fmt.Sprintf("Node contract requires another %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingEtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             fmt.Println("Deposit not completed")
@@ -161,17 +168,40 @@ func completeDeposit(c *cli.Context) error {
 
     }
 
-    // Get node account transactor
-    nodeAccountTransactor, err := am.GetNodeAccountTransactor()
-    if err != nil {
-        return err
+    // Check node RPL balance and transfer remaining required RPL
+    if nodeBalances.RplWei.Cmp(requiredBalances.RplWei) < 0 {
+
+        // Get remaining RPL balance required
+        remainingRplRequiredWei := new(big.Int)
+        remainingRplRequiredWei.Sub(requiredBalances.RplWei, nodeBalances.RplWei)
+
+        // Check node account balance
+        if accountBalances.RplWei.Cmp(remainingRplRequiredWei) < 0 {
+            fmt.Println(fmt.Sprintf("Node balance of %.2f RPL plus account balance of %.2f RPL is not enough to cover requirement of %.2f RPL", eth.WeiToEth(nodeBalances.RplWei), eth.WeiToEth(accountBalances.RplWei), eth.WeiToEth(requiredBalances.RplWei)))
+            return nil
+        }
+
+        // Confirm transfer of remaining required RPL
+        response := cliutils.Prompt(fmt.Sprintf("Node contract requires another %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingRplRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        if strings.ToLower(response[:1]) == "n" {
+            fmt.Println("Deposit not completed")
+            return nil
+        }
+
+        // Transfer remaining required RPL
+        nodeAccountTransactor.Value = big.NewInt(0)
+        _, err = rp.Contracts["rocketPoolToken"].Transact(nodeAccountTransactor, "transfer", nodeContractAddress, remainingRplRequiredWei)
+        if err != nil {
+            return errors.New("Error transferring RPL to node contract: " + err.Error())
+        }
+
     }
 
     // Complete deposit
     nodeAccountTransactor.Value = depositTransactionValueWei
     _, err = nodeContract.Transact(nodeAccountTransactor, "deposit")
     if err != nil {
-        return errors.New("Error canceling deposit reservation: " + err.Error())
+        return errors.New("Error completing deposit: " + err.Error())
     }
 
     // Log & return
