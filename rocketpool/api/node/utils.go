@@ -9,6 +9,7 @@ import (
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
 )
 
+
 // Prompt user for a time zone string
 func promptTimezone() string {
 
