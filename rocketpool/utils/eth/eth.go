@@ -5,6 +5,7 @@ import (
     "context"
     "errors"
     "math/big"
+    "reflect"
 
     "github.com/ethereum/go-ethereum/accounts/abi"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -64,10 +65,14 @@ func KeccakStr(src string) [32]byte {
 
 
 // Get contract events from a transaction
+// eventPrototype must be an event struct and not a pointer to one
 func GetTransactionEvents(client *ethclient.Client, tx *types.Transaction, contractAddress *common.Address, contractAbi *abi.ABI, eventName string, eventPrototype interface{}) ([]interface{}, error) {
 
     // Create contract instance
     contract := bind.NewBoundContract(*contractAddress, *contractAbi, client, client, client)
+
+    // Get event type from prototype
+    eventType := reflect.TypeOf(eventPrototype)
 
     // Get transaction receipt
     receipt, err := client.TransactionReceipt(context.Background(), tx.Hash())
@@ -90,7 +95,7 @@ func GetTransactionEvents(client *ethclient.Client, tx *types.Transaction, contr
         }
 
         // Unpack event
-        event := eventPrototype
+        event := reflect.New(eventType).Interface()
         err = contract.UnpackLog(event, eventName, *log)
         if err != nil {
             return nil, errors.New("Error unpacking event: " + err.Error())

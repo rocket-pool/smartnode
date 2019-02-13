@@ -214,7 +214,7 @@ func completeDeposit(c *cli.Context) error {
     }
 
     // Get minipool created event
-    minipoolCreatedEvents, err := eth.GetTransactionEvents(client, tx, rp.Addresses["rocketPool"], rp.Abis["rocketPool"], "PoolCreated", new(PoolCreated))
+    minipoolCreatedEvents, err := eth.GetTransactionEvents(client, tx, rp.Addresses["rocketPool"], rp.Abis["rocketPool"], "PoolCreated", PoolCreated{})
     if err != nil {
         return errors.New("Error retrieving deposit transaction minipool created event: " + err.Error())
     }
