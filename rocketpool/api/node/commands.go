@@ -1,6 +1,9 @@
 package node
 
 import (
+    "strconv"
+    "strings"
+
     "github.com/urfave/cli"
 
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
@@ -71,6 +74,50 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run command
                     return registerNode(c)
+
+                },
+            },
+
+            // Withdraw resources from the node
+            cli.Command{
+                Name:      "withdraw",
+                Aliases:   []string{"w"},
+                Usage:     "Withdraw resources from the node",
+                UsageText: "rocketpool node withdraw amount unit" + "\n   " +
+                           "- amount must be a decimal number" + "\n   " +
+                           "- valid units are 'eth' and 'rpl'",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var amount float64
+                    var unit string
+
+                    // Validate arguments
+                    err := cliutils.ValidateArgs(c, 2, func(messages *[]string) {
+                        var err error
+
+                        // Parse amount
+                        amount, err = strconv.ParseFloat(c.Args().Get(0), 64)
+                        if err != nil {
+                            *messages = append(*messages, "Invalid amount - must be a decimal number")
+                        }
+
+                        // Parse unit
+                        unit = strings.ToLower(c.Args().Get(1))
+                        switch unit {
+                            case "eth":
+                            case "rpl":
+                            default:
+                                *messages = append(*messages, "Invalid unit - valid units are 'eth' and 'rpl'")
+                        }
+
+                    })
+                    if err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return withdrawFromNode(c, amount, unit)
 
                 },
             },
