@@ -22,8 +22,9 @@ import (
 type ContractManager struct {
     client          *ethclient.Client
     RocketStorage   *contracts.RocketStorage
+    Addresses       map[string]*common.Address
+    Abis            map[string]*abi.ABI
     Contracts       map[string]*bind.BoundContract
-    abis            map[string]*abi.ABI
 }
 
 
@@ -42,8 +43,9 @@ func NewContractManager(client *ethclient.Client, rocketStorageAddress string) (
     return &ContractManager{
         client: client,
         RocketStorage: rocketStorage,
+        Addresses: make(map[string]*common.Address),
+        Abis: make(map[string]*abi.ABI),
         Contracts: make(map[string]*bind.BoundContract),
-        abis: make(map[string]*abi.ABI),
     }, nil
 
 }
@@ -54,23 +56,41 @@ func NewContractManager(client *ethclient.Client, rocketStorageAddress string) (
  */
 func (cm *ContractManager) LoadContracts(contractNames []string) error {
 
-    // Load contracts
-    contractChannels := make(map[string]chan *bind.BoundContract)
+    // Load contract addresses and ABIs
+    addressChannels := make(map[string]chan *common.Address)
+    abiChannels := make(map[string]chan *abi.ABI)
     errorChannels := make(map[string]chan error)
     for _, contractName := range contractNames {
-        contractChannels[contractName] = make(chan *bind.BoundContract)
+        addressChannels[contractName] = make(chan *common.Address)
+        abiChannels[contractName] = make(chan *abi.ABI)
         errorChannels[contractName] = make(chan error)
-        go loadContract(cm.client, cm.RocketStorage, contractName, contractChannels[contractName], errorChannels[contractName])
+        go loadContractAddress(cm.RocketStorage, contractName, addressChannels[contractName], errorChannels[contractName])
+        go loadContractABI(cm.RocketStorage, contractName, abiChannels[contractName], errorChannels[contractName])
     }
 
-    // Receive loaded contracts
+    // Receive loaded contract data and initialise
     errs := []string{"Error loading Rocket Pool contracts:"}
     for _, contractName := range contractNames {
-        select {
-            case cm.Contracts[contractName] = <-contractChannels[contractName]:
-            case err := <-errorChannels[contractName]:
-                errs = append(errs, "Error loading contract " + contractName + ": " + err.Error())
+
+        // Receive contract data
+        received := 0
+        for received != -1 && received < 2 {
+            select {
+                case cm.Addresses[contractName] = <-addressChannels[contractName]:
+                    received++
+                case cm.Abis[contractName] = <-abiChannels[contractName]:
+                    received++
+                case err := <-errorChannels[contractName]:
+                    errs = append(errs, "Error loading contract " + contractName + ": " + err.Error())
+                    received = -1
+            }
         }
+
+        // Initialise contract
+        if received != -1 {
+            cm.Contracts[contractName] = bind.NewBoundContract(*(cm.Addresses[contractName]), *(cm.Abis[contractName]), cm.client, cm.client, cm.client)
+        }
+
     }
 
     // Return
@@ -101,7 +121,7 @@ func (cm *ContractManager) LoadABIs(contractNames []string) error {
     errs := []string{"Error loading Rocket Pool contract ABIs:"}
     for _, contractName := range contractNames {
         select {
-            case cm.abis[contractName] = <-abiChannels[contractName]:
+            case cm.Abis[contractName] = <-abiChannels[contractName]:
             case err := <-errorChannels[contractName]:
                 errs = append(errs, "Error loading contract " + contractName + " ABI: " + err.Error())
         }
@@ -123,7 +143,7 @@ func (cm *ContractManager) LoadABIs(contractNames []string) error {
 func (cm *ContractManager) NewContract(address *common.Address, contractName string) (*bind.BoundContract, error) {
 
     // Get ABI
-    abi, ok := cm.abis[contractName]
+    abi, ok := cm.Abis[contractName]
     if !ok {
         return nil, errors.New(fmt.Sprintf("Error initialising Rocket Pool contract %s: ABI not loaded", contractName))
     }
@@ -135,35 +155,16 @@ func (cm *ContractManager) NewContract(address *common.Address, contractName str
 
 
 /**
- * Load and initialise a contract from stored chain data
- */
-func loadContract(client bind.ContractBackend, rocketStorage *contracts.RocketStorage, name string, contractChannel chan *bind.BoundContract, errorChannel chan error) {
-
-    // Load contract address from storage
-    addressChannel := make(chan common.Address)
-    go loadContractAddress(rocketStorage, name, addressChannel, errorChannel)
-
-    // Load contract ABI from storage
-    abiChannel := make(chan *abi.ABI)
-    go loadContractABI(rocketStorage, name, abiChannel, errorChannel)
-
-    // Initialise and send contract
-    contractChannel <- bind.NewBoundContract(<-addressChannel, *(<-abiChannel), client, client, client)
-
-}
-
-
-/**
  * Load a contract address from stored chain data
  */
-func loadContractAddress(rocketStorage *contracts.RocketStorage, name string, addressChannel chan common.Address, errorChannel chan error) {
+func loadContractAddress(rocketStorage *contracts.RocketStorage, name string, addressChannel chan *common.Address, errorChannel chan error) {
 
     // Get contract address
     address, err := rocketStorage.GetAddress(nil, eth.KeccakStr("contract.name" + name))
     if err != nil {
         errorChannel <- errors.New("Error retrieving contract address: " + err.Error())
     } else {
-        addressChannel <- address
+        addressChannel <- &address
     }
 
 }
