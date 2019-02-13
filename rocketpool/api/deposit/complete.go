@@ -6,6 +6,7 @@ import (
     "math/big"
     "strings"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
@@ -14,11 +15,19 @@ import (
 )
 
 
+// RocketPool PoolCreated event
+type PoolCreated struct {
+    Address common.Address
+    DurationID [32]byte
+    Created *big.Int
+}
+
+
 // Complete a node deposit
 func completeDeposit(c *cli.Context) error {
 
     // Command setup
-    am, client, rp, nodeContractAddress, nodeContract, message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPoolToken"})
+    am, client, rp, nodeContractAddress, nodeContract, message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"})
     if message != "" {
         fmt.Println(message)
         return nil
@@ -199,13 +208,23 @@ func completeDeposit(c *cli.Context) error {
 
     // Complete deposit
     nodeAccountTransactor.Value = depositTransactionValueWei
-    _, err = nodeContract.Transact(nodeAccountTransactor, "deposit")
+    tx, err := nodeContract.Transact(nodeAccountTransactor, "deposit")
     if err != nil {
         return errors.New("Error completing deposit: " + err.Error())
     }
 
+    // Get minipool created event
+    minipoolCreatedEvents, err := eth.GetTransactionEvents(client, tx, rp.Addresses["rocketPool"], rp.Abis["rocketPool"], "PoolCreated", new(PoolCreated))
+    if err != nil {
+        return errors.New("Error retrieving deposit transaction minipool created event: " + err.Error())
+    }
+    if len(minipoolCreatedEvents) == 0 {
+        return errors.New("Could not retrieve deposit transaction minipool created event")
+    }
+    minipoolCreatedEvent := (minipoolCreatedEvents[0]).(*PoolCreated)
+
     // Log & return
-    fmt.Println("Deposit completed successfully")
+    fmt.Println("Deposit completed successfully, minipool created at", minipoolCreatedEvent.Address.Hex())
     return nil
 
 }

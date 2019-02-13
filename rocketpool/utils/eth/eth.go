@@ -1,9 +1,17 @@
 package eth
 
 import (
+    "bytes"
+    "context"
+    "errors"
     "math/big"
 
+    "github.com/ethereum/go-ethereum/accounts/abi"
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/crypto/sha3"
+    "github.com/ethereum/go-ethereum/ethclient"
 )
 
 
@@ -52,5 +60,47 @@ func KeccakBytes(src []byte) [32]byte {
 // Make a keccak256 hash of a source string and return as a 32-byte array
 func KeccakStr(src string) [32]byte {
     return KeccakBytes([]byte(src))
+}
+
+
+// Get contract events from a transaction
+func GetTransactionEvents(client *ethclient.Client, tx *types.Transaction, contractAddress *common.Address, contractAbi *abi.ABI, eventName string, eventPrototype interface{}) ([]interface{}, error) {
+
+    // Create contract instance
+    contract := bind.NewBoundContract(*contractAddress, *contractAbi, client, client, client)
+
+    // Get transaction receipt
+    receipt, err := client.TransactionReceipt(context.Background(), tx.Hash())
+    if err != nil {
+        return nil, errors.New("Error retrieving transaction receipt: " + err.Error())
+    }
+
+    // Process transaction receipt logs
+    events := make([]interface{}, 0)
+    for _, log := range receipt.Logs {
+
+        // Check log address matches contract address
+        if !bytes.Equal(log.Address.Bytes(), contractAddress.Bytes()) {
+            continue
+        }
+
+        // Check log first topic matches event ID
+        if len(log.Topics) == 0 || !bytes.Equal(log.Topics[0].Bytes(), contractAbi.Events[eventName].Id().Bytes()) {
+            continue
+        }
+
+        // Unpack event
+        event := eventPrototype
+        err = contract.UnpackLog(event, eventName, *log)
+        if err != nil {
+            return nil, errors.New("Error unpacking event: " + err.Error())
+        }
+        events = append(events, event)
+
+    }
+
+    // Return events
+    return events, nil
+
 }
 
