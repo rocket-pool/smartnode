@@ -1,4 +1,5 @@
 .DS_Store
-/scripts
+node_modules
+/scripts/package-lock.json
 /rocketpool/contracts
 !/rocketpool/contracts/rocket-storage.go
