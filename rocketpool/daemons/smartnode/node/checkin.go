@@ -49,14 +49,16 @@ func StartCheckinProcess(c *cli.Context, errors chan error, fatalErrors chan err
     // Initialise checkin timer
     checkinTimer := time.NewTimer(nextCheckinDuration)
     for _ = range checkinTimer.C {
-        checkin(db, checkinTimer, checkinInterval, errors)
+        checkin(db, checkinTimer, &checkinInterval, errors)
     }
 
 }
 
 
 // Perform node checkin
-func checkin(db *database.Database, checkinTimer *time.Timer, checkinInterval time.Duration, errors chan error) {
+func checkin(db *database.Database, checkinTimer *time.Timer, checkinInterval *time.Duration, errors chan error) {
+
+
 
     // Set last checkin time
     if err := db.Open(); err != nil {
@@ -71,7 +73,7 @@ func checkin(db *database.Database, checkinTimer *time.Timer, checkinInterval ti
     }
 
     // Reset timer for next checkin
-    checkinTimer.Reset(checkinInterval)
+    checkinTimer.Reset(*checkinInterval)
 
 }
 
