@@ -17,7 +17,7 @@ import (
 
 
 // Conversion factor from wei to eth
-const WEI_PER_ETH = 1000000000000000000
+const WEI_PER_ETH float64 = 1000000000000000000
 
 
 // Convert wei to eth

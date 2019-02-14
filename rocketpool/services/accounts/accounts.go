@@ -11,7 +11,7 @@ import (
 
 
 // Keystore passphrase
-const PASSPHRASE = ""
+const PASSPHRASE string = ""
 
 
 // Account manager
