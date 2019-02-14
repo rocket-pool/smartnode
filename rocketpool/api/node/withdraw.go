@@ -50,10 +50,10 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     var balanceMethod string
     var withdrawMethod string
     switch unit {
-        case "eth":
+        case "ETH":
             balanceMethod = "getBalanceETH"
             withdrawMethod = "withdrawEther"
-        case "rpl":
+        case "RPL":
             balanceMethod = "getBalanceRPL"
             withdrawMethod = "withdrawRPL"
     }
@@ -66,6 +66,7 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     }
     if amountWei.Cmp(*balanceWei) > 0 {
         fmt.Println("Withdrawal amount exceeds available balance on node contract")
+        return nil
     }
 
     // Get node account transactor

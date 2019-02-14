@@ -84,7 +84,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"w"},
                 Usage:     "Withdraw resources from the node",
                 UsageText: "rocketpool node withdraw amount unit" + "\n   " +
-                           "- amount must be a decimal number" + "\n   " +
+                           "- amount must be a positive decimal number" + "\n   " +
                            "- valid units are 'eth' and 'rpl'",
                 Action: func(c *cli.Context) error {
 
@@ -98,17 +98,17 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                         // Parse amount
                         amount, err = strconv.ParseFloat(c.Args().Get(0), 64)
-                        if err != nil {
-                            *messages = append(*messages, "Invalid amount - must be a decimal number")
+                        if err != nil || amount <= 0 {
+                            *messages = append(*messages, "Invalid amount - must be a positive decimal number")
                         }
 
                         // Parse unit
-                        unit = strings.ToLower(c.Args().Get(1))
+                        unit = strings.ToUpper(c.Args().Get(1))
                         switch unit {
-                            case "eth":
-                            case "rpl":
+                            case "ETH":
+                            case "RPL":
                             default:
-                                *messages = append(*messages, "Invalid unit - valid units are 'eth' and 'rpl'")
+                                *messages = append(*messages, "Invalid unit - valid units are 'ETH' and 'RPL'")
                         }
 
                     })
