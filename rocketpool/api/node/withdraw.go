@@ -76,6 +76,7 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     }
 
     // Withdraw amount
+    nodeAccountTransactor.GasLimit = 100000 // Gas estimates on this method are incorrect
     _, err = nodeContract.Transact(nodeAccountTransactor, withdrawMethod, amountWei)
     if err != nil {
         return errors.New("Error withdrawing from node contract: " + err.Error())
