@@ -34,7 +34,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 
 // Get service commands
-func serviceCommands(name string, run func()) []cli.Command {
+func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
     return []cli.Command{
 
         // Install daemon service
@@ -272,8 +272,7 @@ func serviceCommands(name string, run func()) []cli.Command {
                 }
 
                 // Run command
-                run()
-                return nil
+                return run(c)
 
             },
         },
