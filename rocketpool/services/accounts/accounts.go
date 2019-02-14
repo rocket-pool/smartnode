@@ -50,7 +50,11 @@ func (am *AccountManager) GetNodeAccount() accounts.Account {
  * Create the node account
  */
 func (am *AccountManager) CreateNodeAccount() (accounts.Account, error) {
-    return am.ks.NewAccount(PASSPHRASE)
+    account, err := am.ks.NewAccount(PASSPHRASE)
+    if err != nil {
+        return accounts.Account{}, errors.New("Error creating node account: " + err.Error())
+    }
+    return account, nil
 }
 
 
