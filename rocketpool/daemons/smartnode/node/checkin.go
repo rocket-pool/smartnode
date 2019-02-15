@@ -10,6 +10,8 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/shirou/gopsutil/cpu"
+    "github.com/shirou/gopsutil/load"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
@@ -20,7 +22,7 @@ import (
 
 
 // Config
-const CHECKIN_INTERVAL string = "5s"
+const CHECKIN_INTERVAL string = "15s"
 const NODE_FEE_VOTE_NO_CHANGE int64 = 0
 const NODE_FEE_VOTE_INCREASE int64 = 1
 const NODE_FEE_VOTE_DECREASE int64 = 2
@@ -83,6 +85,21 @@ func checkin(db *database.Database, checkinTimer *time.Timer, errorChannel chan 
     // Log
     fmt.Println("Checking in...")
 
+    // Get server load based on average load and CPU info
+    var serverLoad float64
+    if load, err := load.Avg(); err != nil {
+        errorChannel <- errors.New("Error retrieving system CPU load: " + err.Error())
+    } else {
+        if cpus, err := cpu.Info(); err != nil {
+            errorChannel <- errors.New("Error retrieving system CPU information: " + err.Error())
+        } else {
+            var cores int32 = 0
+            for _, cpu := range cpus { cores += cpu.Cores }
+            serverLoad = load.Load15 / float64(cores)
+            if serverLoad > 1 { serverLoad = 1 }
+        }
+    }
+
     // Get target user fee
     targetUserFeePerc := new(float64)
     *targetUserFeePerc = -1
@@ -128,11 +145,20 @@ func checkin(db *database.Database, checkinTimer *time.Timer, errorChannel chan 
     if txor, err := am.GetNodeAccountTransactor(); err != nil {
         errorChannel <- err
     } else {
-        txor.GasLimit = 200000 // Gas estimates on this method are incorrect
-        if _, err := nodeContract.Transact(txor, "checkin", big.NewInt(0), big.NewInt(nodeFeeVote)); err != nil {
+        txor.GasLimit = 250000 // Gas estimates on this method are incorrect
+        if _, err := nodeContract.Transact(txor, "checkin", eth.EthToWei(serverLoad), big.NewInt(nodeFeeVote)); err != nil {
             errorChannel <- errors.New("Error checking in with Rocket Pool: " + err.Error())
         } else {
-            fmt.Println(fmt.Sprintf("Checked in successfully with average load of %.2f and node fee vote of %d", 0.00, nodeFeeVote))
+
+            // Log success
+            var nodeFeeVoteType string
+            switch nodeFeeVote {
+                case NODE_FEE_VOTE_NO_CHANGE: nodeFeeVoteType = "no change"
+                case NODE_FEE_VOTE_INCREASE: nodeFeeVoteType = "increase"
+                case NODE_FEE_VOTE_DECREASE: nodeFeeVoteType = "decrease"
+            }
+            fmt.Println(fmt.Sprintf("Checked in successfully with an average load of %.2f%% and a node fee vote of '%s'", serverLoad * 100, nodeFeeVoteType))
+
         }
     }
 
