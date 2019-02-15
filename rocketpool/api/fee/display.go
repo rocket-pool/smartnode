@@ -18,8 +18,8 @@ import (
 func displayUserFee(c *cli.Context) error {
 
     // Initialise database
-    db, err := database.NewDatabase(c.GlobalString("database"))
-    if err != nil {
+    db := database.NewDatabase(c.GlobalString("database"))
+    if err := db.Open(); err != nil {
         return err
     }
     defer db.Close()

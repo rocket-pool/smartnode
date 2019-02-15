@@ -14,14 +14,14 @@ import (
 func setTargetUserFee(c *cli.Context, feePercent float64) error {
 
     // Initialise database
-    db, err := database.NewDatabase(c.GlobalString("database"))
-    if err != nil {
+    db := database.NewDatabase(c.GlobalString("database"))
+    if err := db.Open(); err != nil {
         return err
     }
     defer db.Close()
 
     // Set target user fee percent
-    err = db.Put("user.fee.target", feePercent)
+    err := db.Put("user.fee.target", feePercent)
     if err != nil {
         return errors.New("Error setting target user fee percentage: " + err.Error())
     }

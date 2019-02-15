@@ -17,18 +17,18 @@ const CHECKIN_INTERVAL string = "15s"
 func StartCheckinProcess(c *cli.Context, errors chan error, fatalErrors chan error) {
 
     // Initialise database
-    db, err := database.NewDatabase(c.GlobalString("database"))
-    if err != nil {
+    db := database.NewDatabase(c.GlobalString("database"))
+    if err := db.Open(); err != nil {
         fatalErrors <- err
         return
     }
 
     // Get last checkin time
     lastCheckinTime := new(int64)
-    if err = db.Get("node.checkin.latest", lastCheckinTime); err != nil {
+    if err := db.Get("node.checkin.latest", lastCheckinTime); err != nil {
         *lastCheckinTime = 0
     }
-    if err = db.Close(); err != nil {
+    if err := db.Close(); err != nil {
         errors <- err
     }
 

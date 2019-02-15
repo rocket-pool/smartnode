@@ -17,21 +17,10 @@ type Database struct {
 /**
  * Create database
  */
-func NewDatabase(path string) (*Database, error) {
-
-    // Initialise
-    db := &Database{
+func NewDatabase(path string) *Database {
+    return &Database{
         path: path,
     }
-
-    // Open
-    if err := db.Open(); err != nil {
-        return nil, err
-    }
-
-    // Return
-    return db, nil
-
 }
 
 
