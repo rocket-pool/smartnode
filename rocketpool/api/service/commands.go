@@ -46,20 +46,17 @@ func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
             Action: func(c *cli.Context) error {
 
                 // Validate arguments
-                err := cliutils.ValidateArgs(c, 0, nil)
-                if err != nil {
+                if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                     return err
                 }
 
                 // Check user ID
-                id := os.Geteuid()
-                if id != 0 {
+                if os.Geteuid() != 0 {
                     return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " install'", 1)
                 }
 
                 // Run command
-                err = daemons.Install(name)
-                if err != nil {
+                if err := daemons.Install(name); err != nil {
                     return cli.NewExitError("The " + name + " daemon service could not be installed: " + err.Error(), 1)
                 }
 
@@ -79,20 +76,17 @@ func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
             Action: func(c *cli.Context) error {
 
                 // Validate arguments
-                err := cliutils.ValidateArgs(c, 0, nil)
-                if err != nil {
+                if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                     return err
                 }
 
                 // Check user ID
-                id := os.Geteuid()
-                if id != 0 {
+                if os.Geteuid() != 0 {
                     return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " uninstall'", 1)
                 }
 
                 // Run command
-                err = daemons.Uninstall(name)
-                if err != nil {
+                if err := daemons.Uninstall(name); err != nil {
                     return cli.NewExitError("The " + name + " daemon service could not be uninstalled: " + err.Error(), 1)
                 }
 
@@ -112,20 +106,17 @@ func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
             Action: func(c *cli.Context) error {
 
                 // Validate arguments
-                err := cliutils.ValidateArgs(c, 0, nil)
-                if err != nil {
+                if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                     return err
                 }
 
                 // Check user ID
-                id := os.Geteuid()
-                if id != 0 {
+                if os.Geteuid() != 0 {
                     return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " enable'", 1)
                 }
 
                 // Run command
-                err = daemons.Enable(name)
-                if err != nil {
+                if err := daemons.Enable(name); err != nil {
                     return cli.NewExitError("The " + name + " daemon service could not be enabled: " + err.Error(), 1)
                 }
 
@@ -145,20 +136,17 @@ func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
             Action: func(c *cli.Context) error {
 
                 // Validate arguments
-                err := cliutils.ValidateArgs(c, 0, nil)
-                if err != nil {
+                if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                     return err
                 }
 
                 // Check user ID
-                id := os.Geteuid()
-                if id != 0 {
+                if os.Geteuid() != 0 {
                     return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " disable'", 1)
                 }
 
                 // Run command
-                err = daemons.Disable(name)
-                if err != nil {
+                if err := daemons.Disable(name); err != nil {
                     return cli.NewExitError("The " + name + " daemon service could not be disabled: " + err.Error(), 1)
                 }
 
@@ -178,20 +166,17 @@ func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
             Action: func(c *cli.Context) error {
 
                 // Validate arguments
-                err := cliutils.ValidateArgs(c, 0, nil)
-                if err != nil {
+                if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                     return err
                 }
 
                 // Check user ID
-                id := os.Geteuid()
-                if id != 0 {
+                if os.Geteuid() != 0 {
                     return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " start'", 1)
                 }
 
                 // Run command
-                err = daemons.Start(name)
-                if err != nil {
+                if err := daemons.Start(name); err != nil {
                     return cli.NewExitError("The " + name + " daemon service could not be started: " + err.Error(), 1)
                 }
 
@@ -210,20 +195,17 @@ func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
             Action: func(c *cli.Context) error {
 
                 // Validate arguments
-                err := cliutils.ValidateArgs(c, 0, nil)
-                if err != nil {
+                if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                     return err
                 }
 
                 // Check user ID
-                id := os.Geteuid()
-                if id != 0 {
+                if os.Geteuid() != 0 {
                     return cli.NewExitError("Command must be run as root - try 'sudo rocketpool service " + name + " stop'", 1)
                 }
 
                 // Run command
-                err = daemons.Stop(name)
-                if err != nil {
+                if err := daemons.Stop(name); err != nil {
                     return cli.NewExitError("The " + name + " daemon service could not be stopped: " + err.Error(), 1)
                 }
 
@@ -242,8 +224,7 @@ func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
             Action: func(c *cli.Context) error {
 
                 // Validate arguments
-                err := cliutils.ValidateArgs(c, 0, nil)
-                if err != nil {
+                if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                     return err
                 }
 
@@ -266,8 +247,7 @@ func serviceCommands(name string, run func(*cli.Context) error) []cli.Command {
             Action: func(c *cli.Context) error {
 
                 // Validate arguments
-                err := cliutils.ValidateArgs(c, 0, nil)
-                if err != nil {
+                if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                     return err
                 }
 

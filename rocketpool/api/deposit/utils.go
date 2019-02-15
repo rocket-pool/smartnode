@@ -34,18 +34,18 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string) (string, e
     }
 
     // Connect to ethereum node
-    clientV, err := ethclient.Dial(c.GlobalString("provider"))
-    if err != nil {
+    if clientV, err := ethclient.Dial(c.GlobalString("provider")); err != nil {
         return "", errors.New("Error connecting to ethereum node: " + err.Error())
+    } else {
+        *client = *clientV
     }
-    *client = *clientV
 
     // Initialise Rocket Pool contract manager
-    cmV, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
-    if err != nil {
+    if cmV, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress")); err != nil {
         return "", err
+    } else {
+        *cm = *cmV
     }
-    *cm = *cmV
 
     // Loading channels
     successChannel := make(chan bool)
@@ -53,16 +53,14 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string) (string, e
 
     // Load Rocket Pool contracts
     go (func() {
-        err := cm.LoadContracts(loadContracts)
-        if err != nil {
+        if err := cm.LoadContracts(loadContracts); err != nil {
             errorChannel <- err
         } else {
             successChannel <- true
         }
     })()
     go (func() {
-        err := cm.LoadABIs(loadAbis)
-        if err != nil {
+        if err := cm.LoadABIs(loadAbis); err != nil {
             errorChannel <- err
         } else {
             successChannel <- true
@@ -80,20 +78,18 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string) (string, e
     }
 
     // Check node is registered & get node contract address
-    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
-    if err != nil {
+    if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address); err != nil {
         return "", errors.New("Error checking node registration: " + err.Error())
-    }
-    if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
         return "Node is not registered with Rocket Pool, please register with `rocketpool node register`", nil
     }
 
     // Initialise node contract
-    nodeContractV, err := cm.NewContract(nodeContractAddress, "rocketNodeContract")
-    if err != nil {
+    if nodeContractV, err := cm.NewContract(nodeContractAddress, "rocketNodeContract"); err != nil {
         return "", errors.New("Error initialising node contract: " + err.Error())
+    } else {
+        *nodeContract = *nodeContractV
     }
-    *nodeContract = *nodeContractV
 
     // Return
     return "", nil

@@ -49,7 +49,7 @@ func StartCheckinProcess(c *cli.Context, errorChannel chan error, fatalErrorChan
         errorChannel <- err
     } else {
         _ = db.Get("node.checkin.latest", lastCheckinTime)
-        if err = db.Close(); err != nil {
+        if err := db.Close(); err != nil {
             errorChannel <- err
         }
     }
@@ -90,7 +90,7 @@ func checkin(db *database.Database, checkinTimer *time.Timer, errorChannel chan 
         errorChannel <- err
     } else {
         _ = db.Get("user.fee.target", targetUserFeePerc)
-        if err = db.Close(); err != nil {
+        if err := db.Close(); err != nil {
             errorChannel <- err
         }
     }
@@ -106,7 +106,7 @@ func checkin(db *database.Database, checkinTimer *time.Timer, errorChannel chan 
 
             // Get current user fee
             userFee := new(*big.Int)
-            if err = cm.Contracts["rocketNodeSettings"].Call(nil, userFee, "getFeePerc"); err != nil {
+            if err := cm.Contracts["rocketNodeSettings"].Call(nil, userFee, "getFeePerc"); err != nil {
                 errorChannel <- errors.New("Error retrieving node user fee percentage setting: " + err.Error())
             } else {
 
@@ -125,11 +125,11 @@ func checkin(db *database.Database, checkinTimer *time.Timer, errorChannel chan 
     }
 
     // Checkin
-    if nodeAccountTransactor, err := am.GetNodeAccountTransactor(); err != nil {
+    if txor, err := am.GetNodeAccountTransactor(); err != nil {
         errorChannel <- err
     } else {
-        nodeAccountTransactor.GasLimit = 200000 // Gas estimates on this method are incorrect
-        if _, err = nodeContract.Transact(nodeAccountTransactor, "checkin", big.NewInt(0), big.NewInt(nodeFeeVote)); err != nil {
+        txor.GasLimit = 200000 // Gas estimates on this method are incorrect
+        if _, err := nodeContract.Transact(txor, "checkin", big.NewInt(0), big.NewInt(nodeFeeVote)); err != nil {
             errorChannel <- errors.New("Error checking in with Rocket Pool: " + err.Error())
         } else {
             fmt.Println(fmt.Sprintf("Checked in successfully with average load of %.2f and node fee vote of %d", 0.00, nodeFeeVote))
@@ -140,10 +140,10 @@ func checkin(db *database.Database, checkinTimer *time.Timer, errorChannel chan 
     if err := db.Open(); err != nil {
         errorChannel <- err
     } else {
-        if err = db.Put("node.checkin.latest", time.Now().Unix()); err != nil {
+        if err := db.Put("node.checkin.latest", time.Now().Unix()); err != nil {
             errorChannel <- err
         }
-        if err = db.Close(); err != nil {
+        if err := db.Close(); err != nil {
             errorChannel <- err
         }
     }
@@ -178,11 +178,11 @@ func setup(c *cli.Context) error {
     }
 
     // Initialise Rocket Pool contract manager
-    cmV, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
-    if err != nil {
+    if cmV, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress")); err != nil {
         return err
+    } else {
+        *cm = *cmV
     }
-    *cm = *cmV
 
     // Loading channels
     successChannel := make(chan bool)
@@ -190,16 +190,14 @@ func setup(c *cli.Context) error {
 
     // Load Rocket Pool contracts
     go (func() {
-        err := cm.LoadContracts([]string{"rocketNodeAPI"})
-        if err != nil {
+        if err := cm.LoadContracts([]string{"rocketNodeAPI"}); err != nil {
             errorChannel <- err
         } else {
             successChannel <- true
         }
     })()
     go (func() {
-        err := cm.LoadABIs([]string{"rocketNodeContract"})
-        if err != nil {
+        if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil {
             errorChannel <- err
         } else {
             successChannel <- true
@@ -218,20 +216,18 @@ func setup(c *cli.Context) error {
 
     // Check node is registered & get node contract address
     nodeContractAddress := new(common.Address)
-    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
-    if err != nil {
+    if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address); err != nil {
         return errors.New("Error checking node registration: " + err.Error())
-    }
-    if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
         return errors.New("Node is not registered with Rocket Pool, please register with `rocketpool node register`")
     }
 
     // Initialise node contract
-    nodeContractV, err := cm.NewContract(nodeContractAddress, "rocketNodeContract")
-    if err != nil {
+    if nodeContractV, err := cm.NewContract(nodeContractAddress, "rocketNodeContract"); err != nil {
         return errors.New("Error initialising node contract: " + err.Error())
+    } else {
+        *nodeContract = *nodeContractV
     }
-    *nodeContract = *nodeContractV
 
     // Return
     return nil

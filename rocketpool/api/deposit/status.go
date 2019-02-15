@@ -14,8 +14,7 @@ import (
 func getDepositStatus(c *cli.Context) error {
 
     // Command setup
-    message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{"rocketNodeContract"})
-    if message != "" {
+    if message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{"rocketNodeContract"}); message != "" {
         fmt.Println(message)
         return nil
     } else if err != nil {
@@ -29,8 +28,7 @@ func getDepositStatus(c *cli.Context) error {
 
     // Get node balances
     go (func() {
-        balances, err := node.GetBalances(nodeContract)
-        if err != nil {
+        if balances, err := node.GetBalances(nodeContract); err != nil {
             errorChannel <- err
         } else {
             balancesChannel <- balances
@@ -39,8 +37,7 @@ func getDepositStatus(c *cli.Context) error {
 
     // Get node deposit reservation details
     go (func() {
-        reservation, err := node.GetReservationDetails(nodeContract, cm)
-        if err != nil {
+        if reservation, err := node.GetReservationDetails(nodeContract, cm); err != nil {
             errorChannel <- err
         } else {
             reservationChannel <- reservation

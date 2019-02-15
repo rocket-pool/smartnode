@@ -21,8 +21,7 @@ func setTargetUserFee(c *cli.Context, feePercent float64) error {
     defer db.Close()
 
     // Set target user fee percent
-    err := db.Put("user.fee.target", feePercent)
-    if err != nil {
+    if err := db.Put("user.fee.target", feePercent); err != nil {
         return errors.New("Error setting target user fee percentage: " + err.Error())
     }
 

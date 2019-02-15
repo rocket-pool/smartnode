@@ -82,8 +82,7 @@ ______           _        _    ______           _
     service.RegisterCommands(app, "service", []string{"s"})
 
     // Run application
-    err := app.Run(os.Args)
-    if err != nil {
+    if err := app.Run(os.Args); err != nil {
         log.Fatal(err)
     }
 

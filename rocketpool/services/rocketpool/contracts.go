@@ -160,8 +160,7 @@ func (cm *ContractManager) NewContract(address *common.Address, contractName str
 func loadContractAddress(rocketStorage *contracts.RocketStorage, name string, addressChannel chan *common.Address, errorChannel chan error) {
 
     // Get contract address
-    address, err := rocketStorage.GetAddress(nil, eth.KeccakStr("contract.name" + name))
-    if err != nil {
+    if address, err := rocketStorage.GetAddress(nil, eth.KeccakStr("contract.name" + name)); err != nil {
         errorChannel <- errors.New("Error retrieving contract address: " + err.Error())
     } else {
         addressChannel <- &address
@@ -176,14 +175,12 @@ func loadContractAddress(rocketStorage *contracts.RocketStorage, name string, ad
 func loadContractABI(rocketStorage *contracts.RocketStorage, name string, abiChannel chan *abi.ABI, errorChannel chan error) {
 
     // Get contract ABI
-    abiEncoded, err := rocketStorage.GetString(nil, eth.KeccakStr("contract.abi" + name))
-    if err != nil {
+    if abiEncoded, err := rocketStorage.GetString(nil, eth.KeccakStr("contract.abi" + name)); err != nil {
         errorChannel <- errors.New("Error retrieving contract ABI: " + err.Error())
     } else {
 
         // Decode, decompress, parse & send ABI
-        abi, err := decodeAbi(abiEncoded)
-        if err != nil {
+        if abi, err := decodeAbi(abiEncoded); err != nil {
             errorChannel <- err
         } else {
             abiChannel <- abi

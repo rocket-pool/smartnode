@@ -96,8 +96,7 @@ func GetTransactionEvents(client *ethclient.Client, tx *types.Transaction, contr
 
         // Unpack event
         event := reflect.New(eventType).Interface()
-        err = contract.UnpackLog(event, eventName, *log)
-        if err != nil {
+        if err := contract.UnpackLog(event, eventName, *log); err != nil {
             return nil, errors.New("Error unpacking event: " + err.Error())
         }
         events = append(events, event)

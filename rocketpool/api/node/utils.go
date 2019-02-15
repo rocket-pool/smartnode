@@ -38,18 +38,18 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountReq
     }
 
     // Connect to ethereum node
-    clientV, err := ethclient.Dial(c.GlobalString("provider"))
-    if err != nil {
+    if clientV, err := ethclient.Dial(c.GlobalString("provider")); err != nil {
         return "", errors.New("Error connecting to ethereum node: " + err.Error())
+    } else {
+        *client = *clientV
     }
-    *client = *clientV
 
     // Initialise Rocket Pool contract manager
-    cmV, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
-    if err != nil {
+    if cmV, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress")); err != nil {
         return "", err
+    } else {
+        *cm = *cmV
     }
-    *cm = *cmV
 
     // Loading channels
     successChannel := make(chan bool)
@@ -57,16 +57,14 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountReq
 
     // Load Rocket Pool contracts
     go (func() {
-        err := cm.LoadContracts(loadContracts)
-        if err != nil {
+        if err := cm.LoadContracts(loadContracts); err != nil {
             errorChannel <- err
         } else {
             successChannel <- true
         }
     })()
     go (func() {
-        err := cm.LoadABIs(loadAbis)
-        if err != nil {
+        if err := cm.LoadABIs(loadAbis); err != nil {
             errorChannel <- err
         } else {
             successChannel <- true
@@ -96,10 +94,8 @@ func promptTimezone() string {
     var timezone string
 
     // Get system time zone
-    timeOutput, _ := exec.Command("timedatectl").Output()
-    if len(timeOutput) > 0 {
-        tzMatches := regexp.MustCompile("(?i)zone:\\s*(\\w{2,}\\/\\w{2,})").FindStringSubmatch(string(timeOutput[:]))
-        if len(tzMatches) > 1 {
+    if timeOutput, _ := exec.Command("timedatectl").Output(); len(timeOutput) > 0 {
+        if tzMatches := regexp.MustCompile("(?i)zone:\\s*(\\w{2,}\\/\\w{2,})").FindStringSubmatch(string(timeOutput[:])); len(tzMatches) > 1 {
             timezone = tzMatches[1]
         }
     }

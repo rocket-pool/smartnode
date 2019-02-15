@@ -43,13 +43,13 @@ func (db *Database) Open() error {
     }
 
     // Initialise storage
-    store, err := skv.Open(db.path)
-    if err != nil {
+    if store, err := skv.Open(db.path); err != nil {
         return errors.New("Error opening database: " + err.Error())
+    } else {
+        db.store = store
     }
 
-    // Set store and return
-    db.store = store
+    // Return
     return nil
 
 }
@@ -66,13 +66,13 @@ func (db *Database) Close() error {
     }
 
     // Close storage
-    err := db.store.Close()
-    if err != nil {
+    if err := db.store.Close(); err != nil {
         return errors.New("Error closing database: " + err.Error())
+    } else {
+        db.store = nil
     }
 
-    // Unset store and return
-    db.store = nil
+    // Return
     return nil
 
 }
@@ -89,8 +89,7 @@ func (db *Database) Get(key string, value interface{}) error {
     }
 
     // Read and return
-    err := db.store.Get(key, value)
-    if err != nil {
+    if err := db.store.Get(key, value); err != nil {
         return errors.New("Error reading value from database: " + err.Error())
     }
     return nil
@@ -109,8 +108,7 @@ func (db *Database) Put(key string, value interface{}) error {
     }
 
     // Write and return
-    err := db.store.Put(key, value)
-    if err != nil {
+    if err := db.store.Put(key, value); err != nil {
         return errors.New("Error writing value to database: " + err.Error())
     }
     return nil
@@ -129,8 +127,7 @@ func (db *Database) Delete(key string) error {
     }
 
     // Remove and return
-    err := db.store.Delete(key)
-    if err != nil {
+    if err := db.store.Delete(key); err != nil {
         return errors.New("Error removing value from database: " + err.Error())
     }
     return nil

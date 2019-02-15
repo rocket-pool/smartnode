@@ -28,8 +28,7 @@ type DepositInput struct {
 func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Command setup
-    message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{"rocketNodeContract"})
-    if message != "" {
+    if message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{"rocketNodeContract"}); message != "" {
         fmt.Println(message)
         return nil
     } else if err != nil {
@@ -44,8 +43,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Check node does not have current deposit reservation
     go (func() {
         hasReservation := new(bool)
-        err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation")
-        if err != nil {
+        if err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
         } else if *hasReservation {
             messageChannel <- "Node has a current deposit reservation, please cancel or complete it"
@@ -57,8 +55,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Check node deposits are enabled
     go (func() {
         depositsAllowed := new(bool)
-        err := cm.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed")
-        if err != nil {
+        if err := cm.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
         } else if !*depositsAllowed {
             messageChannel <- "Node deposits are currently disabled in Rocket Pool"
@@ -117,22 +114,18 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     copy(depositInputData.withdrawalCredentials[:], withdrawalCredentials[:])
     copy(depositInputData.proofOfPossession[:], proofOfPossession)
     depositInput := new(bytes.Buffer)
-    err = ssz.Encode(depositInput, depositInputData)
-    if err != nil {
+    if err := ssz.Encode(depositInput, depositInputData); err != nil {
         return errors.New("Error encoding DepositInput for deposit reservation: " + err.Error())
     }
     */
 
-    // Get node account transactor
-    nodeAccountTransactor, err := am.GetNodeAccountTransactor()
-    if err != nil {
-        return err
-    }
-
     // Create deposit reservation
-    _, err = nodeContract.Transact(nodeAccountTransactor, "depositReserve", durationId, depositInput)
-    if err != nil {
-        return errors.New("Error making deposit reservation: " + err.Error())
+    if txor, err := am.GetNodeAccountTransactor(); err != nil {
+        return err
+    } else {
+        if _, err := nodeContract.Transact(txor, "depositReserve", durationId, depositInput); err != nil {
+            return errors.New("Error making deposit reservation: " + err.Error())
+        }
     }
 
     // Get deposit reservation details

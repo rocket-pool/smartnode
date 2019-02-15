@@ -27,8 +27,7 @@ type PoolCreated struct {
 func completeDeposit(c *cli.Context) error {
 
     // Command setup
-    message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"}, []string{"rocketNodeContract"})
-    if message != "" {
+    if message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"}, []string{"rocketNodeContract"}); message != "" {
         fmt.Println(message)
         return nil
     } else if err != nil {
@@ -43,8 +42,7 @@ func completeDeposit(c *cli.Context) error {
     // Check node has current deposit reservation
     go (func() {
         hasReservation := new(bool)
-        err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation")
-        if err != nil {
+        if err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
         } else if !*hasReservation {
             messageChannel <- "Node does not have a current deposit reservation, please make one with `rocketpool deposit reserve durationID`"
@@ -56,8 +54,7 @@ func completeDeposit(c *cli.Context) error {
     // Check node deposits are enabled
     go (func() {
         depositsAllowed := new(bool)
-        err := cm.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed")
-        if err != nil {
+        if err := cm.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
         } else if !*depositsAllowed {
             messageChannel <- "Node deposits are currently disabled in Rocket Pool"
@@ -69,8 +66,7 @@ func completeDeposit(c *cli.Context) error {
     // Check minipool creation is enabled
     go (func() {
         minipoolCreationAllowed := new(bool)
-        err := cm.Contracts["rocketMinipoolSettings"].Call(nil, minipoolCreationAllowed, "getMinipoolCanBeCreated")
-        if err != nil {
+        if err := cm.Contracts["rocketMinipoolSettings"].Call(nil, minipoolCreationAllowed, "getMinipoolCanBeCreated"); err != nil {
             errorChannel <- errors.New("Error checking minipool creation enabled status: " + err.Error())
         } else if !*minipoolCreationAllowed {
             messageChannel <- "Minipool creation is currently disabled in Rocket Pool"
@@ -99,8 +95,7 @@ func completeDeposit(c *cli.Context) error {
 
     // Get node account balances
     go (func() {
-        accountBalances, err := node.GetAccountBalances(am.GetNodeAccount().Address, client, cm)
-        if err != nil {
+        if accountBalances, err := node.GetAccountBalances(am.GetNodeAccount().Address, client, cm); err != nil {
             errorChannel <- err
         } else {
             accountBalancesChannel <- accountBalances
@@ -109,8 +104,7 @@ func completeDeposit(c *cli.Context) error {
 
     // Get node balances
     go (func() {
-        nodeBalances, err := node.GetBalances(nodeContract)
-        if err != nil {
+        if nodeBalances, err := node.GetBalances(nodeContract); err != nil {
             errorChannel <- err
         } else {
             nodeBalancesChannel <- nodeBalances
@@ -119,8 +113,7 @@ func completeDeposit(c *cli.Context) error {
 
     // Get node balance requirements
     go (func() {
-        requiredBalances, err := node.GetRequiredBalances(nodeContract)
-        if err != nil {
+        if requiredBalances, err := node.GetRequiredBalances(nodeContract); err != nil {
             errorChannel <- err
         } else {
             requiredBalancesChannel <- requiredBalances
@@ -145,7 +138,7 @@ func completeDeposit(c *cli.Context) error {
     }
 
     // Get node account transactor
-    nodeAccountTransactor, err := am.GetNodeAccountTransactor()
+    txor, err := am.GetNodeAccountTransactor()
     if err != nil {
         return err
     }
@@ -197,17 +190,16 @@ func completeDeposit(c *cli.Context) error {
         }
 
         // Transfer remaining required RPL
-        nodeAccountTransactor.Value = big.NewInt(0)
-        _, err = cm.Contracts["rocketPoolToken"].Transact(nodeAccountTransactor, "transfer", nodeContractAddress, remainingRplRequiredWei)
-        if err != nil {
+        txor.Value = big.NewInt(0)
+        if _, err := cm.Contracts["rocketPoolToken"].Transact(txor, "transfer", nodeContractAddress, remainingRplRequiredWei); err != nil {
             return errors.New("Error transferring RPL to node contract: " + err.Error())
         }
 
     }
 
     // Complete deposit
-    nodeAccountTransactor.Value = depositTransactionValueWei
-    tx, err := nodeContract.Transact(nodeAccountTransactor, "deposit")
+    txor.Value = depositTransactionValueWei
+    tx, err := nodeContract.Transact(txor, "deposit")
     if err != nil {
         return errors.New("Error completing deposit: " + err.Error())
     }
@@ -216,8 +208,7 @@ func completeDeposit(c *cli.Context) error {
     minipoolCreatedEvents, err := eth.GetTransactionEvents(client, tx, cm.Addresses["rocketPool"], cm.Abis["rocketPool"], "PoolCreated", PoolCreated{})
     if err != nil {
         return errors.New("Error retrieving deposit transaction minipool created event: " + err.Error())
-    }
-    if len(minipoolCreatedEvents) == 0 {
+    } else if len(minipoolCreatedEvents) == 0 {
         return errors.New("Could not retrieve deposit transaction minipool created event")
     }
     minipoolCreatedEvent := (minipoolCreatedEvents[0]).(*PoolCreated)

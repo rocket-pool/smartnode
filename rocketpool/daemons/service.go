@@ -32,8 +32,7 @@ func Install(name string) error {
     "\r\n")
 
     // Write service config to systemd path
-    err := ioutil.WriteFile(SERVICE_PATH + "rocketpool-" + name + ".service", config, 0664)
-    if err != nil {
+    if err := ioutil.WriteFile(SERVICE_PATH + "rocketpool-" + name + ".service", config, 0664); err != nil {
         return err
     }
 
@@ -47,8 +46,7 @@ func Install(name string) error {
 func Uninstall(name string) error {
 
     // Delete service config at systemd path
-    err := os.Remove(SERVICE_PATH + "rocketpool-" + name + ".service")
-    if err != nil {
+    if err := os.Remove(SERVICE_PATH + "rocketpool-" + name + ".service"); err != nil {
         return err
     }
 

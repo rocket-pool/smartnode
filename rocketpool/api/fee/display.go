@@ -31,29 +31,26 @@ func displayUserFee(c *cli.Context) error {
     }
 
     // Initialise Rocket Pool contract manager
-    rp, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
+    cm, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
     if err != nil {
         return err
     }
 
     // Load Rocket Pool contracts
-    err = rp.LoadContracts([]string{"rocketNodeSettings"})
-    if err != nil {
+    if err := cm.LoadContracts([]string{"rocketNodeSettings"}); err != nil {
         return err
     }
 
     // Get current user fee
     userFee := new(*big.Int)
-    err = rp.Contracts["rocketNodeSettings"].Call(nil, userFee, "getFeePerc")
-    if err != nil {
+    if err := cm.Contracts["rocketNodeSettings"].Call(nil, userFee, "getFeePerc"); err != nil {
         return errors.New("Error retrieving node user fee percentage setting: " + err.Error())
     }
     userFeePerc := eth.WeiToEth(*userFee) * 100
 
     // Get target user fee
     targetUserFeePerc := new(float64)
-    err = db.Get("user.fee.target", targetUserFeePerc)
-    if err != nil {
+    if err := db.Get("user.fee.target", targetUserFeePerc); err != nil {
         *targetUserFeePerc = -1
     }
 

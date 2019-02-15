@@ -45,8 +45,7 @@ func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Cli
 
     // Get node account ether balance
     go (func() {
-        etherBalanceWei, err := client.BalanceAt(context.Background(), nodeAccountAddress, nil)
-        if err != nil {
+        if etherBalanceWei, err := client.BalanceAt(context.Background(), nodeAccountAddress, nil); err != nil {
             errorChannel <- errors.New("Error retrieving node account ether balance: " + err.Error())
         } else {
             etherBalanceChannel <- etherBalanceWei
@@ -56,8 +55,7 @@ func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Cli
     // Get node account RPL balance
     go (func() {
         rplBalanceWei := new(*big.Int)
-        err := cm.Contracts["rocketPoolToken"].Call(nil, rplBalanceWei, "balanceOf", nodeAccountAddress)
-        if err != nil {
+        if err := cm.Contracts["rocketPoolToken"].Call(nil, rplBalanceWei, "balanceOf", nodeAccountAddress); err != nil {
             errorChannel <- errors.New("Error retrieving node account RPL balance: " + err.Error())
         } else {
             rplBalanceChannel <- *rplBalanceWei
@@ -96,8 +94,7 @@ func GetBalances(nodeContract *bind.BoundContract) (*Balances, error) {
     // Get node ETH balance
     go (func() {
         etherBalanceWei := new(*big.Int)
-        err := nodeContract.Call(nil, etherBalanceWei, "getBalanceETH")
-        if err != nil {
+        if err := nodeContract.Call(nil, etherBalanceWei, "getBalanceETH"); err != nil {
             errorChannel <- errors.New("Error retrieving node ETH balance: " + err.Error())
         } else {
             etherBalanceChannel <- *etherBalanceWei
@@ -107,8 +104,7 @@ func GetBalances(nodeContract *bind.BoundContract) (*Balances, error) {
     // Get node RPL balance
     go (func() {
         rplBalanceWei := new(*big.Int)
-        err := nodeContract.Call(nil, rplBalanceWei, "getBalanceRPL")
-        if err != nil {
+        if err := nodeContract.Call(nil, rplBalanceWei, "getBalanceRPL"); err != nil {
             errorChannel <- errors.New("Error retrieving node RPL balance: " + err.Error())
         } else {
             rplBalanceChannel <- *rplBalanceWei
@@ -147,8 +143,7 @@ func GetRequiredBalances(nodeContract *bind.BoundContract) (*Balances, error) {
     // Get deposit reservation ETH required
     go (func() {
         etherRequiredWei := new(*big.Int)
-        err := nodeContract.Call(nil, etherRequiredWei, "getDepositReserveEtherRequired")
-        if err != nil {
+        if err := nodeContract.Call(nil, etherRequiredWei, "getDepositReserveEtherRequired"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation ETH requirement: " + err.Error())
         } else {
             etherRequiredChannel <- *etherRequiredWei
@@ -158,8 +153,7 @@ func GetRequiredBalances(nodeContract *bind.BoundContract) (*Balances, error) {
     // Get deposit reservation RPL required
     go (func() {
         rplRequiredWei := new(*big.Int)
-        err := nodeContract.Call(nil, rplRequiredWei, "getDepositReserveRPLRequired")
-        if err != nil {
+        if err := nodeContract.Call(nil, rplRequiredWei, "getDepositReserveRPLRequired"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation RPL requirement: " + err.Error())
         } else {
             rplRequiredChannel <- *rplRequiredWei
@@ -193,12 +187,10 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
 
     // Check if node has current deposit reservation
     hasReservation := new(bool)
-    err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation")
-    if err != nil {
+    if err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
         return nil, errors.New("Error retrieving deposit reservation status: " + err.Error())
     }
-    details.Exists = *hasReservation
-    if !details.Exists {
+    if details.Exists = *hasReservation; !details.Exists {
         return details, nil
     }
 
@@ -212,8 +204,7 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
     // Get deposit reservation duration ID
     go (func() {
         durationID := new(string)
-        err := nodeContract.Call(nil, durationID, "getDepositReserveDurationID")
-        if err != nil {
+        if err := nodeContract.Call(nil, durationID, "getDepositReserveDurationID"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation staking duration ID: " + err.Error())
         } else {
             durationIDChannel <- *durationID
@@ -222,8 +213,7 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
 
     // Get required balances
     go (func() {
-        requiredBalances, err := GetRequiredBalances(nodeContract)
-        if err != nil {
+        if requiredBalances, err := GetRequiredBalances(nodeContract); err != nil {
             errorChannel <- err
         } else {
             requiredBalancesChannel <- requiredBalances
@@ -233,8 +223,7 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
     // Get deposit reservation reserved time
     go (func() {
         reservedTime := new(*big.Int)
-        err := nodeContract.Call(nil, reservedTime, "getDepositReservedTime")
-        if err != nil {
+        if err := nodeContract.Call(nil, reservedTime, "getDepositReservedTime"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation reserved time: " + err.Error())
         } else {
             reservedTimeChannel <- *reservedTime
@@ -244,8 +233,7 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
     // Get reservation duration
     go (func() {
         reservationTime := new(*big.Int)
-        err := cm.Contracts["rocketNodeSettings"].Call(nil, reservationTime, "getDepositReservationTime")
-        if err != nil {
+        if err := cm.Contracts["rocketNodeSettings"].Call(nil, reservationTime, "getDepositReservationTime"); err != nil {
             errorChannel <- errors.New("Error retrieving node deposit reservation time setting: " + err.Error())
         } else {
             reservationTimeChannel <- *reservationTime

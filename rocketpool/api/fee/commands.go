@@ -26,8 +26,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 0, nil)
-                    if err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 
@@ -50,20 +49,17 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     var feePercent float64
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 1, func(messages *[]string) {
+                    if err := cliutils.ValidateArgs(c, 1, func(messages *[]string) {
                         var err error
 
                         // Parse fee percentage
-                        feePercent, err = strconv.ParseFloat(c.Args().Get(0), 64)
-                        if err != nil {
+                        if feePercent, err = strconv.ParseFloat(c.Args().Get(0), 64); err != nil {
                             *messages = append(*messages, "Invalid fee percentage - must be a decimal number")
-                        }
-                        if feePercent < 0 || feePercent > 100 {
+                        } else if feePercent < 0 || feePercent > 100 {
                             *messages = append(*messages, "Invalid fee percentage - must be between 0 and 100")
                         }
 
-                    })
-                    if err != nil {
+                    }); err != nil {
                         return err
                     }
 

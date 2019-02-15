@@ -17,8 +17,7 @@ import (
 func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
 
     // Command setup
-    message, err := setup(c, []string{"rocketNodeAPI"}, []string{"rocketNodeContract"}, true)
-    if message != "" {
+    if message, err := setup(c, []string{"rocketNodeAPI"}, []string{"rocketNodeContract"}, true); message != "" {
         fmt.Println(message)
         return nil
     } else if err != nil {
@@ -27,11 +26,9 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
 
     // Check node is registered (contract exists)
     nodeContractAddress := new(common.Address)
-    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
-    if err != nil {
+    if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address); err != nil {
         return errors.New("Error checking node registration: " + err.Error())
-    }
-    if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
         fmt.Println("Node is not registered with Rocket Pool, please register with `rocketpool node register`")
         return nil
     }
@@ -59,26 +56,21 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
 
     // Check withdrawal amount is available
     balanceWei := new(*big.Int)
-    err = nodeContract.Call(nil, balanceWei, balanceMethod)
-    if err != nil {
+    if err := nodeContract.Call(nil, balanceWei, balanceMethod); err != nil {
         return errors.New("Error retrieving node balance: " + err.Error())
-    }
-    if amountWei.Cmp(*balanceWei) > 0 {
+    } else if amountWei.Cmp(*balanceWei) > 0 {
         fmt.Println("Withdrawal amount exceeds available balance on node contract")
         return nil
     }
 
-    // Get node account transactor
-    nodeAccountTransactor, err := am.GetNodeAccountTransactor()
-    if err != nil {
-        return err
-    }
-
     // Withdraw amount
-    nodeAccountTransactor.GasLimit = 100000 // Gas estimates on this method are incorrect
-    _, err = nodeContract.Transact(nodeAccountTransactor, withdrawMethod, amountWei)
-    if err != nil {
-        return errors.New("Error withdrawing from node contract: " + err.Error())
+    if txor, err := am.GetNodeAccountTransactor(); err != nil {
+        return err
+    } else {
+        txor.GasLimit = 100000 // Gas estimates on this method are incorrect
+        if _, err := nodeContract.Transact(txor, withdrawMethod, amountWei); err != nil {
+            return errors.New("Error withdrawing from node contract: " + err.Error())
+        }
     }
 
     // Log & return

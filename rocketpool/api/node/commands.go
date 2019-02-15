@@ -27,8 +27,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 0, nil)
-                    if err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 
@@ -47,8 +46,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 0, nil)
-                    if err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 
@@ -67,8 +65,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 0, nil)
-                    if err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 
@@ -93,12 +90,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     var unit string
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 2, func(messages *[]string) {
+                    if err := cliutils.ValidateArgs(c, 2, func(messages *[]string) {
                         var err error
 
                         // Parse amount
-                        amount, err = strconv.ParseFloat(c.Args().Get(0), 64)
-                        if err != nil || amount <= 0 {
+                        if amount, err = strconv.ParseFloat(c.Args().Get(0), 64); err != nil || amount <= 0 {
                             *messages = append(*messages, "Invalid amount - must be a positive decimal number")
                         }
 
@@ -111,8 +107,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                 *messages = append(*messages, "Invalid unit - valid units are 'ETH' and 'RPL'")
                         }
 
-                    })
-                    if err != nil {
+                    }); err != nil {
                         return err
                     }
 
@@ -131,8 +126,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 0, nil)
-                    if err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 

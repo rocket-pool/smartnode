@@ -17,8 +17,7 @@ import (
 func getNodeStatus(c *cli.Context) error {
 
     // Command setup
-    message, err := setup(c, []string{"rocketNodeAPI", "rocketPoolToken"}, []string{"rocketNodeContract"}, false)
-    if message != "" {
+    if message, err := setup(c, []string{"rocketNodeAPI", "rocketPoolToken"}, []string{"rocketNodeContract"}, false); message != "" {
         fmt.Println(message)
         return nil
     } else if err != nil {
@@ -40,11 +39,9 @@ func getNodeStatus(c *cli.Context) error {
 
     // Check if node is registered & get node contract address
     nodeContractAddress := new(common.Address)
-    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
-    if err != nil {
+    if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address); err != nil {
         return errors.New("Error checking node registration: " + err.Error())
-    }
-    if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
         fmt.Println("Node is not registered with Rocket Pool")
         return nil
     }
@@ -63,8 +60,7 @@ func getNodeStatus(c *cli.Context) error {
     // Get node timezone
     go (func() {
         nodeTimezone := new(string)
-        err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", am.GetNodeAccount().Address)
-        if err != nil {
+        if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", am.GetNodeAccount().Address); err != nil {
             errorChannel <- errors.New("Error retrieving node timezone: " + err.Error())
         } else {
             nodeTimezoneChannel <- *nodeTimezone
@@ -73,8 +69,7 @@ func getNodeStatus(c *cli.Context) error {
 
     // Get node contract balances
     go (func() {
-        nodeBalances, err := node.GetBalances(nodeContract)
-        if err != nil {
+        if nodeBalances, err := node.GetBalances(nodeContract); err != nil {
             errorChannel <- err
         } else {
             nodeBalancesChannel <- nodeBalances

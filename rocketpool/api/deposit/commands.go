@@ -24,8 +24,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 0, nil)
-                    if err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 
@@ -48,7 +47,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     var durationId string
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 1, func(messages *[]string) {
+                    if err := cliutils.ValidateArgs(c, 1, func(messages *[]string) {
 
                         // Parse duration ID
                         durationId = c.Args().Get(0)
@@ -60,8 +59,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                                 *messages = append(*messages, "Invalid durationID - valid IDs are '3m', '6m' and '12m'")
                         }
 
-                    })
-                    if err != nil {
+                    }); err != nil {
                         return err
                     }
 
@@ -80,8 +78,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 0, nil)
-                    if err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 
@@ -100,8 +97,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
-                    err := cliutils.ValidateArgs(c, 0, nil)
-                    if err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 
