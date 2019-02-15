@@ -134,3 +134,61 @@ func (db *Database) Delete(key string) error {
 
 }
 
+
+/**
+ * Read a value from the database (atomic operation)
+ */
+func (db *Database) GetAtomic(key string, value interface{}) error {
+
+    // Open database
+    if err := db.Open(); err != nil {
+        return err
+    }
+    defer db.Close()
+
+    // Read value and return; ignore errors as key may not exist
+    _ = db.Get(key, value)
+    return nil
+
+}
+
+
+/**
+ * Write a value to the database (atomic operation)
+ */
+func (db *Database) PutAtomic(key string, value interface{}) error {
+
+    // Open database
+    if err := db.Open(); err != nil {
+        return err
+    }
+    defer db.Close()
+
+    // Write value
+    if err := db.Put(key, value); err != nil {
+        return err
+    }
+    return nil
+
+}
+
+
+/**
+ * Remove a value from the database (atomic operation)
+ */
+func (db *Database) DeleteAtomic(key string) error {
+
+    // Open database
+    if err := db.Open(); err != nil {
+        return err
+    }
+    defer db.Close()
+
+    // Remove value
+    if err := db.Delete(key); err != nil {
+        return err
+    }
+    return nil
+
+}
+
