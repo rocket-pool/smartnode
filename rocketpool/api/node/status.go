@@ -17,17 +17,16 @@ import (
 func getNodeStatus(c *cli.Context) error {
 
     // Command setup
-    am, client, rp, message, err := setup(c, []string{"rocketNodeAPI", "rocketPoolToken"}, []string{"rocketNodeContract"}, false)
+    message, err := setup(c, []string{"rocketNodeAPI", "rocketPoolToken"}, []string{"rocketNodeContract"}, false)
     if message != "" {
         fmt.Println(message)
         return nil
-    }
-    if err != nil {
+    } else if err != nil {
         return err
     }
 
     // Get node account balances
-    accountBalances, err := node.GetAccountBalances(am.GetNodeAccount().Address, client, rp)
+    accountBalances, err := node.GetAccountBalances(am.GetNodeAccount().Address, client, cm)
     if err != nil {
         return err
     }
@@ -41,7 +40,7 @@ func getNodeStatus(c *cli.Context) error {
 
     // Check if node is registered & get node contract address
     nodeContractAddress := new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
+    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error checking node registration: " + err.Error())
     }
@@ -51,7 +50,7 @@ func getNodeStatus(c *cli.Context) error {
     }
 
     // Initialise node contract
-    nodeContract, err := rp.NewContract(nodeContractAddress, "rocketNodeContract")
+    nodeContract, err := cm.NewContract(nodeContractAddress, "rocketNodeContract")
     if err != nil {
         return errors.New("Error initialising node contract: " + err.Error())
     }
@@ -64,7 +63,7 @@ func getNodeStatus(c *cli.Context) error {
     // Get node timezone
     go (func() {
         nodeTimezone := new(string)
-        err := rp.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", am.GetNodeAccount().Address)
+        err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", am.GetNodeAccount().Address)
         if err != nil {
             errorChannel <- errors.New("Error retrieving node timezone: " + err.Error())
         } else {

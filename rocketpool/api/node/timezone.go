@@ -14,18 +14,17 @@ import (
 func setNodeTimezone(c *cli.Context) error {
 
     // Command setup
-    am, _, rp, message, err := setup(c, []string{"rocketNodeAPI"}, []string{}, true)
+    message, err := setup(c, []string{"rocketNodeAPI"}, []string{}, true)
     if message != "" {
         fmt.Println(message)
         return nil
-    }
-    if err != nil {
+    } else if err != nil {
         return err
     }
 
     // Check node is registered (contract exists)
     nodeContractAddress := new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
+    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error checking node registration: " + err.Error())
     }
@@ -44,14 +43,14 @@ func setNodeTimezone(c *cli.Context) error {
     }
 
     // Set node timezone
-    _, err = rp.Contracts["rocketNodeAPI"].Transact(nodeAccountTransactor, "setTimezoneLocation", timezone)
+    _, err = cm.Contracts["rocketNodeAPI"].Transact(nodeAccountTransactor, "setTimezoneLocation", timezone)
     if err != nil {
         return errors.New("Error setting node timezone: " + err.Error())
     }
 
     // Get node timezone
     nodeTimezone := new(string)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", am.GetNodeAccount().Address)
+    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error retrieving node timezone: " + err.Error())
     }

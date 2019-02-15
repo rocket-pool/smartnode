@@ -17,18 +17,17 @@ import (
 func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
 
     // Command setup
-    am, _, rp, message, err := setup(c, []string{"rocketNodeAPI"}, []string{"rocketNodeContract"}, true)
+    message, err := setup(c, []string{"rocketNodeAPI"}, []string{"rocketNodeContract"}, true)
     if message != "" {
         fmt.Println(message)
         return nil
-    }
-    if err != nil {
+    } else if err != nil {
         return err
     }
 
     // Check node is registered (contract exists)
     nodeContractAddress := new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
+    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error checking node registration: " + err.Error())
     }
@@ -38,7 +37,7 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     }
 
     // Initialise node contract
-    nodeContract, err := rp.NewContract(nodeContractAddress, "rocketNodeContract")
+    nodeContract, err := cm.NewContract(nodeContractAddress, "rocketNodeContract")
     if err != nil {
         return errors.New("Error initialising node contract: " + err.Error())
     }

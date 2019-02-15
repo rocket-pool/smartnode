@@ -18,12 +18,11 @@ import (
 func registerNode(c *cli.Context) error {
 
     // Command setup
-    am, client, rp, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{}, true)
+    message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{}, true)
     if message != "" {
         fmt.Println(message)
         return nil
-    }
-    if err != nil {
+    } else if err != nil {
         return err
     }
 
@@ -35,7 +34,7 @@ func registerNode(c *cli.Context) error {
     // Check if node is already registered (contract exists)
     go (func() {
         nodeContractAddress := new(common.Address)
-        err := rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
+        err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
         if err != nil {
             errorChannel <- errors.New("Error checking node registration: " + err.Error())
         } else if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
@@ -48,7 +47,7 @@ func registerNode(c *cli.Context) error {
     // Check node registrations are enabled
     go (func() {
         registrationsAllowed := new(bool)
-        err := rp.Contracts["rocketNodeSettings"].Call(nil, registrationsAllowed, "getNewAllowed")
+        err := cm.Contracts["rocketNodeSettings"].Call(nil, registrationsAllowed, "getNewAllowed")
         if err != nil {
             errorChannel <- errors.New("Error checking node registrations enabled status: " + err.Error())
         } else if !*registrationsAllowed {
@@ -69,7 +68,7 @@ func registerNode(c *cli.Context) error {
         // Get min required node account ether balance
         go (func() {
             minNodeAccountEtherBalanceWei := new(*big.Int)
-            err := rp.Contracts["rocketNodeSettings"].Call(nil, minNodeAccountEtherBalanceWei, "getEtherMin")
+            err := cm.Contracts["rocketNodeSettings"].Call(nil, minNodeAccountEtherBalanceWei, "getEtherMin")
             if err != nil {
                 balanceErrorChannel <- errors.New("Error retrieving minimum ether requirement: " + err.Error())
             } else {
@@ -134,14 +133,14 @@ func registerNode(c *cli.Context) error {
     }
 
     // Register node
-    _, err = rp.Contracts["rocketNodeAPI"].Transact(nodeAccountTransactor, "add", timezone)
+    _, err = cm.Contracts["rocketNodeAPI"].Transact(nodeAccountTransactor, "add", timezone)
     if err != nil {
         return errors.New("Error registering node: " + err.Error())
     }
 
     // Get node contract address
     nodeContractAddress := new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
+    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
         return errors.New("Error retrieving node contract address: " + err.Error())
     }

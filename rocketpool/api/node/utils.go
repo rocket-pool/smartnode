@@ -16,32 +16,40 @@ import (
 )
 
 
+// Shared command vars
+var am = new(accounts.AccountManager)
+var client = new(ethclient.Client)
+var cm = new(rocketpool.ContractManager)
+
+
 // Shared command setup
-func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountRequired bool) (*accounts.AccountManager, *ethclient.Client, *rocketpool.ContractManager, string, error) {
+func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountRequired bool) (string, error) {
 
     // Initialise account manager
-    am := accounts.NewAccountManager(c.GlobalString("keychain"))
+    *am = *accounts.NewAccountManager(c.GlobalString("keychain"))
 
     // Check node account
     if !am.NodeAccountExists() {
         if accountRequired {
-            return nil, nil, nil, "Node account does not exist, please initialize with `rocketpool node init`", nil
+            return "Node account does not exist, please initialize with `rocketpool node init`", nil
         } else {
-            return nil, nil, nil, "Node account has not been initialized", nil
+            return "Node account has not been initialized", nil
         }
     }
 
     // Connect to ethereum node
-    client, err := ethclient.Dial(c.GlobalString("provider"))
+    clientV, err := ethclient.Dial(c.GlobalString("provider"))
     if err != nil {
-        return nil, nil, nil, "", errors.New("Error connecting to ethereum node: " + err.Error())
+        return "", errors.New("Error connecting to ethereum node: " + err.Error())
     }
+    *client = *clientV
 
     // Initialise Rocket Pool contract manager
-    rp, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
+    cmV, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
     if err != nil {
-        return nil, nil, nil, "", err
+        return "", err
     }
+    *cm = *cmV
 
     // Loading channels
     successChannel := make(chan bool)
@@ -49,7 +57,7 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountReq
 
     // Load Rocket Pool contracts
     go (func() {
-        err := rp.LoadContracts(loadContracts)
+        err := cm.LoadContracts(loadContracts)
         if err != nil {
             errorChannel <- err
         } else {
@@ -57,7 +65,7 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountReq
         }
     })()
     go (func() {
-        err := rp.LoadABIs(loadAbis)
+        err := cm.LoadABIs(loadAbis)
         if err != nil {
             errorChannel <- err
         } else {
@@ -71,12 +79,12 @@ func setup(c *cli.Context, loadContracts []string, loadAbis []string, accountReq
             case <-successChannel:
                 received++
             case err := <-errorChannel:
-                return nil, nil, nil, "", err
+                return "", err
         }
     }
 
     // Return
-    return am, client, rp, "", nil
+    return "", nil
 
 }
 
