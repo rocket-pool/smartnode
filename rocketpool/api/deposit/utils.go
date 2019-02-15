@@ -14,28 +14,38 @@ import (
 )
 
 
+// Shared command vars
+var am = new(accounts.AccountManager)
+var client = new(ethclient.Client)
+var cm = new(rocketpool.ContractManager)
+var nodeContractAddress = new(common.Address)
+var nodeContract = new(bind.BoundContract)
+
+
 // Shared command setup
-func setup(c *cli.Context, loadContracts []string) (*accounts.AccountManager, *ethclient.Client, *rocketpool.ContractManager, *common.Address, *bind.BoundContract, string, error) {
+func setup(c *cli.Context, loadContracts []string, loadAbis []string) (string, error) {
 
     // Initialise account manager
-    am := accounts.NewAccountManager(c.GlobalString("keychain"))
+    *am = *accounts.NewAccountManager(c.GlobalString("keychain"))
 
     // Check node account
     if !am.NodeAccountExists() {
-        return nil, nil, nil, nil, nil, "Node account does not exist, please initialize with `rocketpool node init`", nil
+        return "Node account does not exist, please initialize with `rocketpool node init`", nil
     }
 
     // Connect to ethereum node
-    client, err := ethclient.Dial(c.GlobalString("provider"))
+    clientV, err := ethclient.Dial(c.GlobalString("provider"))
     if err != nil {
-        return nil, nil, nil, nil, nil, "", errors.New("Error connecting to ethereum node: " + err.Error())
+        return "", errors.New("Error connecting to ethereum node: " + err.Error())
     }
+    *client = *clientV
 
     // Initialise Rocket Pool contract manager
-    rp, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
+    cmV, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress"))
     if err != nil {
-        return nil, nil, nil, nil, nil, "", err
+        return "", err
     }
+    *cm = *cmV
 
     // Loading channels
     successChannel := make(chan bool)
@@ -43,7 +53,7 @@ func setup(c *cli.Context, loadContracts []string) (*accounts.AccountManager, *e
 
     // Load Rocket Pool contracts
     go (func() {
-        err := rp.LoadContracts(loadContracts)
+        err := cm.LoadContracts(loadContracts)
         if err != nil {
             errorChannel <- err
         } else {
@@ -51,7 +61,7 @@ func setup(c *cli.Context, loadContracts []string) (*accounts.AccountManager, *e
         }
     })()
     go (func() {
-        err := rp.LoadABIs([]string{"rocketNodeContract"})
+        err := cm.LoadABIs(loadAbis)
         if err != nil {
             errorChannel <- err
         } else {
@@ -65,28 +75,28 @@ func setup(c *cli.Context, loadContracts []string) (*accounts.AccountManager, *e
             case <-successChannel:
                 received++
             case err := <-errorChannel:
-                return nil, nil, nil, nil, nil, "", err
+                return "", err
         }
     }
 
     // Check node is registered & get node contract address
-    nodeContractAddress := new(common.Address)
-    err = rp.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
+    err = cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address)
     if err != nil {
-        return nil, nil, nil, nil, nil, "", errors.New("Error checking node registration: " + err.Error())
+        return "", errors.New("Error checking node registration: " + err.Error())
     }
     if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
-        return nil, nil, nil, nil, nil, "Node is not registered with Rocket Pool, please register with `rocketpool node register`", nil
+        return "Node is not registered with Rocket Pool, please register with `rocketpool node register`", nil
     }
 
     // Initialise node contract
-    nodeContract, err := rp.NewContract(nodeContractAddress, "rocketNodeContract")
+    nodeContractV, err := cm.NewContract(nodeContractAddress, "rocketNodeContract")
     if err != nil {
-        return nil, nil, nil, nil, nil, "", errors.New("Error initialising node contract: " + err.Error())
+        return "", errors.New("Error initialising node contract: " + err.Error())
     }
+    *nodeContract = *nodeContractV
 
     // Return
-    return am, client, rp, nodeContractAddress, nodeContract, "", nil
+    return "", nil
 
 }
 

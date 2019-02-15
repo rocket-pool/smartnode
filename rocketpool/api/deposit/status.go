@@ -14,12 +14,11 @@ import (
 func getDepositStatus(c *cli.Context) error {
 
     // Command setup
-    _, _, rp, _, nodeContract, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"})
+    message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{"rocketNodeContract"})
     if message != "" {
         fmt.Println(message)
         return nil
-    }
-    if err != nil {
+    } else if err != nil {
         return err
     }
 
@@ -40,7 +39,7 @@ func getDepositStatus(c *cli.Context) error {
 
     // Get node deposit reservation details
     go (func() {
-        reservation, err := node.GetReservationDetails(nodeContract, rp)
+        reservation, err := node.GetReservationDetails(nodeContract, cm)
         if err != nil {
             errorChannel <- err
         } else {

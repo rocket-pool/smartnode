@@ -12,12 +12,11 @@ import (
 func cancelDeposit(c *cli.Context) error {
 
     // Command setup
-    am, _, _, _, nodeContract, message, err := setup(c, []string{"rocketNodeAPI"})
+    message, err := setup(c, []string{"rocketNodeAPI"}, []string{"rocketNodeContract"})
     if message != "" {
         fmt.Println(message)
         return nil
-    }
-    if err != nil {
+    } else if err != nil {
         return err
     }
 

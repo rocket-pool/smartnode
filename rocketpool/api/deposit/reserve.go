@@ -28,12 +28,11 @@ type DepositInput struct {
 func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Command setup
-    am, _, rp, _, nodeContract, message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"})
+    message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{"rocketNodeContract"})
     if message != "" {
         fmt.Println(message)
         return nil
-    }
-    if err != nil {
+    } else if err != nil {
         return err
     }
 
@@ -58,7 +57,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Check node deposits are enabled
     go (func() {
         depositsAllowed := new(bool)
-        err := rp.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed")
+        err := cm.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed")
         if err != nil {
             errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
         } else if !*depositsAllowed {
@@ -137,7 +136,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     }
 
     // Get deposit reservation details
-    reservation, err := node.GetReservationDetails(nodeContract, rp)
+    reservation, err := node.GetReservationDetails(nodeContract, cm)
     if err != nil {
         return err
     }
