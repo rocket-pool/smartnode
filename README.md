@@ -1,8 +1,6 @@
 TODO: Add a complete list of CLI commands when available and detailed descriptions + link to docs. Add more detailed descriptions of the requirements, installation guide and a FAQ. Also include a list of benefits for running a Rocket Pool smart node.
 
-# Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool 
-
-*NOTE: The current version of Rocket Pool Smart Node CLI requires GoLang.
+# Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="500" />
@@ -25,3 +23,31 @@ The package contains a command line interface that will allow node operators to 
 ## Daemons
 
 The package also contains several services that operate in the background called daemons. They monitor the beacon chain on the Ethereum network and also monitor the Rocket Pool network.
+
+# CLI Commands
+
+Rocket Pool Smart Nodes are primarily managed by the `rocketpool` CLI application. The following commands are available:
+
+- `rocketpool node status` - Displays information about the status of the smart node
+- `rocketpool node init` - Initialises the smart node with an account used for all transactions with the Rocket Pool network
+- `rocketpool node register` - Registers the smart node with the Rocket Pool network
+- `rocketpool node withdraw` - Withdraws resources from the smart node contract back to the node account
+- `rocketpool node timezone` - Set's the smart node's timezone information for display on the Rocket Pool website
+
+- `rocketpool deposit status` - Displays information about the smart node's current pending deposit, if any
+- `rocketpool deposit reserve` - Reserves a deposit with the Rocket Pool network and calculates the ETH and RPL requirements to finalize it
+- `rocketpool deposit cancel` - Cancels the smart node's current pending deposit
+- `rocketpool deposit complete` - Completes the smart node's current pending deposit, sending any required ETH and RPL, and displays information about the created minipool
+
+- `rocketpool fee display` - Displays the current user fee charged by all node operators in the Rocket Pool network, and the target fee to vote for, if set locally
+- `rocketpool fee set` - Sets the target user fee to vote for during node checkin, locally
+
+- `rocketpool service` - Contains subcommands for managing smart node daemon services
+- `rocketpool service [name] install` - Installs the specified smart node daemon on the operating system
+- `rocketpool service [name] uninstall` - Uninstalls the specified smart node daemon from the operating system
+- `rocketpool service [name] enable` - Enables the specified smart node daemon on operating system startup
+- `rocketpool service [name] disable` - Disables the specified smart node daemon on operating system startup
+- `rocketpool service [name] start` - Starts the specified smart node daemon as a background process
+- `rocketpool service [name] stop` - Stops the specified smart node daemon if running as a background process
+- `rocketpool service [name] status` - Displays the current status of the specified smart node daemon
+- `rocketpool service [name] run` - Runs the specified smart node daemon; typically not used manually except during testing
