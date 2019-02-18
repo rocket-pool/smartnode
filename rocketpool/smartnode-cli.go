@@ -9,6 +9,7 @@ import (
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/api/deposit"
     "github.com/rocket-pool/smartnode-cli/rocketpool/api/fee"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/api/minipool"
     "github.com/rocket-pool/smartnode-cli/rocketpool/api/node"
     "github.com/rocket-pool/smartnode-cli/rocketpool/api/service"
 )
@@ -76,10 +77,11 @@ ______           _        _    ______           _
     }
 
     // Register api commands
-    deposit.RegisterCommands(app, "deposit", []string{"d"})
-        fee.RegisterCommands(app, "fee",     []string{"f"})
-       node.RegisterCommands(app, "node",    []string{"n"})
-    service.RegisterCommands(app, "service", []string{"s"})
+     deposit.RegisterCommands(app, "deposit",  []string{"d"})
+         fee.RegisterCommands(app, "fee",      []string{"f"})
+    minipool.RegisterCommands(app, "minipool", []string{"m"})
+        node.RegisterCommands(app, "node",     []string{"n"})
+     service.RegisterCommands(app, "service",  []string{"s"})
 
     // Run application
     if err := app.Run(os.Args); err != nil {
