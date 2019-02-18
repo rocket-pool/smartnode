@@ -3,7 +3,7 @@ package eth
 import (
     "math/big"
 
-    "github.com/ethereum/go-ethereum/crypto/sha3"
+    "golang.org/x/crypto/sha3"
 )
 
 
@@ -36,7 +36,7 @@ func EthToWei(eth float64) *big.Int {
 func KeccakBytes(src []byte) [32]byte {
 
     // Hash source data
-    hash := sha3.NewKeccak256()
+    hash := sha3.NewLegacyKeccak256()
     hash.Write(src[:])
 
     // Copy hashed data to byte array
