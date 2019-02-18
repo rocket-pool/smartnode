@@ -67,7 +67,7 @@ ______           _        _    ______           _
         cli.StringFlag{
             Name:   "provider, p",
             Usage:  "PoW chain provider `url`",
-            Value:  "ws://localhost:8545",
+            Value:  "http://localhost:8545",
         },
         cli.StringFlag{
             Name:   "storageAddress, s",
