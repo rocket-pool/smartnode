@@ -15,6 +15,7 @@ import (
 type Details struct {
     Address *common.Address
     Status uint8
+    StatusType string
     StatusTime time.Time
     StakingDurationId string
     NodeEtherBalanceWei *big.Int
@@ -155,8 +156,25 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
         }
     }
 
+    // Set status type
+    details.StatusType = getStatusType(details.Status)
+
     // Return
     return details, nil
 
+}
+
+
+// Get the status type by value
+func getStatusType(value uint8) string {
+    switch value {
+        case 1: return "pre-launch"
+        case 2: return "staking"
+        case 3: return "logged out"
+        case 4: return "withdrawn"
+        case 5: return "closed"
+        case 6: return "timed out"
+        default: return "initialized"
+    }
 }
 
