@@ -91,15 +91,15 @@ func getMinipoolStatus(c *cli.Context) error {
     fmt.Println(fmt.Sprintf("Node has %d minipools", minipoolCount))
     for _, details := range minipoolDetails {
         fmt.Println("--------")
-        fmt.Println("Address:                ", details.Address.Hex())
-        fmt.Println("Status:                 ", details.StatusType)
-        fmt.Println("Status Updated Time:    ", details.StatusTime.Format("2006-01-02, 15:04 -0700 MST"))
-        fmt.Println("Staking Duration:       ", details.StakingDurationId)
-        fmt.Println("Node ETH Balance:       ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeEtherBalanceWei)))
-        fmt.Println("Node RPL Balance:       ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeRplBalanceWei)))
-        fmt.Println("User Count:             ", details.UserCount.String())
-        fmt.Println("User Deposit Capacity:  ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositCapacityWei)))
-        fmt.Println("User Deposit Total:     ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositTotalWei)))
+        fmt.Println("Address:               ", details.Address.Hex())
+        fmt.Println("Status:                ", details.StatusType)
+        fmt.Println("Status Updated Time:   ", details.StatusTime.Format("2006-01-02, 15:04 -0700 MST"))
+        fmt.Println("Staking Duration:      ", details.StakingDurationId)
+        fmt.Println("Node ETH Balance:      ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeEtherBalanceWei)))
+        fmt.Println("Node RPL Balance:      ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeRplBalanceWei)))
+        fmt.Println("User Count:            ", details.UserCount.String())
+        fmt.Println("User Deposit Capacity: ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositCapacityWei)))
+        fmt.Println("User Deposit Total:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositTotalWei)))
     }
     return nil
 
