@@ -35,6 +35,7 @@ Rocket Pool Smart Nodes are primarily managed by the `rocketpool` CLI applicatio
 - `rocketpool node timezone` - Set's the smart node's timezone information for display on the Rocket Pool website
 
 - `rocketpool deposit status` - Displays information about the smart node's current pending deposit, if any
+- `rocketpool deposit required` - Displays the required deposit amount, RPL requirement and RPL ratio for the specified staking duration
 - `rocketpool deposit reserve` - Reserves a deposit with the Rocket Pool network and calculates the ETH and RPL requirements to finalize it
 - `rocketpool deposit cancel` - Cancels the smart node's current pending deposit
 - `rocketpool deposit complete` - Completes the smart node's current pending deposit, sending any required ETH and RPL, and displays information about the created minipool
