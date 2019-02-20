@@ -1,25 +1,23 @@
 const fs = require('fs');
 const Web3 = require('web3');
-
-// Rocketpool project path
-const rpPath = __dirname + '/../../../../../../rocketpool/rocketpool/';
+const config = require('./config');
 
 // Contracts
-const RocketGroupAPI = JSON.parse(fs.readFileSync(rpPath + 'build/contracts/RocketGroupAPI.json'));
-const RocketGroupContract = JSON.parse(fs.readFileSync(rpPath + 'build/contracts/RocketGroupContract.json'));
-const RocketGroupSettings = JSON.parse(fs.readFileSync(rpPath + 'build/contracts/RocketGroupSettings.json'));
+const RocketGroupAPI = JSON.parse(fs.readFileSync(config.rocketPoolPath + 'build/contracts/RocketGroupAPI.json'));
+const RocketGroupContract = JSON.parse(fs.readFileSync(config.rocketPoolPath + 'build/contracts/RocketGroupContract.json'));
+const RocketGroupSettings = JSON.parse(fs.readFileSync(config.rocketPoolPath + 'build/contracts/RocketGroupSettings.json'));
 
 // Create group & accessor
 async function createGroupAccessor() {
     try {
 
+        // Initialise web3
+        const web3 = new Web3(config.providerUrl);
+
         // Parse arguments
         let args = process.argv.slice(2);
         if (args.length != 1) throw new Error('Usage: node create-group-accessor.js groupName');
         let groupName = args[0];
-
-        // Initialise web3
-        const web3 = new Web3('http://localhost:8545');
 
         // Get network ID & accounts
         let networkId = await web3.eth.net.getId();

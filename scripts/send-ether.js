@@ -1,11 +1,12 @@
 const Web3 = require('web3');
+const config = require('./config');
 
 // Send ether to an account
 async function sendEther() {
     try {
 
         // Initialise web3
-        const web3 = new Web3('http://localhost:8545');
+        const web3 = new Web3(config.providerUrl);
 
         // Parse arguments
         let args = process.argv.slice(2);

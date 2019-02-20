@@ -1,18 +1,16 @@
 const fs = require('fs');
 const Web3 = require('web3');
-
-// Rocketpool project path
-const rpPath = __dirname + '/../../../../../../rocketpool/rocketpool/';
+const config = require('./config');
 
 // Contracts
-const RocketGroupAccessorContract = JSON.parse(fs.readFileSync(rpPath + 'build/contracts/RocketGroupAccessorContract.json'));
+const RocketGroupAccessorContract = JSON.parse(fs.readFileSync(config.rocketPoolPath + 'build/contracts/RocketGroupAccessorContract.json'));
 
 // Make user deposit
 async function userDeposit() {
     try {
 
         // Initialise web3
-        const web3 = new Web3('http://localhost:8545');
+        const web3 = new Web3(config.providerUrl);
 
         // Parse arguments
         let args = process.argv.slice(2);

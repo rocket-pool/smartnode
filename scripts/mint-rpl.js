@@ -1,18 +1,16 @@
 const fs = require('fs');
 const Web3 = require('web3');
-
-// Rocketpool project path
-const rpPath = __dirname + '/../../../../../../rocketpool/rocketpool/';
+const config = require('./config');
 
 // Contracts
-const DummyRocketPoolToken = JSON.parse(fs.readFileSync(rpPath + 'build/contracts/DummyRocketPoolToken.json'));
+const DummyRocketPoolToken = JSON.parse(fs.readFileSync(config.rocketPoolPath + 'build/contracts/DummyRocketPoolToken.json'));
 
 // Mint RPL to an address
 async function mintRpl() {
     try {
 
         // Initialise web3
-        const web3 = new Web3('http://localhost:8545');
+        const web3 = new Web3(config.providerUrl);
 
         // Parse arguments
         let args = process.argv.slice(2);
