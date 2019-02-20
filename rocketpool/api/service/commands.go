@@ -8,6 +8,7 @@ import (
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/daemons"
     "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/smartnode"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/validator"
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
 )
 
@@ -26,6 +27,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"s"},
                 Usage:     "Manage smartnode daemon service",
                 Subcommands: serviceCommands("smartnode", smartnode.Run),
+            },
+
+            // Validator service commands
+            cli.Command{
+                Name:      "validator",
+                Aliases:   []string{"v"},
+                Usage:     "Manage validator daemon service",
+                Subcommands: serviceCommands("validator", validator.Run),
             },
 
         },

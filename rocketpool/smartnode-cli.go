@@ -74,6 +74,11 @@ ______           _        _    ______           _
             Usage:  "PoW chain Rocket Pool storage contract `address`",
             Value:  "0x70a5F2eB9e4C003B105399b471DAeDbC8d00B1c5", // Ganache
         },
+        cli.StringFlag{
+            Name:   "beacon, b",
+            Usage:  "Beacon chain provider `url`",
+            Value:  "http://localhost:9545", // Simulator
+        },
     }
 
     // Register api commands
