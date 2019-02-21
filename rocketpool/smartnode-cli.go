@@ -77,7 +77,7 @@ ______           _        _    ______           _
         cli.StringFlag{
             Name:   "beacon, b",
             Usage:  "Beacon chain provider `url`",
-            Value:  "http://localhost:9545", // Simulator
+            Value:  "ws://localhost:9545", // Simulator
         },
     }
 

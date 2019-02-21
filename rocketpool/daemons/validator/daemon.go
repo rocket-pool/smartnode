@@ -4,6 +4,8 @@ import (
     "fmt"
 
     "github.com/urfave/cli"
+
+    "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/validator/beacon"
 )
 
 
@@ -14,7 +16,8 @@ func Run(c *cli.Context) error {
     errorChannel := make(chan error)
     fatalErrorChannel := make(chan error)
 
-
+    // Start beacon activity process
+    go beacon.StartActivityProcess(c, errorChannel, fatalErrorChannel)
 
     // Block thread; log errors and return fatal errors
     for {
