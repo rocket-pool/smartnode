@@ -158,7 +158,7 @@ func readMessage(wsConnection *websocket.Conn) (*ServerMessage, error) {
     // Read message
     messageType, messageData, err := wsConnection.ReadMessage()
     if err != nil {
-       return nil, errors.New("Error reading beacon message: " + err.Error())
+        return nil, errors.New("Error reading beacon message: " + err.Error())
     }
 
     // Check message type
