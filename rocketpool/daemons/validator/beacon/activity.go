@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "errors"
     "fmt"
+    "log"
     "strings"
     "time"
 
@@ -69,15 +70,15 @@ func connectToBeacon(providerUrl string) {
     if err != nil {
 
         // Log connection errors and retry
-        fmt.Println(errors.New("Error connecting to beacon server: " + err.Error()))
-        fmt.Println(fmt.Sprintf("Retrying in %s...", reconnectInterval.String()))
+        log.Println(errors.New("Error connecting to beacon server: " + err.Error()))
+        log.Println(fmt.Sprintf("Retrying in %s...", reconnectInterval.String()))
         connectionTimer.Reset(reconnectInterval)
         return
 
     }
 
     // Log success & defer close
-    fmt.Println("Connected to beacon server at", providerUrl)
+    log.Println("Connected to beacon server at", providerUrl)
     defer wsConnection.Close()
 
     // Validator active statuses
@@ -92,7 +93,7 @@ func connectToBeacon(providerUrl string) {
         defer close(closed)
         for {
             if message, err, didClose := readMessage(wsConnection); err != nil {
-                fmt.Println(err)
+                log.Println(err)
                 if didClose { return }
             } else {
                 switch message.Message {
@@ -115,19 +116,19 @@ func connectToBeacon(providerUrl string) {
 
                             // Inactive
                             case "inactive":
-                                fmt.Println(fmt.Sprintf("Validator %s is inactive, waiting until active...", message.Pubkey))
+                                log.Println(fmt.Sprintf("Validator %s is inactive, waiting until active...", message.Pubkey))
                                 validatorActive[strings.ToLower(message.Pubkey)] = false
 
                             // Active
                             case "active":
-                                fmt.Println(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey))
+                                log.Println(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey))
                                 validatorActive[strings.ToLower(message.Pubkey)] = true
 
                             // Exited
                             case "exited": fallthrough
                             case "withdrawable": fallthrough
                             case "withdrawn":
-                                fmt.Println(fmt.Sprintf("Validator %s has exited...", message.Pubkey))
+                                log.Println(fmt.Sprintf("Validator %s has exited...", message.Pubkey))
                                 validatorActive[strings.ToLower(message.Pubkey)] = false
 
                         }
@@ -138,16 +139,16 @@ func connectToBeacon(providerUrl string) {
                         // Send activity for active validators
                         for _, pubkey := range pubkeys {
                             if validatorActive[strings.ToLower(pubkey)] {
-                                fmt.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkey))
+                                log.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkey))
 
                                 // Send activity
                                 if payload, err := json.Marshal(ClientMessage{
                                     Message: "activity",
                                     Pubkey: pubkey,
                                 }); err != nil {
-                                    fmt.Println(errors.New("Error encoding activity payload: " + err.Error()))
+                                    log.Println(errors.New("Error encoding activity payload: " + err.Error()))
                                 } else if err := wsConnection.WriteMessage(websocket.TextMessage, payload); err != nil {
-                                    fmt.Println(errors.New("Error sending activity message: " + err.Error()))
+                                    log.Println(errors.New("Error sending activity message: " + err.Error()))
                                 }
 
                             }
@@ -156,12 +157,12 @@ func connectToBeacon(providerUrl string) {
                     // Success response
                     case "success":
                         if message.Action == "process_activity" {
-                            fmt.Println("Processed validator activity successfully...")
+                            log.Println("Processed validator activity successfully...")
                         }
 
                     // Error
                     case "error":
-                        fmt.Println("A beacon server error occurred:", message.Error)
+                        log.Println("A beacon server error occurred:", message.Error)
 
                 }
             }
@@ -174,16 +175,16 @@ func connectToBeacon(providerUrl string) {
             Message: "get_validator_status",
             Pubkey: pubkey,
         }); err != nil {
-            fmt.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
+            log.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
         } else if err := wsConnection.WriteMessage(websocket.TextMessage, payload); err != nil {
-            fmt.Println(errors.New("Error sending get validator status message: " + err.Error()))
+            log.Println(errors.New("Error sending get validator status message: " + err.Error()))
         }
     }
 
     // Block thread until closed, reconnect
     select {
         case <-closed:
-            fmt.Println(fmt.Sprintf("Connection closed, reconnecting in %s...", reconnectInterval.String()))
+            log.Println(fmt.Sprintf("Connection closed, reconnecting in %s...", reconnectInterval.String()))
             connectionTimer.Reset(reconnectInterval)
     }
 
