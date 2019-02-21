@@ -30,6 +30,7 @@ const NODE_FEE_VOTE_DECREASE int64 = 2
 
 // Shared vars
 var checkinInterval, _ = time.ParseDuration(CHECKIN_INTERVAL)
+var checkinTimer *time.Timer
 var db = new(database.Database)
 var am = new(accounts.AccountManager)
 var cm = new(rocketpool.ContractManager)
@@ -37,7 +38,7 @@ var nodeContract = new(bind.BoundContract)
 
 
 // Start node checkin process
-func StartCheckinProcess(c *cli.Context, errorChannel chan error, fatalErrorChannel chan error) {
+func StartCheckinProcess(c *cli.Context, fatalErrorChannel chan error) {
 
     // Setup
     if err := setup(c); err != nil {
@@ -48,7 +49,7 @@ func StartCheckinProcess(c *cli.Context, errorChannel chan error, fatalErrorChan
     // Get last checkin time
     lastCheckinTime := new(int64)
     if err := db.GetAtomic("node.checkin.latest", lastCheckinTime); err != nil {
-        errorChannel <- err
+        fmt.Println(err)
     }
 
     // Get next checkin time
@@ -66,16 +67,16 @@ func StartCheckinProcess(c *cli.Context, errorChannel chan error, fatalErrorChan
     }
 
     // Initialise checkin timer
-    checkinTimer := time.NewTimer(nextCheckinDuration)
+    checkinTimer = time.NewTimer(nextCheckinDuration)
     for _ = range checkinTimer.C {
-        checkin(checkinTimer, errorChannel)
+        checkin()
     }
 
 }
 
 
 // Perform node checkin
-func checkin(checkinTimer *time.Timer, errorChannel chan error) {
+func checkin() {
 
     // Log
     fmt.Println("Checking in...")
@@ -83,22 +84,22 @@ func checkin(checkinTimer *time.Timer, errorChannel chan error) {
     // Get average server load
     serverLoad, err := getServerLoad()
     if err != nil {
-        errorChannel <- err
+        fmt.Println(err)
     }
 
     // Get node fee vote
     nodeFeeVote, err := getNodeFeeVote()
     if err != nil {
-        errorChannel <- err
+        fmt.Println(err)
     }
 
     // Checkin
     if txor, err := am.GetNodeAccountTransactor(); err != nil {
-        errorChannel <- err
+        fmt.Println(err)
     } else {
-        txor.GasLimit = 250000 // Gas estimates on this method are incorrect
+        txor.GasLimit = 400000 // Gas estimates on this method are incorrect
         if _, err := nodeContract.Transact(txor, "checkin", eth.EthToWei(serverLoad), big.NewInt(nodeFeeVote)); err != nil {
-            errorChannel <- errors.New("Error checking in with Rocket Pool: " + err.Error())
+            fmt.Println(errors.New("Error checking in with Rocket Pool: " + err.Error()))
         } else {
             fmt.Println(fmt.Sprintf("Checked in successfully with an average load of %.2f%% and a node fee vote of '%s'", serverLoad * 100, getNodeFeeVoteType(nodeFeeVote)))
         }
@@ -106,7 +107,7 @@ func checkin(checkinTimer *time.Timer, errorChannel chan error) {
 
     // Set last checkin time
     if err := db.PutAtomic("node.checkin.latest", time.Now().Unix()); err != nil {
-        errorChannel <- err
+        fmt.Println(err)
     }
 
     // Log time until next checkin
