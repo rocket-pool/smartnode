@@ -5,10 +5,22 @@ import (
     "errors"
     "fmt"
     "strings"
+    "time"
 
     "github.com/gorilla/websocket"
     "github.com/urfave/cli"
 )
+
+
+// Config
+const RECONNECT_INTERVAL string = "15s"
+
+
+// Shared vars
+var immediate, _ = time.ParseDuration("0s")
+var reconnectInterval, _ = time.ParseDuration(RECONNECT_INTERVAL)
+var connectionTimer *time.Timer
+var pubkeys []string
 
 
 // Client message to server
@@ -31,21 +43,41 @@ type ServerMessage struct {
 
 
 // Start beacon activity process
-func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorChannel chan error) {
+func StartActivityProcess(c *cli.Context, fatalErrorChannel chan error) {
 
     // Get node's validator pubkeys
     // :TODO: implement once BLS library is available
-    pubkeys := []string{
+    pubkeys = []string{
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd01",
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd02",
     }
 
-    // Open websocket connection to beacon server
-    wsConnection, _, err := websocket.DefaultDialer.Dial(c.GlobalString("beacon"), nil)
-    if err != nil {
-        fatalErrorChannel <- errors.New("Error connecting to beacon server: " + err.Error())
-        return
+    // Initialise beacon connection timer
+    connectionTimer = time.NewTimer(immediate)
+    for _ = range connectionTimer.C {
+        connectToBeacon(c.GlobalString("beacon"))
     }
+
+}
+
+
+// Connect to beacon server and start validation
+func connectToBeacon(providerUrl string) {
+
+    // Open websocket connection to beacon server
+    wsConnection, _, err := websocket.DefaultDialer.Dial(providerUrl, nil)
+    if err != nil {
+
+        // Log connection errors and retry
+        fmt.Println(errors.New("Error connecting to beacon server: " + err.Error()))
+        fmt.Println(fmt.Sprintf("Retrying in %s...", reconnectInterval.String()))
+        connectionTimer.Reset(reconnectInterval)
+        return
+
+    }
+
+    // Log success & defer close
+    fmt.Println("Connected to beacon server at", providerUrl)
     defer wsConnection.Close()
 
     // Validator active statuses
@@ -55,13 +87,13 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
     }
 
     // Handle beacon messages
-    done := make(chan struct{})
+    closed := make(chan struct{})
     go (func() {
-        defer close(done)
+        defer close(closed)
         for {
-            if message, err, abort := readMessage(wsConnection); err != nil {
-                errorChannel <- err
-                if abort { return }
+            if message, err, didClose := readMessage(wsConnection); err != nil {
+                fmt.Println(err)
+                if didClose { return }
             } else {
                 switch message.Message {
 
@@ -95,9 +127,8 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
                             case "exited": fallthrough
                             case "withdrawable": fallthrough
                             case "withdrawn":
-                                fmt.Println(fmt.Sprintf("Validator %s has exited, closing connection", message.Pubkey))
+                                fmt.Println(fmt.Sprintf("Validator %s has exited...", message.Pubkey))
                                 validatorActive[strings.ToLower(message.Pubkey)] = false
-                                wsConnection.Close()
 
                         }
 
@@ -114,9 +145,9 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
                                     Message: "activity",
                                     Pubkey: pubkey,
                                 }); err != nil {
-                                    errorChannel <- errors.New("Error encoding activity payload: " + err.Error())
+                                    fmt.Println(errors.New("Error encoding activity payload: " + err.Error()))
                                 } else if err := wsConnection.WriteMessage(websocket.TextMessage, payload); err != nil {
-                                    errorChannel <- errors.New("Error sending activity message: " + err.Error())
+                                    fmt.Println(errors.New("Error sending activity message: " + err.Error()))
                                 }
 
                             }
@@ -143,15 +174,17 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
             Message: "get_validator_status",
             Pubkey: pubkey,
         }); err != nil {
-            errorChannel <- errors.New("Error encoding get validator status payload: " + err.Error())
+            fmt.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
         } else if err := wsConnection.WriteMessage(websocket.TextMessage, payload); err != nil {
-            errorChannel <- errors.New("Error sending get validator status message: " + err.Error())
+            fmt.Println(errors.New("Error sending get validator status message: " + err.Error()))
         }
     }
 
-    // Block thread until done
+    // Block thread until closed, reconnect
     select {
-        case <-done:
+        case <-closed:
+            fmt.Println(fmt.Sprintf("Connection closed, reconnecting in %s...", reconnectInterval.String()))
+            connectionTimer.Reset(reconnectInterval)
     }
 
 }
