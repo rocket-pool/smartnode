@@ -122,10 +122,8 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Create deposit reservation
     if txor, err := am.GetNodeAccountTransactor(); err != nil {
         return err
-    } else {
-        if _, err := nodeContract.Transact(txor, "depositReserve", durationId, depositInput); err != nil {
-            return errors.New("Error making deposit reservation: " + err.Error())
-        }
+    } else if _, err := nodeContract.Transact(txor, "depositReserve", durationId, depositInput); err != nil {
+        return errors.New("Error making deposit reservation: " + err.Error())
     }
 
     // Get deposit reservation details

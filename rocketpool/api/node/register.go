@@ -124,10 +124,8 @@ func registerNode(c *cli.Context) error {
     // Register node
     if txor, err := am.GetNodeAccountTransactor(); err != nil {
         return err
-    } else {
-        if _, err := cm.Contracts["rocketNodeAPI"].Transact(txor, "add", timezone); err != nil {
-            return errors.New("Error registering node: " + err.Error())
-        }
+    } else if _, err := cm.Contracts["rocketNodeAPI"].Transact(txor, "add", timezone); err != nil {
+        return errors.New("Error registering node: " + err.Error())
     }
 
     // Get node contract address

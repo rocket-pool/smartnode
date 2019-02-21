@@ -36,10 +36,8 @@ func setNodeTimezone(c *cli.Context) error {
     // Set node timezone
     if txor, err := am.GetNodeAccountTransactor(); err != nil {
         return err
-    } else {
-        if _, err := cm.Contracts["rocketNodeAPI"].Transact(txor, "setTimezoneLocation", timezone); err != nil {
-            return errors.New("Error setting node timezone: " + err.Error())
-        }
+    } else if _, err := cm.Contracts["rocketNodeAPI"].Transact(txor, "setTimezoneLocation", timezone); err != nil {
+        return errors.New("Error setting node timezone: " + err.Error())
     }
 
     // Get node timezone

@@ -31,10 +31,8 @@ func cancelDeposit(c *cli.Context) error {
     // Cancel deposit reservation
     if txor, err := am.GetNodeAccountTransactor(); err != nil {
         return err
-    } else {
-        if _, err := nodeContract.Transact(txor, "depositReserveCancel"); err != nil {
-            return errors.New("Error canceling deposit reservation: " + err.Error())
-        }
+    } else if _, err := nodeContract.Transact(txor, "depositReserveCancel"); err != nil {
+        return errors.New("Error canceling deposit reservation: " + err.Error())
     }
 
     // Log & return
