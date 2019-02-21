@@ -11,6 +11,25 @@ import (
 )
 
 
+// Client message to server
+type ClientMessage struct {
+    Message string  `json:"message"`
+    Pubkey string   `json:"pubkey"`
+}
+
+
+// Server message to client
+type ServerMessage struct {
+    Message string  `json:"message"`
+    Pubkey string   `json:"pubkey"`
+    Status struct {
+        Code string `json:"code"`
+    }               `json:"status"`
+    Action string   `json:"action"`
+    Error string    `json:"error"`
+}
+
+
 // Start beacon activity process
 func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorChannel chan error) {
 
@@ -48,16 +67,8 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
                 } else {
 
                     // Decode message
-                    message := struct{
-                        Message string  `json:"message"`
-                        Pubkey string   `json:"pubkey"`
-                        Status struct {
-                            Code string     `json:"code"`
-                        }               `json:"status"`
-                        Action string   `json:"action"`
-                        Error string    `json:"error"`
-                    }{}
-                    if err := json.Unmarshal(messageData, &message); err != nil {
+                    message := new(ServerMessage)
+                    if err := json.Unmarshal(messageData, message); err != nil {
                         errorChannel <- errors.New("Error decoding beacon chain message: " + err.Error())
                     } else {
                         switch message.Message {
@@ -107,12 +118,9 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
                                         fmt.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkey))
 
                                         // Send activity
-                                        if payload, err := json.Marshal(struct{
-                                            Message string  `json:"message"`
-                                            Pubkey string   `json:"pubkey"`
-                                        }{
-                                            "activity",
-                                            pubkey,
+                                        if payload, err := json.Marshal(ClientMessage{
+                                            Message: "activity",
+                                            Pubkey: pubkey,
                                         }); err != nil {
                                             errorChannel <- errors.New("Error encoding activity payload: " + err.Error())
                                         } else if err := wsConnection.WriteMessage(websocket.TextMessage, payload); err != nil {
@@ -143,12 +151,9 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
 
     // Request validator statuses
     for _, pubkey := range pubkeys {
-        if payload, err := json.Marshal(struct{
-            Message string  `json:"message"`
-            Pubkey string   `json:"pubkey"`
-        }{
-            "get_validator_status",
-            pubkey,
+        if payload, err := json.Marshal(ClientMessage{
+            Message: "get_validator_status",
+            Pubkey: pubkey,
         }); err != nil {
             errorChannel <- errors.New("Error encoding get validator status payload: " + err.Error())
         } else if err := wsConnection.WriteMessage(websocket.TextMessage, payload); err != nil {
