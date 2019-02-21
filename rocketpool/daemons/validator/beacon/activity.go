@@ -40,10 +40,10 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd02",
     }
 
-    // Open websocket connection to beacon chain
+    // Open websocket connection to beacon server
     wsConnection, _, err := websocket.DefaultDialer.Dial(c.GlobalString("beacon"), nil)
     if err != nil {
-        fatalErrorChannel <- errors.New("Error connecting to beacon chain: " + err.Error())
+        fatalErrorChannel <- errors.New("Error connecting to beacon server: " + err.Error())
         return
     }
     defer wsConnection.Close()
@@ -54,97 +54,82 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
         validatorActive[strings.ToLower(pubkey)] = false
     }
 
-    // Handle server messages
+    // Handle beacon messages
     go (func() {
         for {
-            if messageType, messageData, err := wsConnection.ReadMessage(); err != nil {
-                errorChannel <- errors.New("Error reading beacon chain message: " + err.Error())
+            if message, err := readMessage(wsConnection); err != nil {
+                errorChannel <- err
             } else {
+                switch message.Message {
 
-                // Check message type
-                if messageType != websocket.TextMessage {
-                    errorChannel <- errors.New("Unrecognised beacon chain message type")
-                } else {
+                    // Validator status
+                    case "validator_status":
 
-                    // Decode message
-                    message := new(ServerMessage)
-                    if err := json.Unmarshal(messageData, message); err != nil {
-                        errorChannel <- errors.New("Error decoding beacon chain message: " + err.Error())
-                    } else {
-                        switch message.Message {
+                        // Check validator pubkey
+                        found := false
+                        for _, pubkey := range pubkeys {
+                            if strings.ToLower(pubkey) == strings.ToLower(message.Pubkey) {
+                                found = true
+                                break
+                            }
+                        }
+                        if !found { break }
 
-                            // Validator status
-                            case "validator_status":
+                        // Handle statuses
+                        switch message.Status.Code {
 
-                                // Check validator pubkey
-                                found := false
-                                for _, pubkey := range pubkeys {
-                                    if strings.ToLower(pubkey) == strings.ToLower(message.Pubkey) {
-                                        found = true
-                                        break
-                                    }
-                                }
-                                if !found { break }
+                            // Inactive
+                            case "inactive":
+                                fmt.Println(fmt.Sprintf("Validator %s is inactive, waiting until active...", message.Pubkey))
+                                validatorActive[strings.ToLower(message.Pubkey)] = false
 
-                                // Handle statuses
-                                switch message.Status.Code {
+                            // Active
+                            case "active":
+                                fmt.Println(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey))
+                                validatorActive[strings.ToLower(message.Pubkey)] = true
 
-                                    // Inactive
-                                    case "inactive":
-                                        fmt.Println("Validator is inactive, waiting until active...")
-                                        validatorActive[strings.ToLower(message.Pubkey)] = false
-
-                                    // Active
-                                    case "active":
-                                        fmt.Println("Validator is active, sending activity...")
-                                        validatorActive[strings.ToLower(message.Pubkey)] = true
-
-                                    // Exited
-                                    case "exited": fallthrough
-                                    case "withdrawable": fallthrough
-                                    case "withdrawn":
-                                        fmt.Println("Validator has exited, closing connection")
-                                        validatorActive[strings.ToLower(message.Pubkey)] = false
-                                        wsConnection.Close()
-
-                                }
-
-                            // Epoch
-                            case "epoch":
-
-                                // Send activity for active validators
-                                for _, pubkey := range pubkeys {
-                                    if validatorActive[strings.ToLower(pubkey)] {
-                                        fmt.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkey))
-
-                                        // Send activity
-                                        if payload, err := json.Marshal(ClientMessage{
-                                            Message: "activity",
-                                            Pubkey: pubkey,
-                                        }); err != nil {
-                                            errorChannel <- errors.New("Error encoding activity payload: " + err.Error())
-                                        } else if err := wsConnection.WriteMessage(websocket.TextMessage, payload); err != nil {
-                                            errorChannel <- errors.New("Error sending activity message: " + err.Error())
-                                        }
-
-                                    }
-                                }
-
-                            // Success response
-                            case "success":
-                                if message.Action == "process_activity" {
-                                    fmt.Println("Processed validator activity successfully...")
-                                }
-
-                            // Error
-                            case "error":
-                                fmt.Println("A server error occurred:", message.Error)
+                            // Exited
+                            case "exited": fallthrough
+                            case "withdrawable": fallthrough
+                            case "withdrawn":
+                                fmt.Println(fmt.Sprintf("Validator %s has exited, closing connection", message.Pubkey))
+                                validatorActive[strings.ToLower(message.Pubkey)] = false
+                                wsConnection.Close()
 
                         }
-                    }
+
+                    // Epoch
+                    case "epoch":
+
+                        // Send activity for active validators
+                        for _, pubkey := range pubkeys {
+                            if validatorActive[strings.ToLower(pubkey)] {
+                                fmt.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkey))
+
+                                // Send activity
+                                if payload, err := json.Marshal(ClientMessage{
+                                    Message: "activity",
+                                    Pubkey: pubkey,
+                                }); err != nil {
+                                    errorChannel <- errors.New("Error encoding activity payload: " + err.Error())
+                                } else if err := wsConnection.WriteMessage(websocket.TextMessage, payload); err != nil {
+                                    errorChannel <- errors.New("Error sending activity message: " + err.Error())
+                                }
+
+                            }
+                        }
+
+                    // Success response
+                    case "success":
+                        if message.Action == "process_activity" {
+                            fmt.Println("Processed validator activity successfully...")
+                        }
+
+                    // Error
+                    case "error":
+                        fmt.Println("A beacon server error occurred:", message.Error)
 
                 }
-
             }
         }
     })()
@@ -163,6 +148,32 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
     
     // Block thread
     select {}
+
+}
+
+
+// Read message from beacon
+func readMessage(wsConnection *websocket.Conn) (*ServerMessage, error) {
+
+    // Read message
+    messageType, messageData, err := wsConnection.ReadMessage()
+    if err != nil {
+       return nil, errors.New("Error reading beacon message: " + err.Error())
+    }
+
+    // Check message type
+    if messageType != websocket.TextMessage {
+        return nil, errors.New("Unrecognised beacon message type")
+    }
+
+    // Decode message
+    message := new(ServerMessage)
+    if err := json.Unmarshal(messageData, message); err != nil {
+        return nil, errors.New("Error decoding beacon message: " + err.Error())
+    }
+
+    // Return
+    return message, nil
 
 }
 
