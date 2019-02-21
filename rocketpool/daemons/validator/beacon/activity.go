@@ -55,10 +55,13 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
     }
 
     // Handle beacon messages
+    done := make(chan struct{})
     go (func() {
+        defer close(done)
         for {
-            if message, err := readMessage(wsConnection); err != nil {
+            if message, err, abort := readMessage(wsConnection); err != nil {
                 errorChannel <- err
+                if abort { return }
             } else {
                 switch message.Message {
 
@@ -145,35 +148,37 @@ func StartActivityProcess(c *cli.Context, errorChannel chan error, fatalErrorCha
             errorChannel <- errors.New("Error sending get validator status message: " + err.Error())
         }
     }
-    
-    // Block thread
-    select {}
+
+    // Block thread until done
+    select {
+        case <-done:
+    }
 
 }
 
 
 // Read message from beacon
-func readMessage(wsConnection *websocket.Conn) (*ServerMessage, error) {
+func readMessage(wsConnection *websocket.Conn) (*ServerMessage, error, bool) {
 
     // Read message
     messageType, messageData, err := wsConnection.ReadMessage()
     if err != nil {
-        return nil, errors.New("Error reading beacon message: " + err.Error())
+        return nil, errors.New("Error reading beacon message: " + err.Error()), websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err)
     }
 
     // Check message type
     if messageType != websocket.TextMessage {
-        return nil, errors.New("Unrecognised beacon message type")
+        return nil, errors.New("Unrecognised beacon message type"), false
     }
 
     // Decode message
     message := new(ServerMessage)
     if err := json.Unmarshal(messageData, message); err != nil {
-        return nil, errors.New("Error decoding beacon message: " + err.Error())
+        return nil, errors.New("Error decoding beacon message: " + err.Error()), false
     }
 
     // Return
-    return message, nil
+    return message, nil, false
 
 }
 
