@@ -1,6 +1,7 @@
 package node
 
 import (
+    "bytes"
     "context"
     "errors"
     "math/big"
@@ -11,6 +12,7 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -267,6 +269,52 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
 
     // Return
     return details, nil
+
+}
+
+
+// Get a list of a node's minipool addresses
+// Requires utilAddressSetStorage contract to be loaded with contract manager
+func GetMinipoolAddresses(nodeAccountAddress common.Address, cm *rocketpool.ContractManager) ([]*common.Address, error) {
+
+    // Get node minipool list key
+    minipoolListKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("minipools"), []byte("list.node"), nodeAccountAddress.Bytes()}, []byte{}))
+
+    // Get node minipool count
+    minipoolCountV := new(*big.Int)
+    if err := cm.Contracts["utilAddressSetStorage"].Call(nil, minipoolCountV, "getCount", minipoolListKey); err != nil {
+        return nil, errors.New("Error retrieving node minipool count: " + err.Error())
+    }
+    minipoolCount := (*minipoolCountV).Int64()
+
+    // Get minipool addresses
+    addressChannels := make([]chan *common.Address, minipoolCount)
+    errorChannel := make(chan error)
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        addressChannels[mi] = make(chan *common.Address)
+        go (func(mi int64) {
+            minipoolAddress := new(common.Address)
+            if err := cm.Contracts["utilAddressSetStorage"].Call(nil, minipoolAddress, "getItem", minipoolListKey, big.NewInt(mi)); err != nil {
+                errorChannel <- errors.New("Error retrieving node minipool address: " + err.Error())
+            } else {
+                addressChannels[mi] <- minipoolAddress
+            }
+        })(mi)
+    }
+
+    // Receive minipool addresses
+    minipoolAddresses := make([]*common.Address, minipoolCount)
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        select {
+            case address := <-addressChannels[mi]:
+                minipoolAddresses[mi] = address
+            case err := <-errorChannel:
+                return nil, err
+        }
+    }
+
+    // Return
+    return minipoolAddresses, nil
 
 }
 
