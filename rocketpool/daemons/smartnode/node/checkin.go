@@ -25,14 +25,10 @@ const NODE_FEE_VOTE_DECREASE int64 = 2
 // Shared vars
 var checkinInterval, _ = time.ParseDuration(CHECKIN_INTERVAL)
 var checkinTimer *time.Timer
-var p *services.Provider
 
 
 // Start node checkin process
-func StartCheckinProcess(provider *services.Provider) {
-
-    // Set service provider
-    p = provider
+func StartCheckinProcess(p *services.Provider) {
 
     // Get last checkin time
     lastCheckinTime := new(int64)
@@ -58,7 +54,7 @@ func StartCheckinProcess(provider *services.Provider) {
     go (func() {
         checkinTimer = time.NewTimer(nextCheckinDuration)
         for _ = range checkinTimer.C {
-            checkin()
+            checkin(p)
         }
     })()
 
@@ -66,7 +62,7 @@ func StartCheckinProcess(provider *services.Provider) {
 
 
 // Perform node checkin
-func checkin() {
+func checkin(p *services.Provider) {
 
     // Log
     log.Println("Checking in...")
@@ -78,7 +74,7 @@ func checkin() {
     }
 
     // Get node fee vote
-    nodeFeeVote, err := getNodeFeeVote()
+    nodeFeeVote, err := getNodeFeeVote(p)
     if err != nil {
         log.Println(err)
     }
@@ -144,7 +140,7 @@ func getServerLoad() (float64, error) {
 
 
 // Get the node fee vote based on current and target user fee
-func getNodeFeeVote() (int64, error) {
+func getNodeFeeVote(p *services.Provider) (int64, error) {
 
     // Node fee vote
     nodeFeeVote := NODE_FEE_VOTE_NO_CHANGE

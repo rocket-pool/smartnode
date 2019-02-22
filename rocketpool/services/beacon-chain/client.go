@@ -98,7 +98,7 @@ func (c *Client) connect() {
         defer connection.Close()
         c.connection = connection
         log.Println("Connected to beacon chain server at", c.providerUrl)
-        c.publisher.Notify("beacon.client.connected", c)
+        c.publisher.Notify("beacon.client.connected", struct{Client *Client}{c})
 
     }
 
@@ -120,7 +120,7 @@ func (c *Client) connect() {
     select {
         case <-closed:
             c.connection = nil
-            c.publisher.Notify("beacon.client.disconnected", c)
+            c.publisher.Notify("beacon.client.disconnected", struct{Client *Client}{c})
             log.Println(fmt.Sprintf("Connection closed, reconnecting in %s...", reconnectInterval.String()))
             c.connectionTimer.Reset(reconnectInterval)
     }

@@ -7,8 +7,8 @@ import (
     "log"
     "strings"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     beaconchain "github.com/rocket-pool/smartnode-cli/rocketpool/services/beacon-chain"
-    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
 
 
@@ -37,7 +37,7 @@ type ServerMessage struct {
 
 
 // Start beacon activity process
-func StartActivityProcess(publisher *messaging.Publisher, fatalErrorChannel chan error) {
+func StartActivityProcess(p *services.Provider) {
 
     // Get node's validator pubkeys
     // :TODO: implement once BLS library is available
@@ -56,26 +56,27 @@ func StartActivityProcess(publisher *messaging.Publisher, fatalErrorChannel chan
     // Subscribe to events
     connectedChannel := make(chan interface{})
     messageChannel := make(chan interface{})
-    publisher.AddSubscriber("beacon.client.connected", connectedChannel)
-    publisher.AddSubscriber("beacon.client.message", messageChannel)
+    p.Publisher.AddSubscriber("beacon.client.connected", connectedChannel)
+    p.Publisher.AddSubscriber("beacon.client.message", messageChannel)
 
     // Handle events
-    for {
-        select {
-            case eventData := <-connectedChannel:
-                client := (eventData).(*beaconchain.Client)
-                onBeaconClientConnected(client)
-            case eventData := <-messageChannel:
-                event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-                onBeaconClientMessage(event.Client, event.Message)
+    go (func() {
+        for {
+            select {
+                case <-connectedChannel:
+                    onBeaconClientConnected(p)
+                case eventData := <-messageChannel:
+                    event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
+                    onBeaconClientMessage(p, event.Message)
+            }
         }
-    }
+    })()
 
 }
 
 
 // Handle beacon chain client connections
-func onBeaconClientConnected(client *beaconchain.Client) {
+func onBeaconClientConnected(p *services.Provider) {
 
     // Request validator statuses
     for _, pubkey := range pubkeys {
@@ -84,7 +85,7 @@ func onBeaconClientConnected(client *beaconchain.Client) {
             Pubkey: pubkey,
         }); err != nil {
             log.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
-        } else if err := client.Send(payload); err != nil {
+        } else if err := p.Beacon.Send(payload); err != nil {
             log.Println(errors.New("Error sending get validator status message: " + err.Error()))
         }
     }
@@ -93,7 +94,7 @@ func onBeaconClientConnected(client *beaconchain.Client) {
 
 
 // Handle beacon chain client messages
-func onBeaconClientMessage(client *beaconchain.Client, messageData []byte) {
+func onBeaconClientMessage(p *services.Provider, messageData []byte) {
 
     // Parse message
     message := new(ServerMessage)
@@ -154,7 +155,7 @@ func onBeaconClientMessage(client *beaconchain.Client, messageData []byte) {
                         Pubkey: pubkey,
                     }); err != nil {
                         log.Println(errors.New("Error encoding activity payload: " + err.Error()))
-                    } else if err := client.Send(payload); err != nil {
+                    } else if err := p.Beacon.Send(payload); err != nil {
                         log.Println(errors.New("Error sending activity message: " + err.Error()))
                     }
 

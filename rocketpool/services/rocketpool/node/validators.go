@@ -1,12 +1,8 @@
 package node
 
 import (
-    "errors"
     "log"
     "time"
-
-    "github.com/ethereum/go-ethereum/ethclient"
-    "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
@@ -30,19 +26,11 @@ type ValidatorManager struct {
 /**
  * Create validator manager
  */
-func NewValidatorManager(c *cli.Context, client *ethclient.Client) (*ValidatorManager, error) {
-
-    // Create instance
-    vm := &ValidatorManager{}
-
-    // Setup
-    if err := vm.setup(c, client); err != nil {
-        return nil, err
+func NewValidatorManager(am *accounts.AccountManager, cm *rocketpool.ContractManager) *ValidatorManager {
+    return &ValidatorManager{
+        am: am,
+        cm: cm,
     }
-
-    // Return instance
-    return vm, nil
-
 }
 
 
@@ -109,62 +97,6 @@ func (vm *ValidatorManager) load() {
 
     // Set active validators
     vm.Validators = statuses
-
-}
-
-
-/**
- * Setup validator manager
- */
-func (vm *ValidatorManager) setup(c *cli.Context, client *ethclient.Client) error {
-
-    // Initialise account manager
-    vm.am = accounts.NewAccountManager(c.GlobalString("keychain"))
-
-    // Check node account
-    if !vm.am.NodeAccountExists() {
-        return errors.New("Node account does not exist, please initialize with `rocketpool node init`")
-    }
-
-    // Initialise Rocket Pool contract manager
-    if cm, err := rocketpool.NewContractManager(client, c.GlobalString("storageAddress")); err != nil {
-        return err
-    } else {
-        vm.cm = cm
-    }
-
-    // Loading channels
-    successChannel := make(chan bool)
-    errorChannel := make(chan error)
-
-    // Load Rocket Pool contracts
-    go (func() {
-        if err := vm.cm.LoadContracts([]string{"utilAddressSetStorage"}); err != nil {
-            errorChannel <- err
-        } else {
-            successChannel <- true
-        }
-    })()
-    go (func() {
-        if err := vm.cm.LoadABIs([]string{"rocketMinipool"}); err != nil {
-            errorChannel <- err
-        } else {
-            successChannel <- true
-        }
-    })()
-
-    // Await loading
-    for received := 0; received < 2; {
-        select {
-            case <-successChannel:
-                received++
-            case err := <-errorChannel:
-                return err
-        }
-    }
-
-    // Return
-    return nil
 
 }
 

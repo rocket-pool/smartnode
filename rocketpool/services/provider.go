@@ -10,8 +10,11 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
+    beaconchain "github.com/rocket-pool/smartnode-cli/rocketpool/services/beacon-chain"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/database"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
 
 
@@ -23,6 +26,9 @@ type ProviderOpts struct {
     CM bool
     NodeContractAddress bool
     NodeContract bool
+    Publisher bool
+    Beacon bool
+    VM bool
     LoadContracts []string
     LoadAbis []string
 }
@@ -36,6 +42,9 @@ type Provider struct {
     CM *rocketpool.ContractManager
     NodeContractAddress *common.Address
     NodeContract *bind.BoundContract
+    Publisher *messaging.Publisher
+    Beacon *beaconchain.Client
+    VM *node.ValidatorManager
 }
 
 
@@ -45,8 +54,10 @@ type Provider struct {
 func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Process options
+    if opts.VM { opts.AM = true; opts.CM = true } // Validator manager requires node account manager & RP contract manager
+    if opts.Beacon { opts.Publisher = true } // Beacon chain client requires publisher
     if opts.NodeContract { opts.NodeContractAddress = true } // Node contract requires node contract address
-    if opts.NodeContractAddress { opts.CM = true; opts.AM = true } // Node contract address requires node account manager & RP contract manager
+    if opts.NodeContractAddress { opts.AM = true; opts.CM = true } // Node contract address requires node account manager & RP contract manager
     if len(opts.LoadContracts) + len(opts.LoadAbis) > 0 { opts.CM = true } // Contracts & ABIs require RP contract manager
     if opts.CM { opts.Client = true } // RP contract manager requires eth client
 
@@ -143,6 +154,21 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         } else {
             p.NodeContract = nodeContract
         }
+    }
+
+    // Initialise publisher
+    if opts.Publisher {
+        p.Publisher = messaging.NewPublisher()
+    }
+
+    // Initialise beacon chain client
+    if opts.Beacon {
+        p.Beacon = beaconchain.NewClient(c.GlobalString("beacon"), p.Publisher)
+    }
+
+    // Initialise validator manager
+    if opts.VM {
+        p.VM = node.NewValidatorManager(p.AM, p.CM)
     }
 
     // Return
