@@ -41,6 +41,7 @@ func StartActivityProcess(publisher *messaging.Publisher, fatalErrorChannel chan
 
     // Get node's validator pubkeys
     // :TODO: implement once BLS library is available
+    // :TODO: reload pubkeys periodically
     pubkeys = []string{
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd01",
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd02",

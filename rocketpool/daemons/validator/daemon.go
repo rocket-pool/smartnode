@@ -21,8 +21,9 @@ func Run(c *cli.Context) error {
     // Initialise beacon chain client
     beaconClient := beaconchain.NewClient(c.GlobalString("beacon"), publisher)
 
-    // Start beacon activity process
+    // Start beacon processes
     go beacon.StartActivityProcess(publisher, fatalErrorChannel)
+    go beacon.StartWithdrawalProcess(c, fatalErrorChannel)
 
     // Connect to beacon chain server
     go beaconClient.Connect()
