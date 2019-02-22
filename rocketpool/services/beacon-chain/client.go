@@ -51,11 +51,13 @@ func (c *Client) Connect() {
     }
 
     // Initialise beacon connection timer
-    now, _ := time.ParseDuration("0s")
-    c.connectionTimer = time.NewTimer(now)
-    for _ = range c.connectionTimer.C {
-        c.connect()
-    }
+    go (func() {
+        now, _ := time.ParseDuration("0s")
+        c.connectionTimer = time.NewTimer(now)
+        for _ = range c.connectionTimer.C {
+            c.connect()
+        }
+    })()
 
 }
 

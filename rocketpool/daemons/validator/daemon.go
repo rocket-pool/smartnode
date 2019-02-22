@@ -26,7 +26,7 @@ func Run(c *cli.Context) error {
     go beacon.StartWithdrawalProcess(c, fatalErrorChannel)
 
     // Connect to beacon chain server
-    go beaconClient.Connect()
+    beaconClient.Connect()
 
     // Block thread; return fatal errors
     select {
