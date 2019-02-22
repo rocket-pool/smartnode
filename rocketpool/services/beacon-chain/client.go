@@ -14,9 +14,6 @@ import (
 
 // Config
 const RECONNECT_INTERVAL string = "15s"
-
-
-// Shared vars
 var reconnectInterval, _ = time.ParseDuration(RECONNECT_INTERVAL)
 
 

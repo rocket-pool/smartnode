@@ -12,11 +12,6 @@ import (
 )
 
 
-// Shared vars
-var pubkeys []string
-var validatorActive map[string]bool
-
-
 // Client message to server
 type ClientMessage struct {
     Message string  `json:"message"`
@@ -42,13 +37,13 @@ func StartActivityProcess(p *services.Provider) {
     // Get node's validator pubkeys
     // :TODO: implement once BLS library is available
     // :TODO: reload pubkeys periodically
-    pubkeys = []string{
+    pubkeys := []string{
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd01",
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd02",
     }
 
     // Validator active statuses
-    validatorActive = make(map[string]bool)
+    validatorActive := make(map[string]bool)
     for _, pubkey := range pubkeys {
         validatorActive[strings.ToLower(pubkey)] = false
     }
@@ -64,10 +59,10 @@ func StartActivityProcess(p *services.Provider) {
         for {
             select {
                 case <-connectedChannel:
-                    onBeaconClientConnected(p)
+                    onBeaconClientConnected(p, &pubkeys)
                 case eventData := <-messageChannel:
                     event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-                    onBeaconClientMessage(p, event.Message)
+                    onBeaconClientMessage(p, &pubkeys, &validatorActive, event.Message)
             }
         }
     })()
@@ -76,10 +71,10 @@ func StartActivityProcess(p *services.Provider) {
 
 
 // Handle beacon chain client connections
-func onBeaconClientConnected(p *services.Provider) {
+func onBeaconClientConnected(p *services.Provider, pubkeys *[]string) {
 
     // Request validator statuses
-    for _, pubkey := range pubkeys {
+    for _, pubkey := range *pubkeys {
         if payload, err := json.Marshal(ClientMessage{
             Message: "get_validator_status",
             Pubkey: pubkey,
@@ -94,7 +89,7 @@ func onBeaconClientConnected(p *services.Provider) {
 
 
 // Handle beacon chain client messages
-func onBeaconClientMessage(p *services.Provider, messageData []byte) {
+func onBeaconClientMessage(p *services.Provider, pubkeys *[]string, validatorActive *map[string]bool, messageData []byte) {
 
     // Parse message
     message := new(ServerMessage)
@@ -111,7 +106,7 @@ func onBeaconClientMessage(p *services.Provider, messageData []byte) {
 
             // Check validator pubkey
             found := false
-            for _, pubkey := range pubkeys {
+            for _, pubkey := range *pubkeys {
                 if strings.ToLower(pubkey) == strings.ToLower(message.Pubkey) {
                     found = true
                     break
@@ -125,19 +120,19 @@ func onBeaconClientMessage(p *services.Provider, messageData []byte) {
                 // Inactive
                 case "inactive":
                     log.Println(fmt.Sprintf("Validator %s is inactive, waiting until active...", message.Pubkey))
-                    validatorActive[strings.ToLower(message.Pubkey)] = false
+                    (*validatorActive)[strings.ToLower(message.Pubkey)] = false
 
                 // Active
                 case "active":
                     log.Println(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey))
-                    validatorActive[strings.ToLower(message.Pubkey)] = true
+                    (*validatorActive)[strings.ToLower(message.Pubkey)] = true
 
                 // Exited
                 case "exited": fallthrough
                 case "withdrawable": fallthrough
                 case "withdrawn":
                     log.Println(fmt.Sprintf("Validator %s has exited...", message.Pubkey))
-                    validatorActive[strings.ToLower(message.Pubkey)] = false
+                    (*validatorActive)[strings.ToLower(message.Pubkey)] = false
 
             }
 
@@ -145,8 +140,8 @@ func onBeaconClientMessage(p *services.Provider, messageData []byte) {
         case "epoch":
 
             // Send activity for active validators
-            for _, pubkey := range pubkeys {
-                if validatorActive[strings.ToLower(pubkey)] {
+            for _, pubkey := range *pubkeys {
+                if (*validatorActive)[strings.ToLower(pubkey)] {
                     log.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkey))
 
                     // Send activity

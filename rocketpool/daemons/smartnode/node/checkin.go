@@ -20,11 +20,7 @@ const CHECKIN_INTERVAL string = "15s"
 const NODE_FEE_VOTE_NO_CHANGE int64 = 0
 const NODE_FEE_VOTE_INCREASE int64 = 1
 const NODE_FEE_VOTE_DECREASE int64 = 2
-
-
-// Shared vars
 var checkinInterval, _ = time.ParseDuration(CHECKIN_INTERVAL)
-var checkinTimer *time.Timer
 
 
 // Start node checkin process
@@ -52,9 +48,9 @@ func StartCheckinProcess(p *services.Provider) {
 
     // Initialise checkin timer
     go (func() {
-        checkinTimer = time.NewTimer(nextCheckinDuration)
+        checkinTimer := time.NewTimer(nextCheckinDuration)
         for _ = range checkinTimer.C {
-            checkin(p)
+            checkin(p, checkinTimer)
         }
     })()
 
@@ -62,7 +58,7 @@ func StartCheckinProcess(p *services.Provider) {
 
 
 // Perform node checkin
-func checkin(p *services.Provider) {
+func checkin(p *services.Provider, checkinTimer *time.Timer) {
 
     // Log
     log.Println("Checking in...")
