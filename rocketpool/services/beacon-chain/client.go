@@ -17,7 +17,6 @@ const RECONNECT_INTERVAL string = "15s"
 
 
 // Shared vars
-var immediate, _ = time.ParseDuration("0s")
 var reconnectInterval, _ = time.ParseDuration(RECONNECT_INTERVAL)
 
 
@@ -52,7 +51,8 @@ func (c *Client) Connect() {
     }
 
     // Initialise beacon connection timer
-    c.connectionTimer = time.NewTimer(immediate)
+    now, _ := time.ParseDuration("0s")
+    c.connectionTimer = time.NewTimer(now)
     for _ = range c.connectionTimer.C {
         c.connect()
     }

@@ -32,6 +32,8 @@ const NODE_FEE_VOTE_DECREASE int64 = 2
 // Shared vars
 var checkinInterval, _ = time.ParseDuration(CHECKIN_INTERVAL)
 var checkinTimer *time.Timer
+
+// Process vars
 var db = new(database.Database)
 var am = new(accounts.AccountManager)
 var cm = new(rocketpool.ContractManager)
