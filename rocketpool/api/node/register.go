@@ -10,6 +10,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
@@ -17,11 +18,14 @@ import (
 // Register the node with Rocket Pool
 func registerNode(c *cli.Context) error {
 
-    // Command setup
-    if message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{}, true); message != "" {
-        fmt.Println(message)
-        return nil
-    } else if err != nil {
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        Client: true,
+        CM: true,
+        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+    })
+    if err != nil {
         return err
     }
 
@@ -33,7 +37,7 @@ func registerNode(c *cli.Context) error {
     // Check if node is already registered (contract exists)
     go (func() {
         nodeContractAddress := new(common.Address)
-        if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address); err != nil {
+        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", p.AM.GetNodeAccount().Address); err != nil {
             errorChannel <- errors.New("Error checking node registration: " + err.Error())
         } else if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
             messageChannel <- fmt.Sprintf("Node already registered with contract at %s", nodeContractAddress.Hex())
@@ -45,7 +49,7 @@ func registerNode(c *cli.Context) error {
     // Check node registrations are enabled
     go (func() {
         registrationsAllowed := new(bool)
-        if err := cm.Contracts["rocketNodeSettings"].Call(nil, registrationsAllowed, "getNewAllowed"); err != nil {
+        if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, registrationsAllowed, "getNewAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node registrations enabled status: " + err.Error())
         } else if !*registrationsAllowed {
             messageChannel <- "Node registrations are currently disabled in Rocket Pool"
@@ -65,7 +69,7 @@ func registerNode(c *cli.Context) error {
         // Get min required node account ether balance
         go (func() {
             minNodeAccountEtherBalanceWei := new(*big.Int)
-            if err := cm.Contracts["rocketNodeSettings"].Call(nil, minNodeAccountEtherBalanceWei, "getEtherMin"); err != nil {
+            if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, minNodeAccountEtherBalanceWei, "getEtherMin"); err != nil {
                 balanceErrorChannel <- errors.New("Error retrieving minimum ether requirement: " + err.Error())
             } else {
                 minEtherBalanceChannel <- *minNodeAccountEtherBalanceWei
@@ -74,7 +78,7 @@ func registerNode(c *cli.Context) error {
 
         // Get node account ether balance
         go (func() {
-            if nodeAccountEtherBalanceWei, err := client.BalanceAt(context.Background(), am.GetNodeAccount().Address, nil); err != nil {
+            if nodeAccountEtherBalanceWei, err := p.Client.BalanceAt(context.Background(), p.AM.GetNodeAccount().Address, nil); err != nil {
                 balanceErrorChannel <- errors.New("Error retrieving node account balance: " + err.Error())
             } else {
                 etherBalanceChannel <- nodeAccountEtherBalanceWei
@@ -122,15 +126,15 @@ func registerNode(c *cli.Context) error {
     timezone := promptTimezone()
 
     // Register node
-    if txor, err := am.GetNodeAccountTransactor(); err != nil {
+    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
-    } else if _, err := cm.Contracts["rocketNodeAPI"].Transact(txor, "add", timezone); err != nil {
+    } else if _, err := p.CM.Contracts["rocketNodeAPI"].Transact(txor, "add", timezone); err != nil {
         return errors.New("Error registering node: " + err.Error())
     }
 
     // Get node contract address
     nodeContractAddress := new(common.Address)
-    if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address); err != nil {
+    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", p.AM.GetNodeAccount().Address); err != nil {
         return errors.New("Error retrieving node contract address: " + err.Error())
     }
 
