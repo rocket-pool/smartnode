@@ -5,6 +5,7 @@ import (
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
@@ -13,11 +14,14 @@ import (
 // Get the node's current deposit status
 func getDepositStatus(c *cli.Context) error {
 
-    // Command setup
-    if message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{"rocketNodeContract"}); message != "" {
-        fmt.Println(message)
-        return nil
-    } else if err != nil {
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        CM: true,
+        NodeContract: true,
+        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+        LoadAbis: []string{"rocketNodeContract"},
+    })
+    if err != nil {
         return err
     }
 
@@ -28,7 +32,7 @@ func getDepositStatus(c *cli.Context) error {
 
     // Get node balances
     go (func() {
-        if balances, err := node.GetBalances(nodeContract); err != nil {
+        if balances, err := node.GetBalances(p.NodeContract); err != nil {
             errorChannel <- err
         } else {
             balancesChannel <- balances
@@ -37,7 +41,7 @@ func getDepositStatus(c *cli.Context) error {
 
     // Get node deposit reservation details
     go (func() {
-        if reservation, err := node.GetReservationDetails(nodeContract, cm); err != nil {
+        if reservation, err := node.GetReservationDetails(p.NodeContract, p.CM); err != nil {
             errorChannel <- err
         } else {
             reservationChannel <- reservation

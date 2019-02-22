@@ -9,6 +9,7 @@ import (
     //"github.com/prysmaticlabs/prysm/shared/ssz"
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
@@ -27,12 +28,16 @@ type DepositInput struct {
 // Reserve a node deposit
 func reserveDeposit(c *cli.Context, durationId string) error {
 
-    // Command setup
-    if message, err := setup(c, []string{"rocketNodeAPI", "rocketNodeSettings"}, []string{"rocketNodeContract"}); message != "" {
-        fmt.Println(message)
-        return nil
-    } else if err != nil {
-        return err
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        CM: true,
+        NodeContract: true,
+        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+        LoadAbis: []string{"rocketNodeContract"},
+    })
+    if err != nil {
+        return err 
     }
 
     // Status channels
@@ -43,7 +48,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Check node does not have current deposit reservation
     go (func() {
         hasReservation := new(bool)
-        if err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
+        if err := p.NodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
         } else if *hasReservation {
             messageChannel <- "Node has a current deposit reservation, please cancel or complete it"
@@ -55,7 +60,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Check node deposits are enabled
     go (func() {
         depositsAllowed := new(bool)
-        if err := cm.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed"); err != nil {
+        if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
         } else if !*depositsAllowed {
             messageChannel <- "Node deposits are currently disabled in Rocket Pool"
@@ -120,14 +125,14 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     */
 
     // Create deposit reservation
-    if txor, err := am.GetNodeAccountTransactor(); err != nil {
+    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
-    } else if _, err := nodeContract.Transact(txor, "depositReserve", durationId, depositInput); err != nil {
+    } else if _, err := p.NodeContract.Transact(txor, "depositReserve", durationId, depositInput); err != nil {
         return errors.New("Error making deposit reservation: " + err.Error())
     }
 
     // Get deposit reservation details
-    reservation, err := node.GetReservationDetails(nodeContract, cm)
+    reservation, err := node.GetReservationDetails(p.NodeContract, p.CM)
     if err != nil {
         return err
     }

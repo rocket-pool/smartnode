@@ -7,6 +7,7 @@ import (
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
@@ -14,17 +15,18 @@ import (
 // Get the current deposit RPL requirement
 func getRplRequired(c *cli.Context, durationId string) error {
 
-    // Command setup
-    if message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI"}, []string{"rocketNodeContract"}); message != "" {
-        fmt.Println(message)
-        return nil
-    } else if err != nil {
-        return err
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        CM: true,
+        LoadContracts: []string{"rocketMinipoolSettings", "rocketNodeAPI"},
+    })
+    if err != nil {
+        return err 
     }
 
     // Get minipool launch ether amount
     launchEtherAmountWei := new(*big.Int)
-    if err := cm.Contracts["rocketMinipoolSettings"].Call(nil, launchEtherAmountWei, "getMinipoolLaunchAmount"); err != nil {
+    if err := p.CM.Contracts["rocketMinipoolSettings"].Call(nil, launchEtherAmountWei, "getMinipoolLaunchAmount"); err != nil {
         return errors.New("Error retrieving minipool launch amount: " + err.Error())
     }
 
@@ -36,7 +38,7 @@ func getRplRequired(c *cli.Context, durationId string) error {
     var depositRplAmountWei = new(*big.Int)
     var rplRatioWei = new(*big.Int)
     out := &[]interface{}{depositRplAmountWei, rplRatioWei}
-    if err := cm.Contracts["rocketNodeAPI"].Call(nil, out, "getRPLRequired", depositEtherAmountWei, durationId); err != nil {
+    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, out, "getRPLRequired", depositEtherAmountWei, durationId); err != nil {
         return errors.New("Error retrieving required RPL amount: " + err.Error())
     }
 

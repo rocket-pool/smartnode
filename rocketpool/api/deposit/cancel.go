@@ -5,23 +5,28 @@ import (
     "fmt"
 
     "github.com/urfave/cli"
+
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
 )
 
 
 // Cancel a node deposit reservation
 func cancelDeposit(c *cli.Context) error {
 
-    // Command setup
-    if message, err := setup(c, []string{"rocketNodeAPI"}, []string{"rocketNodeContract"}); message != "" {
-        fmt.Println(message)
-        return nil
-    } else if err != nil {
-        return err
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        NodeContract: true,
+        LoadContracts: []string{"rocketNodeAPI"},
+        LoadAbis: []string{"rocketNodeContract"},
+    })
+    if err != nil {
+        return err 
     }
 
     // Check node has current deposit reservation
     hasReservation := new(bool)
-    if err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
+    if err := p.NodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
         return errors.New("Error retrieving deposit reservation status: " + err.Error())
     } else if !*hasReservation {
         fmt.Println("Node does not have a current deposit reservation")
@@ -29,9 +34,9 @@ func cancelDeposit(c *cli.Context) error {
     }
 
     // Cancel deposit reservation
-    if txor, err := am.GetNodeAccountTransactor(); err != nil {
+    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
-    } else if _, err := nodeContract.Transact(txor, "depositReserveCancel"); err != nil {
+    } else if _, err := p.NodeContract.Transact(txor, "depositReserveCancel"); err != nil {
         return errors.New("Error canceling deposit reservation: " + err.Error())
     }
 

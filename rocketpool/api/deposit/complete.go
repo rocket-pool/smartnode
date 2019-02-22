@@ -9,6 +9,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
@@ -26,12 +27,18 @@ type PoolCreated struct {
 // Complete a node deposit
 func completeDeposit(c *cli.Context) error {
 
-    // Command setup
-    if message, err := setup(c, []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"}, []string{"rocketNodeContract"}); message != "" {
-        fmt.Println(message)
-        return nil
-    } else if err != nil {
-        return err
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        Client: true,
+        CM: true,
+        NodeContractAddress: true,
+        NodeContract: true,
+        LoadContracts: []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"},
+        LoadAbis: []string{"rocketNodeContract"},
+    })
+    if err != nil {
+        return err 
     }
 
     // Status channels
@@ -42,7 +49,7 @@ func completeDeposit(c *cli.Context) error {
     // Check node has current deposit reservation
     go (func() {
         hasReservation := new(bool)
-        if err := nodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
+        if err := p.NodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
         } else if !*hasReservation {
             messageChannel <- "Node does not have a current deposit reservation, please make one with `rocketpool deposit reserve durationID`"
@@ -54,7 +61,7 @@ func completeDeposit(c *cli.Context) error {
     // Check node deposits are enabled
     go (func() {
         depositsAllowed := new(bool)
-        if err := cm.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed"); err != nil {
+        if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
         } else if !*depositsAllowed {
             messageChannel <- "Node deposits are currently disabled in Rocket Pool"
@@ -66,7 +73,7 @@ func completeDeposit(c *cli.Context) error {
     // Check minipool creation is enabled
     go (func() {
         minipoolCreationAllowed := new(bool)
-        if err := cm.Contracts["rocketMinipoolSettings"].Call(nil, minipoolCreationAllowed, "getMinipoolCanBeCreated"); err != nil {
+        if err := p.CM.Contracts["rocketMinipoolSettings"].Call(nil, minipoolCreationAllowed, "getMinipoolCanBeCreated"); err != nil {
             errorChannel <- errors.New("Error checking minipool creation enabled status: " + err.Error())
         } else if !*minipoolCreationAllowed {
             messageChannel <- "Minipool creation is currently disabled in Rocket Pool"
@@ -95,7 +102,7 @@ func completeDeposit(c *cli.Context) error {
 
     // Get node account balances
     go (func() {
-        if accountBalances, err := node.GetAccountBalances(am.GetNodeAccount().Address, client, cm); err != nil {
+        if accountBalances, err := node.GetAccountBalances(p.AM.GetNodeAccount().Address, p.Client, p.CM); err != nil {
             errorChannel <- err
         } else {
             accountBalancesChannel <- accountBalances
@@ -104,7 +111,7 @@ func completeDeposit(c *cli.Context) error {
 
     // Get node balances
     go (func() {
-        if nodeBalances, err := node.GetBalances(nodeContract); err != nil {
+        if nodeBalances, err := node.GetBalances(p.NodeContract); err != nil {
             errorChannel <- err
         } else {
             nodeBalancesChannel <- nodeBalances
@@ -113,7 +120,7 @@ func completeDeposit(c *cli.Context) error {
 
     // Get node balance requirements
     go (func() {
-        if requiredBalances, err := node.GetRequiredBalances(nodeContract); err != nil {
+        if requiredBalances, err := node.GetRequiredBalances(p.NodeContract); err != nil {
             errorChannel <- err
         } else {
             requiredBalancesChannel <- requiredBalances
@@ -138,7 +145,7 @@ func completeDeposit(c *cli.Context) error {
     }
 
     // Get node account transactor
-    txor, err := am.GetNodeAccountTransactor()
+    txor, err := p.AM.GetNodeAccountTransactor()
     if err != nil {
         return err
     }
@@ -191,7 +198,7 @@ func completeDeposit(c *cli.Context) error {
 
         // Transfer remaining required RPL
         txor.Value = big.NewInt(0)
-        if _, err := cm.Contracts["rocketPoolToken"].Transact(txor, "transfer", nodeContractAddress, remainingRplRequiredWei); err != nil {
+        if _, err := p.CM.Contracts["rocketPoolToken"].Transact(txor, "transfer", p.NodeContractAddress, remainingRplRequiredWei); err != nil {
             return errors.New("Error transferring RPL to node contract: " + err.Error())
         }
 
@@ -199,13 +206,13 @@ func completeDeposit(c *cli.Context) error {
 
     // Complete deposit
     txor.Value = depositTransactionValueWei
-    tx, err := nodeContract.Transact(txor, "deposit")
+    tx, err := p.NodeContract.Transact(txor, "deposit")
     if err != nil {
         return errors.New("Error completing deposit: " + err.Error())
     }
 
     // Get minipool created event
-    minipoolCreatedEvents, err := eth.GetTransactionEvents(client, tx, cm.Addresses["rocketPool"], cm.Abis["rocketPool"], "PoolCreated", PoolCreated{})
+    minipoolCreatedEvents, err := eth.GetTransactionEvents(p.Client, tx, p.CM.Addresses["rocketPool"], p.CM.Abis["rocketPool"], "PoolCreated", PoolCreated{})
     if err != nil {
         return errors.New("Error retrieving deposit transaction minipool created event: " + err.Error())
     } else if len(minipoolCreatedEvents) == 0 {
