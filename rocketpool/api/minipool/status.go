@@ -5,6 +5,7 @@ import (
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
@@ -14,16 +15,19 @@ import (
 // Get the node's minipool statuses
 func getMinipoolStatus(c *cli.Context) error {
 
-    // Command setup
-    if message, err := setup(c, []string{"rocketPoolToken", "utilAddressSetStorage"}, []string{"rocketMinipool"}); message != "" {
-        fmt.Println(message)
-        return nil
-    } else if err != nil {
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        CM: true,
+        LoadContracts: []string{"rocketPoolToken", "utilAddressSetStorage"},
+        LoadAbis: []string{"rocketMinipool"},
+    })
+    if err != nil {
         return err
     }
 
     // Get minipool addresses
-    minipoolAddresses, err := node.GetMinipoolAddresses(am.GetNodeAccount().Address, cm)
+    minipoolAddresses, err := node.GetMinipoolAddresses(p.AM.GetNodeAccount().Address, p.CM)
     if err != nil {
         return err
     }
@@ -35,7 +39,7 @@ func getMinipoolStatus(c *cli.Context) error {
     for mi := 0; mi < minipoolCount; mi++ {
         detailsChannels[mi] = make(chan *minipool.Details)
         go (func(mi int) {
-            if details, err := minipool.GetDetails(cm, minipoolAddresses[mi]); err != nil {
+            if details, err := minipool.GetDetails(p.CM, minipoolAddresses[mi]); err != nil {
                 errorChannel <- err
             } else {
                 detailsChannels[mi] <- details

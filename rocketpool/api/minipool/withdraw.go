@@ -8,47 +8,39 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/urfave/cli"
+
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services"
 )
 
 
 // Withdraw node deposit from a minipool
 func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
 
-    // Command setup
-    if message, err := setup(c, []string{"rocketNodeAPI"}, []string{"rocketMinipool", "rocketNodeContract"}); message != "" {
-        fmt.Println(message)
-        return nil
-    } else if err != nil {
-        return err
-    }
-
-    // Check node is registered (contract exists)
-    nodeContractAddress := new(common.Address)
-    if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address); err != nil {
-        return errors.New("Error checking node registration: " + err.Error())
-    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
-        fmt.Println("Node is not registered with Rocket Pool, please register with `rocketpool node register`")
-        return nil
-    }
-
-    // Initialise node contract
-    nodeContract, err := cm.NewContract(nodeContractAddress, "rocketNodeContract")
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        Client: true,
+        CM: true,
+        NodeContract: true,
+        LoadContracts: []string{"rocketNodeAPI"},
+        LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
+    })
     if err != nil {
-        return errors.New("Error initialising node contract: " + err.Error())
+        return err
     }
 
     // Get minipool address
     minipoolAddress := common.HexToAddress(minipoolAddressStr)
 
     // Check contract code at minipool address
-    if code, err := client.CodeAt(context.Background(), minipoolAddress, nil); err != nil {
+    if code, err := p.Client.CodeAt(context.Background(), minipoolAddress, nil); err != nil {
         return errors.New("Error retrieving contract code at minipool address: " + err.Error())
     } else if len(code) == 0 {
         return errors.New("No contract code found at minipool address")
     }
 
     // Initialise minipool contract
-    minipoolContract, err := cm.NewContract(&minipoolAddress, "rocketMinipool")
+    minipoolContract, err := p.CM.NewContract(&minipoolAddress, "rocketMinipool")
     if err != nil {
         return errors.New("Error initialising minipool contract: " + err.Error())
     }
@@ -63,7 +55,7 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
         nodeOwner := new(common.Address)
         if err := minipoolContract.Call(nil, nodeOwner, "getNodeOwner"); err != nil {
             errorChannel <- errors.New("Error retrieving minipool node owner: " + err.Error())
-        } else if bytes.Equal(nodeOwner.Bytes(), am.GetNodeAccount().Address.Bytes()) {
+        } else if bytes.Equal(nodeOwner.Bytes(), p.AM.GetNodeAccount().Address.Bytes()) {
             successChannel <- true
         } else {
             messageChannel <- "Minipool is not owned by this node"
@@ -108,11 +100,11 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
     }
 
     // Withdraw node deposit
-    if txor, err := am.GetNodeAccountTransactor(); err != nil {
+    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
         txor.GasLimit = 600000 // Gas estimates on this method are incorrect
-        if _, err := nodeContract.Transact(txor, "withdrawMinipoolDeposit", minipoolAddress); err != nil {
+        if _, err := p.NodeContract.Transact(txor, "withdrawMinipoolDeposit", minipoolAddress); err != nil {
             return errors.New("Error withdrawing deposit from minipool: " + err.Error())
         }
     }
