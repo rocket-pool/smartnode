@@ -35,8 +35,8 @@ func getRplRequired(c *cli.Context, durationId string) error {
     depositEtherAmountWei.Quo(*launchEtherAmountWei, big.NewInt(2))
 
     // Get RPL required
-    var depositRplAmountWei = new(*big.Int)
-    var rplRatioWei = new(*big.Int)
+    depositRplAmountWei := new(*big.Int)
+    rplRatioWei := new(*big.Int)
     out := &[]interface{}{depositRplAmountWei, rplRatioWei}
     if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, out, "getRPLRequired", depositEtherAmountWei, durationId); err != nil {
         return errors.New("Error retrieving required RPL amount: " + err.Error())
