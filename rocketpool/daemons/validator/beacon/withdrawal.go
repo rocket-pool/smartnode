@@ -15,6 +15,7 @@ import (
 
 // Config
 const CHECK_MINIPOOLS_INTERVAL string = "15s"
+var checkMinipoolsInterval, _ := time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 
 
 // Start beacon withdrawal process
@@ -22,8 +23,6 @@ func StartWithdrawalProcess(p *services.Provider) {
 
     // Check staking minipools for withdrawal on interval
     go (func() {
-        checkStakingMinipools(p)
-        checkMinipoolsInterval, _ := time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
         checkMinipoolsTimer := time.NewTicker(checkMinipoolsInterval)
         for _ = range checkMinipoolsTimer.C {
             checkStakingMinipools(p)

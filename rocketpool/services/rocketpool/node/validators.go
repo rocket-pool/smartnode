@@ -12,6 +12,7 @@ import (
 
 // Config
 const LOAD_VALIDATORS_INTERVAL string = "15s"
+var loadValidatorsInterval, _ := time.ParseDuration(LOAD_VALIDATORS_INTERVAL)
 
 
 // Validator manager
@@ -47,8 +48,7 @@ func (vm *ValidatorManager) StartLoad() {
     // Initialise load timer
     go (func() {
         vm.load()
-        loadInterval, _ := time.ParseDuration(LOAD_VALIDATORS_INTERVAL)
-        vm.loadTimer = time.NewTicker(loadInterval)
+        vm.loadTimer = time.NewTicker(loadValidatorsInterval)
         for _ = range vm.loadTimer.C {
             vm.load()
         }
