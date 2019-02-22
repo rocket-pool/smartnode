@@ -1,7 +1,13 @@
 package beacon
 
 import (
+    "context"
+    "encoding/hex"
     "errors"
+    "fmt"
+    "log"
+    "math/big"
+    "time"
 
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/urfave/cli"
@@ -13,7 +19,14 @@ import (
 )
 
 
+// Config
+const CHECK_MINIPOOLS_INTERVAL string = "15s"
+
+
 // Shared vars
+var stakingMinipools []*minipool.Status
+
+// Process vars
 var am = new(accounts.AccountManager)
 var client = new(ethclient.Client)
 var cm = new(rocketpool.ContractManager)
@@ -30,23 +43,28 @@ func StartWithdrawalProcess(c *cli.Context, fatalErrorChannel chan error) {
 
     // Get staking minipool statuses
     // :TODO: reload minipools periodically
-    stakingMinipools, err := getStakingMinipools()
-    if err != nil {
+    if err := getStakingMinipools(); err != nil {
         fatalErrorChannel <- err
         return
     }
-    _ = stakingMinipools
+
+    // Check staking minipools for withdrawal on interval
+    checkMinipoolsInterval, _ := time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
+    checkMinipoolsTicker := time.NewTicker(checkMinipoolsInterval)
+    for _ = range checkMinipoolsTicker.C {
+        checkStakingMinipools()
+    }
 
 }
 
 
 // Get staking minipool statuses
-func getStakingMinipools() ([]*minipool.Status, error) {
+func getStakingMinipools() error {
 
     // Get minipool addresses
     minipoolAddresses, err := node.GetMinipoolAddresses(am.GetNodeAccount().Address, cm)
     if err != nil {
-        return nil, err
+        return err
     }
     minipoolCount := len(minipoolAddresses)
 
@@ -65,19 +83,47 @@ func getStakingMinipools() ([]*minipool.Status, error) {
     }
 
     // Receive staking minipool statuses
-    stakingMinipools := make([]*minipool.Status, 0)
+    statuses := make([]*minipool.Status, 0)
     for mi := 0; mi < minipoolCount; mi++ {
         select {
             case status := <-statusChannels[mi]:
                 if status.Status != 2 { break } // Staking
-                stakingMinipools = append(stakingMinipools, status)
+                statuses = append(statuses, status)
             case err := <-errorChannel:
-                return nil, err
+                return err
         }
     }
 
-    // Return
-    return stakingMinipools, nil
+    // Set staking minipools & return
+    stakingMinipools = statuses
+    return nil
+
+}
+
+
+// Check staking minipools for withdrawal
+func checkStakingMinipools() {
+
+    // Get latest block header
+    header, err := client.HeaderByNumber(context.Background(), nil)
+    if err != nil {
+        log.Println(errors.New("Error retrieving latest block header: " + err.Error()))
+        return
+    }
+
+    // Log
+    log.Println(fmt.Sprintf("Checking staking minipools for withdrawal at block %s...", header.Number.String()))
+
+    // Check minipools
+    for _, minipool := range stakingMinipools {
+        var exitBlock big.Int
+        exitBlock.Add(minipool.StatusBlock, minipool.StakingDuration)
+        if header.Number.Cmp(&exitBlock) > -1 {
+            log.Println(fmt.Sprintf("Validator %s ready to withdraw, since block %s...", hex.EncodeToString(minipool.ValidatorPubkey), exitBlock.String()))
+        } else {
+            log.Println(fmt.Sprintf("Validator %s not ready to withdraw until block %s...", hex.EncodeToString(minipool.ValidatorPubkey), exitBlock.String()))
+        }
+    }
 
 }
 
