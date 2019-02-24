@@ -26,7 +26,7 @@ type DepositInput struct {
 
 
 // Reserve a node deposit
-func reserveDeposit(c *cli.Context, durationId string) error {
+func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
@@ -84,7 +84,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Get node's validator pubkey
     // :TODO: implement once BLS library is available
-    pubkeyHex := []byte("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd01")
+    pubkeyHex := []byte(pubkeyStr)
     pubkey := make([]byte, hex.DecodedLen(len(pubkeyHex)))
     _,_ = hex.Decode(pubkey, pubkeyHex)
 

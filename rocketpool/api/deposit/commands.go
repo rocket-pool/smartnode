@@ -1,6 +1,8 @@
 package deposit
 
 import (
+    "regexp"
+
     "github.com/urfave/cli"
 
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
@@ -74,18 +76,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "reserve",
                 Aliases:   []string{"r"},
                 Usage:     "Reserve a deposit with a locked ETH:RPL ratio",
-                UsageText: "rocketpool deposit reserve durationID" + "\n   " +
+                UsageText: "rocketpool deposit reserve validatorPubkey durationID" + "\n   " +
+                           "- validatorPubkey must be a valid 48 byte validator public key" + "\n   " +
                            "- durationID must be '3m', '6m' or '12m'",
                 Action: func(c *cli.Context) error {
 
                     // Arguments
+                    var pubkey string
                     var durationId string
 
                     // Validate arguments
-                    if err := cliutils.ValidateArgs(c, 1, func(messages *[]string) {
+                    if err := cliutils.ValidateArgs(c, 2, func(messages *[]string) {
+
+                        // Parse pubkey
+                        pubkey = c.Args().Get(0)
+                        if !regexp.MustCompile("^[0-9a-fA-F]{96}$").MatchString(pubkey) {
+                            *messages = append(*messages, "Invalid validator public key")
+                        }
 
                         // Parse duration ID
-                        durationId = c.Args().Get(0)
+                        durationId = c.Args().Get(1)
                         switch durationId {
                             case "3m":
                             case "6m":
@@ -99,7 +109,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    return reserveDeposit(c, durationId)
+                    return reserveDeposit(c, pubkey, durationId)
 
                 },
             },
