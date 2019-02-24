@@ -12,7 +12,7 @@ import (
 
 // Config
 const LOAD_VALIDATORS_INTERVAL string = "15s"
-var loadValidatorsInterval, _ := time.ParseDuration(LOAD_VALIDATORS_INTERVAL)
+var loadValidatorsInterval, _ = time.ParseDuration(LOAD_VALIDATORS_INTERVAL)
 
 
 // Validator manager

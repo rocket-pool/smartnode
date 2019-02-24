@@ -15,7 +15,7 @@ import (
 
 // Config
 const CHECK_MINIPOOLS_INTERVAL string = "15s"
-var checkMinipoolsInterval, _ := time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
+var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 
 
 // Start beacon withdrawal process
