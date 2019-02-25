@@ -89,7 +89,7 @@ func activityHandleBeaconClientMessage(p *services.Provider, activeValidators *m
 
                 // Inactive
                 case "inactive":
-                    log.Println(fmt.Sprintf("Validator %s is inactive, waiting until active...", message.Pubkey))
+                    log.Println(fmt.Sprintf("Validator %s is inactive, waiting until active to send activity...", message.Pubkey))
                     delete(*activeValidators, message.Pubkey)
 
                 // Active
@@ -101,7 +101,7 @@ func activityHandleBeaconClientMessage(p *services.Provider, activeValidators *m
                 case "exited": fallthrough
                 case "withdrawable": fallthrough
                 case "withdrawn":
-                    log.Println(fmt.Sprintf("Validator %s has exited...", message.Pubkey))
+                    log.Println(fmt.Sprintf("Validator %s has exited, not sending activity...", message.Pubkey))
                     delete(*activeValidators, message.Pubkey)
 
             }
