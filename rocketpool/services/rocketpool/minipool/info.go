@@ -11,6 +11,18 @@ import (
 )
 
 
+// Minipoool status types
+const (
+    INITIALIZED = 0
+    PRELAUNCH = 1
+    STAKING = 2
+    LOGGED_OUT = 3
+    WITHDRAWN = 4
+    CLOSED = 5
+    TIMED_OUT = 6
+)
+
+
 // Minipool detail data
 type Details struct {
     Address *common.Address
@@ -258,13 +270,14 @@ func GetStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) 
 // Get the status type by value
 func getStatusType(value uint8) string {
     switch value {
-        case 1: return "pre-launch"
-        case 2: return "staking"
-        case 3: return "logged out"
-        case 4: return "withdrawn"
-        case 5: return "closed"
-        case 6: return "timed out"
-        default: return "initialized"
+        case INITIALIZED: return "initialized"
+        case PRELAUNCH: return "pre-launch"
+        case STAKING: return "staking"
+        case LOGGED_OUT: return "logged out"
+        case WITHDRAWN: return "withdrawn"
+        case CLOSED: return "closed"
+        case TIMED_OUT: return "timed out"
+        default: return "unknown"
     }
 }
 

@@ -89,7 +89,7 @@ func (vm *ValidatorManager) load() {
     for mi := 0; mi < minipoolCount; mi++ {
         select {
             case status := <-statusChannels[mi]:
-                if status.Status != 2 { break } // Staking
+                if status.Status != minipool.STAKING { break }
                 statuses = append(statuses, status)
             case err := <-errorChannel:
                 log.Println(err)
