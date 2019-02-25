@@ -66,6 +66,7 @@ func (vm *ValidatorManager) load() {
     minipoolAddresses, err := GetMinipoolAddresses(vm.am.GetNodeAccount().Address, vm.cm)
     if err != nil {
         log.Println(err)
+        return
     }
     minipoolCount := len(minipoolAddresses)
 
@@ -92,6 +93,7 @@ func (vm *ValidatorManager) load() {
                 statuses = append(statuses, status)
             case err := <-errorChannel:
                 log.Println(err)
+                return
         }
     }
 
