@@ -26,6 +26,28 @@ type Client struct {
 }
 
 
+// Client message to server
+type ClientMessage struct {
+    Message string  `json:"message"`
+    Pubkey string   `json:"pubkey"`
+}
+
+
+// Server message to client
+type ServerMessage struct {
+    Message string  `json:"message"`
+    Pubkey string   `json:"pubkey"`
+    Status struct {
+        Code string     `json:"code"`
+        Initiated struct {
+            Exit uint       `json:"exit"`
+        }               `json:"initiated"`
+    }               `json:"status"`
+    Action string   `json:"action"`
+    Error string    `json:"error"`
+}
+
+
 /**
  * Create client
  */

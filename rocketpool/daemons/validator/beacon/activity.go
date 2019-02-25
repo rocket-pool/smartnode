@@ -12,46 +12,27 @@ import (
 )
 
 
-// Client message to server
-type ClientMessage struct {
-    Message string  `json:"message"`
-    Pubkey string   `json:"pubkey"`
-}
-
-
-// Server message to client
-type ServerMessage struct {
-    Message string  `json:"message"`
-    Pubkey string   `json:"pubkey"`
-    Status struct {
-        Code string `json:"code"`
-    }               `json:"status"`
-    Action string   `json:"action"`
-    Error string    `json:"error"`
-}
-
-
 // Start beacon activity process
 func StartActivityProcess(p *services.Provider) {
 
-    // Validator active statuses
-    validatorActive := make(map[string]bool)
+    // Active validator set
+    activeValidators := make(map[string]bool)
 
-    // Subscribe to events
+    // Subscribe to beacon chain events
     connectedChannel := make(chan interface{})
     messageChannel := make(chan interface{})
     p.Publisher.AddSubscriber("beacon.client.connected", connectedChannel)
     p.Publisher.AddSubscriber("beacon.client.message", messageChannel)
 
-    // Handle events
+    // Handle beacon chain events
     go (func() {
         for {
             select {
                 case <-connectedChannel:
-                    onBeaconClientConnected(p)
+                    activityHandleBeaconClientConnected(p)
                 case eventData := <-messageChannel:
                     event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-                    onBeaconClientMessage(p, &validatorActive, event.Message)
+                    activityHandleBeaconClientMessage(p, &activeValidators, event.Message)
             }
         }
     })()
@@ -60,11 +41,11 @@ func StartActivityProcess(p *services.Provider) {
 
 
 // Handle beacon chain client connections
-func onBeaconClientConnected(p *services.Provider) {
+func activityHandleBeaconClientConnected(p *services.Provider) {
 
     // Request validator statuses
     for _, validator := range p.VM.Validators {
-        if payload, err := json.Marshal(ClientMessage{
+        if payload, err := json.Marshal(beaconchain.ClientMessage{
             Message: "get_validator_status",
             Pubkey: hex.EncodeToString(validator.ValidatorPubkey),
         }); err != nil {
@@ -78,10 +59,10 @@ func onBeaconClientConnected(p *services.Provider) {
 
 
 // Handle beacon chain client messages
-func onBeaconClientMessage(p *services.Provider, validatorActive *map[string]bool, messageData []byte) {
+func activityHandleBeaconClientMessage(p *services.Provider, activeValidators *map[string]bool, messageData []byte) {
 
     // Parse message
-    message := new(ServerMessage)
+    message := new(beaconchain.ServerMessage)
     if err := json.Unmarshal(messageData, message); err != nil {
         log.Println(errors.New("Error decoding beacon message: " + err.Error()))
         return
@@ -109,19 +90,19 @@ func onBeaconClientMessage(p *services.Provider, validatorActive *map[string]boo
                 // Inactive
                 case "inactive":
                     log.Println(fmt.Sprintf("Validator %s is inactive, waiting until active...", message.Pubkey))
-                    (*validatorActive)[message.Pubkey] = false
+                    delete(*activeValidators, message.Pubkey)
 
                 // Active
                 case "active":
                     log.Println(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey))
-                    (*validatorActive)[message.Pubkey] = true
+                    (*activeValidators)[message.Pubkey] = true
 
                 // Exited
                 case "exited": fallthrough
                 case "withdrawable": fallthrough
                 case "withdrawn":
                     log.Println(fmt.Sprintf("Validator %s has exited...", message.Pubkey))
-                    (*validatorActive)[message.Pubkey] = false
+                    delete(*activeValidators, message.Pubkey)
 
             }
 
@@ -130,13 +111,14 @@ func onBeaconClientMessage(p *services.Provider, validatorActive *map[string]boo
 
             // Send activity for active validators
             for _, validator := range p.VM.Validators {
-                if (*validatorActive)[hex.EncodeToString(validator.ValidatorPubkey)] {
-                    log.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", hex.EncodeToString(validator.ValidatorPubkey)))
+                pubkeyHex := hex.EncodeToString(validator.ValidatorPubkey)
+                if (*activeValidators)[pubkeyHex] {
+                    log.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkeyHex))
 
                     // Send activity
-                    if payload, err := json.Marshal(ClientMessage{
+                    if payload, err := json.Marshal(beaconchain.ClientMessage{
                         Message: "activity",
-                        Pubkey: hex.EncodeToString(validator.ValidatorPubkey),
+                        Pubkey: pubkeyHex,
                     }); err != nil {
                         log.Println(errors.New("Error encoding activity payload: " + err.Error()))
                     } else if err := p.Beacon.Send(payload); err != nil {
