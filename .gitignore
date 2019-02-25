@@ -1,4 +1,3 @@
 .DS_Store
 node_modules
-/rocketpool/contracts
-!/rocketpool/contracts/rocket-storage.go
+/scripts/config.js
