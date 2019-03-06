@@ -23,12 +23,37 @@ const NODE_FEE_VOTE_DECREASE int64 = 2
 var checkinInterval, _ = time.ParseDuration(CHECKIN_INTERVAL)
 
 
-// Start node checkin process
+// Checkin process
+type CheckinProcess struct {
+    p *services.Provider
+    checkinTimer *time.Timer
+}
+
+
+/**
+ * Start node checkin process
+ */
 func StartCheckinProcess(p *services.Provider) {
+
+    // Initialise checkin process
+    checkinProcess := &CheckinProcess{
+        p: p,
+    }
+
+    // Start
+    checkinProcess.start()
+
+}
+
+
+/**
+ * Start node checkin
+ */
+func (c *CheckinProcess) start() {
 
     // Get last checkin time
     lastCheckinTime := new(int64)
-    if err := p.DB.GetAtomic("node.checkin.latest", lastCheckinTime); err != nil {
+    if err := c.p.DB.GetAtomic("node.checkin.latest", lastCheckinTime); err != nil {
         log.Println(err)
     }
 
@@ -48,39 +73,41 @@ func StartCheckinProcess(p *services.Provider) {
 
     // Initialise checkin timer
     go (func() {
-        checkinTimer := time.NewTimer(nextCheckinDuration)
-        for _ = range checkinTimer.C {
-            checkin(p, checkinTimer)
+        c.checkinTimer = time.NewTimer(nextCheckinDuration)
+        for _ = range c.checkinTimer.C {
+            c.checkin()
         }
     })()
 
 }
 
 
-// Perform node checkin
-func checkin(p *services.Provider, checkinTimer *time.Timer) {
+/**
+ * Perform node checkin
+ */
+func (c *CheckinProcess) checkin() {
 
     // Log
     log.Println("Checking in...")
 
     // Get average server load
-    serverLoad, err := getServerLoad()
+    serverLoad, err := c.getServerLoad()
     if err != nil {
         log.Println(err)
     }
 
     // Get node fee vote
-    nodeFeeVote, err := getNodeFeeVote(p)
+    nodeFeeVote, err := c.getNodeFeeVote()
     if err != nil {
         log.Println(err)
     }
 
     // Checkin
-    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
+    if txor, err := c.p.AM.GetNodeAccountTransactor(); err != nil {
         log.Println(err)
     } else {
-        txor.GasLimit = 400000 // Gas estimates on this method are incorrect
-        if _, err := p.NodeContract.Transact(txor, "checkin", eth.EthToWei(serverLoad), big.NewInt(nodeFeeVote)); err != nil {
+        txor.GasLimit = 450000 // Gas estimates on this method are incorrect
+        if _, err := c.p.NodeContract.Transact(txor, "checkin", eth.EthToWei(serverLoad), big.NewInt(nodeFeeVote)); err != nil {
             log.Println(errors.New("Error checking in with Rocket Pool: " + err.Error()))
         } else {
             log.Println(fmt.Sprintf("Checked in successfully with an average load of %.2f%% and a node fee vote of '%s'", serverLoad * 100, getNodeFeeVoteType(nodeFeeVote)))
@@ -88,7 +115,7 @@ func checkin(p *services.Provider, checkinTimer *time.Timer) {
     }
 
     // Set last checkin time
-    if err := p.DB.PutAtomic("node.checkin.latest", time.Now().Unix()); err != nil {
+    if err := c.p.DB.PutAtomic("node.checkin.latest", time.Now().Unix()); err != nil {
         log.Println(err)
     }
 
@@ -96,13 +123,15 @@ func checkin(p *services.Provider, checkinTimer *time.Timer) {
     log.Println("Time until next checkin:", checkinInterval.String())
 
     // Reset timer for next checkin
-    checkinTimer.Reset(checkinInterval)
+    c.checkinTimer.Reset(checkinInterval)
 
 }
 
 
-// Get the average server load
-func getServerLoad() (float64, error) {
+/**
+ * Get the average server load
+ */
+func (c *CheckinProcess) getServerLoad() (float64, error) {
 
     // Server load
     var serverLoad float64
@@ -135,8 +164,10 @@ func getServerLoad() (float64, error) {
 }
 
 
-// Get the node fee vote based on current and target user fee
-func getNodeFeeVote(p *services.Provider) (int64, error) {
+/**
+ * Get the node fee vote based on current and target user fee
+ */
+func (c *CheckinProcess) getNodeFeeVote() (int64, error) {
 
     // Node fee vote
     nodeFeeVote := NODE_FEE_VOTE_NO_CHANGE
@@ -144,20 +175,20 @@ func getNodeFeeVote(p *services.Provider) (int64, error) {
     // Get target user fee
     targetUserFeePerc := new(float64)
     *targetUserFeePerc = -1
-    if err := p.DB.GetAtomic("user.fee.target", targetUserFeePerc); err != nil {
+    if err := c.p.DB.GetAtomic("user.fee.target", targetUserFeePerc); err != nil {
         return nodeFeeVote, err
     } else if *targetUserFeePerc == -1 {
         return nodeFeeVote, nil
     }
 
     // Load latest contracts
-    if err := p.CM.LoadContracts([]string{"rocketNodeSettings"}); err != nil {
+    if err := c.p.CM.LoadContracts([]string{"rocketNodeSettings"}); err != nil {
         return nodeFeeVote, err
     }
 
     // Get current user fee
     userFee := new(*big.Int)
-    if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, userFee, "getFeePerc"); err != nil {
+    if err := c.p.CM.Contracts["rocketNodeSettings"].Call(nil, userFee, "getFeePerc"); err != nil {
         return nodeFeeVote, errors.New("Error retrieving node user fee percentage setting: " + err.Error())
     }
     userFeePerc := eth.WeiToEth(*userFee) * 100
