@@ -63,12 +63,9 @@ func (w *WithdrawalProcess) start() {
 
     // Handle beacon chain events
     go (func() {
-        for {
-            select {
-                case eventData := <-messageChannel:
-                    event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-                    w.onBeaconClientMessage(event.Message)
-            }
+        for eventData := range messageChannel {
+            event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
+            w.onBeaconClientMessage(event.Message)
         }
     })()
 
