@@ -1,4 +1,4 @@
 module.exports = {
-    rocketPoolPath: '/Users/_____/rocketpool/',
+    rocketPoolPath: '/rocketpool/',
     providerUrl: 'http://localhost:8545',
 };
