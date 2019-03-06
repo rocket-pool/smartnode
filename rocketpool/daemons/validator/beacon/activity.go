@@ -12,27 +12,50 @@ import (
 )
 
 
-// Start beacon activity process
+// Activity process
+type ActivityProcess struct {
+    p *services.Provider
+    activeValidators map[string]bool
+}
+
+
+/**
+ * Start beacon activity process
+ */
 func StartActivityProcess(p *services.Provider) {
 
-    // Active validator set
-    activeValidators := make(map[string]bool)
+    // Initialise process
+    activityProcess := &ActivityProcess{
+        p: p,
+        activeValidators: make(map[string]bool),
+    }
+
+    // Start
+    activityProcess.start();
+
+}
+
+
+/**
+ * Start activity
+ */
+func (a *ActivityProcess) start() {
 
     // Subscribe to beacon chain events
     connectedChannel := make(chan interface{})
     messageChannel := make(chan interface{})
-    p.Publisher.AddSubscriber("beacon.client.connected", connectedChannel)
-    p.Publisher.AddSubscriber("beacon.client.message", messageChannel)
+    a.p.Publisher.AddSubscriber("beacon.client.connected", connectedChannel)
+    a.p.Publisher.AddSubscriber("beacon.client.message", messageChannel)
 
     // Handle beacon chain events
     go (func() {
         for {
             select {
                 case <-connectedChannel:
-                    activityHandleBeaconClientConnected(p)
+                    a.onBeaconClientConnected()
                 case eventData := <-messageChannel:
                     event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-                    activityHandleBeaconClientMessage(p, &activeValidators, event.Message)
+                    a.onBeaconClientMessage(event.Message)
             }
         }
     })()
@@ -40,17 +63,19 @@ func StartActivityProcess(p *services.Provider) {
 }
 
 
-// Handle beacon chain client connections
-func activityHandleBeaconClientConnected(p *services.Provider) {
+/**
+ * Handle beacon chain client connections
+ */
+func (a *ActivityProcess) onBeaconClientConnected() {
 
     // Request validator statuses
-    for _, validator := range p.VM.Validators {
+    for _, validator := range a.p.VM.Validators {
         if payload, err := json.Marshal(beaconchain.ClientMessage{
             Message: "get_validator_status",
             Pubkey: hex.EncodeToString(validator.ValidatorPubkey),
         }); err != nil {
             log.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
-        } else if err := p.Beacon.Send(payload); err != nil {
+        } else if err := a.p.Beacon.Send(payload); err != nil {
             log.Println(errors.New("Error sending get validator status message: " + err.Error()))
         }
     }
@@ -58,8 +83,10 @@ func activityHandleBeaconClientConnected(p *services.Provider) {
 }
 
 
-// Handle beacon chain client messages
-func activityHandleBeaconClientMessage(p *services.Provider, activeValidators *map[string]bool, messageData []byte) {
+/**
+ * Handle beacon chain client messages
+ */
+func (a *ActivityProcess) onBeaconClientMessage(messageData []byte) {
 
     // Parse message
     message := new(beaconchain.ServerMessage)
@@ -76,7 +103,7 @@ func activityHandleBeaconClientMessage(p *services.Provider, activeValidators *m
 
             // Check validator pubkey
             found := false
-            for _, validator := range p.VM.Validators {
+            for _, validator := range a.p.VM.Validators {
                 if hex.EncodeToString(validator.ValidatorPubkey) == message.Pubkey {
                     found = true
                     break
@@ -90,19 +117,19 @@ func activityHandleBeaconClientMessage(p *services.Provider, activeValidators *m
                 // Inactive
                 case "inactive":
                     log.Println(fmt.Sprintf("Validator %s is inactive, waiting until active to send activity...", message.Pubkey))
-                    delete(*activeValidators, message.Pubkey)
+                    delete(a.activeValidators, message.Pubkey)
 
                 // Active
                 case "active":
                     log.Println(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey))
-                    (*activeValidators)[message.Pubkey] = true
+                    a.activeValidators[message.Pubkey] = true
 
                 // Exited
                 case "exited": fallthrough
                 case "withdrawable": fallthrough
                 case "withdrawn":
                     log.Println(fmt.Sprintf("Validator %s has exited, not sending activity...", message.Pubkey))
-                    delete(*activeValidators, message.Pubkey)
+                    delete(a.activeValidators, message.Pubkey)
 
             }
 
@@ -110,9 +137,9 @@ func activityHandleBeaconClientMessage(p *services.Provider, activeValidators *m
         case "epoch":
 
             // Send activity for active validators
-            for _, validator := range p.VM.Validators {
+            for _, validator := range a.p.VM.Validators {
                 pubkeyHex := hex.EncodeToString(validator.ValidatorPubkey)
-                if (*activeValidators)[pubkeyHex] {
+                if a.activeValidators[pubkeyHex] {
                     log.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkeyHex))
 
                     // Send activity
@@ -121,7 +148,7 @@ func activityHandleBeaconClientMessage(p *services.Provider, activeValidators *m
                         Pubkey: pubkeyHex,
                     }); err != nil {
                         log.Println(errors.New("Error encoding activity payload: " + err.Error()))
-                    } else if err := p.Beacon.Send(payload); err != nil {
+                    } else if err := a.p.Beacon.Send(payload); err != nil {
                         log.Println(errors.New("Error sending activity message: " + err.Error()))
                     }
 

@@ -35,7 +35,7 @@ type CheckinProcess struct {
  */
 func StartCheckinProcess(p *services.Provider) {
 
-    // Initialise checkin process
+    // Initialise process
     checkinProcess := &CheckinProcess{
         p: p,
     }
