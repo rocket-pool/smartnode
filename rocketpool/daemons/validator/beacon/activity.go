@@ -31,13 +31,13 @@ func StartActivityProcess(p *services.Provider) {
     }
 
     // Start
-    activityProcess.start();
+    activityProcess.start()
 
 }
 
 
 /**
- * Start activity
+ * Start process
  */
 func (a *ActivityProcess) start() {
 

@@ -47,7 +47,7 @@ func StartCheckinProcess(p *services.Provider) {
 
 
 /**
- * Start node checkin
+ * Start process
  */
 func (c *CheckinProcess) start() {
 
