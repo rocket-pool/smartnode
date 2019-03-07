@@ -1,6 +1,7 @@
 package minipool
 
 import (
+    "encoding/hex"
     "errors"
     "math/big"
     "time"
@@ -263,6 +264,87 @@ func GetStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) 
 
     // Return
     return status, nil
+
+}
+
+
+// Get a map of all active minipools by validator pubkey
+// Requires rocketPool and rocketMinipool contracts to be loaded with contract manager
+func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[string]common.Address, error) {
+
+    // Get minipool count
+    minipoolCountV := new(*big.Int)
+    if err := cm.Contracts["rocketPool"].Call(nil, minipoolCountV, "getPoolsCount"); err != nil {
+        return nil, errors.New("Error retrieving minipool count: " + err.Error())
+    }
+    minipoolCount := (*minipoolCountV).Int64()
+
+    // Data channels
+    addressChannels := make([]chan *common.Address, minipoolCount)
+    validatorPubkeyChannels := make([]chan string, minipoolCount)
+    errorChannel := make(chan error)
+
+    // Get minipool addresses
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        addressChannels[mi] = make(chan *common.Address)
+        go (func(mi int64) {
+            minipoolAddress := new(common.Address)
+            if err := cm.Contracts["rocketPool"].Call(nil, minipoolAddress, "getPoolAt", big.NewInt(mi)); err != nil {
+                errorChannel <- errors.New("Error retrieving minipool address: " + err.Error())
+            } else {
+                addressChannels[mi] <- minipoolAddress
+            }
+        })(mi)
+    }
+
+    // Receive minipool addresses
+    minipoolAddresses := make([]*common.Address, minipoolCount)
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        select {
+            case address := <-addressChannels[mi]:
+                minipoolAddresses[mi] = address
+            case err := <-errorChannel:
+                return nil, err
+        }
+    }
+
+    // Get minipool validator pubkeys
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        validatorPubkeyChannels[mi] = make(chan string)
+        go (func(mi int64) {
+
+            // Initialise minipool contract
+            minipoolContract, err := cm.NewContract(minipoolAddresses[mi], "rocketMinipool")
+            if err != nil {
+                errorChannel <- errors.New("Error initialising minipool contract: " + err.Error())
+                return
+            }
+
+            // Get validator pubkey
+            depositInput := new([]byte)
+            if err := minipoolContract.Call(nil, depositInput, "getDepositInput"); err != nil {
+                errorChannel <- errors.New("Error retrieving minipool depositInput data: " + err.Error())
+            } else {
+                // :TODO: decode using SSZ once library is available
+                validatorPubkeyChannels[mi] <- hex.EncodeToString((*depositInput)[4:52])
+            }
+
+        })(mi)
+    }
+
+    // Receive minipool validator pubkeys & build map
+    activeMinipools := make(map[string]common.Address)
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        select {
+            case validatorPubkey := <-validatorPubkeyChannels[mi]:
+                activeMinipools[validatorPubkey] = *minipoolAddresses[mi];
+            case err := <-errorChannel:
+                return nil, err
+        }
+    }
+
+    // Return
+    return &activeMinipools, nil
 
 }
 
