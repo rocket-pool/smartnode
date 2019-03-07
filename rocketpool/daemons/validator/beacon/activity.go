@@ -7,13 +7,20 @@ import (
     "fmt"
     "log"
 
+    "github.com/fatih/color"
+
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     beaconchain "github.com/rocket-pool/smartnode-cli/rocketpool/services/beacon-chain"
 )
 
 
+// Config
+const ACTIVITY_LOG_COLOR = color.FgBlue
+
+
 // Activity process
 type ActivityProcess struct {
+    c func(a ...interface{}) string
     p *services.Provider
     activeValidators map[string]bool
 }
@@ -26,6 +33,7 @@ func StartActivityProcess(p *services.Provider) {
 
     // Initialise process
     activityProcess := &ActivityProcess{
+        c: color.New(ACTIVITY_LOG_COLOR).SprintFunc(),
         p: p,
         activeValidators: make(map[string]bool),
     }
@@ -74,9 +82,9 @@ func (a *ActivityProcess) onBeaconClientConnected() {
             Message: "get_validator_status",
             Pubkey: hex.EncodeToString(validator.ValidatorPubkey),
         }); err != nil {
-            log.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
+            log.Println(a.c(errors.New("Error encoding get validator status payload: " + err.Error())))
         } else if err := a.p.Beacon.Send(payload); err != nil {
-            log.Println(errors.New("Error sending get validator status message: " + err.Error()))
+            log.Println(a.c(errors.New("Error sending get validator status message: " + err.Error())))
         }
     }
 
@@ -91,7 +99,7 @@ func (a *ActivityProcess) onBeaconClientMessage(messageData []byte) {
     // Parse message
     message := new(beaconchain.ServerMessage)
     if err := json.Unmarshal(messageData, message); err != nil {
-        log.Println(errors.New("Error decoding beacon message: " + err.Error()))
+        log.Println(a.c(errors.New("Error decoding beacon message: " + err.Error())))
         return
     }
 
@@ -116,19 +124,19 @@ func (a *ActivityProcess) onBeaconClientMessage(messageData []byte) {
 
                 // Inactive
                 case "inactive":
-                    log.Println(fmt.Sprintf("Validator %s is inactive, waiting until active to send activity...", message.Pubkey))
+                    log.Println(a.c(fmt.Sprintf("Validator %s is inactive, waiting until active to send activity...", message.Pubkey)))
                     delete(a.activeValidators, message.Pubkey)
 
                 // Active
                 case "active":
-                    log.Println(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey))
+                    log.Println(a.c(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey)))
                     a.activeValidators[message.Pubkey] = true
 
                 // Exited
                 case "exited": fallthrough
                 case "withdrawable": fallthrough
                 case "withdrawn":
-                    log.Println(fmt.Sprintf("Validator %s has exited, not sending activity...", message.Pubkey))
+                    log.Println(a.c(fmt.Sprintf("Validator %s has exited, not sending activity...", message.Pubkey)))
                     delete(a.activeValidators, message.Pubkey)
 
             }
@@ -140,16 +148,16 @@ func (a *ActivityProcess) onBeaconClientMessage(messageData []byte) {
             for _, validator := range a.p.VM.Validators {
                 pubkeyHex := hex.EncodeToString(validator.ValidatorPubkey)
                 if a.activeValidators[pubkeyHex] {
-                    log.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkeyHex))
+                    log.Println(a.c(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkeyHex)))
 
                     // Send activity
                     if payload, err := json.Marshal(beaconchain.ClientMessage{
                         Message: "activity",
                         Pubkey: pubkeyHex,
                     }); err != nil {
-                        log.Println(errors.New("Error encoding activity payload: " + err.Error()))
+                        log.Println(a.c(errors.New("Error encoding activity payload: " + err.Error())))
                     } else if err := a.p.Beacon.Send(payload); err != nil {
-                        log.Println(errors.New("Error sending activity message: " + err.Error()))
+                        log.Println(a.c(errors.New("Error sending activity message: " + err.Error())))
                     }
 
                 }
@@ -158,12 +166,12 @@ func (a *ActivityProcess) onBeaconClientMessage(messageData []byte) {
         // Success response
         case "success":
             if message.Action == "process_activity" {
-                log.Println("Processed validator activity successfully...")
+                log.Println(a.c("Processed validator activity successfully..."))
             }
 
         // Error
         case "error":
-            log.Println("A beacon server error occurred:", message.Error)
+            log.Println(a.c("A beacon server error occurred:", message.Error))
 
     }
 
