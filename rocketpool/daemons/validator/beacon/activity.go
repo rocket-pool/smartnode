@@ -171,7 +171,7 @@ func (a *ActivityProcess) onBeaconClientMessage(messageData []byte) {
 
         // Error
         case "error":
-            log.Println(a.c("A beacon server error occurred:", message.Error))
+            log.Println(a.c("A beacon server error occurred: ", message.Error))
 
     }
 
