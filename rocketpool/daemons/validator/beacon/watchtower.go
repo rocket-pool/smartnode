@@ -113,6 +113,9 @@ func (p *WatchtowerProcess) startUpdateMinipools() {
     if p.updatingMinipools { return }
     p.updatingMinipools = true
 
+    // Log
+    log.Println(p.c("Node is trusted, starting watchtower process..."))
+
     // Get active minipools on interval
     go (func() {
         p.getActiveMinipools()
@@ -143,6 +146,9 @@ func (p *WatchtowerProcess) stopUpdateMinipools() {
     if !p.updatingMinipools { return }
     p.updatingMinipools = false
 
+    // Log
+    log.Println(p.c("Node is untrusted, stopping watchtower process..."))
+
     // Stop getting active minipools
     p.getActiveMinipoolsStop <- true
 
@@ -166,15 +172,28 @@ func (p *WatchtowerProcess) getActiveMinipools() {
     }
 
     // Request validator statuses for active minipools
-    for pubkey, _ := range p.activeMinipools {
-        if payload, err := json.Marshal(beaconchain.ClientMessage{
-            Message: "get_validator_status",
-            Pubkey: pubkey,
-        }); err != nil {
-            log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
-        } else if err := p.p.Beacon.Send(payload); err != nil {
-            log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
-        }
+    for pubkey, minipoolAddress := range p.activeMinipools {
+        go (func(pubkey string, minipoolAddress common.Address) {
+
+            // Check minipool status
+            if status, err := getMinipoolStatus(p.p, &minipoolAddress); err != nil {
+                log.Println(p.c(err))
+                return
+            } else if *status < minipool.STAKING || *status > minipool.LOGGED_OUT {
+                return
+            }
+
+            // Request validator status
+            if payload, err := json.Marshal(beaconchain.ClientMessage{
+                Message: "get_validator_status",
+                Pubkey: pubkey,
+            }); err != nil {
+                log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
+            } else if err := p.p.Beacon.Send(payload); err != nil {
+                log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
+            }
+
+        })(pubkey, minipoolAddress)
     }
 
 }
@@ -200,50 +219,75 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
     minipoolAddress, ok := p.activeMinipools[message.Pubkey]
     if !ok { return }
 
-    // Initialise minipool contract
-    minipoolContract, err := p.p.CM.NewContract(&minipoolAddress, "rocketMinipool")
+    // Get minipool status
+    status, err := getMinipoolStatus(p.p, &minipoolAddress)
     if err != nil {
-        log.Println(p.c(errors.New("Error initialising minipool contract: " + err.Error())))
-        return
-    }
-
-    // Get minipool's current status
-    status := new(uint8)
-    minipoolContract.Call(nil, status, "getStatus")
-    if err != nil {
-        log.Println(p.c(errors.New("Error retrieving minipool status: " + err.Error())))
+        log.Println(p.c(err))
         return
     }
 
     // Log minipool out if staking
     if *status == minipool.STAKING {
+
+        // Log
+        log.Println(p.c(fmt.Sprintf("Minipool %s is ready for logout...", minipoolAddress.Hex())))
+
+        // Log out
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
             log.Println(p.c(err))
         } else {
-            txor.GasLimit = 100000 // Gas estimates on this method are incorrect
+            txor.GasLimit = 200000 // Gas estimates on this method are incorrect
             if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "logoutMinipool", minipoolAddress); err != nil {
                 log.Println(p.c(errors.New("Error logging out minipool: " + err.Error())))
             } else {
-                log.Println(p.c(fmt.Sprintf("Minipool %s was logged out", minipoolAddress.Hex())))
+                log.Println(p.c(fmt.Sprintf("Minipool %s was successfully logged out", minipoolAddress.Hex())))
             }
         }
+
         return
     }
 
     // Withdraw minipool if logged out and withdrawable
     if *status == minipool.LOGGED_OUT && message.Status.Code == "withdrawable" {
+
+        // Log
+        log.Println(p.c(fmt.Sprintf("Minipool %s is ready for withdrawal...", minipoolAddress.Hex())))
+
+        // Withdraw
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
             log.Println(p.c(err))
         } else {
-            txor.GasLimit = 100000 // Gas estimates on this method are incorrect
+            txor.GasLimit = 200000 // Gas estimates on this method are incorrect
             if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "withdrawMinipool", minipoolAddress, big.NewInt(0)); err != nil {
                 log.Println(p.c(errors.New("Error withdrawing minipool: " + err.Error())))
             } else {
-                log.Println(p.c(fmt.Sprintf("Minipool %s was withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), 0.00)))
+                log.Println(p.c(fmt.Sprintf("Minipool %s was successfully withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), 0.00)))
             }
         }
+
         return
     }
+
+}
+
+
+// Get a minipool's status
+func getMinipoolStatus(p *services.Provider, address *common.Address) (*uint8, error) {
+
+    // Initialise minipool contract
+    minipoolContract, err := p.CM.NewContract(address, "rocketMinipool")
+    if err != nil {
+        return nil, errors.New("Error initialising minipool contract: " + err.Error())
+    }
+
+    // Get minipool's current status
+    status := new(uint8)
+    if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
+        return nil, errors.New("Error retrieving minipool status: " + err.Error())
+    }
+
+    // Return
+    return status, nil
 
 }
 
