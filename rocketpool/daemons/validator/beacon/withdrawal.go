@@ -101,7 +101,10 @@ func (p *WithdrawalProcess) checkStakingMinipools() {
         pubkeyHex := hex.EncodeToString(minipool.ValidatorPubkey)
 
         // Check exit block
-        if header.Number.Cmp(&exitBlock) == -1 { continue }
+        if header.Number.Cmp(&exitBlock) == -1 {
+            log.Println(p.c(fmt.Sprintf("Validator %s not ready to withdraw until block %s...", pubkeyHex, exitBlock.String())))
+            continue
+        }
 
         // Check if already marked for exit
         if p.exitReadyValidators[pubkeyHex] { continue }
