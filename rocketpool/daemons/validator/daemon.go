@@ -13,10 +13,13 @@ func Run(c *cli.Context) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        Client: true,
+        CM: true,
         Publisher: true,
         Beacon: true,
         VM: true,
-        LoadContracts: []string{"utilAddressSetStorage"},
+        LoadContracts: []string{"rocketAdmin", "rocketNodeWatchtower", "rocketPool", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
     })
     if err != nil {
@@ -26,6 +29,7 @@ func Run(c *cli.Context) error {
     // Start beacon processes
     go beacon.StartActivityProcess(p)
     go beacon.StartWithdrawalProcess(p)
+    go beacon.StartWatchtowerProcess(p)
 
     // Start services
     p.Beacon.Connect()
