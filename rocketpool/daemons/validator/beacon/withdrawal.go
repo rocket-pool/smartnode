@@ -37,14 +37,14 @@ type WithdrawalProcess struct {
 func StartWithdrawalProcess(p *services.Provider) {
 
     // Initialise process
-    withdrawalProcess := &WithdrawalProcess{
+    process := &WithdrawalProcess{
         c: color.New(WITHDRAWAL_LOG_COLOR).SprintFunc(),
         p: p,
         exitReadyValidators: make(map[string]bool),
     }
 
     // Start
-    withdrawalProcess.start()
+    process.start()
 
 }
 
@@ -52,25 +52,25 @@ func StartWithdrawalProcess(p *services.Provider) {
 /**
  * Start process
  */
-func (w *WithdrawalProcess) start() {
+func (p *WithdrawalProcess) start() {
 
     // Check staking minipools for withdrawal on interval
     go (func() {
         checkMinipoolsTimer := time.NewTicker(checkMinipoolsInterval)
         for _ = range checkMinipoolsTimer.C {
-            w.checkStakingMinipools()
+            p.checkStakingMinipools()
         }
     })()
 
     // Subscribe to beacon chain events
     messageChannel := make(chan interface{})
-    w.p.Publisher.AddSubscriber("beacon.client.message", messageChannel)
+    p.p.Publisher.AddSubscriber("beacon.client.message", messageChannel)
 
     // Handle beacon chain events
     go (func() {
         for eventData := range messageChannel {
             event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-            w.onBeaconClientMessage(event.Message)
+            p.onBeaconClientMessage(event.Message)
         }
     })()
 
@@ -80,20 +80,20 @@ func (w *WithdrawalProcess) start() {
 /**
  * Check staking minipools for withdrawal
  */
-func (w *WithdrawalProcess) checkStakingMinipools() {
+func (p *WithdrawalProcess) checkStakingMinipools() {
 
     // Get latest block header
-    header, err := w.p.Client.HeaderByNumber(context.Background(), nil)
+    header, err := p.p.Client.HeaderByNumber(context.Background(), nil)
     if err != nil {
-        log.Println(w.c(errors.New("Error retrieving latest block header: " + err.Error())))
+        log.Println(p.c(errors.New("Error retrieving latest block header: " + err.Error())))
         return
     }
 
     // Log
-    log.Println(w.c(fmt.Sprintf("Checking staking minipools for withdrawal at block %s...", header.Number.String())))
+    log.Println(p.c(fmt.Sprintf("Checking staking minipools for withdrawal at block %s...", header.Number.String())))
 
     // Check minipools
-    for _, minipool := range w.p.VM.Validators {
+    for _, minipool := range p.p.VM.Validators {
 
         // Get minipool validator exit block and pubkey
         var exitBlock big.Int
@@ -104,20 +104,20 @@ func (w *WithdrawalProcess) checkStakingMinipools() {
         if header.Number.Cmp(&exitBlock) == -1 { continue }
 
         // Check if already marked for exit
-        if w.exitReadyValidators[pubkeyHex] { continue }
+        if p.exitReadyValidators[pubkeyHex] { continue }
 
         // Mark validator for exit and log
-        w.exitReadyValidators[pubkeyHex] = true
-        log.Println(w.c(fmt.Sprintf("Validator %s ready to withdraw, since block %s...", pubkeyHex, exitBlock.String())))
+        p.exitReadyValidators[pubkeyHex] = true
+        log.Println(p.c(fmt.Sprintf("Validator %s ready to withdraw, since block %s...", pubkeyHex, exitBlock.String())))
 
         // Request validator status
         if payload, err := json.Marshal(beaconchain.ClientMessage{
             Message: "get_validator_status",
             Pubkey: pubkeyHex,
         }); err != nil {
-            log.Println(w.c(errors.New("Error encoding get validator status payload: " + err.Error())))
-        } else if err := w.p.Beacon.Send(payload); err != nil {
-            log.Println(w.c(errors.New("Error sending get validator status message: " + err.Error())))
+            log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
+        } else if err := p.p.Beacon.Send(payload); err != nil {
+            log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
         }
 
     }
@@ -128,12 +128,12 @@ func (w *WithdrawalProcess) checkStakingMinipools() {
 /**
  * Handle beacon chain client messages
  */
-func (w *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
+func (p *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
 
     // Parse message
     message := new(beaconchain.ServerMessage)
     if err := json.Unmarshal(messageData, message); err != nil {
-        log.Println(w.c(errors.New("Error decoding beacon message: " + err.Error())))
+        log.Println(p.c(errors.New("Error decoding beacon message: " + err.Error())))
         return
     }
 
@@ -144,7 +144,7 @@ func (w *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
         case "validator_status":
 
             // Check validator is ready to exit
-            if !w.exitReadyValidators[message.Pubkey] { break }
+            if !p.exitReadyValidators[message.Pubkey] { break }
 
             // Handle statuses
             switch message.Status.Code {
@@ -155,39 +155,39 @@ func (w *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
                     if message.Status.Initiated.Exit == 0 {
 
                         // Log status
-                        log.Println(w.c(fmt.Sprintf("Validator %s has not exited yet, exiting...", message.Pubkey)))
+                        log.Println(p.c(fmt.Sprintf("Validator %s has not exited yet, exiting...", message.Pubkey)))
 
                         // Send exit message
                         if payload, err := json.Marshal(beaconchain.ClientMessage{
                             Message: "exit",
                             Pubkey: message.Pubkey,
                         }); err != nil {
-                            log.Println(w.c(errors.New("Error encoding exit payload: " + err.Error())))
-                        } else if err := w.p.Beacon.Send(payload); err != nil {
-                            log.Println(w.c(errors.New("Error sending exit message: " + err.Error())))
+                            log.Println(p.c(errors.New("Error encoding exit payload: " + err.Error())))
+                        } else if err := p.p.Beacon.Send(payload); err != nil {
+                            log.Println(p.c(errors.New("Error sending exit message: " + err.Error())))
                         }
 
                     } else {
-                        log.Println(w.c(fmt.Sprintf("Validator %s is already exiting...", message.Pubkey)))
+                        log.Println(p.c(fmt.Sprintf("Validator %s is already exiting...", message.Pubkey)))
                     }
 
                 // Exited
                 case "exited": fallthrough
                 case "withdrawable": fallthrough
                 case "withdrawn":
-                    log.Println(w.c(fmt.Sprintf("Validator %s has exited successfully...", message.Pubkey)))
+                    log.Println(p.c(fmt.Sprintf("Validator %s has exited successfully...", message.Pubkey)))
 
             }
 
         // Success response
         case "success":
             if message.Action == "initiate_exit" {
-                log.Println(w.c("Validator initiated exit successfully..."))
+                log.Println(p.c("Validator initiated exit successfully..."))
             }
 
         // Error
         case "error":
-            log.Println(w.c("A beacon server error occurred: ", message.Error))
+            log.Println(p.c("A beacon server error occurred: ", message.Error))
 
     }
 
