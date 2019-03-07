@@ -19,6 +19,7 @@
 VALIDATOR_PUBKEY_1="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd01"
 VALIDATOR_PUBKEY_2="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd02"
 VALIDATOR_PUBKEY_3="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd03"
+VALIDATOR_PUBKEY_4="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd04"
 GROUP_NAME="Group0"
 
 
@@ -41,7 +42,7 @@ fi
 
 # Configure staking durations (in blocks)
 node "${SCRIPTS_PATH}/set-minipool-setting.js" setMinipoolStakingDuration 3m 5
-node "${SCRIPTS_PATH}/set-minipool-setting.js" setMinipoolStakingDuration 3m 10
+node "${SCRIPTS_PATH}/set-minipool-setting.js" setMinipoolStakingDuration 6m 10
 
 # Seed node account with ETH and RPL
 node "${SCRIPTS_PATH}/send-ether.js" $NODE_ACCOUNT_ADDRESS 500000
@@ -59,6 +60,8 @@ go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit complete
 go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit reserve $VALIDATOR_PUBKEY_2 6m
 go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit complete
 go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit reserve $VALIDATOR_PUBKEY_3 12m
+go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit complete
+go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit reserve $VALIDATOR_PUBKEY_4 3m
 go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit complete
 
 # Create group depositor
