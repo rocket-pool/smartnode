@@ -5,7 +5,6 @@ import (
     "errors"
     "fmt"
     "log"
-    "math/big"
     "time"
 
     "github.com/ethereum/go-ethereum/common"
@@ -14,6 +13,7 @@ import (
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     beaconchain "github.com/rocket-pool/smartnode-cli/rocketpool/services/beacon-chain"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/minipool"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -236,7 +236,7 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
             log.Println(p.c(err))
         } else {
-            txor.GasLimit = 200000 // Gas estimates on this method are incorrect
+            txor.GasLimit = 250000 // Gas estimates on this method are incorrect
             if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "logoutMinipool", minipoolAddress); err != nil {
                 log.Println(p.c(errors.New("Error logging out minipool: " + err.Error())))
             } else {
@@ -253,15 +253,18 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
         // Log
         log.Println(p.c(fmt.Sprintf("Minipool %s is ready for withdrawal...", minipoolAddress.Hex())))
 
+        // Get balance to withdraw
+        balanceWei := eth.GweiToWei(float64(message.Balance))
+
         // Withdraw
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
             log.Println(p.c(err))
         } else {
-            txor.GasLimit = 200000 // Gas estimates on this method are incorrect
-            if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "withdrawMinipool", minipoolAddress, big.NewInt(0)); err != nil {
+            txor.GasLimit = 250000 // Gas estimates on this method are incorrect
+            if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "withdrawMinipool", minipoolAddress, balanceWei); err != nil {
                 log.Println(p.c(errors.New("Error withdrawing minipool: " + err.Error())))
             } else {
-                log.Println(p.c(fmt.Sprintf("Minipool %s was successfully withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), 0.00)))
+                log.Println(p.c(fmt.Sprintf("Minipool %s was successfully withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), eth.WeiToEth(balanceWei))))
             }
         }
 

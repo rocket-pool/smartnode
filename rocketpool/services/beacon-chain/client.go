@@ -43,6 +43,7 @@ type ServerMessage struct {
             Exit uint       `json:"exit"`
         }               `json:"initiated"`
     }               `json:"status"`
+    Balance uint    `json:"balance"`
     Action string   `json:"action"`
     Error string    `json:"error"`
 }
