@@ -1,7 +1,7 @@
 package minipool
 
 import (
-    "github.com/urfave/cli"
+    "gopkg.in/urfave/cli.v1"
 
     "github.com/ethereum/go-ethereum/common"
 

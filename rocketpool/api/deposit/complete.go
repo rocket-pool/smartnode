@@ -7,7 +7,7 @@ import (
     "strings"
 
     "github.com/ethereum/go-ethereum/common"
-    "github.com/urfave/cli"
+    "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"

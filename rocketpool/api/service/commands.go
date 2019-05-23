@@ -4,7 +4,7 @@ import (
     "fmt"
     "os"
 
-    "github.com/urfave/cli"
+    "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/daemons"
     "github.com/rocket-pool/smartnode-cli/rocketpool/daemons/smartnode"

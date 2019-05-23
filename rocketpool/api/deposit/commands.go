@@ -3,7 +3,7 @@ package deposit
 import (
     "regexp"
 
-    "github.com/urfave/cli"
+    "gopkg.in/urfave/cli.v1"
 
     cliutils "github.com/rocket-pool/smartnode-cli/rocketpool/utils/cli"
 )

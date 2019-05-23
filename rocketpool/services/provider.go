@@ -7,7 +7,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
-    "github.com/urfave/cli"
+    "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
     beaconchain "github.com/rocket-pool/smartnode-cli/rocketpool/services/beacon-chain"

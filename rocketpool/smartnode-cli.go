@@ -5,7 +5,8 @@ import (
     "log"
     "os"
 
-    "github.com/urfave/cli"
+    "gopkg.in/urfave/cli.v1"
+    "gopkg.in/urfave/cli.v1/altsrc"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/api/deposit"
     "github.com/rocket-pool/smartnode-cli/rocketpool/api/fee"
@@ -55,30 +56,35 @@ ______           _        _    ______           _
     // Register global application options & defaults
     app.Flags = []cli.Flag{
         cli.StringFlag{
-            Name:   "database, d",
+            Name:   "config",
+            Usage:  "Rocket Pool CLI config file absolute `path`",
+            Value:  os.Getenv("HOME") + "/.rocketpool/config.yml",
+        },
+        altsrc.NewStringFlag(cli.StringFlag{
+            Name:   "database",
             Usage:  "Rocket Pool CLI database absolute `path`",
             Value:  os.Getenv("HOME") + "/.rocketpool/rocketpool-cli.db",
-        },
-        cli.StringFlag{
-            Name:   "keychain, k",
+        }),
+        altsrc.NewStringFlag(cli.StringFlag{
+            Name:   "keychain",
             Usage:  "PoW chain account keychain absolute `path`",
             Value:  os.Getenv("HOME") + "/.rocketpool/accounts",
-        },
-        cli.StringFlag{
-            Name:   "provider, p",
+        }),
+        altsrc.NewStringFlag(cli.StringFlag{
+            Name:   "provider",
             Usage:  "PoW chain provider `url`",
             Value:  "http://localhost:8545",
-        },
-        cli.StringFlag{
-            Name:   "storageAddress, s",
+        }),
+        altsrc.NewStringFlag(cli.StringFlag{
+            Name:   "storageAddress",
             Usage:  "PoW chain Rocket Pool storage contract `address`",
             Value:  "0x70a5F2eB9e4C003B105399b471DAeDbC8d00B1c5", // Ganache
-        },
-        cli.StringFlag{
-            Name:   "beacon, b",
+        }),
+        altsrc.NewStringFlag(cli.StringFlag{
+            Name:   "beacon",
             Usage:  "Beacon chain provider `url`",
             Value:  "ws://localhost:9545", // Local simulator
-        },
+        }),
     }
 
     // Register api commands
@@ -87,6 +93,12 @@ ______           _        _    ______           _
     minipool.RegisterCommands(app, "minipool", []string{"m"})
         node.RegisterCommands(app, "node",     []string{"n"})
      service.RegisterCommands(app, "service",  []string{"s"})
+
+    // Load external config, squelch load errors
+    app.Before = func(c *cli.Context) error {
+        altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))(c)
+        return nil
+    }
 
     // Run application
     if err := app.Run(os.Args); err != nil {
