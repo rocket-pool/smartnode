@@ -101,7 +101,7 @@ func registerNode(c *cli.Context) error {
 
         // Check node account ether balance
         if nodeAccountEtherBalanceWei.Cmp(minNodeAccountEtherBalanceWei) < 0 {
-            messageChannel <- fmt.Sprintf("Node account requires a minimum balance of %.2f ETH balance in node primary account to operate in Rocket Pool", eth.WeiToEth(minNodeAccountEtherBalanceWei))
+            messageChannel <- fmt.Sprintf("Node account requires a minimum balance of %.2f ETH to operate in Rocket Pool", eth.WeiToEth(minNodeAccountEtherBalanceWei))
         } else {
             successChannel <- true
         }
