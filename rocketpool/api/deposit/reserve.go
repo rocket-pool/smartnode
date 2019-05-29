@@ -42,6 +42,12 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
         return err 
     }
 
+    // Get node's validator pubkey
+    // :TODO: implement once BLS library is available
+    pubkeyHex := []byte(pubkeyStr)
+    pubkey := make([]byte, hex.DecodedLen(len(pubkeyHex)))
+    _,_ = hex.Decode(pubkey, pubkeyHex)
+
     // Status channels
     successChannel := make(chan bool)
     messageChannel := make(chan string)
@@ -71,8 +77,20 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
         }
     })()
 
+    // Check pubkey is not in use
+    go (func() {
+        pubkeyUsedKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("validator.pubkey.used"), pubkey}, []byte{}))
+        if pubkeyUsed, err := p.CM.RocketStorage.GetBool(nil, pubkeyUsedKey); err != nil {
+            errorChannel <- errors.New("Error retrieving pubkey used status: " + err.Error())
+        } else if pubkeyUsed {
+            messageChannel <- "The public key is already in use"
+        } else {
+            successChannel <- true
+        }
+    })()
+
     // Receive status
-    for received := 0; received < 2; {
+    for received := 0; received < 3; {
         select {
             case <-successChannel:
                 received++
@@ -83,12 +101,6 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
                 return err
         }
     }
-
-    // Get node's validator pubkey
-    // :TODO: implement once BLS library is available
-    pubkeyHex := []byte(pubkeyStr)
-    pubkey := make([]byte, hex.DecodedLen(len(pubkeyHex)))
-    _,_ = hex.Decode(pubkey, pubkeyHex)
 
     // Get RP withdrawal pubkey
     // :TODO: replace with correct withdrawal pubkey once available
