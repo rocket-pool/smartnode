@@ -1,9 +1,11 @@
 package node
 
 import (
+    "context"
     "errors"
     "fmt"
 
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
@@ -30,8 +32,16 @@ func setNodeTimezone(c *cli.Context) error {
     // Set node timezone
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
-    } else if _, err := p.CM.Contracts["rocketNodeAPI"].Transact(txor, "setTimezoneLocation", timezone); err != nil {
-        return errors.New("Error setting node timezone: " + err.Error())
+    } else {
+        if tx, err := p.CM.Contracts["rocketNodeAPI"].Transact(txor, "setTimezoneLocation", timezone); err != nil {
+            return errors.New("Error setting node timezone: " + err.Error())
+        } else {
+
+            // Wait for transaction to be mined before continuing
+            fmt.Println("Set timezone transaction awaiting mining...")
+            bind.WaitMined(context.Background(), p.Client, tx)
+
+        }
     }
 
     // Get node timezone
