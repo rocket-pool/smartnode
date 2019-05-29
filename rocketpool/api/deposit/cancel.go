@@ -44,7 +44,7 @@ func cancelDeposit(c *cli.Context) error {
         } else {
 
             // Wait for transaction to be mined before continuing
-            fmt.Println("Deposit reservation cancellation transaction awaiting mining...")
+            fmt.Println("Deposit cancellation transaction awaiting mining...")
             bind.WaitMined(context.Background(), p.Client, tx)
 
         }
