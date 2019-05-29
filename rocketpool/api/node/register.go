@@ -7,6 +7,7 @@ import (
     "fmt"
     "math/big"
 
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "gopkg.in/urfave/cli.v1"
 
@@ -127,8 +128,16 @@ func registerNode(c *cli.Context) error {
     // Register node
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
-    } else if _, err := p.CM.Contracts["rocketNodeAPI"].Transact(txor, "add", timezone); err != nil {
-        return errors.New("Error registering node: " + err.Error())
+    } else {
+        if tx, err := p.CM.Contracts["rocketNodeAPI"].Transact(txor, "add", timezone); err != nil {
+            return errors.New("Error registering node: " + err.Error())
+        } else {
+
+            // Wait for transaction to be mined before continuing
+            fmt.Println("Node registration transaction awaiting mining...")
+            bind.WaitMined(context.Background(), p.Client, tx)
+
+        }
     }
 
     // Get node contract address
