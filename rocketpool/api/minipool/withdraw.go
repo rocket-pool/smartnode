@@ -23,7 +23,7 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
         Client: true,
         CM: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketNodeAPI"},
+        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
         LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
     })
     if err != nil {
@@ -50,6 +50,18 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
     successChannel := make(chan bool)
     messageChannel := make(chan string)
     errorChannel := make(chan error)
+
+    // Check withdrawals are allowed
+    go (func() {
+        withdrawalsAllowed := new(bool)
+        if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, withdrawalsAllowed, "getWithdrawalAllowed"); err != nil {
+            errorChannel <- errors.New("Error checking node withdrawals enabled status: " + err.Error())
+        } else if !*withdrawalsAllowed {
+            messageChannel <- "Node withdrawals are currently disabled in Rocket Pool"
+        } else {
+            successChannel <- true
+        }
+    })()
 
     // Check minipool node owner
     go (func() {
@@ -88,7 +100,7 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
     })()
 
     // Receive status
-    for received := 0; received < 3; {
+    for received := 0; received < 4; {
         select {
             case <-successChannel:
                 received++
