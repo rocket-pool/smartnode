@@ -206,7 +206,11 @@ func completeDeposit(c *cli.Context) error {
 
             // Wait for transaction to be mined before continuing
             fmt.Println("RPL transfer transaction awaiting mining...")
-            bind.WaitMined(context.Background(), p.Client, tx)
+            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
+                return errors.New("Error retrieving RPL transfer transaction receipt")
+            } else if txReceipt.Status == 0 {
+                return errors.New("RPL transfer transaction failed")
+            }
 
         }
 
@@ -221,7 +225,11 @@ func completeDeposit(c *cli.Context) error {
 
         // Wait for transaction to be mined before continuing
         fmt.Println("Deposit transaction awaiting mining...")
-        bind.WaitMined(context.Background(), p.Client, tx)
+        if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
+            return errors.New("Error retrieving deposit transaction receipt")
+        } else if txReceipt.Status == 0 {
+            return errors.New("Deposit transaction failed")
+        }
 
     }
 

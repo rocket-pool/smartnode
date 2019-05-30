@@ -64,7 +64,11 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
 
             // Wait for transaction to be mined before continuing
             fmt.Println("Withdrawal transaction awaiting mining...")
-            bind.WaitMined(context.Background(), p.Client, tx)
+            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
+                return errors.New("Error retrieving withdrawal transaction receipt")
+            } else if txReceipt.Status == 0 {
+                return errors.New("Withdrawal transaction failed")
+            }
 
         }
     }

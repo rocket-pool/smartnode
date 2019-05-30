@@ -39,7 +39,11 @@ func setNodeTimezone(c *cli.Context) error {
 
             // Wait for transaction to be mined before continuing
             fmt.Println("Set timezone transaction awaiting mining...")
-            bind.WaitMined(context.Background(), p.Client, tx)
+            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
+                return errors.New("Error retrieving set timezone transaction receipt")
+            } else if txReceipt.Status == 0 {
+                return errors.New("Set timezone transaction failed")
+            }
 
         }
     }

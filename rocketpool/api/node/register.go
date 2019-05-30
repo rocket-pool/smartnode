@@ -135,7 +135,11 @@ func registerNode(c *cli.Context) error {
 
             // Wait for transaction to be mined before continuing
             fmt.Println("Node registration transaction awaiting mining...")
-            bind.WaitMined(context.Background(), p.Client, tx)
+            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
+                return errors.New("Error retrieving node registration transaction receipt")
+            } else if txReceipt.Status == 0 {
+                return errors.New("Node registration transaction failed")
+            }
 
         }
     }

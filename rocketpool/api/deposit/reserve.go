@@ -149,7 +149,11 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
 
             // Wait for transaction to be mined before continuing
             fmt.Println("Deposit reservation transaction awaiting mining...")
-            bind.WaitMined(context.Background(), p.Client, tx)
+            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
+                return errors.New("Error retrieving deposit reservation transaction receipt")
+            } else if txReceipt.Status == 0 {
+                return errors.New("Deposit reservation transaction failed")
+            }
             
         }
     }
