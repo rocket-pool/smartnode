@@ -33,7 +33,7 @@ type Details struct {
     StakingDurationId string
     NodeEtherBalanceWei *big.Int
     NodeRplBalanceWei *big.Int
-    UserCount *big.Int
+    DepositCount *big.Int
     UserDepositCapacityWei *big.Int
     UserDepositTotalWei *big.Int
 }
@@ -69,7 +69,7 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
     stakingDurationIdChannel := make(chan string)
     nodeEtherBalanceChannel := make(chan *big.Int)
     nodeRplBalanceChannel := make(chan *big.Int)
-    userCountChannel := make(chan *big.Int)
+    depositCountChannel := make(chan *big.Int)
     userDepositCapacityChannel := make(chan *big.Int)
     userDepositTotalChannel := make(chan *big.Int)
     errorChannel := make(chan error)
@@ -124,13 +124,13 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
         }
     })()
 
-    // Get user count
+    // Get deposit count
     go (func() {
-        userCount := new(*big.Int)
-        if err := minipoolContract.Call(nil, userCount, "getUserCount"); err != nil {
-            errorChannel <- errors.New("Error retrieving minipool user count: " + err.Error())
+        depositCount := new(*big.Int)
+        if err := minipoolContract.Call(nil, depositCount, "getDepositCount"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool deposit count: " + err.Error())
         } else {
-            userCountChannel <- *userCount
+            depositCountChannel <- *depositCount
         }
     })()
 
@@ -168,7 +168,7 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
                 received++
             case details.NodeRplBalanceWei = <-nodeRplBalanceChannel:
                 received++
-            case details.UserCount = <-userCountChannel:
+            case details.DepositCount = <-depositCountChannel:
                 received++
             case details.UserDepositCapacityWei = <-userDepositCapacityChannel:
                 received++

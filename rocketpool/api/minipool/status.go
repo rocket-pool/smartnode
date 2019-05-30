@@ -68,7 +68,7 @@ func getMinipoolStatus(c *cli.Context) error {
         fmt.Println("Staking Duration:      ", details.StakingDurationId)
         fmt.Println("Node ETH Deposited:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeEtherBalanceWei)))
         fmt.Println("Node RPL Deposited:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeRplBalanceWei)))
-        fmt.Println("User Count:            ", details.UserCount.String())
+        fmt.Println("Deposit Count:         ", details.DepositCount.String())
         fmt.Println("User Deposit Capacity: ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositCapacityWei)))
         fmt.Println("User Deposit Total:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositTotalWei)))
     }
