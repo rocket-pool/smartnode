@@ -6,11 +6,11 @@ import (
     "errors"
     "fmt"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -116,19 +116,9 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        txor.GasLimit = 800000 // Gas estimates on this method are incorrect
-        if tx, err := p.NodeContract.Transact(txor, "withdrawMinipoolDeposit", minipoolAddress); err != nil {
+        fmt.Println("Withdrawing deposit from minipool...")
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", minipoolAddress); err != nil {
             return errors.New("Error withdrawing deposit from minipool: " + err.Error())
-        } else {
-
-            // Wait for transaction to be mined before continuing
-            fmt.Println("Deposit withdrawal transaction awaiting mining...")
-            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
-                return errors.New("Error retrieving deposit withdrawal transaction receipt")
-            } else if txReceipt.Status == 0 {
-                return errors.New("Deposit withdrawal transaction failed")
-            }
-
         }
     }
 

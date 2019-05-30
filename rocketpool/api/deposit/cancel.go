@@ -1,14 +1,13 @@
 package deposit
 
 import (
-    "context"
     "errors"
     "fmt"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -39,18 +38,9 @@ func cancelDeposit(c *cli.Context) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        if tx, err := p.NodeContract.Transact(txor, "depositReserveCancel"); err != nil {
+        fmt.Println("Canceling deposit reservation...")
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserveCancel"); err != nil {
             return errors.New("Error canceling deposit reservation: " + err.Error())
-        } else {
-
-            // Wait for transaction to be mined before continuing
-            fmt.Println("Deposit cancellation transaction awaiting mining...")
-            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
-                return errors.New("Error retrieving deposit cancellation transaction receipt")
-            } else if txReceipt.Status == 0 {
-                return errors.New("Deposit cancellation transaction failed")
-            }
-
         }
     }
 

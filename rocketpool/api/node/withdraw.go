@@ -1,12 +1,10 @@
 package node
 
 import (
-    "context"
     "errors"
     "fmt"
     "math/big"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
@@ -57,19 +55,9 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        txor.GasLimit = 100000 // Gas estimates on this method are incorrect
-        if tx, err := p.NodeContract.Transact(txor, withdrawMethod, amountWei); err != nil {
+        fmt.Println("Withdrawing from node contract...")
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], withdrawMethod, amountWei); err != nil {
             return errors.New("Error withdrawing from node contract: " + err.Error())
-        } else {
-
-            // Wait for transaction to be mined before continuing
-            fmt.Println("Withdrawal transaction awaiting mining...")
-            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
-                return errors.New("Error retrieving withdrawal transaction receipt")
-            } else if txReceipt.Status == 0 {
-                return errors.New("Withdrawal transaction failed")
-            }
-
         }
     }
 

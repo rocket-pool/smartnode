@@ -1,14 +1,13 @@
 package node
 
 import (
-    "context"
     "errors"
     "fmt"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -33,18 +32,9 @@ func setNodeTimezone(c *cli.Context) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        if tx, err := p.CM.Contracts["rocketNodeAPI"].Transact(txor, "setTimezoneLocation", timezone); err != nil {
+        fmt.Println("Setting node timezone...")
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketNodeAPI"], p.CM.Abis["rocketNodeAPI"], "setTimezoneLocation", timezone); err != nil {
             return errors.New("Error setting node timezone: " + err.Error())
-        } else {
-
-            // Wait for transaction to be mined before continuing
-            fmt.Println("Set timezone transaction awaiting mining...")
-            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
-                return errors.New("Error retrieving set timezone transaction receipt")
-            } else if txReceipt.Status == 0 {
-                return errors.New("Set timezone transaction failed")
-            }
-
         }
     }
 
