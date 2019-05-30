@@ -241,8 +241,7 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
             log.Println(p.c(err))
         } else {
-            txor.GasLimit = 300000 // Gas estimates on this method are incorrect
-            if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "logoutMinipool", minipoolAddress); err != nil {
+            if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.CM.Addresses["rocketNodeWatchtower"], p.p.CM.Abis["rocketNodeWatchtower"], "logoutMinipool", minipoolAddress); err != nil {
                 log.Println(p.c(errors.New("Error logging out minipool: " + err.Error())))
             } else {
                 log.Println(p.c(fmt.Sprintf("Minipool %s was successfully logged out", minipoolAddress.Hex())))
@@ -265,8 +264,7 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
             log.Println(p.c(err))
         } else {
-            txor.GasLimit = 300000 // Gas estimates on this method are incorrect
-            if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "withdrawMinipool", minipoolAddress, balanceWei); err != nil {
+            if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.CM.Addresses["rocketNodeWatchtower"], p.p.CM.Abis["rocketNodeWatchtower"], "withdrawMinipool", minipoolAddress, balanceWei); err != nil {
                 log.Println(p.c(errors.New("Error withdrawing minipool: " + err.Error())))
             } else {
                 log.Println(p.c(fmt.Sprintf("Minipool %s was successfully withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), eth.WeiToEth(balanceWei))))
