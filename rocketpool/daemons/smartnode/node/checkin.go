@@ -106,7 +106,7 @@ func (p *CheckinProcess) checkin() {
     if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
         log.Println(err)
     } else {
-        txor.GasLimit = 450000 // Gas estimates on this method are incorrect
+        txor.GasLimit = 500000 // Gas estimates on this method are incorrect
         if _, err := p.p.NodeContract.Transact(txor, "checkin", eth.EthToWei(serverLoad), big.NewInt(nodeFeeVote)); err != nil {
             log.Println(errors.New("Error checking in with Rocket Pool: " + err.Error()))
         } else {

@@ -241,7 +241,7 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
             log.Println(p.c(err))
         } else {
-            txor.GasLimit = 250000 // Gas estimates on this method are incorrect
+            txor.GasLimit = 300000 // Gas estimates on this method are incorrect
             if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "logoutMinipool", minipoolAddress); err != nil {
                 log.Println(p.c(errors.New("Error logging out minipool: " + err.Error())))
             } else {
@@ -265,7 +265,7 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
             log.Println(p.c(err))
         } else {
-            txor.GasLimit = 250000 // Gas estimates on this method are incorrect
+            txor.GasLimit = 300000 // Gas estimates on this method are incorrect
             if _, err := p.p.CM.Contracts["rocketNodeWatchtower"].Transact(txor, "withdrawMinipool", minipoolAddress, balanceWei); err != nil {
                 log.Println(p.c(errors.New("Error withdrawing minipool: " + err.Error())))
             } else {

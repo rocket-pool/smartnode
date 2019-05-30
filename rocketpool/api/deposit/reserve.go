@@ -142,7 +142,7 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        txor.GasLimit = 8000000 // Gas estimates on this method are incorrect
+        txor.GasLimit = 500000 // Gas estimates on this method are incorrect
         if tx, err := p.NodeContract.Transact(txor, "depositReserve", durationId, depositInput); err != nil {
             return errors.New("Error making deposit reservation: " + err.Error())
         } else {
