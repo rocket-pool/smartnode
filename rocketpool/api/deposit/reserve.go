@@ -154,7 +154,7 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
             } else if txReceipt.Status == 0 {
                 return errors.New("Deposit reservation transaction failed")
             }
-            
+
         }
     }
 
