@@ -116,7 +116,7 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        txor.GasLimit = 600000 // Gas estimates on this method are incorrect
+        txor.GasLimit = 800000 // Gas estimates on this method are incorrect
         if tx, err := p.NodeContract.Transact(txor, "withdrawMinipoolDeposit", minipoolAddress); err != nil {
             return errors.New("Error withdrawing deposit from minipool: " + err.Error())
         } else {
