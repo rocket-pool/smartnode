@@ -1,13 +1,11 @@
 package deposit
 
 import (
-    "context"
     "errors"
     "fmt"
     "math/big"
     "strings"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "gopkg.in/urfave/cli.v1"
 
@@ -200,41 +198,23 @@ func completeDeposit(c *cli.Context) error {
 
         // Transfer remaining required RPL
         txor.Value = big.NewInt(0)
-        if tx, err := p.CM.Contracts["rocketPoolToken"].Transact(txor, "transfer", p.NodeContractAddress, remainingRplRequiredWei); err != nil {
+        fmt.Println("Transferring RPL to node contract...")
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketPoolToken"], p.CM.Abis["rocketPoolToken"], "transfer", p.NodeContractAddress, remainingRplRequiredWei); err != nil {
             return errors.New("Error transferring RPL to node contract: " + err.Error())
-        } else {
-
-            // Wait for transaction to be mined before continuing
-            fmt.Println("RPL transfer transaction awaiting mining...")
-            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
-                return errors.New("Error retrieving RPL transfer transaction receipt")
-            } else if txReceipt.Status == 0 {
-                return errors.New("RPL transfer transaction failed")
-            }
-
         }
 
     }
 
     // Complete deposit
     txor.Value = depositTransactionValueWei
-    tx, err := p.NodeContract.Transact(txor, "deposit")
+    fmt.Println("Completing deposit...")
+    txReceipt, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "deposit")
     if err != nil {
         return errors.New("Error completing deposit: " + err.Error())
-    } else {
-
-        // Wait for transaction to be mined before continuing
-        fmt.Println("Deposit transaction awaiting mining...")
-        if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
-            return errors.New("Error retrieving deposit transaction receipt")
-        } else if txReceipt.Status == 0 {
-            return errors.New("Deposit transaction failed")
-        }
-
     }
 
     // Get minipool created event
-    minipoolCreatedEvents, err := eth.GetTransactionEvents(p.Client, tx, p.CM.Addresses["rocketPool"], p.CM.Abis["rocketPool"], "PoolCreated", PoolCreated{})
+    minipoolCreatedEvents, err := eth.GetTransactionEvents(p.Client, txReceipt, p.CM.Addresses["rocketPool"], p.CM.Abis["rocketPool"], "PoolCreated", PoolCreated{})
     if err != nil {
         return errors.New("Error retrieving deposit transaction minipool created event: " + err.Error())
     } else if len(minipoolCreatedEvents) == 0 {

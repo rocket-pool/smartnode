@@ -2,12 +2,10 @@ package deposit
 
 import (
     "bytes"
-    "context"
     "encoding/hex"
     "errors"
     "fmt"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     //"github.com/prysmaticlabs/prysm/shared/ssz"
     "gopkg.in/urfave/cli.v1"
 
@@ -142,19 +140,9 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        txor.GasLimit = 500000 // Gas estimates on this method are incorrect
-        if tx, err := p.NodeContract.Transact(txor, "depositReserve", durationId, depositInput); err != nil {
+        fmt.Println("Making deposit reservation...")
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, depositInput); err != nil {
             return errors.New("Error making deposit reservation: " + err.Error())
-        } else {
-
-            // Wait for transaction to be mined before continuing
-            fmt.Println("Deposit reservation transaction awaiting mining...")
-            if txReceipt, err := bind.WaitMined(context.Background(), p.Client, tx); err != nil {
-                return errors.New("Error retrieving deposit reservation transaction receipt")
-            } else if txReceipt.Status == 0 {
-                return errors.New("Deposit reservation transaction failed")
-            }
-
         }
     }
 

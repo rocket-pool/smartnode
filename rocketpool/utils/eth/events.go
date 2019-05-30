@@ -2,7 +2,6 @@ package eth
 
 import (
     "bytes"
-    "context"
     "errors"
     "reflect"
 
@@ -16,7 +15,7 @@ import (
 
 // Get contract events from a transaction
 // eventPrototype must be an event struct and not a pointer to one
-func GetTransactionEvents(client *ethclient.Client, tx *types.Transaction, contractAddress *common.Address, contractAbi *abi.ABI, eventName string, eventPrototype interface{}) ([]interface{}, error) {
+func GetTransactionEvents(client *ethclient.Client, txReceipt *types.Receipt, contractAddress *common.Address, contractAbi *abi.ABI, eventName string, eventPrototype interface{}) ([]interface{}, error) {
 
     // Create contract instance
     contract := bind.NewBoundContract(*contractAddress, *contractAbi, client, client, client)
@@ -24,15 +23,9 @@ func GetTransactionEvents(client *ethclient.Client, tx *types.Transaction, contr
     // Get event type from prototype
     eventType := reflect.TypeOf(eventPrototype)
 
-    // Get transaction receipt
-    receipt, err := client.TransactionReceipt(context.Background(), tx.Hash())
-    if err != nil {
-        return nil, errors.New("Error retrieving transaction receipt: " + err.Error())
-    }
-
     // Process transaction receipt logs
     events := make([]interface{}, 0)
-    for _, log := range receipt.Logs {
+    for _, log := range txReceipt.Logs {
 
         // Check log address matches contract address
         if !bytes.Equal(log.Address.Bytes(), contractAddress.Bytes()) {
