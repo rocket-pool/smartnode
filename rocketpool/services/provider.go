@@ -109,7 +109,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Sync ethereum client
     if opts.ClientSync {
-        if err := eth.WaitSync(p.Client, true); err != nil {
+        if err := eth.WaitSync(p.Client, false, true); err != nil {
             return nil, err
         }
     }

@@ -10,7 +10,7 @@ import (
 
 
 // Wait for node to sync
-func WaitSync(client *ethclient.Client, renderStatus bool) error {
+func WaitSync(client *ethclient.Client, forceSynced bool, renderStatus bool) error {
 
     // Status channels
     successChannel := make(chan bool)
@@ -24,9 +24,11 @@ func WaitSync(client *ethclient.Client, renderStatus bool) error {
 
             // Check sync progress and render
             if progress, err := client.SyncProgress(context.Background()); err != nil {
-                checkSync = false
-                if statusRendered { fmt.Println("") }
-                errorChannel <- errors.New("Error retrieving ethereum node sync progress: " + err.Error())
+                if !forceSynced {
+                    checkSync = false
+                    if statusRendered { fmt.Println("") }
+                    errorChannel <- errors.New("Error retrieving ethereum node sync progress: " + err.Error())
+                }
             } else if progress == nil {
                 checkSync = false
                 if statusRendered { fmt.Println("") }

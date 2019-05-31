@@ -49,6 +49,9 @@ func StartCheckinProcess(p *services.Provider) {
  */
 func (p *CheckinProcess) scheduleCheckin() {
 
+    // Wait for node to sync
+    eth.WaitSync(p.p.Client, true, false)
+
     // Get last checkin time
     lastCheckinTime := new(int64)
     if err := p.p.DB.GetAtomic("node.checkin.latest", lastCheckinTime); err != nil {
@@ -98,6 +101,9 @@ func (p *CheckinProcess) checkin() {
 
     // Log
     log.Println("Checking in...")
+
+    // Wait for node to sync
+    eth.WaitSync(p.p.Client, true, false)
 
     // Get average server load
     serverLoad, err := p.getServerLoad()
