@@ -15,6 +15,7 @@ func getDepositStatus(c *cli.Context) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
+        ClientSync:    true,
         CM:            true,
         NodeContract:  true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},

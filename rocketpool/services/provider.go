@@ -14,6 +14,7 @@ import (
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/database"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
 
@@ -22,6 +23,7 @@ type ProviderOpts struct {
     DB                  bool
     AM                  bool
     Client              bool
+    ClientSync          bool
     CM                  bool
     NodeContractAddress bool
     NodeContract        bool
@@ -65,12 +67,15 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         opts.AM = true
         opts.CM = true
     } // Node contract address requires node account manager & RP contract manager
-    if len(opts.LoadContracts)+len(opts.LoadAbis) > 0 {
+    if len(opts.LoadContracts) + len(opts.LoadAbis) > 0 {
         opts.CM = true
     } // Contracts & ABIs require RP contract manager
     if opts.CM {
         opts.Client = true
     } // RP contract manager requires eth client
+    if opts.ClientSync {
+        opts.Client = true
+    } // Synced client requires eth client
 
     // Service provider
     p := &Provider{}
@@ -99,6 +104,13 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
             return nil, errors.New("Error connecting to ethereum node: " + err.Error())
         } else {
             p.Client = client
+        }
+    }
+
+    // Sync ethereum client
+    if opts.ClientSync {
+        if err := eth.WaitSync(p.Client, true); err != nil {
+            return nil, err
         }
     }
 
