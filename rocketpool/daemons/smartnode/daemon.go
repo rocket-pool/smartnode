@@ -17,7 +17,7 @@ func Run(c *cli.Context) error {
         AM: true,
         CM: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketNodeAPI"},
+        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
         LoadAbis: []string{"rocketNodeContract"},
     })
     if err != nil {

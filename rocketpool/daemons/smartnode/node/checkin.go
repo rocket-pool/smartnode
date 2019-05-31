@@ -16,17 +16,15 @@ import (
 
 
 // Config
-const CHECKIN_INTERVAL string = "15s"
+const DEFAULT_CHECKIN_INTERVAL string = "24h"
 const NODE_FEE_VOTE_NO_CHANGE int64 = 0
 const NODE_FEE_VOTE_INCREASE int64 = 1
 const NODE_FEE_VOTE_DECREASE int64 = 2
-var checkinInterval, _ = time.ParseDuration(CHECKIN_INTERVAL)
 
 
 // Checkin process
 type CheckinProcess struct {
     p *services.Provider
-    checkinTimer *time.Timer
 }
 
 
@@ -40,21 +38,31 @@ func StartCheckinProcess(p *services.Provider) {
         p: p,
     }
 
-    // Start
-    process.start()
+    // Schedule next checkin
+    process.scheduleCheckin()
 
 }
 
 
 /**
- * Start process
+ * Schedule next checkin
  */
-func (p *CheckinProcess) start() {
+func (p *CheckinProcess) scheduleCheckin() {
 
     // Get last checkin time
     lastCheckinTime := new(int64)
     if err := p.p.DB.GetAtomic("node.checkin.latest", lastCheckinTime); err != nil {
         log.Println(err)
+    }
+
+    // Get current checkin interval
+    var checkinInterval time.Duration
+    checkinIntervalSeconds := new(*big.Int)
+    if err := p.p.CM.Contracts["rocketNodeSettings"].Call(nil, checkinIntervalSeconds, "getCheckinInterval"); err == nil {
+        checkinInterval, _ = time.ParseDuration((*checkinIntervalSeconds).String() + "s")
+    }
+    if checkinInterval.Seconds() == 0 {
+        checkinInterval, _ = time.ParseDuration(DEFAULT_CHECKIN_INTERVAL)
     }
 
     // Get next checkin time
@@ -73,9 +81,10 @@ func (p *CheckinProcess) start() {
 
     // Initialise checkin timer
     go (func() {
-        p.checkinTimer = time.NewTimer(nextCheckinDuration)
-        for _ = range p.checkinTimer.C {
-            p.checkin()
+        checkinTimer := time.NewTimer(nextCheckinDuration)
+        select {
+            case <-checkinTimer.C:
+                p.checkin()
         }
     })()
 
@@ -118,11 +127,8 @@ func (p *CheckinProcess) checkin() {
         log.Println(err)
     }
 
-    // Log time until next checkin
-    log.Println("Time until next checkin:", checkinInterval.String())
-
-    // Reset timer for next checkin
-    p.checkinTimer.Reset(checkinInterval)
+    // Schedule next checkin
+    p.scheduleCheckin()
 
 }
 
