@@ -31,6 +31,7 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
+        ClientSync: true,
         CM: true,
         NodeContract: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},

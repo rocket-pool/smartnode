@@ -15,6 +15,7 @@ func Run(c *cli.Context) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         DB: true,
         AM: true,
+        ClientSync: true,
         CM: true,
         NodeContract: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},

@@ -18,6 +18,7 @@ func getMinipoolStatus(c *cli.Context) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
+        ClientSync: true,
         CM: true,
         LoadContracts: []string{"rocketPoolToken", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},

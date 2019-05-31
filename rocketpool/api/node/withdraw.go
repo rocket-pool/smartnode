@@ -18,6 +18,7 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
+        ClientSync: true,
         CM: true,
         NodeContract: true,
         LoadContracts: []string{"rocketNodeAPI"},

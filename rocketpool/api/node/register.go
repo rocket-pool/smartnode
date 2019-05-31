@@ -21,6 +21,7 @@ func registerNode(c *cli.Context) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM:            true,
         Client:        true,
+        ClientSync:    true,
         CM:            true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
     })

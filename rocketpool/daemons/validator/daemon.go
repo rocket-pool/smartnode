@@ -15,6 +15,7 @@ func Run(c *cli.Context) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
         Client: true,
+        ClientSync: true,
         CM: true,
         Publisher: true,
         Beacon: true,

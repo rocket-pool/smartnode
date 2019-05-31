@@ -21,6 +21,7 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
         Client: true,
+        ClientSync: true,
         CM: true,
         NodeContract: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
