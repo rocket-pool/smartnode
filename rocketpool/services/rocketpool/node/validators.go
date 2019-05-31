@@ -4,9 +4,12 @@ import (
     "log"
     "time"
 
+    "github.com/ethereum/go-ethereum/ethclient"
+
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/minipool"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -19,6 +22,7 @@ var loadValidatorsInterval, _ = time.ParseDuration(LOAD_VALIDATORS_INTERVAL)
 type ValidatorManager struct {
     Validators []*minipool.Status
     am *accounts.AccountManager
+    client *ethclient.Client
     cm *rocketpool.ContractManager
     loadTimer *time.Ticker
 }
@@ -27,9 +31,10 @@ type ValidatorManager struct {
 /**
  * Create validator manager
  */
-func NewValidatorManager(am *accounts.AccountManager, cm *rocketpool.ContractManager) *ValidatorManager {
+func NewValidatorManager(am *accounts.AccountManager, client *ethclient.Client, cm *rocketpool.ContractManager) *ValidatorManager {
     return &ValidatorManager{
         am: am,
+        client: client,
         cm: cm,
     }
 }
@@ -61,6 +66,9 @@ func (vm *ValidatorManager) StartLoad() {
  * Load active validators
  */
 func (vm *ValidatorManager) load() {
+
+    // Wait for node to sync
+    eth.WaitSync(vm.client, true, false)
 
     // Get minipool addresses
     minipoolAddresses, err := GetMinipoolAddresses(vm.am.GetNodeAccount().Address, vm.cm)

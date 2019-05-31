@@ -14,6 +14,7 @@ import (
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
     beaconchain "github.com/rocket-pool/smartnode-cli/rocketpool/services/beacon-chain"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
 )
 
 
@@ -81,6 +82,9 @@ func (p *WithdrawalProcess) start() {
  * Check staking minipools for withdrawal
  */
 func (p *WithdrawalProcess) checkStakingMinipools() {
+
+    // Wait for node to sync
+    eth.WaitSync(p.p.Client, true, false)
 
     // Get latest block header
     header, err := p.p.Client.HeaderByNumber(context.Background(), nil)

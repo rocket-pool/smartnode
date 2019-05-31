@@ -86,6 +86,9 @@ func (p *WatchtowerProcess) start() {
  */
 func (p *WatchtowerProcess) checkTrusted() {
 
+    // Wait for node to sync
+    eth.WaitSync(p.p.Client, true, false)
+
     // Get trusted status
     trusted := new(bool)
     if err := p.p.CM.Contracts["rocketNodeAPI"].Call(nil, trusted, "getTrusted", p.p.AM.GetNodeAccount().Address); err != nil {
@@ -163,6 +166,9 @@ func (p *WatchtowerProcess) stopUpdateMinipools() {
  */
 func (p *WatchtowerProcess) getActiveMinipools() {
 
+    // Wait for node to sync
+    eth.WaitSync(p.p.Client, true, false)
+
     // Get active minipools
     if activeMinipools, err := minipool.GetActiveMinipoolsByValidatorPubkey(p.p.CM); err != nil {
         log.Println(p.c(errors.New("Error getting active minipools: " + err.Error())))
@@ -223,6 +229,9 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
     if !ok {
         return
     }
+
+    // Wait for node to sync
+    eth.WaitSync(p.p.Client, true, false)
 
     // Get minipool status
     status, err := getMinipoolStatus(p.p, &minipoolAddress)
