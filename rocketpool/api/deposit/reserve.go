@@ -6,7 +6,7 @@ import (
     "errors"
     "fmt"
 
-    //"github.com/prysmaticlabs/prysm/shared/ssz"
+    "github.com/prysmaticlabs/go-ssz"
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode-cli/rocketpool/services"
@@ -15,14 +15,16 @@ import (
 )
 
 
-/*
-// DepositInput data
-type DepositInput struct {
+// Deposit amount in gwei
+const DEPOSIT_AMOUNT uint64 = 32000000000
+
+
+// DepositData data
+type DepositData struct {
     pubkey [48]byte
     withdrawalCredentials [32]byte
-    proofOfPossession [96]byte
+    amount uint64
 }
-*/
 
 
 // Reserve a node deposit
@@ -113,38 +115,25 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     withdrawalCredentials := eth.KeccakBytes(withdrawalPubkey) // Withdrawal pubkey hash
     withdrawalCredentials[0] = 0 // Replace first byte with BLS_WITHDRAWAL_PREFIX_BYTE
 
-    // Build proof of possession
-    // :TODO: implement once BLS library is available
-    proofOfPossessionHex := []byte(
-        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" +
-        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" +
-        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
-    proofOfPossession := make([]byte, hex.DecodedLen(len(proofOfPossessionHex)))
-    _,_ = hex.Decode(proofOfPossession, proofOfPossessionHex)
+    // Build DepositData object
+    depositData := &DepositData{}
+    copy(depositData.pubkey[:], pubkey)
+    copy(depositData.withdrawalCredentials[:], withdrawalCredentials[:])
+    depositData.amount = DEPOSIT_AMOUNT
 
-    // Build DepositInput
-    // :TODO: implement using SSZ once library is available
-    var depositInputLength [4]byte
-    depositInputLength[0] = byte(len(pubkey) + len(withdrawalCredentials) + len(proofOfPossession))
-    depositInput := bytes.Join([][]byte{depositInputLength[:], pubkey, withdrawalCredentials[:], proofOfPossession}, []byte{})
-
-    /*
-    depositInputData := &DepositInput{}
-    copy(depositInputData.pubkey[:], pubkey)
-    copy(depositInputData.withdrawalCredentials[:], withdrawalCredentials[:])
-    copy(depositInputData.proofOfPossession[:], proofOfPossession)
-    depositInput := new(bytes.Buffer)
-    if err := ssz.Encode(depositInput, depositInputData); err != nil {
-        return errors.New("Error encoding DepositInput for deposit reservation: " + err.Error())
+    // Build signature
+    depositDataHash, err := ssz.TreeHash(depositData)
+    if err != nil {
+        return errors.New("Error retrieving deposit data hash tree root: " + err.Error())
     }
-    */
+    signature := key.SecretKey.Sign(depositDataHash[:]).Marshal()
 
     // Create deposit reservation
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
         fmt.Println("Making deposit reservation...")
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, depositInput); err != nil {
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, depositData); err != nil {
             return errors.New("Error making deposit reservation: " + err.Error())
         }
     }
