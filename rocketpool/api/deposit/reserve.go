@@ -26,11 +26,12 @@ type DepositInput struct {
 
 
 // Reserve a node deposit
-func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
+func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
+        KM: true,
         ClientSync: true,
         CM: true,
         NodeContract: true,
@@ -41,11 +42,12 @@ func reserveDeposit(c *cli.Context, pubkeyStr string, durationId string) error {
         return err 
     }
 
-    // Get node's validator pubkey
-    // :TODO: implement once BLS library is available
-    pubkeyHex := []byte(pubkeyStr)
-    pubkey := make([]byte, hex.DecodedLen(len(pubkeyHex)))
-    _,_ = hex.Decode(pubkey, pubkeyHex)
+    // Generate new validator key
+    key, err := p.KM.CreateValidatorKey()
+    if err != nil {
+        return errors.New("Error generating validator key: " + err.Error())
+    }
+    pubkey := key.PublicKey.Marshal()
 
     // Status channels
     successChannel := make(chan bool)
