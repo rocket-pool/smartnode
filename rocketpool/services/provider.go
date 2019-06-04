@@ -90,7 +90,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.AM {
 
         // Initialise
-        p.AM = accounts.NewAccountManager(c.GlobalString("keychain"))
+        p.AM = accounts.NewAccountManager(c.GlobalString("keychainPow"))
 
         // Check node account
         if !p.AM.NodeAccountExists() {

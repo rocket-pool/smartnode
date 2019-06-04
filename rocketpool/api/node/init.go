@@ -14,7 +14,7 @@ import (
 func initNode(c *cli.Context) error {
 
     // Initialise account manager
-    am := accounts.NewAccountManager(c.GlobalString("keychain"))
+    am := accounts.NewAccountManager(c.GlobalString("keychainPow"))
 
     // Check if node account exists
     if am.NodeAccountExists() {
