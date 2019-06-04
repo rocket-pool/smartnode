@@ -14,6 +14,7 @@ import (
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/database"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/validators"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/eth"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/messaging"
 )
@@ -22,6 +23,7 @@ import (
 type ProviderOpts struct {
     DB                  bool
     AM                  bool
+    KM                  bool
     Client              bool
     ClientSync          bool
     CM                  bool
@@ -38,6 +40,7 @@ type ProviderOpts struct {
 type Provider struct {
     DB                  *database.Database
     AM                  *accounts.AccountManager
+    KM                  *validators.KeyManager
     Client              *ethclient.Client
     CM                  *rocketpool.ContractManager
     NodeContractAddress *common.Address
@@ -97,6 +100,11 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
             return nil, errors.New("Node account does not exist, please initialize with `rocketpool node init`")
         }
 
+    }
+
+    // Initialise validator key manager
+    if opts.KM {
+        p.KM = validators.NewKeyManager(c.GlobalString("keychainBeacon"))
     }
 
     // Initialise ethereum client
