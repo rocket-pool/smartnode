@@ -237,12 +237,11 @@ func GetStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) 
 
     // Get validator pubkey
     go (func() {
-        depositInput := new([]byte)
-        if err := minipoolContract.Call(nil, depositInput, "getDepositInput"); err != nil {
-            errorChannel <- errors.New("Error retrieving minipool depositInput data: " + err.Error())
+        validatorPubkey := new([]byte)
+        if err := minipoolContract.Call(nil, validatorPubkey, "getValidatorPubkey"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool validator pubkey: " + err.Error())
         } else {
-            // :TODO: decode using SSZ once library is available
-            validatorPubkeyChannel <- (*depositInput)[4:52]
+            validatorPubkeyChannel <- *validatorPubkey
         }
     })()
 
@@ -321,12 +320,11 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
             }
 
             // Get validator pubkey
-            depositInput := new([]byte)
-            if err := minipoolContract.Call(nil, depositInput, "getDepositInput"); err != nil {
-                errorChannel <- errors.New("Error retrieving minipool depositInput data: " + err.Error())
+            validatorPubkey := new([]byte)
+            if err := minipoolContract.Call(nil, validatorPubkey, "getValidatorPubkey"); err != nil {
+                errorChannel <- errors.New("Error retrieving minipool validator pubkey: " + err.Error())
             } else {
-                // :TODO: decode using SSZ once library is available
-                validatorPubkeyChannels[mi] <- hex.EncodeToString((*depositInput)[4:52])
+                validatorPubkeyChannels[mi] <- hex.EncodeToString(*validatorPubkey)
             }
 
         })(mi)
