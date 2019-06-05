@@ -133,7 +133,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
         return err
     } else {
         fmt.Println("Making deposit reservation...")
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, depositData); err != nil {
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, pubkey, signature); err != nil {
             return errors.New("Error making deposit reservation: " + err.Error())
         }
     }
