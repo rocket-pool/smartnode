@@ -113,6 +113,11 @@ func (ks Store) GetKeys(directory, fileprefix, password string) (map[string]*Key
     return keys, nil
 }
 
+// Get keys from the keystore directory
+func (ks Store) GetStoredKeys(password string) (map[string]*Key, error) {
+    return ks.GetKeys(ks.keysDirPath, "", password)
+}
+
 // StoreKey in filepath and encrypt it with a password.
 func (ks Store) StoreKey(filename string, key *Key, auth string) error {
     keyjson, err := EncryptKey(key, auth, ks.scryptN, ks.scryptP)

@@ -30,6 +30,7 @@ func completeDeposit(c *cli.Context) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
+        KM: true,
         Client: true,
         ClientSync: true,
         CM: true,
@@ -94,6 +95,17 @@ func completeDeposit(c *cli.Context) error {
             case err := <-errorChannel:
                 return err
         }
+    }
+
+    // Get deposit reservation validator pubkey
+    validatorPubkey := new([]byte)
+    if err := p.NodeContract.Call(nil, validatorPubkey, "getDepositReserveValidatorPubkey"); err != nil {
+        return errors.New("Error retrieving deposit reservation validator pubkey: " + err.Error())
+    }
+
+    // Check for local validator pubkey
+    if _, err := p.KM.GetValidatorKey(*validatorPubkey); err != nil {
+        return errors.New("Local validator key matching deposit reservation validator pubkey not found")
     }
 
     // Balance channels
