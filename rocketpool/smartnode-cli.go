@@ -65,6 +65,11 @@ ______           _        _    ______           _
             Value: os.Getenv("HOME") + "/.rocketpool/rocketpool-cli.db",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
+            Name:  "password",
+            Usage: "Rocket Pool CLI keystore password `path`",
+            Value: os.Getenv("HOME") + "/.rocketpool/password",
+        }),
+        altsrc.NewStringFlag(cli.StringFlag{
             Name:  "keychainPow",
             Usage: "PoW chain account keychain absolute `path`",
             Value: os.Getenv("HOME") + "/.rocketpool/accounts",
