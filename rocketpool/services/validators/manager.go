@@ -4,26 +4,25 @@ import (
     "encoding/hex"
     "errors"
 
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/passwords"
     "github.com/rocket-pool/smartnode-cli/rocketpool/utils/bls/keystore"
 )
-
-
-// Keystore passphrase
-const PASSPHRASE string = ""
 
 
 // Key manager
 type KeyManager struct {
     ks keystore.Store
+    pm *passwords.PasswordManager
 }
 
 
 /**
  * Create new key manager
  */
-func NewKeyManager(keychainPath string) *KeyManager {
+func NewKeyManager(keychainPath string, passwordManager *passwords.PasswordManager) *KeyManager {
     return &KeyManager{
         ks: keystore.NewKeystore(keychainPath),
+        pm: passwordManager,
     }
 }
 
@@ -33,8 +32,14 @@ func NewKeyManager(keychainPath string) *KeyManager {
  */
 func (km *KeyManager) GetValidatorKey(pubkey []byte) (*keystore.Key, error) {
 
+    // Get keystore passphrase
+    passphrase, err := km.pm.GetPassphrase()
+    if err != nil {
+        return nil, errors.New("Error retrieving node keystore passphrase: " + err.Error())
+    }
+
     // Get all stored validator keys
-    keys, err := km.ks.GetStoredKeys(PASSPHRASE)
+    keys, err := km.ks.GetStoredKeys(passphrase)
     if err != nil {
         return nil, errors.New("Error retrieving stored validator keys: " + err.Error())
     }
@@ -58,10 +63,21 @@ func (km *KeyManager) GetValidatorKey(pubkey []byte) (*keystore.Key, error) {
  * Create a validator key
  */
 func (km *KeyManager) CreateValidatorKey() (*keystore.Key, error) {
-    key, err := km.ks.NewKey(PASSPHRASE)
+
+    // Get keystore passphrase
+    passphrase, err := km.pm.GetPassphrase()
+    if err != nil {
+        return nil, errors.New("Error retrieving node keystore passphrase: " + err.Error())
+    }
+
+    // Create key
+    key, err := km.ks.NewKey(passphrase)
     if err != nil {
         return nil, errors.New("Error creating validator key: " + err.Error())
     }
+
+    // Return
     return key, nil
+
 }
 

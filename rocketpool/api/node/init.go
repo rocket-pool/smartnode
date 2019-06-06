@@ -29,7 +29,7 @@ func initNode(c *cli.Context) error {
     }
 
     // Initialise account manager
-    am := accounts.NewAccountManager(c.GlobalString("keychainPow"))
+    am := accounts.NewAccountManager(c.GlobalString("keychainPow"), pm)
 
     // Create node account if it doesn't exist
     if am.NodeAccountExists() {

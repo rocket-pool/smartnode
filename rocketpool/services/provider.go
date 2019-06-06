@@ -12,6 +12,7 @@ import (
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/accounts"
     beaconchain "github.com/rocket-pool/smartnode-cli/rocketpool/services/beacon-chain"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/database"
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/passwords"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/rocketpool/node"
     "github.com/rocket-pool/smartnode-cli/rocketpool/services/validators"
@@ -22,6 +23,7 @@ import (
 // Service provider options
 type ProviderOpts struct {
     DB                  bool
+    PM                  bool
     AM                  bool
     KM                  bool
     Client              bool
@@ -39,6 +41,7 @@ type ProviderOpts struct {
 // Service provider
 type Provider struct {
     DB                  *database.Database
+    PM                  *passwords.PasswordManager
     AM                  *accounts.AccountManager
     KM                  *validators.KeyManager
     Client              *ethclient.Client
@@ -80,6 +83,9 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.ClientSync {
         opts.Client = true
     } // Synced client requires eth client
+    if opts.AM || opts.KM {
+        opts.PM = true
+    } // Account & key managers require password manager
 
     // Service provider
     p := &Provider{}
@@ -89,11 +95,24 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         p.DB = database.NewDatabase(c.GlobalString("database"))
     }
 
+    // Initialise password manager
+    if opts.PM {
+
+        // Initialise
+        p.PM = passwords.NewPasswordManager(c.GlobalString("password"))
+
+        // Check password set
+        if !p.PM.PasswordExists() {
+            return nil, errors.New("Node password is not set, please initialize with `rocketpool node init`")
+        }
+
+    }
+
     // Initialise account manager
     if opts.AM {
 
         // Initialise
-        p.AM = accounts.NewAccountManager(c.GlobalString("keychainPow"))
+        p.AM = accounts.NewAccountManager(c.GlobalString("keychainPow"), p.PM)
 
         // Check node account
         if !p.AM.NodeAccountExists() {
@@ -104,7 +123,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Initialise validator key manager
     if opts.KM {
-        p.KM = validators.NewKeyManager(c.GlobalString("keychainBeacon"))
+        p.KM = validators.NewKeyManager(c.GlobalString("keychainBeacon"), p.PM)
     }
 
     // Initialise ethereum client

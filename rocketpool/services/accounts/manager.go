@@ -7,25 +7,25 @@ import (
     "github.com/ethereum/go-ethereum/accounts"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/accounts/keystore"
+
+    "github.com/rocket-pool/smartnode-cli/rocketpool/services/passwords"
 )
-
-
-// Keystore passphrase
-const PASSPHRASE string = ""
 
 
 // Account manager
 type AccountManager struct {
     ks *keystore.KeyStore
+    pm *passwords.PasswordManager
 }
 
 
 /**
  * Create new account manager
  */
-func NewAccountManager(keychainPath string) *AccountManager {
+func NewAccountManager(keychainPath string, passwordManager *passwords.PasswordManager) *AccountManager {
     return &AccountManager{
         ks: keystore.NewKeyStore(keychainPath, keystore.StandardScryptN, keystore.StandardScryptP),
+        pm: passwordManager,
     }
 }
 
@@ -50,11 +50,22 @@ func (am *AccountManager) GetNodeAccount() accounts.Account {
  * Create the node account
  */
 func (am *AccountManager) CreateNodeAccount() (accounts.Account, error) {
-    account, err := am.ks.NewAccount(PASSPHRASE)
+
+    // Get keystore passphrase
+    passphrase, err := am.pm.GetPassphrase()
+    if err != nil {
+        return accounts.Account{}, errors.New("Error retrieving node keystore passphrase: " + err.Error())
+    }
+
+    // Get node account
+    account, err := am.ks.NewAccount(passphrase)
     if err != nil {
         return accounts.Account{}, errors.New("Error creating node account: " + err.Error())
     }
+
+    // Return
     return account, nil
+
 }
 
 
@@ -69,8 +80,14 @@ func (am *AccountManager) GetNodeAccountTransactor() (*bind.TransactOpts, error)
         return nil, errors.New("Error opening node account file: " + err.Error())
     }
 
+    // Get keystore passphrase
+    passphrase, err := am.pm.GetPassphrase()
+    if err != nil {
+        return nil, errors.New("Error retrieving node keystore passphrase: " + err.Error())
+    }
+
     // Create node account transactor
-    transactor, err := bind.NewTransactor(nodeAccountFile, PASSPHRASE)
+    transactor, err := bind.NewTransactor(nodeAccountFile, passphrase)
     if err != nil {
         return nil, errors.New("Error creating node account transactor: " + err.Error())
     }
