@@ -63,7 +63,6 @@ func run(c *cli.Context) error {
         ClientSync: true,
         Publisher: true,
         Beacon: true,
-        VM: true,
         LoadContracts: []string{"utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
     })
@@ -77,7 +76,6 @@ func run(c *cli.Context) error {
 
     // Start services
     p.Beacon.Connect()
-    p.VM.StartLoad()
 
     // Block thread
     select {}

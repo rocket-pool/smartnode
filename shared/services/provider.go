@@ -33,7 +33,6 @@ type ProviderOpts struct {
     NodeContract        bool
     Publisher           bool
     Beacon              bool
-    VM                  bool
     LoadContracts       []string
     LoadAbis            []string
 }
@@ -50,7 +49,6 @@ type Provider struct {
     NodeContract        *bind.BoundContract
     Publisher           *messaging.Publisher
     Beacon              *beaconchain.Client
-    VM                  *node.ValidatorManager
 }
 
 /**
@@ -59,11 +57,6 @@ type Provider struct {
 func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Process options
-    if opts.VM {
-        opts.AM = true
-        opts.Client = true
-        opts.CM = true
-    } // Validator manager requires node account manager, eth client & RP contract manager
     if opts.Beacon {
         opts.Publisher = true
     } // Beacon chain client requires publisher
@@ -215,11 +208,6 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     // Initialise beacon chain client
     if opts.Beacon {
         p.Beacon = beaconchain.NewClient(c.GlobalString("providerBeacon"), p.Publisher)
-    }
-
-    // Initialise validator manager
-    if opts.VM {
-        p.VM = node.NewValidatorManager(p.AM, p.Client, p.CM)
     }
 
     // Return
