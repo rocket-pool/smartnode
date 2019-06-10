@@ -65,8 +65,7 @@ func run(c *cli.Context) error {
         CM: true,
         Publisher: true,
         Beacon: true,
-        VM: true,
-        LoadContracts: []string{"rocketAdmin", "rocketNodeWatchtower", "rocketPool", "utilAddressSetStorage"},
+        LoadContracts: []string{"rocketNodeAPI", "rocketNodeWatchtower", "rocketPool"},
         LoadAbis: []string{"rocketMinipool"},
     })
     if err != nil {
@@ -78,7 +77,6 @@ func run(c *cli.Context) error {
 
     // Start services
     p.Beacon.Connect()
-    p.VM.StartLoad()
 
     // Block thread
     select {}
