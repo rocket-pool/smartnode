@@ -6,7 +6,7 @@ import (
 
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool-node/node"
+    "github.com/rocket-pool/smartnode-cli/rocketpool-watchtower/watchtower"
     "github.com/rocket-pool/smartnode-cli/shared/services"
     cliutils "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
 )
@@ -19,8 +19,8 @@ func main() {
     app := cli.NewApp()
 
     // Set application info
-    app.Name = "rocketpool-node"
-    app.Usage = "Rocket Pool node activity daemon"
+    app.Name = "rocketpool-watchtower"
+    app.Usage = "Rocket Pool watchtower activity daemon"
     app.Version = "0.0.1"
     app.Authors = []cli.Author{
         cli.Author{
@@ -59,20 +59,26 @@ func run(c *cli.Context) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
-        DB: true,
         AM: true,
+        Client: true,
         ClientSync: true,
         CM: true,
-        NodeContract: true,
-        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
-        LoadAbis: []string{"rocketNodeContract"},
+        Publisher: true,
+        Beacon: true,
+        VM: true,
+        LoadContracts: []string{"rocketAdmin", "rocketNodeWatchtower", "rocketPool", "utilAddressSetStorage"},
+        LoadAbis: []string{"rocketMinipool"},
     })
     if err != nil {
         return err
     }
 
-    // Start node checkin process
-    go node.StartCheckinProcess(p)
+    // Start minipool processes
+    go watchtower.StartWatchtowerProcess(p)
+
+    // Start services
+    p.Beacon.Connect()
+    p.VM.StartLoad()
 
     // Block thread
     select {}

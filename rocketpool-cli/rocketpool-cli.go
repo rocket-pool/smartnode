@@ -14,6 +14,7 @@ import (
     cliutils "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
 )
 
+
 // Run
 func main() {
 
@@ -66,3 +67,4 @@ ______           _        _    ______           _
     }
 
 }
+
