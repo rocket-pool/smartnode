@@ -13,7 +13,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool/contracts"
+    "github.com/rocket-pool/smartnode-cli/shared/contracts"
     "github.com/rocket-pool/smartnode-cli/shared/utils/eth"
 )
 
