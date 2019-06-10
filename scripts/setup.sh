@@ -16,10 +16,6 @@
 ##
 
 
-VALIDATOR_PUBKEY_1="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd01"
-VALIDATOR_PUBKEY_2="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd02"
-VALIDATOR_PUBKEY_3="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd03"
-VALIDATOR_PUBKEY_4="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd04"
 GROUP_NAME="Group0"
 
 
@@ -32,7 +28,7 @@ GROUP_NAME="Group0"
 SCRIPTS_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # Get node account address
-NODE_STATUS="$( go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" node status )"
+NODE_STATUS="$( go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" node status )"
 if [[ $NODE_STATUS =~ (0x[a-fA-F0-9]{40}) ]] ; then
     NODE_ACCOUNT_ADDRESS="${BASH_REMATCH[1]}"
 else
@@ -49,20 +45,20 @@ node "${SCRIPTS_PATH}/send-ether.js" $NODE_ACCOUNT_ADDRESS 500000
 node "${SCRIPTS_PATH}/mint-rpl.js" $NODE_ACCOUNT_ADDRESS 500000
 
 # Register node
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" node register
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" node register
 
 # Make node trusted
 node "${SCRIPTS_PATH}/set-node-trusted.js" $NODE_ACCOUNT_ADDRESS true
 
 # Make node deposits
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit reserve $VALIDATOR_PUBKEY_1 3m
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit complete
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit reserve $VALIDATOR_PUBKEY_2 6m
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit complete
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit reserve $VALIDATOR_PUBKEY_3 12m
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit complete
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit reserve $VALIDATOR_PUBKEY_4 3m
-go run "${SCRIPTS_PATH}/../rocketpool/smartnode-cli.go" deposit complete
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" deposit reserve 3m
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" deposit complete
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" deposit reserve 6m
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" deposit complete
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" deposit reserve 12m
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" deposit complete
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" deposit reserve 3m
+go run "${SCRIPTS_PATH}/../rocketpool-cli/rocketpool-cli.go" deposit complete
 
 # Create group depositor
 CREATE_GROUP_ACCESSOR_OUTPUT="$( node "${SCRIPTS_PATH}/create-group-accessor.js" $GROUP_NAME )"
