@@ -45,13 +45,3 @@ Rocket Pool Smart Nodes are primarily managed by the `rocketpool` CLI applicatio
 
 - `rocketpool fee display` - Displays the current user fee charged by all node operators in the Rocket Pool network, and the target fee to vote for, if set locally
 - `rocketpool fee set` - Sets the target user fee to vote for during node checkin, locally
-
-- `rocketpool service` - Contains subcommands for managing smart node daemon services
-- `rocketpool service [name] install` - Installs the specified smart node daemon on the operating system
-- `rocketpool service [name] uninstall` - Uninstalls the specified smart node daemon from the operating system
-- `rocketpool service [name] enable` - Enables the specified smart node daemon on operating system startup
-- `rocketpool service [name] disable` - Disables the specified smart node daemon on operating system startup
-- `rocketpool service [name] start` - Starts the specified smart node daemon as a background process
-- `rocketpool service [name] stop` - Stops the specified smart node daemon if running as a background process
-- `rocketpool service [name] status` - Displays the current status of the specified smart node daemon
-- `rocketpool service [name] run` - Runs the specified smart node daemon; typically not used manually except during testing
