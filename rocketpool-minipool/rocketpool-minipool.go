@@ -10,8 +10,6 @@ import (
     "github.com/rocket-pool/smartnode/rocketpool-minipool/minipool"
     "github.com/rocket-pool/smartnode/shared/services"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-
-    "fmt"
 )
 
 
@@ -76,13 +74,21 @@ func run(c *cli.Context, address string) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        KM: true,
         Client: true,
         ClientSync: true,
+        CM: true,
         Publisher: true,
         Beacon: true,
-        LoadContracts: []string{},
         LoadAbis: []string{"rocketMinipool"},
     })
+    if err != nil {
+        return err
+    }
+
+    // Initialise minipool
+    pool, err := minipool.Initialise(p, address)
     if err != nil {
         return err
     }
