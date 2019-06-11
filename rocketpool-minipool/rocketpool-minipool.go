@@ -80,7 +80,7 @@ func run(c *cli.Context, address string) error {
         ClientSync: true,
         Publisher: true,
         Beacon: true,
-        LoadContracts: []string{"utilAddressSetStorage"},
+        LoadContracts: []string{},
         LoadAbis: []string{"rocketMinipool"},
     })
     if err != nil {
