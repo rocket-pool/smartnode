@@ -93,15 +93,24 @@ func run(c *cli.Context, address string) error {
         return err
     }
 
+    // Process done channel
+    done := make(chan struct{})
+
     // Start minipool processes
-    go minipool.StartActivityProcess(p, pool)
+    go minipool.StartActivityProcess(p, pool, done)
     go minipool.StartWithdrawalProcess(p, pool)
 
     // Start services
     p.Beacon.Connect()
 
-    // Block thread
-    select {}
+    // Block thread until done
+    for received := 0; received < 2; {
+        select {
+            case <-done:
+                received++
+        }
+    }
+    return nil
 
 }
 

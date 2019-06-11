@@ -24,13 +24,15 @@ type ActivityProcess struct {
     p *services.Provider
     minipool *Minipool
     validatorActive bool
+    stop chan struct{}
+    done chan struct{}
 }
 
 
 /**
  * Start beacon activity process
  */
-func StartActivityProcess(p *services.Provider, minipool *Minipool) {
+func StartActivityProcess(p *services.Provider, minipool *Minipool, done chan struct{}) {
 
     // Initialise process
     process := &ActivityProcess{
@@ -38,6 +40,8 @@ func StartActivityProcess(p *services.Provider, minipool *Minipool) {
         p: p,
         minipool: minipool,
         validatorActive: false,
+        stop: make(chan struct{}),
+        done: done,
     }
 
     // Start
@@ -57,17 +61,29 @@ func (p *ActivityProcess) start() {
     p.p.Publisher.AddSubscriber("beacon.client.connected", connectedChannel)
     p.p.Publisher.AddSubscriber("beacon.client.message", messageChannel)
 
-    // Handle beacon chain events
+    // Handle beacon chain events while subscribed
     go (func() {
-        for {
+
+        // Handle events & process status
+        subscribed := true
+        for subscribed {
             select {
                 case <-connectedChannel:
                     p.onBeaconClientConnected()
                 case eventData := <-messageChannel:
                     event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
                     p.onBeaconClientMessage(event.Message)
+                case <-p.stop:
+                    p.p.Publisher.RemoveSubscriber("beacon.client.connected", connectedChannel)
+                    p.p.Publisher.RemoveSubscriber("beacon.client.message", messageChannel)
+                    subscribed = false
             }
         }
+
+        // End process
+        log.Println(p.c(fmt.Sprintf("Ending validator %s activity process...", hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()))))
+        p.done <- struct{}{}
+
     })()
 
 }
@@ -131,6 +147,7 @@ func (p *ActivityProcess) onBeaconClientMessage(messageData []byte) {
                 case "withdrawn":
                     log.Println(p.c(fmt.Sprintf("Validator %s has exited, not sending activity...", message.Pubkey)))
                     p.validatorActive = false
+                    close(p.stop)
 
             }
 
