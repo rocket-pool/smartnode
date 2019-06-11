@@ -4,11 +4,14 @@ import (
     "log"
     "os"
 
+    "github.com/ethereum/go-ethereum/common"
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool-minipool/minipool"
-    "github.com/rocket-pool/smartnode-cli/shared/services"
-    cliutils "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/rocketpool-minipool/minipool"
+    "github.com/rocket-pool/smartnode/shared/services"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+
+    "fmt"
 )
 
 
@@ -43,7 +46,21 @@ func main() {
 
     // Set application action
     app.Action = func(c *cli.Context) error {
-        return run(c)
+
+        // Check argument count
+        if len(c.Args()) != 1 {
+            return cli.NewExitError("USAGE:" + "\n   " + "rocketpool-minipool address", 1)
+        }
+
+        // Get & validate arguments
+        address := c.Args().Get(0)
+        if !common.IsHexAddress(address) {
+            return cli.NewExitError("Invalid minipool address", 1)
+        }
+
+        // Run process
+        return run(c, address)
+
     }
 
     // Run application
@@ -55,7 +72,7 @@ func main() {
 
 
 // Run process
-func run(c *cli.Context) error {
+func run(c *cli.Context, address string) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
