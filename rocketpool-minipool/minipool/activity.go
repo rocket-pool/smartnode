@@ -22,20 +22,22 @@ const ACTIVITY_LOG_COLOR = color.FgBlue
 type ActivityProcess struct {
     c func(a ...interface{}) string
     p *services.Provider
-    activeValidators map[string]bool
+    minipool *Minipool
+    validatorActive bool
 }
 
 
 /**
  * Start beacon activity process
  */
-func StartActivityProcess(p *services.Provider) {
+func StartActivityProcess(p *services.Provider, minipool *Minipool) {
 
     // Initialise process
     process := &ActivityProcess{
         c: color.New(ACTIVITY_LOG_COLOR).SprintFunc(),
         p: p,
-        activeValidators: make(map[string]bool),
+        minipool: minipool,
+        validatorActive: false,
     }
 
     // Start
@@ -76,16 +78,14 @@ func (p *ActivityProcess) start() {
  */
 func (p *ActivityProcess) onBeaconClientConnected() {
 
-    // Request validator statuses
-    for _, validator := range p.p.VM.Validators {
-        if payload, err := json.Marshal(beaconchain.ClientMessage{
-            Message: "get_validator_status",
-            Pubkey: hex.EncodeToString(validator.ValidatorPubkey),
-        }); err != nil {
-            log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
-        } else if err := p.p.Beacon.Send(payload); err != nil {
-            log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
-        }
+    // Request validator status
+    if payload, err := json.Marshal(beaconchain.ClientMessage{
+        Message: "get_validator_status",
+        Pubkey: hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()),
+    }); err != nil {
+        log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
+    } else if err := p.p.Beacon.Send(payload); err != nil {
+        log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
     }
 
 }
@@ -110,14 +110,7 @@ func (p *ActivityProcess) onBeaconClientMessage(messageData []byte) {
         case "validator_status":
 
             // Check validator pubkey
-            found := false
-            for _, validator := range p.p.VM.Validators {
-                if hex.EncodeToString(validator.ValidatorPubkey) == message.Pubkey {
-                    found = true
-                    break
-                }
-            }
-            if !found { break }
+            if hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()) != message.Pubkey { break }
 
             // Handle statuses
             switch message.Status.Code {
@@ -125,42 +118,40 @@ func (p *ActivityProcess) onBeaconClientMessage(messageData []byte) {
                 // Inactive
                 case "inactive":
                     log.Println(p.c(fmt.Sprintf("Validator %s is inactive, waiting until active to send activity...", message.Pubkey)))
-                    delete(p.activeValidators, message.Pubkey)
+                    p.validatorActive = false
 
                 // Active
                 case "active":
                     log.Println(p.c(fmt.Sprintf("Validator %s is active, sending activity...", message.Pubkey)))
-                    p.activeValidators[message.Pubkey] = true
+                    p.validatorActive = true
 
                 // Exited
                 case "exited": fallthrough
                 case "withdrawable": fallthrough
                 case "withdrawn":
                     log.Println(p.c(fmt.Sprintf("Validator %s has exited, not sending activity...", message.Pubkey)))
-                    delete(p.activeValidators, message.Pubkey)
+                    p.validatorActive = false
 
             }
 
         // Epoch
         case "epoch":
 
-            // Send activity for active validators
-            for _, validator := range p.p.VM.Validators {
-                pubkeyHex := hex.EncodeToString(validator.ValidatorPubkey)
-                if p.activeValidators[pubkeyHex] {
-                    log.Println(p.c(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkeyHex)))
+            // Check validator active status, get pubkey string
+            if !p.validatorActive { break }
+            pubkeyHex := hex.EncodeToString(p.minipool.Key.PublicKey.Marshal())
 
-                    // Send activity
-                    if payload, err := json.Marshal(beaconchain.ClientMessage{
-                        Message: "activity",
-                        Pubkey: pubkeyHex,
-                    }); err != nil {
-                        log.Println(p.c(errors.New("Error encoding activity payload: " + err.Error())))
-                    } else if err := p.p.Beacon.Send(payload); err != nil {
-                        log.Println(p.c(errors.New("Error sending activity message: " + err.Error())))
-                    }
+            // Log activity
+            log.Println(p.c(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkeyHex)))
 
-                }
+            // Send activity
+            if payload, err := json.Marshal(beaconchain.ClientMessage{
+                Message: "activity",
+                Pubkey: pubkeyHex,
+            }); err != nil {
+                log.Println(p.c(errors.New("Error encoding activity payload: " + err.Error())))
+            } else if err := p.p.Beacon.Send(payload); err != nil {
+                log.Println(p.c(errors.New("Error sending activity message: " + err.Error())))
             }
 
         // Success response

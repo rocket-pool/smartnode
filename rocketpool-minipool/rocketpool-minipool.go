@@ -94,7 +94,7 @@ func run(c *cli.Context, address string) error {
     }
 
     // Start minipool processes
-    go minipool.StartActivityProcess(p)
+    go minipool.StartActivityProcess(p, pool)
     go minipool.StartWithdrawalProcess(p)
 
     // Start services
