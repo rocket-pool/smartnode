@@ -95,7 +95,7 @@ func run(c *cli.Context, address string) error {
 
     // Start minipool processes
     go minipool.StartActivityProcess(p, pool)
-    go minipool.StartWithdrawalProcess(p)
+    go minipool.StartWithdrawalProcess(p, pool)
 
     // Start services
     p.Beacon.Connect()

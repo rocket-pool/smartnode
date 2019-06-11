@@ -15,6 +15,7 @@ import (
 
 // Minipool data
 type Minipool struct {
+    Address *common.Address
     Contract *bind.BoundContract
     Key *keystore.Key
 }
@@ -61,6 +62,7 @@ func Initialise(p *services.Provider, minipoolAddressStr string) (*Minipool, err
 
     // Return
     return &Minipool{
+        Address: &minipoolAddress,
         Contract: minipoolContract,
         Key: validatorKey,
     }, nil

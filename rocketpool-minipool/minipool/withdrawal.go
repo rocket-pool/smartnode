@@ -14,6 +14,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services"
     beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
@@ -28,20 +29,22 @@ var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 type WithdrawalProcess struct {
     c func(a ...interface{}) string
     p *services.Provider
-    exitReadyValidators map[string]bool
+    minipool *Minipool
+    validatorExiting bool
 }
 
 
 /**
  * Start beacon withdrawal process
  */
-func StartWithdrawalProcess(p *services.Provider) {
+func StartWithdrawalProcess(p *services.Provider, minipool *Minipool) {
 
     // Initialise process
     process := &WithdrawalProcess{
         c: color.New(WITHDRAWAL_LOG_COLOR).SprintFunc(),
         p: p,
-        exitReadyValidators: make(map[string]bool),
+        minipool: minipool,
+        validatorExiting: false,
     }
 
     // Start
@@ -55,11 +58,11 @@ func StartWithdrawalProcess(p *services.Provider) {
  */
 func (p *WithdrawalProcess) start() {
 
-    // Check staking minipools for withdrawal on interval
+    // Check minipool for withdrawal on interval
     go (func() {
         checkMinipoolsTimer := time.NewTicker(checkMinipoolsInterval)
         for _ = range checkMinipoolsTimer.C {
-            p.checkStakingMinipools()
+            p.checkWithdrawal()
         }
     })()
 
@@ -79,9 +82,9 @@ func (p *WithdrawalProcess) start() {
 
 
 /**
- * Check staking minipools for withdrawal
+ * Check minipool for withdrawal
  */
-func (p *WithdrawalProcess) checkStakingMinipools() {
+func (p *WithdrawalProcess) checkWithdrawal() {
 
     // Wait for node to sync
     eth.WaitSync(p.p.Client, true, false)
@@ -93,40 +96,42 @@ func (p *WithdrawalProcess) checkStakingMinipools() {
         return
     }
 
+    // Get minipool status
+    status, err := minipool.GetStatus(p.p.CM, p.minipool.Address)
+    if err != nil {
+        log.Println(p.c(errors.New("Error retrieving minipool status: " + err.Error())))
+        return
+    }
+
     // Log
-    log.Println(p.c(fmt.Sprintf("Checking staking minipools for withdrawal at block %s...", header.Number.String())))
+    log.Println(p.c(fmt.Sprintf("Checking minipool for withdrawal at block %s...", header.Number.String())))
 
-    // Check minipools
-    for _, minipool := range p.p.VM.Validators {
+    // Get minipool validator exit block and pubkey
+    var exitBlock big.Int
+    exitBlock.Add(status.StatusBlock, status.StakingDuration)
+    pubkeyHex := hex.EncodeToString(status.ValidatorPubkey)
 
-        // Get minipool validator exit block and pubkey
-        var exitBlock big.Int
-        exitBlock.Add(minipool.StatusBlock, minipool.StakingDuration)
-        pubkeyHex := hex.EncodeToString(minipool.ValidatorPubkey)
+    // Check exit block
+    if header.Number.Cmp(&exitBlock) == -1 {
+        log.Println(p.c(fmt.Sprintf("Validator %s not ready to withdraw until block %s...", pubkeyHex, exitBlock.String())))
+        return
+    }
 
-        // Check exit block
-        if header.Number.Cmp(&exitBlock) == -1 {
-            log.Println(p.c(fmt.Sprintf("Validator %s not ready to withdraw until block %s...", pubkeyHex, exitBlock.String())))
-            continue
-        }
+    // Check if already marked for exit
+    if p.validatorExiting { return }
 
-        // Check if already marked for exit
-        if p.exitReadyValidators[pubkeyHex] { continue }
+    // Mark validator for exit and log
+    p.validatorExiting = true
+    log.Println(p.c(fmt.Sprintf("Validator %s ready to withdraw, since block %s...", pubkeyHex, exitBlock.String())))
 
-        // Mark validator for exit and log
-        p.exitReadyValidators[pubkeyHex] = true
-        log.Println(p.c(fmt.Sprintf("Validator %s ready to withdraw, since block %s...", pubkeyHex, exitBlock.String())))
-
-        // Request validator status
-        if payload, err := json.Marshal(beaconchain.ClientMessage{
-            Message: "get_validator_status",
-            Pubkey: pubkeyHex,
-        }); err != nil {
-            log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
-        } else if err := p.p.Beacon.Send(payload); err != nil {
-            log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
-        }
-
+    // Request validator status
+    if payload, err := json.Marshal(beaconchain.ClientMessage{
+        Message: "get_validator_status",
+        Pubkey: pubkeyHex,
+    }); err != nil {
+        log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
+    } else if err := p.p.Beacon.Send(payload); err != nil {
+        log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
     }
 
 }
@@ -150,8 +155,9 @@ func (p *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
         // Validator status
         case "validator_status":
 
-            // Check validator is ready to exit
-            if !p.exitReadyValidators[message.Pubkey] { break }
+            // Check validator pubkey and status
+            if hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()) != message.Pubkey { break }
+            if !p.validatorExiting { break }
 
             // Handle statuses
             switch message.Status.Code {
