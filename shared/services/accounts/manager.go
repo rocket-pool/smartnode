@@ -8,7 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/accounts/keystore"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services/passwords"
+    "github.com/rocket-pool/smartnode/shared/services/passwords"
 )
 
 

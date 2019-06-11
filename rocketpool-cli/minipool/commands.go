@@ -5,7 +5,7 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
 
-    cliutils "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 

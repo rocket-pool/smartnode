@@ -10,10 +10,10 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/fatih/color"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services"
-    beaconchain "github.com/rocket-pool/smartnode-cli/shared/services/beacon-chain"
-    "github.com/rocket-pool/smartnode-cli/shared/services/rocketpool/minipool"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/eth"
+    "github.com/rocket-pool/smartnode/shared/services"
+    beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
 // Config

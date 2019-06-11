@@ -11,8 +11,8 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services/rocketpool"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/eth"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
 

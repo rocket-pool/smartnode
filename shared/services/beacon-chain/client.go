@@ -8,7 +8,7 @@ import (
 
     "github.com/gorilla/websocket"
 
-    "github.com/rocket-pool/smartnode-cli/shared/utils/messaging"
+    "github.com/rocket-pool/smartnode/shared/utils/messaging"
 )
 
 

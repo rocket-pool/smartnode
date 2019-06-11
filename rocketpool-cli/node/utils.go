@@ -6,7 +6,7 @@ import (
     "regexp"
     "strings"
 
-    "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 

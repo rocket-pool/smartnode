@@ -34,7 +34,7 @@ import (
     "strings"
 
     "github.com/pborman/uuid"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/bls"
+    "github.com/rocket-pool/smartnode/shared/utils/bls"
     "golang.org/x/crypto/pbkdf2"
     "golang.org/x/crypto/scrypt"
 )

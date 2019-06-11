@@ -9,8 +9,8 @@ import (
 
     "github.com/fatih/color"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services"
-    beaconchain "github.com/rocket-pool/smartnode-cli/shared/services/beacon-chain"
+    "github.com/rocket-pool/smartnode/shared/services"
+    beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
 )
 
 

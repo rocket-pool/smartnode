@@ -4,8 +4,8 @@ import (
     "encoding/hex"
     "errors"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services/passwords"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/bls/keystore"
+    "github.com/rocket-pool/smartnode/shared/services/passwords"
+    "github.com/rocket-pool/smartnode/shared/utils/bls/keystore"
 )
 
 

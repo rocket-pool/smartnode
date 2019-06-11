@@ -9,15 +9,14 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services/accounts"
-    beaconchain "github.com/rocket-pool/smartnode-cli/shared/services/beacon-chain"
-    "github.com/rocket-pool/smartnode-cli/shared/services/database"
-    "github.com/rocket-pool/smartnode-cli/shared/services/passwords"
-    "github.com/rocket-pool/smartnode-cli/shared/services/rocketpool"
-    "github.com/rocket-pool/smartnode-cli/shared/services/rocketpool/node"
-    "github.com/rocket-pool/smartnode-cli/shared/services/validators"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/eth"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/messaging"
+    "github.com/rocket-pool/smartnode/shared/services/accounts"
+    beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
+    "github.com/rocket-pool/smartnode/shared/services/database"
+    "github.com/rocket-pool/smartnode/shared/services/passwords"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/services/validators"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
+    "github.com/rocket-pool/smartnode/shared/utils/messaging"
 )
 
 // Service provider options

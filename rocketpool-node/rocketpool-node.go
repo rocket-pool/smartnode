@@ -6,9 +6,9 @@ import (
 
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool-node/node"
-    "github.com/rocket-pool/smartnode-cli/shared/services"
-    cliutils "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/rocketpool-node/node"
+    "github.com/rocket-pool/smartnode/shared/services"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 

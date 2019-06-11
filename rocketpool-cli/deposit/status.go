@@ -5,9 +5,9 @@ import (
 
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services"
-    "github.com/rocket-pool/smartnode-cli/shared/services/rocketpool/node"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/eth"
+    "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
 // Get the node's current deposit status

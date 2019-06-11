@@ -29,7 +29,7 @@ import (
     "path/filepath"
 
     "github.com/pborman/uuid"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/bls"
+    "github.com/rocket-pool/smartnode/shared/utils/bls"
 )
 
 const (

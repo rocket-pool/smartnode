@@ -6,8 +6,8 @@ import (
     "errors"
     "io/ioutil"
 
-    "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/eth"
+    "github.com/rocket-pool/smartnode/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
 

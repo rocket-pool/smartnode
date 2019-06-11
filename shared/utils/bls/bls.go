@@ -10,7 +10,7 @@ import (
     "fmt"
     "io"
 
-    "github.com/rocket-pool/smartnode-cli/shared/utils/bytes"
+    "github.com/rocket-pool/smartnode/shared/utils/bytes"
 
     gobls "github.com/phoreproject/bls/g1pubs"
 )

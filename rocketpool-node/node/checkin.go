@@ -10,8 +10,8 @@ import (
     "github.com/shirou/gopsutil/cpu"
     "github.com/shirou/gopsutil/load"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services"
-    "github.com/rocket-pool/smartnode-cli/shared/utils/eth"
+    "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
 

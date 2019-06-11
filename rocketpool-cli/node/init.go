@@ -6,8 +6,8 @@ import (
 
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services/accounts"
-    "github.com/rocket-pool/smartnode-cli/shared/services/passwords"
+    "github.com/rocket-pool/smartnode/shared/services/accounts"
+    "github.com/rocket-pool/smartnode/shared/services/passwords"
 )
 
 

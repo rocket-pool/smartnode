@@ -6,7 +6,7 @@ import (
 
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode-cli/shared/services/database"
+    "github.com/rocket-pool/smartnode/shared/services/database"
 )
 
 

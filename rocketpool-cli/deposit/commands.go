@@ -3,7 +3,7 @@ package deposit
 import (
     "gopkg.in/urfave/cli.v1"
 
-    cliutils "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 

@@ -7,11 +7,11 @@ import (
 
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode-cli/rocketpool-cli/deposit"
-    "github.com/rocket-pool/smartnode-cli/rocketpool-cli/fee"
-    "github.com/rocket-pool/smartnode-cli/rocketpool-cli/minipool"
-    "github.com/rocket-pool/smartnode-cli/rocketpool-cli/node"
-    cliutils "github.com/rocket-pool/smartnode-cli/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/deposit"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/fee"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/node"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 

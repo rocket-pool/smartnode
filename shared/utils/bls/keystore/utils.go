@@ -28,7 +28,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"github.com/rocket-pool/smartnode-cli/shared/utils/bls"
+	"github.com/rocket-pool/smartnode/shared/utils/bls"
 )
 
 func aesCTRXOR(key, inText, iv []byte) ([]byte, error) {
