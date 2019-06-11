@@ -103,7 +103,7 @@ func completeDeposit(c *cli.Context) error {
         return errors.New("Error retrieving deposit reservation validator pubkey: " + err.Error())
     }
 
-    // Check for local validator pubkey
+    // Check for local validator key
     if _, err := p.KM.GetValidatorKey(*validatorPubkey); err != nil {
         return errors.New("Local validator key matching deposit reservation validator pubkey not found")
     }
