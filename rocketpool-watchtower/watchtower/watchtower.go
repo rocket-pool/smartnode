@@ -189,6 +189,9 @@ func (p *WatchtowerProcess) getActiveMinipools() {
                 return
             }
 
+            // Log
+            log.Println(p.c(fmt.Sprintf("Checking minipool %s status...", minipoolAddress.Hex())))
+
             // Request validator status
             if payload, err := json.Marshal(beaconchain.ClientMessage{
                 Message: "get_validator_status",
