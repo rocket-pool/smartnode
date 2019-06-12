@@ -63,8 +63,6 @@ func (p *ActivityProcess) start() {
 
     // Handle beacon chain events while subscribed
     go (func() {
-
-        // Handle events & process status
         subscribed := true
         for subscribed {
             select {
@@ -79,12 +77,14 @@ func (p *ActivityProcess) start() {
                     subscribed = false
             }
         }
-
-        // End process
-        log.Println(p.c(fmt.Sprintf("Ending validator %s activity process...", hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()))))
-        p.done <- struct{}{}
-
     })()
+
+    // Block thread until done
+    select {
+        case <-p.stop:
+            log.Println(p.c(fmt.Sprintf("Ending validator %s activity process...", hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()))))
+            p.done <- struct{}{}
+    }
 
 }
 
