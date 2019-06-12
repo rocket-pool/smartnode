@@ -16,4 +16,4 @@ RUN go get -d github.com/ethereum/go-ethereum
 RUN go install github.com/rocket-pool/smartnode/rocketpool-cli
 
 # Container entry point
-ENTRYPOINT /go/bin/rocketpool-cli
+ENTRYPOINT ["/go/bin/rocketpool-cli"]
