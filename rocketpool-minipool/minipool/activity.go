@@ -82,7 +82,7 @@ func (p *ActivityProcess) start() {
     // Block thread until done
     select {
         case <-p.stop:
-            log.Println(p.c(fmt.Sprintf("Ending validator %s activity process...", hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()))))
+            log.Println(p.c(fmt.Sprintf("Ending minipool %s activity process...", p.minipool.Address.Hex())))
             p.done <- struct{}{}
     }
 
