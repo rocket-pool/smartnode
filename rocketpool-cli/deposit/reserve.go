@@ -24,6 +24,7 @@ type DepositData struct {
     pubkey [48]byte
     withdrawalCredentials [32]byte
     amount uint64
+    signature [96]byte
 }
 
 
@@ -122,11 +123,11 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     depositData.amount = DEPOSIT_AMOUNT
 
     // Build signature
-    depositDataHash, err := ssz.TreeHash(depositData)
+    signingRoot, err := ssz.SigningRoot(depositData)
     if err != nil {
         return errors.New("Error retrieving deposit data hash tree root: " + err.Error())
     }
-    signature := key.SecretKey.Sign(depositDataHash[:]).Marshal()
+    signature := key.SecretKey.Sign(signingRoot[:]).Marshal()
 
     // Create deposit reservation
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
