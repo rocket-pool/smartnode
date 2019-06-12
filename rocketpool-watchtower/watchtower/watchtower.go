@@ -16,13 +16,14 @@ import (
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
+
 // Config
 const WATCHTOWER_LOG_COLOR = color.FgRed
 const CHECK_TRUSTED_INTERVAL string = "15s"
 const GET_ACTIVE_MINIPOOLS_INTERVAL string = "15s"
-
 var checkTrustedInterval, _ = time.ParseDuration(CHECK_TRUSTED_INTERVAL)
 var getActiveMinipoolsInterval, _ = time.ParseDuration(GET_ACTIVE_MINIPOOLS_INTERVAL)
+
 
 // Watchtower process
 type WatchtowerProcess struct {
@@ -33,6 +34,7 @@ type WatchtowerProcess struct {
     beaconMessageChannel   chan interface{}
     activeMinipools        map[string]common.Address
 }
+
 
 /**
  * Start beacon watchtower process
@@ -54,6 +56,7 @@ func StartWatchtowerProcess(p *services.Provider) {
 
 }
 
+
 /**
  * Start process
  */
@@ -71,15 +74,13 @@ func (p *WatchtowerProcess) start() {
     // Handle beacon chain events
     go (func() {
         for eventData := range p.beaconMessageChannel {
-            event := (eventData).(struct {
-                Client  *beaconchain.Client
-                Message []byte
-            })
+            event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
             p.onBeaconClientMessage(event.Message)
         }
     })()
 
 }
+
 
 /**
  * Check if node is trusted
@@ -105,15 +106,14 @@ func (p *WatchtowerProcess) checkTrusted() {
 
 }
 
+
 /**
  * Start minipool updates
  */
 func (p *WatchtowerProcess) startUpdateMinipools() {
 
     // Cancel if already updating minipools
-    if p.updatingMinipools {
-        return
-    }
+    if p.updatingMinipools { return }
     p.updatingMinipools = true
 
     // Log
@@ -125,11 +125,11 @@ func (p *WatchtowerProcess) startUpdateMinipools() {
         getActiveMinipoolsTimer := time.NewTicker(getActiveMinipoolsInterval)
         for {
             select {
-            case <-getActiveMinipoolsTimer.C:
-                p.getActiveMinipools()
-            case <-p.getActiveMinipoolsStop:
-                getActiveMinipoolsTimer.Stop()
-                return
+                case <-getActiveMinipoolsTimer.C:
+                    p.getActiveMinipools()
+                case <-p.getActiveMinipoolsStop:
+                    getActiveMinipoolsTimer.Stop()
+                    return
             }
         }
     })()
@@ -139,15 +139,14 @@ func (p *WatchtowerProcess) startUpdateMinipools() {
 
 }
 
+
 /**
  * Stop minipool updates
  */
 func (p *WatchtowerProcess) stopUpdateMinipools() {
 
     // Cancel if not updating minipools
-    if !p.updatingMinipools {
-        return
-    }
+    if !p.updatingMinipools { return }
     p.updatingMinipools = false
 
     // Log
@@ -160,6 +159,7 @@ func (p *WatchtowerProcess) stopUpdateMinipools() {
     p.p.Publisher.RemoveSubscriber("beacon.client.message", p.beaconMessageChannel)
 
 }
+
 
 /**
  * Get active minipools by validator pubkey
@@ -204,6 +204,7 @@ func (p *WatchtowerProcess) getActiveMinipools() {
 
 }
 
+
 /**
  * Handle beacon chain client messages
  */
@@ -217,18 +218,12 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
     }
 
     // Handle exit and withdrawal validator status messages only
-    if message.Message != "validator_status" {
-        return
-    }
-    if !(message.Status.Code == "exited" || message.Status.Code == "withdrawable") {
-        return
-    }
+    if message.Message != "validator_status" { return }
+    if !(message.Status.Code == "exited" || message.Status.Code == "withdrawable") { return }
 
     // Get associated minipool
     minipoolAddress, ok := p.activeMinipools[message.Pubkey]
-    if !ok {
-        return
-    }
+    if !ok { return }
 
     // Wait for node to sync
     eth.WaitSync(p.p.Client, true, false)
@@ -285,6 +280,7 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
 
 }
 
+
 // Get a minipool's status
 func getMinipoolStatus(p *services.Provider, address *common.Address) (*uint8, error) {
 
@@ -304,3 +300,4 @@ func getMinipoolStatus(p *services.Provider, address *common.Address) (*uint8, e
     return status, nil
 
 }
+
