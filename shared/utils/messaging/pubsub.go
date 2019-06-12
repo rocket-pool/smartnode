@@ -1,9 +1,14 @@
 package messaging
 
+import (
+    "sync"
+)
+
 
 // Publisher
 type Publisher struct {
     subscribers map[string][]chan interface{}
+    lock sync.Mutex
 }
 
 
@@ -22,6 +27,10 @@ func NewPublisher() *Publisher {
  */
 func (publisher *Publisher) AddSubscriber(event string, listener chan interface{}) {
 
+    // Lock for map modification
+    publisher.lock.Lock()
+    defer publisher.lock.Unlock()
+
     // Create event entry if not set
     if _, ok := publisher.subscribers[event]; !ok {
         publisher.subscribers[event] = make([]chan interface{}, 0)
@@ -37,6 +46,10 @@ func (publisher *Publisher) AddSubscriber(event string, listener chan interface{
  * Remove subscriber
  */
 func (publisher *Publisher) RemoveSubscriber(event string, listener chan interface{}) {
+
+    // Lock for map modification
+    publisher.lock.Lock()
+    defer publisher.lock.Unlock()
 
     // Cancel if event entry not set
     if _, ok := publisher.subscribers[event]; !ok {
