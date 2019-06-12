@@ -25,9 +25,7 @@
 #   unused-packages = true
 
 
-[[constraint]]
-  name = "github.com/ethereum/go-ethereum"
-  version = "1.8.27"
+ignored = ["github.com/ethereum/go-ethereum*"]
 
 [[constraint]]
   name = "github.com/fatih/color"

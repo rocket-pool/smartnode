@@ -18,24 +18,6 @@
   version = "1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e574dab86697e4e3a8e2e815e0e932cfbf3618e74d6379d8732b33757e11b23d"
-  name = "github.com/allegro/bigcache"
-  packages = [
-    ".",
-    "queue",
-  ]
-  pruneopts = "UT"
-  revision = "e24eb225f15679bbe54f91bfa7da3b00e59b9768"
-
-[[projects]]
-  digest = "1:f5322546f652db78b7a8efd35047a61d1e492abca2263e1c647eca49e1c8a354"
-  name = "github.com/aristanetworks/goarista"
-  packages = ["monotime"]
-  pruneopts = "UT"
-  revision = "ea17b1a17847fb6e4c0a91de0b674704693469b0"
-
-[[projects]]
   digest = "1:d6afaeed1502aa28e80a4ed0981d570ad91b2579193404256ce672ed0a609e0d"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
@@ -50,52 +32,6 @@
   pruneopts = "UT"
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
   version = "v1.3.1"
-
-[[projects]]
-  digest = "1:477f6df8a1915abb180d730179a4a45212328effdf98cc6ca5b0e5741db00125"
-  name = "github.com/btcsuite/btcd"
-  packages = ["btcec"]
-  pruneopts = "UT"
-  revision = "2e60448ffcc6bf78332d1fe590260095f554dd78"
-
-[[projects]]
-  digest = "1:1aeb4854a1c278e842712cd6684f48d595cbdd7839655d37a77248efa08c9fc0"
-  name = "github.com/deckarep/golang-set"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "504e848d77ea4752b3057b8fb46da0e7f746ccf3"
-
-[[projects]]
-  digest = "1:6823d33297b71270c3c3f62f1addc138dea763f1e43703a40af7d249e280e5e5"
-  name = "github.com/ethereum/go-ethereum"
-  packages = [
-    ".",
-    "accounts",
-    "accounts/abi",
-    "accounts/abi/bind",
-    "accounts/keystore",
-    "common",
-    "common/hexutil",
-    "common/math",
-    "common/mclock",
-    "common/prque",
-    "core/types",
-    "crypto",
-    "crypto/secp256k1",
-    "ethclient",
-    "ethdb",
-    "event",
-    "log",
-    "metrics",
-    "p2p/netutil",
-    "params",
-    "rlp",
-    "rpc",
-    "trie",
-  ]
-  pruneopts = "UT"
-  revision = "4bcc0a37ab70cb79b16893556cffdaad6974e7d8"
-  version = "v1.8.27"
 
 [[projects]]
   digest = "1:865079840386857c809b72ce300be7580cb50d3d3129ce11bf9aa6ca2bc1934a"
@@ -117,28 +53,12 @@
   version = "v1.2.4"
 
 [[projects]]
-  digest = "1:33542eaf895b5489ccfb059502a721f0e8875379da8b3ff60fdd9212d503705c"
-  name = "github.com/go-stack/stack"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "54be5f394ed2c3e19dac9134a40a95ba5a017f7b"
-  version = "v1.5.4"
-
-[[projects]]
   digest = "1:318f1c959a8a740366fce4b1e1eb2fd914036b4af58fbd0a003349b305f118ad"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
   revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
   version = "v1.3.1"
-
-[[projects]]
-  digest = "1:e4f5819333ac698d294fe04dbf640f84719658d5c7ce195b10060cc37292ce79"
-  name = "github.com/golang/snappy"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2a8bb927dd31d8daada140a5d09578521ce5c36a"
-  version = "v0.0.1"
 
 [[projects]]
   digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
@@ -258,30 +178,6 @@
   revision = "9def2caac4cc4fff72ea6f575e4dd103800e5bec"
 
 [[projects]]
-  digest = "1:8f4b365e527c00e2ba6b25a4c41ee7b84078c375fba83c971e54d2f0582df279"
-  name = "github.com/rjeczalik/notify"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "0f065fa99b48b842c3fd3e2c8b194c6f2b69f6b8"
-  version = "v0.9.1"
-
-[[projects]]
-  digest = "1:4b9bd28bbf14271f4b89a6c401589ea5939d14138e0399c253c1939cc4252d2f"
-  name = "github.com/rs/cors"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "a62a804a8a009876ca59105f7899938a1349f4b3"
-  version = "v1.0"
-
-[[projects]]
-  digest = "1:9665a593c0199c193341b8b110e31b19c899923711fc70bde2c2f3eb2d337526"
-  name = "github.com/rs/xhandler"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "d9d9599b6aaf6a058cb7b1f48291ded2cbd13390"
-  version = "v1.0"
-
-[[projects]]
   digest = "1:65d60de5eae84a758d5862a792318bf78ef480a2d8862c1a37ba0afeebfc4129"
   name = "github.com/shirou/gopsutil"
   packages = [
@@ -292,26 +188,6 @@
   pruneopts = "UT"
   revision = "5335e3fd506df4cb63de0a8239c7461d23063be6"
   version = "v2.19.05"
-
-[[projects]]
-  digest = "1:685fdfea42d825ebd39ee0994354b46c374cf2c2b2d97a41a8dee1807c6a9b62"
-  name = "github.com/syndtr/goleveldb"
-  packages = [
-    "leveldb",
-    "leveldb/cache",
-    "leveldb/comparer",
-    "leveldb/errors",
-    "leveldb/filter",
-    "leveldb/iterator",
-    "leveldb/journal",
-    "leveldb/memdb",
-    "leveldb/opt",
-    "leveldb/storage",
-    "leveldb/table",
-    "leveldb/util",
-  ]
-  pruneopts = "UT"
-  revision = "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae"
 
 [[projects]]
   branch = "master"
@@ -326,16 +202,6 @@
   revision = "5c40567a22f818bd14a1ea7245dad9f8ef0691aa"
 
 [[projects]]
-  digest = "1:8126afc249948c5f48a0dc35c87538bcd5944d01003ce6aaec2f7a9755fcd537"
-  name = "golang.org/x/net"
-  packages = [
-    "context",
-    "websocket",
-  ]
-  pruneopts = "UT"
-  revision = "a6577fac2d73be281a500b310739095313165611"
-
-[[projects]]
   branch = "master"
   digest = "1:8ea0513faaf49c2491a6aa1c4962261295ed140478e3e84b5c699f42af0a3936"
   name = "golang.org/x/sys"
@@ -346,14 +212,6 @@
   ]
   pruneopts = "UT"
   revision = "93c9922d18aeb82498a065f07aec7ad7fa60dfb7"
-
-[[projects]]
-  branch = "v2"
-  digest = "1:3d3f9391ab615be8655ae0d686a1564f3fec413979bb1aaf018bac1ec1bb1cc7"
-  name = "gopkg.in/natefinch/npipe.v2"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6"
 
 [[projects]]
   digest = "1:5f1425074efce8ad776450fda6bdd11e816c825771ba56654493d5fdeac27322"
@@ -378,14 +236,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/ethereum/go-ethereum",
-    "github.com/ethereum/go-ethereum/accounts",
-    "github.com/ethereum/go-ethereum/accounts/abi",
-    "github.com/ethereum/go-ethereum/accounts/abi/bind",
-    "github.com/ethereum/go-ethereum/accounts/keystore",
-    "github.com/ethereum/go-ethereum/common",
-    "github.com/ethereum/go-ethereum/core/types",
-    "github.com/ethereum/go-ethereum/ethclient",
     "github.com/fatih/color",
     "github.com/gorilla/websocket",
     "github.com/pborman/uuid",
