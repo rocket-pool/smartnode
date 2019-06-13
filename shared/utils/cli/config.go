@@ -1,8 +1,6 @@
 package cli
 
 import (
-    "os"
-
     "gopkg.in/urfave/cli.v1"
     "gopkg.in/urfave/cli.v1/altsrc"
 )
@@ -16,27 +14,27 @@ func Configure(app *cli.App) {
         cli.StringFlag{
             Name:  "config",
             Usage: "Rocket Pool CLI config file absolute `path`",
-            Value: os.Getenv("HOME") + "/.rocketpool/config.yml",
+            Value: "/.rocketpool/config.yml",
         },
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "database",
             Usage: "Rocket Pool CLI database absolute `path`",
-            Value: os.Getenv("HOME") + "/.rocketpool/rocketpool.db",
+            Value: "/.rocketpool/rocketpool.db",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "password",
             Usage: "Rocket Pool CLI keystore password `path`",
-            Value: os.Getenv("HOME") + "/.rocketpool/password",
+            Value: "/.rocketpool/password",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "keychainPow",
             Usage: "PoW chain account keychain absolute `path`",
-            Value: os.Getenv("HOME") + "/.rocketpool/accounts",
+            Value: "/.rocketpool/accounts",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "keychainBeacon",
             Usage: "Beacon chain account keychain absolute `path`",
-            Value: os.Getenv("HOME") + "/.rocketpool/validators",
+            Value: "/.rocketpool/validators",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "providerPow",
