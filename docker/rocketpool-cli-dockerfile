@@ -1,19 +1,33 @@
-# Start from golang image
-FROM golang
+###
+# Builder
+###
 
-# Install dep
-RUN go get -u github.com/golang/dep/cmd/dep
+
+# Start from golang (debian) image
+FROM golang AS builder
 
 # Copy source files
-ADD . /go/src/github.com/rocket-pool/smartnode
+ADD ./rocketpool-cli /go/src/github.com/rocket-pool/smartnode/rocketpool-cli
+ADD ./shared /go/src/github.com/rocket-pool/smartnode/shared
 
 # Install go dependencies
 WORKDIR /go/src/github.com/rocket-pool/smartnode
-RUN dep ensure
-RUN go get -d github.com/ethereum/go-ethereum
+RUN go get -d ./...
 
 # Compile & install
 RUN go install github.com/rocket-pool/smartnode/rocketpool-cli
+
+
+###
+# Process
+###
+
+
+# Start from debian image
+FROM debian
+
+# Copy binary
+COPY --from=builder /go/bin/rocketpool-cli /go/bin/rocketpool-cli
 
 # Container entry point
 ENTRYPOINT ["/go/bin/rocketpool-cli"]
