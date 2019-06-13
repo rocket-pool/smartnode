@@ -1,0 +1,36 @@
+###
+# Builder
+###
+
+
+# Start from golang alpine image
+FROM golang:alpine AS builder
+
+# Install OS dependencies
+RUN apk update && apk add --no-cache build-base git
+
+# Copy source files
+ADD ./rocketpool-minipool /go/src/github.com/rocket-pool/smartnode/rocketpool-minipool
+ADD ./shared /go/src/github.com/rocket-pool/smartnode/shared
+
+# Install go dependencies
+WORKDIR /go/src/github.com/rocket-pool/smartnode
+RUN go get -d ./...
+
+# Compile & install
+RUN go install github.com/rocket-pool/smartnode/rocketpool-minipool
+
+
+###
+# Process
+###
+
+
+# Start from alpine image
+FROM alpine
+
+# Copy binary
+COPY --from=builder /go/bin/rocketpool-minipool /go/bin/rocketpool-minipool
+
+# Container entry point
+ENTRYPOINT ["/go/bin/rocketpool-minipool"]

@@ -6,5 +6,11 @@ services:
       - /Users/moles/.rocketpool:/.rocketpool
     networks:
       - net
+  watchtower:
+    image: rocketpool-watchtower
+    volumes:
+      - /Users/moles/.rocketpool:/.rocketpool
+    networks:
+      - net
 networks:
   net:
