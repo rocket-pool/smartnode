@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+  node:
+    image: rocketpool-node
+    volumes:
+      - /Users/moles/.rocketpool:/.rocketpool
+    networks:
+      - net
+networks:
+  net:
