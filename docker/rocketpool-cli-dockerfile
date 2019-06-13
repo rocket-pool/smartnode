@@ -3,8 +3,11 @@
 ###
 
 
-# Start from golang (debian) image
-FROM golang AS builder
+# Start from golang alpine image
+FROM golang:alpine AS builder
+
+# Install OS dependencies
+RUN apk update && apk add --no-cache build-base git
 
 # Copy source files
 ADD ./rocketpool-cli /go/src/github.com/rocket-pool/smartnode/rocketpool-cli
@@ -23,8 +26,8 @@ RUN go install github.com/rocket-pool/smartnode/rocketpool-cli
 ###
 
 
-# Start from debian image
-FROM debian
+# Start from alpine image
+FROM alpine
 
 # Copy binary
 COPY --from=builder /go/bin/rocketpool-cli /go/bin/rocketpool-cli
