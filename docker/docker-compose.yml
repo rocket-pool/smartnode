@@ -1,11 +1,31 @@
 version: "3.7"
 services:
+  geth:
+    image: ethereum/client-go
+    volumes:
+      - /Users/moles/.rocketpool:/root
+    networks:
+      - net
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+      - "30303:30303"
+    command: [
+      "--networkid", "11",
+      "--targetgaslimit", "8000000",
+      "--rpc",
+      "--rpcaddr", "0.0.0.0",
+      "--rpcvhosts", "geth",
+      "--mine"
+    ]
   node:
     image: rocketpool-node
     volumes:
       - /Users/moles/.rocketpool:/.rocketpool
     networks:
       - net
+    links:
+      - geth
   watchtower:
     image: rocketpool-watchtower
     volumes:
