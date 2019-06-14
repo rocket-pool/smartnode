@@ -32,5 +32,7 @@ services:
       - /Users/moles/.rocketpool:/.rocketpool
     networks:
       - net
+    links:
+      - geth
 networks:
   net:
