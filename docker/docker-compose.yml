@@ -16,7 +16,11 @@ services:
       "--rpc",
       "--rpcaddr", "0.0.0.0",
       "--rpcvhosts", "geth",
-      "--mine"
+      # Clique mining parameters
+      "--mine",
+      "--allow-insecure-unlock",
+      "--unlock", "0xca00774c08c016dd831ee4c063c56eec4b9f928e",
+      "--password", "/root/.ethereum/password"
     ]
   node:
     image: rocketpool-node
