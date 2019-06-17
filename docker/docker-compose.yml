@@ -33,6 +33,7 @@ services:
     ports:
       - "9545:9545"
     command: [
+      "--powHost", "http://geth:8545",
       "--depositContract", "0x16EBaCb3cF1E1Bc2220335c606aeE3f1cFb1178c",
       "--withdrawalContract", "0x0BCa77f1202D9A6FA2aa0B6dDe9c822999134cA7",
       "--from", "0xca00774c08c016dd831ee4c063c56eec4b9f928e",
