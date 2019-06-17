@@ -4,6 +4,7 @@ import (
     "errors"
     "fmt"
     "log"
+    "sync"
     "time"
 
     "github.com/gorilla/websocket"
@@ -23,6 +24,7 @@ type Client struct {
     publisher *messaging.Publisher
     connection *websocket.Conn
     connectionTimer *time.Timer
+    lock sync.Mutex
 }
 
 
@@ -86,6 +88,10 @@ func (c *Client) Connect() {
  * Send message to beacon chain server
  */
 func (c *Client) Send(payload []byte) error {
+
+    // Lock for send
+    c.lock.Lock()
+    defer c.lock.Unlock()
 
     // Check connection is open
     if c.connection == nil {
@@ -152,6 +158,10 @@ func (c *Client) connect() {
  * Read message from beacon chain server
  */
 func (c *Client) readMessage() ([]byte, error, bool) {
+
+    // Lock for read
+    c.lock.Lock()
+    defer c.lock.Unlock()
 
     // Read message
     messageType, message, err := c.connection.ReadMessage()
