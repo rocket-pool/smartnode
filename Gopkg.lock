@@ -61,6 +61,14 @@
   version = "v1.3.1"
 
 [[projects]]
+  digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
+  version = "v1.1.1"
+
+[[projects]]
   digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
   name = "github.com/gorilla/websocket"
   packages = ["."]
@@ -101,25 +109,26 @@
   version = "v1.0.1"
 
 [[projects]]
-  digest = "1:361de06aa7ae272616cbe71c3994a654cc6316324e30998e650f7765b20c5b33"
+  digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
   name = "github.com/pborman/uuid"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1b00554d822231195d1babd97ff4a781231955c9"
+  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
+  version = "v1.2"
 
 [[projects]]
   branch = "master"
-  digest = "1:8189a957ad21febb093fa8c1203ee4850e8ddead1595e79e0dbe568bc3e9ebcb"
+  digest = "1:d1488e743ec6b80484251767baa0da925c9ecc8284d61d26aa1641bcaee76266"
   name = "github.com/phoreproject/bls"
   packages = [
     ".",
     "g1pubs",
   ]
   pruneopts = "UT"
-  revision = "11029fcb3eb7540e06cce27de39bf876c53446ad"
+  revision = "e008a268030eb9d66972a79cf193032469364cc6"
 
 [[projects]]
-  digest = "1:183b577e0134c24d0192333df5ce07a885dde601e3665c1cc6e2432f2e4e3a4e"
+  digest = "1:a676195082a96811aaae0b61ba0728cd1efbf99ab979ed89e72091975d4b4f83"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
@@ -127,8 +136,8 @@
     "prometheus/promauto",
   ]
   pruneopts = "UT"
-  revision = "2641b987480bca71fb39738eb8c8b0d577cb1d76"
-  version = "v0.9.4"
+  revision = "4ab88e80c249ed361d3299e2930427d9ac43ef8d"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -147,8 +156,8 @@
     "model",
   ]
   pruneopts = "UT"
-  revision = "17f5ca1748182ddf24fc33a5a7caaaf790a52fcc"
-  version = "v0.4.1"
+  revision = "31bed53e4047fd6c510e43a941f90cb31be0972a"
+  version = "v0.6.0"
 
 [[projects]]
   digest = "1:403b810b43500b5b0a9a24a47347e31dc2783ccae8cf97c891b46f5b0496fa1a"
@@ -163,11 +172,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6ca6b19435503456eb30cc757e19baad1511975da3547f865f322a39f76175a0"
+  digest = "1:4344a6a3629c3e5661415fcb0d097b4477dfb21c018db3a47a42d4e4f5644e31"
   name = "github.com/prysmaticlabs/go-ssz"
   packages = ["."]
   pruneopts = "UT"
-  revision = "18ee40e382924f3cff65fc23ccb4c0fa1aed4d4d"
+  revision = "0fdbce2fb193117d6236c1ccf65a6683ce9d3e49"
 
 [[projects]]
   branch = "master"
@@ -199,11 +208,11 @@
     "sha3",
   ]
   pruneopts = "UT"
-  revision = "5c40567a22f818bd14a1ea7245dad9f8ef0691aa"
+  revision = "cc06ce4a13d484c0101a9e92913248488a75786d"
 
 [[projects]]
   branch = "master"
-  digest = "1:8ea0513faaf49c2491a6aa1c4962261295ed140478e3e84b5c699f42af0a3936"
+  digest = "1:4f0a9e5364a9a5fdadb6ecfe8c59e08f703998add447ecad317acec61477ec9a"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -211,7 +220,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "93c9922d18aeb82498a065f07aec7ad7fa60dfb7"
+  revision = "d432491b91382bba9c2a91776aa47c9430183a6f"
 
 [[projects]]
   digest = "1:5f1425074efce8ad776450fda6bdd11e816c825771ba56654493d5fdeac27322"
