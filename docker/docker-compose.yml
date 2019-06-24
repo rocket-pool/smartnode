@@ -10,18 +10,21 @@ services:
       - "8545:8545"
       - "8546:8546"
       - "30303:30303"
-    command: [
-      "--networkid", "11",
-      "--targetgaslimit", "8000000",
-      "--rpc",
-      "--rpcaddr", "0.0.0.0",
-      "--rpcvhosts", "geth",
-      # Clique mining parameters
-      "--mine",
-      "--allow-insecure-unlock",
-      "--unlock", "0xca00774c08c016dd831ee4c063c56eec4b9f928e",
-      "--password", "/root/.ethereum/password"
-    ]
+      - "30305:30305"
+    entrypoint: [sh, -c, "\
+      /usr/local/bin/geth init /root/genesis77.json && \
+      /usr/local/bin/geth \
+        --networkid 77 \
+        --syncmode full \
+        --bootnodes enode://6114b79e7928bfb19ff8600bad6e09a49cfc53f7d9513bb0e854566102ee04bac8f494472bcc812211c2cc50684f8a04320d23c17410b52c6175e8246b5a3307@3.216.221.20:30305 \
+        --targetgaslimit 8000000 \
+        --rpc \
+        --rpcaddr 0.0.0.0 \
+        --rpcvhosts '*' \
+        --allow-insecure-unlock \
+        --unlock 0x2f6812e7005c61835b12544eeb45958099ef45f4 \
+        --password /root/.ethereum/password \
+    "]
   beacon:
     image: beacon-chain-simulator
     volumes:
@@ -34,9 +37,9 @@ services:
       - "9545:9545"
     command: [
       "--powHost", "http://geth:8545",
-      "--depositContract", "0x16EBaCb3cF1E1Bc2220335c606aeE3f1cFb1178c",
-      "--withdrawalContract", "0x0BCa77f1202D9A6FA2aa0B6dDe9c822999134cA7",
-      "--from", "0xca00774c08c016dd831ee4c063c56eec4b9f928e",
+      "--depositContract", "0xb8c763648c1f251006dd275662f6e7c8e2eb135a",
+      "--withdrawalContract", "0x23104b8a290316a1708dde6dda1803d30b9cb833",
+      "--from", "0x2f6812e7005c61835b12544eeb45958099ef45f4",
       "--database", "/.rocketpool/beacon.json"
     ]
   node:
