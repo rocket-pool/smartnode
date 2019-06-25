@@ -62,6 +62,7 @@ func run(c *cli.Context) error {
         AM: true,
         ClientSync: true,
         CM: true,
+        Docker: true,
         LoadContracts: []string{"utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
     })

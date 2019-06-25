@@ -4,6 +4,7 @@ import (
     "bytes"
     "errors"
 
+    "github.com/docker/docker/client"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
@@ -19,6 +20,11 @@ import (
     "github.com/rocket-pool/smartnode/shared/utils/messaging"
 )
 
+
+// Config
+const DOCKER_API_VERSION string = "1.39"
+
+
 // Service provider options
 type ProviderOpts struct {
     DB                  bool
@@ -32,9 +38,11 @@ type ProviderOpts struct {
     NodeContract        bool
     Publisher           bool
     Beacon              bool
+    Docker              bool
     LoadContracts       []string
     LoadAbis            []string
 }
+
 
 // Service provider
 type Provider struct {
@@ -48,7 +56,9 @@ type Provider struct {
     NodeContract        *bind.BoundContract
     Publisher           *messaging.Publisher
     Beacon              *beaconchain.Client
+    Docker              *client.Client
 }
+
 
 /**
  * Create service provider
@@ -207,6 +217,15 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     // Initialise beacon chain client
     if opts.Beacon {
         p.Beacon = beaconchain.NewClient(c.GlobalString("providerBeacon"), p.Publisher)
+    }
+
+    // Initialise docker client
+    if opts.Docker {
+        if docker, err := client.NewClientWithOpts(client.WithVersion(DOCKER_API_VERSION)); err != nil {
+            return nil, errors.New("Error initialising docker client: " + err.Error())
+        } else {
+            p.Docker = docker
+        }
     }
 
     // Return

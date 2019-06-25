@@ -27,6 +27,14 @@
 
 ignored = ["github.com/ethereum/go-ethereum*"]
 
+[[override]]
+  name = "github.com/docker/distribution"
+  branch = "master"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/docker/docker"
+
 [[constraint]]
   name = "github.com/gorilla/websocket"
   version = "1.4.0"
