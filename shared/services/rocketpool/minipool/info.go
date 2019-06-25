@@ -267,6 +267,28 @@ func GetStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) 
 }
 
 
+// Get a minipool's status code
+// Requires rocketMinipool contract to be loaded with contract manager
+func GetStatusCode(cm *rocketpool.ContractManager, minipoolAddress *common.Address) (uint8, error) {
+
+    // Initialise minipool contract
+    minipoolContract, err := cm.NewContract(minipoolAddress, "rocketMinipool")
+    if err != nil {
+        return 0, errors.New("Error initialising minipool contract: " + err.Error())
+    }
+
+    // Get minipool status
+    status := new(uint8)
+    if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
+        return 0, errors.New("Error retrieving minipool status: " + err.Error())
+    }
+
+    // Return
+    return *status, nil
+
+}
+
+
 // Get a map of all active minipools by validator pubkey
 // Requires rocketPool and rocketMinipool contracts to be loaded with contract manager
 func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[string]common.Address, error) {
