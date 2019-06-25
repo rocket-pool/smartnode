@@ -20,6 +20,9 @@ import (
 // Config
 const CONTAINER_IMAGE_NAME string = "rocketpool-minipool"
 const CONTAINER_NAME_PREFIX string = "rocketpool_minipool_"
+const CONTAINER_BASE_PATH string = "/.rocketpool"
+const CONTAINER_POW_LINK_NAME string = "pow"
+const CONTAINER_BEACON_LINK_NAME string = "beacon"
 const CHECK_MINIPOOLS_INTERVAL string = "15s"
 var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 
@@ -27,17 +30,25 @@ var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 // Management process
 type ManagementProcess struct {
     p *services.Provider
+    rpPath string
+    rpNetwork string
+    powContainer string
+    beaconContainer string
 }
 
 
 /**
  * Start minipools management process
  */
-func StartManagementProcess(p *services.Provider) {
+func StartManagementProcess(p *services.Provider, rpPath string, rpNetwork string, powContainer string, beaconContainer string) {
 
     // Initialise process
     process := &ManagementProcess{
         p: p,
+        rpPath: rpPath,
+        rpNetwork: rpNetwork,
+        powContainer: powContainer,
+        beaconContainer: beaconContainer,
     }
 
     // Start
@@ -186,9 +197,9 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
         if response, err := p.p.Docker.ContainerCreate(context.Background(), &container.Config{
             Image: CONTAINER_IMAGE_NAME,
         }, &container.HostConfig{
-            Binds: []string{"/Users/moles/.rocketpool:/.rocketpool"},
-            Links: []string{"rocketpool_geth_1:geth", "rocketpool_beacon_1:beacon"},
-            NetworkMode: "rocketpool_net",
+            Binds: []string{p.rpPath + ":" + CONTAINER_BASE_PATH},
+            Links: []string{p.powContainer + ":" + CONTAINER_POW_LINK_NAME, p.beaconContainer + ":" + CONTAINER_BEACON_LINK_NAME},
+            NetworkMode: container.NetworkMode(p.rpNetwork),
             RestartPolicy: container.RestartPolicy{Name: "on-failure"},
         }, nil, containerName); err != nil {
             log.Println(errors.New(fmt.Sprintf("Error creating minipool container %s: " + err.Error(), containerName)))

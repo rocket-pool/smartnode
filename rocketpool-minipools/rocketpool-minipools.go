@@ -43,7 +43,21 @@ func main() {
 
     // Set application action
     app.Action = func(c *cli.Context) error {
-        return run(c)
+
+        // Check argument count
+        if len(c.Args()) != 4 {
+            return cli.NewExitError("USAGE:" + "\n   " + "rocketpool-minipools rpPath rpNetwork powContainer beaconContainer", 1)
+        }
+
+        // Get arguments
+        rpPath := c.Args().Get(0)
+        rpNetwork := c.Args().Get(1)
+        powContainer := c.Args().Get(2)
+        beaconContainer := c.Args().Get(3)
+
+        // Run process
+        return run(c, rpPath, rpNetwork, powContainer, beaconContainer)
+
     }
 
     // Run application
@@ -55,7 +69,7 @@ func main() {
 
 
 // Run process
-func run(c *cli.Context) error {
+func run(c *cli.Context, rpPath string, rpNetwork string, powContainer string, beaconContainer string) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
@@ -71,7 +85,7 @@ func run(c *cli.Context) error {
     }
 
     // Start minipools management process
-    go minipools.StartManagementProcess(p)
+    go minipools.StartManagementProcess(p, rpPath, rpNetwork, powContainer, beaconContainer)
 
     // Block thread
     select {}
