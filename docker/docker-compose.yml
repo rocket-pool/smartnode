@@ -51,6 +51,12 @@ services:
       - net
     links:
       - pow
+    command: [
+      "/Users/moles/.rocketpool",
+      "rocketpool_net",
+      "rocketpool_pow_1",
+      "rocketpool_beacon_1",
+    ]
   node:
     image: rocketpool-node
     volumes:
