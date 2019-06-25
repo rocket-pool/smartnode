@@ -8,7 +8,6 @@ import (
     "time"
 
     "github.com/ethereum/go-ethereum/common"
-    "github.com/fatih/color"
 
     "github.com/rocket-pool/smartnode/shared/services"
     beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
@@ -18,7 +17,6 @@ import (
 
 
 // Config
-const WATCHTOWER_LOG_COLOR = color.FgRed
 const CHECK_TRUSTED_INTERVAL string = "15s"
 const GET_ACTIVE_MINIPOOLS_INTERVAL string = "15s"
 var checkTrustedInterval, _ = time.ParseDuration(CHECK_TRUSTED_INTERVAL)
@@ -27,7 +25,6 @@ var getActiveMinipoolsInterval, _ = time.ParseDuration(GET_ACTIVE_MINIPOOLS_INTE
 
 // Watchtower process
 type WatchtowerProcess struct {
-    c                      func(a ...interface{}) string
     p                      *services.Provider
     updatingMinipools      bool
     getActiveMinipoolsStop chan bool
@@ -43,7 +40,6 @@ func StartWatchtowerProcess(p *services.Provider) {
 
     // Initialise process
     process := &WatchtowerProcess{
-        c:                      color.New(WATCHTOWER_LOG_COLOR).SprintFunc(),
         p:                      p,
         updatingMinipools:      false,
         getActiveMinipoolsStop: make(chan bool),
@@ -93,7 +89,7 @@ func (p *WatchtowerProcess) checkTrusted() {
     // Get trusted status
     trusted := new(bool)
     if err := p.p.CM.Contracts["rocketNodeAPI"].Call(nil, trusted, "getTrusted", p.p.AM.GetNodeAccount().Address); err != nil {
-        log.Println(p.c(errors.New("Error retrieving node trusted status: " + err.Error())))
+        log.Println(errors.New("Error retrieving node trusted status: " + err.Error()))
         return
     }
 
@@ -117,7 +113,7 @@ func (p *WatchtowerProcess) startUpdateMinipools() {
     p.updatingMinipools = true
 
     // Log
-    log.Println(p.c("Node is trusted, starting watchtower process..."))
+    log.Println("Node is trusted, starting watchtower process...")
 
     // Get active minipools on interval
     go (func() {
@@ -150,7 +146,7 @@ func (p *WatchtowerProcess) stopUpdateMinipools() {
     p.updatingMinipools = false
 
     // Log
-    log.Println(p.c("Node is untrusted, stopping watchtower process..."))
+    log.Println("Node is untrusted, stopping watchtower process...")
 
     // Stop getting active minipools
     p.getActiveMinipoolsStop <- true
@@ -171,7 +167,7 @@ func (p *WatchtowerProcess) getActiveMinipools() {
 
     // Get active minipools
     if activeMinipools, err := minipool.GetActiveMinipoolsByValidatorPubkey(p.p.CM); err != nil {
-        log.Println(p.c(errors.New("Error getting active minipools: " + err.Error())))
+        log.Println(errors.New("Error getting active minipools: " + err.Error()))
         return
     } else {
         p.activeMinipools = *activeMinipools
@@ -183,23 +179,23 @@ func (p *WatchtowerProcess) getActiveMinipools() {
 
             // Check minipool status
             if status, err := getMinipoolStatus(p.p, &minipoolAddress); err != nil {
-                log.Println(p.c(err))
+                log.Println(err)
                 return
             } else if *status < minipool.STAKING || *status > minipool.LOGGED_OUT {
                 return
             }
 
             // Log
-            log.Println(p.c(fmt.Sprintf("Checking minipool %s status...", minipoolAddress.Hex())))
+            log.Println(fmt.Sprintf("Checking minipool %s status...", minipoolAddress.Hex()))
 
             // Request validator status
             if payload, err := json.Marshal(beaconchain.ClientMessage{
                 Message: "get_validator_status",
                 Pubkey:  pubkey,
             }); err != nil {
-                log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
+                log.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
             } else if err := p.p.Beacon.Send(payload); err != nil {
-                log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
+                log.Println(errors.New("Error sending get validator status message: " + err.Error()))
             }
 
         })(pubkey, minipoolAddress)
@@ -216,7 +212,7 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
     // Parse message
     message := new(beaconchain.ServerMessage)
     if err := json.Unmarshal(messageData, message); err != nil {
-        log.Println(p.c(errors.New("Error decoding beacon message: " + err.Error())))
+        log.Println(errors.New("Error decoding beacon message: " + err.Error()))
         return
     }
 
@@ -234,7 +230,7 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
     // Get minipool status
     status, err := getMinipoolStatus(p.p, &minipoolAddress)
     if err != nil {
-        log.Println(p.c(err))
+        log.Println(err)
         return
     }
 
@@ -242,16 +238,16 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
     if *status == minipool.STAKING {
 
         // Log
-        log.Println(p.c(fmt.Sprintf("Minipool %s is ready for logout...", minipoolAddress.Hex())))
+        log.Println(fmt.Sprintf("Minipool %s is ready for logout...", minipoolAddress.Hex()))
 
         // Log out
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
-            log.Println(p.c(err))
+            log.Println(err)
         } else {
             if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.CM.Addresses["rocketNodeWatchtower"], p.p.CM.Abis["rocketNodeWatchtower"], "logoutMinipool", minipoolAddress); err != nil {
-                log.Println(p.c(errors.New("Error logging out minipool: " + err.Error())))
+                log.Println(errors.New("Error logging out minipool: " + err.Error()))
             } else {
-                log.Println(p.c(fmt.Sprintf("Minipool %s was successfully logged out", minipoolAddress.Hex())))
+                log.Println(fmt.Sprintf("Minipool %s was successfully logged out", minipoolAddress.Hex()))
             }
         }
 
@@ -262,19 +258,19 @@ func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
     if *status == minipool.LOGGED_OUT && message.Status.Code == "withdrawable" {
 
         // Log
-        log.Println(p.c(fmt.Sprintf("Minipool %s is ready for withdrawal...", minipoolAddress.Hex())))
+        log.Println(fmt.Sprintf("Minipool %s is ready for withdrawal...", minipoolAddress.Hex()))
 
         // Get balance to withdraw
         balanceWei := eth.GweiToWei(float64(message.Balance))
 
         // Withdraw
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
-            log.Println(p.c(err))
+            log.Println(err)
         } else {
             if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.CM.Addresses["rocketNodeWatchtower"], p.p.CM.Abis["rocketNodeWatchtower"], "withdrawMinipool", minipoolAddress, balanceWei); err != nil {
-                log.Println(p.c(errors.New("Error withdrawing minipool: " + err.Error())))
+                log.Println(errors.New("Error withdrawing minipool: " + err.Error()))
             } else {
-                log.Println(p.c(fmt.Sprintf("Minipool %s was successfully withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), eth.WeiToEth(balanceWei))))
+                log.Println(fmt.Sprintf("Minipool %s was successfully withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), eth.WeiToEth(balanceWei)))
             }
         }
 

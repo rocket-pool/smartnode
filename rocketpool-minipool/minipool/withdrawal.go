@@ -10,8 +10,6 @@ import (
     "math/big"
     "time"
 
-    "github.com/fatih/color"
-
     "github.com/rocket-pool/smartnode/shared/services"
     beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
@@ -20,14 +18,12 @@ import (
 
 
 // Config
-const WITHDRAWAL_LOG_COLOR = color.FgYellow
 const CHECK_MINIPOOLS_INTERVAL string = "15s"
 var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 
 
 // Withdrawal process
 type WithdrawalProcess struct {
-    c func(a ...interface{}) string
     p *services.Provider
     minipool *Minipool
     minipoolExiting bool
@@ -43,7 +39,6 @@ func StartWithdrawalProcess(p *services.Provider, minipool *Minipool, done chan 
 
     // Initialise process
     process := &WithdrawalProcess{
-        c: color.New(WITHDRAWAL_LOG_COLOR).SprintFunc(),
         p: p,
         minipool: minipool,
         minipoolExiting: false,
@@ -99,7 +94,7 @@ func (p *WithdrawalProcess) start() {
     // Block thread until done
     select {
         case <-p.stop:
-            log.Println(p.c(fmt.Sprintf("Ending minipool %s withdrawal process...", p.minipool.Address.Hex())))
+            log.Println(fmt.Sprintf("Ending minipool %s withdrawal process...", p.minipool.Address.Hex()))
             p.done <- struct{}{}
     }
 
@@ -117,27 +112,27 @@ func (p *WithdrawalProcess) checkWithdrawal() {
     // Get latest block header
     header, err := p.p.Client.HeaderByNumber(context.Background(), nil)
     if err != nil {
-        log.Println(p.c(errors.New("Error retrieving latest block header: " + err.Error())))
+        log.Println(errors.New("Error retrieving latest block header: " + err.Error()))
         return
     }
 
     // Get minipool status
     status, err := minipool.GetStatus(p.p.CM, p.minipool.Address)
     if err != nil {
-        log.Println(p.c(errors.New("Error retrieving minipool status: " + err.Error())))
+        log.Println(errors.New("Error retrieving minipool status: " + err.Error()))
         return
     }
 
     // Log
-    log.Println(p.c(fmt.Sprintf("Checking minipool %s for withdrawal at block %s...", p.minipool.Address.Hex(), header.Number.String())))
+    log.Println(fmt.Sprintf("Checking minipool %s for withdrawal at block %s...", p.minipool.Address.Hex(), header.Number.String()))
 
     // Check minipool status
     if status.Status > minipool.STAKING {
-        log.Println(p.c(fmt.Sprintf("Minipool %s has already progressed beyond staking...", p.minipool.Address.Hex())))
+        log.Println(fmt.Sprintf("Minipool %s has already progressed beyond staking...", p.minipool.Address.Hex()))
         close(p.stop)
         return
     } else if status.Status < minipool.STAKING {
-        log.Println(p.c(fmt.Sprintf("Minipool %s is not staking yet...", p.minipool.Address.Hex())))
+        log.Println(fmt.Sprintf("Minipool %s is not staking yet...", p.minipool.Address.Hex()))
         return
     }
 
@@ -147,7 +142,7 @@ func (p *WithdrawalProcess) checkWithdrawal() {
 
     // Check exit block
     if header.Number.Cmp(&exitBlock) == -1 {
-        log.Println(p.c(fmt.Sprintf("Minipool %s is not ready to withdraw until block %s...", p.minipool.Address.Hex(), exitBlock.String())))
+        log.Println(fmt.Sprintf("Minipool %s is not ready to withdraw until block %s...", p.minipool.Address.Hex(), exitBlock.String()))
         return
     }
 
@@ -156,16 +151,16 @@ func (p *WithdrawalProcess) checkWithdrawal() {
 
     // Mark minipool for exit and log
     p.minipoolExiting = true
-    log.Println(p.c(fmt.Sprintf("Minipool %s is ready to withdraw, since block %s...", p.minipool.Address.Hex(), exitBlock.String())))
+    log.Println(fmt.Sprintf("Minipool %s is ready to withdraw, since block %s...", p.minipool.Address.Hex(), exitBlock.String()))
 
     // Request validator status
     if payload, err := json.Marshal(beaconchain.ClientMessage{
         Message: "get_validator_status",
         Pubkey: hex.EncodeToString(status.ValidatorPubkey),
     }); err != nil {
-        log.Println(p.c(errors.New("Error encoding get validator status payload: " + err.Error())))
+        log.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
     } else if err := p.p.Beacon.Send(payload); err != nil {
-        log.Println(p.c(errors.New("Error sending get validator status message: " + err.Error())))
+        log.Println(errors.New("Error sending get validator status message: " + err.Error()))
     }
 
 }
@@ -179,7 +174,7 @@ func (p *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
     // Parse message
     message := new(beaconchain.ServerMessage)
     if err := json.Unmarshal(messageData, message); err != nil {
-        log.Println(p.c(errors.New("Error decoding beacon message: " + err.Error())))
+        log.Println(errors.New("Error decoding beacon message: " + err.Error()))
         return
     }
 
@@ -202,27 +197,27 @@ func (p *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
                     if message.Status.Initiated.Exit == 0 {
 
                         // Log status
-                        log.Println(p.c(fmt.Sprintf("Minipool %s has not exited yet, exiting...", p.minipool.Address.Hex())))
+                        log.Println(fmt.Sprintf("Minipool %s has not exited yet, exiting...", p.minipool.Address.Hex()))
 
                         // Send exit message
                         if payload, err := json.Marshal(beaconchain.ClientMessage{
                             Message: "exit",
                             Pubkey: message.Pubkey,
                         }); err != nil {
-                            log.Println(p.c(errors.New("Error encoding exit payload: " + err.Error())))
+                            log.Println(errors.New("Error encoding exit payload: " + err.Error()))
                         } else if err := p.p.Beacon.Send(payload); err != nil {
-                            log.Println(p.c(errors.New("Error sending exit message: " + err.Error())))
+                            log.Println(errors.New("Error sending exit message: " + err.Error()))
                         }
 
                     } else {
-                        log.Println(p.c(fmt.Sprintf("Minipool %s is already exiting...", p.minipool.Address.Hex())))
+                        log.Println(fmt.Sprintf("Minipool %s is already exiting...", p.minipool.Address.Hex()))
                     }
 
                 // Exited
                 case "exited": fallthrough
                 case "withdrawable": fallthrough
                 case "withdrawn":
-                    log.Println(p.c(fmt.Sprintf("Minipool %s has exited successfully...", p.minipool.Address.Hex())))
+                    log.Println(fmt.Sprintf("Minipool %s has exited successfully...", p.minipool.Address.Hex()))
                     close(p.stop)
 
             }
@@ -230,12 +225,12 @@ func (p *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
         // Success response
         case "success":
             if message.Action == "initiate_exit" {
-                log.Println(p.c(fmt.Sprintf("Minipool %s initiated exit successfully...", p.minipool.Address.Hex())))
+                log.Println(fmt.Sprintf("Minipool %s initiated exit successfully...", p.minipool.Address.Hex()))
             }
 
         // Error
         case "error":
-            log.Println(p.c("A beacon server error occurred: ", message.Error))
+            log.Println("A beacon server error occurred: ", message.Error)
 
     }
 
