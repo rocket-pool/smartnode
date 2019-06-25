@@ -39,12 +39,12 @@ func Configure(app *cli.App) {
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "providerPow",
             Usage: "PoW chain provider `url`",
-            Value: "http://localhost:8545",
+            Value: "http://pow:8545",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "providerBeacon",
             Usage: "Beacon chain provider `url`",
-            Value: "ws://localhost:9545", // Local simulator
+            Value: "ws://beacon:9545", // Local simulator
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "storageAddress",
