@@ -61,34 +61,58 @@ func (p *ManagementProcess) start() {
  */
 func (p *ManagementProcess) checkMinipools() {
 
-    // Get minipool addresses
-    minipoolAddresses, err := node.GetMinipoolAddresses(p.p.AM.GetNodeAccount().Address, p.p.CM)
-    if err != nil {
-        log.Println(err)
-        return
-    }
-    minipoolCount := len(minipoolAddresses)
-
-    // Get minipool statuses
-    statusChannels := make([]chan uint8, minipoolCount)
+    // Data channels
+    stakingMinipoolAddressesChannel := make(chan []*common.Address)
     errorChannel := make(chan error)
-    for mi := 0; mi < minipoolCount; mi++ {
-        statusChannels[mi] = make(chan uint8)
-        go (func(mi int) {
-            if status, err := minipool.GetStatusCode(p.p.CM, minipoolAddresses[mi]); err != nil {
-                errorChannel <- err
-            } else {
-                statusChannels[mi] <- status
-            }
-        })(mi)
-    }
 
-    // Receive minipool statuses & filter staking minipools
-    activeMinipoolAddresses := []*common.Address{}
-    for mi := 0; mi < minipoolCount; mi++ {
+    // Get staking minipool addresses
+    go (func() {
+
+        // Get minipool addresses
+        minipoolAddresses, err := node.GetMinipoolAddresses(p.p.AM.GetNodeAccount().Address, p.p.CM)
+        if err != nil {
+            errorChannel <- err
+            return
+        }
+        minipoolCount := len(minipoolAddresses)
+
+        // Get minipool statuses
+        statusChannels := make([]chan uint8, minipoolCount)
+        statusErrorChannel := make(chan error)
+        for mi := 0; mi < minipoolCount; mi++ {
+            statusChannels[mi] = make(chan uint8)
+            go (func(mi int) {
+                if status, err := minipool.GetStatusCode(p.p.CM, minipoolAddresses[mi]); err != nil {
+                    statusErrorChannel <- err
+                } else {
+                    statusChannels[mi] <- status
+                }
+            })(mi)
+        }
+
+        // Receive minipool statuses & filter staking minipools
+        stakingMinipoolAddresses := []*common.Address{}
+        for mi := 0; mi < minipoolCount; mi++ {
+            select {
+                case status := <-statusChannels[mi]:
+                    if status == minipool.STAKING { stakingMinipoolAddresses = append(stakingMinipoolAddresses, minipoolAddresses[mi]) }
+                case err := <-statusErrorChannel:
+                    errorChannel <- err
+                    return
+            }
+        }
+
+        // Send staking minipool addresses
+        stakingMinipoolAddressesChannel <- stakingMinipoolAddresses
+
+    })()
+
+    // Receive minipool data
+    var stakingMinipoolAddresses []*common.Address
+    for received := 0; received < 1; {
         select {
-            case status := <-statusChannels[mi]:
-                if status == minipool.STAKING { activeMinipoolAddresses = append(activeMinipoolAddresses, minipoolAddresses[mi]) }
+            case stakingMinipoolAddresses = <-stakingMinipoolAddressesChannel:
+                received++
             case err := <-errorChannel:
                 log.Println(err)
                 return
