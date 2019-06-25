@@ -1,6 +1,6 @@
 version: "3.7"
 services:
-  geth:
+  pow:
     image: ethereum/client-go
     volumes:
       - /Users/moles/.rocketpool:/root
@@ -32,16 +32,25 @@ services:
     networks:
       - net
     links:
-      - geth
+      - pow
     ports:
       - "9545:9545"
     command: [
-      "--powHost", "http://geth:8545",
+      "--powHost", "http://pow:8545",
       "--depositContract", "0xb8c763648c1f251006dd275662f6e7c8e2eb135a",
       "--withdrawalContract", "0x23104b8a290316a1708dde6dda1803d30b9cb833",
       "--from", "0x2f6812e7005c61835b12544eeb45958099ef45f4",
       "--database", "/.rocketpool/beacon.json"
     ]
+  minipools:
+    image: rocketpool-minipools
+    volumes:
+      - /Users/moles/.rocketpool:/.rocketpool
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - net
+    links:
+      - pow
   node:
     image: rocketpool-node
     volumes:
@@ -49,7 +58,7 @@ services:
     networks:
       - net
     links:
-      - geth
+      - pow
   watchtower:
     image: rocketpool-watchtower
     volumes:
@@ -58,6 +67,6 @@ services:
       - net
     links:
       - beacon
-      - geth
+      - pow
 networks:
   net:
