@@ -196,6 +196,7 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
         // Create container
         if response, err := p.p.Docker.ContainerCreate(context.Background(), &container.Config{
             Image: CONTAINER_IMAGE_NAME,
+            Cmd: []string{minipoolAddress.Hex()},
         }, &container.HostConfig{
             Binds: []string{p.rpPath + ":" + CONTAINER_BASE_PATH},
             Links: []string{p.powContainer + ":" + CONTAINER_POW_LINK_NAME, p.beaconContainer + ":" + CONTAINER_BEACON_LINK_NAME},
