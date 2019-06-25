@@ -3,7 +3,7 @@ services:
   pow:
     image: ethereum/client-go
     volumes:
-      - /Users/moles/.rocketpool:/root
+      - ${RP_PATH}:/root
     networks:
       - net
     ports:
@@ -28,7 +28,7 @@ services:
   beacon:
     image: beacon-chain-simulator
     volumes:
-      - /Users/moles/.rocketpool:/.rocketpool
+      - ${RP_PATH}:/.rocketpool
     networks:
       - net
     links:
@@ -45,14 +45,14 @@ services:
   minipools:
     image: rocketpool-minipools
     volumes:
-      - /Users/moles/.rocketpool:/.rocketpool
+      - ${RP_PATH}:/.rocketpool
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - net
     links:
       - pow
     command: [
-      "/Users/moles/.rocketpool",
+      "${RP_PATH}",
       "rocketpool_net",
       "rocketpool_pow_1",
       "rocketpool_beacon_1",
@@ -60,7 +60,7 @@ services:
   node:
     image: rocketpool-node
     volumes:
-      - /Users/moles/.rocketpool:/.rocketpool
+      - ${RP_PATH}:/.rocketpool
     networks:
       - net
     links:
@@ -68,7 +68,7 @@ services:
   watchtower:
     image: rocketpool-watchtower
     volumes:
-      - /Users/moles/.rocketpool:/.rocketpool
+      - ${RP_PATH}:/.rocketpool
     networks:
       - net
     links:
