@@ -58,3 +58,7 @@ ignored = ["github.com/ethereum/go-ethereum*"]
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/docker/docker"
+  version = "1.13.1"
