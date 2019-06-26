@@ -4,6 +4,7 @@ services:
     image: ethereum/client-go
     volumes:
       - ${RP_PATH}:/root
+      - ./pow:/pow:ro
     networks:
       - net
     ports:
@@ -12,7 +13,7 @@ services:
       - "30303:30303"
       - "30305:30305"
     entrypoint: [sh, -c, "\
-      /usr/local/bin/geth init /root/genesis77.json && \
+      /usr/local/bin/geth init /pow/genesis77.json && \
       /usr/local/bin/geth \
         --networkid 77 \
         --syncmode full \
