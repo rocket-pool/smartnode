@@ -2,6 +2,7 @@ version: "3.7"
 services:
   pow:
     image: ethereum/client-go
+    restart: on-failure
     volumes:
       - ${RP_PATH}:/root
       - ./pow:/pow:ro
@@ -25,6 +26,7 @@ services:
     "]
   beacon:
     image: beacon-chain-simulator
+    restart: on-failure
     volumes:
       - ${RP_PATH}:/.rocketpool
     networks:
@@ -42,6 +44,7 @@ services:
     ]
   minipools:
     image: rocketpool-minipools
+    restart: on-failure
     volumes:
       - ${RP_PATH}:/.rocketpool
       - /var/run/docker.sock:/var/run/docker.sock
@@ -57,6 +60,7 @@ services:
     ]
   node:
     image: rocketpool-node
+    restart: on-failure
     volumes:
       - ${RP_PATH}:/.rocketpool
     networks:
@@ -65,6 +69,7 @@ services:
       - pow
   watchtower:
     image: rocketpool-watchtower
+    restart: on-failure
     volumes:
       - ${RP_PATH}:/.rocketpool
     networks:
