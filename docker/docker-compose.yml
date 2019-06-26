@@ -54,9 +54,9 @@ services:
       - pow
     command: [
       "${RP_PATH}",
-      "rocketpool_net",
-      "rocketpool_pow_1",
-      "rocketpool_beacon_1",
+      "${RP_PROJECT_NAME}_net",
+      "${RP_PROJECT_NAME}_pow_1",
+      "${RP_PROJECT_NAME}_beacon_1",
     ]
   node:
     image: rocketpool-node
