@@ -22,9 +22,6 @@ services:
         --rpc \
         --rpcaddr 0.0.0.0 \
         --rpcvhosts '*' \
-        --allow-insecure-unlock \
-        --unlock 0x2f6812e7005c61835b12544eeb45958099ef45f4 \
-        --password /root/.ethereum/password \
     "]
   beacon:
     image: beacon-chain-simulator
