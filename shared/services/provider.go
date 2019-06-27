@@ -154,7 +154,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     }
 
     // Load contracts & ABIs
-    if len(opts.LoadContracts)+len(opts.LoadAbis) > 0 {
+    if len(opts.LoadContracts) + len(opts.LoadAbis) > 0 {
 
         // Loading channels
         successChannel := make(chan bool)
