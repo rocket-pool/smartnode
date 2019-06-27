@@ -22,7 +22,7 @@ if [ $CLIENT == "geth" ]; then
     CMD="/usr/local/bin/geth --datadir $DATADIR init /pow/genesis77.json"
 
     # Run
-    CMD="$CMD && /usr/local/bin/geth --datadir $DATADIR --networkid $NETWORKID --syncmode full --rpc --rpcport 8545 --rpcaddr 0.0.0.0 --rpcvhosts '*' --rpcapi db,eth,net,web3,personal --bootnodes $BOOTNODE"
+    CMD="$CMD && /usr/local/bin/geth --datadir $DATADIR --networkid $NETWORKID --syncmode full --rpc --rpcaddr 0.0.0.0 --rpcport 8545 --rpcapi db,eth,net,web3,personal --rpcvhosts '*' --ws --wsaddr 0.0.0.0 --wsport 8546 --wsapi db,eth,net,web3,personal --wsorigins '*' --bootnodes $BOOTNODE"
 
     # Add Ethstats to run
     if [ ! -z "$ETHSTATSLABEL" ] && [ ! -z "$ETHSTATSLOGIN" ]; then
