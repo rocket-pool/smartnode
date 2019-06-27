@@ -74,6 +74,7 @@ func run(c *cli.Context, rpPath string, rpNetwork string, powContainer string, b
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
+        ClientConnection: true,
         ClientSync: true,
         CM: true,
         Docker: true,

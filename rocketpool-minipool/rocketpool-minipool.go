@@ -77,6 +77,7 @@ func run(c *cli.Context, address string) error {
         AM: true,
         KM: true,
         Client: true,
+        ClientConnection: true,
         ClientSync: true,
         CM: true,
         Publisher: true,
