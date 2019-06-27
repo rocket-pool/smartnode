@@ -32,6 +32,7 @@ type ProviderOpts struct {
     AM                  bool
     KM                  bool
     Client              bool
+    ClientConnection    bool
     ClientSync          bool
     CM                  bool
     NodeContractAddress bool
@@ -135,6 +136,11 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         } else {
             p.Client = client
         }
+    }
+
+    // Wait for ethereum client connection
+    if opts.ClientConnection {
+        eth.WaitConnection(p.Client)
     }
 
     // Sync ethereum client

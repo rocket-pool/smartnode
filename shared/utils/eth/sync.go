@@ -4,9 +4,35 @@ import (
     "context"
     "errors"
     "fmt"
+    "time"
 
     "github.com/ethereum/go-ethereum/ethclient"
 )
+
+
+// Config
+const RECONNECT_INTERVAL string = "10s"
+var reconnectInterval, _ = time.ParseDuration(RECONNECT_INTERVAL)
+
+
+// Wait for node connection
+func WaitConnection(client *ethclient.Client) {
+
+    // Attempt until connected
+    var connected bool = false
+    for !connected {
+
+        // Get network ID
+        if _, err := client.NetworkID(context.Background()); err != nil {
+            fmt.Println(fmt.Sprintf("Not connected to ethereum client, retrying in %s...", reconnectInterval.String()))
+            time.Sleep(reconnectInterval)
+        } else {
+            connected = true
+        }
+
+    }
+
+}
 
 
 // Wait for node to sync
