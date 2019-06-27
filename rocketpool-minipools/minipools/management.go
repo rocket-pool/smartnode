@@ -14,6 +14,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
 
@@ -83,6 +84,9 @@ func (p *ManagementProcess) checkMinipools() {
     stakingMinipoolAddressesChannel := make(chan []*common.Address)
     minipoolContainersChannel := make(chan []types.Container)
     errorChannel := make(chan error)
+
+    // Wait for node to sync
+    eth.WaitSync(p.p.Client, true, false)
 
     // Get staking minipool addresses
     go (func() {
