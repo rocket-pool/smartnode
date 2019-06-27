@@ -35,6 +35,7 @@ type ProviderOpts struct {
     ClientConnection    bool
     ClientSync          bool
     CM                  bool
+    RocketStorage       bool
     NodeContractAddress bool
     NodeContract        bool
     Publisher           bool
@@ -157,6 +158,11 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         } else {
             p.CM = cm
         }
+    }
+
+    // Wait until RocketStorage contract is available
+    if opts.RocketStorage {
+        eth.WaitContract(p.Client, "RocketStorage", common.HexToAddress(c.GlobalString("storageAddress")))
     }
 
     // Load contracts & ABIs

@@ -80,6 +80,7 @@ func run(c *cli.Context, address string) error {
         ClientConnection: true,
         ClientSync: true,
         CM: true,
+        RocketStorage: true,
         Publisher: true,
         Beacon: true,
         LoadAbis: []string{"rocketMinipool"},

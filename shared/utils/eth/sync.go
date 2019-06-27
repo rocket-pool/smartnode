@@ -6,6 +6,7 @@ import (
     "fmt"
     "time"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -74,6 +75,26 @@ func WaitSync(client *ethclient.Client, forceSynced bool, renderStatus bool) err
             return nil
         case err := <-errorChannel:
             return err
+    }
+
+}
+
+
+// Wait for contract to become available on node
+func WaitContract(client *ethclient.Client, contractName string, contractAddress common.Address) {
+
+    // Attempt until contract exists
+    var exists bool = false
+    for !exists {
+
+        // Get contract code
+        if code, err := client.CodeAt(context.Background(), contractAddress, nil); err != nil || len(code) == 0 {
+            fmt.Println(fmt.Sprintf("%s contract not loaded, retrying in %s...", contractName, reconnectInterval.String()))
+            time.Sleep(reconnectInterval)
+        } else {
+            exists = true
+        }
+
     }
 
 }

@@ -77,6 +77,7 @@ func run(c *cli.Context, rpPath string, rpNetwork string, powContainer string, b
         ClientConnection: true,
         ClientSync: true,
         CM: true,
+        RocketStorage: true,
         Docker: true,
         LoadContracts: []string{"utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},

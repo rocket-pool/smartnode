@@ -64,6 +64,7 @@ func run(c *cli.Context) error {
         ClientConnection: true,
         ClientSync: true,
         CM: true,
+        RocketStorage: true,
         NodeContract: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
         LoadAbis: []string{"rocketNodeContract"},
