@@ -19,8 +19,6 @@ import (
 
 
 // Config
-const CONTAINER_IMAGE_NAME string = "rocketpool-minipool"
-const CONTAINER_NAME_PREFIX string = "rocketpool_minipool_"
 const CONTAINER_BASE_PATH string = "/.rocketpool"
 const CONTAINER_POW_LINK_NAME string = "pow"
 const CONTAINER_BEACON_LINK_NAME string = "beacon"
@@ -32,6 +30,8 @@ var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 type ManagementProcess struct {
     p *services.Provider
     rpPath string
+    imageName string
+    containerPrefix string
     rpNetwork string
     powContainer string
     beaconContainer string
@@ -41,12 +41,14 @@ type ManagementProcess struct {
 /**
  * Start minipools management process
  */
-func StartManagementProcess(p *services.Provider, rpPath string, rpNetwork string, powContainer string, beaconContainer string) {
+func StartManagementProcess(p *services.Provider, rpPath string, imageName string, containerPrefix string, rpNetwork string, powContainer string, beaconContainer string) {
 
     // Initialise process
     process := &ManagementProcess{
         p: p,
         rpPath: rpPath,
+        imageName: imageName,
+        containerPrefix: containerPrefix,
         rpNetwork: rpNetwork,
         powContainer: powContainer,
         beaconContainer: beaconContainer,
@@ -143,7 +145,7 @@ func (p *ManagementProcess) checkMinipools() {
         // Filter by minipool container image name
         minipoolContainers := []types.Container{}
         for _, container := range containers {
-            if container.Image == CONTAINER_IMAGE_NAME { minipoolContainers = append(minipoolContainers, container) }
+            if container.Image == p.imageName { minipoolContainers = append(minipoolContainers, container) }
         }
 
         // Send minipool containers
@@ -180,7 +182,7 @@ func (p *ManagementProcess) checkMinipools() {
 func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address, minipoolContainers []types.Container) {
 
     // Get name for minipool container
-    containerName := CONTAINER_NAME_PREFIX + minipoolAddress.Hex()
+    containerName := p.containerPrefix + minipoolAddress.Hex()
 
     // Get existing minipool container ID
     var containerId string
@@ -199,7 +201,7 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
 
         // Create container
         if response, err := p.p.Docker.ContainerCreate(context.Background(), &container.Config{
-            Image: CONTAINER_IMAGE_NAME,
+            Image: p.imageName,
             Cmd: []string{minipoolAddress.Hex()},
         }, &container.HostConfig{
             Binds: []string{p.rpPath + ":" + CONTAINER_BASE_PATH},

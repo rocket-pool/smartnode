@@ -45,18 +45,20 @@ func main() {
     app.Action = func(c *cli.Context) error {
 
         // Check argument count
-        if len(c.Args()) != 4 {
-            return cli.NewExitError("USAGE:" + "\n   " + "rocketpool-minipools rpPath rpNetwork powContainer beaconContainer", 1)
+        if len(c.Args()) != 6 {
+            return cli.NewExitError("USAGE:" + "\n   " + "rocketpool-minipools rpPath imageName containerPrefix rpNetwork powContainer beaconContainer", 1)
         }
 
         // Get arguments
         rpPath := c.Args().Get(0)
-        rpNetwork := c.Args().Get(1)
-        powContainer := c.Args().Get(2)
-        beaconContainer := c.Args().Get(3)
+        imageName := c.Args().Get(1)
+        containerPrefix := c.Args().Get(2)
+        rpNetwork := c.Args().Get(3)
+        powContainer := c.Args().Get(4)
+        beaconContainer := c.Args().Get(5)
 
         // Run process
-        return run(c, rpPath, rpNetwork, powContainer, beaconContainer)
+        return run(c, rpPath, imageName, containerPrefix, rpNetwork, powContainer, beaconContainer)
 
     }
 
@@ -69,7 +71,7 @@ func main() {
 
 
 // Run process
-func run(c *cli.Context, rpPath string, rpNetwork string, powContainer string, beaconContainer string) error {
+func run(c *cli.Context, rpPath string, imageName string, containerPrefix string, rpNetwork string, powContainer string, beaconContainer string) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
@@ -87,7 +89,7 @@ func run(c *cli.Context, rpPath string, rpNetwork string, powContainer string, b
     }
 
     // Start minipools management process
-    go minipools.StartManagementProcess(p, rpPath, rpNetwork, powContainer, beaconContainer)
+    go minipools.StartManagementProcess(p, rpPath, imageName, containerPrefix, rpNetwork, powContainer, beaconContainer)
 
     // Block thread
     select {}
