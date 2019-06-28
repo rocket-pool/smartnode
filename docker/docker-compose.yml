@@ -8,11 +8,6 @@ services:
       - ./pow:/pow:ro
     networks:
       - net
-    ports:
-      - "8545:8545"
-      - "8546:8546"
-      - "30303:30303"
-      - "30305:30305"
     entrypoint: [sh, -c, "\
       /pow/setup.sh geth 77 \
       enode://6114b79e7928bfb19ff8600bad6e09a49cfc53f7d9513bb0e854566102ee04bac8f494472bcc812211c2cc50684f8a04320d23c17410b52c6175e8246b5a3307@3.216.221.20:30305 \
@@ -20,16 +15,12 @@ services:
       rp2testbeta@3.216.221.20 \
     "]
   beacon:
-    image: beacon-chain-simulator
+    image: rocketpool/beacon-chain-simulator:v0.0.1
     restart: on-failure
     volumes:
       - eth2clientdata:/ethclient
     networks:
       - net
-    links:
-      - pow
-    ports:
-      - "9545:9545"
     command: [
       "--powHost", "ws://pow:8546",
       "--depositContract", "0xb8c763648c1f251006dd275662f6e7c8e2eb135a",
@@ -38,40 +29,33 @@ services:
       "--database", "/ethclient/beacon.json"
     ]
   minipools:
-    image: rocketpool-minipools
+    image: rocketpool/smartnode-minipools:v0.0.1
     restart: on-failure
     volumes:
       - ${RP_PATH}:/.rocketpool
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - net
-    links:
-      - pow
     command: [
       "${RP_PATH}",
-      "${RP_PROJECT_NAME}_net",
-      "${RP_PROJECT_NAME}_pow_1",
-      "${RP_PROJECT_NAME}_beacon_1",
+      "${COMPOSE_PROJECT_NAME}_net",
+      "${COMPOSE_PROJECT_NAME}_pow_1",
+      "${COMPOSE_PROJECT_NAME}_beacon_1",
     ]
   node:
-    image: rocketpool-node
+    image: rocketpool/smartnode-node:v0.0.1
     restart: on-failure
     volumes:
       - ${RP_PATH}:/.rocketpool
     networks:
       - net
-    links:
-      - pow
   watchtower:
-    image: rocketpool-watchtower
+    image: rocketpool/smartnode-watchtower:v0.0.1
     restart: on-failure
     volumes:
       - ${RP_PATH}:/.rocketpool
     networks:
       - net
-    links:
-      - beacon
-      - pow
 networks:
   net:
 volumes:
