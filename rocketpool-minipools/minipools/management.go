@@ -20,8 +20,6 @@ import (
 
 // Config
 const CONTAINER_BASE_PATH string = "/.rocketpool"
-const CONTAINER_POW_LINK_NAME string = "pow"
-const CONTAINER_BEACON_LINK_NAME string = "beacon"
 const CHECK_MINIPOOLS_INTERVAL string = "15s"
 var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 
@@ -33,15 +31,13 @@ type ManagementProcess struct {
     imageName string
     containerPrefix string
     rpNetwork string
-    powContainer string
-    beaconContainer string
 }
 
 
 /**
  * Start minipools management process
  */
-func StartManagementProcess(p *services.Provider, rpPath string, imageName string, containerPrefix string, rpNetwork string, powContainer string, beaconContainer string) {
+func StartManagementProcess(p *services.Provider, rpPath string, imageName string, containerPrefix string, rpNetwork string) {
 
     // Initialise process
     process := &ManagementProcess{
@@ -50,8 +46,6 @@ func StartManagementProcess(p *services.Provider, rpPath string, imageName strin
         imageName: imageName,
         containerPrefix: containerPrefix,
         rpNetwork: rpNetwork,
-        powContainer: powContainer,
-        beaconContainer: beaconContainer,
     }
 
     // Start
@@ -205,7 +199,6 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
             Cmd: []string{minipoolAddress.Hex()},
         }, &container.HostConfig{
             Binds: []string{p.rpPath + ":" + CONTAINER_BASE_PATH},
-            Links: []string{p.powContainer + ":" + CONTAINER_POW_LINK_NAME, p.beaconContainer + ":" + CONTAINER_BEACON_LINK_NAME},
             NetworkMode: container.NetworkMode(p.rpNetwork),
             RestartPolicy: container.RestartPolicy{Name: "on-failure"},
         }, nil, containerName); err != nil {

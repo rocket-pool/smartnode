@@ -79,8 +79,6 @@ services:
       "rocketpool/smartnode-minipool:v0.0.1",
       "${COMPOSE_PROJECT_NAME}_minipool_",
       "${COMPOSE_PROJECT_NAME}_net",
-      "${COMPOSE_PROJECT_NAME}_pow_1",
-      "${COMPOSE_PROJECT_NAME}_beacon_1",
     ]
   node:
     image: rocketpool/smartnode-node:v0.0.1
