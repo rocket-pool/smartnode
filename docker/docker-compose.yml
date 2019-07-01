@@ -23,15 +23,16 @@ services:
     restart: on-failure
     volumes:
       - eth1clientdata:/ethclient
-      - ./setup/pow:/setup/pow:ro
+      - ./setup/pow:/setup:ro
     networks:
       - net
-    entrypoint: [sh, -c, "\
-      /setup/pow/start.sh geth 77 \
-      enode://6114b79e7928bfb19ff8600bad6e09a49cfc53f7d9513bb0e854566102ee04bac8f494472bcc812211c2cc50684f8a04320d23c17410b52c6175e8246b5a3307@3.216.221.20:30305 \
-      RP2Beta-Node \
-      rp2testbeta@3.216.221.20 \
-    "]
+    environment:
+      - CLIENT=${POW_CLIENT}
+      - NETWORKID=${POW_NETWORK_ID}
+      - BOOTNODE=${POW_BOOTNODE}
+      - ETHSTATSLABEL=${POW_ETHSTATS_LABEL}
+      - ETHSTATSLOGIN=${POW_ETHSTATS_LOGIN}
+    entrypoint: [sh, -c, "/setup/start.sh"]
     labels:
       - traefik.enable=true
       - traefik.port=8545
