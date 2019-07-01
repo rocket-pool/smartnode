@@ -1,5 +1,23 @@
 version: "3.7"
 services:
+  traefik:
+    image: traefik
+    command: [
+      "--api",
+      "--docker",
+      "--docker.watch",
+      "--docker.domain=smartnode.localhost",
+    ]
+    restart: always
+    ports:
+      - "9080:8080" # Web UI (enabled by --api)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      net:
+        aliases:
+          - "eth1.rpc.smartnode.localhost"
+          - "beacon.ws.smartnode.localhost"
   pow:
     image: ethereum/client-go
     restart: on-failure
@@ -14,6 +32,16 @@ services:
       RP2Beta-Node \
       rp2testbeta@3.216.221.20 \
     "]
+    labels:
+      - traefik.enable=true
+      - traefik.port=8545
+      - traefik.docker.network=net
+      - traefik.frontend.priority=10
+      - traefik.frontend.rule=Host:eth1.rpc.smartnode.localhost
+      - traefik.backend.loadbalancer.stickiness=true
+      - traefik.backend.loadbalancer.stickiness.cookieName=smartnodeEth1
+      - traefik.backend.loadbalancer.method=drr
+      - traefik.backend=eth1.rpc.smartnode
   beacon:
     image: rocketpool/beacon-chain-simulator:v0.0.1
     restart: on-failure
@@ -22,12 +50,22 @@ services:
     networks:
       - net
     command: [
-      "--powHost", "ws://pow:8546",
+      "--powHost", "http://eth1.rpc.smartnode.localhost",
       "--depositContract", "0xb8c763648c1f251006dd275662f6e7c8e2eb135a",
       "--withdrawalContract", "0x23104b8a290316a1708dde6dda1803d30b9cb833",
       "--from", "0x2f6812e7005c61835b12544eeb45958099ef45f4",
-      "--database", "/ethclient/beacon.json"
+      "--database", "/ethclient/beacon.json",
     ]
+    labels:
+      - traefik.enable=true
+      - traefik.port=9545
+      - traefik.docker.network=net
+      - traefik.frontend.priority=10
+      - traefik.frontend.rule=Host:beacon.ws.smartnode.localhost
+      - traefik.backend.loadbalancer.stickiness=true
+      - traefik.backend.loadbalancer.stickiness.cookieName=smartnodeBeacon
+      - traefik.backend.loadbalancer.method=drr
+      - traefik.backend=beacon.ws.smartnode
   minipools:
     image: rocketpool/smartnode-minipools:v0.0.1
     restart: on-failure
