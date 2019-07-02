@@ -19,11 +19,11 @@ func registerNode(c *cli.Context) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
-        AM:            true,
-        Client:        true,
-        ClientSync:    true,
-        CM:            true,
+        AM: true,
+        Client: true,
+        CM: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+        WaitClientSync: true,
     })
     if err != nil {
         return err

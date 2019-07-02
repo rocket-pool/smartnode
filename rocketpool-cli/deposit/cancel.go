@@ -17,10 +17,10 @@ func cancelDeposit(c *cli.Context) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        ClientSync: true,
         NodeContract: true,
         LoadContracts: []string{"rocketNodeAPI"},
         LoadAbis: []string{"rocketNodeContract"},
+        WaitClientSync: true,
     })
     if err != nil {
         return err 

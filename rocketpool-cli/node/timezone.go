@@ -17,10 +17,10 @@ func setNodeTimezone(c *cli.Context) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        ClientSync: true,
         CM: true,
         NodeContractAddress: true,
         LoadContracts: []string{"rocketNodeAPI"},
+        WaitClientSync: true,
     })
     if err != nil {
         return err

@@ -18,9 +18,9 @@ func displayUserFee(c *cli.Context) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         DB: true,
-        ClientSync: true,
         CM: true,
         LoadContracts: []string{"rocketNodeSettings"},
+        WaitClientSync: true,
     })
     if err != nil {
         return err 

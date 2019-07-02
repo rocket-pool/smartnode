@@ -18,6 +18,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/validators"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
     "github.com/rocket-pool/smartnode/shared/utils/messaging"
+    "github.com/rocket-pool/smartnode/shared/utils/sync"
 )
 
 
@@ -32,10 +33,7 @@ type ProviderOpts struct {
     AM                  bool
     KM                  bool
     Client              bool
-    ClientConnection    bool
-    ClientSync          bool
     CM                  bool
-    RocketStorage       bool
     NodeContractAddress bool
     NodeContract        bool
     Publisher           bool
@@ -43,6 +41,12 @@ type ProviderOpts struct {
     Docker              bool
     LoadContracts       []string
     LoadAbis            []string
+    WaitPassword        bool
+    WaitNodeAccount     bool
+    WaitNodeRegistered  bool
+    WaitClientConn      bool
+    WaitClientSync      bool
+    WaitRocketStorage   bool
 }
 
 
@@ -68,6 +72,19 @@ type Provider struct {
 func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Process options
+    if opts.WaitPassword {
+        opts.PM = true
+    } // Password requires password manager
+    if opts.WaitNodeAccount {
+        opts.AM = true
+    } // Node account requires node account manager
+    if opts.WaitNodeRegistered {
+        opts.AM = true
+        opts.CM = true
+    } // Node registration requires node account manager & RP contract manager
+    if opts.WaitClientConn || opts.WaitClientSync || opts.WaitRocketStorage {
+        opts.Client = true
+    } // Connected client, synced client and RS contract require eth client
     if opts.Beacon {
         opts.Publisher = true
     } // Beacon chain client requires publisher
@@ -84,9 +101,6 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.CM {
         opts.Client = true
     } // RP contract manager requires eth client
-    if opts.ClientSync {
-        opts.Client = true
-    } // Synced client requires eth client
     if opts.AM || opts.KM {
         opts.PM = true
     } // Account & key managers require password manager
@@ -105,8 +119,10 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         // Initialise
         p.PM = passwords.NewPasswordManager(c.GlobalString("password"))
 
-        // Check password set
-        if !p.PM.PasswordExists() {
+        // Check or wait for password set
+        if opts.WaitPassword {
+            sync.WaitPasswordSet(p.PM)
+        } else if !p.PM.PasswordExists() {
             return nil, errors.New("Node password is not set, please initialize with `rocketpool node init`")
         }
 
@@ -118,8 +134,10 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         // Initialise
         p.AM = accounts.NewAccountManager(c.GlobalString("keychainPow"), p.PM)
 
-        // Check node account
-        if !p.AM.NodeAccountExists() {
+        // Check or wait for node account
+        if opts.WaitNodeAccount {
+            sync.WaitNodeAccountSet(p.AM)
+        } else if !p.AM.NodeAccountExists() {
             return nil, errors.New("Node account does not exist, please initialize with `rocketpool node init`")
         }
 
@@ -140,12 +158,17 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     }
 
     // Wait for ethereum client connection
-    if opts.ClientConnection {
-        eth.WaitConnection(p.Client)
+    if opts.WaitClientConn {
+        sync.WaitClientConnection(p.Client)
     }
 
-    // Sync ethereum client
-    if opts.ClientSync {
+    // Wait until RocketStorage contract is available
+    if opts.WaitRocketStorage {
+        sync.WaitContractLoaded(p.Client, "RocketStorage", common.HexToAddress(c.GlobalString("storageAddress")))
+    }
+
+    // Wait for ethereum client to sync
+    if opts.WaitClientSync {
         if err := eth.WaitSync(p.Client, false, true); err != nil {
             return nil, err
         }
@@ -158,11 +181,6 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         } else {
             p.CM = cm
         }
-    }
-
-    // Wait until RocketStorage contract is available
-    if opts.RocketStorage {
-        eth.WaitContract(p.Client, "RocketStorage", common.HexToAddress(c.GlobalString("storageAddress")))
     }
 
     // Load contracts & ABIs
@@ -198,6 +216,11 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
             }
         }
 
+    }
+
+    // Wait until node is registered
+    if opts.WaitNodeRegistered {
+        sync.WaitNodeRegistered(p.AM, p.CM)
     }
 
     // Initialise node contract address

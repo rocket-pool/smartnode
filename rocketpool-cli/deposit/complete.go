@@ -32,12 +32,12 @@ func completeDeposit(c *cli.Context) error {
         AM: true,
         KM: true,
         Client: true,
-        ClientSync: true,
         CM: true,
         NodeContractAddress: true,
         NodeContract: true,
         LoadContracts: []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"},
         LoadAbis: []string{"rocketNodeContract"},
+        WaitClientSync: true,
     })
     if err != nil {
         return err 

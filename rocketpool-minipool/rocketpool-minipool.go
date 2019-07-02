@@ -77,13 +77,15 @@ func run(c *cli.Context, address string) error {
         AM: true,
         KM: true,
         Client: true,
-        ClientConnection: true,
-        ClientSync: true,
         CM: true,
-        RocketStorage: true,
         Publisher: true,
         Beacon: true,
         LoadAbis: []string{"rocketMinipool"},
+        WaitPassword: true,
+        WaitNodeAccount: true,
+        WaitClientConn: true,
+        WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err

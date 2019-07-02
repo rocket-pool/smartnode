@@ -61,14 +61,16 @@ func run(c *cli.Context) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
         Client: true,
-        ClientConnection: true,
-        ClientSync: true,
         CM: true,
-        RocketStorage: true,
         Publisher: true,
         Beacon: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeWatchtower", "rocketPool"},
         LoadAbis: []string{"rocketMinipool"},
+        WaitPassword: true,
+        WaitNodeAccount: true,
+        WaitClientConn: true,
+        WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err

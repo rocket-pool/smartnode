@@ -35,11 +35,11 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
         KM: true,
-        ClientSync: true,
         CM: true,
         NodeContract: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
         LoadAbis: []string{"rocketNodeContract"},
+        WaitClientSync: true,
     })
     if err != nil {
         return err 

@@ -74,13 +74,15 @@ func run(c *cli.Context, rpPath string, imageName string, containerPrefix string
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        ClientConnection: true,
-        ClientSync: true,
         CM: true,
-        RocketStorage: true,
         Docker: true,
         LoadContracts: []string{"utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
+        WaitPassword: true,
+        WaitNodeAccount: true,
+        WaitClientConn: true,
+        WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err
