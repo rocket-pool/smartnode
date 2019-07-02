@@ -67,6 +67,7 @@ func run(c *cli.Context) error {
         LoadAbis: []string{"rocketNodeContract"},
         WaitPassword: true,
         WaitNodeAccount: true,
+        WaitNodeRegistered: true,
         WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
