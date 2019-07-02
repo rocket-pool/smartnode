@@ -14,7 +14,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      public_net:
       internal_net:
         aliases:
           - "eth1.rpc.smartnode.localhost"
