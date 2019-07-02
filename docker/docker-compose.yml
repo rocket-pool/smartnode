@@ -99,6 +99,7 @@ services:
     ]
     depends_on:
       - pow
+      - beacon
   node:
     image: rocketpool/smartnode-node:v0.0.1
     restart: on-failure
