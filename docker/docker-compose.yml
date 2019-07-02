@@ -36,7 +36,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.port=8545
-      - traefik.docker.network=net
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME}_net
       - traefik.frontend.priority=10
       - traefik.frontend.rule=Host:eth1.rpc.smartnode.localhost
       - traefik.backend.loadbalancer.stickiness=true
@@ -60,7 +60,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.port=9545
-      - traefik.docker.network=net
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME}_net
       - traefik.frontend.priority=10
       - traefik.frontend.rule=Host:beacon.ws.smartnode.localhost
       - traefik.backend.loadbalancer.stickiness=true
