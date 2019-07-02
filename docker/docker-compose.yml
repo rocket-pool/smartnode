@@ -81,7 +81,7 @@ services:
       - internal_net
     depends_on:
       - pow
-    entrypoint: /bin/ash
+    entrypoint: /bin/sh
     tty: true
   minipools:
     image: rocketpool/smartnode-minipools:v0.0.1
