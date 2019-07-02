@@ -33,7 +33,7 @@ services:
       - BOOTNODE=${POW_BOOTNODE}
       - ETHSTATSLABEL=${POW_ETHSTATS_LABEL}
       - ETHSTATSLOGIN=${POW_ETHSTATS_LOGIN}
-    entrypoint: [sh, -c, "/setup/start.sh"]
+    entrypoint: /setup/start.sh
     labels:
       - traefik.enable=true
       - traefik.port=8545
@@ -72,6 +72,17 @@ services:
       - traefik.backend=beacon.ws.smartnode
     depends_on:
       - traefik
+  cli:
+    image: rocketpool/smartnode-cli:v0.0.1
+    restart: on-failure
+    volumes:
+      - ${RP_PATH}:/.rocketpool
+    networks:
+      - internal_net
+    depends_on:
+      - pow
+    entrypoint: /bin/ash
+    tty: true
   minipools:
     image: rocketpool/smartnode-minipools:v0.0.1
     restart: on-failure
