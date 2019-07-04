@@ -7,7 +7,7 @@
 FROM golang:alpine AS builder
 
 # Install OS dependencies
-RUN apk update && apk add --no-cache build-base git
+RUN apk update && apk add --no-cache build-base git linux-headers
 
 # Copy source files
 ADD ./rocketpool-cli /go/src/github.com/rocket-pool/smartnode/rocketpool-cli
