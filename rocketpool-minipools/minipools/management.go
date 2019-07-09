@@ -20,7 +20,7 @@ import (
 
 // Config
 const CONTAINER_BASE_PATH string = "/.rocketpool"
-const CHECK_MINIPOOLS_INTERVAL string = "15s"
+const CHECK_MINIPOOLS_INTERVAL string = "30s"
 var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 
 
