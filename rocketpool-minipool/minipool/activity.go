@@ -59,10 +59,10 @@ func (p *ActivityProcess) start() {
         for subscribed {
             select {
                 case <-connectedChannel:
-                    p.onBeaconClientConnected()
+                    go p.onBeaconClientConnected()
                 case eventData := <-messageChannel:
                     event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-                    p.onBeaconClientMessage(event.Message)
+                    go p.onBeaconClientMessage(event.Message)
                 case <-p.stop:
                     p.p.Publisher.RemoveSubscriber("beacon.client.connected", connectedChannel)
                     p.p.Publisher.RemoveSubscriber("beacon.client.message", messageChannel)

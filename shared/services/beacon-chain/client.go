@@ -24,7 +24,8 @@ type Client struct {
     publisher *messaging.Publisher
     connection *websocket.Conn
     connectionTimer *time.Timer
-    lock sync.Mutex
+    readLock sync.Mutex
+    writeLock sync.Mutex
 }
 
 
@@ -46,6 +47,7 @@ type ServerMessage struct {
         }               `json:"initiated"`
     }               `json:"status"`
     Balance uint    `json:"balance"`
+    Number uint     `json:"number"`
     Action string   `json:"action"`
     Error string    `json:"error"`
 }
@@ -89,9 +91,9 @@ func (c *Client) Connect() {
  */
 func (c *Client) Send(payload []byte) error {
 
-    // Lock for send
-    c.lock.Lock()
-    defer c.lock.Unlock()
+    // Lock for write
+    c.writeLock.Lock()
+    defer c.writeLock.Unlock()
 
     // Check connection is open
     if c.connection == nil {
@@ -160,8 +162,8 @@ func (c *Client) connect() {
 func (c *Client) readMessage() ([]byte, error, bool) {
 
     // Lock for read
-    c.lock.Lock()
-    defer c.lock.Unlock()
+    c.readLock.Lock()
+    defer c.readLock.Unlock()
 
     // Read message
     messageType, message, err := c.connection.ReadMessage()
