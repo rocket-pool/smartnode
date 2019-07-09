@@ -83,7 +83,7 @@ func (p *WithdrawalProcess) start() {
             select {
                 case eventData := <-messageChannel:
                     event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-                    p.onBeaconClientMessage(event.Message)
+                    go p.onBeaconClientMessage(event.Message)
                 case <-p.stop:
                     p.p.Publisher.RemoveSubscriber("beacon.client.message", messageChannel)
                     subscribed = false
