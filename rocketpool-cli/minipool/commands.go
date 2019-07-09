@@ -41,7 +41,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "stop",
                 Aliases:   []string{"t"},
                 Usage:     "Stop all running minipool containers",
-                UsageText: "rocketpool run minipool stop",
+                UsageText: "rocketpool run minipool stop imageName",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments

@@ -41,7 +41,6 @@ func stopMinipoolContainers(c *cli.Context, imageName string) error {
         // Remove
         if err := p.Docker.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
             RemoveVolumes: true,
-            RemoveLinks: true,
             Force: true,
         }); err != nil {
             return errors.New(fmt.Sprintf("Error removing minipool container %s: " + err.Error(), container.Names[0]))
