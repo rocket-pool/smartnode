@@ -123,7 +123,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         if opts.WaitPassword {
             sync.WaitPasswordSet(p.PM)
         } else if !p.PM.PasswordExists() {
-            return nil, errors.New("Node password is not set, please initialize with `rocketpool node init`")
+            return nil, errors.New("Node password is not set, please initialize with `rocketpool run node init`")
         }
 
     }
@@ -138,7 +138,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         if opts.WaitNodeAccount {
             sync.WaitNodeAccountSet(p.AM)
         } else if !p.AM.NodeAccountExists() {
-            return nil, errors.New("Node account does not exist, please initialize with `rocketpool node init`")
+            return nil, errors.New("Node account does not exist, please initialize with `rocketpool run node init`")
         }
 
     }
@@ -229,7 +229,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", p.AM.GetNodeAccount().Address); err != nil {
             return nil, errors.New("Error checking node registration: " + err.Error())
         } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
-            return nil, errors.New("Node is not registered with Rocket Pool, please register with `rocketpool node register`")
+            return nil, errors.New("Node is not registered with Rocket Pool, please register with `rocketpool run node register`")
         } else {
             p.NodeContractAddress = nodeContractAddress
         }

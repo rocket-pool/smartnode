@@ -22,7 +22,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "status",
                 Aliases:   []string{"s"},
                 Usage:     "Get the node's current minipool statuses",
-                UsageText: "rocketpool minipool status",
+                UsageText: "rocketpool run minipool status",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -41,7 +41,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "withdraw",
                 Aliases:   []string{"w"},
                 Usage:     "Withdraw deposit from an initialized, withdrawn or timed out minipool",
-                UsageText: "rocketpool minipool withdraw minipoolAddress" + "\n   " +
+                UsageText: "rocketpool run minipool withdraw minipoolAddress" + "\n   " +
                            "- minipoolAddress must be a valid address",
                 Action: func(c *cli.Context) error {
 

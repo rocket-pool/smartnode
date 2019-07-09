@@ -23,7 +23,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "status",
                 Aliases:   []string{"s"},
                 Usage:     "Get the node's status",
-                UsageText: "rocketpool node status",
+                UsageText: "rocketpool run node status",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -42,7 +42,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "init",
                 Aliases:   []string{"i"},
                 Usage:     "Initialize the node with an account",
-                UsageText: "rocketpool node initialize",
+                UsageText: "rocketpool run node initialize",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -61,7 +61,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "register",
                 Aliases:   []string{"r"},
                 Usage:     "Register the node on the Rocket Pool network",
-                UsageText: "rocketpool node register",
+                UsageText: "rocketpool run node register",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -80,7 +80,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "withdraw",
                 Aliases:   []string{"w"},
                 Usage:     "Withdraw resources from the node",
-                UsageText: "rocketpool node withdraw amount unit" + "\n   " +
+                UsageText: "rocketpool run node withdraw amount unit" + "\n   " +
                            "- amount must be a positive decimal number" + "\n   " +
                            "- valid units are 'eth' and 'rpl'",
                 Action: func(c *cli.Context) error {
@@ -122,7 +122,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "timezone",
                 Aliases:   []string{"t"},
                 Usage:     "Set the node's timezone on the Rocket Pool network",
-                UsageText: "rocketpool node timezone",
+                UsageText: "rocketpool run node timezone",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
