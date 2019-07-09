@@ -41,6 +41,7 @@ Rocket Pool Smart Nodes are primarily managed by the `rocketpool` CLI applicatio
 - `rocketpool run deposit complete` - Completes the smart node's current pending deposit, sending any required ETH and RPL, and displays information about the created minipool
 
 - `rocketpool run minipool status` - Displays information about the node's current minipools
+- `rocketpool run minipool stop` - Stops all running minipool containers (for advanced use only)
 - `rocketpool run minipool withdraw` - Withdraws the node's deposit from an initialized, withdrawn or timed out minipool
 
 - `rocketpool run fee display` - Displays the current user fee charged by all node operators in the Rocket Pool network, and the target fee to vote for, if set locally
