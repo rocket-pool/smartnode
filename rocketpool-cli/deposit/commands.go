@@ -20,7 +20,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "status",
                 Aliases:   []string{"s"},
                 Usage:     "Get the node's current deposit status",
-                UsageText: "rocketpool run deposit status",
+                UsageText: "rocketpool deposit status",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -39,7 +39,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "required",
                 Aliases:   []string{"q"},
                 Usage:     "Get the current RPL requirement for a deposit",
-                UsageText: "rocketpool run deposit required durationID" + "\n   " +
+                UsageText: "rocketpool deposit required durationID" + "\n   " +
                            "- durationID must be '3m', '6m' or '12m'",
                 Action: func(c *cli.Context) error {
 
@@ -74,7 +74,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "reserve",
                 Aliases:   []string{"r"},
                 Usage:     "Reserve a deposit with a locked ETH:RPL ratio",
-                UsageText: "rocketpool run deposit reserve durationID" + "\n   " +
+                UsageText: "rocketpool deposit reserve durationID" + "\n   " +
                            "- durationID must be '3m', '6m' or '12m'",
                 Action: func(c *cli.Context) error {
 
@@ -109,7 +109,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "cancel",
                 Aliases:   []string{"a"},
                 Usage:     "Cancel a deposit reservation",
-                UsageText: "rocketpool run deposit cancel",
+                UsageText: "rocketpool deposit cancel",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -128,7 +128,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "complete",
                 Aliases:   []string{"c"},
                 Usage:     "Complete a deposit",
-                UsageText: "rocketpool run deposit complete",
+                UsageText: "rocketpool deposit complete",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments

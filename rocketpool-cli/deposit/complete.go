@@ -54,7 +54,7 @@ func completeDeposit(c *cli.Context) error {
         if err := p.NodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
         } else if !*hasReservation {
-            messageChannel <- "Node does not have a current deposit reservation, please make one with `rocketpool run deposit reserve durationID`"
+            messageChannel <- "Node does not have a current deposit reservation, please make one with `rocketpool deposit reserve durationID`"
         } else {
             successChannel <- true
         }

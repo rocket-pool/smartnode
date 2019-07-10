@@ -22,7 +22,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "display",
                 Aliases:   []string{"d"},
                 Usage:     "Display the current user fee percentage",
-                UsageText: "rocketpool run fee display",
+                UsageText: "rocketpool fee display",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -41,7 +41,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "set",
                 Aliases:   []string{"s"},
                 Usage:     "Set the target user fee percentage to vote for",
-                UsageText: "rocketpool run fee set percent" + "\n   " +
+                UsageText: "rocketpool fee set percent" + "\n   " +
                            "- percent must be a decimal number between 0 and 100",
                 Action: func(c *cli.Context) error {
 
