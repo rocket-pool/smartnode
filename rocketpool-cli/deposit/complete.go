@@ -178,7 +178,7 @@ func completeDeposit(c *cli.Context) error {
         }
 
         // Confirm transfer of remaining required ether
-        response := cliutils.Prompt(fmt.Sprintf("Node contract requires another %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingEtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        response := cliutils.Prompt(fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingEtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             fmt.Println("Deposit not completed")
             return nil
@@ -203,7 +203,7 @@ func completeDeposit(c *cli.Context) error {
         }
 
         // Confirm transfer of remaining required RPL
-        response := cliutils.Prompt(fmt.Sprintf("Node contract requires another %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingRplRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        response := cliutils.Prompt(fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingRplRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             fmt.Println("Deposit not completed")
             return nil
