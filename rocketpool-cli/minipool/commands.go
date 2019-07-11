@@ -36,28 +36,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
-            // Stop all running minipool containers
-            cli.Command{
-                Name:      "stop",
-                Aliases:   []string{"t"},
-                Usage:     "Stop all running minipool containers",
-                UsageText: "rocketpool minipool stop imageName",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    if err := cliutils.ValidateArgs(c, 1, nil); err != nil {
-                        return err
-                    }
-
-                    // Get arguments
-                    imageName := c.Args().Get(0)
-
-                    // Run command
-                    return stopMinipoolContainers(c, imageName)
-
-                },
-            },
-
             // Withdraw node deposit from a minipool
             cli.Command{
                 Name:      "withdraw",
