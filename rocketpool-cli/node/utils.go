@@ -3,7 +3,6 @@ package node
 import (
     "fmt"
     "os/exec"
-    "regexp"
     "strings"
 
     "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -17,10 +16,8 @@ func promptTimezone() string {
     var timezone string
 
     // Get system time zone
-    if timeOutput, _ := exec.Command("timedatectl").Output(); len(timeOutput) > 0 {
-        if tzMatches := regexp.MustCompile("(?i)zone:\\s*(\\w{2,}\\/\\w{2,})").FindStringSubmatch(string(timeOutput[:])); len(tzMatches) > 1 {
-            timezone = tzMatches[1]
-        }
+    if tzOutput, _ := exec.Command("cat", "/etc/timezone").Output(); len(tzOutput) > 0 {
+        timezone = strings.TrimSpace(string(tzOutput[:]))
     }
 
     // Confirm system time zone
