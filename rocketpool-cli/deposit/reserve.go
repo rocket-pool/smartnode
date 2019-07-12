@@ -21,10 +21,10 @@ const DEPOSIT_AMOUNT uint64 = 32000000000
 
 // DepositData data
 type DepositData struct {
-    pubkey [48]byte
-    withdrawalCredentials [32]byte
-    amount uint64
-    signature [96]byte
+    Pubkey [48]byte
+    WithdrawalCredentials [32]byte
+    Amount uint64
+    Signature [96]byte
 }
 
 
@@ -118,9 +118,9 @@ func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Build DepositData object
     depositData := &DepositData{}
-    copy(depositData.pubkey[:], pubkey)
-    copy(depositData.withdrawalCredentials[:], withdrawalCredentials[:])
-    depositData.amount = DEPOSIT_AMOUNT
+    copy(depositData.Pubkey[:], pubkey)
+    copy(depositData.WithdrawalCredentials[:], withdrawalCredentials[:])
+    depositData.Amount = DEPOSIT_AMOUNT
 
     // Build signature
     signingRoot, err := ssz.SigningRoot(depositData)
