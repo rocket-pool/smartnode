@@ -264,11 +264,19 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4344a6a3629c3e5661415fcb0d097b4477dfb21c018db3a47a42d4e4f5644e31"
+  digest = "1:f2b84f18546d3028f76a64cf99d7ee349b2daebbcdd203ee3eefa04b255cae21"
+  name = "github.com/prysmaticlabs/go-bitfield"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ec88cc4d1d143cad98308da54b73d0cdb04254eb"
+
+[[projects]]
+  branch = "master"
+  digest = "1:0405098c1e6f115ece7b4a7367f87363be7ee5938bf521ed1a9f4c1ebba181e8"
   name = "github.com/prysmaticlabs/go-ssz"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0fdbce2fb193117d6236c1ccf65a6683ce9d3e49"
+  revision = "08374e459d08fc6abeb43011a206ad54602e71b6"
 
 [[projects]]
   branch = "master"
@@ -375,6 +383,8 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/docker/docker/api/types",
+    "github.com/docker/docker/api/types/container",
     "github.com/docker/docker/client",
     "github.com/gorilla/websocket",
     "github.com/pborman/uuid",
