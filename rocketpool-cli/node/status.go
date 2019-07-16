@@ -120,7 +120,7 @@ func getNodeStatus(c *cli.Context) error {
         eth.WeiToEth(nodeBalances.RplWei)))
     if !nodeActive {
         fmt.Println("Node has been marked inactive after failing to check in, and will not receive user deposits!")
-        fmt.Println("Please check smart node daemon status with `rocketpool service smartnode status`; check in manually with `rocketpool service smartnode run`")
+        fmt.Println("Please check smart node daemon status with `rocketpool service stats`")
     }
     return nil
 
