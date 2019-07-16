@@ -63,6 +63,7 @@ func getNodeStatus(c *cli.Context) error {
     nodeActiveChannel := make(chan bool)
     nodeTimezoneChannel := make(chan string)
     nodeBalancesChannel := make(chan *node.Balances)
+    nodeTrustedChannel := make(chan bool)
     errorChannel := make(chan error)
 
     // Get node active status
@@ -94,17 +95,30 @@ func getNodeStatus(c *cli.Context) error {
         }
     })()
 
+    // Get node trusted status
+    go (func() {
+        trusted := new(bool)
+        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, trusted, "getTrusted", p.AM.GetNodeAccount().Address); err != nil {
+            errorChannel <- errors.New("Error retrieving node trusted status: " + err.Error())
+        } else {
+            nodeTrustedChannel <- *trusted
+        }
+    })()
+
     // Receive node details
     var nodeActive bool
     var nodeTimezone string
     var nodeBalances *node.Balances
-    for received := 0; received < 3; {
+    var nodeTrusted bool
+    for received := 0; received < 4; {
         select {
             case nodeActive = <-nodeActiveChannel:
                 received++
             case nodeTimezone = <-nodeTimezoneChannel:
                 received++
             case nodeBalances = <-nodeBalancesChannel:
+                received++
+            case nodeTrusted = <-nodeTrustedChannel:
                 received++
             case err := <-errorChannel:
                 return err
@@ -118,6 +132,9 @@ func getNodeStatus(c *cli.Context) error {
         nodeTimezone,
         eth.WeiToEth(nodeBalances.EtherWei),
         eth.WeiToEth(nodeBalances.RplWei)))
+    if nodeTrusted {
+        fmt.Println("Node is a trusted Rocket Pool node and will perform watchtower duties")
+    }
     if !nodeActive {
         fmt.Println("Node has been marked inactive after failing to check in, and will not receive user deposits!")
         fmt.Println("Please check smart node daemon status with `rocketpool service stats`")
