@@ -1,21 +1,24 @@
 package minipool
 
 import (
-    "bytes"
-    "context"
     "errors"
     "fmt"
+    "strconv"
+    "strings"
 
     "github.com/ethereum/go-ethereum/common"
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
 
 // Withdraw node deposit from a minipool
-func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
+func withdrawMinipool(c *cli.Context) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
@@ -23,7 +26,7 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
         Client: true,
         CM: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
         WaitClientSync: true,
     })
@@ -31,100 +34,109 @@ func withdrawMinipool(c *cli.Context, minipoolAddressStr string) error {
         return err
     }
 
-    // Get minipool address
-    minipoolAddress := common.HexToAddress(minipoolAddressStr)
-
-    // Check contract code at minipool address
-    if code, err := p.Client.CodeAt(context.Background(), minipoolAddress, nil); err != nil {
-        return errors.New("Error retrieving contract code at minipool address: " + err.Error())
-    } else if len(code) == 0 {
-        return errors.New("No contract code found at minipool address")
-    }
-
-    // Initialise minipool contract
-    minipoolContract, err := p.CM.NewContract(&minipoolAddress, "rocketMinipool")
-    if err != nil {
-        return errors.New("Error initialising minipool contract: " + err.Error())
-    }
-
-    // Status channels
-    successChannel := make(chan bool)
-    messageChannel := make(chan string)
-    errorChannel := make(chan error)
-
     // Check withdrawals are allowed
-    go (func() {
-        withdrawalsAllowed := new(bool)
-        if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, withdrawalsAllowed, "getWithdrawalAllowed"); err != nil {
-            errorChannel <- errors.New("Error checking node withdrawals enabled status: " + err.Error())
-        } else if !*withdrawalsAllowed {
-            messageChannel <- "Node withdrawals are currently disabled in Rocket Pool"
-        } else {
-            successChannel <- true
-        }
-    })()
+    withdrawalsAllowed := new(bool)
+    if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, withdrawalsAllowed, "getWithdrawalAllowed"); err != nil {
+        return errors.New("Error checking node withdrawals enabled status: " + err.Error())
+    } else if !*withdrawalsAllowed {
+        fmt.Println("Node withdrawals are currently disabled in Rocket Pool")
+        return nil
+    }
 
-    // Check minipool node owner
-    go (func() {
-        nodeOwner := new(common.Address)
-        if err := minipoolContract.Call(nil, nodeOwner, "getNodeOwner"); err != nil {
-            errorChannel <- errors.New("Error retrieving minipool node owner: " + err.Error())
-        } else if bytes.Equal(nodeOwner.Bytes(), p.AM.GetNodeAccount().Address.Bytes()) {
-            successChannel <- true
-        } else {
-            messageChannel <- "Minipool is not owned by this node"
-        }
-    })()
+    // Get minipool addresses
+    minipoolAddresses, err := node.GetMinipoolAddresses(p.AM.GetNodeAccount().Address, p.CM)
+    if err != nil {
+        return err
+    }
+    minipoolCount := len(minipoolAddresses)
 
-    // Check minipool status
-    go (func() {
-        status := new(uint8)
-        if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
-            errorChannel <- errors.New("Error retrieving minipool status: " + err.Error())
-        } else if *status == 0 || *status == 4 || *status == 6 {
-            successChannel <- true
-        } else {
-            messageChannel <- "Minipool is not currently allowing node withdrawals"
-        }
-    })()
+    // Get minipool node statuses
+    nodeStatusChannel := make([]chan *minipool.NodeStatus, minipoolCount)
+    nodeStatusErrorChannel := make(chan error)
+    for mi := 0; mi < minipoolCount; mi++ {
+        nodeStatusChannel[mi] = make(chan *minipool.NodeStatus)
+        go (func(mi int) {
+            if nodeStatus, err := minipool.GetNodeStatus(p.CM, minipoolAddresses[mi]); err != nil {
+                nodeStatusErrorChannel <- err
+            } else {
+                nodeStatusChannel[mi] <- nodeStatus
+            }
+        })(mi)
+    }
 
-    // Check minipool node deposit exists
-    go (func() {
-        nodeDepositExists := new(bool)
-        if err := minipoolContract.Call(nil, nodeDepositExists, "getNodeDepositExists"); err != nil {
-            errorChannel <- errors.New("Error retrieving minipool node deposit status: " + err.Error())
-        } else if *nodeDepositExists {
-            successChannel <- true
-        } else {
-            messageChannel <- "Node deposit does not exist in minipool"
-        }
-    })()
-
-    // Receive status
-    for received := 0; received < 4; {
+    // Receive minipool node statuses & filter withdrawable minipools
+    withdrawableMinipoolAddresses := []*common.Address{}
+    for mi := 0; mi < minipoolCount; mi++ {
         select {
-            case <-successChannel:
-                received++
-            case msg := <-messageChannel:
-                fmt.Println(msg)
-                return nil
-            case err := <-errorChannel:
+            case nodeStatus := <-nodeStatusChannel[mi]:
+                if nodeStatus.Status == minipool.WITHDRAWN && nodeStatus.DepositExists {
+                    withdrawableMinipoolAddresses = append(withdrawableMinipoolAddresses, minipoolAddresses[mi])
+                }
+            case err := <-nodeStatusErrorChannel:
                 return err
         }
     }
 
-    // Withdraw node deposit
-    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
-        return err
+    // Cancel if no minipools are withdrawable
+    if len(withdrawableMinipoolAddresses) == 0 {
+        fmt.Println("No minipools are currently available for withdrawal")
+        return nil
+    }
+
+    // Prompt for minipools to withdraw
+    prompt := []string{"Please select a minipool to withdraw from by entering a number, or enter 'A' for all:"}
+    options := []string{}
+    for mi, minipoolAddress := range withdrawableMinipoolAddresses {
+        prompt = append(prompt, fmt.Sprintf("%d: %s", mi + 1, minipoolAddress.Hex()))
+        options = append(options, strconv.Itoa(mi + 1))
+    }
+    response := cliutils.Prompt(strings.Join(prompt, "\n"), fmt.Sprintf("(?i)^(%s|a|all)$", strings.Join(options, "|")), "Please enter a minipool number or 'A' for all")
+
+    // Get addresses of minipools to withdraw
+    var withdrawMinipoolAddresses []*common.Address
+    if strings.ToLower(response[:1]) == "a" {
+        withdrawMinipoolAddresses = withdrawableMinipoolAddresses
     } else {
-        fmt.Println("Withdrawing deposit from minipool...")
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", minipoolAddress); err != nil {
-            return errors.New("Error withdrawing deposit from minipool: " + err.Error())
+        index, _ := strconv.Atoi(response)
+        withdrawMinipoolAddresses = []*common.Address{withdrawableMinipoolAddresses[index - 1]}
+    }
+    withdrawMinipoolCount := len(withdrawMinipoolAddresses)
+
+    // Status channels
+    withdrawSuccessChannel := make(chan bool)
+    withdrawErrorChannel := make(chan error)
+
+    // Withdraw node deposits
+    for mi := 0; mi < withdrawMinipoolCount; mi++ {
+        go (func(mi int) {
+            if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
+                withdrawErrorChannel <- errors.New(fmt.Sprintf("Error creating transactor for minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
+            } else {
+                fmt.Println(fmt.Sprintf("Withdrawing deposit from minipool %s...", withdrawMinipoolAddresses[mi].Hex()))
+                if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", withdrawMinipoolAddresses[mi]); err != nil {
+                    withdrawErrorChannel <- errors.New(fmt.Sprintf("Error withdrawing deposit from minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
+                } else {
+                    fmt.Println("Successfully withdrew deposit from minipool", withdrawMinipoolAddresses[mi].Hex())
+                    withdrawSuccessChannel <- true
+                }
+            }
+        })(mi)
+    }
+
+    // Receive status & errors
+    withdrawErrors := []string{"Error withdrawing deposits from one or more minipools:"}
+    for received := 0; received < withdrawMinipoolCount; {
+        select {
+            case <-withdrawSuccessChannel:
+                received++
+            case err := <-withdrawErrorChannel:
+                withdrawErrors = append(withdrawErrors, err.Error())
+                received++
         }
     }
 
-    // Log & return
-    fmt.Println("Successfully withdrew deposit from minipool at", minipoolAddress.Hex())
+    // Return
+    if len(withdrawErrors) > 1 { return errors.New(strings.Join(withdrawErrors, "\n")) }
     return nil
 
 }

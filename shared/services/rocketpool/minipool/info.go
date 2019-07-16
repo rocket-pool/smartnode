@@ -48,6 +48,13 @@ type Status struct {
 }
 
 
+// Minipool node status data
+type NodeStatus struct {
+    Status uint8
+    DepositExists bool
+}
+
+
 // Get a minipool's details
 // Requires rocketMinipool and rocketPoolToken contracts to be loaded with contract manager
 func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address) (*Details, error) {
@@ -263,6 +270,62 @@ func GetStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) 
 
     // Return
     return status, nil
+
+}
+
+
+// Get a minipool's node status
+// Requires rocketMinipool contract to be loaded with contract manager
+func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) (*NodeStatus, error) {
+
+    // Node status
+    nodeStatus := &NodeStatus{}
+
+    // Initialise minipool contract
+    minipoolContract, err := cm.NewContract(minipoolAddress, "rocketMinipool")
+    if err != nil {
+        return nil, errors.New("Error initialising minipool contract: " + err.Error())
+    }
+
+    // Data channels
+    statusChannel := make(chan uint8)
+    depositExistsChannel := make(chan bool)
+    errorChannel := make(chan error)
+
+    // Get status
+    go (func() {
+        status := new(uint8)
+        if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool status: " + err.Error())
+        } else {
+            statusChannel <- *status
+        }
+    })()
+
+    // Get node deposit status
+    go (func() {
+        nodeDepositExists := new(bool)
+        if err := minipoolContract.Call(nil, nodeDepositExists, "getNodeDepositExists"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool node deposit status: " + err.Error())
+        } else {
+            depositExistsChannel <- *nodeDepositExists
+        }
+    })()
+
+    // Receive minipool data
+    for received := 0; received < 2; {
+        select {
+            case nodeStatus.Status = <-statusChannel:
+                received++
+            case nodeStatus.DepositExists = <-depositExistsChannel:
+                received++
+            case err := <-errorChannel:
+                return nil, err
+        }
+    }
+
+    // Return
+    return nodeStatus, nil
 
 }
 
