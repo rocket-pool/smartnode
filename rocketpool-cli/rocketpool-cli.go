@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "os"
+    "regexp"
 
     "gopkg.in/urfave/cli.v1"
 
@@ -28,6 +29,10 @@ ______           _        _    ______           _
 \_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|
 
 %s`, cli.AppHelpTemplate)
+
+    // Add service commands to application help template
+    commandsEnd := regexp.MustCompile("(\\{\\{end\\}\\})(\\{\\{if \\.VisibleFlags\\}\\})")
+    cli.AppHelpTemplate = commandsEnd.ReplaceAllString(cli.AppHelpTemplate, "${1}\n     service      Manage Rocket Pool services${2}")
 
     // Initialise application
     app := cli.NewApp()
