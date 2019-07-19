@@ -19,7 +19,7 @@ import (
 // Node balance data
 type Balances struct {
     EtherWei *big.Int
-    BethWei *big.Int
+    RethWei *big.Int
     RplWei *big.Int
 }
 
@@ -43,7 +43,7 @@ func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Cli
 
     // Balance data channels
     etherBalanceChannel := make(chan *big.Int)
-    bethBalanceChannel := make(chan *big.Int)
+    rethBalanceChannel := make(chan *big.Int)
     rplBalanceChannel := make(chan *big.Int)
     errorChannel := make(chan error)
 
@@ -56,13 +56,13 @@ func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Cli
         }
     })()
 
-    // Get node account BETH balance
+    // Get node account rETH balance
     go (func() {
-        bethBalanceWei := new(*big.Int)
-        if err := cm.Contracts["rocketBETHToken"].Call(nil, bethBalanceWei, "balanceOf", nodeAccountAddress); err != nil {
+        rethBalanceWei := new(*big.Int)
+        if err := cm.Contracts["rocketETHToken"].Call(nil, rethBalanceWei, "balanceOf", nodeAccountAddress); err != nil {
             errorChannel <- errors.New("Error retrieving node account rETH balance: " + err.Error())
         } else {
-            bethBalanceChannel <- *bethBalanceWei
+            rethBalanceChannel <- *rethBalanceWei
         }
     })()
 
@@ -81,7 +81,7 @@ func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Cli
         select {
             case balances.EtherWei = <-etherBalanceChannel:
                 received++
-            case balances.BethWei = <-bethBalanceChannel:
+            case balances.RethWei = <-rethBalanceChannel:
                 received++
             case balances.RplWei = <-rplBalanceChannel:
                 received++
