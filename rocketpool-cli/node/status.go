@@ -25,6 +25,7 @@ func getNodeStatus(c *cli.Context) error {
         LoadContracts: []string{"rocketBETHToken", "rocketNodeAPI", "rocketPoolToken"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err

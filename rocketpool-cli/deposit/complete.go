@@ -38,6 +38,7 @@ func completeDeposit(c *cli.Context) error {
         LoadContracts: []string{"rocketBETHToken", "rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err 

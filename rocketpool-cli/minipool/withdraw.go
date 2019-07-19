@@ -29,6 +29,7 @@ func withdrawMinipool(c *cli.Context) error {
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err

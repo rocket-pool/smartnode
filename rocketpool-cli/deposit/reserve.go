@@ -40,6 +40,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err 

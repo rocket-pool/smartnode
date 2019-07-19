@@ -22,6 +22,7 @@ func getMinipoolStatus(c *cli.Context) error {
         LoadContracts: []string{"rocketPoolToken", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err

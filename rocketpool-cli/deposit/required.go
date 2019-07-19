@@ -20,6 +20,7 @@ func getRplRequired(c *cli.Context, durationId string) error {
         CM: true,
         LoadContracts: []string{"rocketMinipoolSettings", "rocketNodeAPI"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err 

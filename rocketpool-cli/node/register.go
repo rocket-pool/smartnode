@@ -24,6 +24,7 @@ func registerNode(c *cli.Context) error {
         CM: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err

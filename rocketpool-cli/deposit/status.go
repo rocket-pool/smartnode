@@ -20,6 +20,7 @@ func getDepositStatus(c *cli.Context) error {
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err

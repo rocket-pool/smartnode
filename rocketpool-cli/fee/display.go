@@ -21,6 +21,7 @@ func displayUserFee(c *cli.Context) error {
         CM: true,
         LoadContracts: []string{"rocketNodeSettings"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err 

@@ -21,6 +21,7 @@ func cancelDeposit(c *cli.Context) error {
         LoadContracts: []string{"rocketNodeAPI"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientSync: true,
+        WaitRocketStorage: true,
     })
     if err != nil {
         return err 
