@@ -22,7 +22,7 @@ func getNodeStatus(c *cli.Context) error {
         AM: true,
         Client: true,
         CM: true,
-        LoadContracts: []string{"rocketBETHToken", "rocketNodeAPI", "rocketPoolToken"},
+        LoadContracts: []string{"rocketETHToken", "rocketNodeAPI", "rocketPoolToken"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientSync: true,
         WaitRocketStorage: true,
@@ -42,7 +42,7 @@ func getNodeStatus(c *cli.Context) error {
         "Node account %s has a balance of %.2f ETH, %.2f rETH and %.2f RPL",
         p.AM.GetNodeAccount().Address.Hex(),
         eth.WeiToEth(accountBalances.EtherWei),
-        eth.WeiToEth(accountBalances.BethWei),
+        eth.WeiToEth(accountBalances.RethWei),
         eth.WeiToEth(accountBalances.RplWei)))
 
     // Check if node is registered & get node contract address

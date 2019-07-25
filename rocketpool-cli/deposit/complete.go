@@ -35,7 +35,7 @@ func completeDeposit(c *cli.Context) error {
         CM: true,
         NodeContractAddress: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketBETHToken", "rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"},
+        LoadContracts: []string{"rocketETHToken", "rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientSync: true,
         WaitRocketStorage: true,
