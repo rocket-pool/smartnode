@@ -49,7 +49,7 @@ func Configure(app *cli.App) {
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "storageAddress",
             Usage: "PoW chain Rocket Pool storage contract `address`",
-            Value: "0x09482eC078a263b31cfBD501dc64ab3f716E8D93", // RP2 Beta network
+            Value: "0x9Ff8948DD13f5F690Ac83DF5a11a2b8D5C762779", // RP2 Beta network
         }),
     }
 
