@@ -72,6 +72,10 @@ func (publisher *Publisher) RemoveSubscriber(event string, listener chan interfa
  */
 func (publisher *Publisher) Notify(event string, data interface{}) {
 
+    // Lock during notification
+    publisher.lock.Lock()
+    defer publisher.lock.Unlock()
+
     // Cancel if event entry not set
     if _, ok := publisher.subscribers[event]; !ok {
         return
