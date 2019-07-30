@@ -5,6 +5,7 @@ import (
     "encoding/hex"
     "errors"
     "io/ioutil"
+    "os"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
@@ -19,6 +20,7 @@ const PASSWORD_SALT string = "iRmrlkOXNzOcEf8Dy3HQTgNNc4HYAMMeft7axN6XngLVei49OP
 
 // Password manager
 type PasswordManager struct {
+    input *os.File
     passwordPath string
 }
 
@@ -26,10 +28,17 @@ type PasswordManager struct {
 /**
  * Create new password manager
  */
-func NewPasswordManager(passwordPath string) *PasswordManager {
+func NewPasswordManager(input *os.File, passwordPath string) *PasswordManager {
+
+    // Read from stdin by default
+    if input == nil { input = os.Stdin }
+
+    // Create and return
     return &PasswordManager{
+        input: input,
         passwordPath: passwordPath,
     }
+
 }
 
 
@@ -70,7 +79,7 @@ func (pm *PasswordManager) PasswordExists() bool {
 func (pm *PasswordManager) CreatePassword() (string, error) {
 
     // Prompt for password
-    password := cliutils.Prompt(nil, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
+    password := cliutils.Prompt(pm.input, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
 
     // Write to file
     if err := ioutil.WriteFile(pm.passwordPath, []byte(password), 0600); err != nil {

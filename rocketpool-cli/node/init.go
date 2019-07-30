@@ -15,7 +15,7 @@ import (
 func initNode(c *cli.Context) error {
 
     // Initialise password manager
-    pm := passwords.NewPasswordManager(c.GlobalString("password"))
+    pm := passwords.NewPasswordManager(nil, c.GlobalString("password"))
 
     // Create password if it isn't set
     if pm.PasswordExists() {
