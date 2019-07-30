@@ -22,7 +22,7 @@ func promptTimezone() string {
 
     // Confirm system time zone
     if timezone != "" {
-        response := cliutils.Prompt(fmt.Sprintf("Your system timezone is '%s', would you like to register using this timezone? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        response := cliutils.Prompt(nil, fmt.Sprintf("Your system timezone is '%s', would you like to register using this timezone? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             timezone = ""
         }
@@ -30,8 +30,8 @@ func promptTimezone() string {
 
     // Prompt for time zone
     for timezone == "" {
-        timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Country/City':", "^\\w{2,}\\/\\w{2,}$", "Please enter a timezone in the format 'Country/City'")
-        response := cliutils.Prompt(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+        timezone = cliutils.Prompt(nil, "Please enter a timezone to register with in the format 'Country/City':", "^\\w{2,}\\/\\w{2,}$", "Please enter a timezone in the format 'Country/City'")
+        response := cliutils.Prompt(nil, fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
             timezone = ""
         }

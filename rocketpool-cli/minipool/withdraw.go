@@ -91,7 +91,7 @@ func withdrawMinipool(c *cli.Context) error {
         prompt = append(prompt, fmt.Sprintf("%d: %s", mi + 1, minipoolAddress.Hex()))
         options = append(options, strconv.Itoa(mi + 1))
     }
-    response := cliutils.Prompt(strings.Join(prompt, "\n"), fmt.Sprintf("(?i)^(%s|a|all)$", strings.Join(options, "|")), "Please enter a minipool number or 'A' for all")
+    response := cliutils.Prompt(nil, strings.Join(prompt, "\n"), fmt.Sprintf("(?i)^(%s|a|all)$", strings.Join(options, "|")), "Please enter a minipool number or 'A' for all")
 
     // Get addresses of minipools to withdraw
     var withdrawMinipoolAddresses []*common.Address

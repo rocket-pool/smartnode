@@ -70,7 +70,7 @@ func (pm *PasswordManager) PasswordExists() bool {
 func (pm *PasswordManager) CreatePassword() (string, error) {
 
     // Prompt for password
-    password := cliutils.Prompt("Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
+    password := cliutils.Prompt(nil, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
 
     // Write to file
     if err := ioutil.WriteFile(pm.passwordPath, []byte(password), 0600); err != nil {
