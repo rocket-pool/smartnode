@@ -27,11 +27,8 @@ func TestAccountManager(t *testing.T) {
     io.WriteString(input, "foobarbaz" + "\n")
     input.Seek(0, io.SeekStart)
 
-    // Initialise password manager & create password
+    // Initialise password manager & account manager
     passwordManager := passwords.NewPasswordManager(input, passwordPath)
-    if _, err := passwordManager.CreatePassword(); err != nil { t.Fatal(err) }
-
-    // Initialise account manager
     accountManager := NewAccountManager(keychainPath, passwordManager)
 
     // Check if node account exists
@@ -48,6 +45,14 @@ func TestAccountManager(t *testing.T) {
     if _, err := accountManager.GetNodeAccountTransactor(); err == nil {
         t.Error("Account manager GetNodeAccountTransactor() method should return error when uninitialised")
     }
+
+    // Attempt to create node account while password is uninitialised
+    if _, err := accountManager.CreateNodeAccount(); err == nil {
+        t.Error("Account manager CreateNodeAccount() method should return error when password is uninitialised")
+    }
+
+    // Initialise password
+    if _, err := passwordManager.CreatePassword(); err != nil { t.Fatal(err) }
 
     // Create node account
     if _, err := accountManager.CreateNodeAccount(); err != nil { t.Error(err) }
