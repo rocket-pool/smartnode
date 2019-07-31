@@ -45,7 +45,8 @@ func withdrawMinipool(c *cli.Context) error {
     }
 
     // Get minipool addresses
-    minipoolAddresses, err := node.GetMinipoolAddresses(p.AM.GetNodeAccount().Address, p.CM)
+    nodeAccount, _ := p.AM.GetNodeAccount()
+    minipoolAddresses, err := node.GetMinipoolAddresses(nodeAccount.Address, p.CM)
     if err != nil {
         return err
     }

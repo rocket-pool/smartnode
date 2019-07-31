@@ -225,8 +225,9 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Initialise node contract address
     if opts.NodeContractAddress {
+        nodeAccount, _ := p.AM.GetNodeAccount()
         nodeContractAddress := new(common.Address)
-        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", p.AM.GetNodeAccount().Address); err != nil {
+        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
             return nil, errors.New("Error checking node registration: " + err.Error())
         } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
             return nil, errors.New("Node is not registered with Rocket Pool, please register with `rocketpool node register`")

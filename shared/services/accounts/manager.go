@@ -41,8 +41,14 @@ func (am *AccountManager) NodeAccountExists() bool {
 /**
  * Get the node account
  */
-func (am *AccountManager) GetNodeAccount() accounts.Account {
-    return am.ks.Accounts()[0]
+func (am *AccountManager) GetNodeAccount() (accounts.Account, error) {
+
+    // Check node account exists
+    if !am.NodeAccountExists() { return accounts.Account{}, errors.New("Node account does not exist.") }
+
+    // Return
+    return am.ks.Accounts()[0], nil
+
 }
 
 
@@ -50,6 +56,9 @@ func (am *AccountManager) GetNodeAccount() accounts.Account {
  * Create the node account
  */
 func (am *AccountManager) CreateNodeAccount() (accounts.Account, error) {
+
+    // Check node account does not exist
+    if am.NodeAccountExists() { return accounts.Account{}, errors.New("Node account already exists.") }
 
     // Get keystore passphrase
     passphrase, err := am.pm.GetPassphrase()
@@ -74,8 +83,12 @@ func (am *AccountManager) CreateNodeAccount() (accounts.Account, error) {
  */
 func (am *AccountManager) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
 
+    // Check node account exists
+    if !am.NodeAccountExists() { return nil, errors.New("Node account does not exist.") }
+
     // Open node account file
-    nodeAccountFile, err := os.Open(am.GetNodeAccount().URL.Path)
+    nodeAccount, _ := am.GetNodeAccount()
+    nodeAccountFile, err := os.Open(nodeAccount.URL.Path)
     if err != nil {
         return nil, errors.New("Error opening node account file: " + err.Error())
     }

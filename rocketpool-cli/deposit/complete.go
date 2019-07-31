@@ -116,7 +116,8 @@ func completeDeposit(c *cli.Context) error {
 
     // Get node account balances
     go (func() {
-        if accountBalances, err := node.GetAccountBalances(p.AM.GetNodeAccount().Address, p.Client, p.CM); err != nil {
+        nodeAccount, _ := p.AM.GetNodeAccount()
+        if accountBalances, err := node.GetAccountBalances(nodeAccount.Address, p.Client, p.CM); err != nil {
             errorChannel <- err
         } else {
             accountBalancesChannel <- accountBalances

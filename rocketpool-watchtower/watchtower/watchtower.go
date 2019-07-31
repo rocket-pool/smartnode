@@ -87,8 +87,9 @@ func (p *WatchtowerProcess) checkTrusted() {
     eth.WaitSync(p.p.Client, true, false)
 
     // Get trusted status
+    nodeAccount, _ := p.p.AM.GetNodeAccount()
     trusted := new(bool)
-    if err := p.p.CM.Contracts["rocketNodeAPI"].Call(nil, trusted, "getTrusted", p.p.AM.GetNodeAccount().Address); err != nil {
+    if err := p.p.CM.Contracts["rocketNodeAPI"].Call(nil, trusted, "getTrusted", nodeAccount.Address); err != nil {
         log.Println(errors.New("Error retrieving node trusted status: " + err.Error()))
         return
     }

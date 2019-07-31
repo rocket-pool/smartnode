@@ -41,8 +41,9 @@ func setNodeTimezone(c *cli.Context) error {
     }
 
     // Get node timezone
+    nodeAccount, _ := p.AM.GetNodeAccount()
     nodeTimezone := new(string)
-    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", p.AM.GetNodeAccount().Address); err != nil {
+    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", nodeAccount.Address); err != nil {
         return errors.New("Error retrieving node timezone: " + err.Error())
     }
 

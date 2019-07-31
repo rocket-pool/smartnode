@@ -101,8 +101,9 @@ func WaitNodeRegistered(am *accounts.AccountManager, cm *rocketpool.ContractMana
     for !registered {
 
         // Get node contract address
+        nodeAccount, _ := am.GetNodeAccount()
         nodeContractAddress := new(common.Address)
-        if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", am.GetNodeAccount().Address); err != nil {
+        if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
             return errors.New("Error checking node registration: " + err.Error())
         } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
             fmt.Println(fmt.Sprintf("Node is not registered with Rocket Pool, retrying in %s...", checkNodeRegisteredInterval.String()))

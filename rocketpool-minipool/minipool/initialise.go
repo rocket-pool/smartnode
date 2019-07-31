@@ -41,10 +41,11 @@ func Initialise(p *services.Provider, minipoolAddressStr string) (*Minipool, err
     }
 
     // Check minipool node owner
+    nodeAccount, _ := p.AM.GetNodeAccount()
     nodeOwner := new(common.Address)
     if err := minipoolContract.Call(nil, nodeOwner, "getNodeOwner"); err != nil {
        return nil, errors.New("Error retrieving minipool node owner: " + err.Error())
-    } else if !bytes.Equal(nodeOwner.Bytes(), p.AM.GetNodeAccount().Address.Bytes()) {
+    } else if !bytes.Equal(nodeOwner.Bytes(), nodeAccount.Address.Bytes()) {
         return nil, errors.New("Minipool is not owned by this node")
     }
 

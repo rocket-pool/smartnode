@@ -30,6 +30,9 @@ func registerNode(c *cli.Context) error {
         return err
     }
 
+    // Get node account
+    nodeAccount, _ := p.AM.GetNodeAccount()
+
     // Status channels
     successChannel := make(chan bool)
     messageChannel := make(chan string)
@@ -38,7 +41,7 @@ func registerNode(c *cli.Context) error {
     // Check if node is already registered (contract exists)
     go (func() {
         nodeContractAddress := new(common.Address)
-        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", p.AM.GetNodeAccount().Address); err != nil {
+        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
             errorChannel <- errors.New("Error checking node registration: " + err.Error())
         } else if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
             messageChannel <- fmt.Sprintf("Node is already registered with Rocket Pool - current deposit contract is at %s", nodeContractAddress.Hex())
@@ -79,7 +82,7 @@ func registerNode(c *cli.Context) error {
 
         // Get node account ether balance
         go (func() {
-            if nodeAccountEtherBalanceWei, err := p.Client.BalanceAt(context.Background(), p.AM.GetNodeAccount().Address, nil); err != nil {
+            if nodeAccountEtherBalanceWei, err := p.Client.BalanceAt(context.Background(), nodeAccount.Address, nil); err != nil {
                 balanceErrorChannel <- errors.New("Error retrieving node account balance: " + err.Error())
             } else {
                 etherBalanceChannel <- nodeAccountEtherBalanceWei
@@ -103,7 +106,7 @@ func registerNode(c *cli.Context) error {
 
         // Check node account ether balance
         if nodeAccountEtherBalanceWei.Cmp(minNodeAccountEtherBalanceWei) < 0 {
-            messageChannel <- fmt.Sprintf("Node account %s requires a minimum balance of %.2f ETH to operate in Rocket Pool", p.AM.GetNodeAccount().Address.Hex(), eth.WeiToEth(minNodeAccountEtherBalanceWei))
+            messageChannel <- fmt.Sprintf("Node account %s requires a minimum balance of %.2f ETH to operate in Rocket Pool", nodeAccount.Address.Hex(), eth.WeiToEth(minNodeAccountEtherBalanceWei))
         } else {
             successChannel <- true
         }
@@ -138,7 +141,7 @@ func registerNode(c *cli.Context) error {
 
     // Get node contract address
     nodeContractAddress := new(common.Address)
-    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", p.AM.GetNodeAccount().Address); err != nil {
+    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
         return errors.New("Error retrieving node contract address: " + err.Error())
     }
 

@@ -33,7 +33,8 @@ func initNode(c *cli.Context) error {
 
     // Create node account if it doesn't exist
     if am.NodeAccountExists() {
-        fmt.Println("Node account already exists:", am.GetNodeAccount().Address.Hex())
+        nodeAccount, _ := am.GetNodeAccount()
+        fmt.Println("Node account already exists:", nodeAccount.Address.Hex())
     } else {
         if account, err := am.CreateNodeAccount(); err != nil {
             return errors.New("Error creating node account: " + err.Error())

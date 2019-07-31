@@ -88,7 +88,8 @@ func (p *ManagementProcess) checkMinipools() {
     go (func() {
 
         // Get minipool addresses
-        minipoolAddresses, err := node.GetMinipoolAddresses(p.p.AM.GetNodeAccount().Address, p.p.CM)
+        nodeAccount, _ := p.p.AM.GetNodeAccount()
+        minipoolAddresses, err := node.GetMinipoolAddresses(nodeAccount.Address, p.p.CM)
         if err != nil {
             errorChannel <- err
             return

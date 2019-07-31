@@ -31,8 +31,11 @@ func getNodeStatus(c *cli.Context) error {
         return err
     }
 
+    // Get node account
+    nodeAccount, _ := p.AM.GetNodeAccount()
+
     // Get node account balances
-    accountBalances, err := node.GetAccountBalances(p.AM.GetNodeAccount().Address, p.Client, p.CM)
+    accountBalances, err := node.GetAccountBalances(nodeAccount.Address, p.Client, p.CM)
     if err != nil {
         return err
     }
@@ -40,14 +43,14 @@ func getNodeStatus(c *cli.Context) error {
     // Log
     fmt.Println(fmt.Sprintf(
         "Node account %s has a balance of %.2f ETH, %.2f rETH and %.2f RPL",
-        p.AM.GetNodeAccount().Address.Hex(),
+        nodeAccount.Address.Hex(),
         eth.WeiToEth(accountBalances.EtherWei),
         eth.WeiToEth(accountBalances.RethWei),
         eth.WeiToEth(accountBalances.RplWei)))
 
     // Check if node is registered & get node contract address
     nodeContractAddress := new(common.Address)
-    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", p.AM.GetNodeAccount().Address); err != nil {
+    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
         return errors.New("Error checking node registration: " + err.Error())
     } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
         fmt.Println("Node is not registered with Rocket Pool")
@@ -69,7 +72,7 @@ func getNodeStatus(c *cli.Context) error {
 
     // Get node active status
     go (func() {
-        nodeActiveKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("node.active"), p.AM.GetNodeAccount().Address.Bytes()}, []byte{}))
+        nodeActiveKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("node.active"), nodeAccount.Address.Bytes()}, []byte{}))
         if nodeActive, err := p.CM.RocketStorage.GetBool(nil, nodeActiveKey); err != nil {
             errorChannel <- errors.New("Error retrieving node active status: " + err.Error())
         } else {
@@ -80,7 +83,7 @@ func getNodeStatus(c *cli.Context) error {
     // Get node timezone
     go (func() {
         nodeTimezone := new(string)
-        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", p.AM.GetNodeAccount().Address); err != nil {
+        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", nodeAccount.Address); err != nil {
             errorChannel <- errors.New("Error retrieving node timezone: " + err.Error())
         } else {
             nodeTimezoneChannel <- *nodeTimezone
@@ -99,7 +102,7 @@ func getNodeStatus(c *cli.Context) error {
     // Get node trusted status
     go (func() {
         trusted := new(bool)
-        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, trusted, "getTrusted", p.AM.GetNodeAccount().Address); err != nil {
+        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, trusted, "getTrusted", nodeAccount.Address); err != nil {
             errorChannel <- errors.New("Error retrieving node trusted status: " + err.Error())
         } else {
             nodeTrustedChannel <- *trusted
