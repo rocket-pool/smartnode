@@ -39,12 +39,12 @@ func TestAccountManager(t *testing.T) {
         t.Errorf("Incorrect node account exists status: expected %t, got %t", false, nodeAccountExists)
     }
 
-    // Get node account
+    // Attempt to get node account while uninitialised
     if _, err := accountManager.GetNodeAccount(); err == nil {
         t.Error("Account manager GetNodeAccount() method should return error when uninitialised")
     }
 
-    // Get node account transactor
+    // Attempt to get node account transactor while uninitialised
     if _, err := accountManager.GetNodeAccountTransactor(); err == nil {
         t.Error("Account manager GetNodeAccountTransactor() method should return error when uninitialised")
     }
@@ -52,7 +52,7 @@ func TestAccountManager(t *testing.T) {
     // Create node account
     if _, err := accountManager.CreateNodeAccount(); err != nil { t.Error(err) }
 
-    // Create second node account
+    // Attempt to create node account again
     if _, err := accountManager.CreateNodeAccount(); err == nil {
         t.Error("Account manager CreateNodeAccount() method should return error when initialised")
     }
