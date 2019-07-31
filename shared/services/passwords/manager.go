@@ -78,6 +78,9 @@ func (pm *PasswordManager) PasswordExists() bool {
  */
 func (pm *PasswordManager) CreatePassword() (string, error) {
 
+    // Check password does not exist
+    if pm.PasswordExists() { return "", errors.New("Password already exists.") }
+
     // Prompt for password
     password := cliutils.Prompt(pm.input, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
 

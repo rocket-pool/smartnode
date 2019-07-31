@@ -32,11 +32,21 @@ func TestPasswordManager(t *testing.T) {
         t.Errorf("Incorrect password exists status: expected %t, got %t", false, passwordExists)
     }
 
+    // Get passphrase
+    if _, err := passwordManager.GetPassphrase(); err == nil {
+        t.Error("Password manager GetPassphrase() method should return error when uninitialised")
+    }
+
     // Create password
     if password, err := passwordManager.CreatePassword(); err != nil {
         t.Error(err)
     } else if password != "foobarbaz" {
         t.Errorf("Incorrect created password: expected %s, got %s", "foobarbaz", password)
+    }
+
+    // Overwrite password
+    if _, err := passwordManager.CreatePassword(); err == nil {
+        t.Error("Password manager CreatePassword() method should return error when initialised")
     }
 
     // Check if password exists
