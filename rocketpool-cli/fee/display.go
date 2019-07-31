@@ -42,8 +42,9 @@ func displayUserFee(c *cli.Context) error {
 
     // Get target user fee
     targetUserFeePerc := new(float64)
+    *targetUserFeePerc = -1
     if err := p.DB.Get("user.fee.target", targetUserFeePerc); err != nil {
-        *targetUserFeePerc = -1
+        return errors.New("Error retrieving target node user fee percentage: " + err.Error())
     }
 
     // Log & return

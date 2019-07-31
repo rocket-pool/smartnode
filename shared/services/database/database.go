@@ -2,6 +2,7 @@ package database
 
 import (
     "errors"
+    "sync"
 
     "github.com/rapidloop/skv"
 )
@@ -11,6 +12,8 @@ import (
 type Database struct {
     store *skv.KVStore
     path string
+    lock sync.Mutex
+    atomicLock sync.Mutex
 }
 
 
@@ -37,10 +40,12 @@ func (db *Database) IsOpen() bool {
  */
 func (db *Database) Open() error {
 
+    // Lock for modification
+    db.lock.Lock()
+    defer db.lock.Unlock()
+
     // Check not open
-    if db.store != nil {
-        return errors.New("Database is already open")
-    }
+    if db.store != nil { return errors.New("Database is already open") }
 
     // Initialise storage
     if store, err := skv.Open(db.path); err != nil {
@@ -60,10 +65,12 @@ func (db *Database) Open() error {
  */
 func (db *Database) Close() error {
 
+    // Lock for modification
+    db.lock.Lock()
+    defer db.lock.Unlock()
+
     // Check not closed
-    if db.store == nil {
-        return errors.New("Database is already closed")
-    }
+    if db.store == nil { return errors.New("Database is already closed") }
 
     // Close storage
     if err := db.store.Close(); err != nil {
@@ -83,15 +90,15 @@ func (db *Database) Close() error {
  */
 func (db *Database) Get(key string, value interface{}) error {
 
-    // Check not closed
-    if db.store == nil {
-        return errors.New("Cannot read from closed database")
-    }
+    // Lock during read
+    db.lock.Lock()
+    defer db.lock.Unlock()
 
-    // Read and return
-    if err := db.store.Get(key, value); err != nil {
-        return errors.New("Error reading value from database: " + err.Error())
-    }
+    // Check not closed
+    if db.store == nil { return errors.New("Cannot read from closed database") }
+
+    // Read and return; ignore errors as key may not exist
+    _ = db.store.Get(key, value)
     return nil
 
 }
@@ -102,10 +109,12 @@ func (db *Database) Get(key string, value interface{}) error {
  */
 func (db *Database) Put(key string, value interface{}) error {
 
+    // Lock for modification
+    db.lock.Lock()
+    defer db.lock.Unlock()
+
     // Check not closed
-    if db.store == nil {
-        return errors.New("Cannot write to closed database")
-    }
+    if db.store == nil { return errors.New("Cannot write to closed database") }
 
     // Write and return
     if err := db.store.Put(key, value); err != nil {
@@ -121,10 +130,12 @@ func (db *Database) Put(key string, value interface{}) error {
  */
 func (db *Database) Delete(key string) error {
 
+    // Lock for modification
+    db.lock.Lock()
+    defer db.lock.Unlock()
+
     // Check not closed
-    if db.store == nil {
-        return errors.New("Cannot remove from closed database")
-    }
+    if db.store == nil { return errors.New("Cannot remove from closed database") }
 
     // Remove and return
     if err := db.store.Delete(key); err != nil {
@@ -140,15 +151,16 @@ func (db *Database) Delete(key string) error {
  */
 func (db *Database) GetAtomic(key string, value interface{}) error {
 
+    // Lock during read
+    db.atomicLock.Lock()
+    defer db.atomicLock.Unlock()
+
     // Open database
-    if err := db.Open(); err != nil {
-        return err
-    }
+    if err := db.Open(); err != nil { return err }
     defer db.Close()
 
-    // Read value and return; ignore errors as key may not exist
-    _ = db.Get(key, value)
-    return nil
+    // Read value and return
+    return db.Get(key, value)
 
 }
 
@@ -158,17 +170,16 @@ func (db *Database) GetAtomic(key string, value interface{}) error {
  */
 func (db *Database) PutAtomic(key string, value interface{}) error {
 
+    // Lock for modification
+    db.atomicLock.Lock()
+    defer db.atomicLock.Unlock()
+
     // Open database
-    if err := db.Open(); err != nil {
-        return err
-    }
+    if err := db.Open(); err != nil { return err }
     defer db.Close()
 
-    // Write value
-    if err := db.Put(key, value); err != nil {
-        return err
-    }
-    return nil
+    // Write value and return
+    return db.Put(key, value)
 
 }
 
@@ -178,17 +189,16 @@ func (db *Database) PutAtomic(key string, value interface{}) error {
  */
 func (db *Database) DeleteAtomic(key string) error {
 
+    // Lock for modification
+    db.atomicLock.Lock()
+    defer db.atomicLock.Unlock()
+
     // Open database
-    if err := db.Open(); err != nil {
-        return err
-    }
+    if err := db.Open(); err != nil { return err }
     defer db.Close()
 
-    // Remove value
-    if err := db.Delete(key); err != nil {
-        return err
-    }
-    return nil
+    // Remove value and return
+    return db.Delete(key)
 
 }
 
