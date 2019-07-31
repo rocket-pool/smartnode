@@ -1,35 +1,34 @@
 package accounts
 
 import (
-    "io"
     "io/ioutil"
     "testing"
 
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
+    "github.com/rocket-pool/smartnode/shared/services/accounts"
+
+    test "github.com/rocket-pool/smartnode/tests/utils"
 )
 
 
 // Test account manager functionality
 func TestAccountManager(t *testing.T) {
 
-    // Create temporary password & keychain path
-    path, err := ioutil.TempDir("", "")
+    // Create temporary keychain path
+    keychainPath, err := ioutil.TempDir("", "")
     if err != nil { t.Fatal(err) }
-    passwordPath := path + "/password"
-    keychainPath := path + "/keychain"
+    keychainPath += "/keychain"
 
-    // Create temporary input file
-    input, err := ioutil.TempFile("", "")
+    // Create temporary password input file
+    input, err := test.NewInputFile("foobarbaz" + "\n")
     if err != nil { t.Fatal(err) }
     defer input.Close()
 
-    // Write input to file
-    io.WriteString(input, "foobarbaz" + "\n")
-    input.Seek(0, io.SeekStart)
+    // Create password manager
+    passwordManager, err := test.NewPasswordManager(input)
+    if err != nil { t.Fatal(err) }
 
-    // Initialise password manager & account manager
-    passwordManager := passwords.NewPasswordManager(input, passwordPath)
-    accountManager := NewAccountManager(keychainPath, passwordManager)
+    // Initialise account manager
+    accountManager := accounts.NewAccountManager(keychainPath, passwordManager)
 
     // Check if node account exists
     if nodeAccountExists := accountManager.NodeAccountExists(); nodeAccountExists {

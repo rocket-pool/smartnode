@@ -1,4 +1,4 @@
-package test
+package utils
 
 import (
     "io"
@@ -8,7 +8,7 @@ import (
 
 
 // Create a temporary input file
-func NewInputFile(contents string) (f *os.File, err error) {
+func NewInputFile(contents string) (*os.File, error) {
 
     // Create temporary input file
     input, err := ioutil.TempFile("", "")

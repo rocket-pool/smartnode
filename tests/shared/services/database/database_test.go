@@ -3,6 +3,8 @@ package database
 import (
     "io/ioutil"
     "testing"
+
+    "github.com/rocket-pool/smartnode/shared/services/database"
 )
 
 
@@ -15,7 +17,7 @@ func TestDatabase(t *testing.T) {
     dbPath += "/database"
 
     // Initialise database
-    db := NewDatabase(dbPath)
+    db := database.NewDatabase(dbPath)
 
     // Initialise data pointer
     foobar := new(int64)

@@ -1,31 +1,30 @@
 package passwords
 
 import (
-    "io"
     "io/ioutil"
     "testing"
+
+    "github.com/rocket-pool/smartnode/shared/services/passwords"
+
+    test "github.com/rocket-pool/smartnode/tests/utils"
 )
 
 
 // Test password manager functionality
 func TestPasswordManager(t *testing.T) {
 
+    // Create temporary password input file
+    input, err := test.NewInputFile("foobarbaz" + "\n")
+    if err != nil { t.Fatal(err) }
+    defer input.Close()
+
     // Create temporary password path
     passwordPath, err := ioutil.TempDir("", "")
     if err != nil { t.Fatal(err) }
     passwordPath += "/password"
 
-    // Create temporary input file
-    input, err := ioutil.TempFile("", "")
-    if err != nil { t.Fatal(err) }
-    defer input.Close()
-
-    // Write input to file
-    io.WriteString(input, "foobarbaz" + "\n")
-    input.Seek(0, io.SeekStart)
-
     // Initialise password manager
-    passwordManager := NewPasswordManager(input, passwordPath)
+    passwordManager := passwords.NewPasswordManager(input, passwordPath)
 
     // Check if password exists
     if passwordExists := passwordManager.PasswordExists(); passwordExists {

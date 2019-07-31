@@ -2,6 +2,8 @@ package messaging
 
 import (
     "testing"
+
+    "github.com/rocket-pool/smartnode/shared/utils/messaging"
 )
 
 
@@ -16,7 +18,7 @@ type EventData struct {
 func TestPublisher(t *testing.T) {
 
     // Initialise publisher
-    publisher := NewPublisher()
+    publisher := messaging.NewPublisher()
 
     // Initialise listener channels
     listener1 := make(chan interface{})
