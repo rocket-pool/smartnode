@@ -1,9 +1,9 @@
 package cli
 
 import (
-    "io"
-    "io/ioutil"
     "testing"
+
+    "github.com/rocket-pool/smartnode/shared/utils/test"
 )
 
 
@@ -11,19 +11,15 @@ import (
 func TestPrompt(t *testing.T) {
 
     // Create temporary input file
-    input, err := ioutil.TempFile("", "")
-    if err != nil { t.Fatal(err) }
-    defer input.Close()
-
-    // Write input to file
-    io.WriteString(input,
+    input, err := test.NewInputFile(
         "foobar" + "\n" +
         "" + "\n" +
         "Y" + "\n" +
         "YES" + "\n" +
         "N" + "\n" +
         "NO" + "\n")
-    input.Seek(0, io.SeekStart)
+    if err != nil { t.Fatal(err) }
+    defer input.Close()
 
     // Test prompts
     if input := Prompt(input, "Run test 'Y' [y/n]",   "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'"); input != "Y" {
