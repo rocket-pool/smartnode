@@ -26,7 +26,7 @@ func TestExecuteContractTransaction(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Seed account
-    if err := test.SeedAccount(client, account, eth.EthToWei(10)); err != nil { t.Fatal(err) }
+    if err := test.SeedAccount(client, account.Address, eth.EthToWei(10)); err != nil { t.Fatal(err) }
 
     // Initialise contract manager & load test contract
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)

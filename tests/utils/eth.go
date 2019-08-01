@@ -6,7 +6,6 @@ import (
     "errors"
     "math/big"
 
-    "github.com/ethereum/go-ethereum/accounts"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
@@ -32,8 +31,8 @@ func OwnerAccount() (*ecdsa.PrivateKey, common.Address, error) {
 }
 
 
-// Seed an account with ether from the owner account
-func SeedAccount(client *ethclient.Client, account accounts.Account, amount *big.Int) error {
+// Seed an address with ether from the owner account
+func SeedAccount(client *ethclient.Client, address common.Address, amount *big.Int) error {
 
     // Get owner account
     ownerPrivateKey, ownerAddress, err := OwnerAccount()
@@ -44,7 +43,7 @@ func SeedAccount(client *ethclient.Client, account accounts.Account, amount *big
     if err != nil { return err }
 
     // Initialise tx
-    tx := types.NewTransaction(nonce, account.Address, amount, 8000000, big.NewInt(20000), []byte{})
+    tx := types.NewTransaction(nonce, address, amount, 8000000, big.NewInt(20000), []byte{})
 
     // Get chain ID
     chainID, err := client.NetworkID(context.Background())
