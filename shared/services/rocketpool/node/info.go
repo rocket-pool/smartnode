@@ -35,7 +35,7 @@ type ReservationDetails struct {
 
 
 // Get a node account's balances
-// Requires rocketPoolToken contract to be loaded with contract manager
+// Requires rocketETHToken & rocketPoolToken contracts to be loaded with contract manager
 func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Client, cm *rocketpool.ContractManager) (*Balances, error) {
 
     // Account balances
