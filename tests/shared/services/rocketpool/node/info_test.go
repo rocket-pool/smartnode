@@ -92,3 +92,42 @@ func TestGetBalances(t *testing.T) {
 
 }
 
+
+// Test node deposit reservation required balances getter
+func TestGetRequiredBalances(t *testing.T) {
+
+    // Create account manager
+    am, err := test.NewInitAccountManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Create key manager
+    km, err := test.NewInitKeyManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(test.POW_PROVIDER_URL)
+    if err != nil { t.Fatal(err) }
+
+    // Initialise contract manager & load contracts / ABIs
+    cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
+    if err != nil { t.Fatal(err) }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
+
+    // Register node
+    nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
+    if err != nil { t.Fatal(err) }
+
+    // Reserve node deposit
+    if err := rp.ReserveNodeDeposit(client, cm, am, km, nodeContractAddress, "3m"); err != nil { t.Fatal(err) }
+
+    // Get required balances
+    balances, err := node.GetRequiredBalances(nodeContract)
+    if err != nil { t.Fatal(err) }
+
+    // Check required balances
+    expectedEth := eth.EthToWei(16)
+    if balances.EtherWei.String() != expectedEth.String() { t.Errorf("Incorrect required balance ETH value: expected %s, got %s", expectedEth.String(), balances.EtherWei.String()) }
+
+}
+
