@@ -46,7 +46,7 @@ func TestKeyManager(t *testing.T) {
     // Get validator key by pubkey
     if key, err := keyManager.GetValidatorKey(createdKey.PublicKey.Marshal()); err != nil {
         t.Error(err)
-    } else if bytes.Compare(createdKey.SecretKey.Marshal(), key.SecretKey.Marshal()) != 0 {
+    } else if !bytes.Equal(createdKey.SecretKey.Marshal(), key.SecretKey.Marshal()) {
         t.Error("Incorrect retrieved validator key")
     }
 
