@@ -207,12 +207,19 @@ func TestGetMinipoolAddresses(t *testing.T) {
     if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken", "utilAddressSetStorage"}); err != nil { t.Fatal(err) }
     if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
 
+    // Get minipool addresses for nonexistent node
+    minipoolAddresses, err := node.GetMinipoolAddresses(account.Address, cm)
+    if err != nil { t.Fatal(err) }
+
+    // Check minipool addresses
+    if len(minipoolAddresses) > 0 { t.Error("Minipool address list should be empty for new node") }
+
     // Register node
     nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
     if err != nil { t.Fatal(err) }
 
     // Get minipool addresses before minipool creation
-    minipoolAddresses, err := node.GetMinipoolAddresses(account.Address, cm)
+    minipoolAddresses, err = node.GetMinipoolAddresses(account.Address, cm)
     if err != nil { t.Fatal(err) }
 
     // Check minipool addresses
