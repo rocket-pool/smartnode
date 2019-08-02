@@ -1,6 +1,7 @@
 package node
 
 import (
+    "bytes"
     "testing"
 
     "github.com/ethereum/go-ethereum/ethclient"
@@ -179,6 +180,60 @@ func TestGetReservationDetails(t *testing.T) {
     if !details.Exists { t.Errorf("Incorrect deposit exists value: expected %t, got %t", true, details.Exists) }
     if details.StakingDurationID != "3m" { t.Errorf("Incorrect staking duration ID: expected %s, got %s", "3m", details.StakingDurationID) }
     if details.EtherRequiredWei.String() != expectedEth.String() { t.Errorf("Incorrect required ETH value: expected %s, got %s", expectedEth.String(), details.EtherRequiredWei.String()) }
+
+}
+
+
+// Test minipool addresses getter
+func TestGetMinipoolAddresses(t *testing.T) {
+
+    // Create account manager & get account
+    am, err := test.NewInitAccountManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+    account, err := am.GetNodeAccount()
+    if err != nil { t.Fatal(err) }
+
+    // Create key manager
+    km, err := test.NewInitKeyManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(test.POW_PROVIDER_URL)
+    if err != nil { t.Fatal(err) }
+
+    // Initialise contract manager & load contracts / ABIs
+    cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
+    if err != nil { t.Fatal(err) }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken", "utilAddressSetStorage"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
+
+    // Register node
+    nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
+    if err != nil { t.Fatal(err) }
+
+    // Get minipool addresses before minipool creation
+    minipoolAddresses, err := node.GetMinipoolAddresses(account.Address, cm)
+    if err != nil { t.Fatal(err) }
+
+    // Check minipool addresses
+    if len(minipoolAddresses) > 0 { t.Error("Minipool address list should be empty for new node") }
+
+    // Create minipools
+    minipool1Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    if err != nil { t.Fatal(err) }
+    minipool2Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "6m")
+    if err != nil { t.Fatal(err) }
+    minipool3Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "12m")
+    if err != nil { t.Fatal(err) }
+
+    // Get minipool addresses
+    minipoolAddresses, err = node.GetMinipoolAddresses(account.Address, cm)
+    if err != nil { t.Fatal(err) }
+
+    // Check minipool addresses
+    if !bytes.Equal(minipoolAddresses[0].Bytes(), minipool1Address.Bytes()) { t.Error("Minipool address 1 does not match created address") }
+    if !bytes.Equal(minipoolAddresses[1].Bytes(), minipool2Address.Bytes()) { t.Error("Minipool address 2 does not match created address") }
+    if !bytes.Equal(minipoolAddresses[2].Bytes(), minipool3Address.Bytes()) { t.Error("Minipool address 3 does not match created address") }
 
 }
 

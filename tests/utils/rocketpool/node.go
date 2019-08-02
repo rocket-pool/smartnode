@@ -12,6 +12,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
     "github.com/rocket-pool/smartnode/shared/services/validators"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
@@ -27,6 +28,14 @@ const DEPOSIT_AMOUNT uint64 = 32000000000
 type NodeAdd struct {
     ID common.Address
     ContractAddress common.Address
+    Created *big.Int
+}
+
+
+// RocketPool PoolCreated event
+type PoolCreated struct {
+    Address common.Address
+    DurationID [32]byte
     Created *big.Int
 }
 
@@ -109,6 +118,45 @@ func ReserveNodeDeposit(client *ethclient.Client, cm *rocketpool.ContractManager
 
     // Return
     return nil
+
+}
+
+
+// Create a minipool under a node
+func CreateNodeMinipool(client *ethclient.Client, cm *rocketpool.ContractManager, am *accounts.AccountManager, km *validators.KeyManager, nodeContract *bind.BoundContract, nodeContractAddress common.Address, durationId string) (common.Address, error) {
+
+    // Reserve deposit
+    if err := ReserveNodeDeposit(client, cm, am, km, nodeContractAddress, durationId); err != nil { return common.Address{}, err }
+
+    // Get required balances
+    requiredBalances, err := node.GetRequiredBalances(nodeContract)
+    if err != nil { return common.Address{}, err }
+
+    // Seed node contract
+    if requiredBalances.EtherWei.Cmp(big.NewInt(0)) == 1 {
+        if err := test.SeedAccount(client, nodeContractAddress, requiredBalances.EtherWei); err != nil { return common.Address{}, err }
+    }
+    if requiredBalances.RplWei.Cmp(big.NewInt(0)) == 1 {
+        if err := MintRPL(client, cm, nodeContractAddress, requiredBalances.RplWei); err != nil { return common.Address{}, err }
+    }
+
+    // Complete deposit
+    txor, err := am.GetNodeAccountTransactor()
+    if err != nil { return common.Address{}, err }
+    txReceipt, err := eth.ExecuteContractTransaction(client, txor, &nodeContractAddress, cm.Abis["rocketNodeContract"], "deposit")
+    if err != nil { return common.Address{}, err }
+
+    // Get minipool created event
+    minipoolCreatedEvents, err := eth.GetTransactionEvents(client, txReceipt, cm.Addresses["rocketPool"], cm.Abis["rocketPool"], "PoolCreated", PoolCreated{})
+    if err != nil {
+        return common.Address{}, err
+    } else if len(minipoolCreatedEvents) == 0 {
+        return common.Address{}, errors.New("Failed to retrieve PoolCreated event")
+    }
+    minipoolCreatedEvent := (minipoolCreatedEvents[0]).(*PoolCreated)
+
+    // Return
+    return minipoolCreatedEvent.Address, nil
 
 }
 
