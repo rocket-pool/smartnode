@@ -195,3 +195,54 @@ func TestGetStatusCode(t *testing.T) {
 
 }
 
+
+// Test active minipools by validator pubkey getter
+func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
+
+    // Create account manager
+    am, err := test.NewInitAccountManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Create key manager
+    km, err := test.NewInitKeyManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(test.POW_PROVIDER_URL)
+    if err != nil { t.Fatal(err) }
+
+    // Initialise contract manager & load contracts / ABIs
+    cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
+    if err != nil { t.Fatal(err) }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketMinipool", "rocketNodeContract"}); err != nil { t.Fatal(err) }
+
+    // Register node
+    nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
+    if err != nil { t.Fatal(err) }
+
+    // Create minipools
+    minipool1Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    if err != nil { t.Fatal(err) }
+    minipool2Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "6m")
+    if err != nil { t.Fatal(err) }
+    minipool3Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "12m")
+    if err != nil { t.Fatal(err) }
+
+    // Get active minipools
+    minipools, err := minipool.GetActiveMinipoolsByValidatorPubkey(cm)
+    if err != nil { t.Fatal(err) }
+
+    // Search for created minipools in map
+    minipool1Found := false
+    minipool2Found := false
+    minipool3Found := false
+    for _, address := range *minipools {
+        if bytes.Equal(address.Bytes(), minipool1Address.Bytes()) { minipool1Found = true }
+        if bytes.Equal(address.Bytes(), minipool2Address.Bytes()) { minipool2Found = true }
+        if bytes.Equal(address.Bytes(), minipool3Address.Bytes()) { minipool3Found = true }
+    }
+    if !(minipool1Found && minipool2Found && minipool3Found) { t.Error("Created minipools not found in active set") }
+
+}
+
