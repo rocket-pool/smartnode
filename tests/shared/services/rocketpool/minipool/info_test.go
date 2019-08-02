@@ -152,3 +152,46 @@ func TestGetNodeStatus(t *testing.T) {
 
 }
 
+
+// Test minipool status code getter
+func TestGetStatusCode(t *testing.T) {
+
+    // Create account manager
+    am, err := test.NewInitAccountManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Create key manager
+    km, err := test.NewInitKeyManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(test.POW_PROVIDER_URL)
+    if err != nil { t.Fatal(err) }
+
+    // Initialise contract manager & load contracts / ABIs
+    cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
+    if err != nil { t.Fatal(err) }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketMinipool", "rocketNodeContract"}); err != nil { t.Fatal(err) }
+
+    // Register node
+    nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
+    if err != nil { t.Fatal(err) }
+
+    // Create minipool
+    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    if err != nil { t.Fatal(err) }
+
+    // Get minipool status code
+    status, err := minipool.GetStatusCode(cm, &minipoolAddress)
+    if err != nil { t.Fatal(err) }
+
+    // Check status code
+    if status != minipool.INITIALIZED { t.Errorf("Incorrect minipool status: expected %d, got %d", minipool.INITIALIZED, status) }
+
+    // Get status code for nonexistent minipool
+    address := common.HexToAddress("0x0000000000000000000000000000000000000000")
+    if _, err := minipool.GetStatusCode(cm, &address); err == nil { t.Error("GetStatusCode() method should return error for nonexistent minipools") }
+
+}
+
