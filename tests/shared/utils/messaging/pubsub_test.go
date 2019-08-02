@@ -24,19 +24,19 @@ func TestPublisher(t *testing.T) {
     listener2 := make(chan interface{})
 
     // Handle listener events
-    eventsReceived := make(chan struct{})
+    eventReceived := make(chan struct{})
     listener1Events := []EventData{}
     listener2Events := []EventData{}
     go (func() {
         for e := range listener1 {
             listener1Events = append(listener1Events, (e).(EventData))
-            eventsReceived <- struct{}{}
+            eventReceived <- struct{}{}
         }
     })()
     go (func() {
         for e := range listener2 {
             listener2Events = append(listener2Events, (e).(EventData))
-            eventsReceived <- struct{}{}
+            eventReceived <- struct{}{}
         }
     })()
 
@@ -51,8 +51,8 @@ func TestPublisher(t *testing.T) {
     // Notify of event with both listeners subscribed
     publisher.Notify("event1", EventData{"c"})
     publisher.Notify("event2", EventData{"d"})
-    <-eventsReceived
-    <-eventsReceived
+    <-eventReceived
+    <-eventReceived
 
     // Unsubscribe listener
     publisher.RemoveSubscriber("event2", listener2)
@@ -60,11 +60,11 @@ func TestPublisher(t *testing.T) {
     // Notify of event with listener 1 subscribed
     publisher.Notify("event1", EventData{"e"})
     publisher.Notify("event2", EventData{"f"})
-    <-eventsReceived
+    <-eventReceived
     publisher.Notify("event2", EventData{"g"})
-    <-eventsReceived
+    <-eventReceived
     publisher.Notify("event2", EventData{"h"})
-    <-eventsReceived
+    <-eventReceived
 
     // Check observed events
     if len(listener1Events) != 4 { t.Fatalf("Incorrect listener 1 event count: expected %d, got %d", 4, len(listener1Events)) }
