@@ -58,8 +58,53 @@ func TestGetDetails(t *testing.T) {
 
     // Get details for nonexistent minipool
     address := common.HexToAddress("0x0000000000000000000000000000000000000000")
-    details, err = minipool.GetDetails(cm, &address)
-    if err == nil { t.Error("GetDetails() method should return error for nonexistent minipools") }
+    if _, err := minipool.GetDetails(cm, &address); err == nil { t.Error("GetDetails() method should return error for nonexistent minipools") }
+
+}
+
+
+// Test minipool status getter
+func TestGetStatus(t *testing.T) {
+
+    // Create account manager
+    am, err := test.NewInitAccountManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Create key manager
+    km, err := test.NewInitKeyManager("foobarbaz")
+    if err != nil { t.Fatal(err) }
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(test.POW_PROVIDER_URL)
+    if err != nil { t.Fatal(err) }
+
+    // Initialise contract manager & load contracts / ABIs
+    cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
+    if err != nil { t.Fatal(err) }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketMinipool", "rocketNodeContract"}); err != nil { t.Fatal(err) }
+
+    // Register node
+    nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
+    if err != nil { t.Fatal(err) }
+
+    // Create minipool
+    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    if err != nil { t.Fatal(err) }
+
+    // Get minipool status
+    status, err := minipool.GetStatus(cm, &minipoolAddress)
+    if err != nil { t.Fatal(err) }
+
+    // Check minipool status
+    expectedStakingDuration := big.NewInt(526000)
+    if status.Status != minipool.INITIALIZED { t.Errorf("Incorrect minipool status: expected %d, got %d", minipool.INITIALIZED, status.Status) }
+    if status.StakingDuration.Cmp(expectedStakingDuration) != 0 { t.Errorf("Incorrect minipool staking duration: expected %s, got %s", expectedStakingDuration.String(), status.StakingDuration.String()) }
+    if _, err := km.GetValidatorKey(status.ValidatorPubkey); err != nil { t.Error("Minipool validator pubkey does not match local validator key") }
+
+    // Get status for nonexistent minipool
+    address := common.HexToAddress("0x0000000000000000000000000000000000000000")
+    if _, err := minipool.GetStatus(cm, &address); err == nil { t.Error("GetStatus() method should return error for nonexistent minipools") }
 
 }
 
