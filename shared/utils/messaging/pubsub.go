@@ -7,7 +7,7 @@ import (
 
 // Publisher
 type Publisher struct {
-    subscribers map[string][]chan interface{}
+    subscribers map[string][]chan<- interface{}
     lock sync.Mutex
 }
 
@@ -17,7 +17,7 @@ type Publisher struct {
  */
 func NewPublisher() *Publisher {
     return &Publisher{
-        subscribers: make(map[string][]chan interface{}),
+        subscribers: make(map[string][]chan<- interface{}),
     }
 }
 
@@ -25,7 +25,7 @@ func NewPublisher() *Publisher {
 /**
  * Add subscriber
  */
-func (publisher *Publisher) AddSubscriber(event string, listener chan interface{}) {
+func (publisher *Publisher) AddSubscriber(event string, listener chan<- interface{}) {
 
     // Lock for map modification
     publisher.lock.Lock()
@@ -33,7 +33,7 @@ func (publisher *Publisher) AddSubscriber(event string, listener chan interface{
 
     // Create event entry if not set
     if _, ok := publisher.subscribers[event]; !ok {
-        publisher.subscribers[event] = make([]chan interface{}, 0)
+        publisher.subscribers[event] = make([]chan<- interface{}, 0)
     }
 
     // Append listener
@@ -45,7 +45,7 @@ func (publisher *Publisher) AddSubscriber(event string, listener chan interface{
 /**
  * Remove subscriber
  */
-func (publisher *Publisher) RemoveSubscriber(event string, listener chan interface{}) {
+func (publisher *Publisher) RemoveSubscriber(event string, listener chan<- interface{}) {
 
     // Lock for map modification
     publisher.lock.Lock()
@@ -81,9 +81,9 @@ func (publisher *Publisher) Notify(event string, data interface{}) {
         return
     }
 
-    // Send to listeners
+    // Send to listeners without blocking
     for _, listener := range publisher.subscribers[event] {
-        go (func(listener chan interface{}) {
+        go (func(listener chan<- interface{}) {
             listener <- data
         })(listener)
     }
