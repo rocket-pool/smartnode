@@ -126,7 +126,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Initialise output file
     if outputPath := c.GlobalString("output"); outputPath != "" {
-        if outputFile, err := os.Create(outputPath); err != nil {
+        if outputFile, err := os.OpenFile(outputPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
             return nil, errors.New("Error opening CLI output file: " + err.Error())
         } else {
             p.Output = outputFile
