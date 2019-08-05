@@ -24,7 +24,7 @@ func TestPasswordManager(t *testing.T) {
     passwordPath += "/password"
 
     // Initialise password manager
-    passwordManager := passwords.NewPasswordManager(input, passwordPath)
+    passwordManager := passwords.NewPasswordManager(input, nil, passwordPath)
 
     // Check if password exists
     if passwordExists := passwordManager.PasswordExists(); passwordExists {

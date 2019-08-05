@@ -127,7 +127,7 @@ func registerNode(c *cli.Context) error {
     }
 
     // Prompt user for timezone
-    timezone := promptTimezone(p.Input)
+    timezone := promptTimezone(p.Input, p.Output)
 
     // Register node
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {

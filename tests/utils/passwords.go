@@ -17,7 +17,7 @@ func NewPasswordManager(input *os.File) (*passwords.PasswordManager, error) {
     passwordPath += "/password"
 
     // Create and return password manager
-    return passwords.NewPasswordManager(input, passwordPath), nil
+    return passwords.NewPasswordManager(input, nil, passwordPath), nil
 
 }
 

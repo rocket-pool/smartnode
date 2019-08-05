@@ -55,6 +55,10 @@ func Configure(app *cli.App) {
             Name:  "input",
             Usage: "Rocket Pool CLI input file `path` (advanced use only)",
         }),
+        altsrc.NewStringFlag(cli.StringFlag{
+            Name:  "output",
+            Usage: "Rocket Pool CLI output file `path` (advanced use only)",
+        }),
     }
 
     // Load external config, squelch load errors

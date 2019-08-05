@@ -33,7 +33,7 @@ func NewApp() *cli.App {
 
 
 // Get CLI app args
-func AppArgs(inputPath string, dataPath string) []string {
+func AppArgs(inputPath string, outputPath string, dataPath string) []string {
     return []string{
         "rocketpool-cli",
         "--database", dataPath + "/rocketpool.db",
@@ -44,6 +44,7 @@ func AppArgs(inputPath string, dataPath string) []string {
         "--providerBeacon", BEACON_PROVIDER_URL,
         "--storageAddress", ROCKET_STORAGE_ADDRESS,
         "--input", inputPath,
+        "--output", outputPath,
     }
 }
 

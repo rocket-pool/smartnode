@@ -56,6 +56,7 @@ type ProviderOpts struct {
 // Service provider
 type Provider struct {
     Input               *os.File
+    Output              *os.File
     DB                  *database.Database
     PM                  *passwords.PasswordManager
     AM                  *accounts.AccountManager
@@ -123,6 +124,17 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         p.Input = os.Stdin
     }
 
+    // Initialise output file
+    if outputPath := c.GlobalString("output"); outputPath != "" {
+        if outputFile, err := os.Create(outputPath); err != nil {
+            return nil, errors.New("Error opening CLI output file: " + err.Error())
+        } else {
+            p.Output = outputFile
+        }
+    } else {
+        p.Output = os.Stdout
+    }
+
     // Initialise database
     if opts.DB {
         p.DB = database.NewDatabase(c.GlobalString("database"))
@@ -132,7 +144,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.PM {
 
         // Initialise
-        p.PM = passwords.NewPasswordManager(p.Input, c.GlobalString("password"))
+        p.PM = passwords.NewPasswordManager(p.Input, p.Output, c.GlobalString("password"))
 
         // Check or wait for password set
         if opts.WaitPassword {

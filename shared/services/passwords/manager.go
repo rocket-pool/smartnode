@@ -21,6 +21,7 @@ const PASSWORD_SALT string = "iRmrlkOXNzOcEf8Dy3HQTgNNc4HYAMMeft7axN6XngLVei49OP
 // Password manager
 type PasswordManager struct {
     input *os.File
+    output *os.File
     passwordPath string
 }
 
@@ -28,14 +29,16 @@ type PasswordManager struct {
 /**
  * Create new password manager
  */
-func NewPasswordManager(input *os.File, passwordPath string) *PasswordManager {
+func NewPasswordManager(input *os.File, output *os.File, passwordPath string) *PasswordManager {
 
-    // Read from stdin by default
+    // Read from stdin, write to stdout by default
     if input == nil { input = os.Stdin }
+    if output == nil { output = os.Stdout }
 
     // Create and return
     return &PasswordManager{
         input: input,
+        output: output,
         passwordPath: passwordPath,
     }
 
@@ -82,7 +85,7 @@ func (pm *PasswordManager) CreatePassword() (string, error) {
     if pm.PasswordExists() { return "", errors.New("Password already exists.") }
 
     // Prompt for password
-    password := cliutils.Prompt(pm.input, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
+    password := cliutils.Prompt(pm.input, pm.output, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
 
     // Write to file
     if err := ioutil.WriteFile(pm.passwordPath, []byte(password), 0600); err != nil {
