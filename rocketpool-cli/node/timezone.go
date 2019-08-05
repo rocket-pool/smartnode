@@ -28,7 +28,7 @@ func setNodeTimezone(c *cli.Context) error {
     }
 
     // Prompt user for timezone
-    timezone := promptTimezone()
+    timezone := promptTimezone(p.Input)
 
     // Set node timezone
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
