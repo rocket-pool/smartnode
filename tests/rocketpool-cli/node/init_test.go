@@ -47,10 +47,10 @@ func TestInitNode(t *testing.T) {
     for scanner := bufio.NewScanner(output); scanner.Scan(); {
         switch line {
             case 0: if !regexp.MustCompile("(?i)^Please enter a node password").MatchString(scanner.Text()) { t.Error("Password prompt message incorrect") }
-            case 1: if !regexp.MustCompile("(?i)^Node password set successfully:").MatchString(scanner.Text()) { t.Error("Node password set message incorrect") }
-            case 2: if !regexp.MustCompile("(?i)^Node account created successfully:").MatchString(scanner.Text()) { t.Error("Node account created message incorrect") }
-            case 3: if !regexp.MustCompile("(?i)^Node password already set.").MatchString(scanner.Text()) { t.Error("Node password already set message incorrect") }
-            case 4: if !regexp.MustCompile("(?i)^Node account already exists:").MatchString(scanner.Text()) { t.Error("Node account already exists message incorrect") }
+            case 1: if !regexp.MustCompile("(?i)^Node password set successfully").MatchString(scanner.Text()) { t.Error("Node password set message incorrect") }
+            case 2: if !regexp.MustCompile("(?i)^Node account created successfully").MatchString(scanner.Text()) { t.Error("Node account created message incorrect") }
+            case 3: if !regexp.MustCompile("(?i)^Node password already set").MatchString(scanner.Text()) { t.Error("Node password already set message incorrect") }
+            case 4: if !regexp.MustCompile("(?i)^Node account already exists").MatchString(scanner.Text()) { t.Error("Node account already exists message incorrect") }
         }
         line++
     }
