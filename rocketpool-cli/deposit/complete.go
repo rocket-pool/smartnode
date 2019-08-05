@@ -91,7 +91,7 @@ func completeDeposit(c *cli.Context) error {
             case <-successChannel:
                 received++
             case msg := <-messageChannel:
-                fmt.Println(msg)
+                fmt.Fprintln(p.Output, msg)
                 return nil
             case err := <-errorChannel:
                 return err
@@ -175,14 +175,14 @@ func completeDeposit(c *cli.Context) error {
 
         // Check node account balance
         if accountBalances.EtherWei.Cmp(remainingEtherRequiredWei) < 0 {
-            fmt.Println(fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH", eth.WeiToEth(nodeBalances.EtherWei), eth.WeiToEth(accountBalances.EtherWei), eth.WeiToEth(requiredBalances.EtherWei)))
+            fmt.Fprintln(p.Output, fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH", eth.WeiToEth(nodeBalances.EtherWei), eth.WeiToEth(accountBalances.EtherWei), eth.WeiToEth(requiredBalances.EtherWei)))
             return nil
         }
 
         // Confirm transfer of remaining required ether
         response := cliutils.Prompt(p.Input, p.Output, fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingEtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
-            fmt.Println("Deposit not completed")
+            fmt.Fprintln(p.Output, "Deposit not completed")
             return nil
         }
 
@@ -200,20 +200,20 @@ func completeDeposit(c *cli.Context) error {
 
         // Check node account balance
         if accountBalances.RplWei.Cmp(remainingRplRequiredWei) < 0 {
-            fmt.Println(fmt.Sprintf("Node balance of %.2f RPL plus account balance of %.2f RPL is not enough to cover requirement of %.2f RPL", eth.WeiToEth(nodeBalances.RplWei), eth.WeiToEth(accountBalances.RplWei), eth.WeiToEth(requiredBalances.RplWei)))
+            fmt.Fprintln(p.Output, fmt.Sprintf("Node balance of %.2f RPL plus account balance of %.2f RPL is not enough to cover requirement of %.2f RPL", eth.WeiToEth(nodeBalances.RplWei), eth.WeiToEth(accountBalances.RplWei), eth.WeiToEth(requiredBalances.RplWei)))
             return nil
         }
 
         // Confirm transfer of remaining required RPL
         response := cliutils.Prompt(p.Input, p.Output, fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(remainingRplRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
         if strings.ToLower(response[:1]) == "n" {
-            fmt.Println("Deposit not completed")
+            fmt.Fprintln(p.Output, "Deposit not completed")
             return nil
         }
 
         // Transfer remaining required RPL
         txor.Value = big.NewInt(0)
-        fmt.Println("Transferring RPL to node contract...")
+        fmt.Fprintln(p.Output, "Transferring RPL to node contract...")
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketPoolToken"], p.CM.Abis["rocketPoolToken"], "transfer", p.NodeContractAddress, remainingRplRequiredWei); err != nil {
             return errors.New("Error transferring RPL to node contract: " + err.Error())
         }
@@ -222,7 +222,7 @@ func completeDeposit(c *cli.Context) error {
 
     // Complete deposit
     txor.Value = depositTransactionValueWei
-    fmt.Println("Completing deposit...")
+    fmt.Fprintln(p.Output, "Completing deposit...")
     txReceipt, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "deposit")
     if err != nil {
         return errors.New("Error completing deposit: " + err.Error())
@@ -238,7 +238,7 @@ func completeDeposit(c *cli.Context) error {
     minipoolCreatedEvent := (minipoolCreatedEvents[0]).(*PoolCreated)
 
     // Log & return
-    fmt.Println("Deposit completed successfully, minipool created at", minipoolCreatedEvent.Address.Hex())
+    fmt.Fprintln(p.Output, "Deposit completed successfully, minipool created at", minipoolCreatedEvent.Address.Hex())
     return nil
 
 }

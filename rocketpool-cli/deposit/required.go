@@ -45,7 +45,7 @@ func getRplRequired(c *cli.Context, durationId string) error {
     }
 
     // Log & return
-    fmt.Println(fmt.Sprintf(
+    fmt.Fprintln(p.Output, fmt.Sprintf(
         "%.2f RPL required to cover a deposit amount of %.2f ETH for %s @ %.2f RPL / ETH",
         eth.WeiToEth(*depositRplAmountWei),
         eth.WeiToEth(depositEtherAmountWei),

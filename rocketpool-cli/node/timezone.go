@@ -34,7 +34,7 @@ func setNodeTimezone(c *cli.Context) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        fmt.Println("Setting node timezone...")
+        fmt.Fprintln(p.Output, "Setting node timezone...")
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketNodeAPI"], p.CM.Abis["rocketNodeAPI"], "setTimezoneLocation", timezone); err != nil {
             return errors.New("Error setting node timezone: " + err.Error())
         }
@@ -48,7 +48,7 @@ func setNodeTimezone(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Println("Node timezone successfully updated to:", *nodeTimezone)
+    fmt.Fprintln(p.Output, "Node timezone successfully updated to:", *nodeTimezone)
     return nil
 
 }

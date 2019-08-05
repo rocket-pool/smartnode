@@ -100,7 +100,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
             case <-successChannel:
                 received++
             case msg := <-messageChannel:
-                fmt.Println(msg)
+                fmt.Fprintln(p.Output, msg)
                 return nil
             case err := <-errorChannel:
                 return err
@@ -134,7 +134,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        fmt.Println("Making deposit reservation...")
+        fmt.Fprintln(p.Output, "Making deposit reservation...")
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, pubkey, signature); err != nil {
             return errors.New("Error making deposit reservation: " + err.Error())
         }
@@ -147,7 +147,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     }
 
     // Log & return
-    fmt.Println(fmt.Sprintf(
+    fmt.Fprintln(p.Output, fmt.Sprintf(
         "Deposit reservation made successfully, requiring %.2f ETH and %.2f RPL, with a staking duration of %s and expiring at %s",
         eth.WeiToEth(reservation.EtherRequiredWei),
         eth.WeiToEth(reservation.RplRequiredWei),

@@ -26,24 +26,24 @@ func initNode(c *cli.Context) error {
 
     // Create password if it isn't set
     if p.PM.PasswordExists() {
-        fmt.Println("Node password already set.")
+        fmt.Fprintln(p.Output, "Node password already set.")
     } else {
         if password, err := p.PM.CreatePassword(); err != nil {
             return errors.New("Error setting node password: " + err.Error())
         } else {
-            fmt.Println("Node password set successfully:", password)
+            fmt.Fprintln(p.Output, "Node password set successfully:", password)
         }
     }
 
     // Create node account if it doesn't exist
     if p.AM.NodeAccountExists() {
         nodeAccount, _ := p.AM.GetNodeAccount()
-        fmt.Println("Node account already exists:", nodeAccount.Address.Hex())
+        fmt.Fprintln(p.Output, "Node account already exists:", nodeAccount.Address.Hex())
     } else {
         if account, err := p.AM.CreateNodeAccount(); err != nil {
             return errors.New("Error creating node account: " + err.Error())
         } else {
-            fmt.Println("Node account created successfully:", account.Address.Hex())
+            fmt.Fprintln(p.Output, "Node account created successfully:", account.Address.Hex())
         }
     }
 

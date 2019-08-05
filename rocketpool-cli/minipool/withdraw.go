@@ -40,7 +40,7 @@ func withdrawMinipool(c *cli.Context) error {
     if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, withdrawalsAllowed, "getWithdrawalAllowed"); err != nil {
         return errors.New("Error checking node withdrawals enabled status: " + err.Error())
     } else if !*withdrawalsAllowed {
-        fmt.Println("Node withdrawals are currently disabled in Rocket Pool")
+        fmt.Fprintln(p.Output, "Node withdrawals are currently disabled in Rocket Pool")
         return nil
     }
 
@@ -81,7 +81,7 @@ func withdrawMinipool(c *cli.Context) error {
 
     // Cancel if no minipools are withdrawable
     if len(withdrawableMinipoolAddresses) == 0 {
-        fmt.Println("No minipools are currently available for withdrawal")
+        fmt.Fprintln(p.Output, "No minipools are currently available for withdrawal")
         return nil
     }
 
@@ -114,11 +114,11 @@ func withdrawMinipool(c *cli.Context) error {
             if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
                 withdrawErrorChannel <- errors.New(fmt.Sprintf("Error creating transactor for minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
             } else {
-                fmt.Println(fmt.Sprintf("Withdrawing deposit from minipool %s...", withdrawMinipoolAddresses[mi].Hex()))
+                fmt.Fprintln(p.Output, fmt.Sprintf("Withdrawing deposit from minipool %s...", withdrawMinipoolAddresses[mi].Hex()))
                 if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", withdrawMinipoolAddresses[mi]); err != nil {
                     withdrawErrorChannel <- errors.New(fmt.Sprintf("Error withdrawing deposit from minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
                 } else {
-                    fmt.Println("Successfully withdrew deposit from minipool", withdrawMinipoolAddresses[mi].Hex())
+                    fmt.Fprintln(p.Output, "Successfully withdrew deposit from minipool", withdrawMinipoolAddresses[mi].Hex())
                     withdrawSuccessChannel <- true
                 }
             }

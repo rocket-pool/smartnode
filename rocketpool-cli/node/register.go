@@ -119,7 +119,7 @@ func registerNode(c *cli.Context) error {
         case <-successChannel:
             received++
         case msg := <-messageChannel:
-            fmt.Println(msg)
+            fmt.Fprintln(p.Output, msg)
             return nil
         case err := <-errorChannel:
             return err
@@ -133,7 +133,7 @@ func registerNode(c *cli.Context) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        fmt.Println("Registering node...")
+        fmt.Fprintln(p.Output, "Registering node...")
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketNodeAPI"], p.CM.Abis["rocketNodeAPI"], "add", timezone); err != nil {
             return errors.New("Error registering node: " + err.Error())
         }
@@ -146,7 +146,7 @@ func registerNode(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Println("Node registered successfully with Rocket Pool - new node deposit contract created at", nodeContractAddress.Hex())
+    fmt.Fprintln(p.Output, "Node registered successfully with Rocket Pool - new node deposit contract created at", nodeContractAddress.Hex())
     return nil
 
 }

@@ -41,7 +41,7 @@ func getNodeStatus(c *cli.Context) error {
     }
 
     // Log
-    fmt.Println(fmt.Sprintf(
+    fmt.Fprintln(p.Output, fmt.Sprintf(
         "Node account %s has a balance of %.2f ETH, %.2f rETH and %.2f RPL",
         nodeAccount.Address.Hex(),
         eth.WeiToEth(accountBalances.EtherWei),
@@ -53,7 +53,7 @@ func getNodeStatus(c *cli.Context) error {
     if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
         return errors.New("Error checking node registration: " + err.Error())
     } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
-        fmt.Println("Node is not registered with Rocket Pool")
+        fmt.Fprintln(p.Output, "Node is not registered with Rocket Pool")
         return nil
     }
 
@@ -130,18 +130,18 @@ func getNodeStatus(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Println(fmt.Sprintf(
+    fmt.Fprintln(p.Output, fmt.Sprintf(
         "Node registered with Rocket Pool with contract at %s, timezone '%s' and a balance of %.2f ETH and %.2f RPL",
         nodeContractAddress.Hex(),
         nodeTimezone,
         eth.WeiToEth(nodeBalances.EtherWei),
         eth.WeiToEth(nodeBalances.RplWei)))
     if nodeTrusted {
-        fmt.Println("Node is a trusted Rocket Pool node and will perform watchtower duties")
+        fmt.Fprintln(p.Output, "Node is a trusted Rocket Pool node and will perform watchtower duties")
     }
     if !nodeActive {
-        fmt.Println("Node has been marked inactive after failing to check in, and will not receive user deposits!")
-        fmt.Println("Please check smart node daemon status with `rocketpool service stats`")
+        fmt.Fprintln(p.Output, "Node has been marked inactive after failing to check in, and will not receive user deposits!")
+        fmt.Fprintln(p.Output, "Please check smart node daemon status with `rocketpool service stats`")
     }
     return nil
 

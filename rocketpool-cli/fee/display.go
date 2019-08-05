@@ -48,11 +48,11 @@ func displayUserFee(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Println(fmt.Sprintf("The current Rocket Pool user fee paid to node operators is %.2f%% of rewards", userFeePerc))
+    fmt.Fprintln(p.Output, fmt.Sprintf("The current Rocket Pool user fee paid to node operators is %.2f%% of rewards", userFeePerc))
     if *targetUserFeePerc == -1 {
-        fmt.Println("The target Rocket Pool user fee to vote for is not set")
+        fmt.Fprintln(p.Output, "The target Rocket Pool user fee to vote for is not set")
     } else {
-        fmt.Println(fmt.Sprintf("The target Rocket Pool user fee to vote for is %.2f%% of rewards", *targetUserFeePerc))
+        fmt.Fprintln(p.Output, fmt.Sprintf("The target Rocket Pool user fee to vote for is %.2f%% of rewards", *targetUserFeePerc))
     }
     return nil
 

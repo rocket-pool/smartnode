@@ -32,7 +32,7 @@ func cancelDeposit(c *cli.Context) error {
     if err := p.NodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
         return errors.New("Error retrieving deposit reservation status: " + err.Error())
     } else if !*hasReservation {
-        fmt.Println("Node does not have a current deposit reservation")
+        fmt.Fprintln(p.Output, "Node does not have a current deposit reservation")
         return nil
     }
 
@@ -40,14 +40,14 @@ func cancelDeposit(c *cli.Context) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        fmt.Println("Canceling deposit reservation...")
+        fmt.Fprintln(p.Output, "Canceling deposit reservation...")
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserveCancel"); err != nil {
             return errors.New("Error canceling deposit reservation: " + err.Error())
         }
     }
 
     // Log & return
-    fmt.Println("Deposit reservation cancelled successfully")
+    fmt.Fprintln(p.Output, "Deposit reservation cancelled successfully")
     return nil
 
 }

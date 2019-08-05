@@ -62,18 +62,18 @@ func getMinipoolStatus(c *cli.Context) error {
     }
 
     // Log status & return
-    fmt.Println(fmt.Sprintf("Node has %d minipools", minipoolCount))
+    fmt.Fprintln(p.Output, fmt.Sprintf("Node has %d minipools", minipoolCount))
     for _, details := range minipoolDetails {
-        fmt.Println("--------")
-        fmt.Println("Address:               ", details.Address.Hex())
-        fmt.Println("Status:                ", details.StatusType)
-        fmt.Println("Status Updated Time:   ", details.StatusTime.Format("2006-01-02, 15:04 -0700 MST"))
-        fmt.Println("Staking Duration:      ", details.StakingDurationId)
-        fmt.Println("Node ETH Deposited:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeEtherBalanceWei)))
-        fmt.Println("Node RPL Deposited:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeRplBalanceWei)))
-        fmt.Println("Deposit Count:         ", details.DepositCount.String())
-        fmt.Println("User Deposit Capacity: ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositCapacityWei)))
-        fmt.Println("User Deposit Total:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositTotalWei)))
+        fmt.Fprintln(p.Output, "--------")
+        fmt.Fprintln(p.Output, "Address:               ", details.Address.Hex())
+        fmt.Fprintln(p.Output, "Status:                ", details.StatusType)
+        fmt.Fprintln(p.Output, "Status Updated Time:   ", details.StatusTime.Format("2006-01-02, 15:04 -0700 MST"))
+        fmt.Fprintln(p.Output, "Staking Duration:      ", details.StakingDurationId)
+        fmt.Fprintln(p.Output, "Node ETH Deposited:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeEtherBalanceWei)))
+        fmt.Fprintln(p.Output, "Node RPL Deposited:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeRplBalanceWei)))
+        fmt.Fprintln(p.Output, "Deposit Count:         ", details.DepositCount.String())
+        fmt.Fprintln(p.Output, "User Deposit Capacity: ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositCapacityWei)))
+        fmt.Fprintln(p.Output, "User Deposit Total:    ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositTotalWei)))
     }
     return nil
 

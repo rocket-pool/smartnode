@@ -49,7 +49,7 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     if err := p.NodeContract.Call(nil, balanceWei, balanceMethod); err != nil {
         return errors.New("Error retrieving node balance: " + err.Error())
     } else if amountWei.Cmp(*balanceWei) > 0 {
-        fmt.Println("Withdrawal amount exceeds available balance on node contract")
+        fmt.Fprintln(p.Output, "Withdrawal amount exceeds available balance on node contract")
         return nil
     }
 
@@ -57,14 +57,14 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        fmt.Println("Withdrawing from node contract...")
+        fmt.Fprintln(p.Output, "Withdrawing from node contract...")
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], withdrawMethod, amountWei); err != nil {
             return errors.New("Error withdrawing from node contract: " + err.Error())
         }
     }
 
     // Log & return
-    fmt.Println(fmt.Sprintf("Successfully withdrew %.2f %s from node contract to account", amount, unit))
+    fmt.Fprintln(p.Output, fmt.Sprintf("Successfully withdrew %.2f %s from node contract to account", amount, unit))
     return nil
 
 }

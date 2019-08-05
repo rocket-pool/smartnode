@@ -64,16 +64,16 @@ func getDepositStatus(c *cli.Context) error {
     }
 
     // Log status & return
-    fmt.Println(fmt.Sprintf("Node deposit contract has a balance of %.2f ETH and %.2f RPL", eth.WeiToEth(balances.EtherWei), eth.WeiToEth(balances.RplWei)))
+    fmt.Fprintln(p.Output, fmt.Sprintf("Node deposit contract has a balance of %.2f ETH and %.2f RPL", eth.WeiToEth(balances.EtherWei), eth.WeiToEth(balances.RplWei)))
     if reservation.Exists {
-        fmt.Println(fmt.Sprintf(
+        fmt.Fprintln(p.Output, fmt.Sprintf(
             "Node has a deposit reservation requiring %.2f ETH and %.2f RPL, with a staking duration of %s and expiring at %s",
             eth.WeiToEth(reservation.EtherRequiredWei),
             eth.WeiToEth(reservation.RplRequiredWei),
             reservation.StakingDurationID,
             reservation.ExpiryTime.Format("2006-01-02, 15:04 -0700 MST")))
     } else {
-        fmt.Println("Node does not have a current deposit reservation")
+        fmt.Fprintln(p.Output, "Node does not have a current deposit reservation")
     }
     return nil
 
