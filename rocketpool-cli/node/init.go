@@ -6,37 +6,41 @@ import (
 
     "gopkg.in/urfave/cli.v1"
 
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
+    "github.com/rocket-pool/smartnode/shared/services"
 )
 
 
 // Initialise the node with a password and an account
 func initNode(c *cli.Context) error {
 
-    // Initialise password manager
-    pm := passwords.NewPasswordManager(nil, c.GlobalString("password"))
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        PM: true,
+        AM: true,
+        PasswordOptional: true,
+        NodeAccountOptional: true,
+    })
+    if err != nil {
+        return err
+    }
 
     // Create password if it isn't set
-    if pm.PasswordExists() {
+    if p.PM.PasswordExists() {
         fmt.Println("Node password already set.")
     } else {
-        if password, err := pm.CreatePassword(); err != nil {
+        if password, err := p.PM.CreatePassword(); err != nil {
             return errors.New("Error setting node password: " + err.Error())
         } else {
             fmt.Println("Node password set successfully:", password)
         }
     }
 
-    // Initialise account manager
-    am := accounts.NewAccountManager(c.GlobalString("keychainPow"), pm)
-
     // Create node account if it doesn't exist
-    if am.NodeAccountExists() {
-        nodeAccount, _ := am.GetNodeAccount()
+    if p.AM.NodeAccountExists() {
+        nodeAccount, _ := p.AM.GetNodeAccount()
         fmt.Println("Node account already exists:", nodeAccount.Address.Hex())
     } else {
-        if account, err := am.CreateNodeAccount(); err != nil {
+        if account, err := p.AM.CreateNodeAccount(); err != nil {
             return errors.New("Error creating node account: " + err.Error())
         } else {
             fmt.Println("Node account created successfully:", account.Address.Hex())
