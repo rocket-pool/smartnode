@@ -51,6 +51,10 @@ func Configure(app *cli.App) {
             Usage: "PoW chain Rocket Pool storage contract `address`",
             Value: "0x9Ff8948DD13f5F690Ac83DF5a11a2b8D5C762779", // RP2 Beta network
         }),
+        altsrc.NewStringFlag(cli.StringFlag{
+            Name:  "input",
+            Usage: "Rocket Pool CLI input file `path` (advanced use only)",
+        }),
     }
 
     // Load external config, squelch load errors

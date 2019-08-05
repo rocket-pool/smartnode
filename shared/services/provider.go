@@ -3,6 +3,7 @@ package services
 import (
     "bytes"
     "errors"
+    "os"
 
     "github.com/docker/docker/client"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -47,11 +48,14 @@ type ProviderOpts struct {
     WaitClientConn      bool
     WaitClientSync      bool
     WaitRocketStorage   bool
+    PasswordOptional    bool
+    NodeAccountOptional bool
 }
 
 
 // Service provider
 type Provider struct {
+    Input               *os.File
     DB                  *database.Database
     PM                  *passwords.PasswordManager
     AM                  *accounts.AccountManager
@@ -108,6 +112,17 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     // Service provider
     p := &Provider{}
 
+    // Initialise input source
+    if inputPath := c.GlobalString("input"); inputPath != "" {
+        if inputFile, err := os.Open(inputPath); err != nil {
+            return nil, errors.New("Error opening CLI input file: " + err.Error())
+        } else {
+            p.Input = inputFile
+        }
+    } else {
+        p.Input = os.Stdin
+    }
+
     // Initialise database
     if opts.DB {
         p.DB = database.NewDatabase(c.GlobalString("database"))
@@ -117,12 +132,12 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.PM {
 
         // Initialise
-        p.PM = passwords.NewPasswordManager(nil, c.GlobalString("password"))
+        p.PM = passwords.NewPasswordManager(p.Input, c.GlobalString("password"))
 
         // Check or wait for password set
         if opts.WaitPassword {
             sync.WaitPasswordSet(p.PM)
-        } else if !p.PM.PasswordExists() {
+        } else if !opts.PasswordOptional && !p.PM.PasswordExists() {
             return nil, errors.New("Node password is not set, please initialize with `rocketpool node init`")
         }
 
@@ -137,7 +152,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         // Check or wait for node account
         if opts.WaitNodeAccount {
             sync.WaitNodeAccountSet(p.AM)
-        } else if !p.AM.NodeAccountExists() {
+        } else if !opts.NodeAccountOptional && !p.AM.NodeAccountExists() {
             return nil, errors.New("Node account does not exist, please initialize with `rocketpool node init`")
         }
 
