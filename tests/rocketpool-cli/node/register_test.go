@@ -44,7 +44,7 @@ func TestNodeRegister(t *testing.T) {
     if err := app.Run(append(registerArgs, "node", "register")); err == nil { t.Error("Should return error for uninitialised node") }
 
     // Initialise node
-    if err := app.Run(append(initArgs, "node", "init")); err != nil { t.Error(err) }
+    if err := app.Run(append(initArgs, "node", "init")); err != nil { t.Fatal(err) }
 
     // Register initialised node with no balance
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }

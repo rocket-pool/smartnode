@@ -46,14 +46,14 @@ func TestNodeStatus(t *testing.T) {
     if err := app.Run(append(statusArgs, "node", "status")); err == nil { t.Error("Should return error for uninitialised node") }
 
     // Initialise node
-    if err := app.Run(append(initArgs, "node", "init")); err != nil { t.Error(err) }
+    if err := app.Run(append(initArgs, "node", "init")); err != nil { t.Fatal(err) }
     
     // Get status of unregistered node
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
 
     // Seed node account & register node
     if err := test.AppSeedAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
-    if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }
+    if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Fatal(err) }
 
     // Get status of registered node
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
