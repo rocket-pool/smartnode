@@ -23,13 +23,9 @@ func TestFeeDisplay(t *testing.T) {
     dataPath, err := ioutil.TempDir("", "")
     if err != nil { t.Fatal(err) }
 
-    // Get app args & options
+    // Get app args
     displayArgs := testapp.GetAppArgs(dataPath, "", output.Name())
     setArgs := testapp.GetAppArgs(dataPath, "", "")
-    appOptions := testapp.GetAppOptions(dataPath)
-
-    _ = setArgs
-    _ = appOptions
 
     // Display fee before set
     if err := app.Run(append(displayArgs, "fee", "display")); err != nil { t.Error(err) }
