@@ -11,6 +11,18 @@ import (
 )
 
 
+// Application options
+type AppOptions struct {
+    Database string
+    Password string
+    KeychainPow string
+    KeychainBeacon string
+    ProviderPow string
+    ProviderBeacon string
+    StorageAddress string
+}
+
+
 // Create a test app
 func NewApp() *cli.App {
 
@@ -33,7 +45,7 @@ func NewApp() *cli.App {
 
 
 // Get CLI app args
-func AppArgs(inputPath string, outputPath string, dataPath string) []string {
+func GetAppArgs(dataPath string, inputPath string, outputPath string) []string {
     return []string{
         "rocketpool-cli",
         "--database", dataPath + "/rocketpool.db",
@@ -45,6 +57,20 @@ func AppArgs(inputPath string, outputPath string, dataPath string) []string {
         "--storageAddress", ROCKET_STORAGE_ADDRESS,
         "--input", inputPath,
         "--output", outputPath,
+    }
+}
+
+
+// Get CLI app options
+func GetAppOptions(dataPath string) AppOptions {
+    return AppOptions{
+        Database: dataPath + "/rocketpool.db",
+        Password: dataPath + "/password",
+        KeychainPow: dataPath + "/accounts",
+        KeychainBeacon: dataPath + "/validators",
+        ProviderPow: POW_PROVIDER_URL,
+        ProviderBeacon: BEACON_PROVIDER_URL,
+        StorageAddress: ROCKET_STORAGE_ADDRESS,
     }
 }
 

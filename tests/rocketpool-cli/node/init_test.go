@@ -32,7 +32,7 @@ func TestInitNode(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Get app args
-    args := test.AppArgs(input.Name(), output.Name(), dataPath)
+    args := test.GetAppArgs(dataPath, input.Name(), output.Name())
 
     // Initialise node
     if err := app.Run(append(args, "node", "init")); err != nil { t.Error(err) }
