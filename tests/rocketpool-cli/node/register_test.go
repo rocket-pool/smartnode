@@ -1,11 +1,8 @@
 package node
 
 import (
-    "bufio"
     "io/ioutil"
     "testing"
-    "os"
-    "regexp"
 
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
@@ -61,21 +58,17 @@ func TestNodeRegister(t *testing.T) {
     // Register already registered node
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }
 
-    // Read & check output
-    output, err = os.Open(output.Name())
-    if err != nil { t.Fatal(err) }
-    line := 0
-    for scanner := bufio.NewScanner(output); scanner.Scan(); {
-        if regexp.MustCompile("(?i)^Your system timezone is").MatchString(scanner.Text()) || regexp.MustCompile("(?i)^Please answer").MatchString(scanner.Text()) { continue }
-        line++
-        switch line {
-            case 1: if !regexp.MustCompile("(?i)^Node account 0x[0-9a-fA-F]{40} requires a minimum balance of \\d\\.\\d\\d ETH to operate in Rocket Pool$").MatchString(scanner.Text()) { t.Error("Minimum balance message incorrect") }
-            case 2: if !regexp.MustCompile("(?i)^Registering node...$").MatchString(scanner.Text()) { t.Error("Registering node message incorrect") }
-            case 3: if !regexp.MustCompile("(?i)^Node registered successfully with Rocket Pool - new node deposit contract created at 0x[0-9a-fA-F]{40}$").MatchString(scanner.Text()) { t.Error("Node registered message incorrect") }
-            case 4: if !regexp.MustCompile("(?i)^Node is already registered with Rocket Pool - current deposit contract is at 0x[0-9a-fA-F]{40}$").MatchString(scanner.Text()) { t.Error("Node already registered message incorrect") }
-        }
+    // Check output
+    if messages, err := test.CheckOutput(output.Name(), []string{"(?i)^Your system timezone is", "(?i)^Please answer"}, map[int][]string{
+        1: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} requires a minimum balance of \\d\\.\\d\\d ETH to operate in Rocket Pool$", "Minimum balance message incorrect"},
+        2: []string{"(?i)^Registering node...$", "Registering node message incorrect"},
+        3: []string{"(?i)^Node registered successfully with Rocket Pool - new node deposit contract created at 0x[0-9a-fA-F]{40}$", "Node registered message incorrect"},
+        4: []string{"(?i)^Node is already registered with Rocket Pool - current deposit contract is at 0x[0-9a-fA-F]{40}$", "Node already registered message incorrect"},
+    }); err != nil {
+        t.Fatal(err)
+    } else {
+        for _, msg := range messages { t.Error(msg) }
     }
-    if line != 4 { t.Error("Incorrect output line count") }
 
 }
 

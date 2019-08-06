@@ -1,11 +1,8 @@
 package node
 
 import (
-    "bufio"
     "io/ioutil"
     "testing"
-    "os"
-    "regexp"
 
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
@@ -39,9 +36,9 @@ func TestNodeTimezone(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Get app args & options
+    timezoneArgs := test.GetAppArgs(dataPath, timezoneInput.Name(), output.Name())
     initArgs := test.GetAppArgs(dataPath, initInput.Name(), "")
     registerArgs := test.GetAppArgs(dataPath, timezoneInput.Name(), "")
-    timezoneArgs := test.GetAppArgs(dataPath, timezoneInput.Name(), output.Name())
     appOptions := test.GetAppOptions(dataPath)
 
     // Attempt to set timezone for uninitialised node
@@ -60,19 +57,15 @@ func TestNodeTimezone(t *testing.T) {
     // Set timezone for registered node
     if err := app.Run(append(timezoneArgs, "node", "timezone")); err != nil { t.Error(err) }
 
-    // Read & check output
-    output, err = os.Open(output.Name())
-    if err != nil { t.Fatal(err) }
-    line := 0
-    for scanner := bufio.NewScanner(output); scanner.Scan(); {
-        if regexp.MustCompile("(?i)^Your system timezone is").MatchString(scanner.Text()) || regexp.MustCompile("(?i)^Please answer").MatchString(scanner.Text()) { continue }
-        line++
-        switch line {
-            case 1: if !regexp.MustCompile("(?i)^Setting node timezone...$").MatchString(scanner.Text()) { t.Error("Setting node timezone message incorrect") }
-            case 2: if !regexp.MustCompile("(?i)^Node timezone successfully updated to: \\w+/\\w+$").MatchString(scanner.Text()) { t.Error("Node timezone updated message incorrect") }
-        }
+    // Check output
+    if messages, err := test.CheckOutput(output.Name(), []string{"(?i)^Your system timezone is", "(?i)^Please answer"}, map[int][]string{
+        1: []string{"(?i)^Setting node timezone...$", "Setting node timezone message incorrect"},
+        2: []string{"(?i)^Node timezone successfully updated to: \\w+/\\w+$", "Node timezone updated message incorrect"},
+    }); err != nil {
+        t.Fatal(err)
+    } else {
+        for _, msg := range messages { t.Error(msg) }
     }
-    if line != 2 { t.Error("Incorrect output line count") }
 
 }
 

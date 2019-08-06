@@ -1,6 +1,10 @@
 package utils
 
 import (
+    "bufio"
+    "os"
+    "regexp"
+
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode/rocketpool-cli/deposit"
@@ -72,5 +76,46 @@ func GetAppOptions(dataPath string) AppOptions {
         ProviderBeacon: BEACON_PROVIDER_URL,
         StorageAddress: ROCKET_STORAGE_ADDRESS,
     }
+}
+
+
+// Check output from file against validation rules and return error messages
+func CheckOutput(outputPath string, skipLines []string, rules map[int][]string) ([]string, error) {
+
+    // Error messages
+    messages := []string{}
+
+    // Open output file
+    output, err := os.Open(outputPath)
+    if err != nil { return []string{}, err }
+
+    // Scan output
+    line := 0
+    for scanner := bufio.NewScanner(output); scanner.Scan(); {
+
+        // Check if line should be skipped
+        skip := false
+        for _, skipLine := range skipLines {
+            if regexp.MustCompile(skipLine).MatchString(scanner.Text()) {
+                skip = true
+                break
+            }
+        }
+        if skip { continue }
+
+        // Increment line number and check line if rules exist
+        line++
+        if rule, ok := rules[line]; ok {
+            if !regexp.MustCompile(rule[0]).MatchString(scanner.Text()) { messages = append(messages, rule[1]) }
+        }
+
+    }
+
+    // Check final line count
+    if line != len(rules) { messages = append(messages, "Incorrect output line count") }
+
+    // Return error messages
+    return messages, nil
+
 }
 
