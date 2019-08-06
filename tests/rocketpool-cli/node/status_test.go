@@ -45,7 +45,7 @@ func TestNodeStatus(t *testing.T) {
     registerArgs := test.GetAppArgs(dataPath, registerInput.Name(), "")
     appOptions := test.GetAppOptions(dataPath)
 
-    // Get status of uninitialised node
+    // Attempt to get status of uninitialised node
     if err := app.Run(append(statusArgs, "node", "status")); err == nil { t.Error("Should return error for uninitialised node") }
 
     // Initialise node
