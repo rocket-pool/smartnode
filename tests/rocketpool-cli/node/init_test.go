@@ -45,15 +45,16 @@ func TestInitNode(t *testing.T) {
     if err != nil { t.Fatal(err) }
     line := 0
     for scanner := bufio.NewScanner(output); scanner.Scan(); {
-        switch line {
-            case 0: if !regexp.MustCompile("(?i)^Please enter a node password").MatchString(scanner.Text()) { t.Error("Password prompt message incorrect") }
-            case 1: if !regexp.MustCompile("(?i)^Node password set successfully: .{8,}$").MatchString(scanner.Text()) { t.Error("Node password set message incorrect") }
-            case 2: if !regexp.MustCompile("(?i)^Node account created successfully: 0x[0-9a-fA-F]{40}$").MatchString(scanner.Text()) { t.Error("Node account created message incorrect") }
-            case 3: if !regexp.MustCompile("(?i)^Node password already set.$").MatchString(scanner.Text()) { t.Error("Node password already set message incorrect") }
-            case 4: if !regexp.MustCompile("(?i)^Node account already exists: 0x[0-9a-fA-F]{40}$").MatchString(scanner.Text()) { t.Error("Node account already exists message incorrect") }
-        }
         line++
+        switch line {
+            case 1: if !regexp.MustCompile("(?i)^Please enter a node password").MatchString(scanner.Text()) { t.Error("Password prompt message incorrect") }
+            case 2: if !regexp.MustCompile("(?i)^Node password set successfully: .{8,}$").MatchString(scanner.Text()) { t.Error("Node password set message incorrect") }
+            case 3: if !regexp.MustCompile("(?i)^Node account created successfully: 0x[0-9a-fA-F]{40}$").MatchString(scanner.Text()) { t.Error("Node account created message incorrect") }
+            case 4: if !regexp.MustCompile("(?i)^Node password already set.$").MatchString(scanner.Text()) { t.Error("Node password already set message incorrect") }
+            case 5: if !regexp.MustCompile("(?i)^Node account already exists: 0x[0-9a-fA-F]{40}$").MatchString(scanner.Text()) { t.Error("Node account already exists message incorrect") }
+        }
     }
+    if line != 5 { t.Error("Incorrect output line count") }
 
 }
 

@@ -10,6 +10,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
+    rp "github.com/rocket-pool/smartnode/tests/utils/rocketpool"
 )
 
 
@@ -54,10 +55,16 @@ func TestNodeStatus(t *testing.T) {
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
 
     // Seed node account & register node
-    if err := test.SeedAppAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
+    if err := test.AppSeedAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }
 
     // Get status of registered node
+    if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
+
+    // Make node trusted
+    if err := rp.AppSetNodeTrusted(appOptions); err != nil { t.Fatal(err) }
+
+    // Get status of trusted node
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
 
     // Read & check output
@@ -65,14 +72,18 @@ func TestNodeStatus(t *testing.T) {
     if err != nil { t.Fatal(err) }
     line := 0
     for scanner := bufio.NewScanner(output); scanner.Scan(); {
-        switch line {
-            case 0: fallthrough
-            case 2: if !regexp.MustCompile("(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d\\.\\d\\d ETH, \\d\\.\\d\\d rETH and \\d\\.\\d\\d RPL$").MatchString(scanner.Text()) { t.Error("Node account message incorrect") }
-            case 1: if !regexp.MustCompile("(?i)^Node is not registered with Rocket Pool$").MatchString(scanner.Text()) { t.Error("Node not registered message incorrect") }
-            case 3: if !regexp.MustCompile("(?i)^Node registered with Rocket Pool with contract at 0x[0-9a-fA-F]{40}, timezone '\\w+/\\w+' and a balance of \\d\\.\\d\\d ETH and \\d\\.\\d\\d RPL$").MatchString(scanner.Text()) { t.Error("Node registered message incorrect") }
-        }
         line++
+        switch line {
+            case 1: fallthrough
+            case 3: fallthrough
+            case 5: if !regexp.MustCompile("(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d\\.\\d\\d ETH, \\d\\.\\d\\d rETH and \\d\\.\\d\\d RPL$").MatchString(scanner.Text()) { t.Error("Node account message incorrect") }
+            case 2: if !regexp.MustCompile("(?i)^Node is not registered with Rocket Pool$").MatchString(scanner.Text()) { t.Error("Node not registered message incorrect") }
+            case 4: fallthrough
+            case 6: if !regexp.MustCompile("(?i)^Node registered with Rocket Pool with contract at 0x[0-9a-fA-F]{40}, timezone '\\w+/\\w+' and a balance of \\d\\.\\d\\d ETH and \\d\\.\\d\\d RPL$").MatchString(scanner.Text()) { t.Error("Node registered message incorrect") }
+            case 7: if !regexp.MustCompile("(?i)^Node is a trusted Rocket Pool node and will perform watchtower duties$").MatchString(scanner.Text()) { t.Error("Node trusted message incorrect") }
+        }
     }
+    if line != 7 { t.Error("Incorrect output line count") }
 
 }
 
