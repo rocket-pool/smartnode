@@ -67,7 +67,7 @@ func SeedAccount(client *ethclient.Client, address common.Address, amount *big.I
 
 
 // Seed a node account from app options
-func SeedAppAccount(options AppOptions, amount *big.Int) error {
+func AppSeedAccount(options AppOptions, amount *big.Int) error {
 
     // Create password manager & account manager
     pm := passwords.NewPasswordManager(nil, nil, options.Password)

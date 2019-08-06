@@ -11,6 +11,7 @@ import (
     "github.com/prysmaticlabs/go-ssz"
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
+    "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
     "github.com/rocket-pool/smartnode/shared/services/validators"
@@ -157,6 +158,40 @@ func CreateNodeMinipool(client *ethclient.Client, cm *rocketpool.ContractManager
 
     // Return
     return minipoolCreatedEvent.Address, nil
+
+}
+
+
+// Make a node trusted from app options
+func AppSetNodeTrusted(options test.AppOptions) error {
+
+    // Create password manager & account manager
+    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    am := accounts.NewAccountManager(options.KeychainPow, pm)
+
+    // Get node account
+    nodeAccount, err := am.GetNodeAccount()
+    if err != nil { return err }
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(options.ProviderPow)
+    if err != nil { return err }
+
+    // Initialise contract manager & load contracts
+    cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
+    if err != nil { return err }
+    if err := cm.LoadContracts([]string{"rocketAdmin"}); err != nil { return err }
+
+    // Get owner account
+    ownerPrivateKey, _, err := test.OwnerAccount()
+    if err != nil { return err }
+
+    // Set node trusted status
+    txor := bind.NewKeyedTransactor(ownerPrivateKey)
+    if _, err := eth.ExecuteContractTransaction(client, txor, cm.Addresses["rocketAdmin"], cm.Abis["rocketAdmin"], "setNodeTrusted", nodeAccount.Address, true); err != nil { return err }
+
+    // Return
+    return nil
 
 }
 
