@@ -9,7 +9,7 @@ import (
 
 
 // Test node init command
-func TestInitNode(t *testing.T) {
+func TestNodeInit(t *testing.T) {
 
     // Create test app
     app := test.NewApp()
