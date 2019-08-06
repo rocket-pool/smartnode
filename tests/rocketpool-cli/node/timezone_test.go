@@ -51,7 +51,7 @@ func TestNodeTimezone(t *testing.T) {
     if err := app.Run(append(timezoneArgs, "node", "timezone")); err == nil { t.Error("Should return error for unregistered node") }
 
     // Seed node account & register node
-    if err := test.AppSeedAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
+    if err := test.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Fatal(err) }
 
     // Set timezone for registered node

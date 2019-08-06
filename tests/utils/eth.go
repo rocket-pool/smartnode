@@ -11,9 +11,6 @@ import (
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/crypto"
     "github.com/ethereum/go-ethereum/ethclient"
-
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
 )
 
 
@@ -62,27 +59,6 @@ func SeedAccount(client *ethclient.Client, address common.Address, amount *big.I
 
     // Return
     return nil
-
-}
-
-
-// Seed a node account from app options
-func AppSeedAccount(options AppOptions, amount *big.Int) error {
-
-    // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
-    am := accounts.NewAccountManager(options.KeychainPow, pm)
-
-    // Get node account
-    nodeAccount, err := am.GetNodeAccount()
-    if err != nil { return err }
-
-    // Initialise ethereum client
-    client, err := ethclient.Dial(options.ProviderPow)
-    if err != nil { return err }
-
-    // Seed account
-    return SeedAccount(client, nodeAccount.Address, amount)
 
 }
 

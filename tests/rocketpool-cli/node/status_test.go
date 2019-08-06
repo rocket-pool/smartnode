@@ -7,7 +7,6 @@ import (
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
-    rp "github.com/rocket-pool/smartnode/tests/utils/rocketpool"
 )
 
 
@@ -52,14 +51,14 @@ func TestNodeStatus(t *testing.T) {
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
 
     // Seed node account & register node
-    if err := test.AppSeedAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
+    if err := test.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Fatal(err) }
 
     // Get status of registered node
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
 
     // Make node trusted
-    if err := rp.AppSetNodeTrusted(appOptions); err != nil { t.Fatal(err) }
+    if err := test.AppSetNodeTrusted(appOptions); err != nil { t.Fatal(err) }
 
     // Get status of trusted node
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
