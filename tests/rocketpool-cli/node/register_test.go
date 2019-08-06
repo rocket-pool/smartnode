@@ -61,7 +61,7 @@ func TestNodeRegister(t *testing.T) {
 
     // Check output
     if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Your system timezone is", "(?i)^Please answer"}, map[int][]string{
-        1: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} requires a minimum balance of \\d\\.\\d\\d ETH to operate in Rocket Pool$", "Minimum balance message incorrect"},
+        1: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} requires a minimum balance of \\d+\\.\\d+ ETH to operate in Rocket Pool$", "Minimum balance message incorrect"},
         2: []string{"(?i)^Registering node...$", "Registering node message incorrect"},
         3: []string{"(?i)^Node registered successfully with Rocket Pool - new node deposit contract created at 0x[0-9a-fA-F]{40}$", "Node registered message incorrect"},
         4: []string{"(?i)^Node is already registered with Rocket Pool - current deposit contract is at 0x[0-9a-fA-F]{40}$", "Node already registered message incorrect"},

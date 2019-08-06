@@ -66,12 +66,12 @@ func TestNodeStatus(t *testing.T) {
 
     // Check output
     if messages, err := testapp.CheckOutput(output.Name(), []string{}, map[int][]string{
-        1: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d\\.\\d\\d ETH, \\d\\.\\d\\d rETH and \\d\\.\\d\\d RPL$", "Node account message incorrect"},
-        3: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d\\.\\d\\d ETH, \\d\\.\\d\\d rETH and \\d\\.\\d\\d RPL$", "Node account message incorrect"},
-        5: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d\\.\\d\\d ETH, \\d\\.\\d\\d rETH and \\d\\.\\d\\d RPL$", "Node account message incorrect"},
+        1: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d+\\.\\d+ ETH, \\d+\\.\\d+ rETH and \\d+\\.\\d+ RPL$", "Node account message incorrect"},
+        3: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d+\\.\\d+ ETH, \\d+\\.\\d+ rETH and \\d+\\.\\d+ RPL$", "Node account message incorrect"},
+        5: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d+\\.\\d+ ETH, \\d+\\.\\d+ rETH and \\d+\\.\\d+ RPL$", "Node account message incorrect"},
         2: []string{"(?i)^Node is not registered with Rocket Pool$", "Node not registered message incorrect"},
-        4: []string{"(?i)^Node registered with Rocket Pool with contract at 0x[0-9a-fA-F]{40}, timezone '\\w+/\\w+' and a balance of \\d\\.\\d\\d ETH and \\d\\.\\d\\d RPL$", "Node registered message incorrect"},
-        6: []string{"(?i)^Node registered with Rocket Pool with contract at 0x[0-9a-fA-F]{40}, timezone '\\w+/\\w+' and a balance of \\d\\.\\d\\d ETH and \\d\\.\\d\\d RPL$", "Node registered message incorrect"},
+        4: []string{"(?i)^Node registered with Rocket Pool with contract at 0x[0-9a-fA-F]{40}, timezone '\\w+/\\w+' and a balance of \\d+\\.\\d+ ETH and \\d+\\.\\d+ RPL$", "Node registered message incorrect"},
+        6: []string{"(?i)^Node registered with Rocket Pool with contract at 0x[0-9a-fA-F]{40}, timezone '\\w+/\\w+' and a balance of \\d+\\.\\d+ ETH and \\d+\\.\\d+ RPL$", "Node registered message incorrect"},
         7: []string{"(?i)^Node is a trusted Rocket Pool node and will perform watchtower duties$", "Node trusted message incorrect"},
     }); err != nil {
         t.Fatal(err)

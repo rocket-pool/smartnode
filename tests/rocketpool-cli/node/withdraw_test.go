@@ -72,8 +72,8 @@ func TestNodeWithdraw(t *testing.T) {
         2: []string{"(?i)^Withdrawal amount exceeds available balance on node contract$", "Insufficient balance message incorrect"},
         3: []string{"(?i)^Withdrawing from node contract...$", "Withdrawing message incorrect"},
         5: []string{"(?i)^Withdrawing from node contract...$", "Withdrawing message incorrect"},
-        4: []string{"(?i)^Successfully withdrew \\d\\.\\d\\d (ETH|RPL) from node contract to account$", "Withdrawn message incorrect"},
-        6: []string{"(?i)^Successfully withdrew \\d\\.\\d\\d (ETH|RPL) from node contract to account$", "Withdrawn message incorrect"},
+        4: []string{"(?i)^Successfully withdrew \\d+\\.\\d+ (ETH|RPL) from node contract to account$", "Withdrawn message incorrect"},
+        6: []string{"(?i)^Successfully withdrew \\d+\\.\\d+ (ETH|RPL) from node contract to account$", "Withdrawn message incorrect"},
     }); err != nil {
         t.Fatal(err)
     } else {

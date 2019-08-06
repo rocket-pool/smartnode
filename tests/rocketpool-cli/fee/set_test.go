@@ -31,7 +31,7 @@ func TestFeeSet(t *testing.T) {
 
     // Check output
     if messages, err := testapp.CheckOutput(output.Name(), []string{}, map[int][]string{
-        1: []string{"(?i)^Target user fee to vote for successfully set to \\d\\.\\d\\d%$", "Target fee set message incorrect"},
+        1: []string{"(?i)^Target user fee to vote for successfully set to \\d+\\.\\d+%$", "Target fee set message incorrect"},
     }); err != nil {
         t.Fatal(err)
     } else {
