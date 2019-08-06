@@ -2,23 +2,18 @@ package utils
 
 import (
     "bufio"
-    "math/big"
     "os"
     "regexp"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/ethclient"
     "gopkg.in/urfave/cli.v1"
 
     "github.com/rocket-pool/smartnode/rocketpool-cli/deposit"
     "github.com/rocket-pool/smartnode/rocketpool-cli/fee"
     "github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
     "github.com/rocket-pool/smartnode/rocketpool-cli/node"
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/eth"
+
+    test "github.com/rocket-pool/smartnode/tests/utils"
 )
 
 
@@ -63,9 +58,9 @@ func GetAppArgs(dataPath string, inputPath string, outputPath string) []string {
         "--password", dataPath + "/password",
         "--keychainPow", dataPath + "/accounts",
         "--keychainBeacon", dataPath + "/validators",
-        "--providerPow", POW_PROVIDER_URL,
-        "--providerBeacon", BEACON_PROVIDER_URL,
-        "--storageAddress", ROCKET_STORAGE_ADDRESS,
+        "--providerPow", test.POW_PROVIDER_URL,
+        "--providerBeacon", test.BEACON_PROVIDER_URL,
+        "--storageAddress", test.ROCKET_STORAGE_ADDRESS,
         "--input", inputPath,
         "--output", outputPath,
     }
@@ -79,9 +74,9 @@ func GetAppOptions(dataPath string) AppOptions {
         Password: dataPath + "/password",
         KeychainPow: dataPath + "/accounts",
         KeychainBeacon: dataPath + "/validators",
-        ProviderPow: POW_PROVIDER_URL,
-        ProviderBeacon: BEACON_PROVIDER_URL,
-        StorageAddress: ROCKET_STORAGE_ADDRESS,
+        ProviderPow: test.POW_PROVIDER_URL,
+        ProviderBeacon: test.BEACON_PROVIDER_URL,
+        StorageAddress: test.ROCKET_STORAGE_ADDRESS,
     }
 }
 
@@ -123,61 +118,6 @@ func CheckOutput(outputPath string, skipLines []string, rules map[int][]string) 
 
     // Return error messages
     return messages, nil
-
-}
-
-
-// Seed a node account from app options
-func AppSeedNodeAccount(options AppOptions, amount *big.Int) error {
-
-    // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
-    am := accounts.NewAccountManager(options.KeychainPow, pm)
-
-    // Get node account
-    nodeAccount, err := am.GetNodeAccount()
-    if err != nil { return err }
-
-    // Initialise ethereum client
-    client, err := ethclient.Dial(options.ProviderPow)
-    if err != nil { return err }
-
-    // Seed account
-    return SeedAccount(client, nodeAccount.Address, amount)
-
-}
-
-
-// Make a node trusted from app options
-func AppSetNodeTrusted(options AppOptions) error {
-
-    // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
-    am := accounts.NewAccountManager(options.KeychainPow, pm)
-
-    // Get node account
-    nodeAccount, err := am.GetNodeAccount()
-    if err != nil { return err }
-
-    // Initialise ethereum client
-    client, err := ethclient.Dial(options.ProviderPow)
-    if err != nil { return err }
-
-    // Initialise contract manager & load contracts
-    cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
-    if err != nil { return err }
-    if err := cm.LoadContracts([]string{"rocketAdmin"}); err != nil { return err }
-
-    // Get owner account
-    ownerPrivateKey, _, err := OwnerAccount()
-    if err != nil { return err }
-
-    // Set node trusted status
-    txor := bind.NewKeyedTransactor(ownerPrivateKey)
-    if _, err := eth.ExecuteContractTransaction(client, txor, cm.Addresses["rocketAdmin"], cm.Abis["rocketAdmin"], "setNodeTrusted", nodeAccount.Address, true); err != nil { return err }
-
-    // Return
-    return nil
 
 }
 

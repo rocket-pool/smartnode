@@ -7,6 +7,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
+    testapp "github.com/rocket-pool/smartnode/tests/utils/app"
 )
 
 
@@ -14,7 +15,7 @@ import (
 func TestNodeStatus(t *testing.T) {
 
     // Create test app
-    app := test.NewApp()
+    app := testapp.NewApp()
 
     // Create temporary input files
     initInput, err := test.NewInputFile("foobarbaz" + "\n")
@@ -36,10 +37,10 @@ func TestNodeStatus(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Get app args & options
-    statusArgs := test.GetAppArgs(dataPath, "", output.Name())
-    initArgs := test.GetAppArgs(dataPath, initInput.Name(), "")
-    registerArgs := test.GetAppArgs(dataPath, registerInput.Name(), "")
-    appOptions := test.GetAppOptions(dataPath)
+    statusArgs := testapp.GetAppArgs(dataPath, "", output.Name())
+    initArgs := testapp.GetAppArgs(dataPath, initInput.Name(), "")
+    registerArgs := testapp.GetAppArgs(dataPath, registerInput.Name(), "")
+    appOptions := testapp.GetAppOptions(dataPath)
 
     // Attempt to get status of uninitialised node
     if err := app.Run(append(statusArgs, "node", "status")); err == nil { t.Error("Should return error for uninitialised node") }
@@ -51,20 +52,20 @@ func TestNodeStatus(t *testing.T) {
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
 
     // Seed node account & register node
-    if err := test.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
+    if err := testapp.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Fatal(err) }
 
     // Get status of registered node
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
 
     // Make node trusted
-    if err := test.AppSetNodeTrusted(appOptions); err != nil { t.Fatal(err) }
+    if err := testapp.AppSetNodeTrusted(appOptions); err != nil { t.Fatal(err) }
 
     // Get status of trusted node
     if err := app.Run(append(statusArgs, "node", "status")); err != nil { t.Error(err) }
 
     // Check output
-    if messages, err := test.CheckOutput(output.Name(), []string{}, map[int][]string{
+    if messages, err := testapp.CheckOutput(output.Name(), []string{}, map[int][]string{
         1: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d\\.\\d\\d ETH, \\d\\.\\d\\d rETH and \\d\\.\\d\\d RPL$", "Node account message incorrect"},
         3: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d\\.\\d\\d ETH, \\d\\.\\d\\d rETH and \\d\\.\\d\\d RPL$", "Node account message incorrect"},
         5: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} has a balance of \\d\\.\\d\\d ETH, \\d\\.\\d\\d rETH and \\d\\.\\d\\d RPL$", "Node account message incorrect"},

@@ -7,6 +7,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
+    testapp "github.com/rocket-pool/smartnode/tests/utils/app"
 )
 
 
@@ -14,7 +15,7 @@ import (
 func TestNodeTimezone(t *testing.T) {
 
     // Create test app
-    app := test.NewApp()
+    app := testapp.NewApp()
 
     // Create temporary input files
     initInput, err := test.NewInputFile("foobarbaz" + "\n")
@@ -36,10 +37,10 @@ func TestNodeTimezone(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Get app args & options
-    timezoneArgs := test.GetAppArgs(dataPath, timezoneInput.Name(), output.Name())
-    initArgs := test.GetAppArgs(dataPath, initInput.Name(), "")
-    registerArgs := test.GetAppArgs(dataPath, timezoneInput.Name(), "")
-    appOptions := test.GetAppOptions(dataPath)
+    timezoneArgs := testapp.GetAppArgs(dataPath, timezoneInput.Name(), output.Name())
+    initArgs := testapp.GetAppArgs(dataPath, initInput.Name(), "")
+    registerArgs := testapp.GetAppArgs(dataPath, timezoneInput.Name(), "")
+    appOptions := testapp.GetAppOptions(dataPath)
 
     // Attempt to set timezone for uninitialised node
     if err := app.Run(append(timezoneArgs, "node", "timezone")); err == nil { t.Error("Should return error for uninitialised node") }
@@ -51,14 +52,14 @@ func TestNodeTimezone(t *testing.T) {
     if err := app.Run(append(timezoneArgs, "node", "timezone")); err == nil { t.Error("Should return error for unregistered node") }
 
     // Seed node account & register node
-    if err := test.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
+    if err := testapp.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Fatal(err) }
 
     // Set timezone for registered node
     if err := app.Run(append(timezoneArgs, "node", "timezone")); err != nil { t.Error(err) }
 
     // Check output
-    if messages, err := test.CheckOutput(output.Name(), []string{"(?i)^Your system timezone is", "(?i)^Please answer"}, map[int][]string{
+    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Your system timezone is", "(?i)^Please answer"}, map[int][]string{
         1: []string{"(?i)^Setting node timezone...$", "Setting node timezone message incorrect"},
         2: []string{"(?i)^Node timezone successfully updated to: \\w+/\\w+$", "Node timezone updated message incorrect"},
     }); err != nil {

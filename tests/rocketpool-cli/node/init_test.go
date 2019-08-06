@@ -5,6 +5,7 @@ import (
     "testing"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
+    testapp "github.com/rocket-pool/smartnode/tests/utils/app"
 )
 
 
@@ -12,7 +13,7 @@ import (
 func TestNodeInit(t *testing.T) {
 
     // Create test app
-    app := test.NewApp()
+    app := testapp.NewApp()
 
     // Create temporary input file
     input, err := test.NewInputFile("foobarbaz" + "\n")
@@ -29,7 +30,7 @@ func TestNodeInit(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Get app args
-    args := test.GetAppArgs(dataPath, input.Name(), output.Name())
+    args := testapp.GetAppArgs(dataPath, input.Name(), output.Name())
 
     // Initialise node
     if err := app.Run(append(args, "node", "init")); err != nil { t.Error(err) }
@@ -38,7 +39,7 @@ func TestNodeInit(t *testing.T) {
     if err := app.Run(append(args, "node", "init")); err != nil { t.Error(err) }
 
     // Check output
-    if messages, err := test.CheckOutput(output.Name(), []string{}, map[int][]string{
+    if messages, err := testapp.CheckOutput(output.Name(), []string{}, map[int][]string{
         1: []string{"(?i)^Please enter a node password", "Password prompt message incorrect"},
         2: []string{"(?i)^Node password set successfully: .{8,}$", "Node password set message incorrect"},
         3: []string{"(?i)^Node account created successfully: 0x[0-9a-fA-F]{40}$", "Node account created message incorrect"},

@@ -7,6 +7,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
+    testapp "github.com/rocket-pool/smartnode/tests/utils/app"
 )
 
 
@@ -14,7 +15,7 @@ import (
 func TestNodeRegister(t *testing.T) {
 
     // Create test app
-    app := test.NewApp()
+    app := testapp.NewApp()
 
     // Create temporary input files
     initInput, err := test.NewInputFile("foobarbaz" + "\n")
@@ -36,9 +37,9 @@ func TestNodeRegister(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Get app args & options
-    initArgs := test.GetAppArgs(dataPath, initInput.Name(), "")
-    registerArgs := test.GetAppArgs(dataPath, registerInput.Name(), output.Name())
-    appOptions := test.GetAppOptions(dataPath)
+    initArgs := testapp.GetAppArgs(dataPath, initInput.Name(), "")
+    registerArgs := testapp.GetAppArgs(dataPath, registerInput.Name(), output.Name())
+    appOptions := testapp.GetAppOptions(dataPath)
 
     // Attempt to register uninitialised node
     if err := app.Run(append(registerArgs, "node", "register")); err == nil { t.Error("Should return error for uninitialised node") }
@@ -50,7 +51,7 @@ func TestNodeRegister(t *testing.T) {
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }
 
     // Seed node account
-    if err := test.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
+    if err := testapp.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
 
     // Register initialised node with balance
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }
@@ -59,7 +60,7 @@ func TestNodeRegister(t *testing.T) {
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }
 
     // Check output
-    if messages, err := test.CheckOutput(output.Name(), []string{"(?i)^Your system timezone is", "(?i)^Please answer"}, map[int][]string{
+    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Your system timezone is", "(?i)^Please answer"}, map[int][]string{
         1: []string{"(?i)^Node account 0x[0-9a-fA-F]{40} requires a minimum balance of \\d\\.\\d\\d ETH to operate in Rocket Pool$", "Minimum balance message incorrect"},
         2: []string{"(?i)^Registering node...$", "Registering node message incorrect"},
         3: []string{"(?i)^Node registered successfully with Rocket Pool - new node deposit contract created at 0x[0-9a-fA-F]{40}$", "Node registered message incorrect"},
