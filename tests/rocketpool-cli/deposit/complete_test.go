@@ -128,6 +128,8 @@ func TestDepositComplete(t *testing.T) {
     // Complete deposit
     if err := app.Run(append(completeArgs, "deposit", "complete")); err != nil { t.Error(err) }
 
+    // -- Tests complete
+
     // Check output
     if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Node contract requires", "(?i)^Transferring RPL to node contract", "(?i)^Completing deposit"}, map[int][]string{
         1: []string{"(?i)^Node does not have a current deposit reservation", "No deposit reservation message incorrect"},
