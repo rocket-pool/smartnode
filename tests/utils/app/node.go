@@ -12,6 +12,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
@@ -125,6 +126,45 @@ func AppSetNodeTrusted(options AppOptions) error {
 
     // Return
     return nil
+
+}
+
+
+// Get a node's required deposit balances from app options
+func AppGetNodeRequiredBalances(options AppOptions) (*node.Balances, error) {
+
+    // Create password manager & account manager
+    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    am := accounts.NewAccountManager(options.KeychainPow, pm)
+
+    // Get node account
+    nodeAccount, err := am.GetNodeAccount()
+    if err != nil { return nil, err }
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(options.ProviderPow)
+    if err != nil { return nil, err }
+
+    // Initialise contract manager & load contracts
+    cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
+    if err != nil { return nil, err }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI"}); err != nil { return nil, err }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { return nil, err }
+
+    // Get node contract address
+    nodeContractAddress := new(common.Address)
+    if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
+        return nil, errors.New("Error checking node registration: " + err.Error())
+    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+        return nil, errors.New("Node is not registered with Rocket Pool")
+    }
+
+    // Get node contract
+    nodeContract, err := cm.NewContract(nodeContractAddress, "rocketNodeContract")
+    if err != nil { return nil, err }
+
+    // Get and return required deposit balances
+    return node.GetRequiredBalances(nodeContract)
 
 }
 
