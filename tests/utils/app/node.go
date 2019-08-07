@@ -20,7 +20,7 @@ import (
 
 
 // Seed a node account from app options
-func AppSeedNodeAccount(options AppOptions, amount *big.Int) error {
+func AppSeedNodeAccount(options AppOptions, ethAmount *big.Int, rplAmount *big.Int) error {
 
     // Create password manager & account manager
     pm := passwords.NewPasswordManager(nil, nil, options.Password)
@@ -34,8 +34,21 @@ func AppSeedNodeAccount(options AppOptions, amount *big.Int) error {
     client, err := ethclient.Dial(options.ProviderPow)
     if err != nil { return err }
 
-    // Seed account
-    return test.SeedAccount(client, nodeAccount.Address, amount)
+    // Initialise contract manager & load contracts
+    cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
+    if err != nil { return err }
+    if err := cm.LoadContracts([]string{"rocketPoolToken"}); err != nil { return err }
+
+    // Seed node account
+    if ethAmount != nil && ethAmount.Cmp(big.NewInt(0)) > 0 {
+        if err := test.SeedAccount(client, nodeAccount.Address, ethAmount); err != nil { return err }
+    }
+    if rplAmount != nil && rplAmount.Cmp(big.NewInt(0)) > 0 {
+        if err := rp.MintRPL(client, cm, nodeAccount.Address, rplAmount); err != nil { return err }
+    }
+
+    // Return
+    return nil
 
 }
 
@@ -69,10 +82,10 @@ func AppSeedNodeContract(options AppOptions, ethAmount *big.Int, rplAmount *big.
     }
 
     // Seed node contract
-    if ethAmount.Cmp(big.NewInt(0)) > 0 {
+    if ethAmount != nil && ethAmount.Cmp(big.NewInt(0)) > 0 {
         if err := test.SeedAccount(client, *nodeContractAddress, ethAmount); err != nil { return err }
     }
-    if rplAmount.Cmp(big.NewInt(0)) > 0 {
+    if rplAmount != nil && rplAmount.Cmp(big.NewInt(0)) > 0 {
         if err := rp.MintRPL(client, cm, *nodeContractAddress, rplAmount); err != nil { return err }
     }
 

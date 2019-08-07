@@ -51,7 +51,7 @@ func TestNodeRegister(t *testing.T) {
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }
 
     // Seed node account
-    if err := testapp.AppSeedNodeAccount(appOptions, eth.EthToWei(10)); err != nil { t.Fatal(err) }
+    if err := testapp.AppSeedNodeAccount(appOptions, eth.EthToWei(10), nil); err != nil { t.Fatal(err) }
 
     // Register initialised node with balance
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Error(err) }
