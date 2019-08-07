@@ -62,7 +62,7 @@ func TestDepositReserve(t *testing.T) {
     if err := app.Run(append(reserveArgs, "deposit", "reserve", "3m")); err != nil { t.Error(err) }
 
     // Check output
-    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Making deposit reservation...$"}, map[int][]string{
+    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Making deposit reservation"}, map[int][]string{
         1: []string{"(?i)^Deposit reservation made successfully, requiring \\d+\\.\\d+ ETH and \\d+\\.\\d+ RPL, with a staking duration of \\S+ and expiring at", "Deposit reservation made message incorrect"},
         2: []string{"(?i)^Node has a current deposit reservation, please cancel or complete it$", "Deposit reservation exists message incorrect"},
     }); err != nil {

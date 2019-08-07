@@ -66,7 +66,7 @@ func TestDepositCancel(t *testing.T) {
     if err := app.Run(append(cancelArgs, "deposit", "cancel")); err != nil { t.Error(err) }
 
     // Check output
-    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Canceling deposit reservation...$"}, map[int][]string{
+    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Canceling deposit reservation"}, map[int][]string{
         1: []string{"(?i)^Node does not have a current deposit reservation$", "No deposit reservation message incorrect"},
         2: []string{"(?i)^Deposit reservation cancelled successfully$", "Deposit reservation canceled message incorrect"},
     }); err != nil {

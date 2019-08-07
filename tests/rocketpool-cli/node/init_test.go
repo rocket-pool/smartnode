@@ -43,7 +43,7 @@ func TestNodeInit(t *testing.T) {
         1: []string{"(?i)^Please enter a node password", "Password prompt message incorrect"},
         2: []string{"(?i)^Node password set successfully: .{8,}$", "Node password set message incorrect"},
         3: []string{"(?i)^Node account created successfully: 0x[0-9a-fA-F]{40}$", "Node account created message incorrect"},
-        4: []string{"(?i)^Node password already set.$", "Node password already set message incorrect"},
+        4: []string{"(?i)^Node password already set", "Node password already set message incorrect"},
         5: []string{"(?i)^Node account already exists: 0x[0-9a-fA-F]{40}$", "Node account already exists message incorrect"},
     }); err != nil {
         t.Fatal(err)
