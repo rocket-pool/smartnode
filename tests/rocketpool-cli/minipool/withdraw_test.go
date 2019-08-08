@@ -59,17 +59,31 @@ func TestMinipoolWithdraw(t *testing.T) {
     if err := app.Run(append(registerArgs, "node", "register")); err != nil { t.Fatal(err) }
 
     // Create minipools
-    minipoolAddresses, err := testapp.AppCreateNodeMinipools(appOptions, "3m", 3)
+    minipoolAddresses, err := testapp.AppCreateNodeMinipools(appOptions, "12m", 3)
     if err != nil { t.Fatal(err) }
-    _ = minipoolAddresses
 
     // Withdraw with no withdrawn minipools
     if err := app.Run(append(withdrawArgs, "minipool", "withdraw")); err != nil { t.Error(err) }
 
+    // Stake, logout and withdraw minipools
+    if _, accessorAddress, err := testapp.AppCreateGroupAccessor(appOptions); err != nil {
+        t.Fatal(err)
+    } else {
+        if err := testapp.AppStakeAllMinipools(appOptions, "12m", accessorAddress); err != nil { t.Fatal(err) }
+        if err := testapp.AppSetNodeTrusted(appOptions); err != nil { t.Fatal(err) }
+        if err := testapp.AppWithdrawMinipools(appOptions, minipoolAddresses, eth.EthToWei(40)); err != nil { t.Fatal(err) }
+    }
+
+    // Withdraw from minipools
+    if err := app.Run(append(withdrawArgs, "minipool", "withdraw")); err != nil { t.Error(err) }
+
     // Check output
-    if messages, err := testapp.CheckOutput(output.Name(), []string{}, map[int][]string{
-        1: []string{"(?i)^No minipools are currently available for withdrawal$", "No withdrawable minipools message incorrect"},
-    }); err != nil {
+    outputRules := map[int][]string{}
+    outputRules[1] = []string{"(?i)^No minipools are currently available for withdrawal$", "No withdrawable minipools message incorrect"}
+    for mi, address := range minipoolAddresses {
+        outputRules[mi + 2] = []string{"(?i)^Successfully withdrew deposit from minipool " + address.Hex() + "$", "Minipool deposit withdrawn message incorrect"}
+    }
+    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Please select a minipool to withdraw from", "(?i)^\\d+:\\s+0x[0-9a-fA-F]{40}$", "(?i)^Withdrawing deposit from minipool 0x[0-9a-fA-F]{40}"}, outputRules); err != nil {
         t.Fatal(err)
     } else {
         for _, msg := range messages { t.Error(msg) }
