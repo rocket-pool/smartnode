@@ -104,36 +104,18 @@ func withdrawMinipool(c *cli.Context) error {
     }
     withdrawMinipoolCount := len(withdrawMinipoolAddresses)
 
-    // Status channels
-    withdrawSuccessChannel := make(chan bool)
-    withdrawErrorChannel := make(chan error)
-
     // Withdraw node deposits
-    for mi := 0; mi < withdrawMinipoolCount; mi++ {
-        go (func(mi int) {
-            if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
-                withdrawErrorChannel <- errors.New(fmt.Sprintf("Error creating transactor for minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
-            } else {
-                fmt.Fprintln(p.Output, fmt.Sprintf("Withdrawing deposit from minipool %s...", withdrawMinipoolAddresses[mi].Hex()))
-                if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", withdrawMinipoolAddresses[mi]); err != nil {
-                    withdrawErrorChannel <- errors.New(fmt.Sprintf("Error withdrawing deposit from minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
-                } else {
-                    fmt.Fprintln(p.Output, "Successfully withdrew deposit from minipool", withdrawMinipoolAddresses[mi].Hex())
-                    withdrawSuccessChannel <- true
-                }
-            }
-        })(mi)
-    }
-
-    // Receive status & errors
     withdrawErrors := []string{"Error withdrawing deposits from one or more minipools:"}
-    for received := 0; received < withdrawMinipoolCount; {
-        select {
-            case <-withdrawSuccessChannel:
-                received++
-            case err := <-withdrawErrorChannel:
-                withdrawErrors = append(withdrawErrors, err.Error())
-                received++
+    for mi := 0; mi < withdrawMinipoolCount; mi++ {
+        if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
+           withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error creating transactor for minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
+        } else {
+            fmt.Fprintln(p.Output, fmt.Sprintf("Withdrawing deposit from minipool %s...", withdrawMinipoolAddresses[mi].Hex()))
+            if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", withdrawMinipoolAddresses[mi]); err != nil {
+                withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error withdrawing deposit from minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
+            } else {
+                fmt.Fprintln(p.Output, "Successfully withdrew deposit from minipool", withdrawMinipoolAddresses[mi].Hex())
+            }
         }
     }
 
