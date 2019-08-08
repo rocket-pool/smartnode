@@ -15,6 +15,7 @@ import (
 
 // Config
 const GAS_LIMIT_PADDING uint64 = 100000
+const MAX_GAS_LIMIT uint64 = 8000000
 
 
 // Executes a transaction on a contract method and returns a transaction receipt
@@ -24,17 +25,23 @@ func ExecuteContractTransaction(client *ethclient.Client, txor *bind.TransactOpt
     // Create contract instance
     contract := bind.NewBoundContract(*contractAddress, *contractAbi, client, client, client)
 
-    // Pack transaction input
-    input, err := contractAbi.Pack(method, params...)
-    if err != nil {
-        return nil, errors.New("Error packing transaction input: " + err.Error())
-    }
+    // Estimate gas limit if not set
+    if txor.GasLimit == 0 {
 
-    // Get transaction gas limit
-    if gasLimit, err := client.EstimateGas(context.Background(), ethereum.CallMsg{From: txor.From, To: contractAddress, Value: txor.Value, Data: input}); err != nil {
-        return nil, errors.New("Error estimating transaction gas limit: " + err.Error())
-    } else {
-        txor.GasLimit = (gasLimit + GAS_LIMIT_PADDING)
+        // Pack transaction input
+        input, err := contractAbi.Pack(method, params...)
+        if err != nil {
+            return nil, errors.New("Error packing transaction input: " + err.Error())
+        }
+
+        // Get transaction gas limit
+        if gasLimit, err := client.EstimateGas(context.Background(), ethereum.CallMsg{From: txor.From, To: contractAddress, Value: txor.Value, Data: input}); err != nil {
+            return nil, errors.New("Error estimating transaction gas limit: " + err.Error())
+        } else {
+            txor.GasLimit = (gasLimit + GAS_LIMIT_PADDING)
+            if txor.GasLimit > MAX_GAS_LIMIT { txor.GasLimit = MAX_GAS_LIMIT }
+        }
+
     }
 
     // Execute transaction

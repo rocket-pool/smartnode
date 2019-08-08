@@ -159,12 +159,6 @@ func completeDeposit(c *cli.Context) error {
         }
     }
 
-    // Get node account transactor
-    txor, err := p.AM.GetNodeAccountTransactor()
-    if err != nil {
-        return err
-    }
-
     // Check node ether balance and get required deposit transaction value
     depositTransactionValueWei := new(big.Int)
     if nodeBalances.EtherWei.Cmp(requiredBalances.EtherWei) < 0 {
@@ -212,15 +206,21 @@ func completeDeposit(c *cli.Context) error {
         }
 
         // Transfer remaining required RPL
-        txor.Value = big.NewInt(0)
-        fmt.Fprintln(p.Output, "Transferring RPL to node contract...")
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketPoolToken"], p.CM.Abis["rocketPoolToken"], "transfer", p.NodeContractAddress, remainingRplRequiredWei); err != nil {
-            return errors.New("Error transferring RPL to node contract: " + err.Error())
+        if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
+            return err
+        } else {
+            txor.Value = big.NewInt(0)
+            fmt.Fprintln(p.Output, "Transferring RPL to node contract...")
+            if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketPoolToken"], p.CM.Abis["rocketPoolToken"], "transfer", p.NodeContractAddress, remainingRplRequiredWei); err != nil {
+                return errors.New("Error transferring RPL to node contract: " + err.Error())
+            }
         }
 
     }
 
     // Complete deposit
+    txor, err := p.AM.GetNodeAccountTransactor()
+    if err != nil { return err }
     txor.Value = depositTransactionValueWei
     fmt.Fprintln(p.Output, "Completing deposit...")
     txReceipt, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "deposit")
