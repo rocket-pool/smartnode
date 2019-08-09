@@ -31,7 +31,7 @@ func TestGetAccountBalances(t *testing.T) {
     // Initialise contract manager & load contracts
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
     if err != nil { t.Fatal(err) }
-    if err := cm.LoadContracts([]string{"rocketETHToken", "rocketPoolToken"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadContracts([]string{"rocketPoolToken"}); err != nil { t.Fatal(err) }
 
     // Amounts to seed to account
     ethAmount := eth.EthToWei(3)
@@ -41,6 +41,10 @@ func TestGetAccountBalances(t *testing.T) {
     // Seed account
     if err := test.SeedAccount(client, account.Address, ethAmount); err != nil { t.Fatal(err) }
     if err := rp.MintRPL(client, cm, account.Address, rplAmount); err != nil { t.Fatal(err) }
+
+    // Get account balances without required contracts; load contracts
+    if _, err := node.GetAccountBalances(account.Address, client, cm); err == nil { t.Error("GetAccountBalances() method should return error without contracts loaded") }
+    if err := cm.LoadContracts([]string{"rocketETHToken"}); err != nil { t.Fatal(err) }
 
     // Get account balances
     balances, err := node.GetAccountBalances(account.Address, client, cm)
@@ -151,12 +155,16 @@ func TestGetReservationDetails(t *testing.T) {
     // Initialise contract manager & load contracts / ABIs
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
     if err != nil { t.Fatal(err) }
-    if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketNodeSettings"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI"}); err != nil { t.Fatal(err) }
     if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
 
     // Register node
     nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
     if err != nil { t.Fatal(err) }
+
+    // Get reservation details without required contracts; load contracts
+    if _, err := node.GetReservationDetails(nodeContract, cm); err == nil { t.Error("GetReservationDetails() method should return error without contracts loaded") }
+    if err := cm.LoadContracts([]string{"rocketNodeSettings"}); err != nil { t.Fatal(err) }
 
     // Get reservation details before deposit reservation
     details, err := node.GetReservationDetails(nodeContract, cm)
@@ -204,8 +212,12 @@ func TestGetMinipoolAddresses(t *testing.T) {
     // Initialise contract manager & load contracts / ABIs
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
     if err != nil { t.Fatal(err) }
-    if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken", "utilAddressSetStorage"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
     if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
+
+    // Get minipool addresses without required contracts; load contracts
+    if _, err := node.GetMinipoolAddresses(account.Address, cm); err == nil { t.Error("GetMinipoolAddresses() method should return error without contracts loaded") }
+    if err := cm.LoadContracts([]string{"utilAddressSetStorage"}); err != nil { t.Fatal(err) }
 
     // Get minipool addresses for nonexistent node
     minipoolAddresses, err := node.GetMinipoolAddresses(account.Address, cm)

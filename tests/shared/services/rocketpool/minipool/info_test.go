@@ -35,7 +35,7 @@ func TestGetDetails(t *testing.T) {
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
     if err != nil { t.Fatal(err) }
     if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
-    if err := cm.LoadABIs([]string{"rocketMinipool", "rocketNodeContract"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
 
     // Register node
     nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
@@ -44,6 +44,10 @@ func TestGetDetails(t *testing.T) {
     // Create minipool
     minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
+
+    // Get minipool details without rocketMinipool ABI; load ABI
+    if _, err := minipool.GetDetails(cm, &minipoolAddress); err == nil { t.Error("GetDetails() method should return error without rocketMinipool ABI loaded") }
+    if err := cm.LoadABIs([]string{"rocketMinipool"}); err != nil { t.Fatal(err) }
 
     // Get minipool details
     details, err := minipool.GetDetails(cm, &minipoolAddress)
@@ -82,7 +86,7 @@ func TestGetStatus(t *testing.T) {
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
     if err != nil { t.Fatal(err) }
     if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
-    if err := cm.LoadABIs([]string{"rocketMinipool", "rocketNodeContract"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
 
     // Register node
     nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
@@ -91,6 +95,10 @@ func TestGetStatus(t *testing.T) {
     // Create minipool
     minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
+
+    // Get minipool status without rocketMinipool ABI; load ABI
+    if _, err := minipool.GetStatus(cm, &minipoolAddress); err == nil { t.Error("GetStatus() method should return error without rocketMinipool ABI loaded") }
+    if err := cm.LoadABIs([]string{"rocketMinipool"}); err != nil { t.Fatal(err) }
 
     // Get minipool status
     status, err := minipool.GetStatus(cm, &minipoolAddress)
@@ -128,7 +136,7 @@ func TestGetNodeStatus(t *testing.T) {
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
     if err != nil { t.Fatal(err) }
     if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
-    if err := cm.LoadABIs([]string{"rocketMinipool", "rocketNodeContract"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
 
     // Register node
     nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
@@ -137,6 +145,10 @@ func TestGetNodeStatus(t *testing.T) {
     // Create minipool
     minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
+
+    // Get minipool node status without rocketMinipool ABI; load ABI
+    if _, err := minipool.GetNodeStatus(cm, &minipoolAddress); err == nil { t.Error("GetNodeStatus() method should return error without rocketMinipool ABI loaded") }
+    if err := cm.LoadABIs([]string{"rocketMinipool"}); err != nil { t.Fatal(err) }
 
     // Get minipool node status
     status, err := minipool.GetNodeStatus(cm, &minipoolAddress)
@@ -172,7 +184,7 @@ func TestGetStatusCode(t *testing.T) {
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
     if err != nil { t.Fatal(err) }
     if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
-    if err := cm.LoadABIs([]string{"rocketMinipool", "rocketNodeContract"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
 
     // Register node
     nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
@@ -181,6 +193,10 @@ func TestGetStatusCode(t *testing.T) {
     // Create minipool
     minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
+
+    // Get minipool status code without rocketMinipool ABI; load ABI
+    if _, err := minipool.GetStatusCode(cm, &minipoolAddress); err == nil { t.Error("GetStatusCode() method should return error without rocketMinipool ABI loaded") }
+    if err := cm.LoadABIs([]string{"rocketMinipool"}); err != nil { t.Fatal(err) }
 
     // Get minipool status code
     status, err := minipool.GetStatusCode(cm, &minipoolAddress)
@@ -215,7 +231,7 @@ func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
     cm, err := rocketpool.NewContractManager(client, test.ROCKET_STORAGE_ADDRESS)
     if err != nil { t.Fatal(err) }
     if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketPool", "rocketPoolToken"}); err != nil { t.Fatal(err) }
-    if err := cm.LoadABIs([]string{"rocketMinipool", "rocketNodeContract"}); err != nil { t.Fatal(err) }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { t.Fatal(err) }
 
     // Register node
     nodeContract, nodeContractAddress, err := rp.RegisterNode(client, cm, am)
@@ -228,6 +244,10 @@ func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
     if err != nil { t.Fatal(err) }
     minipool3Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "12m")
     if err != nil { t.Fatal(err) }
+
+    // Get active minipools without rocketMinipool ABI; load ABI
+    if _, err := minipool.GetActiveMinipoolsByValidatorPubkey(cm); err == nil { t.Error("GetActiveMinipoolsByValidatorPubkey() method should return error without rocketMinipool ABI loaded") }
+    if err := cm.LoadABIs([]string{"rocketMinipool"}); err != nil { t.Fatal(err) }
 
     // Get active minipools
     minipools, err := minipool.GetActiveMinipoolsByValidatorPubkey(cm)
