@@ -25,9 +25,8 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Convert withdrawal amount to wei
     amountWei := eth.EthToWei(amount)

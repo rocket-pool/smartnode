@@ -17,9 +17,8 @@ func setTargetUserFee(c *cli.Context, feePercent float64) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         DB: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Open database
     if err := p.DB.Open(); err != nil {

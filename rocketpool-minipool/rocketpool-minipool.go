@@ -87,15 +87,12 @@ func run(c *cli.Context, address string) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Initialise minipool
     pool, err := minipool.Initialise(p, address)
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
 
     // Process done channel
     done := make(chan struct{})

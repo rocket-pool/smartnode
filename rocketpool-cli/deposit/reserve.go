@@ -42,9 +42,8 @@ func reserveDeposit(c *cli.Context, durationId string) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err 
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Generate new validator key
     key, err := p.KM.CreateValidatorKey()

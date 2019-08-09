@@ -23,9 +23,8 @@ func setNodeTimezone(c *cli.Context) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Prompt user for timezone
     timezone := promptTimezone(p.Input, p.Output)

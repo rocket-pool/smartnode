@@ -23,9 +23,8 @@ func displayUserFee(c *cli.Context) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err 
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Open database
     if err := p.DB.Open(); err != nil {

@@ -22,9 +22,8 @@ func getRplRequired(c *cli.Context, durationId string) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err 
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Get minipool launch ether amount
     launchEtherAmountWei := new(*big.Int)

@@ -84,9 +84,7 @@ func run(c *cli.Context, rpPath string, imageName string, containerPrefix string
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
 
     // Start minipools management process
     go minipools.StartManagementProcess(p, rpPath, imageName, containerPrefix, rpNetwork)

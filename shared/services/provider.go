@@ -295,3 +295,13 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     return p, nil
 
 }
+
+
+/**
+ * Cleanup service provider (close resources)
+ */
+func (p *Provider) Cleanup() {
+    if p.Input != os.Stdin { p.Input.Close() }
+    if p.Output != os.Stdout { p.Output.Close() }
+}
+

@@ -72,9 +72,7 @@ func run(c *cli.Context) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
 
     // Start node checkin process
     go node.StartCheckinProcess(p)

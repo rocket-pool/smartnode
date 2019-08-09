@@ -20,9 +20,8 @@ func initNode(c *cli.Context) error {
         PasswordOptional: true,
         NodeAccountOptional: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Create password if it isn't set
     if p.PM.PasswordExists() {

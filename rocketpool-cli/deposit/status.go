@@ -22,9 +22,8 @@ func getDepositStatus(c *cli.Context) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Status channels
     balancesChannel := make(chan *node.Balances)

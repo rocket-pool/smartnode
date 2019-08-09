@@ -31,9 +31,8 @@ func withdrawMinipool(c *cli.Context) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Check withdrawals are allowed
     withdrawalsAllowed := new(bool)

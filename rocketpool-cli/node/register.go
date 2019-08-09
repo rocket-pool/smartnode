@@ -26,9 +26,8 @@ func registerNode(c *cli.Context) error {
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+    defer p.Cleanup()
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
