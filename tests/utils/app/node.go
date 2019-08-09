@@ -4,6 +4,7 @@ import (
     "bytes"
     "errors"
     "math/big"
+    "os"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
@@ -19,6 +20,25 @@ import (
     test "github.com/rocket-pool/smartnode/tests/utils"
     rp "github.com/rocket-pool/smartnode/tests/utils/rocketpool"
 )
+
+
+// Initialise a node from app options
+func AppInitNode(options AppOptions, passwordInput *os.File) error {
+
+    // Create password manager & account manager
+    pm := passwords.NewPasswordManager(passwordInput, nil, options.Password)
+    am := accounts.NewAccountManager(options.KeychainPow, pm)
+
+    // Create password
+    if _, err := pm.CreatePassword(); err != nil { return err }
+
+    // Create node account
+    if _, err := am.CreateNodeAccount(); err != nil { return err }
+
+    // Return
+    return nil
+
+}
 
 
 // Register a node from app options
