@@ -56,8 +56,12 @@ type NodeStatus struct {
 
 
 // Get a minipool's details
-// Requires rocketMinipool and rocketPoolToken contracts to be loaded with contract manager
+// Requires rocketMinipool ABI and rocketPoolToken contract to be loaded with contract manager
 func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address) (*Details, error) {
+
+    // Check contracts & ABIs are loaded
+    if _, ok := cm.Abis["rocketMinipool"]; !ok { return nil, errors.New("RocketMinipool ABI is not loaded") }
+    if _, ok := cm.Contracts["rocketPoolToken"]; !ok { return nil, errors.New("RocketPoolToken contract is not loaded") }
 
     // Minipool details
     details := &Details{
@@ -193,8 +197,11 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
 
 
 // Get a minipool's status details
-// Requires rocketMinipool contract to be loaded with contract manager
+// Requires rocketMinipool ABI to be loaded with contract manager
 func GetStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) (*Status, error) {
+
+    // Check rocketMinipool ABI is loaded
+    if _, ok := cm.Abis["rocketMinipool"]; !ok { return nil, errors.New("RocketMinipool ABI is not loaded") }
 
     // Minipool status
     status := &Status{}
@@ -275,8 +282,11 @@ func GetStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) 
 
 
 // Get a minipool's node status
-// Requires rocketMinipool contract to be loaded with contract manager
+// Requires rocketMinipool ABI to be loaded with contract manager
 func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Address) (*NodeStatus, error) {
+
+    // Check rocketMinipool ABI is loaded
+    if _, ok := cm.Abis["rocketMinipool"]; !ok { return nil, errors.New("RocketMinipool ABI is not loaded") }
 
     // Node status
     nodeStatus := &NodeStatus{}
@@ -331,8 +341,11 @@ func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Addre
 
 
 // Get a minipool's status code
-// Requires rocketMinipool contract to be loaded with contract manager
+// Requires rocketMinipool ABI to be loaded with contract manager
 func GetStatusCode(cm *rocketpool.ContractManager, minipoolAddress *common.Address) (uint8, error) {
+
+    // Check rocketMinipool ABI is loaded
+    if _, ok := cm.Abis["rocketMinipool"]; !ok { return 0, errors.New("RocketMinipool ABI is not loaded") }
 
     // Initialise minipool contract
     minipoolContract, err := cm.NewContract(minipoolAddress, "rocketMinipool")
@@ -353,8 +366,12 @@ func GetStatusCode(cm *rocketpool.ContractManager, minipoolAddress *common.Addre
 
 
 // Get a map of all active minipools by validator pubkey
-// Requires rocketPool and rocketMinipool contracts to be loaded with contract manager
+// Requires rocketPool contract and rocketMinipool ABI to be loaded with contract manager
 func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[string]common.Address, error) {
+
+    // Check contracts & ABIs are loaded
+    if _, ok := cm.Contracts["rocketPool"]; !ok { return nil, errors.New("RocketPool contract is not loaded") }
+    if _, ok := cm.Abis["rocketMinipool"]; !ok { return nil, errors.New("RocketMinipool ABI is not loaded") }
 
     // Get minipool count
     minipoolCountV := new(*big.Int)

@@ -94,7 +94,11 @@ func WaitContractLoaded(client *ethclient.Client, contractName string, contractA
 
 
 // Wait for node to be registered
+// Requires rocketNodeAPI contract to be loaded with contract manager
 func WaitNodeRegistered(am *accounts.AccountManager, cm *rocketpool.ContractManager) error {
+
+    // Check rocketNodeAPI contract is loaded
+    if _, ok := cm.Contracts["rocketNodeAPI"]; !ok { return errors.New("RocketNodeAPI contract is not loaded") }
 
     // Block until registered
     var registered bool = false

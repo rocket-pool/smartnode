@@ -38,6 +38,10 @@ type ReservationDetails struct {
 // Requires rocketETHToken & rocketPoolToken contracts to be loaded with contract manager
 func GetAccountBalances(nodeAccountAddress common.Address, client *ethclient.Client, cm *rocketpool.ContractManager) (*Balances, error) {
 
+    // Check contracts are loaded
+    if _, ok := cm.Contracts["rocketETHToken"]; !ok { return nil, errors.New("RocketETHToken contract is not loaded") }
+    if _, ok := cm.Contracts["rocketPoolToken"]; !ok { return nil, errors.New("RocketPoolToken contract is not loaded") }
+
     // Account balances
     balances := &Balances{}
 
@@ -198,6 +202,9 @@ func GetRequiredBalances(nodeContract *bind.BoundContract) (*Balances, error) {
 // Requires rocketNodeSettings contract to be loaded with contract manager
 func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.ContractManager) (*ReservationDetails, error) {
 
+    // Check rocketNodeSettings contract is loaded
+    if _, ok := cm.Contracts["rocketNodeSettings"]; !ok { return nil, errors.New("RocketNodeSettings contract is not loaded") }
+
     // Reservation details
     details := &ReservationDetails{}
 
@@ -290,6 +297,9 @@ func GetReservationDetails(nodeContract *bind.BoundContract, cm *rocketpool.Cont
 // Get a list of a node's minipool addresses
 // Requires utilAddressSetStorage contract to be loaded with contract manager
 func GetMinipoolAddresses(nodeAccountAddress common.Address, cm *rocketpool.ContractManager) ([]*common.Address, error) {
+
+    // Check utilAddressSetStorage contract is loaded
+    if _, ok := cm.Contracts["utilAddressSetStorage"]; !ok { return nil, errors.New("UtilAddressSetStorage contract is not loaded") }
 
     // Get node minipool list key
     minipoolListKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("minipools"), []byte("list.node"), nodeAccountAddress.Bytes()}, []byte{}))

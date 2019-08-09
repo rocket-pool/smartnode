@@ -250,11 +250,22 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Wait until node is registered
     if opts.WaitNodeRegistered {
+
+        // Check rocketNodeAPI contract is loaded
+        if _, ok := p.CM.Contracts["rocketNodeAPI"]; !ok { return nil, errors.New("RocketNodeAPI contract is required to wait for node registration") }
+
+        // Wait until node is registered
         sync.WaitNodeRegistered(p.AM, p.CM)
+
     }
 
     // Initialise node contract address
     if opts.NodeContractAddress {
+
+        // Check rocketNodeAPI contract is loaded
+        if _, ok := p.CM.Contracts["rocketNodeAPI"]; !ok { return nil, errors.New("RocketNodeAPI contract is required for node contract address") }
+
+        // Get node contract address
         nodeAccount, _ := p.AM.GetNodeAccount()
         nodeContractAddress := new(common.Address)
         if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
@@ -264,15 +275,22 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         } else {
             p.NodeContractAddress = nodeContractAddress
         }
+
     }
 
     // Initialise node contract
     if opts.NodeContract {
+
+        // Check rocketNodeContract ABI is loaded
+        if _, ok := p.CM.Abis["rocketNodeContract"]; !ok { return nil, errors.New("RocketNodeContract ABI is required for node contract") }
+
+        // Initialise contract
         if nodeContract, err := p.CM.NewContract(p.NodeContractAddress, "rocketNodeContract"); err != nil {
             return nil, errors.New("Error initialising node contract: " + err.Error())
         } else {
             p.NodeContract = nodeContract
         }
+
     }
 
     // Initialise publisher
