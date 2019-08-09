@@ -21,6 +21,30 @@ import (
 )
 
 
+// Register a node from app options
+func AppRegisterNode(options AppOptions) error {
+
+    // Create password manager & account manager
+    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    am := accounts.NewAccountManager(options.KeychainPow, pm)
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(options.ProviderPow)
+    if err != nil { return err }
+
+    // Initialise contract manager & load contracts
+    cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
+    if err != nil { return err }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI"}); err != nil { return err }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { return err }
+
+    // Register node
+    _, _, err = rp.RegisterNode(client, cm, am)
+    return err
+
+}
+
+
 // Seed a node account from app options
 func AppSeedNodeAccount(options AppOptions, ethAmount *big.Int, rplAmount *big.Int) error {
 
