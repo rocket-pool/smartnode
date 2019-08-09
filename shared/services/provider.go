@@ -3,6 +3,7 @@ package services
 import (
     "bytes"
     "errors"
+    "log"
     "os"
 
     "github.com/docker/docker/client"
@@ -57,6 +58,7 @@ type ProviderOpts struct {
 type Provider struct {
     Input               *os.File
     Output              *os.File
+    Log                 *log.Logger
     DB                  *database.Database
     PM                  *passwords.PasswordManager
     AM                  *accounts.AccountManager
@@ -134,6 +136,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     } else {
         p.Output = os.Stdout
     }
+    p.Log = log.New(p.Output, log.Prefix(), log.Flags())
 
     // Initialise database
     if opts.DB {
@@ -279,7 +282,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Initialise beacon chain client
     if opts.Beacon {
-        p.Beacon = beaconchain.NewClient(c.GlobalString("providerBeacon"), p.Publisher)
+        p.Beacon = beaconchain.NewClient(c.GlobalString("providerBeacon"), p.Publisher, p.Log)
     }
 
     // Initialise docker client

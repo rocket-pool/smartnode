@@ -3,7 +3,6 @@ package node
 import (
     "errors"
     "fmt"
-    "log"
     "math/big"
     "time"
 
@@ -55,7 +54,7 @@ func (p *CheckinProcess) scheduleCheckin() {
     // Get last checkin time
     lastCheckinTime := new(int64)
     if err := p.p.DB.GetAtomic("node.checkin.latest", lastCheckinTime); err != nil {
-        log.Println(err)
+        p.p.Log.Println(err)
     }
 
     // Get current checkin interval
@@ -79,7 +78,7 @@ func (p *CheckinProcess) scheduleCheckin() {
     // Get time until next checkin & log
     nextCheckinDuration := time.Until(nextCheckinTime)
     if nextCheckinDuration.Seconds() > 0 {
-        log.Println("Time until next checkin:", nextCheckinDuration.String())
+        p.p.Log.Println("Time until next checkin:", nextCheckinDuration.String())
     }
 
     // Initialise checkin timer
@@ -100,7 +99,7 @@ func (p *CheckinProcess) scheduleCheckin() {
 func (p *CheckinProcess) checkin() {
 
     // Log
-    log.Println("Checking in...")
+    p.p.Log.Println("Checking in...")
 
     // Wait for node to sync
     eth.WaitSync(p.p.Client, true, false)
@@ -108,29 +107,29 @@ func (p *CheckinProcess) checkin() {
     // Get average server load
     serverLoad, err := p.getServerLoad()
     if err != nil {
-        log.Println(err)
+        p.p.Log.Println(err)
     }
 
     // Get node fee vote
     nodeFeeVote, err := p.getNodeFeeVote()
     if err != nil {
-        log.Println(err)
+        p.p.Log.Println(err)
     }
 
     // Checkin
     if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
-        log.Println(err)
+        p.p.Log.Println(err)
     } else {
         if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.NodeContractAddress, p.p.CM.Abis["rocketNodeContract"], "checkin", eth.EthToWei(serverLoad), big.NewInt(nodeFeeVote)); err != nil {
-            log.Println(errors.New("Error checking in with Rocket Pool: " + err.Error()))
+            p.p.Log.Println(errors.New("Error checking in with Rocket Pool: " + err.Error()))
         } else {
-            log.Println(fmt.Sprintf("Checked in successfully with an average load of %.2f%% and a node fee vote of '%s'", serverLoad * 100, getNodeFeeVoteType(nodeFeeVote)))
+            p.p.Log.Println(fmt.Sprintf("Checked in successfully with an average load of %.2f%% and a node fee vote of '%s'", serverLoad * 100, getNodeFeeVoteType(nodeFeeVote)))
         }
     }
 
     // Set last checkin time
     if err := p.p.DB.PutAtomic("node.checkin.latest", time.Now().Unix()); err != nil {
-        log.Println(err)
+        p.p.Log.Println(err)
     }
 
     // Schedule next checkin

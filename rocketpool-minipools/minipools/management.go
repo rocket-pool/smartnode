@@ -4,7 +4,6 @@ import (
     "context"
     "errors"
     "fmt"
-    "log"
     "time"
 
     "github.com/docker/docker/api/types"
@@ -158,7 +157,7 @@ func (p *ManagementProcess) checkMinipools() {
             case minipoolContainers = <-minipoolContainersChannel:
                 received++
             case err := <-errorChannel:
-                log.Println(err)
+                p.p.Log.Println(err)
                 return
         }
     }
@@ -192,7 +191,7 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
     if containerId == "" {
 
         // Log
-        log.Println(fmt.Sprintf("Creating minipool container %s...", containerName))
+        p.p.Log.Println(fmt.Sprintf("Creating minipool container %s...", containerName))
 
         // Create container
         if response, err := p.p.Docker.ContainerCreate(context.Background(), &container.Config{
@@ -203,10 +202,10 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
             NetworkMode: container.NetworkMode(p.rpNetwork),
             RestartPolicy: container.RestartPolicy{Name: "on-failure"},
         }, nil, containerName); err != nil {
-            log.Println(errors.New(fmt.Sprintf("Error creating minipool container %s: " + err.Error(), containerName)))
+            p.p.Log.Println(errors.New(fmt.Sprintf("Error creating minipool container %s: " + err.Error(), containerName)))
             return
         } else {
-            log.Println(fmt.Sprintf("Created minipool container %s successfully", containerName))
+            p.p.Log.Println(fmt.Sprintf("Created minipool container %s successfully", containerName))
             containerId = response.ID
         }
 
@@ -214,19 +213,19 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
 
     // Start minipool container if not running
     if container, err := p.p.Docker.ContainerInspect(context.Background(), containerId); err != nil {
-        log.Println(errors.New(fmt.Sprintf("Error inspecting minipool container %s: " + err.Error(), containerName)))
+        p.p.Log.Println(errors.New(fmt.Sprintf("Error inspecting minipool container %s: " + err.Error(), containerName)))
         return
     } else if !container.State.Running {
 
         // Log
-        log.Println(fmt.Sprintf("Starting minipool container %s...", containerName))
+        p.p.Log.Println(fmt.Sprintf("Starting minipool container %s...", containerName))
 
         // Start container
         if err := p.p.Docker.ContainerStart(context.Background(), containerId, types.ContainerStartOptions{}); err != nil {
-            log.Println(errors.New(fmt.Sprintf("Error starting minipool container %s: " + err.Error(), containerName)))
+            p.p.Log.Println(errors.New(fmt.Sprintf("Error starting minipool container %s: " + err.Error(), containerName)))
             return
         } else {
-            log.Println(fmt.Sprintf("Started minipool container %s successfully", containerName))
+            p.p.Log.Println(fmt.Sprintf("Started minipool container %s successfully", containerName))
         }
 
     }

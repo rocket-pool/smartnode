@@ -22,6 +22,7 @@ var reconnectInterval, _ = time.ParseDuration(RECONNECT_INTERVAL)
 type Client struct {
     providerUrl string
     publisher *messaging.Publisher
+    log *log.Logger
     connection *websocket.Conn
     connectionTimer *time.Timer
     readLock sync.Mutex
@@ -56,10 +57,11 @@ type ServerMessage struct {
 /**
  * Create client
  */
-func NewClient(providerUrl string, publisher *messaging.Publisher) *Client {
+func NewClient(providerUrl string, publisher *messaging.Publisher, logger *log.Logger) *Client {
     return &Client{
         providerUrl: providerUrl,
         publisher: publisher,
+        log: logger,
     }
 }
 
@@ -115,8 +117,8 @@ func (c *Client) connect() {
     if connection, _, err := websocket.DefaultDialer.Dial(c.providerUrl, nil); err != nil {
 
         // Log connection errors and retry
-        log.Println(errors.New("Error connecting to beacon chain server: " + err.Error()))
-        log.Println(fmt.Sprintf("Retrying in %s...", reconnectInterval.String()))
+        c.log.Println(errors.New("Error connecting to beacon chain server: " + err.Error()))
+        c.log.Println(fmt.Sprintf("Retrying in %s...", reconnectInterval.String()))
         c.connectionTimer.Reset(reconnectInterval)
         return
 
@@ -125,7 +127,7 @@ func (c *Client) connect() {
         // Log success & notify
         defer connection.Close()
         c.connection = connection
-        log.Println("Connected to beacon chain server at", c.providerUrl)
+        c.log.Println("Connected to beacon chain server at", c.providerUrl)
         c.publisher.Notify("beacon.client.connected", struct{Client *Client}{c})
 
     }
@@ -136,7 +138,7 @@ func (c *Client) connect() {
         defer close(closed)
         for {
             if message, err, didClose := c.readMessage(); err != nil {
-                log.Println(err)
+                c.log.Println(err)
                 if didClose { return }
             } else {
                 c.publisher.Notify("beacon.client.message", struct{Client *Client; Message []byte}{c, message})
@@ -149,7 +151,7 @@ func (c *Client) connect() {
         case <-closed:
             c.connection = nil
             c.publisher.Notify("beacon.client.disconnected", struct{Client *Client}{c})
-            log.Println(fmt.Sprintf("Connection closed, reconnecting in %s...", reconnectInterval.String()))
+            c.log.Println(fmt.Sprintf("Connection closed, reconnecting in %s...", reconnectInterval.String()))
             c.connectionTimer.Reset(reconnectInterval)
     }
 
