@@ -33,7 +33,7 @@ func GetTransactionEvents(client *ethclient.Client, txReceipt *types.Receipt, co
         }
 
         // Check log first topic matches event ID
-        if len(log.Topics) == 0 || !bytes.Equal(log.Topics[0].Bytes(), contractAbi.Events[eventName].Id().Bytes()) {
+        if len(log.Topics) == 0 || !bytes.Equal(log.Topics[0].Bytes(), contractAbi.Events[eventName].ID().Bytes()) {
             continue
         }
 
