@@ -5,7 +5,7 @@ import (
     "os"
     "regexp"
 
-    "gopkg.in/urfave/cli.v1"
+    "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool-cli/deposit"
     "github.com/rocket-pool/smartnode/rocketpool-cli/fee"

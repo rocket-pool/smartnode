@@ -5,7 +5,7 @@ import (
     "testing"
     "time"
 
-    "gopkg.in/urfave/cli.v1"
+    "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool-node/node"
     "github.com/rocket-pool/smartnode/shared/services"

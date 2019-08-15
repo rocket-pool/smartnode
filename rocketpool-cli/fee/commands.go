@@ -3,7 +3,7 @@ package fee
 import (
     "strconv"
 
-    "gopkg.in/urfave/cli.v1"
+    "github.com/urfave/cli"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
