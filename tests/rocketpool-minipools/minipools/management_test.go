@@ -67,7 +67,7 @@ func TestMinipoolManagement(t *testing.T) {
         if err != nil { return err }
 
         // Start minipools management process
-        go minipools.StartManagementProcess(p, os.Getenv("HOME") + "/.rocketpool", "rocketpool/smartnode-minipool:" + test.IMAGE_VERSION, "rocketpool_minipool_", "none")
+        go minipools.StartManagementProcess(p, os.Getenv("HOME") + "/.rptest", "rocketpool/smartnode-minipool:" + test.IMAGE_VERSION, "rocketpool_minipool_", "none")
 
         // Allow time to launch minipool containers
         time.Sleep(5 * time.Second)
