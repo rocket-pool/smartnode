@@ -52,21 +52,23 @@ The Rocket Pool Smart Node test suite requires a number of external dependencies
 
 ## Installation
 
-- Install [Golang](https://golang.org/doc/install)
+- Install [Golang](https://golang.org/doc/install) and configure the [Go workspace](https://golang.org/doc/code.html#Workspaces) & [GOPATH](https://golang.org/doc/code.html#GOPATH)
 - Install [dep](https://github.com/golang/dep)
+- Install [nodejs](https://nodejs.org/en/download/)
+- Install [truffle](https://github.com/trufflesuite/truffle)
 - Install [ganache-cli](https://github.com/trufflesuite/ganache-cli)
 - Install [Docker](https://docs.docker.com/install)
 
 ## Setup
 
-- Clone the Rocket Pool repository: `git clone git@github.com:rocket-pool/rocketpool.git`
-- Download Rocket Pool dependencies: `cd rocketpool && npm install && cd ..`
-- Clone the Smart Node repository: `git clone git@github.com:rocket-pool/smartnode.git`
-- Download Smart Node dependencies: `cd smartnode && dep ensure && cd ..`
+- Clone the Rocket Pool repository: `git clone https://github.com/rocket-pool/rocketpool.git`
+- Download Rocket Pool dependencies (under Rocket Pool repository path): `npm install`
+- Clone the Smart Node repository: `git clone https://github.com/rocket-pool/smartnode.git ~/go/src/github.com/rocket-pool/smartnode`
+- Download Smart Node dependencies (under Smart Node repository path): `dep ensure && go get github.com/ethereum/go-ethereum`
 - Download the Smart Node minipool daemon docker image: `docker pull rocketpool/smartnode-minipool:v0.0.1`
 
 ## Testing
 
 - Run ganache-cli: `ganache-cli -l 8000000 -e 1000000 -m "cute equal tide control local garment maid nature unusual coyote choice dynamic"`
-- Deploy the Rocket Pool contracts: `cd rocketpool && truffle migrate && cd ..`
-- Run the test suite: `cd smartnode && go test -p 1 ./... && cd ..`
+- Deploy the Rocket Pool contracts (under Rocket Pool repository path): `truffle migrate`
+- Run the test suite (under Smart Node repository path): `go test -p 1 ./...`
