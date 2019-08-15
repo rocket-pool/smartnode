@@ -64,7 +64,7 @@ The Rocket Pool Smart Node test suite requires a number of external dependencies
 - Clone the Rocket Pool repository: `git clone https://github.com/rocket-pool/rocketpool.git`
 - Download Rocket Pool dependencies (under Rocket Pool repository path): `npm install`
 - Clone the Smart Node repository: `git clone https://github.com/rocket-pool/smartnode.git ~/go/src/github.com/rocket-pool/smartnode`
-- Download Smart Node dependencies (under Smart Node repository path): `dep ensure && go get github.com/ethereum/go-ethereum`
+- Download Smart Node dependencies (under Smart Node repository path): `dep ensure && go get -d github.com/ethereum/go-ethereum`
 - Download the Smart Node minipool daemon docker image: `docker pull rocketpool/smartnode-minipool:v0.0.1`
 
 ## Testing
