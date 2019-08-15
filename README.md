@@ -45,3 +45,28 @@ Rocket Pool Smart Nodes are primarily managed by the `rocketpool` CLI applicatio
 
 - `rocketpool fee display` - Displays the current user fee charged by all node operators in the Rocket Pool network, and the target fee to vote for, if set locally
 - `rocketpool fee set` - Sets the target user fee to vote for during node checkin, locally
+
+# Tests
+
+The Rocket Pool Smart Node test suite requires a number of external dependencies in order to run successfully.
+
+## Installation
+
+- Install [Golang](https://golang.org/doc/install)
+- Install [dep](https://github.com/golang/dep)
+- Install [ganache-cli](https://github.com/trufflesuite/ganache-cli)
+- Install [Docker](https://docs.docker.com/install)
+
+## Setup
+
+- Clone the Rocket Pool repository: `git clone git@github.com:rocket-pool/rocketpool.git`
+- Download Rocket Pool dependencies: `cd rocketpool && npm install && cd ..`
+- Clone the Smart Node repository: `git clone git@github.com:rocket-pool/smartnode.git`
+- Download Smart Node dependencies: `cd smartnode && dep ensure && cd ..`
+- Download the Smart Node minipool daemon docker image: `docker pull rocketpool/smartnode-minipool:v0.0.1`
+
+## Testing
+
+- Run ganache-cli: `ganache-cli -l 8000000 -e 1000000 -m "cute equal tide control local garment maid nature unusual coyote choice dynamic"`
+- Deploy the Rocket Pool contracts: `cd rocketpool && truffle migrate && cd ..`
+- Run the test suite: `cd smartnode && go test -p 1 ./... && cd ..`
