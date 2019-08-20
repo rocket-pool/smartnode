@@ -32,7 +32,7 @@ ______           _        _    ______           _
 
     // Add service commands to application help template
     commandsEnd := regexp.MustCompile("(\\{\\{end\\}\\})(\\{\\{if \\.VisibleFlags\\}\\})")
-    cli.AppHelpTemplate = commandsEnd.ReplaceAllString(cli.AppHelpTemplate, "${1}\n     service      Manage Rocket Pool services${2}")
+    cli.AppHelpTemplate = commandsEnd.ReplaceAllString(cli.AppHelpTemplate, "${1}\n   service      Manage Rocket Pool services${2}")
 
     // Initialise application
     app := cli.NewApp()
