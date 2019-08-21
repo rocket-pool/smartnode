@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "errors"
     "fmt"
+    "math/big"
     "time"
 
     "github.com/ethereum/go-ethereum/common"
@@ -17,18 +18,17 @@ import (
 
 // Config
 const CHECK_TRUSTED_INTERVAL string = "1m"
-const GET_ACTIVE_MINIPOOLS_INTERVAL string = "1m"
+const DEFAULT_CHECK_MINIPOOLS_INTERVAL string = "1m"
 var checkTrustedInterval, _ = time.ParseDuration(CHECK_TRUSTED_INTERVAL)
-var getActiveMinipoolsInterval, _ = time.ParseDuration(GET_ACTIVE_MINIPOOLS_INTERVAL)
 
 
 // Watchtower process
 type WatchtowerProcess struct {
-    p                      *services.Provider
-    updatingMinipools      bool
-    getActiveMinipoolsStop chan bool
-    beaconMessageChannel   chan interface{}
-    activeMinipools        map[string]common.Address
+    p                    *services.Provider
+    updatingMinipools    bool
+    stopCheckMinipools   chan struct{}
+    beaconMessageChannel chan interface{}
+    activeMinipools      map[string]common.Address
 }
 
 
@@ -39,11 +39,11 @@ func StartWatchtowerProcess(p *services.Provider) {
 
     // Initialise process
     process := &WatchtowerProcess{
-        p:                      p,
-        updatingMinipools:      false,
-        getActiveMinipoolsStop: make(chan bool),
-        beaconMessageChannel:   make(chan interface{}),
-        activeMinipools:        make(map[string]common.Address),
+        p:                    p,
+        updatingMinipools:    false,
+        stopCheckMinipools:   make(chan struct{}),
+        beaconMessageChannel: make(chan interface{}),
+        activeMinipools:      make(map[string]common.Address),
     }
 
     // Start
@@ -115,20 +115,8 @@ func (p *WatchtowerProcess) startUpdateMinipools() {
     // Log
     p.p.Log.Println("Node is trusted, starting watchtower process...")
 
-    // Get active minipools on interval
-    go (func() {
-        p.getActiveMinipools()
-        getActiveMinipoolsTimer := time.NewTicker(getActiveMinipoolsInterval)
-        for {
-            select {
-                case <-getActiveMinipoolsTimer.C:
-                    p.getActiveMinipools()
-                case <-p.getActiveMinipoolsStop:
-                    getActiveMinipoolsTimer.Stop()
-                    return
-            }
-        }
-    })()
+    // Check minipools
+    p.checkMinipools()
 
     // Subscribe to beacon chain events
     p.p.Publisher.AddSubscriber("beacon.client.message", p.beaconMessageChannel)
@@ -148,8 +136,8 @@ func (p *WatchtowerProcess) stopUpdateMinipools() {
     // Log
     p.p.Log.Println("Node is untrusted, stopping watchtower process...")
 
-    // Stop getting active minipools
-    p.getActiveMinipoolsStop <- true
+    // Stop checking minipools
+    p.stopCheckMinipools <- struct{}{}
 
     // Unsubscribe from beacon chain events
     p.p.Publisher.RemoveSubscriber("beacon.client.message", p.beaconMessageChannel)
@@ -158,9 +146,12 @@ func (p *WatchtowerProcess) stopUpdateMinipools() {
 
 
 /**
- * Get active minipools by validator pubkey
+ * Check active minipools
  */
-func (p *WatchtowerProcess) getActiveMinipools() {
+func (p *WatchtowerProcess) checkMinipools() {
+
+    // Log
+    p.p.Log.Println("Checking active minipools...")
 
     // Wait for node to sync
     eth.WaitSync(p.p.Client, true, false)
@@ -200,6 +191,44 @@ func (p *WatchtowerProcess) getActiveMinipools() {
 
         })(pubkey, minipoolAddress)
     }
+
+    // Schedule next minipool check
+    p.scheduleCheckMinipools()
+
+}
+
+
+/**
+ * Schedule next minipool check
+ */
+func (p *WatchtowerProcess) scheduleCheckMinipools() {
+
+    // Wait for node to sync
+    eth.WaitSync(p.p.Client, true, false)
+
+    // Get current check interval
+    var checkInterval time.Duration
+    checkIntervalSeconds := new(*big.Int)
+    if err := p.p.CM.Contracts["rocketMinipoolSettings"].Call(nil, checkIntervalSeconds, "getMinipoolCheckInterval"); err == nil {
+        checkInterval, _ = time.ParseDuration((*checkIntervalSeconds).String() + "s")
+    }
+    if checkInterval.Seconds() == 0 {
+        checkInterval, _ = time.ParseDuration(DEFAULT_CHECK_MINIPOOLS_INTERVAL)
+    }
+
+    // Log check interval
+    p.p.Log.Println("Time until next minipool check:", checkInterval.String())
+
+    // Initialise check timer
+    go (func() {
+        checkMinipoolsTimer := time.NewTimer(checkInterval)
+        select {
+            case <-checkMinipoolsTimer.C:
+                p.checkMinipools()
+            case <-p.stopCheckMinipools:
+                checkMinipoolsTimer.Stop()
+        }
+    })()
 
 }
 

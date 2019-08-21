@@ -64,7 +64,7 @@ func run(c *cli.Context) error {
         CM: true,
         Publisher: true,
         Beacon: true,
-        LoadContracts: []string{"rocketNodeAPI", "rocketNodeWatchtower", "rocketPool"},
+        LoadContracts: []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeWatchtower", "rocketPool"},
         LoadAbis: []string{"rocketMinipool"},
         WaitPassword: true,
         WaitNodeAccount: true,
