@@ -14,7 +14,7 @@ import (
 
 
 // Config
-const RECONNECT_INTERVAL string = "15s"
+const RECONNECT_INTERVAL string = "10s"
 var reconnectInterval, _ = time.ParseDuration(RECONNECT_INTERVAL)
 
 
