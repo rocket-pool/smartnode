@@ -17,7 +17,7 @@ import (
 
 
 // Config
-const CHECK_MINIPOOLS_INTERVAL string = "15s"
+const CHECK_MINIPOOLS_INTERVAL string = "1m"
 var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 
 

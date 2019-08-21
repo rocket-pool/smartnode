@@ -16,8 +16,8 @@ import (
 
 
 // Config
-const CHECK_TRUSTED_INTERVAL string = "15s"
-const GET_ACTIVE_MINIPOOLS_INTERVAL string = "15s"
+const CHECK_TRUSTED_INTERVAL string = "1m"
+const GET_ACTIVE_MINIPOOLS_INTERVAL string = "1m"
 var checkTrustedInterval, _ = time.ParseDuration(CHECK_TRUSTED_INTERVAL)
 var getActiveMinipoolsInterval, _ = time.ParseDuration(GET_ACTIVE_MINIPOOLS_INTERVAL)
 
