@@ -35,7 +35,7 @@ func completeDeposit(c *cli.Context) error {
         CM: true,
         NodeContractAddress: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketETHToken", "rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"},
+        LoadContracts: []string{"rocketDepositQueue", "rocketETHToken", "rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientSync: true,
         WaitRocketStorage: true,
@@ -108,10 +108,11 @@ func completeDeposit(c *cli.Context) error {
         return errors.New("Local validator key matching deposit reservation validator pubkey not found")
     }
 
-    // Balance channels
+    // Data channels
     accountBalancesChannel := make(chan *node.Balances)
     nodeBalancesChannel := make(chan *node.Balances)
     requiredBalancesChannel := make(chan *node.Balances)
+    depositDurationIDChannel := make(chan string)
 
     // Get node account balances
     go (func() {
@@ -141,17 +142,30 @@ func completeDeposit(c *cli.Context) error {
         }
     })()
 
-    // Receive balances
+    // Get deposit duration ID
+    go (func() {
+        durationID := new(string)
+        if err := p.NodeContract.Call(nil, durationID, "getDepositReserveDurationID"); err != nil {
+            errorChannel <- errors.New("Error retrieving deposit duration ID: " + err.Error())
+        } else {
+            depositDurationIDChannel <- *durationID
+        }
+    })()
+
+    // Receive data
     var accountBalances *node.Balances
     var nodeBalances *node.Balances
     var requiredBalances *node.Balances
-    for received := 0; received < 3; {
+    var depositDurationID string
+    for received := 0; received < 4; {
         select {
             case accountBalances = <-accountBalancesChannel:
                 received++
             case nodeBalances = <-nodeBalancesChannel:
                 received++
             case requiredBalances = <-requiredBalancesChannel:
+                received++
+            case depositDurationID = <-depositDurationIDChannel:
                 received++
             case err := <-errorChannel:
                 return err
@@ -208,7 +222,6 @@ func completeDeposit(c *cli.Context) error {
         if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
             return err
         } else {
-            txor.Value = big.NewInt(0)
             fmt.Fprintln(p.Output, "Transferring RPL to node contract...")
             if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketPoolToken"], p.CM.Abis["rocketPoolToken"], "transfer", p.NodeContractAddress, remainingRplRequiredWei); err != nil {
                 return errors.New("Error transferring RPL to node contract: " + err.Error())
@@ -235,6 +248,16 @@ func completeDeposit(c *cli.Context) error {
         return errors.New("Could not retrieve deposit transaction minipool created event")
     }
     minipoolCreatedEvent := (minipoolCreatedEvents[0]).(*PoolCreated)
+
+    // Process deposit queue for duration
+    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
+        return err
+    } else {
+        fmt.Fprintln(p.Output, "Processing deposit queue...")
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketDepositQueue"], p.CM.Abis["rocketDepositQueue"], "assignChunks", depositDurationID); err != nil {
+            return errors.New("Error processing deposit queue: " + err.Error())
+        }
+    }
 
     // Log & return
     fmt.Fprintln(p.Output, "Deposit completed successfully, minipool created at", minipoolCreatedEvent.Address.Hex())
