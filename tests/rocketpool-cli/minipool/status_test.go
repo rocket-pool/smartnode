@@ -22,6 +22,7 @@ func TestMinipoolStatus(t *testing.T) {
     if err != nil { t.Fatal(err) }
     initInput.Close()
     registerInput, err := test.NewInputFile(
+        "NO" + "\n" +
         "Australia/Brisbane" + "\n" +
         "YES" + "\n")
     if err != nil { t.Fatal(err) }

@@ -23,6 +23,7 @@ func TestDepositComplete(t *testing.T) {
     if err != nil { t.Fatal(err) }
     initInput.Close()
     registerInput, err := test.NewInputFile(
+        "NO" + "\n" +
         "Australia/Brisbane" + "\n" +
         "YES" + "\n")
     if err != nil { t.Fatal(err) }
@@ -131,7 +132,7 @@ func TestDepositComplete(t *testing.T) {
     // -- Tests complete
 
     // Check output
-    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Node contract requires", "(?i)^Transferring RPL to node contract", "(?i)^Completing deposit"}, map[int][]string{
+    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Node contract requires", "(?i)^Transferring RPL to node contract", "(?i)^Completing deposit", "(?i)^Processing deposit queue"}, map[int][]string{
         1: []string{"(?i)^Node does not have a current deposit reservation", "No deposit reservation message incorrect"},
         2: []string{"(?i)^Deposit completed successfully, minipool created at 0x[0-9a-fA-F]{40}$", "Deposit completed message incorrect"},
         5: []string{"(?i)^Deposit completed successfully, minipool created at 0x[0-9a-fA-F]{40}$", "Deposit completed message incorrect"},

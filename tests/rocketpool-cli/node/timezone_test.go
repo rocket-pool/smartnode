@@ -22,6 +22,7 @@ func TestNodeTimezone(t *testing.T) {
     if err != nil { t.Fatal(err) }
     initInput.Close()
     timezoneInput, err := test.NewInputFile(
+        "NO" + "\n" +
         "Australia/Brisbane" + "\n" +
         "YES" + "\n")
     if err != nil { t.Fatal(err) }
@@ -59,7 +60,7 @@ func TestNodeTimezone(t *testing.T) {
     if err := app.Run(append(timezoneArgs, "node", "timezone")); err != nil { t.Error(err) }
 
     // Check output
-    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Your system timezone is", "(?i)^Please answer", "(?i)^Setting node timezone"}, map[int][]string{
+    if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Would you like to detect your timezone", "(?i)^Please enter a timezone", "(?i)^You have chosen to register with the timezone", "(?i)^Setting node timezone"}, map[int][]string{
         1: []string{"(?i)^Node timezone successfully updated to: \\w+/\\w+$", "Node timezone updated message incorrect"},
     }); err != nil {
         t.Fatal(err)
