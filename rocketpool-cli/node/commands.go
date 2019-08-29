@@ -79,7 +79,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "withdraw",
                 Aliases:   []string{"w"},
-                Usage:     "Withdraw resources from the node",
+                Usage:     "Withdraw resources from the node's network contract",
                 UsageText: "rocketpool node withdraw amount unit" + "\n   " +
                            "- amount must be a positive decimal number" + "\n   " +
                            "- valid units are 'eth' and 'rpl'",
