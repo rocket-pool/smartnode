@@ -70,7 +70,7 @@ func withdrawMinipool(c *cli.Context) error {
     for mi := 0; mi < minipoolCount; mi++ {
         select {
             case nodeStatus := <-nodeStatusChannel[mi]:
-                if nodeStatus.Status == minipool.WITHDRAWN && nodeStatus.DepositExists {
+                if (nodeStatus.Status == minipool.WITHDRAWN || nodeStatus.Status == minipool.TIMED_OUT) && nodeStatus.DepositExists {
                     withdrawableMinipoolAddresses = append(withdrawableMinipoolAddresses, minipoolAddresses[mi])
                 }
             case err := <-nodeStatusErrorChannel:
