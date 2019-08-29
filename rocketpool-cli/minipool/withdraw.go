@@ -17,6 +17,16 @@ import (
 )
 
 
+// RocketMinipool NodeWithdrawal event
+type NodeWithdrawal struct {
+    To common.Address
+    EtherAmount *big.Int
+    RethAmount *big.Int
+    RplAmount *big.Int
+    Created *big.Int
+}
+
+
 // Withdraw node deposit from a minipool
 func withdrawMinipool(c *cli.Context) error {
 
@@ -26,7 +36,7 @@ func withdrawMinipool(c *cli.Context) error {
         Client: true,
         CM: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings", "utilAddressSetStorage"},
+        LoadContracts: []string{"rocketMinipoolDelegateNode", "rocketNodeAPI", "rocketNodeSettings", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
         WaitClientSync: true,
         WaitRocketStorage: true,
@@ -106,14 +116,35 @@ func withdrawMinipool(c *cli.Context) error {
     // Withdraw node deposits
     withdrawErrors := []string{"Error withdrawing deposits from one or more minipools:"}
     for mi := 0; mi < withdrawMinipoolCount; mi++ {
+
+        // Create transactor
         if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error creating transactor for minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
         } else {
+
+            // Send withdrawal transaction
             fmt.Fprintln(p.Output, fmt.Sprintf("Withdrawing deposit from minipool %s...", withdrawMinipoolAddresses[mi].Hex()))
-            if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", withdrawMinipoolAddresses[mi]); err != nil {
+            if txReceipt, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", withdrawMinipoolAddresses[mi]); err != nil {
                 withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error withdrawing deposit from minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
             } else {
-                fmt.Fprintln(p.Output, "Successfully withdrew deposit from minipool", withdrawMinipoolAddresses[mi].Hex())
+
+                // Get withdrawal event
+                if nodeWithdrawalEvents, err := eth.GetTransactionEvents(p.Client, txReceipt, p.CM.Addresses["rocketMinipoolDelegateNode"], p.CM.Abis["rocketMinipoolDelegateNode"], "NodeWithdrawal", NodeWithdrawal{}); err != nil {
+                    withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error retrieving node deposit withdrawal event for minipool %s: " + err.Error(), withdrawMinipoolAddresses[mi].Hex()))
+                } else if len(nodeWithdrawalEvents) == 0 {
+                    withdrawErrors = append(withdrawErrors, fmt.Sprintf("Could not retrieve node deposit withdrawal event for minipool %s", withdrawMinipoolAddresses[mi].Hex()))
+                } else {
+                    nodeWithdrawalEvent := (nodeWithdrawalEvents[0]).(*NodeWithdrawal)
+
+                    // Log
+                    fmt.Fprintln(p.Output, fmt.Sprintf(
+                        "Successfully withdrew deposit of %.2f ETH, %.2f rETH and %.2f RPL from minipool %s",
+                        eth.WeiToEth(nodeWithdrawalEvent.EtherAmount),
+                        eth.WeiToEth(nodeWithdrawalEvent.RethAmount),
+                        eth.WeiToEth(nodeWithdrawalEvent.RplAmount),
+                        withdrawMinipoolAddresses[mi].Hex()))
+
+                }
             }
         }
     }
