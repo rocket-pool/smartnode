@@ -1,4 +1,4 @@
-# Rocket Pool - A next generation Ethereum proof of stake (PoS) network and pool
+# Rocket Pool - Smart Node Package
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="500" />
