@@ -1,5 +1,3 @@
-TODO: Add a complete list of CLI commands when available and detailed descriptions + link to docs. Add more detailed descriptions of the requirements, installation guide and a FAQ. Also include a list of benefits for running a Rocket Pool smart node.
-
 # Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool
 
 <p align="center">
