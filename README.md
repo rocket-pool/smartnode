@@ -12,7 +12,7 @@ This repository contains the Smart Node package required to run a Smart Node in 
 
 # Quick Install
 
-If you just wish to run a node in the Rocket Pool network, you can install this software quickly and easily using the [Smart Node Installer](https://github.com/rocket-pool/smartnode-install) package. Currently on Ubuntu is supported with more OS's on the way.
+If you just wish to run a node in the Rocket Pool network, you can install this software quickly and easily using the [Smart Node Installer](https://github.com/rocket-pool/smartnode-install) package. Currently only Ubuntu is supported with more OS's on the way.
 
 # Package
 
