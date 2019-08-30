@@ -1,4 +1,4 @@
-# Rocket Pool - A next generation Ethereum proof of stake (PoS) infrastructure service and pool
+# Rocket Pool - A next generation Ethereum proof of stake (PoS) network and pool
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="500" />
@@ -9,6 +9,10 @@
 `Rocket Pool 2.0` is a next generation Ethereum proof of stake (PoS) infrastructure service designed to be highly decentralised, distributed and compatible with Casper 2.0, the new consensus protocol that Ethereum will transition to in late 2019.
 
 This repository contains the Smart Node package required to run a Smart Node in the Rocket Pool network and earn a higher return staking ether than you would outside the network.
+
+# Quick Install
+
+If you just wish to run a node in the Rocket Pool network, you can install this software quickly and easily using the [Smart Node Installer](https://github.com/rocket-pool/smartnode-install) package. Currently on Ubuntu is supported with more OS's on the way.
 
 # Package
 
