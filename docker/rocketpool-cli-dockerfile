@@ -29,6 +29,9 @@ RUN go install github.com/rocket-pool/smartnode/rocketpool-cli
 # Start from alpine image
 FROM alpine
 
+# Install OS dependencies
+RUN apk add ca-certificates
+
 # Copy binary
 COPY --from=builder /go/bin/rocketpool-cli /go/bin/rocketpool-cli
 
