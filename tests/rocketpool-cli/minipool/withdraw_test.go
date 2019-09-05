@@ -82,7 +82,7 @@ func TestMinipoolWithdraw(t *testing.T) {
     outputRules := map[int][]string{}
     outputRules[1] = []string{"(?i)^No minipools are currently available for withdrawal$", "No withdrawable minipools message incorrect"}
     for mi, address := range minipoolAddresses {
-        outputRules[mi + 2] = []string{"(?i)^Successfully withdrew deposit from minipool " + address.Hex() + "$", "Minipool deposit withdrawn message incorrect"}
+        outputRules[mi + 2] = []string{"(?i)Successfully withdrew deposit of \\d+\\.\\d+ ETH, \\d+\\.\\d+ rETH and \\d+\\.\\d+ RPL from minipool " + address.Hex() + "$", "Minipool deposit withdrawn message incorrect"}
     }
     if messages, err := testapp.CheckOutput(output.Name(), []string{"(?i)^Please select a minipool to withdraw from", "(?i)^\\d+:\\s+0x[0-9a-fA-F]{40}$", "(?i)^Withdrawing deposit from minipool 0x[0-9a-fA-F]{40}"}, outputRules); err != nil {
         t.Fatal(err)
