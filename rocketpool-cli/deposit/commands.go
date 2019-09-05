@@ -15,29 +15,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Usage:     "Manage node deposits",
         Subcommands: []cli.Command{
 
-            // Get the node's current deposit status
-            cli.Command{
-                Name:      "status",
-                Aliases:   []string{"s"},
-                Usage:     "Get the node's current deposit status",
-                UsageText: "rocketpool deposit status",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
-                        return err
-                    }
-
-                    // Run command
-                    return getDepositStatus(c)
-
-                },
-            },
-
             // Get the current deposit RPL requirement
             cli.Command{
                 Name:      "required",
-                Aliases:   []string{"q"},
+                Aliases:   []string{"r"},
                 Usage:     "Get the current RPL requirement for a deposit",
                 UsageText: "rocketpool deposit required durationID" + "\n   " +
                            "- durationID must be '3m', '6m' or '12m'",
@@ -69,12 +50,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
-            // Reserve a node deposit
+            // Reserve and complete a node deposit
             cli.Command{
-                Name:      "reserve",
-                Aliases:   []string{"r"},
-                Usage:     "Reserve a deposit with a locked ETH:RPL ratio",
-                UsageText: "rocketpool deposit reserve durationID" + "\n   " +
+                Name:      "make",
+                Aliases:   []string{"m"},
+                Usage:     "Make a deposit into Rocket Pool",
+                UsageText: "rocketpool deposit make durationID" + "\n   " +
                            "- durationID must be '3m', '6m' or '12m'",
                 Action: func(c *cli.Context) error {
 
@@ -99,45 +80,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    return reserveDeposit(c, durationId)
-
-                },
-            },
-
-            // Cancel a node deposit reservation
-            cli.Command{
-                Name:      "cancel",
-                Aliases:   []string{"a"},
-                Usage:     "Cancel a deposit reservation",
-                UsageText: "rocketpool deposit cancel",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
-                        return err
-                    }
-
-                    // Run command
-                    return cancelDeposit(c)
-
-                },
-            },
-
-            // Complete a node deposit
-            cli.Command{
-                Name:      "complete",
-                Aliases:   []string{"c"},
-                Usage:     "Complete a deposit",
-                UsageText: "rocketpool deposit complete",
-                Action: func(c *cli.Context) error {
-
-                    // Validate arguments
-                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
-                        return err
-                    }
-
-                    // Run command
-                    return completeDeposit(c)
+                    return makeDeposit(c, durationId)
 
                 },
             },
