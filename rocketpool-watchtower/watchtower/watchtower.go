@@ -5,6 +5,7 @@ import (
     "errors"
     "fmt"
     "math/big"
+    "sync"
     "time"
 
     "github.com/ethereum/go-ethereum/common"
@@ -29,6 +30,7 @@ type WatchtowerProcess struct {
     stopCheckMinipools   chan struct{}
     beaconMessageChannel chan interface{}
     activeMinipools      map[string]common.Address
+    txLock               sync.Mutex
 }
 
 
@@ -237,6 +239,10 @@ func (p *WatchtowerProcess) scheduleCheckMinipools() {
  * Handle beacon chain client messages
  */
 func (p *WatchtowerProcess) onBeaconClientMessage(messageData []byte) {
+
+    // Lock for transactions
+    p.txLock.Lock()
+    defer p.txLock.Unlock()
 
     // Parse message
     message := new(beaconchain.ServerMessage)
