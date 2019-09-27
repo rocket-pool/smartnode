@@ -20,32 +20,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "required",
                 Aliases:   []string{"r"},
                 Usage:     "Get the current RPL requirement for a deposit",
-                UsageText: "rocketpool deposit required durationID" + "\n   " +
-                           "- durationID must be '3m', '6m' or '12m'",
+                UsageText: "rocketpool deposit required",
                 Action: func(c *cli.Context) error {
 
-                    // Arguments
-                    var durationId string
-
                     // Validate arguments
-                    if err := cliutils.ValidateArgs(c, 1, func(messages *[]string) {
-
-                        // Parse duration ID
-                        durationId = c.Args().Get(0)
-                        switch durationId {
-                            case "3m":
-                            case "6m":
-                            case "12m":
-                            default:
-                                *messages = append(*messages, "Invalid durationID - valid IDs are '3m', '6m' and '12m'")
-                        }
-
-                    }); err != nil {
+                    if err := cliutils.ValidateArgs(c, 0, nil); err != nil {
                         return err
                     }
 
                     // Run command
-                    return getRplRequired(c, durationId)
+                    return getRplRequired(c)
 
                 },
             },
