@@ -58,7 +58,7 @@ func TestGetDetails(t *testing.T) {
     if !bytes.Equal(minipoolAddress.Bytes(), details.Address.Bytes()) { t.Error("Minipool address does not match created address") }
     if details.Status != minipool.INITIALIZED { t.Errorf("Incorrect minipool status: expected %d, got %d", minipool.INITIALIZED, details.Status) }
     if details.StakingDurationId != "3m" { t.Errorf("Incorrect minipool staking duration ID: expected %s, got %s", "3m", details.StakingDurationId) }
-    if details.DepositCount.Cmp(expectedDepositCount) != 0 { t.Errorf("Incorrect minipool deposit count: expected %s, got %s", expectedDepositCount.String(), details.DepositCount.String()) }
+    if details.UserDepositCount.Cmp(expectedDepositCount) != 0 { t.Errorf("Incorrect minipool deposit count: expected %s, got %s", expectedDepositCount.String(), details.UserDepositCount.String()) }
 
     // Get details for nonexistent minipool
     address := common.HexToAddress("0x0000000000000000000000000000000000000000")

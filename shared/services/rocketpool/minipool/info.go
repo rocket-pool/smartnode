@@ -30,10 +30,14 @@ type Details struct {
     Status uint8
     StatusType string
     StatusTime time.Time
+    StatusBlock *big.Int
     StakingDurationId string
+    StakingDuration *big.Int
+    StakingExitBlock *big.Int
+    NodeDepositExists bool
     NodeEtherBalanceWei *big.Int
     NodeRplBalanceWei *big.Int
-    DepositCount *big.Int
+    UserDepositCount *big.Int
     UserDepositCapacityWei *big.Int
     UserDepositTotalWei *big.Int
 }
@@ -77,10 +81,13 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
     // Data channels
     statusChannel := make(chan uint8)
     statusTimeChannel := make(chan time.Time)
+    statusBlockChannel := make(chan *big.Int)
     stakingDurationIdChannel := make(chan string)
+    stakingDurationChannel := make(chan *big.Int)
+    nodeDepositExistsChannel := make(chan bool)
     nodeEtherBalanceChannel := make(chan *big.Int)
     nodeRplBalanceChannel := make(chan *big.Int)
-    depositCountChannel := make(chan *big.Int)
+    userDepositCountChannel := make(chan *big.Int)
     userDepositCapacityChannel := make(chan *big.Int)
     userDepositTotalChannel := make(chan *big.Int)
     errorChannel := make(chan error)
@@ -105,6 +112,16 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
         }
     })()
 
+    // Get status block
+    go (func() {
+        statusBlock := new(*big.Int)
+        if err := minipoolContract.Call(nil, statusBlock, "getStatusChangedBlock"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool status changed block: " + err.Error())
+        } else {
+            statusBlockChannel <- *statusBlock
+        }
+    })()
+
     // Get staking duration ID
     go (func() {
         stakingDurationId := new(string)
@@ -112,6 +129,26 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
             errorChannel <- errors.New("Error retrieving minipool staking duration ID: " + err.Error())
         } else {
             stakingDurationIdChannel <- *stakingDurationId
+        }
+    })()
+
+    // Get staking duration
+    go (func() {
+        stakingDuration := new(*big.Int)
+        if err := minipoolContract.Call(nil, stakingDuration, "getStakingDuration"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool staking duration: " + err.Error())
+        } else {
+            stakingDurationChannel <- *stakingDuration
+        }
+    })()
+
+    // Get node deposit exists flag
+    go (func() {
+        nodeDepositExists := new(bool)
+        if err := minipoolContract.Call(nil, nodeDepositExists, "getNodeDepositExists"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool node deposit status: " + err.Error())
+        } else {
+            nodeDepositExistsChannel <- *nodeDepositExists
         }
     })()
 
@@ -137,11 +174,11 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
 
     // Get deposit count
     go (func() {
-        depositCount := new(*big.Int)
-        if err := minipoolContract.Call(nil, depositCount, "getDepositCount"); err != nil {
+        userDepositCount := new(*big.Int)
+        if err := minipoolContract.Call(nil, userDepositCount, "getDepositCount"); err != nil {
             errorChannel <- errors.New("Error retrieving minipool deposit count: " + err.Error())
         } else {
-            depositCountChannel <- *depositCount
+            userDepositCountChannel <- *userDepositCount
         }
     })()
 
@@ -166,20 +203,26 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
     })()
 
     // Receive minipool data
-    for received := 0; received < 8; {
+    for received := 0; received < 11; {
         select {
             case details.Status = <-statusChannel:
                 details.StatusType = getStatusType(details.Status)
                 received++
             case details.StatusTime = <-statusTimeChannel:
                 received++
+            case details.StatusBlock = <-statusBlockChannel:
+                received++
             case details.StakingDurationId = <-stakingDurationIdChannel:
+                received++
+            case details.StakingDuration = <-stakingDurationChannel:
+                received++
+            case details.NodeDepositExists = <-nodeDepositExistsChannel:
                 received++
             case details.NodeEtherBalanceWei = <-nodeEtherBalanceChannel:
                 received++
             case details.NodeRplBalanceWei = <-nodeRplBalanceChannel:
                 received++
-            case details.DepositCount = <-depositCountChannel:
+            case details.UserDepositCount = <-userDepositCountChannel:
                 received++
             case details.UserDepositCapacityWei = <-userDepositCapacityChannel:
                 received++
@@ -188,6 +231,12 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
             case err := <-errorChannel:
                 return nil, err
         }
+    }
+
+    // Set exit block
+    if details.Status == STAKING {
+        details.StakingExitBlock = new(big.Int)
+        details.StakingExitBlock.Add(details.StatusBlock, details.StakingDuration)
     }
 
     // Return
