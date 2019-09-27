@@ -5,6 +5,7 @@ import (
     "errors"
     "fmt"
     "strings"
+    "time"
 
     "github.com/urfave/cli"
 
@@ -75,27 +76,44 @@ func getMinipoolStatus(c *cli.Context) error {
     fmt.Fprintln(p.Output, fmt.Sprintf("Node has %d minipools:", minipoolCount))
     fmt.Fprintln(p.Output, "=====================")
     for _, details := range minipoolDetails {
-        fmt.Fprintln(p.Output, "")
-        fmt.Fprintln(p.Output, "Address:                ", details.Address.Hex())
-        fmt.Fprintln(p.Output, "Status:                 ", strings.Title(details.StatusType))
-        fmt.Fprintln(p.Output, "Status Updated Time:    ", details.StatusTime.Format("2006-01-02, 15:04 -0700 MST"))
-        fmt.Fprintln(p.Output, "Status Updated @ Block: ", details.StatusBlock.String())
-        fmt.Fprintln(p.Output, "")
-        fmt.Fprintln(p.Output, "Staking Duration:       ", details.StakingDurationId)
+
+        // Get staking info
+        var stakingBlocksLeft int64
+        var stakingCompleteAt time.Time
         if details.StakingExitBlock != nil {
-        fmt.Fprintln(p.Output, "Staking Until Block:    ", details.StakingExitBlock.String())
-        fmt.Fprintln(p.Output, "Staking Blocks Left:    ", (details.StakingExitBlock.Int64() - header.Number.Int64()))
+            stakingBlocksLeft = details.StakingExitBlock.Int64() - header.Number.Int64()
+            if stakingBlocksLeft < 0 { stakingBlocksLeft = 0 }
+            stakingTimeLeft, _ := time.ParseDuration(fmt.Sprintf("%dm", stakingBlocksLeft / 4))
+            stakingCompleteAt = time.Now().Add(stakingTimeLeft)
+        }
+
+        // Log
+        fmt.Fprintln(p.Output, "")
+        fmt.Fprintln(p.Output, "Address:                 ", details.Address.Hex())
+        fmt.Fprintln(p.Output, "Status:                  ", strings.Title(details.StatusType))
+        fmt.Fprintln(p.Output, "Status Updated @ Time:   ", details.StatusTime.Format("2006-01-02, 15:04 -0700 MST"))
+        fmt.Fprintln(p.Output, "Status Updated @ Block:  ", details.StatusBlock.String())
+        fmt.Fprintln(p.Output, "")
+        fmt.Fprintln(p.Output, "Staking Duration:        ", details.StakingDurationId)
+        fmt.Fprintln(p.Output, "Staking Total Blocks:    ", details.StakingDuration.String())
+        if details.StakingExitBlock != nil {
+        fmt.Fprintln(p.Output, "Staking Until Block:     ", details.StakingExitBlock.String())
+        fmt.Fprintln(p.Output, "Staking Blocks Left:     ", stakingBlocksLeft)
+        fmt.Fprintln(p.Output, "Staking Complete Approx: ", stakingCompleteAt.Format("2006-01-02, 15:04 -0700 MST"))
         }
         fmt.Fprintln(p.Output, "")
-        fmt.Fprintln(p.Output, "Node ETH Deposited:     ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeEtherBalanceWei)))
-        fmt.Fprintln(p.Output, "Node RPL Deposited:     ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeRplBalanceWei)))
-        fmt.Fprintln(p.Output, "Node Deposit Withdrawn: ", fmt.Sprintf("%t", !details.NodeDepositExists))
+        if details.Status >= minipool.WITHDRAWN {
+        fmt.Fprintln(p.Output, "Node Deposit Withdrawn:  ", fmt.Sprintf("%t", !details.NodeDepositExists))
+        }
+        fmt.Fprintln(p.Output, "Node ETH Deposited:      ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeEtherBalanceWei)))
+        fmt.Fprintln(p.Output, "Node RPL Deposited:      ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeRplBalanceWei)))
         fmt.Fprintln(p.Output, "")
-        fmt.Fprintln(p.Output, "User Deposit Count:     ", details.UserDepositCount.String())
-        fmt.Fprintln(p.Output, "User Deposit Total:     ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositTotalWei)))
-        fmt.Fprintln(p.Output, "User Deposit Capacity:  ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositCapacityWei)))
+        fmt.Fprintln(p.Output, "User Deposit Count:      ", details.UserDepositCount.String())
+        fmt.Fprintln(p.Output, "User Deposit Total:      ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositTotalWei)))
+        fmt.Fprintln(p.Output, "User Deposit Capacity:   ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositCapacityWei)))
         fmt.Fprintln(p.Output, "")
         fmt.Fprintln(p.Output, "--------")
+
     }
     return nil
 
