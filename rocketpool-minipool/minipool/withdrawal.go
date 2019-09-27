@@ -108,6 +108,16 @@ func (p *WithdrawalProcess) checkWithdrawal() {
     // Wait for node to sync
     eth.WaitSync(p.p.Client, true, false)
 
+    // Check minipool contract still exists
+    if code, err := p.p.Client.CodeAt(context.Background(), *(p.minipool.Address), nil); err != nil {
+        p.p.Log.Println(errors.New("Error retrieving contract code at minipool address: " + err.Error()))
+        return
+    } else if len(code) == 0 {
+        p.p.Log.Println(fmt.Sprintf("Minipool %s no longer exists...", p.minipool.Address.Hex()))
+        close(p.stop)
+        return
+    }
+
     // Get latest block header
     header, err := p.p.Client.HeaderByNumber(context.Background(), nil)
     if err != nil {
