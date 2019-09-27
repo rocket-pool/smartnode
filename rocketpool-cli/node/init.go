@@ -38,6 +38,7 @@ func initNode(c *cli.Context) error {
     if p.AM.NodeAccountExists() {
         nodeAccount, _ := p.AM.GetNodeAccount()
         fmt.Fprintln(p.Output, "Node account already exists:", nodeAccount.Address.Hex())
+        return nil
     } else {
         if account, err := p.AM.CreateNodeAccount(); err != nil {
             return errors.New("Error creating node account: " + err.Error())
@@ -46,7 +47,8 @@ func initNode(c *cli.Context) error {
         }
     }
 
-    // Return
+    // Print backup notice & return
+    fmt.Fprintln(p.Output, "Please back up your Rocket Pool data folder at ~/.rocketpool in a safe and secure location to protect your node account!")
     return nil
 
 }
