@@ -1,10 +1,12 @@
 package minipools
 
 import (
+    "bytes"
     "context"
     "errors"
     "fmt"
     "io/ioutil"
+    "strings"
     "time"
 
     "github.com/docker/docker/api/types"
@@ -198,6 +200,13 @@ func (p *ManagementProcess) checkMinipools() {
         go p.runMinipoolContainer(minipoolAddress, minipoolContainers)
     }
 
+    // Check inactive minipool containers
+    for _, container := range minipoolContainers {
+        if container.State == "exited" {
+            go p.checkInactiveMinipoolContainer(container, stakingMinipoolAddresses)
+        }
+    }
+
 }
 
 
@@ -259,6 +268,46 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
             p.p.Log.Println(fmt.Sprintf("Started minipool container %s successfully", containerName))
         }
 
+    }
+
+}
+
+
+/**
+ * Check inactive minipool container
+ */
+func (p *ManagementProcess) checkInactiveMinipoolContainer(container types.Container, stakingMinipoolAddresses []*common.Address) {
+
+    // Get minipool container name
+    containerName := container.Names[0]
+
+    // Get minipool container address from command args
+    args := strings.Split(container.Command, " ")
+    addressStr := args[len(args) - 1]
+
+    // Check and parse minipool container address
+    if !common.IsHexAddress(addressStr) {
+        p.p.Log.Println(errors.New(fmt.Sprintf("Could not get minipool address for container %s", containerName)))
+        return
+    }
+    address := common.HexToAddress(addressStr)
+
+    // Check if minipool is staking
+    staking := false
+    for _, stakingMinipoolAddress := range stakingMinipoolAddresses {
+        if bytes.Equal(address.Bytes(), stakingMinipoolAddress.Bytes()) {
+            staking = true
+            break
+        }
+    }
+    if staking { return }
+
+    // Remove container
+    p.p.Log.Println(fmt.Sprintf("Removing minipool container %s...", containerName))
+    if err := p.p.Docker.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{}); err != nil {
+        p.p.Log.Println(errors.New(fmt.Sprintf("Error removing minipool container %s: " + err.Error(), containerName)))
+    } else {
+        p.p.Log.Println(fmt.Sprintf("Removed minipool container %s successfully", containerName))
     }
 
 }
