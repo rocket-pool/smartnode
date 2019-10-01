@@ -31,7 +31,7 @@ func sendFromNode(c *cli.Context, toAddressStr string, sendAmount float64, unit 
 
     // Get parameters
     toAddress := common.HexToAddress(toAddressStr)
-    sendAountWei := eth.EthToWei(sendAmount)
+    sendAmountWei := eth.EthToWei(sendAmount)
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
@@ -43,13 +43,20 @@ func sendFromNode(c *cli.Context, toAddressStr string, sendAmount float64, unit 
             // Check balance
             if etherBalanceWei, err := p.Client.BalanceAt(context.Background(), nodeAccount.Address, nil); err != nil {
                 return errors.New("Error retrieving node account ETH balance: " + err.Error())
-            } else if etherBalanceWei.Cmp(sendAountWei) == -1 {
+            } else if etherBalanceWei.Cmp(sendAmountWei) == -1 {
                 fmt.Fprintln(p.Output, "Send amount exceeds node account ETH balance")
                 return nil
             }
 
             // Send
-
+            if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
+                return err
+            } else {
+                fmt.Fprintln(p.Output, "Sending ETH to address...")
+                if _, err := eth.SendEther(p.Client, txor, &toAddress, sendAmountWei); err != nil {
+                    return errors.New("Error transferring ETH to address: " + err.Error())
+                }
+            }
 
         case "RETH": fallthrough
         case "RPL":
@@ -70,7 +77,7 @@ func sendFromNode(c *cli.Context, toAddressStr string, sendAmount float64, unit 
             tokenBalanceWei := new(*big.Int)
             if err := p.CM.Contracts[tokenContract].Call(nil, tokenBalanceWei, "balanceOf", nodeAccount.Address); err != nil {
                 return errors.New(fmt.Sprintf("Error retrieving node account %s balance: " + err.Error(), tokenName))
-            } else if (*tokenBalanceWei).Cmp(sendAountWei) == -1 {
+            } else if (*tokenBalanceWei).Cmp(sendAmountWei) == -1 {
                 fmt.Fprintln(p.Output, fmt.Sprintf("Send amount exceeds node account %s balance", tokenName))
                 return nil
             }
@@ -80,7 +87,7 @@ func sendFromNode(c *cli.Context, toAddressStr string, sendAmount float64, unit 
                 return err
             } else {
                 fmt.Fprintln(p.Output, fmt.Sprintf("Sending %s to address...", tokenName))
-                if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses[tokenContract], p.CM.Abis[tokenContract], "transfer", toAddress, sendAountWei); err != nil {
+                if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses[tokenContract], p.CM.Abis[tokenContract], "transfer", toAddress, sendAmountWei); err != nil {
                     return errors.New(fmt.Sprintf("Error transferring %s to address: " + err.Error(), tokenName))
                 }
             }
