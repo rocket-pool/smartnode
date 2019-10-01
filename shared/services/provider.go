@@ -215,37 +215,8 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Load contracts & ABIs
     if len(opts.LoadContracts) + len(opts.LoadAbis) > 0 {
-
-        // Loading channels
-        successChannel := make(chan bool)
-        errorChannel := make(chan error)
-
-        // Load Rocket Pool contracts
-        go (func() {
-            if err := p.CM.LoadContracts(opts.LoadContracts); err != nil {
-                errorChannel <- err
-            } else {
-                successChannel <- true
-            }
-        })()
-        go (func() {
-            if err := p.CM.LoadABIs(opts.LoadAbis); err != nil {
-                errorChannel <- err
-            } else {
-                successChannel <- true
-            }
-        })()
-
-        // Await loading
-        for received := 0; received < 2; {
-            select {
-            case <-successChannel:
-                received++
-            case err := <-errorChannel:
-                return nil, err
-            }
-        }
-
+        if err := p.CM.LoadContracts(opts.LoadContracts); err != nil { return nil, err }
+        if err := p.CM.LoadABIs(opts.LoadAbis); err != nil { return nil, err }
     }
 
     // Wait until node is registered
