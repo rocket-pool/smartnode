@@ -502,12 +502,12 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
 func getStatusType(value uint8) string {
     switch value {
         case INITIALIZED: return "initialized"
-        case PRELAUNCH: return "pre-launch"
+        case PRELAUNCH: return "prelaunch"
         case STAKING: return "staking"
-        case LOGGED_OUT: return "logged out"
+        case LOGGED_OUT: return "loggedout"
         case WITHDRAWN: return "withdrawn"
         case CLOSED: return "closed"
-        case TIMED_OUT: return "timed out"
+        case TIMED_OUT: return "timedout"
         default: return "unknown"
     }
 }

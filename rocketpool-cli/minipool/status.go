@@ -17,7 +17,7 @@ import (
 
 
 // Get the node's minipool statuses
-func getMinipoolStatus(c *cli.Context) error {
+func getMinipoolStatus(c *cli.Context, statusFilter string) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
@@ -71,11 +71,22 @@ func getMinipoolStatus(c *cli.Context) error {
         }
     }
 
-    // Log status & return
-    fmt.Fprintln(p.Output, "=====================")
-    fmt.Fprintln(p.Output, fmt.Sprintf("Node has %d minipools:", minipoolCount))
-    fmt.Fprintln(p.Output, "=====================")
+    // Filter minipool details
+    filteredMinipoolDetails := make([]*minipool.Details, 0)
     for _, details := range minipoolDetails {
+        if statusFilter == "" || details.StatusType == statusFilter {
+            filteredMinipoolDetails = append(filteredMinipoolDetails, details)
+        }
+    }
+
+    // Log status & return
+    poolsType := statusFilter
+    if poolsType == "" { poolsType = "total" }
+    poolsTitle := fmt.Sprintf("Node has %d %s minipools:", len(filteredMinipoolDetails), poolsType)
+    fmt.Fprintln(p.Output, strings.Repeat("=", len(poolsTitle)))
+    fmt.Fprintln(p.Output, poolsTitle)
+    fmt.Fprintln(p.Output, strings.Repeat("=", len(poolsTitle)))
+    for _, details := range filteredMinipoolDetails {
 
         // Get staking info
         var stakingBlocksLeft int64
