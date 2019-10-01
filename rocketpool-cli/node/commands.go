@@ -4,6 +4,7 @@ import (
     "strconv"
     "strings"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/urfave/cli"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -113,6 +114,57 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run command
                     return withdrawFromNode(c, amount, unit)
+
+                },
+            },
+
+            // Send resources from the node to an address
+            cli.Command{
+                Name:      "send",
+                Aliases:   []string{"n"},
+                Usage:     "Send resources from the node account to an address",
+                UsageText: "rocketpool node send address amount unit" + "\n   " +
+                           "- address must be a valid ethereum address" + "\n   " +
+                           "- amount must be a positive decimal number" + "\n   " +
+                           "- valid units are 'eth', 'reth' and 'rpl'",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var address string
+                    var amount float64
+                    var unit string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateArgs(c, 3, func(messages *[]string) {
+                        var err error
+
+                        // Validate address
+                        address = c.Args().Get(0)
+                        if !common.IsHexAddress(address) {
+                            *messages = append(*messages, "Invalid address - must be a valid Ethereum address")
+                        }
+
+                        // Parse amount
+                        if amount, err = strconv.ParseFloat(c.Args().Get(1), 64); err != nil || amount <= 0 {
+                            *messages = append(*messages, "Invalid amount - must be a positive decimal number")
+                        }
+
+                        // Parse unit
+                        unit = strings.ToUpper(c.Args().Get(2))
+                        switch unit {
+                            case "ETH":
+                            case "RETH":
+                            case "RPL":
+                            default:
+                                *messages = append(*messages, "Invalid unit - valid units are 'ETH', 'RETH' and 'RPL'")
+                        }
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return sendFromNode(c, address, amount, unit)
 
                 },
             },
