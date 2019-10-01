@@ -72,7 +72,7 @@ func getMinipoolStatus(c *cli.Context, statusFilter string) error {
     }
 
     // Filter minipool details
-    filteredMinipoolDetails := make([]*minipool.Details, 0)
+    filteredMinipoolDetails := []*minipool.Details{}
     for _, details := range minipoolDetails {
         if statusFilter == "" || details.StatusType == statusFilter {
             filteredMinipoolDetails = append(filteredMinipoolDetails, details)
