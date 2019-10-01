@@ -77,12 +77,12 @@ func withdrawMinipool(c *cli.Context) error {
     }
 
     // Receive minipool node statuses & filter withdrawable minipools
-    withdrawableMinipoolAddresses := []*common.Address{}
+    withdrawableMinipools := []*minipool.NodeStatus{}
     for mi := 0; mi < minipoolCount; mi++ {
         select {
             case nodeStatus := <-nodeStatusChannel[mi]:
-                if (nodeStatus.Status == minipool.WITHDRAWN || nodeStatus.Status == minipool.TIMED_OUT) && nodeStatus.DepositExists {
-                    withdrawableMinipoolAddresses = append(withdrawableMinipoolAddresses, minipoolAddresses[mi])
+                if (nodeStatus.Status == minipool.INITIALIZED || nodeStatus.Status == minipool.WITHDRAWN || nodeStatus.Status == minipool.TIMED_OUT) && nodeStatus.DepositExists {
+                    withdrawableMinipools = append(withdrawableMinipools, nodeStatus)
                 }
             case err := <-nodeStatusErrorChannel:
                 return err
@@ -90,29 +90,39 @@ func withdrawMinipool(c *cli.Context) error {
     }
 
     // Cancel if no minipools are withdrawable
-    if len(withdrawableMinipoolAddresses) == 0 {
+    if len(withdrawableMinipools) == 0 {
         fmt.Fprintln(p.Output, "No minipools are currently available for withdrawal")
         return nil
     }
 
     // Prompt for minipools to withdraw
-    prompt := []string{"Please select a minipool to withdraw from by entering a number, or enter 'A' for all:"}
+    prompt := []string{"Please select a minipool to withdraw from by entering a number, or enter 'A' for all (excluding initialized):"}
     options := []string{}
-    for mi, minipoolAddress := range withdrawableMinipoolAddresses {
-        prompt = append(prompt, fmt.Sprintf("%d: %s", mi + 1, minipoolAddress.Hex()))
+    for mi, minipoolStatus := range withdrawableMinipools {
+        prompt = append(prompt, fmt.Sprintf("%d: %s (%s)", mi + 1, minipoolStatus.Address.Hex(), strings.Title(minipoolStatus.StatusType)))
         options = append(options, strconv.Itoa(mi + 1))
     }
-    response := cliutils.Prompt(p.Input, p.Output, strings.Join(prompt, "\n"), fmt.Sprintf("(?i)^(%s|a|all)$", strings.Join(options, "|")), "Please enter a minipool number or 'A' for all")
+    response := cliutils.Prompt(p.Input, p.Output, strings.Join(prompt, "\n"), fmt.Sprintf("(?i)^(%s|a|all)$", strings.Join(options, "|")), "Please enter a minipool number or 'A' for all (excluding initialized)")
 
     // Get addresses of minipools to withdraw
-    var withdrawMinipoolAddresses []*common.Address
+    withdrawMinipoolAddresses := []*common.Address{}
     if strings.ToLower(response[:1]) == "a" {
-        withdrawMinipoolAddresses = withdrawableMinipoolAddresses
+        for _, minipoolStatus := range withdrawableMinipools {
+            if minipoolStatus.Status != minipool.INITIALIZED {
+                withdrawMinipoolAddresses = append(withdrawMinipoolAddresses, minipoolStatus.Address)
+            }
+        }
     } else {
         index, _ := strconv.Atoi(response)
-        withdrawMinipoolAddresses = []*common.Address{withdrawableMinipoolAddresses[index - 1]}
+        withdrawMinipoolAddresses = append(withdrawMinipoolAddresses, withdrawableMinipools[index - 1].Address)
     }
     withdrawMinipoolCount := len(withdrawMinipoolAddresses)
+
+    // Cancel if no minipools to withdraw
+    if withdrawMinipoolCount == 0 {
+        fmt.Fprintln(p.Output, "No minipools to withdraw")
+        return nil
+    }
 
     // Withdraw node deposits
     withdrawErrors := []string{"Error withdrawing deposits from one or more minipools:"}

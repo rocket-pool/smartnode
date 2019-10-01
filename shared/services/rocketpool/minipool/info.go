@@ -54,7 +54,9 @@ type Status struct {
 
 // Minipool node status data
 type NodeStatus struct {
+    Address *common.Address
     Status uint8
+    StatusType string
     DepositExists bool
 }
 
@@ -338,7 +340,9 @@ func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Addre
     if _, ok := cm.Abis["rocketMinipool"]; !ok { return nil, errors.New("RocketMinipool ABI is not loaded") }
 
     // Node status
-    nodeStatus := &NodeStatus{}
+    nodeStatus := &NodeStatus{
+        Address: minipoolAddress,
+    }
 
     // Initialise minipool contract
     minipoolContract, err := cm.NewContract(minipoolAddress, "rocketMinipool")
@@ -375,6 +379,7 @@ func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Addre
     for received := 0; received < 2; {
         select {
             case nodeStatus.Status = <-statusChannel:
+                nodeStatus.StatusType = getStatusType(nodeStatus.Status)
                 received++
             case nodeStatus.DepositExists = <-depositExistsChannel:
                 received++
