@@ -1,7 +1,6 @@
 package minipool
 
 import (
-    "encoding/hex"
     "encoding/json"
     "errors"
     "fmt"
@@ -88,7 +87,7 @@ func (p *ActivityProcess) onBeaconClientConnected() {
     // Request validator status
     if payload, err := json.Marshal(beaconchain.ClientMessage{
         Message: "get_validator_status",
-        Pubkey: hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()),
+        Pubkey: p.minipool.Pubkey,
     }); err != nil {
         p.p.Log.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
     } else if err := p.p.Beacon.Send(payload); err != nil {
@@ -117,7 +116,7 @@ func (p *ActivityProcess) onBeaconClientMessage(messageData []byte) {
         case "validator_status":
 
             // Check validator pubkey
-            if hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()) != message.Pubkey { break }
+            if p.minipool.Pubkey != message.Pubkey { break }
 
             // Handle statuses
             switch message.Status.Code {
@@ -147,7 +146,7 @@ func (p *ActivityProcess) onBeaconClientMessage(messageData []byte) {
 
             // Check validator active status, get pubkey string
             if !p.validatorActive { break }
-            pubkeyHex := hex.EncodeToString(p.minipool.Key.PublicKey.Marshal())
+            pubkeyHex := p.minipool.Pubkey
 
             // Log activity
             p.p.Log.Println(fmt.Sprintf("New epoch, sending activity for validator %s...", pubkeyHex))

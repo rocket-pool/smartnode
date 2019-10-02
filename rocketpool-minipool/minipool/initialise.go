@@ -3,13 +3,13 @@ package minipool
 import (
     "bytes"
     "context"
+    "encoding/hex"
     "errors"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/utils/bls/keystore"
 )
 
 
@@ -17,7 +17,7 @@ import (
 type Minipool struct {
     Address *common.Address
     Contract *bind.BoundContract
-    Key *keystore.Key
+    Pubkey string
 }
 
 
@@ -55,17 +55,27 @@ func Initialise(p *services.Provider, minipoolAddressStr string) (*Minipool, err
         return nil, errors.New("Error retrieving minipool validator pubkey: " + err.Error())
     }
 
+    /*
+    REMOVED due to excess memory consumption
+    TODO: Replace implementation with something less memory intensive!
+    
     // Check for local validator key
     validatorKey, err := p.KM.GetValidatorKey(*validatorPubkey)
     if err != nil {
         return nil, errors.New("Local minipool validator key not found")
     }
+    */
+
+    // Encode validator pubkey
+    validatorPubkeyHex := make([]byte, hex.EncodedLen(len(*validatorPubkey)))
+    hex.Encode(validatorPubkeyHex, *validatorPubkey)
+    validatorPubkeyStr := string(validatorPubkeyHex)
 
     // Return
     return &Minipool{
         Address: &minipoolAddress,
         Contract: minipoolContract,
-        Key: validatorKey,
+        Pubkey: validatorPubkeyStr,
     }, nil
 
 }

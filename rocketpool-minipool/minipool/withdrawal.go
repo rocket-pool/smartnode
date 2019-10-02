@@ -194,7 +194,7 @@ func (p *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
         case "validator_status":
 
             // Check validator pubkey and minipool status
-            if hex.EncodeToString(p.minipool.Key.PublicKey.Marshal()) != message.Pubkey { break }
+            if p.minipool.Pubkey != message.Pubkey { break }
             if !p.minipoolExiting { break }
 
             // Handle statuses
