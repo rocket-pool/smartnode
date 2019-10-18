@@ -88,7 +88,43 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
         }
     }
 
-    // Log status & return
+    // Get minipool overview details
+    overview := map[string]map[string]uint64{"total": map[string]uint64{"3m": 0, "6m": 0, "12m": 0, "total": 0}}
+    for _, details := range filteredMinipoolDetails {
+        if _, ok := overview[details.StatusType]; !ok {
+            overview[details.StatusType] = map[string]uint64{"3m": 0, "6m": 0, "12m": 0, "total": 0}
+        }
+        overview[details.StatusType][details.StakingDurationId]++
+        overview[details.StatusType]["total"]++
+        overview["total"][details.StakingDurationId]++
+        overview["total"]["total"]++
+    }
+
+    // Print minipool overview
+    if len(filteredMinipoolDetails) > 0 {
+        fmt.Fprintln(p.Output, "========================")
+        fmt.Fprintln(p.Output, "Node minipools overview:")
+        fmt.Fprintln(p.Output, "========================")
+        fmt.Fprintln(p.Output, "")
+        fmt.Fprintln(p.Output, fmt.Sprintf("%-13v | %-3v | %-3v | %-3v | %v", "Status", "3m", "6m", "12m", "Total"))
+        fmt.Fprintln(p.Output, strings.Repeat("-", 39))
+        rowsPrinted := 0
+        for _, status := range []string{"initialized", "prelaunch", "staking", "loggedout", "withdrawn", "timedout", "total"} {
+            if _, ok := overview[status]; !ok { continue }
+            if status == "total" && rowsPrinted < 2 { continue }
+            fmt.Fprintln(p.Output, fmt.Sprintf(
+                "%-13v | %-3v | %-3v | %-3v | %v",
+                strings.Title(status) + ":",
+                overview[status]["3m"],
+                overview[status]["6m"],
+                overview[status]["12m"],
+                overview[status]["total"]))
+            rowsPrinted++
+        }
+        fmt.Fprintln(p.Output, "")
+    }
+
+    // Print minipool statuses
     poolsType := strings.Join(statusFilters, " / ")
     if poolsType == "" { poolsType = "total" }
     poolsTitle := fmt.Sprintf("Node has %d %s minipools:", len(filteredMinipoolDetails), poolsType)
@@ -107,7 +143,7 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
             stakingCompleteAt = time.Now().Add(stakingTimeLeft)
         }
 
-        // Log
+        // Print
         fmt.Fprintln(p.Output, "")
         fmt.Fprintln(p.Output, "Address:                 ", details.Address.Hex())
         fmt.Fprintln(p.Output, "Status:                  ", strings.Title(details.StatusType))
@@ -135,6 +171,8 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
         fmt.Fprintln(p.Output, "--------")
 
     }
+
+    // Return
     return nil
 
 }
