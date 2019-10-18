@@ -408,13 +408,9 @@ func completeDeposit(p *services.Provider) (*PoolCreated, error) {
     minipoolCreatedEvent := (minipoolCreatedEvents[0]).(*PoolCreated)
 
     // Process deposit queue for duration
-    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
-        return nil, err
-    } else {
+    if txor, err := p.AM.GetNodeAccountTransactor(); err == nil {
         fmt.Fprintln(p.Output, "Processing deposit queue...")
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketDepositQueue"], p.CM.Abis["rocketDepositQueue"], "assignChunks", depositDurationID); err != nil {
-            return nil, errors.New("Error processing deposit queue: " + err.Error())
-        }
+        _, _ = eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketDepositQueue"], p.CM.Abis["rocketDepositQueue"], "assignChunks", depositDurationID)
     }
 
     // Return
