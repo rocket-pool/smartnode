@@ -1,6 +1,9 @@
 package minipool
 
 import (
+    "fmt"
+    "strings"
+
     "github.com/urfave/cli"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -21,7 +24,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"s"},
                 Usage:     "Get the node's current minipool statuses",
                 UsageText: "rocketpool minipool status [filter]" + "\n   " +
-                           "- optionally filter by a status code, one of:" + "\n   " +
+                           "- optionally filter by comma-delimited status codes, from:" + "\n   " +
                            "  'initialized', 'prelaunch', 'staking', 'loggedout', 'withdrawn', 'timedout'",
                 Action: func(c *cli.Context) error {
 
@@ -30,24 +33,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         return cli.NewExitError("USAGE:" + "\n   " + c.Command.UsageText, 1)
                     }
 
-                    // Get & validate status filter
-                    statusFilter := ""
+                    // Get & validate status filters
+                    var statusFilters []string
                     if len(c.Args()) == 1 {
-                        statusFilter = c.Args().Get(0)
-                        filterExists := false
-                        for _, filterOption := range []string{"initialized", "prelaunch", "staking", "loggedout", "withdrawn", "timedout"} {
-                            if statusFilter == filterOption {
-                                filterExists = true
-                                break
+                        statusFilters = strings.Split(c.Args().Get(0), ",")
+                        for _, statusFilter := range statusFilters {
+                            filterExists := false
+                            for _, filterOption := range []string{"initialized", "prelaunch", "staking", "loggedout", "withdrawn", "timedout"} {
+                                if statusFilter == filterOption {
+                                    filterExists = true
+                                    break
+                                }
                             }
-                        }
-                        if !filterExists {
-                            return cli.NewExitError("Invalid filter - valid options are 'initialized', 'prelaunch', 'staking', 'loggedout', 'withdrawn', 'timedout'", 1)
+                            if !filterExists {
+                                return cli.NewExitError(fmt.Sprintf("Invalid filter '%s' - valid options are 'initialized', 'prelaunch', 'staking', 'loggedout', 'withdrawn', 'timedout'", statusFilter), 1)
+                            }
                         }
                     }
 
                     // Run command
-                    return getMinipoolStatus(c, statusFilter)
+                    return getMinipoolStatus(c, statusFilters)
 
                 },
             },

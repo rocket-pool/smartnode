@@ -17,7 +17,7 @@ import (
 
 
 // Get the node's minipool statuses
-func getMinipoolStatus(c *cli.Context, statusFilter string) error {
+func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
@@ -74,13 +74,22 @@ func getMinipoolStatus(c *cli.Context, statusFilter string) error {
     // Filter minipool details
     filteredMinipoolDetails := []*minipool.Details{}
     for _, details := range minipoolDetails {
-        if statusFilter == "" || details.StatusType == statusFilter {
+        statusMatch := (len(statusFilters) == 0)
+        if !statusMatch {
+            for _, statusFilter := range statusFilters {
+                if details.StatusType == statusFilter {
+                    statusMatch = true
+                    break
+                }
+            }
+        }
+        if statusMatch {
             filteredMinipoolDetails = append(filteredMinipoolDetails, details)
         }
     }
 
     // Log status & return
-    poolsType := statusFilter
+    poolsType := strings.Join(statusFilters, " / ")
     if poolsType == "" { poolsType = "total" }
     poolsTitle := fmt.Sprintf("Node has %d %s minipools:", len(filteredMinipoolDetails), poolsType)
     fmt.Fprintln(p.Output, strings.Repeat("=", len(poolsTitle)))
