@@ -165,8 +165,10 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
         fmt.Fprintln(p.Output, "Node RPL Deposited:      ", fmt.Sprintf("%.2f", eth.WeiToEth(details.NodeRplBalanceWei)))
         fmt.Fprintln(p.Output, "")
         fmt.Fprintln(p.Output, "User Deposit Count:      ", details.UserDepositCount.String())
+        if details.Status <= minipool.STAKING || details.Status == minipool.TIMED_OUT {
         fmt.Fprintln(p.Output, "User Deposit Total:      ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositTotalWei)))
         fmt.Fprintln(p.Output, "User Deposit Capacity:   ", fmt.Sprintf("%.2f", eth.WeiToEth(details.UserDepositCapacityWei)))
+        }
         fmt.Fprintln(p.Output, "")
         fmt.Fprintln(p.Output, "--------")
 
