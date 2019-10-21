@@ -99,7 +99,13 @@ func withdrawMinipool(c *cli.Context) error {
     prompt := []string{"Please select a minipool to withdraw from by entering a number, or enter 'A' for all (excluding initialized):"}
     options := []string{}
     for mi, minipoolStatus := range withdrawableMinipools {
-        prompt = append(prompt, fmt.Sprintf("%d: %s (%s)", mi + 1, minipoolStatus.Address.Hex(), strings.Title(minipoolStatus.StatusType)))
+        prompt = append(prompt, fmt.Sprintf(
+            "%-4v %-42v  %-11v @ %v  %-3v",
+            strconv.Itoa(mi + 1) + ":",
+            minipoolStatus.Address.Hex(),
+            strings.Title(minipoolStatus.StatusType),
+            minipoolStatus.StatusTime.Format("2006-01-02, 15:04 -0700 MST"),
+            minipoolStatus.StakingDurationId))
         options = append(options, strconv.Itoa(mi + 1))
     }
     response := cliutils.Prompt(p.Input, p.Output, strings.Join(prompt, "\n"), fmt.Sprintf("(?i)^(%s|a|all)$", strings.Join(options, "|")), "Please enter a minipool number or 'A' for all (excluding initialized)")

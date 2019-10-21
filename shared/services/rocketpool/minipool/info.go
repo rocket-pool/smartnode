@@ -57,6 +57,8 @@ type NodeStatus struct {
     Address *common.Address
     Status uint8
     StatusType string
+    StatusTime time.Time
+    StakingDurationId string
     DepositExists bool
 }
 
@@ -352,6 +354,8 @@ func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Addre
 
     // Data channels
     statusChannel := make(chan uint8)
+    statusTimeChannel := make(chan time.Time)
+    stakingDurationIdChannel := make(chan string)
     depositExistsChannel := make(chan bool)
     errorChannel := make(chan error)
 
@@ -362,6 +366,26 @@ func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Addre
             errorChannel <- errors.New("Error retrieving minipool status: " + err.Error())
         } else {
             statusChannel <- *status
+        }
+    })()
+
+    // Get status time
+    go (func() {
+        statusChangedTime := new(*big.Int)
+        if err := minipoolContract.Call(nil, statusChangedTime, "getStatusChangedTime"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool status changed time: " + err.Error())
+        } else {
+            statusTimeChannel <- time.Unix((*statusChangedTime).Int64(), 0)
+        }
+    })()
+
+    // Get staking duration ID
+    go (func() {
+        stakingDurationId := new(string)
+        if err := minipoolContract.Call(nil, stakingDurationId, "getStakingDurationID"); err != nil {
+            errorChannel <- errors.New("Error retrieving minipool staking duration ID: " + err.Error())
+        } else {
+            stakingDurationIdChannel <- *stakingDurationId
         }
     })()
 
@@ -376,10 +400,14 @@ func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Addre
     })()
 
     // Receive minipool data
-    for received := 0; received < 2; {
+    for received := 0; received < 4; {
         select {
             case nodeStatus.Status = <-statusChannel:
                 nodeStatus.StatusType = getStatusType(nodeStatus.Status)
+                received++
+            case nodeStatus.StatusTime = <-statusTimeChannel:
+                received++
+            case nodeStatus.StakingDurationId = <-stakingDurationIdChannel:
                 received++
             case nodeStatus.DepositExists = <-depositExistsChannel:
                 received++
