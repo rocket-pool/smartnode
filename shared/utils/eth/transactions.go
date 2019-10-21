@@ -15,7 +15,7 @@ import (
 
 
 // Config
-const GAS_LIMIT_PADDING uint64 = 400000
+const GAS_LIMIT_PADDING uint64 = 500000
 const MAX_GAS_LIMIT uint64 = 8000000
 
 
