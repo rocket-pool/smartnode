@@ -43,10 +43,6 @@ ______           _        _    ______           _
     app.Version = "0.0.1"
     app.Authors = []cli.Author{
         cli.Author{
-            Name:  "Darren Langley",
-            Email: "darren@rocketpool.net",
-        },
-        cli.Author{
             Name:  "David Rugendyke",
             Email: "david@rocketpool.net",
         },
