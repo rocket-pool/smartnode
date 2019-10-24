@@ -5,6 +5,7 @@ import (
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/rocketpool-api/node"
     "github.com/rocket-pool/smartnode/shared/utils/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -34,6 +35,9 @@ func main() {
 
     // Configure application
     cliutils.Configure(app)
+
+    // Register commands
+    node.RegisterCommands(app, "node", []string{"n"})
 
     // Run application
     if err := app.Run(os.Args); err != nil {
