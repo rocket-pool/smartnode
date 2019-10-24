@@ -57,39 +57,31 @@ func WaitNodeAccountSet(am *accounts.AccountManager) {
 func WaitClientConnection(client *ethclient.Client) {
 
     // Block until connected
-    var connected bool = false
-    for !connected {
-
-        // Get network ID
-        if _, err := client.NetworkID(context.Background()); err != nil {
-            fmt.Println(fmt.Sprintf("Not connected to ethereum client, retrying in %s...", checkConnectionInterval.String()))
-            time.Sleep(checkConnectionInterval)
-        } else {
-            connected = true
-        }
-
+    for !ClientIsConnected(client) {
+        fmt.Println(fmt.Sprintf("Not connected to ethereum client, retrying in %s...", checkConnectionInterval.String()))
+        time.Sleep(checkConnectionInterval)
     }
 
+}
+func ClientIsConnected(client *ethclient.Client) bool {
+    _, err := client.NetworkID(context.Background())
+    return err == nil
 }
 
 
 // Wait for contract to become available on ethereum client
 func WaitContractLoaded(client *ethclient.Client, contractName string, contractAddress common.Address) {
 
-    // Block until contract exists
-    var exists bool = false
-    for !exists {
-
-        // Get contract code
-        if code, err := client.CodeAt(context.Background(), contractAddress, nil); err != nil || len(code) == 0 {
-            fmt.Println(fmt.Sprintf("%s contract not loaded, retrying in %s...", contractName, checkContractInterval.String()))
-            time.Sleep(checkContractInterval)
-        } else {
-            exists = true
-        }
-
+    // Block until contract is loaded
+    for !ContractIsLoaded(client, contractAddress) {
+        fmt.Println(fmt.Sprintf("%s contract not loaded, retrying in %s...", contractName, checkContractInterval.String()))
+        time.Sleep(checkContractInterval)
     }
 
+}
+func ContractIsLoaded(client *ethclient.Client, contractAddress common.Address) bool {
+    code, err := client.CodeAt(context.Background(), contractAddress, nil)
+    return err == nil && len(code) > 0
 }
 
 
