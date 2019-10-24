@@ -115,6 +115,8 @@ func registerNode(c *cli.Context, timezone string) error {
     } else {
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketNodeAPI"], p.CM.Abis["rocketNodeAPI"], "add", timezone); err != nil {
             return errors.New("Error registering node: " + err.Error())
+        } else {
+            response.Success = true
         }
     }
 
@@ -123,7 +125,6 @@ func registerNode(c *cli.Context, timezone string) error {
     if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
         return errors.New("Error retrieving node contract address: " + err.Error())
     } else {
-        response.Success = true
         response.ContractAddress = *nodeContractAddress
     }
 
