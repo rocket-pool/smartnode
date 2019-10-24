@@ -44,3 +44,11 @@ type NodeRegisterResponse struct {
     AccountBalanceEtherWei *big.Int     `json:"accountBalanceEtherWei"`
 }
 
+
+// Node timezone response type
+type NodeTimezoneResponse struct {
+    Success bool                        `json:"success"`
+    AccountAddress common.Address       `json:"accountAddress"`
+    Timezone string                     `json:"timezone"`
+}
+

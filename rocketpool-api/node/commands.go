@@ -94,6 +94,35 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Set the node's timezone
+            cli.Command{
+                Name:      "timezone",
+                Aliases:   []string{"t"},
+                Usage:     "Set the node's timezone on the Rocket Pool network",
+                UsageText: "rocketpool node timezone tz",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var timezone string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 1, func(messages *[]string) {
+
+                        // Check timezone
+                        if timezone = c.Args().Get(0); !regexp.MustCompile("^\\w{2,}\\/\\w{2,}$").MatchString(timezone) {
+                            *messages = append(*messages, "Timezone must be in the format 'Country/City'")
+                        }
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return setNodeTimezone(c, timezone)
+
+                },
+            },
+
         },
     })
 }
