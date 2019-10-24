@@ -7,7 +7,6 @@ import (
     "io/ioutil"
     "os"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
@@ -79,19 +78,19 @@ func (pm *PasswordManager) PasswordExists() bool {
 /**
  * Create the stored password
  */
-func (pm *PasswordManager) CreatePassword() (string, error) {
+func (pm *PasswordManager) SetPassword(password string) error {
 
     // Check password does not exist
-    if pm.PasswordExists() { return "", errors.New("Password already exists.") }
+    if pm.PasswordExists() { return errors.New("Password already exists.") }
 
-    // Prompt for password
-    password := cliutils.Prompt(pm.input, pm.output, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
+    // Check password length
+    if len(password) < 8 { return errors.New("Password must be at least 8 characters long") }
 
     // Write to file
     if err := ioutil.WriteFile(pm.passwordPath, []byte(password), 0600); err != nil {
-        return "", errors.New("Could not write password to disk.")
+        return errors.New("Could not write password to disk.")
     } else {
-        return password, nil
+        return nil
     }
 
 }
