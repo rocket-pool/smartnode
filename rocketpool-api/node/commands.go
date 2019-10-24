@@ -1,6 +1,8 @@
 package node
 
 import (
+    "regexp"
+
     "github.com/urfave/cli"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -59,6 +61,35 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run command
                     return initNode(c, password)
+
+                },
+            },
+
+            // Register the node with Rocket Pool
+            cli.Command{
+                Name:      "register",
+                Aliases:   []string{"r"},
+                Usage:     "Register the node on the Rocket Pool network",
+                UsageText: "rocketpool node register timezone",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var timezone string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 1, func(messages *[]string) {
+
+                        // Check timezone
+                        if timezone = c.Args().Get(0); !regexp.MustCompile("^\\w{2,}\\/\\w{2,}$").MatchString(timezone) {
+                            *messages = append(*messages, "Timezone must be in the format 'Country/City'")
+                        }
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return registerNode(c, timezone)
 
                 },
             },
