@@ -22,3 +22,12 @@ type NodeStatusResponse struct {
     Timezone string                     `json:"timezone"`
 }
 
+
+// Node initialization response type
+type NodeInitResponse struct {
+    Success bool                    `json:"success"`
+    PasswordSet bool                `json:"passwordSet"`
+    AccountCreated bool             `json:"accountCreated"`
+    AccountAddress common.Address   `json:"accountAddress"`
+}
+

@@ -34,6 +34,35 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Initialise the node with an account
+            cli.Command{
+                Name:      "init",
+                Aliases:   []string{"i"},
+                Usage:     "Initialize the node with an account",
+                UsageText: "rocketpool node initialize password",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var password string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 1, func(messages *[]string) {
+
+                        // Check password
+                        if password = c.Args().Get(0); len(password) < 8 {
+                            *messages = append(*messages, "Password must be at least 8 characters long")
+                        }
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return initNode(c, password)
+
+                },
+            },
+
         },
     })
 }
