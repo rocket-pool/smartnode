@@ -3,6 +3,7 @@ package api
 import (
     "encoding/json"
     "fmt"
+    "os"
 )
 
 
@@ -14,15 +15,16 @@ type ErrorResponse struct {
 
 
 // Print a response
-func PrintResponse(response interface{}) {
+func PrintResponse(output *os.File, response interface{}) {
+    if output == nil { output = os.Stdout }
     responseBytes, err := json.Marshal(response)
-    if err == nil { fmt.Println(string(responseBytes)) }
+    if err == nil { fmt.Fprintln(output, string(responseBytes)) }
 }
 
 
 // Print an error response
-func PrintErrorResponse(err error) {
-    PrintResponse(ErrorResponse{
+func PrintErrorResponse(output *os.File, err error) {
+    PrintResponse(output, ErrorResponse{
         Success: false,
         Error: err.Error(),
     })
