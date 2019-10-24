@@ -112,33 +112,24 @@ func getNodeStatus(c *cli.Context) error {
     })()
 
     // Receive node details
-    var nodeActive bool
-    var nodeTimezone string
-    var nodeBalances *node.Balances
-    var nodeTrusted bool
     for received := 0; received < 4; {
         select {
-            case nodeActive = <-nodeActiveChannel:
+            case response.Active = <-nodeActiveChannel:
                 received++
-            case nodeTimezone = <-nodeTimezoneChannel:
+            case response.Timezone = <-nodeTimezoneChannel:
                 received++
-            case nodeBalances = <-nodeBalancesChannel:
+            case nodeBalances := <-nodeBalancesChannel:
+                response.ContractBalanceEtherWei = nodeBalances.EtherWei
+                response.ContractBalanceRplWei = nodeBalances.RplWei
                 received++
-            case nodeTrusted = <-nodeTrustedChannel:
+            case response.Trusted = <-nodeTrustedChannel:
                 received++
             case err := <-errorChannel:
                 return err
         }
     }
 
-    // Update response
-    response.Active = nodeActive
-    response.Timezone = nodeTimezone
-    response.ContractBalanceEtherWei = nodeBalances.EtherWei
-    response.ContractBalanceRplWei = nodeBalances.RplWei
-    response.Trusted = nodeTrusted
-
-    // Print & return
+    // Print response & return
     api.PrintResponse(p.Output, response)
     return nil
 
