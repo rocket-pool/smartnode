@@ -10,8 +10,8 @@ import (
 
 // Deposit cancellation response type
 type DepositCancelResponse struct {
-    Success bool                            `json:"success"`
-    HadExistingReservation bool             `json:"hadExistingReservation"`
+    Success bool                    `json:"success"`
+    HadExistingReservation bool     `json:"hadExistingReservation"`
 }
 
 

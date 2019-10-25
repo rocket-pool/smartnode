@@ -12,9 +12,9 @@ import (
 
 // Node timezone response type
 type NodeTimezoneResponse struct {
-    Success bool                        `json:"success"`
-    AccountAddress common.Address       `json:"accountAddress"`
-    Timezone string                     `json:"timezone"`
+    Success bool                    `json:"success"`
+    AccountAddress common.Address   `json:"accountAddress"`
+    Timezone string                 `json:"timezone"`
 }
 
 

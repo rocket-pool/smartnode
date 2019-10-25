@@ -11,10 +11,10 @@ import (
 
 // Node initialization response type
 type NodeInitResponse struct {
-    Success bool                        `json:"success"`
-    PasswordSet bool                    `json:"passwordSet"`
-    AccountCreated bool                 `json:"accountCreated"`
-    AccountAddress common.Address       `json:"accountAddress"`
+    Success bool                    `json:"success"`
+    PasswordSet bool                `json:"passwordSet"`
+    AccountCreated bool             `json:"accountCreated"`
+    AccountAddress common.Address   `json:"accountAddress"`
 }
 
 
