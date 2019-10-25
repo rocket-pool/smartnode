@@ -37,8 +37,8 @@ type NodeRegisterResponse struct {
     Success bool                        `json:"success"`
     AccountAddress common.Address       `json:"accountAddress"`
     ContractAddress common.Address      `json:"contractAddress"`
-    RegistrationsEnabled bool           `json:"registrationsEnabled"`
     AlreadyRegistered bool              `json:"alreadyRegistered"`
+    RegistrationsEnabled bool           `json:"registrationsEnabled"`
     InsufficientAccountBalance bool     `json:"insufficientAccountBalance"`
     MinAccountBalanceEtherWei *big.Int  `json:"minAccountBalanceEtherWei"`
     AccountBalanceEtherWei *big.Int     `json:"accountBalanceEtherWei"`

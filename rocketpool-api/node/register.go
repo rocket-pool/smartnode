@@ -104,7 +104,7 @@ func registerNode(c *cli.Context, timezone string) error {
     response.InsufficientAccountBalance = (response.AccountBalanceEtherWei.Cmp(response.MinAccountBalanceEtherWei) < 0)
 
     // Check status
-    if !response.RegistrationsEnabled || response.AlreadyRegistered || response.InsufficientAccountBalance {
+    if response.AlreadyRegistered || !response.RegistrationsEnabled || response.InsufficientAccountBalance {
         api.PrintResponse(p.Output, response)
         return nil
     }
