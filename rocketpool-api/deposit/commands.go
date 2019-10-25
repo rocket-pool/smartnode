@@ -87,11 +87,30 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Complete a deposit
+            cli.Command{
+                Name:      "complete",
+                Aliases:   []string{"c"},
+                Usage:     "Complete a reserved node deposit",
+                UsageText: "rocketpool deposit complete",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return completeDeposit(c)
+
+                },
+            },
+
             // Cancel a deposit
             cli.Command{
                 Name:      "cancel",
                 Aliases:   []string{"a"},
-                Usage:     "Cancel a node deposit",
+                Usage:     "Cancel a reserved node deposit",
                 UsageText: "rocketpool deposit cancel",
                 Action: func(c *cli.Context) error {
 
