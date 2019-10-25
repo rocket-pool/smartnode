@@ -52,11 +52,14 @@ func GetNodeStatus(p *services.Provider) (*NodeStatusResponse, error) {
     nodeContractAddress := new(common.Address)
     if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
         return nil, errors.New("Error checking node registration: " + err.Error())
-    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
-        return response, nil
-    } else {
+    } else if !bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
         response.Registered = true
         response.ContractAddress = *nodeContractAddress
+    }
+
+    // Check node registration
+    if !response.Registered {
+        return response, nil
     }
 
     // Initialise node contract
