@@ -2,6 +2,7 @@ package api
 
 import (
     "math/big"
+    "time"
 )
 
 
@@ -15,5 +16,17 @@ type DurationRequirement struct {
     RplAmountWei *big.Int                   `json:"rplAmountWei"`
     RplRatioWei *big.Int                    `json:"rplRatioWei"`
     NetworkUtilisationPercentWei *big.Int   `json:"networkUtilisationPercentWei"`
+}
+
+
+// Deposit status response type
+type DepositStatusResponse struct {
+    ReservationExists bool                  `json:"reservationExists"`
+    ReservationStakingDurationID string     `json:"reservationStakingDurationID"`
+    ReservationEtherRequiredWei *big.Int    `json:"reservationEtherRequiredWei"`
+    ReservationRplRequiredWei *big.Int      `json:"reservationRplRequiredWei"`
+    ReservationExpiryTime time.Time         `json:"reservationExpiryTime"`
+    NodeBalanceEtherWei *big.Int            `json:"nodeBalanceEtherWei"`
+    NodeBalanceRplWei *big.Int              `json:"nodeBalanceRplWei"`
 }
 

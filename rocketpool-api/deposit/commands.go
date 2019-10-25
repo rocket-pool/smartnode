@@ -34,6 +34,25 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Get the current deposit RPL requirement
+            cli.Command{
+                Name:      "status",
+                Aliases:   []string{"s"},
+                Usage:     "Get the current deposit status information",
+                UsageText: "rocketpool deposit status",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return getDepositStatus(c)
+
+                },
+            },
+
         },
     })
 }
