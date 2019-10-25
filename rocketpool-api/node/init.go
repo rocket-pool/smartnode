@@ -1,10 +1,9 @@
 package node
 
 import (
-    "errors"
-
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/api/node"
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/utils/api"
 )
@@ -23,36 +22,13 @@ func initNode(c *cli.Context, password string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Response
-    response := api.NodeInitResponse{}
-
-    // Create password if it isn't set
-    if !p.PM.PasswordExists() {
-        if err := p.PM.SetPassword(password); err != nil {
-            return errors.New("Error setting node password: " + err.Error())
-        } else {
-            response.Success = true
-            response.PasswordSet = true
-        }
-    }
-
-    // Create node account if it doesn't exist
-    if p.AM.NodeAccountExists() {
-        nodeAccount, _ := p.AM.GetNodeAccount()
-        response.AccountAddress = nodeAccount.Address
+    // Init node & print response
+    if response, err := node.InitNode(p, password); err != nil {
+        return err
     } else {
-        if account, err := p.AM.CreateNodeAccount(); err != nil {
-            return errors.New("Error creating node account: " + err.Error())
-        } else {
-            response.Success = true
-            response.AccountCreated = true
-            response.AccountAddress = account.Address
-        }
+        api.PrintResponse(p.Output, response)
+        return nil
     }
-
-    // Print response & return
-    api.PrintResponse(p.Output, response)
-    return nil
 
 }
 
