@@ -30,3 +30,12 @@ type DepositStatusResponse struct {
     NodeBalanceRplWei *big.Int              `json:"nodeBalanceRplWei"`
 }
 
+
+// Deposit reservation response type
+type DepositReserveResponse struct {
+    Success bool                            `json:"success"`
+    HasExistingReservation bool             `json:"hasExistingReservation"`
+    DepositsEnabled bool                    `json:"depositsEnabled"`
+    PubkeyUsed bool                         `json:"pubkeyUsed"`
+}
+
