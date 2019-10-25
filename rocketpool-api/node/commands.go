@@ -81,7 +81,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                         // Check timezone
                         if timezone = c.Args().Get(0); !regexp.MustCompile("^\\w{2,}\\/\\w{2,}$").MatchString(timezone) {
-                            *messages = append(*messages, "Timezone must be in the format 'Country/City'")
+                            *messages = append(*messages, "Invalid timezone - must be in the format 'Country/City'")
                         }
 
                     }); err != nil {
@@ -110,7 +110,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                         // Check timezone
                         if timezone = c.Args().Get(0); !regexp.MustCompile("^\\w{2,}\\/\\w{2,}$").MatchString(timezone) {
-                            *messages = append(*messages, "Timezone must be in the format 'Country/City'")
+                            *messages = append(*messages, "Invalid timezone - must be in the format 'Country/City'")
                         }
 
                     }); err != nil {
