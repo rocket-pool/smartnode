@@ -39,3 +39,10 @@ type DepositReserveResponse struct {
     PubkeyUsed bool                         `json:"pubkeyUsed"`
 }
 
+
+// Deposit cancellation response type
+type DepositCancelResponse struct {
+    Success bool                            `json:"success"`
+    HadExistingReservation bool             `json:"hadExistingReservation"`
+}
+
