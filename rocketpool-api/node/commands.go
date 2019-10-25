@@ -41,7 +41,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "init",
                 Aliases:   []string{"i"},
                 Usage:     "Initialize the node with an account",
-                UsageText: "rocketpool node initialize password",
+                UsageText: "rocketpool node init password",
                 Action: func(c *cli.Context) error {
 
                     // Arguments
