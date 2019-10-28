@@ -26,20 +26,20 @@ const (
 
 // Minipool detail data
 type Details struct {
-    Address *common.Address
-    Status uint8
-    StatusType string
-    StatusTime time.Time
-    StatusBlock *big.Int
-    StakingDurationId string
-    StakingDuration *big.Int
-    StakingExitBlock *big.Int
-    NodeDepositExists bool
-    NodeEtherBalanceWei *big.Int
-    NodeRplBalanceWei *big.Int
-    UserDepositCount *big.Int
-    UserDepositCapacityWei *big.Int
-    UserDepositTotalWei *big.Int
+    Address *common.Address         `json:"address"`
+    Status uint8                    `json:"status"`
+    StatusType string               `json:"statusType"`
+    StatusTime time.Time            `json:"statusTime"`
+    StatusBlock *big.Int            `json:"statusBlock"`
+    StakingDurationId string        `json:"stakingDurationId"`
+    StakingDuration *big.Int        `json:"stakingDuration"`
+    StakingExitBlock *big.Int       `json:"stakingExitBlock"`
+    NodeDepositExists bool          `json:"nodeDepositExists"`
+    NodeEtherBalanceWei *big.Int    `json:"nodeEtherBalanceWei"`
+    NodeRplBalanceWei *big.Int      `json:"nodeRplBalanceWei"`
+    UserDepositCount *big.Int       `json:"userDepositCount"`
+    UserDepositCapacityWei *big.Int `json:"userDepositCapacityWei"`
+    UserDepositTotalWei *big.Int    `json:"userDepositTotalWei"`
 }
 
 
