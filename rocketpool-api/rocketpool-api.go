@@ -6,6 +6,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool-api/deposit"
+    "github.com/rocket-pool/smartnode/rocketpool-api/fee"
     "github.com/rocket-pool/smartnode/rocketpool-api/node"
     "github.com/rocket-pool/smartnode/shared/utils/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -39,6 +40,7 @@ func main() {
 
     // Register commands
     deposit.RegisterCommands(app, "deposit", []string{"d"})
+        fee.RegisterCommands(app, "fee",     []string{"f"})
        node.RegisterCommands(app, "node",    []string{"n"})
 
     // Run application
