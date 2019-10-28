@@ -26,17 +26,24 @@ type NodeWithdrawal struct {
 
 // Minipool withdraw response type
 type MinipoolWithdrawResponse struct {
+
+    // Status
     Success bool                `json:"success"`
-    EtherAmount *big.Int        `json:"etherAmount"`
-    RethAmount *big.Int         `json:"rethAmount"`
-    RplAmount *big.Int          `json:"rplAmount"`
-    MinipoolExists bool         `json:"minipoolExists"`
-    WithdrawalsEnabled bool     `json:"withdrawalsEnabled"`
+
+    // Withdrawal info
+    EtherWithdrawnWei *big.Int  `json:"etherWithdrawnWei"`
+    RethWithdrawnWei *big.Int   `json:"rethWithdrawnWei"`
+    RplWithdrawnWei *big.Int    `json:"rplWithdrawnWei"`
+
+    // Failure info
+    MinipoolDidNotExist bool    `json:"minipoolDidNotExist"`
+    WithdrawalsDisabled bool    `json:"withdrawalsDisabled"`
     InvalidNodeOwner bool       `json:"invalidNodeOwner"`
     NodeOwner common.Address    `json:"nodeOwner"`
     InvalidStatus bool          `json:"invalidStatus"`
     Status uint8                `json:"status"`
-    DepositExists bool          `json:"depositExists"`
+    NodeDepositDidNotExist bool `json:"nodeDepositDidNotExist"`
+
 }
 
 
@@ -53,11 +60,11 @@ func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*Mi
     if code, err := p.Client.CodeAt(context.Background(), minipoolAddress, nil); err != nil {
         return nil, errors.New("Error retrieving contract code at minipool address: " + err.Error())
     } else {
-        response.MinipoolExists = (len(code) > 0)
+        response.MinipoolDidNotExist = (len(code) == 0)
     }
 
     // Check minipool exists
-    if !response.MinipoolExists {
+    if response.MinipoolDidNotExist {
         return response, nil
     }
 
@@ -117,13 +124,13 @@ func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*Mi
     // Receive status
     for received := 0; received < 4; {
         select {
-            case response.WithdrawalsEnabled = <-withdrawalsAllowedChannel:
+            case response.WithdrawalsDisabled = !<-withdrawalsAllowedChannel:
                 received++
             case response.NodeOwner = <-nodeOwnerChannel:
                 received++
             case response.Status = <-statusChannel:
                 received++
-            case response.DepositExists = <-depositExistsChannel:
+            case response.NodeDepositDidNotExist = !<-depositExistsChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
@@ -135,7 +142,7 @@ func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*Mi
     response.InvalidStatus = !(response.Status == minipool.INITIALIZED || response.Status == minipool.WITHDRAWN || response.Status == minipool.TIMED_OUT)
 
     // Check minipool status
-    if response.InvalidNodeOwner || response.InvalidStatus || !response.DepositExists {
+    if response.WithdrawalsDisabled || response.InvalidNodeOwner || response.InvalidStatus || response.NodeDepositDidNotExist {
         return response, nil
     }
 
@@ -156,9 +163,9 @@ func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*Mi
         return nil, errors.New("Could not retrieve node deposit withdrawal event")
     } else {
         nodeWithdrawalEvent := (nodeWithdrawalEvents[0]).(*NodeWithdrawal)
-        response.EtherAmount = nodeWithdrawalEvent.EtherAmount
-        response.RethAmount = nodeWithdrawalEvent.RethAmount
-        response.RplAmount = nodeWithdrawalEvent.RplAmount
+        response.EtherWithdrawnWei = nodeWithdrawalEvent.EtherAmount
+        response.RethWithdrawnWei = nodeWithdrawalEvent.RethAmount
+        response.RplWithdrawnWei = nodeWithdrawalEvent.RplAmount
     }
 
     // Return response
