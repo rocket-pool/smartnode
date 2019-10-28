@@ -2,7 +2,10 @@ package node
 
 import (
     "regexp"
+    "strconv"
+    "strings"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/urfave/cli"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -90,6 +93,94 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run command
                     return registerNode(c, timezone)
+
+                },
+            },
+
+            // Withdraw resources from the node contract
+            cli.Command{
+                Name:      "withdraw",
+                Aliases:   []string{"w"},
+                Usage:     "Withdraw resources from the node's network contract",
+                UsageText: "rocketpool node withdraw amount unit",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var amount float64
+                    var unit string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 2, func(messages *[]string) {
+                        var err error
+
+                        // Parse amount
+                        if amount, err = strconv.ParseFloat(c.Args().Get(0), 64); err != nil || amount <= 0 {
+                            *messages = append(*messages, "Invalid amount - must be a positive decimal number")
+                        }
+
+                        // Parse unit
+                        unit = strings.ToUpper(c.Args().Get(1))
+                        switch unit {
+                            case "ETH":
+                            case "RPL":
+                            default:
+                                *messages = append(*messages, "Invalid unit - valid units are 'ETH' and 'RPL'")
+                        }
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return withdrawFromNode(c, amount, unit)
+
+                },
+            },
+
+            // Send resources from the node account to an address
+            cli.Command{
+                Name:      "send",
+                Aliases:   []string{"n"},
+                Usage:     "Send resources from the node account to an address",
+                UsageText: "rocketpool node send address amount unit",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var address string
+                    var amount float64
+                    var unit string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 3, func(messages *[]string) {
+                        var err error
+
+                        // Validate address
+                        address = c.Args().Get(0)
+                        if !common.IsHexAddress(address) {
+                            *messages = append(*messages, "Invalid address - must be a valid Ethereum address")
+                        }
+
+                        // Parse amount
+                        if amount, err = strconv.ParseFloat(c.Args().Get(1), 64); err != nil || amount <= 0 {
+                            *messages = append(*messages, "Invalid amount - must be a positive decimal number")
+                        }
+
+                        // Parse unit
+                        unit = strings.ToUpper(c.Args().Get(2))
+                        switch unit {
+                            case "ETH":
+                            case "RETH":
+                            case "RPL":
+                            default:
+                                *messages = append(*messages, "Invalid unit - valid units are 'ETH', 'RETH' and 'RPL'")
+                        }
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return sendFromNode(c, address, amount, unit)
 
                 },
             },
