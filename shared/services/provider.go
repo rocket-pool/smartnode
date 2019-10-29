@@ -150,7 +150,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.PM {
 
         // Initialise
-        p.PM = passwords.NewPasswordManager(p.Input, p.Output, c.GlobalString("password"))
+        p.PM = passwords.NewPasswordManager(c.GlobalString("password"))
 
         // Check or wait for password set
         if opts.WaitPassword {

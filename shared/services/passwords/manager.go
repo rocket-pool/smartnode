@@ -19,8 +19,6 @@ const PASSWORD_SALT string = "iRmrlkOXNzOcEf8Dy3HQTgNNc4HYAMMeft7axN6XngLVei49OP
 
 // Password manager
 type PasswordManager struct {
-    input *os.File
-    output *os.File
     passwordPath string
 }
 
@@ -28,19 +26,10 @@ type PasswordManager struct {
 /**
  * Create new password manager
  */
-func NewPasswordManager(input *os.File, output *os.File, passwordPath string) *PasswordManager {
-
-    // Read from stdin, write to stdout by default
-    if input == nil { input = os.Stdin }
-    if output == nil { output = os.Stdout }
-
-    // Create and return
+func NewPasswordManager(passwordPath string) *PasswordManager {
     return &PasswordManager{
-        input: input,
-        output: output,
         passwordPath: passwordPath,
     }
-
 }
 
 
