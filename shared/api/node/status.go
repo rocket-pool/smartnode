@@ -15,10 +15,14 @@ import (
 
 // Node status response type
 type NodeStatusResponse struct {
+
+    // Node account info
     AccountAddress common.Address       `json:"accountAddress"`
     AccountBalanceEtherWei *big.Int     `json:"accountBalanceEtherWei"`
     AccountBalanceRethWei *big.Int      `json:"accountBalanceRethWei"`
     AccountBalanceRplWei *big.Int       `json:"accountBalanceRplWei"`
+
+    // Node contract info
     ContractAddress common.Address      `json:"contractAddress"`
     ContractBalanceEtherWei *big.Int    `json:"contractBalanceEtherWei"`
     ContractBalanceRplWei *big.Int      `json:"contractBalanceRplWei"`
@@ -26,6 +30,7 @@ type NodeStatusResponse struct {
     Active bool                         `json:"active"`
     Trusted bool                        `json:"trusted"`
     Timezone string                     `json:"timezone"`
+
 }
 
 

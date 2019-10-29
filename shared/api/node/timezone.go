@@ -12,9 +12,13 @@ import (
 
 // Node timezone response type
 type NodeTimezoneResponse struct {
-    Success bool                    `json:"success"`
-    AccountAddress common.Address   `json:"accountAddress"`
-    Timezone string                 `json:"timezone"`
+
+    // Status
+    Success bool        `json:"success"`
+
+    // Timezone info
+    Timezone string     `json:"timezone"`
+
 }
 
 
@@ -26,7 +30,6 @@ func SetNodeTimezone(p *services.Provider, timezone string) (*NodeTimezoneRespon
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
-    response.AccountAddress = nodeAccount.Address
 
     // Set node timezone
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {

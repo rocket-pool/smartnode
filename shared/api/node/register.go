@@ -15,14 +15,20 @@ import (
 
 // Node registration response type
 type NodeRegisterResponse struct {
+
+    // Status
     Success bool                        `json:"success"`
-    AccountAddress common.Address       `json:"accountAddress"`
+
+    // Registration info
     ContractAddress common.Address      `json:"contractAddress"`
-    AlreadyRegistered bool              `json:"alreadyRegistered"`
-    RegistrationsEnabled bool           `json:"registrationsEnabled"`
+
+    // Failure info
+    HadExistingContract bool            `json:"hadExistingContract"`
+    RegistrationsDisabled bool          `json:"registrationsDisabled"`
     InsufficientAccountBalance bool     `json:"insufficientAccountBalance"`
     MinAccountBalanceEtherWei *big.Int  `json:"minAccountBalanceEtherWei"`
     AccountBalanceEtherWei *big.Int     `json:"accountBalanceEtherWei"`
+
 }
 
 
@@ -34,7 +40,6 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
-    response.AccountAddress = nodeAccount.Address
 
     // Status channels
     nodeContractAddressChannel := make(chan common.Address)
@@ -87,7 +92,7 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
         select {
             case response.ContractAddress = <-nodeContractAddressChannel:
                 received++
-            case response.RegistrationsEnabled = <-registrationsAllowedChannel:
+            case response.RegistrationsDisabled = !<-registrationsAllowedChannel:
                 received++
             case response.MinAccountBalanceEtherWei = <-minEtherBalanceChannel:
                 received++
@@ -99,11 +104,11 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
     }
 
     // Update response
-    response.AlreadyRegistered = !bytes.Equal(response.ContractAddress.Bytes(), make([]byte, common.AddressLength))
+    response.HadExistingContract = !bytes.Equal(response.ContractAddress.Bytes(), make([]byte, common.AddressLength))
     response.InsufficientAccountBalance = (response.AccountBalanceEtherWei.Cmp(response.MinAccountBalanceEtherWei) < 0)
 
     // Check status
-    if response.AlreadyRegistered || !response.RegistrationsEnabled || response.InsufficientAccountBalance {
+    if response.HadExistingContract || response.RegistrationsDisabled || response.InsufficientAccountBalance {
         return response, nil
     }
 

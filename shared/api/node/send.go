@@ -15,8 +15,13 @@ import (
 
 // Node send response type
 type NodeSendResponse struct {
+
+    // Status
     Success bool                        `json:"success"`
+
+    // Failure info
     InsufficientAccountBalance bool     `json:"insufficientAccountBalance"`
+
 }
 
 

@@ -11,8 +11,13 @@ import (
 
 // Node withdrawal response type
 type NodeWithdrawResponse struct {
+
+    // Status
     Success bool                    `json:"success"`
+
+    // Failure info
     InsufficientNodeBalance bool    `json:"insufficientNodeBalance"`
+
 }
 
 
