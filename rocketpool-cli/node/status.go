@@ -1,15 +1,12 @@
 package node
 
 import (
-    "bytes"
-    "errors"
     "fmt"
 
-    "github.com/ethereum/go-ethereum/common"
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/api/node"
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
@@ -30,117 +27,33 @@ func getNodeStatus(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Get node account
-    nodeAccount, _ := p.AM.GetNodeAccount()
+    // Get node status
+    response, err := node.GetNodeStatus(p)
+    if err != nil { return err }
 
-    // Get node account balances
-    accountBalances, err := node.GetAccountBalances(nodeAccount.Address, p.Client, p.CM)
-    if err != nil {
-        return err
-    }
-
-    // Log
+    // Print output & return
     fmt.Fprintln(p.Output, fmt.Sprintf(
         "Node account %s has a balance of %.2f ETH, %.2f rETH and %.2f RPL",
-        nodeAccount.Address.Hex(),
-        eth.WeiToEth(accountBalances.EtherWei),
-        eth.WeiToEth(accountBalances.RethWei),
-        eth.WeiToEth(accountBalances.RplWei)))
-
-    // Check if node is registered & get node contract address
-    nodeContractAddress := new(common.Address)
-    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
-        return errors.New("Error checking node registration: " + err.Error())
-    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+        response.AccountAddress.Hex(),
+        eth.WeiToEth(response.AccountBalanceEtherWei),
+        eth.WeiToEth(response.AccountBalanceRethWei),
+        eth.WeiToEth(response.AccountBalanceRplWei)))
+    if response.Registered {
+        fmt.Fprintln(p.Output, fmt.Sprintf(
+            "Node registered with Rocket Pool with contract at %s, timezone '%s' and a balance of %.2f ETH and %.2f RPL",
+            response.ContractAddress.Hex(),
+            response.Timezone,
+            eth.WeiToEth(response.ContractBalanceEtherWei),
+            eth.WeiToEth(response.ContractBalanceRplWei)))
+        if response.Trusted {
+            fmt.Fprintln(p.Output, "Node is a trusted Rocket Pool node and will perform watchtower duties")
+        }
+        if !response.Active {
+            fmt.Fprintln(p.Output, "Node has been marked inactive after failing to check in, and will not receive user deposits!")
+            fmt.Fprintln(p.Output, "Please check smart node daemon status with `rocketpool service stats`")
+        }
+    } else {
         fmt.Fprintln(p.Output, "Node is not registered with Rocket Pool")
-        return nil
-    }
-
-    // Initialise node contract
-    nodeContract, err := p.CM.NewContract(nodeContractAddress, "rocketNodeContract")
-    if err != nil {
-        return errors.New("Error initialising node contract: " + err.Error())
-    }
-
-    // Node details channels
-    nodeActiveChannel := make(chan bool)
-    nodeTimezoneChannel := make(chan string)
-    nodeBalancesChannel := make(chan *node.Balances)
-    nodeTrustedChannel := make(chan bool)
-    errorChannel := make(chan error)
-
-    // Get node active status
-    go (func() {
-        nodeActiveKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("node.active"), nodeAccount.Address.Bytes()}, []byte{}))
-        if nodeActive, err := p.CM.RocketStorage.GetBool(nil, nodeActiveKey); err != nil {
-            errorChannel <- errors.New("Error retrieving node active status: " + err.Error())
-        } else {
-            nodeActiveChannel <- nodeActive
-        }
-    })()
-
-    // Get node timezone
-    go (func() {
-        nodeTimezone := new(string)
-        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeTimezone, "getTimezoneLocation", nodeAccount.Address); err != nil {
-            errorChannel <- errors.New("Error retrieving node timezone: " + err.Error())
-        } else {
-            nodeTimezoneChannel <- *nodeTimezone
-        }
-    })()
-
-    // Get node contract balances
-    go (func() {
-        if nodeBalances, err := node.GetBalances(nodeContract); err != nil {
-            errorChannel <- err
-        } else {
-            nodeBalancesChannel <- nodeBalances
-        }
-    })()
-
-    // Get node trusted status
-    go (func() {
-        trusted := new(bool)
-        if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, trusted, "getTrusted", nodeAccount.Address); err != nil {
-            errorChannel <- errors.New("Error retrieving node trusted status: " + err.Error())
-        } else {
-            nodeTrustedChannel <- *trusted
-        }
-    })()
-
-    // Receive node details
-    var nodeActive bool
-    var nodeTimezone string
-    var nodeBalances *node.Balances
-    var nodeTrusted bool
-    for received := 0; received < 4; {
-        select {
-            case nodeActive = <-nodeActiveChannel:
-                received++
-            case nodeTimezone = <-nodeTimezoneChannel:
-                received++
-            case nodeBalances = <-nodeBalancesChannel:
-                received++
-            case nodeTrusted = <-nodeTrustedChannel:
-                received++
-            case err := <-errorChannel:
-                return err
-        }
-    }
-
-    // Log & return
-    fmt.Fprintln(p.Output, fmt.Sprintf(
-        "Node registered with Rocket Pool with contract at %s, timezone '%s' and a balance of %.2f ETH and %.2f RPL",
-        nodeContractAddress.Hex(),
-        nodeTimezone,
-        eth.WeiToEth(nodeBalances.EtherWei),
-        eth.WeiToEth(nodeBalances.RplWei)))
-    if nodeTrusted {
-        fmt.Fprintln(p.Output, "Node is a trusted Rocket Pool node and will perform watchtower duties")
-    }
-    if !nodeActive {
-        fmt.Fprintln(p.Output, "Node has been marked inactive after failing to check in, and will not receive user deposits!")
-        fmt.Fprintln(p.Output, "Please check smart node daemon status with `rocketpool service stats`")
     }
     return nil
 
