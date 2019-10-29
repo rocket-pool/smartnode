@@ -22,13 +22,20 @@ type PoolCreated struct {
 
 // Deposit completion response type
 type DepositCompleteResponse struct {
+
+    // Status
     Success bool                        `json:"success"`
+
+    // Minipool info
     MinipoolAddress common.Address      `json:"minipoolAddress"`
-    HadExistingReservation bool         `json:"hadExistingReservation"`
-    DepositsEnabled bool                `json:"depositsEnabled"`
-    MinipoolCreationEnabled bool        `json:"minipoolCreationEnabled"`
+
+    // Failure info
+    ReservationDidNotExist bool         `json:"reservationDidNotExist"`
+    DepositsDisabled bool               `json:"depositsDisabled"`
+    MinipoolCreationDisabled bool       `json:"minipoolCreationDisabled"`
     InsufficientNodeEtherBalance bool   `json:"insufficientNodeEtherBalance"`
     InsufficientNodeRplBalance bool     `json:"insufficientNodeRplBalance"`
+
 }
 
 
@@ -77,11 +84,11 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
     // Receive status
     for received := 0; received < 3; {
         select {
-            case response.HadExistingReservation = <-hasReservationChannel:
+            case response.ReservationDidNotExist = !<-hasReservationChannel:
                 received++
-            case response.DepositsEnabled = <-depositsAllowedChannel:
+            case response.DepositsDisabled = !<-depositsAllowedChannel:
                 received++
-            case response.MinipoolCreationEnabled = <-minipoolCreationAllowedChannel:
+            case response.MinipoolCreationDisabled = !<-minipoolCreationAllowedChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
@@ -89,7 +96,7 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
     }
 
     // Check status
-    if !response.HadExistingReservation || !response.DepositsEnabled || !response.MinipoolCreationEnabled {
+    if response.ReservationDidNotExist || response.DepositsDisabled || response.MinipoolCreationDisabled {
         return response, nil
     }
 

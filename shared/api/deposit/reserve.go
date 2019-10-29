@@ -27,10 +27,15 @@ type DepositData struct {
 
 // Deposit reservation response type
 type DepositReserveResponse struct {
+
+    // Status
     Success bool                    `json:"success"`
-    HasExistingReservation bool     `json:"hasExistingReservation"`
-    DepositsEnabled bool            `json:"depositsEnabled"`
+
+    // Failure info
+    HadExistingReservation bool     `json:"hadExistingReservation"`
+    DepositsDisabled bool           `json:"depositsDisabled"`
     PubkeyUsed bool                 `json:"pubkeyUsed"`
+
 }
 
 
@@ -86,9 +91,9 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
     // Receive status
     for received := 0; received < 3; {
         select {
-            case response.HasExistingReservation = <- hasReservationChannel:
+            case response.HadExistingReservation = <- hasReservationChannel:
                 received++
-            case response.DepositsEnabled = <-depositsAllowedChannel:
+            case response.DepositsDisabled = !<-depositsAllowedChannel:
                 received++
             case response.PubkeyUsed = <- pubkeyUsedChannel:
                 received++
@@ -98,7 +103,7 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
     }
 
     // Check status
-    if response.HasExistingReservation || !response.DepositsEnabled || response.PubkeyUsed {
+    if response.HadExistingReservation || response.DepositsDisabled || response.PubkeyUsed {
         return response, nil
     }
 

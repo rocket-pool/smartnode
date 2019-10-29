@@ -10,8 +10,13 @@ import (
 
 // Deposit cancellation response type
 type DepositCancelResponse struct {
+
+    // Status
     Success bool                    `json:"success"`
-    HadExistingReservation bool     `json:"hadExistingReservation"`
+
+    // Failure info
+    ReservationDidNotExist bool     `json:"reservationDidNotExist"`
+
 }
 
 
@@ -26,11 +31,11 @@ func CancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
     if err := p.NodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
         return nil, errors.New("Error retrieving deposit reservation status: " + err.Error())
     } else {
-        response.HadExistingReservation = *hasReservation
+        response.ReservationDidNotExist = !*hasReservation
     }
 
     // Check reservation status
-    if !response.HadExistingReservation {
+    if response.ReservationDidNotExist {
         return response, nil
     }
 

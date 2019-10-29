@@ -5,19 +5,20 @@ import (
     "math/big"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
 
 // Deposit required response type
 type DepositRequiredResponse struct {
-    Durations []*DurationRequirement        `json:"durations"`
+    Durations []*DurationRequirement    `json:"durations"`
 }
 type DurationRequirement struct {
-    DurationId string                       `json:"durationId"`
-    EtherAmountWei *big.Int                 `json:"etherAmountWei"`
-    RplAmountWei *big.Int                   `json:"rplAmountWei"`
-    RplRatioWei *big.Int                    `json:"rplRatioWei"`
-    NetworkUtilisationPercentWei *big.Int   `json:"networkUtilisationPercentWei"`
+    DurationId string                   `json:"durationId"`
+    EtherAmountWei *big.Int             `json:"etherAmountWei"`
+    RplAmountWei *big.Int               `json:"rplAmountWei"`
+    RplRatioWei *big.Int                `json:"rplRatioWei"`
+    NetworkUtilisation float64          `json:"networkUtilisation"`
 }
 
 
@@ -77,7 +78,7 @@ func getRplRequiredDuration(p *services.Provider, depositEtherAmountWei *big.Int
     // Data channels
     depositRplAmountWeiChannel := make(chan *big.Int)
     rplRatioWeiChannel := make(chan *big.Int)
-    networkUtilisationPercentChannel := make(chan *big.Int)
+    networkUtilisationChannel := make(chan float64)
     errorChannel := make(chan error)
 
     // Get RPL amount & ratio
@@ -99,23 +100,21 @@ func getRplRequiredDuration(p *services.Provider, depositEtherAmountWei *big.Int
         if err := p.CM.Contracts["rocketPool"].Call(nil, networkUtilisation, "getNetworkUtilisation", durationId); err != nil {
             errorChannel <- errors.New("Error retrieving network utilisation: " + err.Error())
         } else {
-            networkUtilisationPercent := new(big.Int)
-            networkUtilisationPercent.Mul(*networkUtilisation, big.NewInt(100))
-            networkUtilisationPercentChannel <- networkUtilisationPercent
+            networkUtilisationChannel <- eth.WeiToEth(networkUtilisation)
         }
     })()
 
     // Receive data
     var depositRplAmountWei *big.Int
     var rplRatioWei *big.Int
-    var networkUtilisationPercent *big.Int
+    var networkUtilisation float64
     for received := 0; received < 3; {
         select {
             case depositRplAmountWei = <-depositRplAmountWeiChannel:
                 received++
             case rplRatioWei = <-rplRatioWeiChannel:
                 received++
-            case networkUtilisationPercent = <-networkUtilisationPercentChannel:
+            case networkUtilisation = <-networkUtilisationChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
@@ -128,7 +127,7 @@ func getRplRequiredDuration(p *services.Provider, depositEtherAmountWei *big.Int
         EtherAmountWei: depositEtherAmountWei,
         RplAmountWei: depositRplAmountWei,
         RplRatioWei: rplRatioWei,
-        NetworkUtilisationPercentWei: networkUtilisationPercent,
+        NetworkUtilisation: networkUtilisation,
     }, nil
 
 }
