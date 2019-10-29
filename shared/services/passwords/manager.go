@@ -5,7 +5,6 @@ import (
     "encoding/hex"
     "errors"
     "io/ioutil"
-    "os"
 
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
