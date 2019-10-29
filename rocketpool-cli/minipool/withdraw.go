@@ -35,7 +35,9 @@ func withdrawMinipool(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Check withdrawals are enabled
+    // TODO: move get withdrawable minipools logic to API method
+
+    // Check withdrawals are enabled here?
     // TODO: implement
 
     // Get minipool addresses
