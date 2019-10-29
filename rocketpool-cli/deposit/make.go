@@ -82,7 +82,10 @@ func makeDeposit(c *cli.Context, durationId string) error {
         // Complete deposit
         case "1":
 
-            // Check RPL balances & send to node contract
+            // Check ETH balances & confirm ETH send
+            // TODO: implement
+
+            // Check RPL balances & confirm RPL send/send to node contract
             // TODO: implement
 
             // Complete
