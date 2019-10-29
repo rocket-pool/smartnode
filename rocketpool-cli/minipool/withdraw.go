@@ -3,29 +3,19 @@ package minipool
 import (
     "errors"
     "fmt"
-    "math/big"
     "strconv"
     "strings"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/urfave/cli"
 
+    minipoolapi "github.com/rocket-pool/smartnode/shared/api/minipool"
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
-
-
-// RocketMinipool NodeWithdrawal event
-type NodeWithdrawal struct {
-    To common.Address
-    EtherAmount *big.Int
-    RethAmount *big.Int
-    RplAmount *big.Int
-    Created *big.Int
-}
 
 
 // Withdraw node deposit from a minipool
@@ -36,7 +26,7 @@ func withdrawMinipool(c *cli.Context) error {
         AM: true,
         Client: true,
         CM: true,
-        NodeContract: true,
+        NodeContractAddress: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool", "rocketMinipoolDelegateNode", "rocketNodeContract"},
         WaitClientSync: true,
@@ -45,21 +35,13 @@ func withdrawMinipool(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Check withdrawals are allowed
-    withdrawalsAllowed := new(bool)
-    if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, withdrawalsAllowed, "getWithdrawalAllowed"); err != nil {
-        return errors.New("Error checking node withdrawals enabled status: " + err.Error())
-    } else if !*withdrawalsAllowed {
-        fmt.Fprintln(p.Output, "Node withdrawals are currently disabled in Rocket Pool")
-        return nil
-    }
+    // Check withdrawals are enabled
+    // TODO: implement
 
     // Get minipool addresses
     nodeAccount, _ := p.AM.GetNodeAccount()
     minipoolAddresses, err := node.GetMinipoolAddresses(nodeAccount.Address, p.CM)
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
     minipoolCount := len(minipoolAddresses)
 
     // Get minipool node statuses
@@ -135,40 +117,46 @@ func withdrawMinipool(c *cli.Context) error {
     for mi := 0; mi < withdrawMinipoolCount; mi++ {
         minipoolAddress := withdrawMinipoolAddresses[mi]
 
-        // Create transactor
-        if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
-           withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error creating transactor for minipool %s: " + err.Error(), minipoolAddress.Hex()))
-        } else {
-
-            // Send withdrawal transaction
-            fmt.Fprintln(p.Output, fmt.Sprintf("Withdrawing deposit from minipool %s...", minipoolAddress.Hex()))
-            if txReceipt, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", minipoolAddress); err != nil {
-                withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error withdrawing deposit from minipool %s: " + err.Error(), minipoolAddress.Hex()))
-            } else {
-
-                // Get withdrawal event
-                if nodeWithdrawalEvents, err := eth.GetTransactionEvents(p.Client, txReceipt, minipoolAddress, p.CM.Abis["rocketMinipoolDelegateNode"], "NodeWithdrawal", NodeWithdrawal{}); err != nil {
-                    withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error retrieving node deposit withdrawal event for minipool %s: " + err.Error(), minipoolAddress.Hex()))
-                } else if len(nodeWithdrawalEvents) == 0 {
-                    withdrawErrors = append(withdrawErrors, fmt.Sprintf("Could not retrieve node deposit withdrawal event for minipool %s", minipoolAddress.Hex()))
-                } else {
-                    nodeWithdrawalEvent := (nodeWithdrawalEvents[0]).(*NodeWithdrawal)
-
-                    // Log
-                    fmt.Fprintln(p.Output, fmt.Sprintf(
-                        "Successfully withdrew deposit of %.2f ETH, %.2f rETH and %.2f RPL from minipool %s",
-                        eth.WeiToEth(nodeWithdrawalEvent.EtherAmount),
-                        eth.WeiToEth(nodeWithdrawalEvent.RethAmount),
-                        eth.WeiToEth(nodeWithdrawalEvent.RplAmount),
-                        minipoolAddress.Hex()))
-
-                }
-            }
+        // Withdraw minipool
+        // TODO: bypass unnecessary withdrawal checks
+        withdrawn, err := minipoolapi.WithdrawMinipool(p, *minipoolAddress)
+        if err != nil {
+            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error withdrawing from minipool %s: %s", minipoolAddress.Hex(), err.Error()))
+            continue
         }
+        if withdrawn.MinipoolDidNotExist {
+            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Minipool %s does not exist", minipoolAddress.Hex()))
+        }
+        if withdrawn.WithdrawalsDisabled {
+            withdrawErrors = append(withdrawErrors, "Node withdrawals are currently disabled in Rocket Pool")
+        }
+        if withdrawn.InvalidNodeOwner {
+            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Minipool %s is not owned by this node", minipoolAddress.Hex()))
+        }
+        if withdrawn.InvalidStatus {
+            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Minipool %s is not available for withdrawal", minipoolAddress.Hex()))
+        }
+        if withdrawn.NodeDepositDidNotExist {
+            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Minipool %s has already been withdrawn from", minipoolAddress.Hex()))
+        }
+        if !withdrawn.Success {
+            continue
+        }
+
+        // Print output
+        fmt.Fprintln(p.Output, fmt.Sprintf(
+            "Successfully withdrew deposit of %.2f ETH, %.2f rETH and %.2f RPL from minipool %s",
+            eth.WeiToEth(withdrawn.EtherWithdrawnWei),
+            eth.WeiToEth(withdrawn.RethWithdrawnWei),
+            eth.WeiToEth(withdrawn.RplWithdrawnWei),
+            minipoolAddress.Hex()))
+
     }
 
     // Return
-    if len(withdrawErrors) > 1 { return errors.New(strings.Join(withdrawErrors, "\n")) }
+    if len(withdrawErrors) > 1 {
+        return errors.New(strings.Join(withdrawErrors, "\n"))
+    }
     return nil
 
 }
