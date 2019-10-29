@@ -25,13 +25,23 @@ func registerNode(c *cli.Context, timezone string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Register node & print response
-    if response, err := node.RegisterNode(p, timezone); err != nil {
-        return err
-    } else {
+    // Check node can be registered
+    response, err := node.CanRegisterNode(p)
+    if err != nil { return err }
+
+    // Check response
+    if response.HadExistingContract || response.RegistrationsDisabled || response.InsufficientAccountBalance {
         api.PrintResponse(p.Output, response)
         return nil
     }
+
+    // Register node
+    response, err = node.RegisterNode(p, timezone)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, response)
+    return nil
 
 }
 

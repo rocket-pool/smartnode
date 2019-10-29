@@ -33,8 +33,8 @@ type NodeRegisterResponse struct {
 }
 
 
-// Register node
-func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse, error) {
+// Check node can be registered
+func CanRegisterNode(p *services.Provider) (*NodeRegisterResponse, error) {
 
     // Response
     response := &NodeRegisterResponse{}
@@ -105,14 +105,22 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
         }
     }
 
-    // Update response
+    // Update & return response
     response.HadExistingContract = !bytes.Equal(response.ContractAddress.Bytes(), make([]byte, common.AddressLength))
     response.InsufficientAccountBalance = (response.AccountBalanceEtherWei.Cmp(response.MinAccountBalanceEtherWei) < 0)
+    return response, nil
 
-    // Check status
-    if response.HadExistingContract || response.RegistrationsDisabled || response.InsufficientAccountBalance {
-        return response, nil
-    }
+}
+
+
+// Register node
+func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse, error) {
+
+    // Response
+    response := &NodeRegisterResponse{}
+
+    // Get node account
+    nodeAccount, _ := p.AM.GetNodeAccount()
 
     // Register node
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
