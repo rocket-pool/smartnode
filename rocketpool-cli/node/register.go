@@ -27,6 +27,7 @@ func registerNode(c *cli.Context) error {
     defer p.Cleanup()
 
     // Prompt for timezone
+    // TODO: don't prompt if node can't register
     timezone := promptTimezone(p.Input, p.Output)
 
     // Register node

@@ -25,6 +25,7 @@ func initNode(c *cli.Context) error {
     defer p.Cleanup()
 
     // Prompt for password
+    // TODO: don't prompt if password already set
     password := cliutils.Prompt(p.Input, p.Output, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
 
     // Init node
