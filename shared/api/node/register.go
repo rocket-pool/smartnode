@@ -26,6 +26,7 @@ type NodeRegisterResponse struct {
     HadExistingContract bool            `json:"hadExistingContract"`
     RegistrationsDisabled bool          `json:"registrationsDisabled"`
     InsufficientAccountBalance bool     `json:"insufficientAccountBalance"`
+    AccountAddress common.Address       `json:"accountAddress"`
     MinAccountBalanceEtherWei *big.Int  `json:"minAccountBalanceEtherWei"`
     AccountBalanceEtherWei *big.Int     `json:"accountBalanceEtherWei"`
 
@@ -40,6 +41,7 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
+    response.AccountAddress = nodeAccount.Address
 
     // Status channels
     nodeContractAddressChannel := make(chan common.Address)
