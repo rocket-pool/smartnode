@@ -17,12 +17,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Usage:     "Manage user fees",
         Subcommands: []cli.Command{
 
-            // Display the current user fee
+            // Get the current user fee
             cli.Command{
-                Name:      "display",
-                Aliases:   []string{"d"},
-                Usage:     "Display the current user fee percentage",
-                UsageText: "rocketpool fee display",
+                Name:      "get",
+                Aliases:   []string{"g"},
+                Usage:     "Get the current user fee percentage",
+                UsageText: "rocketpool fee get",
                 Action: func(c *cli.Context) error {
 
                     // Validate arguments
@@ -31,7 +31,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    return displayUserFee(c)
+                    return getUserFee(c)
 
                 },
             },

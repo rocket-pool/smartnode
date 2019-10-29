@@ -9,8 +9,8 @@ import (
 )
 
 
-// Display the current user fee
-func displayUserFee(c *cli.Context) error {
+// Get the current user fee
+func getUserFee(c *cli.Context) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
