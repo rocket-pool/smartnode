@@ -75,10 +75,10 @@ func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*Mi
     }
 
     // Status channels
-    withdrawalsAllowedChannel := make(chan bool)
+    withdrawalsDisabledChannel := make(chan bool)
     nodeOwnerChannel := make(chan common.Address)
     statusChannel := make(chan uint8)
-    depositExistsChannel := make(chan bool)
+    depositNotExistsChannel := make(chan bool)
     errorChannel := make(chan error)
 
     // Check withdrawals are allowed
@@ -87,7 +87,7 @@ func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*Mi
         if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, withdrawalsAllowed, "getWithdrawalAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node withdrawals enabled status: " + err.Error())
         } else {
-            withdrawalsAllowedChannel <- *withdrawalsAllowed
+            withdrawalsDisabledChannel <- !*withdrawalsAllowed
         }
     })()
 
@@ -117,20 +117,20 @@ func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*Mi
         if err := minipoolContract.Call(nil, nodeDepositExists, "getNodeDepositExists"); err != nil {
             errorChannel <- errors.New("Error retrieving minipool node deposit status: " + err.Error())
         } else {
-            depositExistsChannel <- *nodeDepositExists
+            depositNotExistsChannel <- !*nodeDepositExists
         }
     })()
 
     // Receive status
     for received := 0; received < 4; {
         select {
-            case response.WithdrawalsDisabled = !<-withdrawalsAllowedChannel:
+            case response.WithdrawalsDisabled = <-withdrawalsDisabledChannel:
                 received++
             case response.NodeOwner = <-nodeOwnerChannel:
                 received++
             case response.Status = <-statusChannel:
                 received++
-            case response.NodeDepositDidNotExist = !<-depositExistsChannel:
+            case response.NodeDepositDidNotExist = <-depositNotExistsChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err

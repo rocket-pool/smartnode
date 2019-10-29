@@ -11,13 +11,18 @@ import (
 
 // Deposit status response type
 type DepositStatusResponse struct {
+
+    // Reservation info
     ReservationExists bool                  `json:"reservationExists"`
     ReservationStakingDurationID string     `json:"reservationStakingDurationID"`
     ReservationEtherRequiredWei *big.Int    `json:"reservationEtherRequiredWei"`
     ReservationRplRequiredWei *big.Int      `json:"reservationRplRequiredWei"`
     ReservationExpiryTime time.Time         `json:"reservationExpiryTime"`
+
+    // Node balance info
     NodeBalanceEtherWei *big.Int            `json:"nodeBalanceEtherWei"`
     NodeBalanceRplWei *big.Int              `json:"nodeBalanceRplWei"`
+
 }
 
 

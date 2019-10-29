@@ -46,9 +46,9 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
     response := &DepositCompleteResponse{}
 
     // Status channels
-    hasReservationChannel := make(chan bool)
-    depositsAllowedChannel := make(chan bool)
-    minipoolCreationAllowedChannel := make(chan bool)
+    reservationNotExistsChannel := make(chan bool)
+    depositsDisabledChannel := make(chan bool)
+    minipoolCreationDisabledChannel := make(chan bool)
     errorChannel := make(chan error)
 
     // Check node has current deposit reservation
@@ -57,7 +57,7 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
         if err := p.NodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
         } else {
-            hasReservationChannel <- *hasReservation
+            reservationNotExistsChannel <- !*hasReservation
         }
     })()
 
@@ -67,7 +67,7 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
         if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
         } else {
-            depositsAllowedChannel <- *depositsAllowed
+            depositsDisabledChannel <- !*depositsAllowed
         }
     })()
 
@@ -77,18 +77,18 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
         if err := p.CM.Contracts["rocketMinipoolSettings"].Call(nil, minipoolCreationAllowed, "getMinipoolCanBeCreated"); err != nil {
             errorChannel <- errors.New("Error checking minipool creation enabled status: " + err.Error())
         } else {
-            minipoolCreationAllowedChannel <- *minipoolCreationAllowed
+            minipoolCreationDisabledChannel <- !*minipoolCreationAllowed
         }
     })()
 
     // Receive status
     for received := 0; received < 3; {
         select {
-            case response.ReservationDidNotExist = !<-hasReservationChannel:
+            case response.ReservationDidNotExist = <-reservationNotExistsChannel:
                 received++
-            case response.DepositsDisabled = !<-depositsAllowedChannel:
+            case response.DepositsDisabled = <-depositsDisabledChannel:
                 received++
-            case response.MinipoolCreationDisabled = !<-minipoolCreationAllowedChannel:
+            case response.MinipoolCreationDisabled = <-minipoolCreationDisabledChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err

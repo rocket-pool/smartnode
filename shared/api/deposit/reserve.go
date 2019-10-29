@@ -53,8 +53,8 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
     pubkey := key.PublicKey.Marshal()
 
     // Status channels
-    hasReservationChannel := make(chan bool)
-    depositsAllowedChannel := make(chan bool)
+    hasExistingReservationChannel := make(chan bool)
+    depositsDisabledChannel := make(chan bool)
     pubkeyUsedChannel := make(chan bool)
     errorChannel := make(chan error)
 
@@ -64,7 +64,7 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
         if err := p.NodeContract.Call(nil, hasReservation, "getHasDepositReservation"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit reservation status: " + err.Error())
         } else {
-            hasReservationChannel <- *hasReservation
+            hasExistingReservationChannel <- *hasReservation
         }
     })()
 
@@ -74,7 +74,7 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
         if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, depositsAllowed, "getDepositAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node deposits enabled status: " + err.Error())
         } else {
-            depositsAllowedChannel <- *depositsAllowed
+            depositsDisabledChannel <- !*depositsAllowed
         }
     })()
 
@@ -91,9 +91,9 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
     // Receive status
     for received := 0; received < 3; {
         select {
-            case response.HadExistingReservation = <- hasReservationChannel:
+            case response.HadExistingReservation = <- hasExistingReservationChannel:
                 received++
-            case response.DepositsDisabled = !<-depositsAllowedChannel:
+            case response.DepositsDisabled = <-depositsDisabledChannel:
                 received++
             case response.PubkeyUsed = <- pubkeyUsedChannel:
                 received++

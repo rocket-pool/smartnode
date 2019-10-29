@@ -43,7 +43,7 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
 
     // Status channels
     nodeContractAddressChannel := make(chan common.Address)
-    registrationsAllowedChannel := make(chan bool)
+    registrationsDisabledChannel := make(chan bool)
     minEtherBalanceChannel := make(chan *big.Int)
     etherBalanceChannel := make(chan *big.Int)
     errorChannel := make(chan error)
@@ -64,7 +64,7 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
         if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, registrationsAllowed, "getNewAllowed"); err != nil {
             errorChannel <- errors.New("Error checking node registrations enabled status: " + err.Error())
         } else {
-            registrationsAllowedChannel <- *registrationsAllowed
+            registrationsDisabledChannel <- !*registrationsAllowed
         }
     })()
 
@@ -92,7 +92,7 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
         select {
             case response.ContractAddress = <-nodeContractAddressChannel:
                 received++
-            case response.RegistrationsDisabled = !<-registrationsAllowedChannel:
+            case response.RegistrationsDisabled = <-registrationsDisabledChannel:
                 received++
             case response.MinAccountBalanceEtherWei = <-minEtherBalanceChannel:
                 received++

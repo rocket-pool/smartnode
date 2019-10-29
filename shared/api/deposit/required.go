@@ -100,7 +100,7 @@ func getRplRequiredDuration(p *services.Provider, depositEtherAmountWei *big.Int
         if err := p.CM.Contracts["rocketPool"].Call(nil, networkUtilisation, "getNetworkUtilisation", durationId); err != nil {
             errorChannel <- errors.New("Error retrieving network utilisation: " + err.Error())
         } else {
-            networkUtilisationChannel <- eth.WeiToEth(networkUtilisation)
+            networkUtilisationChannel <- eth.WeiToEth(*networkUtilisation)
         }
     })()
 
