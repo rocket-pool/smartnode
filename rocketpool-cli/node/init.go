@@ -1,12 +1,13 @@
 package node
 
 import (
-    "errors"
     "fmt"
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/api/node"
     "github.com/rocket-pool/smartnode/shared/services"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -23,32 +24,27 @@ func initNode(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Create password if it isn't set
-    if p.PM.PasswordExists() {
+    // Prompt for password
+    password := cliutils.Prompt(p.Input, p.Output, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
+
+    // Init node
+    response, err := node.InitNode(p, password)
+    if err != nil { return err }
+
+    // Print output & return
+    if response.PasswordSet {
+        fmt.Fprintln(p.Output, "Node password set successfully:", password)
+    } else {
         fmt.Fprintln(p.Output, "Node password already set.")
-    } else {
-        if password, err := p.PM.CreatePassword(); err != nil {
-            return errors.New("Error setting node password: " + err.Error())
-        } else {
-            fmt.Fprintln(p.Output, "Node password set successfully:", password)
-        }
     }
-
-    // Create node account if it doesn't exist
-    if p.AM.NodeAccountExists() {
-        nodeAccount, _ := p.AM.GetNodeAccount()
-        fmt.Fprintln(p.Output, "Node account already exists:", nodeAccount.Address.Hex())
-        return nil
+    if response.AccountCreated {
+        fmt.Fprintln(p.Output, "Node account created successfully:", response.AccountAddress.Hex())
     } else {
-        if account, err := p.AM.CreateNodeAccount(); err != nil {
-            return errors.New("Error creating node account: " + err.Error())
-        } else {
-            fmt.Fprintln(p.Output, "Node account created successfully:", account.Address.Hex())
-        }
+        fmt.Fprintln(p.Output, "Node account already exists:", response.AccountAddress.Hex())
     }
-
-    // Print backup notice & return
-    fmt.Fprintln(p.Output, "Please back up your Rocket Pool data folder at ~/.rocketpool in a safe and secure location to protect your node account!")
+    if response.Success {
+        fmt.Fprintln(p.Output, "Please back up your Rocket Pool data folder at ~/.rocketpool in a safe and secure location to protect your node account!")
+    }
     return nil
 
 }
