@@ -19,9 +19,6 @@ type FeeGetResponse struct {
 // Get user fee
 func GetUserFee(p *services.Provider) (*FeeGetResponse, error) {
 
-    // Response
-    response := &FeeGetResponse{}
-
     // Open database
     if err := p.DB.Open(); err != nil {
         return nil, err
@@ -32,8 +29,6 @@ func GetUserFee(p *services.Provider) (*FeeGetResponse, error) {
     userFee := new(*big.Int)
     if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, userFee, "getFeePerc"); err != nil {
         return nil, errors.New("Error retrieving node user fee percentage setting: " + err.Error())
-    } else {
-        response.CurrentUserFeePerc = eth.WeiToEth(*userFee) * 100
     }
 
     // Get target user fee
@@ -41,12 +36,13 @@ func GetUserFee(p *services.Provider) (*FeeGetResponse, error) {
     *targetUserFeePerc = -1
     if err := p.DB.Get("user.fee.target", targetUserFeePerc); err != nil {
         return nil, errors.New("Error retrieving target node user fee percentage: " + err.Error())
-    } else {
-        response.TargetUserFeePerc = *targetUserFeePerc
     }
 
     // Return response
-    return response, nil
+    return &FeeGetResponse{
+        CurrentUserFeePerc: eth.WeiToEth(*userFee) * 100,
+        TargetUserFeePerc: *targetUserFeePerc,
+    }, nil
 
 }
 
