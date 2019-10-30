@@ -9,52 +9,90 @@ import (
 )
 
 
-// Node initialization response type
-type NodeInitResponse struct {
+// Node password initialization response type
+type NodePasswordInitResponse struct {
+
+    // Status
+    Success bool                    `json:"success"`
+
+    // Failure info
+    HadExistingPassword bool        `json:"hadExistingPassword"`
+
+}
+
+
+// Node account initialization response type
+type NodeAccountInitResponse struct {
 
     // Status
     Success bool                    `json:"success"`
 
     // Initialization info
-    PasswordSet bool                `json:"passwordSet"`
-    AccountCreated bool             `json:"accountCreated"`
     AccountAddress common.Address   `json:"accountAddress"`
+
+    // Failure info
+    HadExistingAccount bool         `json:"hadExistingAccount"`
 
 }
 
 
-// Initialize node
-func InitNode(p *services.Provider, password string) (*NodeInitResponse, error) {
-
-    // Response
-    response := &NodeInitResponse{}
-
-    // Create password if it isn't set
-    if !p.PM.PasswordExists() {
-        if err := p.PM.SetPassword(password); err != nil {
-            return nil, errors.New("Error setting node password: " + err.Error())
-        } else {
-            response.Success = true
-            response.PasswordSet = true
-        }
+// Check node password can be initialized
+func CanInitNodePassword(p *services.Provider) *NodePasswordInitResponse {
+    return &NodePasswordInitResponse{
+        HadExistingPassword: p.PM.PasswordExists(),
     }
+}
 
-    // Create node account if it doesn't exist
-    if p.AM.NodeAccountExists() {
-        nodeAccount, _ := p.AM.GetNodeAccount()
-        response.AccountAddress = nodeAccount.Address
-    } else {
-        if account, err := p.AM.CreateNodeAccount(); err != nil {
-            return nil, errors.New("Error creating node account: " + err.Error())
-        } else {
-            response.Success = true
-            response.AccountCreated = true
-            response.AccountAddress = account.Address
-        }
+
+// Initialize node password
+func InitNodePassword(p *services.Provider, password string) (*NodePasswordInitResponse, error) {
+
+    // Set password
+    if err := p.PM.SetPassword(password); err != nil {
+        return nil, errors.New("Error setting node password: " + err.Error())
     }
 
     // Return response
-    return response, nil
+    return &NodePasswordInitResponse{
+        Success: true,
+    }, nil
+
+}
+
+
+// Check node account can be initialized
+func CanInitNodeAccount(p *services.Provider) *NodeAccountInitResponse {
+
+    // Response
+    response := &NodeAccountInitResponse{}
+
+    // Check if node account already exists
+    if p.AM.NodeAccountExists() {
+        nodeAccount, _ := p.AM.GetNodeAccount()
+        response.AccountAddress = nodeAccount.Address
+        response.HadExistingAccount = true
+    }
+
+    // Return response
+    return response
+
+}
+
+
+// Initialize node account
+func InitNodeAccount(p *services.Provider) (*NodeAccountInitResponse, error) {
+
+    // Create node account
+    account, err := p.AM.CreateNodeAccount()
+    if err != nil {
+        return nil, errors.New("Error creating node account: " + err.Error())
+    }
+
+    // Return response
+    return &NodeAccountInitResponse{
+        Success: true,
+        AccountAddress: account.Address,
+    }, nil
 
 }
 

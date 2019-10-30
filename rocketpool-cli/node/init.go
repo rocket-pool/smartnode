@@ -24,26 +24,41 @@ func initNode(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Prompt for password
-    // TODO: don't prompt if password already set
-    password := cliutils.Prompt(p.Input, p.Output, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
-
-    // Init node
-    response, err := node.InitNode(p, password)
-    if err != nil { return err }
-
-    // Print output & return
-    if response.PasswordSet {
-        fmt.Fprintln(p.Output, "Node password set successfully:", password)
-    } else {
+    // Check & init password
+    passwordSet := node.CanInitNodePassword(p)
+    if passwordSet.HadExistingPassword {
         fmt.Fprintln(p.Output, "Node password already set.")
-    }
-    if response.AccountCreated {
-        fmt.Fprintln(p.Output, "Node account created successfully:", response.AccountAddress.Hex())
     } else {
-        fmt.Fprintln(p.Output, "Node account already exists:", response.AccountAddress.Hex())
+
+        // Prompt for password
+        password := cliutils.Prompt(p.Input, p.Output, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
+
+        // Init password
+        passwordSet, err = node.InitNodePassword(p, password)
+        if err != nil { return err }
+
+        // Print output
+        fmt.Fprintln(p.Output, "Node password set successfully:", password)
+
     }
-    if response.Success {
+
+    // Check & init account
+    accountSet := node.CanInitNodeAccount(p)
+    if accountSet.HadExistingAccount {
+        fmt.Fprintln(p.Output, "Node account already exists:", accountSet.AccountAddress.Hex())
+    } else {
+
+        // Init account
+        accountSet, err = node.InitNodeAccount(p)
+        if err != nil { return err }
+
+        // Print output
+        fmt.Fprintln(p.Output, "Node account created successfully:", accountSet.AccountAddress.Hex())
+
+    }
+
+    // Print backup notice & return
+    if passwordSet.Success || accountSet.Success {
         fmt.Fprintln(p.Output, "Please back up your Rocket Pool data folder at ~/.rocketpool in a safe and secure location to protect your node account!")
     }
     return nil

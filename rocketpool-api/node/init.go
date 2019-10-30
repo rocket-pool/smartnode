@@ -9,6 +9,13 @@ import (
 )
 
 
+// Node initialization response type
+type NodeInitResponse struct {
+    Password *node.NodePasswordInitResponse  `json:"password"`
+    Account *node.NodeAccountInitResponse    `json:"account"`
+}
+
+
 // Initialise the node with a password and an account
 func initNode(c *cli.Context, password string) error {
 
@@ -22,13 +29,26 @@ func initNode(c *cli.Context, password string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Init node & print response
-    if response, err := node.InitNode(p, password); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
+    // Check & init password
+    passwordSet := node.CanInitNodePassword(p)
+    if !passwordSet.HadExistingPassword {
+        passwordSet, err = node.InitNodePassword(p, password)
+        if err != nil { return err }
     }
+
+    // Check & init account
+    accountSet := node.CanInitNodeAccount(p)
+    if !accountSet.HadExistingAccount {
+        accountSet, err = node.InitNodeAccount(p)
+        if err != nil { return err }
+    }
+
+    // Print response
+    api.PrintResponse(p.Output, NodeInitResponse{
+        Password: passwordSet,
+        Account: accountSet,
+    })
+    return nil
 
 }
 

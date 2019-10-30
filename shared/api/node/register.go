@@ -116,9 +116,6 @@ func CanRegisterNode(p *services.Provider) (*NodeRegisterResponse, error) {
 // Register node
 func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse, error) {
 
-    // Response
-    response := &NodeRegisterResponse{}
-
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
 
@@ -128,8 +125,6 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
     } else {
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketNodeAPI"], p.CM.Abis["rocketNodeAPI"], "add", timezone); err != nil {
             return nil, errors.New("Error registering node: " + err.Error())
-        } else {
-            response.Success = true
         }
     }
 
@@ -137,12 +132,13 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
     nodeContractAddress := new(common.Address)
     if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
         return nil, errors.New("Error retrieving node contract address: " + err.Error())
-    } else {
-        response.ContractAddress = *nodeContractAddress
     }
 
     // Return response
-    return response, nil
+    return &NodeRegisterResponse{
+        Success: true,
+        ContractAddress: *nodeContractAddress,
+    }, nil
 
 }
 
