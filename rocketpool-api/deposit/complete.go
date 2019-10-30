@@ -29,13 +29,23 @@ func completeDeposit(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Complete deposit & print response
-    if response, err := deposit.CompleteDeposit(p); err != nil {
-        return err
-    } else {
+    // Check deposit reservation can be completed
+    response, err := deposit.CanCompleteDeposit(p)
+    if err != nil { return err }
+
+    // Check response
+    if response.ReservationDidNotExist || response.DepositsDisabled || response.MinipoolCreationDisabled || response.InsufficientNodeEtherBalance || response.InsufficientNodeRplBalance {
         api.PrintResponse(p.Output, response)
         return nil
     }
+
+    // Complete deposit reservation
+    response, err = deposit.CompleteDeposit(p, response.TxValueWei)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, response)
+    return nil
 
 }
 

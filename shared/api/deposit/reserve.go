@@ -8,6 +8,7 @@ import (
     "github.com/prysmaticlabs/go-ssz"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/utils/bls/keystore"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
@@ -39,18 +40,14 @@ type DepositReserveResponse struct {
 }
 
 
-// Reserve node deposit
-func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveResponse, error) {
+// Check node deposit can be reserved
+func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*DepositReserveResponse, error) {
 
     // Response
     response := &DepositReserveResponse{}
 
-    // Generate new validator key
-    key, err := p.KM.CreateValidatorKey()
-    if err != nil {
-        return nil, errors.New("Error generating validator key: " + err.Error())
-    }
-    pubkey := key.PublicKey.Marshal()
+    // Get validator pubkey
+    validatorPubkey := validatorKey.PublicKey.Marshal()
 
     // Status channels
     hasExistingReservationChannel := make(chan bool)
@@ -80,7 +77,7 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
 
     // Check pubkey is not in use
     go (func() {
-        pubkeyUsedKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("validator.pubkey.used"), pubkey}, []byte{}))
+        pubkeyUsedKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("validator.pubkey.used"), validatorPubkey}, []byte{}))
         if pubkeyUsed, err := p.CM.RocketStorage.GetBool(nil, pubkeyUsedKey); err != nil {
             errorChannel <- errors.New("Error retrieving pubkey used status: " + err.Error())
         } else {
@@ -102,10 +99,17 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
         }
     }
 
-    // Check status
-    if response.HadExistingReservation || response.DepositsDisabled || response.PubkeyUsed {
-        return response, nil
-    }
+    // Return response
+    return response, nil
+
+}
+
+
+// Reserve node deposit
+func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId string) (*DepositReserveResponse, error) {
+
+    // Get validator pubkey
+    validatorPubkey := validatorKey.PublicKey.Marshal()
 
     // Get RP withdrawal pubkey
     // :TODO: replace with correct withdrawal pubkey once available
@@ -119,7 +123,7 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
 
     // Build DepositData object
     depositData := &DepositData{}
-    copy(depositData.Pubkey[:], pubkey)
+    copy(depositData.Pubkey[:], validatorPubkey)
     copy(depositData.WithdrawalCredentials[:], withdrawalCredentials[:])
     depositData.Amount = DEPOSIT_AMOUNT
 
@@ -128,21 +132,21 @@ func ReserveDeposit(p *services.Provider, durationId string) (*DepositReserveRes
     if err != nil {
         return nil, errors.New("Error retrieving deposit data hash tree root: " + err.Error())
     }
-    signature := key.SecretKey.Sign(signingRoot[:]).Marshal()
+    signature := validatorKey.SecretKey.Sign(signingRoot[:]).Marshal()
 
     // Create deposit reservation
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return nil, err
     } else {
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, pubkey, signature); err != nil {
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, validatorPubkey, signature); err != nil {
             return nil, errors.New("Error making deposit reservation: " + err.Error())
-        } else {
-            response.Success = true
         }
     }
 
     // Return response
-    return response, nil
+    return &DepositReserveResponse{
+        Success: true,
+    }, nil
 
 }
 

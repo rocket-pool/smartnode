@@ -26,7 +26,8 @@ type DepositCompleteResponse struct {
     // Status
     Success bool                        `json:"success"`
 
-    // Minipool info
+    // Completion info
+    TxValueWei *big.Int                 `json:"txValueWei"`
     MinipoolAddress common.Address      `json:"minipoolAddress"`
 
     // Failure info
@@ -39,8 +40,8 @@ type DepositCompleteResponse struct {
 }
 
 
-// Complete reserved deposit
-func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
+// Check deposit reservation can be completed
+func CanCompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
 
     // Response
     response := &DepositCompleteResponse{}
@@ -176,10 +177,10 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
     }
 
     // Check node ether balance and get required deposit transaction value
-    depositTransactionValueWei := new(big.Int)
+    response.TxValueWei := new(big.Int)
     if nodeBalances.EtherWei.Cmp(requiredBalances.EtherWei) < 0 {
-        depositTransactionValueWei.Sub(requiredBalances.EtherWei, nodeBalances.EtherWei)
-        if accountBalances.EtherWei.Cmp(depositTransactionValueWei) < 0 {
+        response.TxValueWei.Sub(requiredBalances.EtherWei, nodeBalances.EtherWei)
+        if accountBalances.EtherWei.Cmp(response.TxValueWei) < 0 {
             response.InsufficientNodeEtherBalance = true
         }
     }
@@ -189,31 +190,34 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
         response.InsufficientNodeRplBalance = true
     }
 
-    // Check balances
-    if response.InsufficientNodeEtherBalance || response.InsufficientNodeRplBalance {
-        return response, nil
-    }
+    // Return response
+    return response, nil
 
-    // Complete deposit
+}
+
+
+// Complete reserved deposit
+func CompleteDeposit(p *services.Provider, txValueWei *big.Int) (*DepositCompleteResponse, error) {
+
+    // Get account transactor
     txor, err := p.AM.GetNodeAccountTransactor()
     if err != nil { return nil, err }
-    txor.Value = depositTransactionValueWei
+    txor.Value = txValueWei
+
+    // Complete deposit
     txReceipt, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "deposit")
     if err != nil {
         return nil, errors.New("Error completing deposit: " + err.Error())
-    } else {
-        response.Success = true
     }
 
     // Get minipool created event
-    if minipoolCreatedEvents, err := eth.GetTransactionEvents(p.Client, txReceipt, p.CM.Addresses["rocketPool"], p.CM.Abis["rocketPool"], "PoolCreated", PoolCreated{}); err != nil {
+    minipoolCreatedEvents, err := eth.GetTransactionEvents(p.Client, txReceipt, p.CM.Addresses["rocketPool"], p.CM.Abis["rocketPool"], "PoolCreated", PoolCreated{})
+    if err != nil {
         return nil, errors.New("Error retrieving deposit transaction minipool created event: " + err.Error())
     } else if len(minipoolCreatedEvents) == 0 {
         return nil, errors.New("Could not retrieve deposit transaction minipool created event")
-    } else {
-        minipoolCreatedEvent := (minipoolCreatedEvents[0]).(*PoolCreated)
-        response.MinipoolAddress = minipoolCreatedEvent.Address
     }
+    minipoolCreatedEvent := (minipoolCreatedEvents[0]).(*PoolCreated)
 
     // Process deposit queue for duration
     if txor, err := p.AM.GetNodeAccountTransactor(); err == nil {
@@ -221,7 +225,10 @@ func CompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
     }
 
     // Return response
-    return response, nil
+    return &DepositCompleteResponse{
+        Success: true,
+        MinipoolAddress: minipoolCreatedEvent.Address,
+    }, nil
 
 }
 

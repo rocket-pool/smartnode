@@ -42,23 +42,27 @@ func makeDeposit(c *cli.Context, durationId string) error {
     } else {
         statusFormat = "Deposit reservation made successfully, requiring %.2f ETH and %.2f RPL, with a staking duration of %s and expiring at %s"
 
-        // Reserve deposit
-        reserved, err := deposit.ReserveDeposit(p, durationId)
+        // Generate new validator key
+        validatorKey, err := p.KM.CreateValidatorKey()
         if err != nil { return err }
 
-        // Check deposit reservation
-        if reserved.HadExistingReservation {
-            fmt.Fprintln(p.Output, "Node has a current deposit reservation")
-        }
+        // Check node deposit can be reserved
+        reserved, err := deposit.CanReserveDeposit(p, validatorKey)
+        if err != nil { return err }
+
+        // Check response
         if reserved.DepositsDisabled {
             fmt.Fprintln(p.Output, "Node deposits are currently disabled in Rocket Pool")
+            return nil
         }
         if reserved.PubkeyUsed {
             fmt.Fprintln(p.Output, "The validator public key is already in use")
-        }
-        if !reserved.Success {
             return nil
         }
+
+        // Reserve deposit
+        reserved, err = deposit.ReserveDeposit(p, validatorKey, durationId)
+        if err != nil { return err }
 
         // Get deposit status
         status, err = deposit.GetDepositStatus(p)
@@ -82,33 +86,40 @@ func makeDeposit(c *cli.Context, durationId string) error {
         // Complete deposit
         case "1":
 
-            // Check ETH balances & confirm ETH send
-            // TODO: implement
-
-            // Check RPL balances & confirm RPL send/send to node contract
-            // TODO: implement
-
-            // Complete
-            completed, err := deposit.CompleteDeposit(p)
+            // Check deposit can be completed
+            completed, err := deposit.CanCompleteDeposit(p)
             if err != nil { return err }
 
-            // Print output
+            // Confirm ETH send
+            // TODO: implement
+
+            // Check RPL balances & confirm RPL send / send to node contract
+            // TODO: implement
+
+            // Check response
             // TODO: fix insufficient balance messages
-            if completed.ReservationDidNotExist {
-                fmt.Fprintln(p.Output, "Node does not have a current deposit reservation")
-            }
             if completed.DepositsDisabled {
                 fmt.Fprintln(p.Output, "Node deposits are currently disabled in Rocket Pool")
+                return nil
             }
             if completed.MinipoolCreationDisabled {
                 fmt.Fprintln(p.Output, "Minipool creation is currently disabled in Rocket Pool")
+                return nil
             }
             if completed.InsufficientNodeEtherBalance {
                 fmt.Fprintln(p.Output, fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH"))
+                return nil
             }
             if completed.InsufficientNodeRplBalance {
                 fmt.Fprintln(p.Output, fmt.Sprintf("Node balance of %.2f RPL is not enough to cover requirement of %.2f RPL"))
+                return nil
             }
+
+            // Complete
+            completed, err = deposit.CompleteDeposit(p, completed.TxValueWei)
+            if err != nil { return err }
+
+            // Print output
             if completed.Success {
                 fmt.Fprintln(p.Output, "Deposit completed successfully, minipool created at", completed.MinipoolAddress.Hex())
             }
@@ -121,9 +132,6 @@ func makeDeposit(c *cli.Context, durationId string) error {
             if err != nil { return err }
 
             // Print output
-            if cancelled.ReservationDidNotExist {
-                fmt.Fprintln(p.Output, "Node does not have a current deposit reservation")
-            }
             if cancelled.Success {
                 fmt.Fprintln(p.Output, "Deposit reservation cancelled successfully")
             }

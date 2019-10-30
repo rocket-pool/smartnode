@@ -28,13 +28,23 @@ func cancelDeposit(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Cancel deposit & print response
-    if response, err := deposit.CancelDeposit(p); err != nil {
-        return err
-    } else {
+    // Check deposit reservation can be cancelled
+    response, err := deposit.CanCancelDeposit(p)
+    if err != nil { return err }
+
+    // Check response
+    if response.ReservationDidNotExist {
         api.PrintResponse(p.Output, response)
         return nil
     }
+
+    // Cancel deposit reservation
+    response, err = deposit.CancelDeposit(p)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, response)
+    return nil
 
 }
 

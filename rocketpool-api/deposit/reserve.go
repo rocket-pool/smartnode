@@ -29,13 +29,27 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Reserve deposit & print response
-    if response, err := deposit.ReserveDeposit(p, durationId); err != nil {
-        return err
-    } else {
+    // Generate new validator key
+    validatorKey, err := p.KM.CreateValidatorKey()
+    if err != nil { return err }
+
+    // Check node deposit can be reserved
+    response, err := deposit.CanReserveDeposit(p, validatorKey)
+    if err != nil { return err }
+
+    // Check response
+    if response.HadExistingReservation || response.DepositsDisabled || response.PubkeyUsed {
         api.PrintResponse(p.Output, response)
         return nil
     }
+
+    // Reserve node deposit
+    response, err = deposit.ReserveDeposit(p, validatorKey, durationId)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, response)
+    return nil
 
 }
 

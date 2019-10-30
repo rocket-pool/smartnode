@@ -20,8 +20,8 @@ type DepositCancelResponse struct {
 }
 
 
-// Cancel deposit reservation
-func CancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
+// Check deposit reservation can be cancelled
+func CanCancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
 
     // Response
     response := &DepositCancelResponse{}
@@ -34,10 +34,14 @@ func CancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
         response.ReservationDidNotExist = !*hasReservation
     }
 
-    // Check reservation status
-    if response.ReservationDidNotExist {
-        return response, nil
-    }
+    // Return response
+    return response, nil
+
+}
+
+
+// Cancel deposit reservation
+func CancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
 
     // Cancel deposit reservation
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
@@ -45,13 +49,13 @@ func CancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
     } else {
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserveCancel"); err != nil {
             return nil, errors.New("Error canceling deposit reservation: " + err.Error())
-        } else {
-            response.Success = true
         }
     }
 
     // Return response
-    return response, nil
+    return &DepositCancelResponse{
+        Success: true,
+    }, nil
 
 }
 
