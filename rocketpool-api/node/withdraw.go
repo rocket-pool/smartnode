@@ -27,13 +27,26 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Withdraw from node & print response
-    if response, err := node.WithdrawFromNode(p, eth.EthToWei(amount), unit); err != nil {
-        return err
-    } else {
+    // Get args
+    amountWei := eth.EthToWei(amount)
+
+    // Check deposit can be withdrawn from node
+    response, err := node.CanWithdrawFromNode(p, amountWei, unit)
+    if err != nil { return err }
+
+    // Check response
+    if response.InsufficientNodeBalance {
         api.PrintResponse(p.Output, response)
         return nil
     }
+
+    // Withdraw from node
+    response, err = node.WithdrawFromNode(p, amountWei, unit)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, response)
+    return nil
 
 }
 

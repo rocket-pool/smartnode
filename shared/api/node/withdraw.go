@@ -21,22 +21,19 @@ type NodeWithdrawResponse struct {
 }
 
 
-// Withdraw from node
-func WithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*NodeWithdrawResponse, error) {
+// Check deposit can be withdrawn from node
+func CanWithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*NodeWithdrawResponse, error) {
 
     // Response
     response := &NodeWithdrawResponse{}
 
     // Get contract method names
     var balanceMethod string
-    var withdrawMethod string
     switch unit {
         case "ETH":
             balanceMethod = "getBalanceETH"
-            withdrawMethod = "withdrawEther"
         case "RPL":
             balanceMethod = "getBalanceRPL"
-            withdrawMethod = "withdrawRPL"
     }
 
     // Check withdrawal amount is available
@@ -47,9 +44,22 @@ func WithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*N
         response.InsufficientNodeBalance = true
     }
 
-    // Check balance
-    if response.InsufficientNodeBalance {
-        return response, nil
+    // Return response
+    return response, nil
+
+}
+
+
+// Withdraw from node
+func WithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*NodeWithdrawResponse, error) {
+
+    // Get contract method names
+    var withdrawMethod string
+    switch unit {
+        case "ETH":
+            withdrawMethod = "withdrawEther"
+        case "RPL":
+            withdrawMethod = "withdrawRPL"
     }
 
     // Withdraw amount
@@ -58,13 +68,13 @@ func WithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*N
     } else {
         if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], withdrawMethod, amountWei); err != nil {
             return nil, errors.New("Error withdrawing from node contract: " + err.Error())
-        } else {
-            response.Success = true
         }
     }
 
     // Return response
-    return response, nil
+    return &NodeWithdrawResponse{
+        Success: true,
+    }, nil
 
 }
 
