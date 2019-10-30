@@ -10,6 +10,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
@@ -43,6 +44,50 @@ type MinipoolWithdrawResponse struct {
     InvalidStatus bool          `json:"invalidStatus"`
     Status uint8                `json:"status"`
     NodeDepositDidNotExist bool `json:"nodeDepositDidNotExist"`
+
+}
+
+
+// Get withdrawable minipools
+func GetWithdrawableMinipools(p *services.Provider) ([]*minipool.NodeStatus, error) {
+
+    // Get node account
+    nodeAccount, _ := p.AM.GetNodeAccount()
+
+    // Get minipool addresses
+    minipoolAddresses, err := node.GetMinipoolAddresses(nodeAccount.Address, p.CM)
+    if err != nil { return nil, err }
+    minipoolCount := len(minipoolAddresses)
+
+    // Get minipool node statuses
+    nodeStatusChannel := make([]chan *minipool.NodeStatus, minipoolCount)
+    nodeStatusErrorChannel := make(chan error)
+    for mi := 0; mi < minipoolCount; mi++ {
+        nodeStatusChannel[mi] = make(chan *minipool.NodeStatus)
+        go (func(mi int) {
+            if nodeStatus, err := minipool.GetNodeStatus(p.CM, minipoolAddresses[mi]); err != nil {
+                nodeStatusErrorChannel <- err
+            } else {
+                nodeStatusChannel[mi] <- nodeStatus
+            }
+        })(mi)
+    }
+
+    // Receive minipool node statuses & filter withdrawable minipools
+    withdrawableMinipools := []*minipool.NodeStatus{}
+    for mi := 0; mi < minipoolCount; mi++ {
+        select {
+            case nodeStatus := <-nodeStatusChannel[mi]:
+                if (nodeStatus.Status == minipool.INITIALIZED || nodeStatus.Status == minipool.WITHDRAWN || nodeStatus.Status == minipool.TIMED_OUT) && nodeStatus.DepositExists {
+                    withdrawableMinipools = append(withdrawableMinipools, nodeStatus)
+                }
+            case err := <-nodeStatusErrorChannel:
+                return nil, err
+        }
+    }
+
+    // Return
+    return withdrawableMinipools, nil
 
 }
 

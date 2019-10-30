@@ -12,7 +12,6 @@ import (
     minipoolapi "github.com/rocket-pool/smartnode/shared/api/minipool"
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
@@ -35,43 +34,12 @@ func withdrawMinipool(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // TODO: move get withdrawable minipools logic to API method
-
     // Check withdrawals are enabled here?
     // TODO: implement
 
-    // Get minipool addresses
-    nodeAccount, _ := p.AM.GetNodeAccount()
-    minipoolAddresses, err := node.GetMinipoolAddresses(nodeAccount.Address, p.CM)
+    // Get withdrawable minipools
+    withdrawableMinipools, err := minipoolapi.GetWithdrawableMinipools(p)
     if err != nil { return err }
-    minipoolCount := len(minipoolAddresses)
-
-    // Get minipool node statuses
-    nodeStatusChannel := make([]chan *minipool.NodeStatus, minipoolCount)
-    nodeStatusErrorChannel := make(chan error)
-    for mi := 0; mi < minipoolCount; mi++ {
-        nodeStatusChannel[mi] = make(chan *minipool.NodeStatus)
-        go (func(mi int) {
-            if nodeStatus, err := minipool.GetNodeStatus(p.CM, minipoolAddresses[mi]); err != nil {
-                nodeStatusErrorChannel <- err
-            } else {
-                nodeStatusChannel[mi] <- nodeStatus
-            }
-        })(mi)
-    }
-
-    // Receive minipool node statuses & filter withdrawable minipools
-    withdrawableMinipools := []*minipool.NodeStatus{}
-    for mi := 0; mi < minipoolCount; mi++ {
-        select {
-            case nodeStatus := <-nodeStatusChannel[mi]:
-                if (nodeStatus.Status == minipool.INITIALIZED || nodeStatus.Status == minipool.WITHDRAWN || nodeStatus.Status == minipool.TIMED_OUT) && nodeStatus.DepositExists {
-                    withdrawableMinipools = append(withdrawableMinipools, nodeStatus)
-                }
-            case err := <-nodeStatusErrorChannel:
-                return err
-        }
-    }
 
     // Cancel if no minipools are withdrawable
     if len(withdrawableMinipools) == 0 {
