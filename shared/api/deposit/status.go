@@ -20,8 +20,10 @@ type DepositStatusResponse struct {
     ReservationExpiryTime time.Time         `json:"reservationExpiryTime"`
 
     // Node balance info
-    NodeBalanceEtherWei *big.Int            `json:"nodeBalanceEtherWei"`
-    NodeBalanceRplWei *big.Int              `json:"nodeBalanceRplWei"`
+    NodeAccountBalanceEtherWei *big.Int     `json:"nodeAccountBalanceEtherWei"`
+    NodeAccountBalanceRplWei *big.Int       `json:"nodeAccountBalanceRplWei"`
+    NodeContractBalanceEtherWei *big.Int    `json:"nodeContractBalanceEtherWei"`
+    NodeContractBalanceRplWei *big.Int      `json:"nodeContractBalanceRplWei"`
 
 }
 
@@ -33,16 +35,27 @@ func GetDepositStatus(p *services.Provider) (*DepositStatusResponse, error) {
     response := &DepositStatusResponse{}
 
     // Status channels
-    balancesChannel := make(chan *node.Balances)
+    accountBalancesChannel := make(chan *node.Balances)
+    nodeBalancesChannel := make(chan *node.Balances)
     reservationChannel := make(chan *node.ReservationDetails)
     errorChannel := make(chan error)
 
-    // Get node balances
+    // Get node account balances
     go (func() {
-        if balances, err := node.GetBalances(p.NodeContract); err != nil {
+        nodeAccount, _ := p.AM.GetNodeAccount()
+        if accountBalances, err := node.GetAccountBalances(nodeAccount.Address, p.Client, p.CM); err != nil {
             errorChannel <- err
         } else {
-            balancesChannel <- balances
+            accountBalancesChannel <- accountBalances
+        }
+    })()
+
+    // Get node balances
+    go (func() {
+        if nodeBalances, err := node.GetBalances(p.NodeContract); err != nil {
+            errorChannel <- err
+        } else {
+            nodeBalancesChannel <- nodeBalances
         }
     })()
 
@@ -56,11 +69,15 @@ func GetDepositStatus(p *services.Provider) (*DepositStatusResponse, error) {
     })()
 
     // Receive status
-    for received := 0; received < 2; {
+    for received := 0; received < 3; {
         select {
-            case balances := <-balancesChannel:
-                response.NodeBalanceEtherWei = balances.EtherWei
-                response.NodeBalanceRplWei = balances.RplWei
+            case accountBalances := <- accountBalancesChannel:
+                response.NodeAccountBalanceEtherWei = accountBalances.EtherWei
+                response.NodeAccountBalanceRplWei = accountBalances.RplWei
+                received++
+            case nodeBalances := <-balancesChannel:
+                response.NodeContractBalanceEtherWei = nodeBalances.EtherWei
+                response.NodeContractBalanceRplWei = nodeBalances.RplWei
                 received++
             case reservation := <-reservationChannel:
                 response.ReservationExists = reservation.Exists
