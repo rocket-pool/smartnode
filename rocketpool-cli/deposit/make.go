@@ -79,7 +79,14 @@ func makeDeposit(c *cli.Context, durationId string) error {
         eth.WeiToEth(status.ReservationRplRequiredWei),
         status.ReservationStakingDurationID,
         status.ReservationExpiryTime.Format("2006-01-02, 15:04 -0700 MST")))
-    fmt.Fprintln(p.Output, fmt.Sprintf("Node deposit contract has a balance of %.2f ETH and %.2f RPL", eth.WeiToEth(status.NodeBalanceEtherWei), eth.WeiToEth(status.NodeBalanceRplWei)))
+    fmt.Fprintln(p.Output, fmt.Sprintf(
+        "Node deposit contract has a balance of %.2f ETH and %.2f RPL",
+        eth.WeiToEth(status.NodeContractBalanceEtherWei),
+        eth.WeiToEth(status.NodeContractBalanceRplWei)))
+    fmt.Fprintln(p.Output, fmt.Sprintf(
+        "Node account has a balance of %.2f ETH and %.2f RPL",
+        eth.WeiToEth(status.NodeAccountBalanceEtherWei),
+        eth.WeiToEth(status.NodeAccountBalanceRplWei)))
 
     // Prompt for action
     action := cliutils.Prompt(p.Input, p.Output, "Would you like to:\n1. Complete the deposit;\n2. Cancel the deposit; or\n3. Finish later?", "^(1|2|3)$", "Please answer '1', '2' or '3'")
@@ -93,7 +100,6 @@ func makeDeposit(c *cli.Context, durationId string) error {
             if err != nil { return err }
 
             // Check response
-            // TODO: fix insufficient balance messages
             if completed.DepositsDisabled {
                 fmt.Fprintln(p.Output, "Node deposits are currently disabled in Rocket Pool")
                 return nil
@@ -103,23 +109,35 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 return nil
             }
             if completed.InsufficientNodeEtherBalance {
-                fmt.Fprintln(p.Output, fmt.Sprintf("Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH"))
+                fmt.Fprintln(p.Output, fmt.Sprintf(
+                    "Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH",
+                    eth.WeiToEth(status.NodeContractBalanceEtherWei),
+                    eth.WeiToEth(status.NodeAccountBalanceEtherWei),
+                    eth.WeiToEth(status.ReservationEtherRequiredWei)))
                 return nil
             }
             if completed.InsufficientNodeRplBalance {
-                fmt.Fprintln(p.Output, fmt.Sprintf("Node balance of %.2f RPL is not enough to cover requirement of %.2f RPL"))
+                fmt.Fprintln(p.Output, fmt.Sprintf(
+                    "Node balance of %.2f RPL plus account balance of %.2f RPL is not enough to cover requirement of %.2f RPL",
+                    eth.WeiToEth(status.NodeContractBalanceRplWei),
+                    eth.WeiToEth(status.NodeAccountBalanceRplWei),
+                    eth.WeiToEth(status.ReservationRplRequiredWei)))
                 return nil
             }
 
             // Confirm transfer of remaining required ETH
-            ethConfirmed := cliutils.Prompt(p.Input, p.Output, fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.EtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+            ethConfirmed := cliutils.Prompt(p.Input, p.Output,
+                fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.EtherRequiredWei)),
+                "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
             if strings.ToLower(ethConfirmed[:1]) == "n" {
                 fmt.Fprintln(p.Output, "Deposit not completed")
                 return nil
             }
 
             // Confirm transfer of remaining required RPL
-            rplConfirmed := cliutils.Prompt(p.Input, p.Output, fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.RplRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+            rplConfirmed := cliutils.Prompt(p.Input, p.Output,
+                fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.RplRequiredWei)),
+                "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
             if strings.ToLower(rplConfirmed[:1]) == "n" {
                 fmt.Fprintln(p.Output, "Deposit not completed")
                 return nil
