@@ -93,7 +93,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
             // Confirm ETH send
             // TODO: implement
 
-            // Check RPL balances & confirm RPL send / send to node contract
+            // Confirm & perform RPL send
             // TODO: implement
 
             // Check response
@@ -116,7 +116,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
             }
 
             // Complete
-            completed, err = deposit.CompleteDeposit(p, completed.TxValueWei)
+            completed, err = deposit.CompleteDeposit(p, completed.EtherRequiredWei, completed.DepositDurationId)
             if err != nil { return err }
 
             // Print output

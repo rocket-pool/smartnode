@@ -1,6 +1,8 @@
 package deposit
 
 import (
+    "math/big"
+
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/api/deposit"
@@ -33,6 +35,11 @@ func completeDeposit(c *cli.Context) error {
     response, err := deposit.CanCompleteDeposit(p)
     if err != nil { return err }
 
+    // RPL send not available
+    if response.RplRequiredWei.Cmp(big.NewInt(0)) > 0 {
+        response.InsufficientNodeRplBalance = true
+    }
+
     // Check response
     if response.ReservationDidNotExist || response.DepositsDisabled || response.MinipoolCreationDisabled || response.InsufficientNodeEtherBalance || response.InsufficientNodeRplBalance {
         api.PrintResponse(p.Output, response)
@@ -40,7 +47,7 @@ func completeDeposit(c *cli.Context) error {
     }
 
     // Complete deposit reservation
-    response, err = deposit.CompleteDeposit(p, response.TxValueWei)
+    response, err = deposit.CompleteDeposit(p, response.EtherRequiredWei, response.DepositDurationId)
     if err != nil { return err }
 
     // Print response

@@ -26,8 +26,7 @@ type DepositCompleteResponse struct {
     // Status
     Success bool                        `json:"success"`
 
-    // Completion info
-    TxValueWei *big.Int                 `json:"txValueWei"`
+    // Minipool info
     MinipoolAddress common.Address      `json:"minipoolAddress"`
 
     // Failure info
@@ -36,6 +35,11 @@ type DepositCompleteResponse struct {
     MinipoolCreationDisabled bool       `json:"minipoolCreationDisabled"`
     InsufficientNodeEtherBalance bool   `json:"insufficientNodeEtherBalance"`
     InsufficientNodeRplBalance bool     `json:"insufficientNodeRplBalance"`
+
+    // Deposit info
+    EtherRequiredWei *big.Int           `json:"etherRequiredWei"`
+    RplRequiredWei *big.Int             `json:"rplRequiredWei"`
+    DepositDurationId string            `json:"depositDurationId"`
 
 }
 
@@ -116,7 +120,7 @@ func CanCompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) 
     accountBalancesChannel := make(chan *node.Balances)
     nodeBalancesChannel := make(chan *node.Balances)
     requiredBalancesChannel := make(chan *node.Balances)
-    depositDurationIDChannel := make(chan string)
+    depositDurationIdChannel := make(chan string)
 
     // Get node account balances
     go (func() {
@@ -152,7 +156,7 @@ func CanCompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) 
         if err := p.NodeContract.Call(nil, durationID, "getDepositReserveDurationID"); err != nil {
             errorChannel <- errors.New("Error retrieving deposit duration ID: " + err.Error())
         } else {
-            depositDurationIDChannel <- *durationID
+            depositDurationIdChannel <- *durationID
         }
     })()
 
@@ -160,7 +164,6 @@ func CanCompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) 
     var accountBalances *node.Balances
     var nodeBalances *node.Balances
     var requiredBalances *node.Balances
-    var depositDurationID string
     for received := 0; received < 4; {
         select {
             case accountBalances = <-accountBalancesChannel:
@@ -169,25 +172,27 @@ func CanCompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) 
                 received++
             case requiredBalances = <-requiredBalancesChannel:
                 received++
-            case depositDurationID = <-depositDurationIDChannel:
+            case response.DepositDurationId = <-depositDurationIdChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
         }
     }
 
-    // Check node ether balance and get required deposit transaction value
-    response.TxValueWei := new(big.Int)
+    // Check node ether balance and get required ether remaining
     if nodeBalances.EtherWei.Cmp(requiredBalances.EtherWei) < 0 {
-        response.TxValueWei.Sub(requiredBalances.EtherWei, nodeBalances.EtherWei)
-        if accountBalances.EtherWei.Cmp(response.TxValueWei) < 0 {
+        response.EtherRequiredWei.Sub(requiredBalances.EtherWei, nodeBalances.EtherWei)
+        if accountBalances.EtherWei.Cmp(response.EtherRequiredWei) < 0 {
             response.InsufficientNodeEtherBalance = true
         }
     }
 
-    // Check node RPL balance
+    // Check node RPL balance and get required RPL remaining
     if nodeBalances.RplWei.Cmp(requiredBalances.RplWei) < 0 {
-        response.InsufficientNodeRplBalance = true
+        response.RplRequiredWei.Sub(requiredBalances.RplWei, nodeBalances.RplWei)
+        if accountBalances.RplWei.Cmp(response.RplRequiredWei) < 0 {
+            response.InsufficientNodeRplBalance = true
+        }
     }
 
     // Return response
@@ -197,7 +202,7 @@ func CanCompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) 
 
 
 // Complete reserved deposit
-func CompleteDeposit(p *services.Provider, txValueWei *big.Int) (*DepositCompleteResponse, error) {
+func CompleteDeposit(p *services.Provider, txValueWei *big.Int, depositDurationId string) (*DepositCompleteResponse, error) {
 
     // Get account transactor
     txor, err := p.AM.GetNodeAccountTransactor()
@@ -221,7 +226,7 @@ func CompleteDeposit(p *services.Provider, txValueWei *big.Int) (*DepositComplet
 
     // Process deposit queue for duration
     if txor, err := p.AM.GetNodeAccountTransactor(); err == nil {
-        _, _ = eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketDepositQueue"], p.CM.Abis["rocketDepositQueue"], "assignChunks", depositDurationID)
+        _, _ = eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses["rocketDepositQueue"], p.CM.Abis["rocketDepositQueue"], "assignChunks", depositDurationId)
     }
 
     // Return response
