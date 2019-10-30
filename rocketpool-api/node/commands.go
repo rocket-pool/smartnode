@@ -68,6 +68,25 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Export the node account
+            cli.Command{
+                Name:      "export",
+                Aliases:   []string{"e"},
+                Usage:     "Export the node account",
+                UsageText: "rocketpool node export",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return exportNodeAccount(c)
+
+                },
+            },
+
             // Register the node with Rocket Pool
             cli.Command{
                 Name:      "register",
