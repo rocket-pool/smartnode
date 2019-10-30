@@ -25,8 +25,8 @@ type NodeSendResponse struct {
 }
 
 
-// Send from node
-func SendFromNode(p *services.Provider, toAddress common.Address, sendAmountWei *big.Int, unit string) (*NodeSendResponse, error) {
+// Check tokens can be sent from node
+func CanSendFromNode(p *services.Provider, sendAmountWei *big.Int, unit string) (*NodeSendResponse, error) {
 
     // Response
     response := &NodeSendResponse{}
@@ -43,18 +43,6 @@ func SendFromNode(p *services.Provider, toAddress common.Address, sendAmountWei 
                 return nil, errors.New("Error retrieving node account ETH balance: " + err.Error())
             } else if etherBalanceWei.Cmp(sendAmountWei) == -1 {
                 response.InsufficientAccountBalance = true
-                break
-            }
-
-            // Send
-            if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
-                return nil, err
-            } else {
-                if _, err := eth.SendEther(p.Client, txor, &toAddress, sendAmountWei); err != nil {
-                    return nil, errors.New("Error transferring ETH to address: " + err.Error())
-                } else {
-                    response.Success = true
-                }
             }
 
         case "RETH": fallthrough
@@ -78,7 +66,45 @@ func SendFromNode(p *services.Provider, toAddress common.Address, sendAmountWei 
                 return nil, errors.New(fmt.Sprintf("Error retrieving node account %s balance: " + err.Error(), tokenName))
             } else if (*tokenBalanceWei).Cmp(sendAmountWei) == -1 {
                 response.InsufficientAccountBalance = true
-                break
+            }
+
+    }
+
+    // Return response
+    return response, nil
+
+}
+
+
+// Send from node
+func SendFromNode(p *services.Provider, toAddress common.Address, sendAmountWei *big.Int, unit string) (*NodeSendResponse, error) {
+
+    // Handle unit types
+    switch unit {
+        case "ETH":
+
+            // Send
+            if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
+                return nil, err
+            } else {
+                if _, err := eth.SendEther(p.Client, txor, &toAddress, sendAmountWei); err != nil {
+                    return nil, errors.New("Error transferring ETH to address: " + err.Error())
+                }
+            }
+
+        case "RETH": fallthrough
+        case "RPL":
+
+            // Get token properties
+            var tokenName string
+            var tokenContract string
+            switch unit {
+                case "RETH":
+                    tokenName = "rETH"
+                    tokenContract = "rocketETHToken"
+                case "RPL":
+                    tokenName = "RPL"
+                    tokenContract = "rocketPoolToken"
             }
 
             // Send
@@ -87,15 +113,15 @@ func SendFromNode(p *services.Provider, toAddress common.Address, sendAmountWei 
             } else {
                 if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.CM.Addresses[tokenContract], p.CM.Abis[tokenContract], "transfer", toAddress, sendAmountWei); err != nil {
                     return nil, errors.New(fmt.Sprintf("Error transferring %s to address: " + err.Error(), tokenName))
-                } else {
-                    response.Success = true
                 }
             }
 
     }
 
     // Return response
-    return response, nil
+    return &NodeSendResponse{
+        Success: true,
+    }, nil
 
 }
 

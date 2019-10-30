@@ -27,14 +27,25 @@ func sendFromNode(c *cli.Context, address string, amount float64, unit string) e
     if err != nil { return err }
     defer p.Cleanup()
 
+    // Get args
+    toAddress := common.HexToAddress(address)
+    amountWei := eth.EthToWei(amount)
+
+    // Check tokens can be sent from node
+    response, err := node.CanSendFromNode(p, amountWei, unit)
+    if err != nil { return err }
+
+    // Check response
+    if response.InsufficientAccountBalance {
+        fmt.Fprintln(p.Output, fmt.Sprintf("Send amount exceeds node account %s balance", unit))
+        return nil
+    }
+
     // Send from node
-    response, err := node.SendFromNode(p, common.HexToAddress(address), eth.EthToWei(amount), unit)
+    response, err = node.SendFromNode(p, toAddress, amountWei, unit)
     if err != nil { return err }
 
     // Print output & return
-    if response.InsufficientAccountBalance {
-        fmt.Fprintln(p.Output, fmt.Sprintf("Send amount exceeds node account %s balance", unit))
-    }
     if response.Success {
         fmt.Fprintln(p.Output, fmt.Sprintf("Successfully sent %.2f %s from node account to %s", amount, unit, address))
     }
