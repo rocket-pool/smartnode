@@ -126,19 +126,19 @@ func makeDeposit(c *cli.Context, durationId string) error {
             }
 
             // Confirm transfer of remaining required ETH
-            ethConfirmed := cliutils.Prompt(p.Input, p.Output,
+            ethTransferConfirmed := cliutils.Prompt(p.Input, p.Output,
                 fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.EtherRequiredWei)),
                 "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-            if strings.ToLower(ethConfirmed[:1]) == "n" {
+            if strings.ToLower(ethTransferConfirmed[:1]) == "n" {
                 fmt.Fprintln(p.Output, "Deposit not completed")
                 return nil
             }
 
             // Confirm transfer of remaining required RPL
-            rplConfirmed := cliutils.Prompt(p.Input, p.Output,
+            rplTransferConfirmed := cliutils.Prompt(p.Input, p.Output,
                 fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.RplRequiredWei)),
                 "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-            if strings.ToLower(rplConfirmed[:1]) == "n" {
+            if strings.ToLower(rplTransferConfirmed[:1]) == "n" {
                 fmt.Fprintln(p.Output, "Deposit not completed")
                 return nil
             }
