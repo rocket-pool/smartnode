@@ -2,10 +2,12 @@ package deposit
 
 import (
     "fmt"
+    "strings"
 
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/api/deposit"
+    "github.com/rocket-pool/smartnode/shared/api/node"
     "github.com/rocket-pool/smartnode/shared/services"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
@@ -80,8 +82,8 @@ func makeDeposit(c *cli.Context, durationId string) error {
     fmt.Fprintln(p.Output, fmt.Sprintf("Node deposit contract has a balance of %.2f ETH and %.2f RPL", eth.WeiToEth(status.NodeBalanceEtherWei), eth.WeiToEth(status.NodeBalanceRplWei)))
 
     // Prompt for action
-    response := cliutils.Prompt(p.Input, p.Output, "Would you like to:\n1. Complete the deposit;\n2. Cancel the deposit; or\n3. Finish later?", "^(1|2|3)$", "Please answer '1', '2' or '3'")
-    switch response {
+    action := cliutils.Prompt(p.Input, p.Output, "Would you like to:\n1. Complete the deposit;\n2. Cancel the deposit; or\n3. Finish later?", "^(1|2|3)$", "Please answer '1', '2' or '3'")
+    switch action {
 
         // Complete deposit
         case "1":
@@ -109,13 +111,25 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 return nil
             }
 
-            // Confirm ETH send
-            // TODO: implement
+            // Confirm transfer of remaining required ETH
+            ethConfirmed := cliutils.Prompt(p.Input, p.Output, fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.EtherRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+            if strings.ToLower(ethConfirmed[:1]) == "n" {
+                fmt.Fprintln(p.Output, "Deposit not completed")
+                return nil
+            }
 
-            // Confirm & perform RPL send
-            // TODO: implement
+            // Confirm transfer of remaining required RPL
+            rplConfirmed := cliutils.Prompt(p.Input, p.Output, fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.RplRequiredWei)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+            if strings.ToLower(rplConfirmed[:1]) == "n" {
+                fmt.Fprintln(p.Output, "Deposit not completed")
+                return nil
+            }
 
-            // Complete
+            // Transfer remaining required RPL
+            _, err = node.SendFromNode(p, *(p.NodeContractAddress), completed.RplRequiredWei, "RPL")
+            if err != nil { return err }
+
+            // Complete deposit
             completed, err = deposit.CompleteDeposit(p, completed.EtherRequiredWei, completed.DepositDurationId)
             if err != nil { return err }
 
@@ -127,7 +141,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
         // Cancel deposit
         case "2":
 
-            // Cancel
+            // Cancel deposit
             cancelled, err := deposit.CancelDeposit(p)
             if err != nil { return err }
 
