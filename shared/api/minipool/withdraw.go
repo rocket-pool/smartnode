@@ -47,8 +47,8 @@ type MinipoolWithdrawResponse struct {
 }
 
 
-// Withdraw node deposit from minipool
-func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*MinipoolWithdrawResponse, error) {
+// Check node deposit can be withdrawn from minipool
+func CanWithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*MinipoolWithdrawResponse, error) {
 
     // Response
     response := &MinipoolWithdrawResponse{}
@@ -141,35 +141,41 @@ func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*Mi
     response.InvalidNodeOwner = !bytes.Equal(response.NodeOwner.Bytes(), nodeAccount.Address.Bytes())
     response.InvalidStatus = !(response.Status == minipool.INITIALIZED || response.Status == minipool.WITHDRAWN || response.Status == minipool.TIMED_OUT)
 
-    // Check minipool status
-    if response.WithdrawalsDisabled || response.InvalidNodeOwner || response.InvalidStatus || response.NodeDepositDidNotExist {
-        return response, nil
-    }
+    // Return response
+    return response, nil
 
-    // Send withdrawal transaction
+}
+
+
+// Withdraw node deposit from minipool
+func WithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*MinipoolWithdrawResponse, error) {
+
+    // Get account transactor
     txor, err := p.AM.GetNodeAccountTransactor()
     if err != nil { return nil, err }
+
+    // Withdraw from minipool
     txReceipt, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "withdrawMinipoolDeposit", minipoolAddress)
     if err != nil {
         return nil, errors.New("Error withdrawing deposit: " + err.Error())
-    } else {
-        response.Success = true
     }
 
     // Get withdrawal event
-    if nodeWithdrawalEvents, err := eth.GetTransactionEvents(p.Client, txReceipt, &minipoolAddress, p.CM.Abis["rocketMinipoolDelegateNode"], "NodeWithdrawal", NodeWithdrawal{}); err != nil {
+    nodeWithdrawalEvents, err := eth.GetTransactionEvents(p.Client, txReceipt, &minipoolAddress, p.CM.Abis["rocketMinipoolDelegateNode"], "NodeWithdrawal", NodeWithdrawal{})
+    if err != nil {
         return nil, errors.New("Error retrieving node deposit withdrawal event: " + err.Error())
     } else if len(nodeWithdrawalEvents) == 0 {
         return nil, errors.New("Could not retrieve node deposit withdrawal event")
-    } else {
-        nodeWithdrawalEvent := (nodeWithdrawalEvents[0]).(*NodeWithdrawal)
-        response.EtherWithdrawnWei = nodeWithdrawalEvent.EtherAmount
-        response.RethWithdrawnWei = nodeWithdrawalEvent.RethAmount
-        response.RplWithdrawnWei = nodeWithdrawalEvent.RplAmount
     }
+    nodeWithdrawalEvent := (nodeWithdrawalEvents[0]).(*NodeWithdrawal)
 
     // Return response
-    return response, nil
+    return &MinipoolWithdrawResponse{
+        Success: true,
+        EtherWithdrawnWei: nodeWithdrawalEvent.EtherAmount,
+        RethWithdrawnWei: nodeWithdrawalEvent.RethAmount,
+        RplWithdrawnWei: nodeWithdrawalEvent.RplAmount,
+    }, nil
 
 }
 

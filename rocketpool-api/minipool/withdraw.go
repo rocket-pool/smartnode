@@ -28,13 +28,26 @@ func withdrawMinipool(c *cli.Context, address string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Withdraw from minipool & print response
-    if response, err := minipool.WithdrawMinipool(p, common.HexToAddress(address)); err != nil {
-        return err
-    } else {
+    // Get args
+    minipoolAddress := common.HexToAddress(address)
+
+    // Check node deposit can be withdrawn from minipool
+    response, err := minipool.CanWithdrawMinipool(p, minipoolAddress)
+    if err != nil { return err }
+
+    // Check response
+    if response.MinipoolDidNotExist || response.WithdrawalsDisabled || response.InvalidNodeOwner || response.InvalidStatus || response.NodeDepositDidNotExist {
         api.PrintResponse(p.Output, response)
         return nil
     }
+
+    // Withdraw node deposit from minipool
+    response, err = minipool.WithdrawMinipool(p, minipoolAddress)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, response)
+    return nil
 
 }
 

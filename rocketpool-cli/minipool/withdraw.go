@@ -119,39 +119,17 @@ func withdrawMinipool(c *cli.Context) error {
     for mi := 0; mi < withdrawMinipoolCount; mi++ {
         minipoolAddress := withdrawMinipoolAddresses[mi]
 
-        // Withdraw minipool
-        // TODO: bypass unnecessary withdrawal checks
-        withdrawn, err := minipoolapi.WithdrawMinipool(p, *minipoolAddress)
-        if err != nil {
+        // Withdraw from minipool & print output
+        if withdrawn, err := minipoolapi.WithdrawMinipool(p, *minipoolAddress); err != nil {
             withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error withdrawing from minipool %s: %s", minipoolAddress.Hex(), err.Error()))
-            continue
+        } else {
+            fmt.Fprintln(p.Output, fmt.Sprintf(
+                "Successfully withdrew deposit of %.2f ETH, %.2f rETH and %.2f RPL from minipool %s",
+                eth.WeiToEth(withdrawn.EtherWithdrawnWei),
+                eth.WeiToEth(withdrawn.RethWithdrawnWei),
+                eth.WeiToEth(withdrawn.RplWithdrawnWei),
+                minipoolAddress.Hex()))
         }
-        if withdrawn.MinipoolDidNotExist {
-            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Minipool %s does not exist", minipoolAddress.Hex()))
-        }
-        if withdrawn.WithdrawalsDisabled {
-            withdrawErrors = append(withdrawErrors, "Node withdrawals are currently disabled in Rocket Pool")
-        }
-        if withdrawn.InvalidNodeOwner {
-            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Minipool %s is not owned by this node", minipoolAddress.Hex()))
-        }
-        if withdrawn.InvalidStatus {
-            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Minipool %s is not available for withdrawal", minipoolAddress.Hex()))
-        }
-        if withdrawn.NodeDepositDidNotExist {
-            withdrawErrors = append(withdrawErrors, fmt.Sprintf("Minipool %s has already been withdrawn from", minipoolAddress.Hex()))
-        }
-        if !withdrawn.Success {
-            continue
-        }
-
-        // Print output
-        fmt.Fprintln(p.Output, fmt.Sprintf(
-            "Successfully withdrew deposit of %.2f ETH, %.2f rETH and %.2f RPL from minipool %s",
-            eth.WeiToEth(withdrawn.EtherWithdrawnWei),
-            eth.WeiToEth(withdrawn.RethWithdrawnWei),
-            eth.WeiToEth(withdrawn.RplWithdrawnWei),
-            minipoolAddress.Hex()))
 
     }
 
