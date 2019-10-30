@@ -90,12 +90,6 @@ func makeDeposit(c *cli.Context, durationId string) error {
             completed, err := deposit.CanCompleteDeposit(p)
             if err != nil { return err }
 
-            // Confirm ETH send
-            // TODO: implement
-
-            // Confirm & perform RPL send
-            // TODO: implement
-
             // Check response
             // TODO: fix insufficient balance messages
             if completed.DepositsDisabled {
@@ -114,6 +108,12 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 fmt.Fprintln(p.Output, fmt.Sprintf("Node balance of %.2f RPL is not enough to cover requirement of %.2f RPL"))
                 return nil
             }
+
+            // Confirm ETH send
+            // TODO: implement
+
+            // Confirm & perform RPL send
+            // TODO: implement
 
             // Complete
             completed, err = deposit.CompleteDeposit(p, completed.EtherRequiredWei, completed.DepositDurationId)
