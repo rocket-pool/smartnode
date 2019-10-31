@@ -33,14 +33,14 @@ func registerNode(c *cli.Context) error {
     // Check response
     if canRegister.HadExistingContract {
         fmt.Fprintln(p.Output, fmt.Sprintf("Node is already registered with Rocket Pool - current deposit contract is at %s", canRegister.ContractAddress.Hex()))
-        return nil
     }
     if canRegister.RegistrationsDisabled {
         fmt.Fprintln(p.Output, "New node registrations are currently disabled in Rocket Pool.")
-        return nil
     }
     if canRegister.InsufficientAccountBalance {
         fmt.Fprintln(p.Output, fmt.Sprintf("Node account %s requires a minimum balance of %.2f ETH to operate in Rocket Pool", canRegister.AccountAddress.Hex(), eth.WeiToEth(canRegister.MinAccountBalanceEtherWei)))
+    }
+    if !canRegister.Success {
         return nil
     }
 

@@ -30,7 +30,7 @@ func registerNode(c *cli.Context, timezone string) error {
     if err != nil { return err }
 
     // Check response
-    if canRegister.HadExistingContract || canRegister.RegistrationsDisabled || canRegister.InsufficientAccountBalance {
+    if !canRegister.Success {
         api.PrintResponse(p.Output, canRegister)
         return nil
     }

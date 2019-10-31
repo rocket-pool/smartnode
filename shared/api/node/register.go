@@ -13,31 +13,35 @@ import (
 )
 
 
-// Node registration response type
-type NodeRegisterResponse struct {
+// Node registration response types
+type CanRegisterNodeResponse struct {
 
     // Status
     Success bool                        `json:"success"`
 
-    // Registration info
-    ContractAddress common.Address      `json:"contractAddress"`
-
-    // Failure info
+    // Failure reasons
     HadExistingContract bool            `json:"hadExistingContract"`
     RegistrationsDisabled bool          `json:"registrationsDisabled"`
     InsufficientAccountBalance bool     `json:"insufficientAccountBalance"`
+
+    // Failure info
+    ContractAddress common.Address      `json:"contractAddress"`
     AccountAddress common.Address       `json:"accountAddress"`
     MinAccountBalanceEtherWei *big.Int  `json:"minAccountBalanceEtherWei"`
     AccountBalanceEtherWei *big.Int     `json:"accountBalanceEtherWei"`
 
 }
+type RegisterNodeResponse struct {
+    Success bool                        `json:"success"`
+    ContractAddress common.Address      `json:"contractAddress"`
+}
 
 
 // Check node can be registered
-func CanRegisterNode(p *services.Provider) (*NodeRegisterResponse, error) {
+func CanRegisterNode(p *services.Provider) (*CanRegisterNodeResponse, error) {
 
     // Response
-    response := &NodeRegisterResponse{}
+    response := &CanRegisterNodeResponse{}
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
@@ -105,16 +109,19 @@ func CanRegisterNode(p *services.Provider) (*NodeRegisterResponse, error) {
         }
     }
 
-    // Update & return response
+    // Update status
     response.HadExistingContract = !bytes.Equal(response.ContractAddress.Bytes(), make([]byte, common.AddressLength))
     response.InsufficientAccountBalance = (response.AccountBalanceEtherWei.Cmp(response.MinAccountBalanceEtherWei) < 0)
+
+    // Update & return response
+    response.Success = !(response.HadExistingContract || response.RegistrationsDisabled || response.InsufficientAccountBalance)
     return response, nil
 
 }
 
 
 // Register node
-func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse, error) {
+func RegisterNode(p *services.Provider, timezone string) (*RegisterNodeResponse, error) {
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
@@ -135,7 +142,7 @@ func RegisterNode(p *services.Provider, timezone string) (*NodeRegisterResponse,
     }
 
     // Return response
-    return &NodeRegisterResponse{
+    return &RegisterNodeResponse{
         Success: true,
         ContractAddress: *nodeContractAddress,
     }, nil
