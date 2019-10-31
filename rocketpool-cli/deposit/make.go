@@ -55,10 +55,11 @@ func makeDeposit(c *cli.Context, durationId string) error {
         // Check response
         if canReserve.DepositsDisabled {
             fmt.Fprintln(p.Output, "Node deposits are currently disabled in Rocket Pool")
-            return nil
         }
         if canReserve.PubkeyUsed {
             fmt.Fprintln(p.Output, "The validator public key is already in use")
+        }
+        if !canReserve.Success {
             return nil
         }
 
@@ -102,11 +103,9 @@ func makeDeposit(c *cli.Context, durationId string) error {
             // Check response
             if canComplete.DepositsDisabled {
                 fmt.Fprintln(p.Output, "Node deposits are currently disabled in Rocket Pool")
-                return nil
             }
             if canComplete.MinipoolCreationDisabled {
                 fmt.Fprintln(p.Output, "Minipool creation is currently disabled in Rocket Pool")
-                return nil
             }
             if canComplete.InsufficientNodeEtherBalance {
                 fmt.Fprintln(p.Output, fmt.Sprintf(
@@ -114,7 +113,6 @@ func makeDeposit(c *cli.Context, durationId string) error {
                     eth.WeiToEth(status.NodeContractBalanceEtherWei),
                     eth.WeiToEth(status.NodeAccountBalanceEtherWei),
                     eth.WeiToEth(status.ReservationEtherRequiredWei)))
-                return nil
             }
             if canComplete.InsufficientNodeRplBalance {
                 fmt.Fprintln(p.Output, fmt.Sprintf(
@@ -122,6 +120,8 @@ func makeDeposit(c *cli.Context, durationId string) error {
                     eth.WeiToEth(status.NodeContractBalanceRplWei),
                     eth.WeiToEth(status.NodeAccountBalanceRplWei),
                     eth.WeiToEth(status.ReservationRplRequiredWei)))
+            }
+            if !canComplete.Success {
                 return nil
             }
 

@@ -38,6 +38,8 @@ func sendFromNode(c *cli.Context, address string, amount float64, unit string) e
     // Check response
     if canSend.InsufficientAccountBalance {
         fmt.Fprintln(p.Output, fmt.Sprintf("Send amount exceeds node account %s balance", unit))
+    }
+    if !canSend.Success {
         return nil
     }
 

@@ -37,6 +37,8 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     // Check response
     if canWithdraw.InsufficientNodeBalance {
         fmt.Fprintln(p.Output, "Withdrawal amount exceeds available balance on node contract")
+    }
+    if !canWithdraw.Success {
         return nil
     }
 
