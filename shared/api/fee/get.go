@@ -9,15 +9,15 @@ import (
 )
 
 
-// Fee get response type
-type FeeGetResponse struct {
+// Get user fee response type
+type GetUserFeeResponse struct {
     CurrentUserFeePerc float64  `json:"currentUserFeePerc"`
     TargetUserFeePerc float64   `json:"targetUserFeePerc"`
 }
 
 
 // Get user fee
-func GetUserFee(p *services.Provider) (*FeeGetResponse, error) {
+func GetUserFee(p *services.Provider) (*GetUserFeeResponse, error) {
 
     // Open database
     if err := p.DB.Open(); err != nil {
@@ -39,7 +39,7 @@ func GetUserFee(p *services.Provider) (*FeeGetResponse, error) {
     }
 
     // Return response
-    return &FeeGetResponse{
+    return &GetUserFeeResponse{
         CurrentUserFeePerc: eth.WeiToEth(*userFee) * 100,
         TargetUserFeePerc: *targetUserFeePerc,
     }, nil

@@ -8,23 +8,26 @@ import (
 )
 
 
-// Deposit cancellation response type
-type DepositCancelResponse struct {
+// Cancel deposit response types
+type CanCancelDepositResponse struct {
 
     // Status
     Success bool                    `json:"success"`
 
-    // Failure info
+    // Failure reasons
     ReservationDidNotExist bool     `json:"reservationDidNotExist"`
 
+}
+type CancelDepositResponse struct {
+    Success bool                    `json:"success"`
 }
 
 
 // Check deposit reservation can be cancelled
-func CanCancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
+func CanCancelDeposit(p *services.Provider) (*CanCancelDepositResponse, error) {
 
     // Response
-    response := &DepositCancelResponse{}
+    response := &CanCancelDepositResponse{}
 
     // Check node has current deposit reservation
     hasReservation := new(bool)
@@ -34,14 +37,15 @@ func CanCancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
         response.ReservationDidNotExist = !*hasReservation
     }
 
-    // Return response
+    // Update & return response
+    response.Success = !response.ReservationDidNotExist
     return response, nil
 
 }
 
 
 // Cancel deposit reservation
-func CancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
+func CancelDeposit(p *services.Provider) (*CancelDepositResponse, error) {
 
     // Cancel deposit reservation
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
@@ -53,7 +57,7 @@ func CancelDeposit(p *services.Provider) (*DepositCancelResponse, error) {
     }
 
     // Return response
-    return &DepositCancelResponse{
+    return &CancelDepositResponse{
         Success: true,
     }, nil
 

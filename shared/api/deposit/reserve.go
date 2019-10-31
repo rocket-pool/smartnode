@@ -26,25 +26,28 @@ type DepositData struct {
 }
 
 
-// Deposit reservation response type
-type DepositReserveResponse struct {
+// Reserve deposit response type
+type CanReserveDepositResponse struct {
 
     // Status
     Success bool                    `json:"success"`
 
-    // Failure info
+    // Failure reasons
     HadExistingReservation bool     `json:"hadExistingReservation"`
     DepositsDisabled bool           `json:"depositsDisabled"`
     PubkeyUsed bool                 `json:"pubkeyUsed"`
 
 }
+type ReserveDepositResponse struct {
+    Success bool                    `json:"success"`
+}
 
 
 // Check node deposit can be reserved
-func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*DepositReserveResponse, error) {
+func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*CanReserveDepositResponse, error) {
 
     // Response
-    response := &DepositReserveResponse{}
+    response := &CanReserveDepositResponse{}
 
     // Get validator pubkey
     validatorPubkey := validatorKey.PublicKey.Marshal()
@@ -99,14 +102,15 @@ func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*Depos
         }
     }
 
-    // Return response
+    // Update & return response
+    response.Success = !(response.HadExistingReservation || response.DepositsDisabled || response.PubkeyUsed)
     return response, nil
 
 }
 
 
 // Reserve node deposit
-func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId string) (*DepositReserveResponse, error) {
+func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId string) (*ReserveDepositResponse, error) {
 
     // Get validator pubkey
     validatorPubkey := validatorKey.PublicKey.Marshal()
@@ -144,7 +148,7 @@ func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId
     }
 
     // Return response
-    return &DepositReserveResponse{
+    return &ReserveDepositResponse{
         Success: true,
     }, nil
 

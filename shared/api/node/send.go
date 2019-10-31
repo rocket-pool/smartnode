@@ -13,23 +13,26 @@ import (
 )
 
 
-// Node send response type
-type NodeSendResponse struct {
+// Send from node response types
+type CanSendFromNodeResponse struct {
 
     // Status
     Success bool                        `json:"success"`
 
-    // Failure info
+    // Failure reasons
     InsufficientAccountBalance bool     `json:"insufficientAccountBalance"`
 
+}
+type SendFromNodeResponse struct {
+    Success bool                        `json:"success"`
 }
 
 
 // Check tokens can be sent from node
-func CanSendFromNode(p *services.Provider, sendAmountWei *big.Int, unit string) (*NodeSendResponse, error) {
+func CanSendFromNode(p *services.Provider, sendAmountWei *big.Int, unit string) (*CanSendFromNodeResponse, error) {
 
     // Response
-    response := &NodeSendResponse{}
+    response := &CanSendFromNodeResponse{}
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
@@ -70,14 +73,15 @@ func CanSendFromNode(p *services.Provider, sendAmountWei *big.Int, unit string) 
 
     }
 
-    // Return response
+    // Update & return response
+    response.Success = !response.InsufficientAccountBalance
     return response, nil
 
 }
 
 
 // Send from node
-func SendFromNode(p *services.Provider, toAddress common.Address, sendAmountWei *big.Int, unit string) (*NodeSendResponse, error) {
+func SendFromNode(p *services.Provider, toAddress common.Address, sendAmountWei *big.Int, unit string) (*SendFromNodeResponse, error) {
 
     // Handle unit types
     switch unit {
@@ -119,7 +123,7 @@ func SendFromNode(p *services.Provider, toAddress common.Address, sendAmountWei 
     }
 
     // Return response
-    return &NodeSendResponse{
+    return &SendFromNodeResponse{
         Success: true,
     }, nil
 

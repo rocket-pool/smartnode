@@ -13,7 +13,7 @@ import (
 )
 
 
-// Node registration response types
+// Register node response types
 type CanRegisterNodeResponse struct {
 
     // Status

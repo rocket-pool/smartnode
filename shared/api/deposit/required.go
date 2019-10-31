@@ -9,8 +9,8 @@ import (
 )
 
 
-// Deposit required response type
-type DepositRequiredResponse struct {
+// Get RPL required response types
+type GetRplRequiredResponse struct {
     Durations []*DurationRequirement    `json:"durations"`
 }
 type DurationRequirement struct {
@@ -23,10 +23,10 @@ type DurationRequirement struct {
 
 
 // Get deposit RPL requirement
-func GetRplRequired(p *services.Provider) (*DepositRequiredResponse, error) {
+func GetRplRequired(p *services.Provider) (*GetRplRequiredResponse, error) {
 
     // Response
-    response := &DepositRequiredResponse{}
+    response := &GetRplRequiredResponse{}
 
     // Get minipool launch ether amount
     launchEtherAmountWei := new(*big.Int)

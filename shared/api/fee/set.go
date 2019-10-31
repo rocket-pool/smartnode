@@ -7,14 +7,14 @@ import (
 )
 
 
-// Fee set response type
-type FeeSetResponse struct {
+// Set target user fee response type
+type SetTargetUserFeeResponse struct {
     Success bool    `json:"success"`
 }
 
 
 // Set target user fee
-func SetTargetUserFee(p *services.Provider, feePercent float64) (*FeeSetResponse, error) {
+func SetTargetUserFee(p *services.Provider, feePercent float64) (*SetTargetUserFeeResponse, error) {
 
     // Open database
     if err := p.DB.Open(); err != nil {
@@ -28,7 +28,7 @@ func SetTargetUserFee(p *services.Provider, feePercent float64) (*FeeSetResponse
     }
 
     // Return response
-    return &FeeSetResponse{
+    return &SetTargetUserFeeResponse{
         Success: true,
     }, nil
 

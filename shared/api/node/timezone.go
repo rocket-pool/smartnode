@@ -8,20 +8,15 @@ import (
 )
 
 
-// Node timezone response type
-type NodeTimezoneResponse struct {
-
-    // Status
+// Set node timezone response type
+type SetNodeTimezoneResponse struct {
     Success bool        `json:"success"`
-
-    // Timezone info
     Timezone string     `json:"timezone"`
-
 }
 
 
 // Set node timezone
-func SetNodeTimezone(p *services.Provider, timezone string) (*NodeTimezoneResponse, error) {
+func SetNodeTimezone(p *services.Provider, timezone string) (*SetNodeTimezoneResponse, error) {
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()
@@ -42,7 +37,7 @@ func SetNodeTimezone(p *services.Provider, timezone string) (*NodeTimezoneRespon
     }
 
     // Return response
-    return &NodeTimezoneResponse{
+    return &SetNodeTimezoneResponse{
         Success: true,
         Timezone: *nodeTimezone,
     }, nil

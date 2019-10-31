@@ -7,17 +7,17 @@ import (
 )
 
 
-// Minipool status response type
-type MinipoolStatusResponse struct {
+// Get minipool status response type
+type GetMinipoolStatusResponse struct {
     Minipools []*minipool.Details   `json:"minipools"`
 }
 
 
 // Get minipool statuses
-func GetMinipoolStatus(p *services.Provider) (*MinipoolStatusResponse, error) {
+func GetMinipoolStatus(p *services.Provider) (*GetMinipoolStatusResponse, error) {
 
     // Response
-    response := &MinipoolStatusResponse{}
+    response := &GetMinipoolStatusResponse{}
 
     // Get minipool addresses
     nodeAccount, _ := p.AM.GetNodeAccount()

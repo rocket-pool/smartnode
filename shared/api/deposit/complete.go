@@ -20,16 +20,13 @@ type PoolCreated struct {
 }
 
 
-// Deposit completion response type
-type DepositCompleteResponse struct {
+// Complete deposit response types
+type CanCompleteDepositResponse struct {
 
     // Status
     Success bool                        `json:"success"`
 
-    // Minipool info
-    MinipoolAddress common.Address      `json:"minipoolAddress"`
-
-    // Failure info
+    // Failure reasons
     ReservationDidNotExist bool         `json:"reservationDidNotExist"`
     DepositsDisabled bool               `json:"depositsDisabled"`
     MinipoolCreationDisabled bool       `json:"minipoolCreationDisabled"`
@@ -42,13 +39,17 @@ type DepositCompleteResponse struct {
     DepositDurationId string            `json:"depositDurationId"`
 
 }
+type CompleteDepositResponse struct {
+    Success bool                        `json:"success"`
+    MinipoolAddress common.Address      `json:"minipoolAddress"`
+}
 
 
 // Check deposit reservation can be completed
-func CanCompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) {
+func CanCompleteDeposit(p *services.Provider) (*CompleteDepositResponse, error) {
 
     // Response
-    response := &DepositCompleteResponse{}
+    response := &CompleteDepositResponse{}
 
     // Status channels
     reservationNotExistsChannel := make(chan bool)
@@ -195,14 +196,15 @@ func CanCompleteDeposit(p *services.Provider) (*DepositCompleteResponse, error) 
         }
     }
 
-    // Return response
+    // Update & return response
+    response.Success = !(response.ReservationDidNotExist || response.DepositsDisabled || response.MinipoolCreationDisabled || response.InsufficientNodeEtherBalance || response.InsufficientNodeRplBalance)
     return response, nil
 
 }
 
 
 // Complete reserved deposit
-func CompleteDeposit(p *services.Provider, txValueWei *big.Int, depositDurationId string) (*DepositCompleteResponse, error) {
+func CompleteDeposit(p *services.Provider, txValueWei *big.Int, depositDurationId string) (*CompleteDepositResponse, error) {
 
     // Get account transactor
     txor, err := p.AM.GetNodeAccountTransactor()
@@ -230,7 +232,7 @@ func CompleteDeposit(p *services.Provider, txValueWei *big.Int, depositDurationI
     }
 
     // Return response
-    return &DepositCompleteResponse{
+    return &CompleteDepositResponse{
         Success: true,
         MinipoolAddress: minipoolCreatedEvent.Address,
     }, nil

@@ -38,9 +38,11 @@ func withdrawMinipool(c *cli.Context) error {
     canWithdraw, err := minipoolapi.CanWithdrawMinipools(p)
     if err != nil { return err }
 
-    // Cancel if node withdrawals are disabled
-    if !canWithdraw {
+    // Check response
+    if canWithdraw.WithdrawalsDisabled {
         fmt.Fprintln(p.Output, "Node withdrawals are currently disabled in Rocket Pool")
+    }
+    if !canWithdraw.Success {
         return nil
     }
 
@@ -94,17 +96,20 @@ func withdrawMinipool(c *cli.Context) error {
     for mi := 0; mi < withdrawMinipoolCount; mi++ {
         minipoolAddress := withdrawMinipoolAddresses[mi]
 
-        // Withdraw from minipool & print output
-        if withdrawn, err := minipoolapi.WithdrawMinipool(p, *minipoolAddress); err != nil {
+        // Withdraw from minipool
+        withdrawn, err := minipoolapi.WithdrawMinipool(p, *minipoolAddress)
+        if err != nil {
             withdrawErrors = append(withdrawErrors, fmt.Sprintf("Error withdrawing from minipool %s: %s", minipoolAddress.Hex(), err.Error()))
-        } else {
-            fmt.Fprintln(p.Output, fmt.Sprintf(
-                "Successfully withdrew deposit of %.2f ETH, %.2f rETH and %.2f RPL from minipool %s",
-                eth.WeiToEth(withdrawn.EtherWithdrawnWei),
-                eth.WeiToEth(withdrawn.RethWithdrawnWei),
-                eth.WeiToEth(withdrawn.RplWithdrawnWei),
-                minipoolAddress.Hex()))
+            continue
         }
+
+        // Print output
+        fmt.Fprintln(p.Output, fmt.Sprintf(
+            "Successfully withdrew deposit of %.2f ETH, %.2f rETH and %.2f RPL from minipool %s",
+            eth.WeiToEth(withdrawn.EtherWithdrawnWei),
+            eth.WeiToEth(withdrawn.RethWithdrawnWei),
+            eth.WeiToEth(withdrawn.RplWithdrawnWei),
+            minipoolAddress.Hex()))
 
     }
 

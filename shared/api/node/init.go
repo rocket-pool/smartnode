@@ -9,20 +9,20 @@ import (
 )
 
 
-// Node password initialization response type
-type NodePasswordInitResponse struct {
+// Initialize node password response type
+type InitNodePasswordResponse struct {
 
     // Status
     Success bool                    `json:"success"`
 
-    // Failure info
+    // Failure reasons
     HadExistingPassword bool        `json:"hadExistingPassword"`
 
 }
 
 
-// Node account initialization response type
-type NodeAccountInitResponse struct {
+// Initialize node account response type
+type InitNodeAccountResponse struct {
 
     // Status
     Success bool                    `json:"success"`
@@ -30,22 +30,22 @@ type NodeAccountInitResponse struct {
     // Initialization info
     AccountAddress common.Address   `json:"accountAddress"`
 
-    // Failure info
+    // Failure reasons
     HadExistingAccount bool         `json:"hadExistingAccount"`
 
 }
 
 
 // Check node password can be initialized
-func CanInitNodePassword(p *services.Provider) *NodePasswordInitResponse {
-    return &NodePasswordInitResponse{
+func CanInitNodePassword(p *services.Provider) *InitNodePasswordResponse {
+    return &InitNodePasswordResponse{
         HadExistingPassword: p.PM.PasswordExists(),
     }
 }
 
 
 // Initialize node password
-func InitNodePassword(p *services.Provider, password string) (*NodePasswordInitResponse, error) {
+func InitNodePassword(p *services.Provider, password string) (*InitNodePasswordResponse, error) {
 
     // Set password
     if err := p.PM.SetPassword(password); err != nil {
@@ -53,7 +53,7 @@ func InitNodePassword(p *services.Provider, password string) (*NodePasswordInitR
     }
 
     // Return response
-    return &NodePasswordInitResponse{
+    return &InitNodePasswordResponse{
         Success: true,
     }, nil
 
@@ -61,10 +61,10 @@ func InitNodePassword(p *services.Provider, password string) (*NodePasswordInitR
 
 
 // Check node account can be initialized
-func CanInitNodeAccount(p *services.Provider) *NodeAccountInitResponse {
+func CanInitNodeAccount(p *services.Provider) *InitNodeAccountResponse {
 
     // Response
-    response := &NodeAccountInitResponse{}
+    response := &InitNodeAccountResponse{}
 
     // Check if node account already exists
     if p.AM.NodeAccountExists() {
@@ -80,7 +80,7 @@ func CanInitNodeAccount(p *services.Provider) *NodeAccountInitResponse {
 
 
 // Initialize node account
-func InitNodeAccount(p *services.Provider) (*NodeAccountInitResponse, error) {
+func InitNodeAccount(p *services.Provider) (*InitNodeAccountResponse, error) {
 
     // Create node account
     account, err := p.AM.CreateNodeAccount()
@@ -89,7 +89,7 @@ func InitNodeAccount(p *services.Provider) (*NodeAccountInitResponse, error) {
     }
 
     // Return response
-    return &NodeAccountInitResponse{
+    return &InitNodeAccountResponse{
         Success: true,
         AccountAddress: account.Address,
     }, nil

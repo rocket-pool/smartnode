@@ -13,8 +13,8 @@ import (
 )
 
 
-// Node status response type
-type NodeStatusResponse struct {
+// Get node status response type
+type GetNodeStatusResponse struct {
 
     // Node account info
     AccountAddress common.Address       `json:"accountAddress"`
@@ -35,10 +35,10 @@ type NodeStatusResponse struct {
 
 
 // Get node status
-func GetNodeStatus(p *services.Provider) (*NodeStatusResponse, error) {
+func GetNodeStatus(p *services.Provider) (*GetNodeStatusResponse, error) {
 
     // Response
-    response := &NodeStatusResponse{}
+    response := &GetNodeStatusResponse{}
 
     // Get node account
     nodeAccount, _ := p.AM.GetNodeAccount()

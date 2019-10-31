@@ -9,8 +9,8 @@ import (
 )
 
 
-// Deposit status response type
-type DepositStatusResponse struct {
+// Get deposit status response type
+type GetDepositStatusResponse struct {
 
     // Reservation info
     ReservationExists bool                  `json:"reservationExists"`
@@ -29,10 +29,10 @@ type DepositStatusResponse struct {
 
 
 // Get deposit status
-func GetDepositStatus(p *services.Provider) (*DepositStatusResponse, error) {
+func GetDepositStatus(p *services.Provider) (*GetDepositStatusResponse, error) {
 
     // Response
-    response := &DepositStatusResponse{}
+    response := &GetDepositStatusResponse{}
 
     // Status channels
     accountBalancesChannel := make(chan *node.Balances)

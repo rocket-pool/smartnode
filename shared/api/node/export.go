@@ -7,8 +7,8 @@ import (
 )
 
 
-// Node export response type
-type NodeExportResponse struct {
+// Export node account response type
+type ExportNodeAccountResponse struct {
     Password string         `json:"password"`
     KeystorePath string     `json:"keystorePath"`
     KeystoreFile string     `json:"keystoreFile"`
@@ -16,7 +16,7 @@ type NodeExportResponse struct {
 
 
 // Export node account
-func ExportNodeAccount(p *services.Provider) (*NodeExportResponse, error) {
+func ExportNodeAccount(p *services.Provider) (*ExportNodeAccountResponse, error) {
 
     // Get passphrase
     passphrase, err := p.PM.GetPassphrase()
@@ -31,7 +31,7 @@ func ExportNodeAccount(p *services.Provider) (*NodeExportResponse, error) {
     if err != nil { return nil, err }
 
     // Return response
-    return &NodeExportResponse{
+    return &ExportNodeAccountResponse{
         Password: passphrase,
         KeystorePath: nodeAccount.URL.Path,
         KeystoreFile: string(keystoreFile),

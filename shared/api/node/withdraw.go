@@ -9,23 +9,26 @@ import (
 )
 
 
-// Node withdrawal response type
-type NodeWithdrawResponse struct {
+// Withdraw from node response types
+type CanWithdrawFromNodeResponse struct {
 
     // Status
     Success bool                    `json:"success"`
 
-    // Failure info
+    // Failure reasons
     InsufficientNodeBalance bool    `json:"insufficientNodeBalance"`
 
+}
+type WithdrawFromNodeResponse struct {
+    Success bool                    `json:"success"`
 }
 
 
 // Check deposit can be withdrawn from node
-func CanWithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*NodeWithdrawResponse, error) {
+func CanWithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*CanWithdrawFromNodeResponse, error) {
 
     // Response
-    response := &NodeWithdrawResponse{}
+    response := &CanWithdrawFromNodeResponse{}
 
     // Get contract method names
     var balanceMethod string
@@ -44,14 +47,15 @@ func CanWithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) 
         response.InsufficientNodeBalance = true
     }
 
-    // Return response
+    // Update & return response
+    response.Success = !response.InsufficientNodeBalance
     return response, nil
 
 }
 
 
 // Withdraw from node
-func WithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*NodeWithdrawResponse, error) {
+func WithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*WithdrawFromNodeResponse, error) {
 
     // Get contract method names
     var withdrawMethod string
@@ -72,7 +76,7 @@ func WithdrawFromNode(p *services.Provider, amountWei *big.Int, unit string) (*N
     }
 
     // Return response
-    return &NodeWithdrawResponse{
+    return &WithdrawFromNodeResponse{
         Success: true,
     }, nil
 
