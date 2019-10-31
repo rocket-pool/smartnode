@@ -49,7 +49,10 @@ type CompleteDepositResponse struct {
 func CanCompleteDeposit(p *services.Provider) (*CanCompleteDepositResponse, error) {
 
     // Response
-    response := &CanCompleteDepositResponse{}
+    response := &CanCompleteDepositResponse{
+        EtherRequiredWei: big.NewInt(0),
+        RplRequiredWei: big.NewInt(0),
+    }
 
     // Status channels
     reservationNotExistsChannel := make(chan bool)
