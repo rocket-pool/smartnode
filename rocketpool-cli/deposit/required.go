@@ -25,11 +25,11 @@ func getRplRequired(c *cli.Context) error {
     defer p.Cleanup()
 
     // Get RPL requirement
-    response, err := deposit.GetRplRequired(p)
+    required, err := deposit.GetRplRequired(p)
     if err != nil { return err }
 
     // Print output & return
-    for _, duration := range response.Durations {
+    for _, duration := range required.Durations {
         fmt.Fprintln(p.Output, fmt.Sprintf(
             "Depositing %.2f ETH for %s requires %.2f RPL @ %.2f RPL / ETH. Current network utilisation for %s is %.2f%%.",
             eth.WeiToEth(duration.EtherAmountWei),

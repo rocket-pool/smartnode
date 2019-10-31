@@ -39,12 +39,12 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
     }
 
     // Get minipool statuses
-    response, err := minipoolapi.GetMinipoolStatus(p)
+    status, err := minipoolapi.GetMinipoolStatus(p)
     if err != nil { return err }
 
     // Filter minipool details
     filteredMinipoolDetails := []*minipool.Details{}
-    for _, details := range response.Minipools {
+    for _, details := range status.Minipools {
         statusMatch := (len(statusFilters) == 0)
         if !statusMatch {
             for _, statusFilter := range statusFilters {

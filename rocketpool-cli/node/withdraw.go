@@ -31,21 +31,21 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     amountWei := eth.EthToWei(amount)
 
     // Check deposit can be withdrawn from node
-    response, err := node.CanWithdrawFromNode(p, amountWei, unit)
+    canWithdraw, err := node.CanWithdrawFromNode(p, amountWei, unit)
     if err != nil { return err }
 
     // Check response
-    if response.InsufficientNodeBalance {
+    if canWithdraw.InsufficientNodeBalance {
         fmt.Fprintln(p.Output, "Withdrawal amount exceeds available balance on node contract")
         return nil
     }
 
     // Withdraw from node
-    response, err = node.WithdrawFromNode(p, amountWei, unit)
+    withdrawn, err := node.WithdrawFromNode(p, amountWei, unit)
     if err != nil { return err }
 
     // Print output & return
-    if response.Success {
+    if withdrawn.Success {
         fmt.Fprintln(p.Output, fmt.Sprintf("Successfully withdrew %.2f %s from node contract to account", amount, unit))
     }
     return nil

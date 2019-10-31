@@ -49,21 +49,21 @@ func makeDeposit(c *cli.Context, durationId string) error {
         if err != nil { return err }
 
         // Check node deposit can be reserved
-        reserved, err := deposit.CanReserveDeposit(p, validatorKey)
+        canReserve, err := deposit.CanReserveDeposit(p, validatorKey)
         if err != nil { return err }
 
         // Check response
-        if reserved.DepositsDisabled {
+        if canReserve.DepositsDisabled {
             fmt.Fprintln(p.Output, "Node deposits are currently disabled in Rocket Pool")
             return nil
         }
-        if reserved.PubkeyUsed {
+        if canReserve.PubkeyUsed {
             fmt.Fprintln(p.Output, "The validator public key is already in use")
             return nil
         }
 
         // Reserve deposit
-        reserved, err = deposit.ReserveDeposit(p, validatorKey, durationId)
+        _, err := deposit.ReserveDeposit(p, validatorKey, durationId)
         if err != nil { return err }
 
         // Get deposit status
@@ -96,19 +96,19 @@ func makeDeposit(c *cli.Context, durationId string) error {
         case "1":
 
             // Check deposit can be completed
-            completed, err := deposit.CanCompleteDeposit(p)
+            canComplete, err := deposit.CanCompleteDeposit(p)
             if err != nil { return err }
 
             // Check response
-            if completed.DepositsDisabled {
+            if canComplete.DepositsDisabled {
                 fmt.Fprintln(p.Output, "Node deposits are currently disabled in Rocket Pool")
                 return nil
             }
-            if completed.MinipoolCreationDisabled {
+            if canComplete.MinipoolCreationDisabled {
                 fmt.Fprintln(p.Output, "Minipool creation is currently disabled in Rocket Pool")
                 return nil
             }
-            if completed.InsufficientNodeEtherBalance {
+            if canComplete.InsufficientNodeEtherBalance {
                 fmt.Fprintln(p.Output, fmt.Sprintf(
                     "Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH",
                     eth.WeiToEth(status.NodeContractBalanceEtherWei),
@@ -116,7 +116,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
                     eth.WeiToEth(status.ReservationEtherRequiredWei)))
                 return nil
             }
-            if completed.InsufficientNodeRplBalance {
+            if canComplete.InsufficientNodeRplBalance {
                 fmt.Fprintln(p.Output, fmt.Sprintf(
                     "Node balance of %.2f RPL plus account balance of %.2f RPL is not enough to cover requirement of %.2f RPL",
                     eth.WeiToEth(status.NodeContractBalanceRplWei),
@@ -127,7 +127,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
 
             // Confirm transfer of remaining required ETH
             ethTransferConfirmed := cliutils.Prompt(p.Input, p.Output,
-                fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.EtherRequiredWei)),
+                fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(canComplete.EtherRequiredWei)),
                 "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
             if strings.ToLower(ethTransferConfirmed[:1]) == "n" {
                 fmt.Fprintln(p.Output, "Deposit not completed")
@@ -136,7 +136,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
 
             // Confirm transfer of remaining required RPL
             rplTransferConfirmed := cliutils.Prompt(p.Input, p.Output,
-                fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(completed.RplRequiredWei)),
+                fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(canComplete.RplRequiredWei)),
                 "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
             if strings.ToLower(rplTransferConfirmed[:1]) == "n" {
                 fmt.Fprintln(p.Output, "Deposit not completed")
@@ -144,11 +144,11 @@ func makeDeposit(c *cli.Context, durationId string) error {
             }
 
             // Transfer remaining required RPL
-            _, err = node.SendFromNode(p, *(p.NodeContractAddress), completed.RplRequiredWei, "RPL")
+            _, err = node.SendFromNode(p, *(p.NodeContractAddress), canComplete.RplRequiredWei, "RPL")
             if err != nil { return err }
 
             // Complete deposit
-            completed, err = deposit.CompleteDeposit(p, completed.EtherRequiredWei, completed.DepositDurationId)
+            completed, err := deposit.CompleteDeposit(p, canComplete.EtherRequiredWei, canComplete.DepositDurationId)
             if err != nil { return err }
 
             // Print output

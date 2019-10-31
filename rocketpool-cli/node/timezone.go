@@ -29,12 +29,12 @@ func setNodeTimezone(c *cli.Context) error {
     timezone := promptTimezone(p.Input, p.Output)
 
     // Set node timezone
-    response, err := node.SetNodeTimezone(p, timezone)
+    timezoneSet, err := node.SetNodeTimezone(p, timezone)
     if err != nil { return err }
 
     // Print output & return
-    if response.Success {
-        fmt.Fprintln(p.Output, "Node timezone successfully updated to:", response.Timezone)
+    if timezoneSet.Success {
+        fmt.Fprintln(p.Output, "Node timezone successfully updated to:", timezoneSet.Timezone)
     }
     return nil
 

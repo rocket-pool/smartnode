@@ -21,11 +21,11 @@ func setTargetUserFee(c *cli.Context, feePercent float64) error {
     defer p.Cleanup()
 
     // Set target user fee
-    response, err := fee.SetTargetUserFee(p, feePercent)
+    feeSet, err := fee.SetTargetUserFee(p, feePercent)
     if err != nil { return err }
 
     // Print output & return
-    if response.Success {
+    if feeSet.Success {
         fmt.Fprintln(p.Output, fmt.Sprintf("Target user fee to vote for successfully set to %.2f%%", feePercent))
     }
     return nil
