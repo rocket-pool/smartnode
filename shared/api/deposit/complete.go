@@ -46,10 +46,10 @@ type CompleteDepositResponse struct {
 
 
 // Check deposit reservation can be completed
-func CanCompleteDeposit(p *services.Provider) (*CompleteDepositResponse, error) {
+func CanCompleteDeposit(p *services.Provider) (*CanCompleteDepositResponse, error) {
 
     // Response
-    response := &CompleteDepositResponse{}
+    response := &CanCompleteDepositResponse{}
 
     // Status channels
     reservationNotExistsChannel := make(chan bool)

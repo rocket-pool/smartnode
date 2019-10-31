@@ -118,7 +118,7 @@ func CanWithdrawMinipools(p *services.Provider) (*CanWithdrawMinipoolsResponse, 
     // Check withdrawals are allowed
     withdrawalsAllowed := new(bool)
     if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, withdrawalsAllowed, "getWithdrawalAllowed"); err != nil {
-        return false, errors.New("Error checking node withdrawals enabled status: " + err.Error())
+        return nil, errors.New("Error checking node withdrawals enabled status: " + err.Error())
     } else {
         response.WithdrawalsDisabled = !*withdrawalsAllowed
     }

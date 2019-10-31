@@ -11,8 +11,8 @@ import (
 
 // Node initialization response type
 type NodeInitResponse struct {
-    Password *node.NodePasswordInitResponse  `json:"password"`
-    Account *node.NodeAccountInitResponse    `json:"account"`
+    Password *node.InitNodePasswordResponse  `json:"password"`
+    Account *node.InitNodeAccountResponse    `json:"account"`
 }
 
 
