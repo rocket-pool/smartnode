@@ -24,13 +24,13 @@ func getUserFee(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Get user fee & print response
-    if response, err := fee.GetUserFee(p); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
-    }
+    // Get user fee
+    userFee, err := fee.GetUserFee(p)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, userFee)
+    return nil
 
 }
 

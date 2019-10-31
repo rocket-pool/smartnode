@@ -19,13 +19,13 @@ func setTargetUserFee(c *cli.Context, feePercent float64) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Set target user fee & print response
-    if response, err := fee.SetTargetUserFee(p, feePercent); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
-    }
+    // Set target user fee
+    feeSet, err := fee.SetTargetUserFee(p, feePercent)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, feeSet)
+    return nil
 
 }
 

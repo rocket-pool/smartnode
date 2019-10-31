@@ -26,13 +26,13 @@ func getNodeStatus(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Get node status & print response
-    if response, err := node.GetNodeStatus(p); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
-    }
+    // Get node status
+    status, err := node.GetNodeStatus(p)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, status)
+    return nil
 
 }
 

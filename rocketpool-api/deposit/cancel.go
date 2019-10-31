@@ -29,21 +29,21 @@ func cancelDeposit(c *cli.Context) error {
     defer p.Cleanup()
 
     // Check deposit reservation can be cancelled
-    response, err := deposit.CanCancelDeposit(p)
+    canCanel, err := deposit.CanCancelDeposit(p)
     if err != nil { return err }
 
     // Check response
-    if response.ReservationDidNotExist {
-        api.PrintResponse(p.Output, response)
+    if canCanel.ReservationDidNotExist {
+        api.PrintResponse(p.Output, canCanel)
         return nil
     }
 
     // Cancel deposit reservation
-    response, err = deposit.CancelDeposit(p)
+    cancelled, err := deposit.CancelDeposit(p)
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, response)
+    api.PrintResponse(p.Output, cancelled)
     return nil
 
 }

@@ -25,13 +25,13 @@ func setNodeTimezone(c *cli.Context, timezone string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Set node timezone & print response
-    if response, err := node.SetNodeTimezone(p, timezone); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
-    }
+    // Set node timezone
+    timezoneSet, err := node.SetNodeTimezone(p, timezone)
+    if err != nil { return err }
+
+    // Return response
+    api.PrintResponse(p.Output, timezoneSet)
+    return nil
 
 }
 

@@ -26,13 +26,13 @@ func getDepositStatus(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Get deposit status & print response
-    if response, err := deposit.GetDepositStatus(p); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
-    }
+    // Get deposit status
+    status, err := deposit.GetDepositStatus(p)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, status)
+    return nil
 
 }
 

@@ -32,21 +32,21 @@ func withdrawMinipool(c *cli.Context, address string) error {
     minipoolAddress := common.HexToAddress(address)
 
     // Check node deposit can be withdrawn from minipool
-    response, err := minipool.CanWithdrawMinipool(p, minipoolAddress)
+    canWithdraw, err := minipool.CanWithdrawMinipool(p, minipoolAddress)
     if err != nil { return err }
 
     // Check response
-    if response.MinipoolDidNotExist || response.WithdrawalsDisabled || response.InvalidNodeOwner || response.InvalidStatus || response.NodeDepositDidNotExist {
-        api.PrintResponse(p.Output, response)
+    if canWithdraw.MinipoolDidNotExist || canWithdraw.WithdrawalsDisabled || canWithdraw.InvalidNodeOwner || canWithdraw.InvalidStatus || canWithdraw.NodeDepositDidNotExist {
+        api.PrintResponse(p.Output, canWithdraw)
         return nil
     }
 
     // Withdraw node deposit from minipool
-    response, err = minipool.WithdrawMinipool(p, minipoolAddress)
+    withdrawn, err := minipool.WithdrawMinipool(p, minipoolAddress)
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, response)
+    api.PrintResponse(p.Output, withdrawn)
     return nil
 
 }

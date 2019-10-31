@@ -32,21 +32,21 @@ func sendFromNode(c *cli.Context, address string, amount float64, unit string) e
     amountWei := eth.EthToWei(amount)
 
     // Check tokens can be sent from node
-    response, err := node.CanSendFromNode(p, amountWei, unit)
+    canSend, err := node.CanSendFromNode(p, amountWei, unit)
     if err != nil { return err }
 
     // Check response
-    if response.InsufficientAccountBalance {
-        api.PrintResponse(p.Output, response)
+    if canSend.InsufficientAccountBalance {
+        api.PrintResponse(p.Output, canSend)
         return nil
     }
 
     // Send from node
-    response, err = node.SendFromNode(p, toAddress, amountWei, unit)
+    sent, err := node.SendFromNode(p, toAddress, amountWei, unit)
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, response)
+    api.PrintResponse(p.Output, sent)
     return nil
 
 }

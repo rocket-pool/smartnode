@@ -32,26 +32,26 @@ func completeDeposit(c *cli.Context) error {
     defer p.Cleanup()
 
     // Check deposit reservation can be completed
-    response, err := deposit.CanCompleteDeposit(p)
+    canComplete, err := deposit.CanCompleteDeposit(p)
     if err != nil { return err }
 
     // RPL send not available
-    if response.RplRequiredWei.Cmp(big.NewInt(0)) > 0 {
-        response.InsufficientNodeRplBalance = true
+    if canComplete.RplRequiredWei.Cmp(big.NewInt(0)) > 0 {
+        canComplete.InsufficientNodeRplBalance = true
     }
 
     // Check response
-    if response.ReservationDidNotExist || response.DepositsDisabled || response.MinipoolCreationDisabled || response.InsufficientNodeEtherBalance || response.InsufficientNodeRplBalance {
-        api.PrintResponse(p.Output, response)
+    if canComplete.ReservationDidNotExist || canComplete.DepositsDisabled || canComplete.MinipoolCreationDisabled || canComplete.InsufficientNodeEtherBalance || canComplete.InsufficientNodeRplBalance {
+        api.PrintResponse(p.Output, canComplete)
         return nil
     }
 
     // Complete deposit reservation
-    response, err = deposit.CompleteDeposit(p, response.EtherRequiredWei, response.DepositDurationId)
+    completed, err := deposit.CompleteDeposit(p, canComplete.EtherRequiredWei, canComplete.DepositDurationId)
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, response)
+    api.PrintResponse(p.Output, completed)
     return nil
 
 }

@@ -20,13 +20,13 @@ func exportNodeAccount(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Export node account & print response
-    if response, err := node.ExportNodeAccount(p); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
-    }
+    // Get node account
+    account, err := node.ExportNodeAccount(p)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, account)
+    return nil
 
 }
 

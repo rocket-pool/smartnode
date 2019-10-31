@@ -25,13 +25,13 @@ func getMinipoolStatus(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Get minipool statuses & print response
-    if response, err := minipool.GetMinipoolStatus(p); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
-    }
+    // Get minipool statuses
+    status, err := minipool.GetMinipoolStatus(p)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, status)
+    return nil
 
 }
 

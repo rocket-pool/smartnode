@@ -23,13 +23,13 @@ func getRplRequired(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Get RPL requirement & print response
-    if response, err := deposit.GetRplRequired(p); err != nil {
-        return err
-    } else {
-        api.PrintResponse(p.Output, response)
-        return nil
-    }
+    // Get RPL requirement
+    required, err := deposit.GetRplRequired(p)
+    if err != nil { return err }
+
+    // Print response
+    api.PrintResponse(p.Output, required)
+    return nil
 
 }
 
