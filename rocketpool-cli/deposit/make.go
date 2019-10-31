@@ -63,7 +63,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
         }
 
         // Reserve deposit
-        _, err := deposit.ReserveDeposit(p, validatorKey, durationId)
+        _, err = deposit.ReserveDeposit(p, validatorKey, durationId)
         if err != nil { return err }
 
         // Get deposit status

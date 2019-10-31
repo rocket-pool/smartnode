@@ -75,7 +75,7 @@ func GetDepositStatus(p *services.Provider) (*DepositStatusResponse, error) {
                 response.NodeAccountBalanceEtherWei = accountBalances.EtherWei
                 response.NodeAccountBalanceRplWei = accountBalances.RplWei
                 received++
-            case nodeBalances := <-balancesChannel:
+            case nodeBalances := <-nodeBalancesChannel:
                 response.NodeContractBalanceEtherWei = nodeBalances.EtherWei
                 response.NodeContractBalanceRplWei = nodeBalances.RplWei
                 received++
