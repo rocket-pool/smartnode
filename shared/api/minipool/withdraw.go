@@ -92,6 +92,21 @@ func GetWithdrawableMinipools(p *services.Provider) ([]*minipool.NodeStatus, err
 }
 
 
+// Check node deposits can be withdrawn from minipools
+func CanWithdrawMinipools(p *services.Provider) (bool, error) {
+
+    // Check withdrawals are allowed
+    withdrawalsAllowed := new(bool)
+    if err := p.CM.Contracts["rocketNodeSettings"].Call(nil, withdrawalsAllowed, "getWithdrawalAllowed"); err != nil {
+        return false, errors.New("Error checking node withdrawals enabled status: " + err.Error())
+    }
+
+    // Return
+    return *withdrawalsAllowed, nil
+
+}
+
+
 // Check node deposit can be withdrawn from minipool
 func CanWithdrawMinipool(p *services.Provider, minipoolAddress common.Address) (*MinipoolWithdrawResponse, error) {
 

@@ -34,8 +34,15 @@ func withdrawMinipool(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Check withdrawals are enabled here?
-    // TODO: implement
+    // Check node withdrawals are enabled
+    canWithdraw, err := minipoolapi.CanWithdrawMinipools(p)
+    if err != nil { return err }
+
+    // Cancel if node withdrawals are disabled
+    if !canWithdraw {
+        fmt.Fprintln(p.Output, "Node withdrawals are currently disabled in Rocket Pool")
+        return nil
+    }
 
     // Get withdrawable minipools
     withdrawableMinipools, err := minipoolapi.GetWithdrawableMinipools(p)
