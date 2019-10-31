@@ -9,8 +9,9 @@ import (
 
 // Node export response type
 type NodeExportResponse struct {
-    Passphrase string   `json:"passphrase"`
-    KeyFile string      `json:"keyFile"`
+    Password string         `json:"password"`
+    KeystorePath string     `json:"keystorePath"`
+    KeystoreFile string     `json:"keystoreFile"`
 }
 
 
@@ -25,14 +26,15 @@ func ExportNodeAccount(p *services.Provider) (*NodeExportResponse, error) {
     nodeAccount, err := p.AM.GetNodeAccount()
     if err != nil { return nil, err }
 
-    // Get node account key file
-    keyFile, err := ioutil.ReadFile(nodeAccount.URL.Path)
+    // Get node account keystore file
+    keystoreFile, err := ioutil.ReadFile(nodeAccount.URL.Path)
     if err != nil { return nil, err }
 
     // Return response
     return &NodeExportResponse{
-        Passphrase: passphrase,
-        KeyFile: string(keyFile),
+        Password: passphrase,
+        KeystorePath: nodeAccount.URL.Path,
+        KeystoreFile: string(keystoreFile),
     }, nil
 
 }
