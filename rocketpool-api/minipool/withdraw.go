@@ -36,7 +36,7 @@ func withdrawMinipool(c *cli.Context, address string) error {
     if err != nil { return err }
 
     // Check response
-    if canWithdraw.MinipoolDidNotExist || canWithdraw.WithdrawalsDisabled || canWithdraw.InvalidNodeOwner || canWithdraw.InvalidStatus || canWithdraw.NodeDepositDidNotExist {
+    if !canWithdraw.Success {
         api.PrintResponse(p.Output, canWithdraw)
         return nil
     }

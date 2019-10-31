@@ -38,10 +38,11 @@ func completeDeposit(c *cli.Context) error {
     // RPL send not available
     if canComplete.RplRequiredWei.Cmp(big.NewInt(0)) > 0 {
         canComplete.InsufficientNodeRplBalance = true
+        canComplete.Success = false
     }
 
     // Check response
-    if canComplete.ReservationDidNotExist || canComplete.DepositsDisabled || canComplete.MinipoolCreationDisabled || canComplete.InsufficientNodeEtherBalance || canComplete.InsufficientNodeRplBalance {
+    if !canComplete.Success {
         api.PrintResponse(p.Output, canComplete)
         return nil
     }

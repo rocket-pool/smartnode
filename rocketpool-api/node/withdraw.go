@@ -35,7 +35,7 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     if err != nil { return err }
 
     // Check response
-    if canWithdraw.InsufficientNodeBalance {
+    if !canWithdraw.Success {
         api.PrintResponse(p.Output, canWithdraw)
         return nil
     }

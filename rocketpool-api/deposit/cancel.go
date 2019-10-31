@@ -33,7 +33,7 @@ func cancelDeposit(c *cli.Context) error {
     if err != nil { return err }
 
     // Check response
-    if canCanel.ReservationDidNotExist {
+    if !canCanel.Success {
         api.PrintResponse(p.Output, canCanel)
         return nil
     }

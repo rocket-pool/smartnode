@@ -36,7 +36,7 @@ func sendFromNode(c *cli.Context, address string, amount float64, unit string) e
     if err != nil { return err }
 
     // Check response
-    if canSend.InsufficientAccountBalance {
+    if !canSend.Success {
         api.PrintResponse(p.Output, canSend)
         return nil
     }

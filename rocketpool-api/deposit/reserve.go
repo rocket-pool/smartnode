@@ -38,7 +38,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if err != nil { return err }
 
     // Check response
-    if canReserve.HadExistingReservation || canReserve.DepositsDisabled || canReserve.PubkeyUsed {
+    if !canReserve.Success {
         api.PrintResponse(p.Output, canReserve)
         return nil
     }
