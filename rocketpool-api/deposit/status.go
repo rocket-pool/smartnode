@@ -17,7 +17,7 @@ func getDepositStatus(c *cli.Context) error {
         AM: true,
         CM: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+        LoadContracts: []string{"rocketETHToken", "rocketNodeAPI", "rocketNodeSettings", "rocketPoolToken"},
         LoadAbis: []string{"rocketNodeContract"},
         ClientConn: true,
         ClientSync: true,
