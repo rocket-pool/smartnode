@@ -14,9 +14,11 @@ import (
 // Test node init password methods
 func TestNodeInitPassword(t *testing.T) {
 
-    // Create test app context
+    // Create temporary data path
     dataPath, err := ioutil.TempDir("", "")
     if err != nil { t.Fatal(err) }
+
+    // Create test app context
     c := testapp.GetAppContext(dataPath)
 
     // Initialise services
@@ -33,9 +35,9 @@ func TestNodeInitPassword(t *testing.T) {
     }
 
     // Initialise node password
-    if initPassword, err := node.InitNodePassword(p, "foobarbaz"); err != nil {
+    if passwordInitialised, err := node.InitNodePassword(p, "foobarbaz"); err != nil {
         t.Error(err)
-    } else if !initPassword.Success {
+    } else if !passwordInitialised.Success {
         t.Error("Node password was not initialised successfully")
     }
 
@@ -55,9 +57,11 @@ func TestNodeInitPassword(t *testing.T) {
 // Test node init account methods
 func TestNodeInitAccount(t *testing.T) {
 
-    // Create test app context
+    // Create temporary data path
     dataPath, err := ioutil.TempDir("", "")
     if err != nil { t.Fatal(err) }
+
+    // Create test app context
     c := testapp.GetAppContext(dataPath)
 
     // Initialise services
@@ -89,9 +93,9 @@ func TestNodeInitAccount(t *testing.T) {
     }
 
     // Initialise node account
-    if initAccount, err := node.InitNodeAccount(p); err != nil {
+    if accountInitialised, err := node.InitNodeAccount(p); err != nil {
         t.Error(err)
-    } else if !initAccount.Success {
+    } else if !accountInitialised.Success {
         t.Error("Node account was not initialised successfully")
     }
 
