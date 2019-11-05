@@ -2,6 +2,7 @@ package app
 
 import (
     "bufio"
+    "flag"
     "os"
     "regexp"
 
@@ -64,6 +65,37 @@ func GetAppArgs(dataPath string, inputPath string, outputPath string) []string {
         "--input", inputPath,
         "--output", outputPath,
     }
+}
+
+
+// Get CLI app context
+func GetAppContext(dataPath string) *cli.Context {
+
+    // Initialise flag set & define flags
+    fs := flag.NewFlagSet("", flag.ContinueOnError)
+    fs.String("database", "", "")
+    fs.String("password", "", "")
+    fs.String("keychainPow", "", "")
+    fs.String("keychainBeacon", "", "")
+    fs.String("providerPow", "", "")
+    fs.String("providerBeacon", "", "")
+    fs.String("storageAddress", "", "")
+
+    // Initialise context
+    c := cli.NewContext(nil, fs, nil)
+
+    // Set flags
+    c.GlobalSet("database", dataPath + "/rocketpool.db")
+    c.GlobalSet("password", dataPath + "/password")
+    c.GlobalSet("keychainPow", dataPath + "/accounts")
+    c.GlobalSet("keychainBeacon", dataPath + "/validators")
+    c.GlobalSet("providerPow", test.POW_PROVIDER_URL)
+    c.GlobalSet("providerBeacon", test.BEACON_PROVIDER_URL)
+    c.GlobalSet("storageAddress", test.ROCKET_STORAGE_ADDRESS)
+
+    // Return context
+    return c
+
 }
 
 
