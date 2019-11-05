@@ -31,6 +31,7 @@ type InitNodeAccountResponse struct {
     AccountAddress common.Address   `json:"accountAddress"`
 
     // Failure reasons
+    NodePasswordDidNotExist bool    `json:"nodePasswordDidNotExist"`
     HadExistingAccount bool         `json:"hadExistingAccount"`
 
 }
@@ -65,6 +66,11 @@ func CanInitNodeAccount(p *services.Provider) *InitNodeAccountResponse {
 
     // Response
     response := &InitNodeAccountResponse{}
+
+    // Check if node password exists
+    if !p.PM.PasswordExists() {
+        response.NodePasswordDidNotExist = true
+    }
 
     // Check if node account already exists
     if p.AM.NodeAccountExists() {
