@@ -11,18 +11,12 @@ import (
     "github.com/rocket-pool/smartnode/shared/services"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 
-    test "github.com/rocket-pool/smartnode/tests/utils"
     testapp "github.com/rocket-pool/smartnode/tests/utils/app"
 )
 
 
 // Test node checkin functionality
 func TestNodeCheckin(t *testing.T) {
-
-    // Create temporary input file
-    passwordInput, err := test.NewInputFile("foobarbaz" + "\n")
-    if err != nil { t.Fatal(err) }
-    defer passwordInput.Close()
 
     // Create temporary output file
     output, err := ioutil.TempFile("", "")
@@ -43,7 +37,7 @@ func TestNodeCheckin(t *testing.T) {
     app.Action = func(c *cli.Context) error {
 
         // Initialise and register node
-        if err := testapp.AppInitNode(appOptions, passwordInput); err != nil { return err }
+        if err := testapp.AppInitNode(appOptions); err != nil { return err }
         if err := testapp.AppRegisterNode(appOptions); err != nil { return err }
 
         // Initialise services

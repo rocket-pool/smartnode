@@ -4,7 +4,6 @@ import (
     "bytes"
     "errors"
     "math/big"
-    "os"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
@@ -23,14 +22,14 @@ import (
 
 
 // Initialise a node from app options
-func AppInitNode(options AppOptions, passwordInput *os.File) error {
+func AppInitNode(options AppOptions) error {
 
     // Create password manager & account manager
-    pm := passwords.NewPasswordManager(passwordInput, nil, options.Password)
+    pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
 
     // Create password
-    if _, err := pm.CreatePassword(); err != nil { return err }
+    if err := pm.SetPassword("foobarbaz"); err != nil { return err }
 
     // Create node account
     if _, err := am.CreateNodeAccount(); err != nil { return err }
@@ -45,7 +44,7 @@ func AppInitNode(options AppOptions, passwordInput *os.File) error {
 func AppRegisterNode(options AppOptions) error {
 
     // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
 
     // Initialise ethereum client
@@ -69,7 +68,7 @@ func AppRegisterNode(options AppOptions) error {
 func AppSeedNodeAccount(options AppOptions, ethAmount *big.Int, rplAmount *big.Int) error {
 
     // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
 
     // Get node account
@@ -103,7 +102,7 @@ func AppSeedNodeAccount(options AppOptions, ethAmount *big.Int, rplAmount *big.I
 func AppSeedNodeContract(options AppOptions, ethAmount *big.Int, rplAmount *big.Int) error {
 
     // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
 
     // Get node account
@@ -145,7 +144,7 @@ func AppSeedNodeContract(options AppOptions, ethAmount *big.Int, rplAmount *big.
 func AppGetNodeRequiredBalances(options AppOptions) (*node.Balances, error) {
 
     // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
 
     // Get node account
@@ -184,7 +183,7 @@ func AppGetNodeRequiredBalances(options AppOptions) (*node.Balances, error) {
 func AppCreateNodeMinipools(options AppOptions, durationId string, minipoolCount int) ([]common.Address, error) {
 
     // Create password manager, account manager & key manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
     km := validators.NewKeyManager(options.KeychainBeacon, pm)
 
@@ -234,7 +233,7 @@ func AppCreateNodeMinipools(options AppOptions, durationId string, minipoolCount
 func AppSetNodeTrusted(options AppOptions) error {
 
     // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
 
     // Get node account

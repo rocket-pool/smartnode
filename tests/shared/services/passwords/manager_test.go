@@ -5,18 +5,11 @@ import (
     "testing"
 
     "github.com/rocket-pool/smartnode/shared/services/passwords"
-
-    test "github.com/rocket-pool/smartnode/tests/utils"
 )
 
 
 // Test password manager functionality
 func TestPasswordManager(t *testing.T) {
-
-    // Create temporary password input file
-    input, err := test.NewInputFile("foobarbaz" + "\n")
-    if err != nil { t.Fatal(err) }
-    defer input.Close()
 
     // Create temporary password path
     passwordPath, err := ioutil.TempDir("", "")
@@ -24,7 +17,7 @@ func TestPasswordManager(t *testing.T) {
     passwordPath += "/password"
 
     // Initialise password manager
-    passwordManager := passwords.NewPasswordManager(input, nil, passwordPath)
+    passwordManager := passwords.NewPasswordManager(passwordPath)
 
     // Check if password exists
     if passwordExists := passwordManager.PasswordExists(); passwordExists {
@@ -37,15 +30,11 @@ func TestPasswordManager(t *testing.T) {
     }
 
     // Create password
-    if password, err := passwordManager.CreatePassword(); err != nil {
-        t.Error(err)
-    } else if password != "foobarbaz" {
-        t.Errorf("Incorrect created password: expected %s, got %s", "foobarbaz", password)
-    }
+    if err := passwordManager.SetPassword("foobarbaz"); err != nil { t.Error(err) }
 
     // Attempt to create password again
-    if _, err := passwordManager.CreatePassword(); err == nil {
-        t.Error("Password manager CreatePassword() method should return error when initialised")
+    if err := passwordManager.SetPassword("foobarbaz"); err == nil {
+        t.Error("Password manager SetPassword() method should return error when initialised")
     }
 
     // Check if password exists
