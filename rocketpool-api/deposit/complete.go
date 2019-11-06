@@ -14,9 +14,9 @@ import (
 // Complete the reserved node deposit
 func completeDeposit(c *cli.Context) error {
 
-	// Initialise services
+    // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
-    	AM: true,
+        AM: true,
         KM: true,
         Client: true,
         CM: true,
