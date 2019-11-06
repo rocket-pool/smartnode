@@ -44,7 +44,7 @@ func TestNodeTimezone(t *testing.T) {
     // Set node timezone
     if timezoneSet, err := node.SetNodeTimezone(p, "foobar/barbaz"); err != nil {
         t.Error(err)
-    } else if timezoneSet.Timezone != "foobar/barbaz" {
+    } else if !(timezoneSet.Success && timezoneSet.Timezone == "foobar/barbaz") {
         t.Error("Node timezone was not set successfully")
     }
 
