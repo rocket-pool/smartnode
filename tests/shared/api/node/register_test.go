@@ -42,7 +42,7 @@ func TestNodeRegister(t *testing.T) {
     // Check node cannot be registered with insufficient account balance
     if canRegister, err := node.CanRegisterNode(p); err != nil {
         t.Error(err)
-    } else if !canRegister.InsufficientAccountBalance {
+    } else if canRegister.Success || !canRegister.InsufficientAccountBalance {
         t.Error("InsufficientAccountBalance flag was not set with an insufficient node account balance")
     }
 
@@ -71,7 +71,7 @@ func TestNodeRegister(t *testing.T) {
     // Check node cannot be registered with existing registration
     if canRegister, err := node.CanRegisterNode(p); err != nil {
         t.Error(err)
-    } else if !canRegister.HadExistingContract {
+    } else if canRegister.Success || !canRegister.HadExistingContract {
         t.Error("HadExistingContract flag was not set with an existing registration")
     }
 
