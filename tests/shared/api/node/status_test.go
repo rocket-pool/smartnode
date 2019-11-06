@@ -49,7 +49,7 @@ func TestNodeStatus(t *testing.T) {
 
     // Seed node account & register node
     if err := testapp.AppSeedNodeAccount(appOptions, eth.EthToWei(10), nil); err != nil { t.Fatal(err) }
-    if _, err := node.RegisterNode(p, "foo/bar"); err != nil { t.Fatal(err) }
+    if err := testapp.AppRegisterNode(appOptions); err != nil { t.Fatal(err) }
 
     // Get registered node status
     if status, err := node.GetNodeStatus(p); err != nil {
