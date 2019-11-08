@@ -3,36 +3,41 @@ package proxy
 import (
     "fmt"
     "io"
-    "log"
     "net/http"
 )
 
 
 // Config
 const INFURA_URL = "https://%s.infura.io/v3/%s";
-const INFURA_NETWORK = "mainnet";
-const INFURA_PROJECT_ID = "d690a0156a994dd785c0a64423586f52";
 
 
 // Proxy server
-type ProxyServer struct {}
+type ProxyServer struct {
+    Port string
+    Network string
+    ProjectId string
+}
 
 
 /**
  * Create proxy server
  */
-func NewProxyServer() *ProxyServer {
-    return &ProxyServer{}
+func NewProxyServer(port string, network string, projectId string) *ProxyServer {
+    return &ProxyServer{
+        Port: port,
+        Network: network,
+        ProjectId: projectId,
+    }
 }
 
 
 /**
  * Start proxy server
  */
-func (p *ProxyServer) Start() {
+func (p *ProxyServer) Start() error {
 
     // Listen on RPC port
-    log.Fatal(http.ListenAndServe(":8545", p))
+    return http.ListenAndServe(":" + p.Port, p)
 
 }
 
@@ -50,7 +55,7 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
 
     // Forward request to infura
-    response, err := http.Post(fmt.Sprintf(INFURA_URL, INFURA_NETWORK, INFURA_PROJECT_ID), contentTypes[0], r.Body)
+    response, err := http.Post(fmt.Sprintf(INFURA_URL, p.Network, p.ProjectId), contentTypes[0], r.Body)
     if err != nil {
         fmt.Fprintln(w, "Error forwarding request to remote server")
         return
