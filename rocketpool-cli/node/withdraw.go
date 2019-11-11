@@ -22,6 +22,7 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
         NodeContract: true,
         LoadContracts: []string{"rocketNodeAPI"},
         LoadAbis: []string{"rocketNodeContract"},
+        WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
     })

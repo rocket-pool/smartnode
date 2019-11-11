@@ -23,6 +23,7 @@ func sendFromNode(c *cli.Context, toAddressStr string, sendAmount float64, unit 
         Client: true,
         CM: true,
         LoadContracts: []string{"rocketETHToken", "rocketPoolToken"},
+        WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
     })

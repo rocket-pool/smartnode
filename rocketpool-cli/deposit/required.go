@@ -29,6 +29,7 @@ func getRplRequired(c *cli.Context) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         CM: true,
         LoadContracts: []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketPool"},
+        WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
     })

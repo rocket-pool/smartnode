@@ -20,6 +20,7 @@ func setNodeTimezone(c *cli.Context) error {
         CM: true,
         NodeContractAddress: true,
         LoadContracts: []string{"rocketNodeAPI"},
+        WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
