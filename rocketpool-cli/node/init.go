@@ -1,12 +1,13 @@
 package node
 
 import (
-    "errors"
     "fmt"
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/api/node"
     "github.com/rocket-pool/smartnode/shared/services"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -23,32 +24,43 @@ func initNode(c *cli.Context) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Create password if it isn't set
-    if p.PM.PasswordExists() {
+    // Check & init password
+    passwordSet := node.CanInitNodePassword(p)
+    if passwordSet.HadExistingPassword {
         fmt.Fprintln(p.Output, "Node password already set.")
     } else {
-        if password, err := p.PM.CreatePassword(); err != nil {
-            return errors.New("Error setting node password: " + err.Error())
-        } else {
-            fmt.Fprintln(p.Output, "Node password set successfully:", password)
-        }
+
+        // Prompt for password
+        password := cliutils.Prompt(p.Input, p.Output, "Please enter a node password (this will be saved locally and used to generate dynamic keystore passphrases):", "^.{8,}$", "Please enter a password with 8 or more characters")
+
+        // Init password
+        passwordSet, err = node.InitNodePassword(p, password)
+        if err != nil { return err }
+
+        // Print output
+        fmt.Fprintln(p.Output, "Node password set successfully:", password)
+
     }
 
-    // Create node account if it doesn't exist
-    if p.AM.NodeAccountExists() {
-        nodeAccount, _ := p.AM.GetNodeAccount()
-        fmt.Fprintln(p.Output, "Node account already exists:", nodeAccount.Address.Hex())
-        return nil
+    // Check & init account
+    accountSet := node.CanInitNodeAccount(p)
+    if accountSet.HadExistingAccount {
+        fmt.Fprintln(p.Output, "Node account already exists:", accountSet.AccountAddress.Hex())
     } else {
-        if account, err := p.AM.CreateNodeAccount(); err != nil {
-            return errors.New("Error creating node account: " + err.Error())
-        } else {
-            fmt.Fprintln(p.Output, "Node account created successfully:", account.Address.Hex())
-        }
+
+        // Init account
+        accountSet, err = node.InitNodeAccount(p)
+        if err != nil { return err }
+
+        // Print output
+        fmt.Fprintln(p.Output, "Node account created successfully:", accountSet.AccountAddress.Hex())
+
     }
 
     // Print backup notice & return
-    fmt.Fprintln(p.Output, "Please back up your Rocket Pool data folder at ~/.rocketpool in a safe and secure location to protect your node account!")
+    if passwordSet.Success || accountSet.Success {
+        fmt.Fprintln(p.Output, "Please back up your Rocket Pool data folder at ~/.rocketpool in a safe and secure location to protect your node account!")
+    }
     return nil
 
 }

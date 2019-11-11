@@ -43,6 +43,9 @@ type ProviderOpts struct {
     Docker              bool
     LoadContracts       []string
     LoadAbis            []string
+    ClientConn          bool
+    ClientSync          bool
+    RocketStorage       bool
     WaitPassword        bool
     WaitNodeAccount     bool
     WaitNodeRegistered  bool
@@ -147,7 +150,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.PM {
 
         // Initialise
-        p.PM = passwords.NewPasswordManager(p.Input, p.Output, c.GlobalString("password"))
+        p.PM = passwords.NewPasswordManager(c.GlobalString("password"))
 
         // Check or wait for password set
         if opts.WaitPassword {
@@ -187,21 +190,27 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         }
     }
 
-    // Wait for ethereum client connection
+    // Check or wait for ethereum client connection
     if opts.WaitClientConn {
         sync.WaitClientConnection(p.Client)
+    } else if opts.ClientConn && !sync.ClientIsConnected(p.Client) {
+        return nil, errors.New("Not connected to ethereum client")
     }
 
-    // Wait until RocketStorage contract is available
+    // Check or wait for RocketStorage contract
     if opts.WaitRocketStorage {
         sync.WaitContractLoaded(p.Client, "RocketStorage", common.HexToAddress(c.GlobalString("storageAddress")))
+    } else if opts.RocketStorage && !sync.ContractIsLoaded(p.Client, common.HexToAddress(c.GlobalString("storageAddress"))) {
+        return nil, errors.New("RocketStorage contract not loaded")
     }
 
-    // Wait for ethereum client to sync
+    // Check or wait for ethereum client sync
     if opts.WaitClientSync {
         if err := eth.WaitSync(p.Client, false, true); err != nil {
             return nil, err
         }
+    } else if opts.ClientSync && !eth.IsSynced(p.Client) {
+        return nil, errors.New("Ethereum client not synced")
     }
 
     // Initialise Rocket Pool contract manager

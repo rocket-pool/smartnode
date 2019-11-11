@@ -9,9 +9,9 @@ import (
 
     "github.com/urfave/cli"
 
+    minipoolapi "github.com/rocket-pool/smartnode/shared/api/minipool"
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
@@ -39,42 +39,13 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
         return errors.New("Error retrieving latest block header: " + err.Error())
     }
 
-    // Get minipool addresses
-    nodeAccount, _ := p.AM.GetNodeAccount()
-    minipoolAddresses, err := node.GetMinipoolAddresses(nodeAccount.Address, p.CM)
-    if err != nil {
-        return err
-    }
-    minipoolCount := len(minipoolAddresses)
-
-    // Get minipool details
-    detailsChannels := make([]chan *minipool.Details, minipoolCount)
-    errorChannel := make(chan error)
-    for mi := 0; mi < minipoolCount; mi++ {
-        detailsChannels[mi] = make(chan *minipool.Details)
-        go (func(mi int) {
-            if details, err := minipool.GetDetails(p.CM, minipoolAddresses[mi]); err != nil {
-                errorChannel <- err
-            } else {
-                detailsChannels[mi] <- details
-            }
-        })(mi)
-    }
-
-    // Receive minipool details
-    minipoolDetails := make([]*minipool.Details, minipoolCount)
-    for mi := 0; mi < minipoolCount; mi++ {
-        select {
-            case details := <-detailsChannels[mi]:
-                minipoolDetails[mi] = details
-            case err := <-errorChannel:
-                return err
-        }
-    }
+    // Get minipool statuses
+    status, err := minipoolapi.GetMinipoolStatus(p)
+    if err != nil { return err }
 
     // Filter minipool details
     filteredMinipoolDetails := []*minipool.Details{}
-    for _, details := range minipoolDetails {
+    for _, details := range status.Minipools {
         statusMatch := (len(statusFilters) == 0)
         if !statusMatch {
             for _, statusFilter := range statusFilters {

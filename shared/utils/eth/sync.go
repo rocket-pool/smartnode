@@ -52,3 +52,10 @@ func WaitSync(client *ethclient.Client, forceSynced bool, renderStatus bool) err
 
 }
 
+
+// Check if node is synced
+func IsSynced(client *ethclient.Client) bool {
+    progress, err := client.SyncProgress(context.Background())
+    return err == nil && progress == nil
+}
+

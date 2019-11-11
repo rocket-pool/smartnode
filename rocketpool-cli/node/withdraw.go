@@ -1,12 +1,11 @@
 package node
 
 import (
-    "errors"
     "fmt"
-    "math/big"
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/api/node"
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
@@ -29,42 +28,29 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Convert withdrawal amount to wei
+    // Get args
     amountWei := eth.EthToWei(amount)
 
-    // Get contract method names
-    var balanceMethod string
-    var withdrawMethod string
-    switch unit {
-        case "ETH":
-            balanceMethod = "getBalanceETH"
-            withdrawMethod = "withdrawEther"
-        case "RPL":
-            balanceMethod = "getBalanceRPL"
-            withdrawMethod = "withdrawRPL"
-    }
+    // Check deposit can be withdrawn from node
+    canWithdraw, err := node.CanWithdrawFromNode(p, amountWei, unit)
+    if err != nil { return err }
 
-    // Check withdrawal amount is available
-    balanceWei := new(*big.Int)
-    if err := p.NodeContract.Call(nil, balanceWei, balanceMethod); err != nil {
-        return errors.New("Error retrieving node balance: " + err.Error())
-    } else if amountWei.Cmp(*balanceWei) > 0 {
+    // Check response
+    if canWithdraw.InsufficientNodeBalance {
         fmt.Fprintln(p.Output, "Withdrawal amount exceeds available balance on node contract")
+    }
+    if !canWithdraw.Success {
         return nil
     }
 
-    // Withdraw amount
-    if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
-        return err
-    } else {
-        fmt.Fprintln(p.Output, "Withdrawing from node contract...")
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], withdrawMethod, amountWei); err != nil {
-            return errors.New("Error withdrawing from node contract: " + err.Error())
-        }
-    }
+    // Withdraw from node
+    withdrawn, err := node.WithdrawFromNode(p, amountWei, unit)
+    if err != nil { return err }
 
-    // Log & return
-    fmt.Fprintln(p.Output, fmt.Sprintf("Successfully withdrew %.2f %s from node contract to account", amount, unit))
+    // Print output & return
+    if withdrawn.Success {
+        fmt.Fprintln(p.Output, fmt.Sprintf("Successfully withdrew %.2f %s from node contract to account", amount, unit))
+    }
     return nil
 
 }

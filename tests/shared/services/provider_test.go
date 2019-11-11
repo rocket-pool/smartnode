@@ -11,18 +11,12 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 
-    test "github.com/rocket-pool/smartnode/tests/utils"
     testapp "github.com/rocket-pool/smartnode/tests/utils/app"
 )
 
 
 // Test service provider functionality
 func TestServiceProvider(t *testing.T) {
-
-    // Create temporary input file
-    passwordInput, err := test.NewInputFile("foobarbaz" + "\n")
-    if err != nil { t.Fatal(err) }
-    defer passwordInput.Close()
 
     // Create temporary data path
     dataPath, err := ioutil.TempDir("", "")
@@ -78,8 +72,8 @@ func TestServiceProvider(t *testing.T) {
         if _, err := services.NewProvider(c, opts); err == nil { t.Error("NewProvider() should return error without node password") }
 
         // Set node password
-        pm := passwords.NewPasswordManager(passwordInput, nil, appOptions.Password)
-        if _, err := pm.CreatePassword(); err != nil { return err }
+        pm := passwords.NewPasswordManager(appOptions.Password)
+        if err := pm.SetPassword("foobarbaz"); err != nil { return err }
 
         // Attempt to create provider without node account set
         if _, err := services.NewProvider(c, opts); err == nil { t.Error("NewProvider() should return error without node account") }

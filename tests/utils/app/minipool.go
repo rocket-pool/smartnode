@@ -79,7 +79,7 @@ func AppStakeAllMinipools(options AppOptions, durationId string, depositorAddres
 func AppWithdrawMinipools(options AppOptions, minipoolAddresses []common.Address, balance *big.Int) error {
 
     // Create password manager & account manager
-    pm := passwords.NewPasswordManager(nil, nil, options.Password)
+    pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
 
     // Initialise ethereum client

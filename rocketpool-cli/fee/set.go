@@ -1,11 +1,11 @@
 package fee
 
 import (
-    "errors"
     "fmt"
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/api/fee"
     "github.com/rocket-pool/smartnode/shared/services"
 )
 
@@ -20,19 +20,14 @@ func setTargetUserFee(c *cli.Context, feePercent float64) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Open database
-    if err := p.DB.Open(); err != nil {
-        return err
-    }
-    defer p.DB.Close()
+    // Set target user fee
+    feeSet, err := fee.SetTargetUserFee(p, feePercent)
+    if err != nil { return err }
 
-    // Set target user fee percent
-    if err := p.DB.Put("user.fee.target", feePercent); err != nil {
-        return errors.New("Error setting target user fee percentage: " + err.Error())
+    // Print output & return
+    if feeSet.Success {
+        fmt.Fprintln(p.Output, fmt.Sprintf("Target user fee to vote for successfully set to %.2f%%", feePercent))
     }
-
-    // Log & return
-    fmt.Fprintln(p.Output, fmt.Sprintf("Target user fee to vote for successfully set to %.2f%%", feePercent))
     return nil
 
 }

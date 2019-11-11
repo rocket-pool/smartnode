@@ -19,13 +19,8 @@ func TestKeyManager(t *testing.T) {
     if err != nil { t.Fatal(err) }
     keychainPath += "/keychain"
 
-    // Create temporary password input file
-    input, err := test.NewInputFile("foobarbaz" + "\n")
-    if err != nil { t.Fatal(err) }
-    defer input.Close()
-
     // Create password manager
-    passwordManager, err := test.NewPasswordManager(input)
+    passwordManager, err := test.NewPasswordManager()
     if err != nil { t.Fatal(err) }
 
     // Initialise key manager
@@ -37,7 +32,7 @@ func TestKeyManager(t *testing.T) {
     }
 
     // Initialise password
-    if _, err := passwordManager.CreatePassword(); err != nil { t.Fatal(err) }
+    if err := passwordManager.SetPassword("foobarbaz"); err != nil { t.Fatal(err) }
 
     // Create validator key
     createdKey, err := keyManager.CreateValidatorKey()

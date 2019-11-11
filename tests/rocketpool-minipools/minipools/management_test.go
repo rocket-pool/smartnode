@@ -20,11 +20,6 @@ import (
 // Test minipool management functionality
 func TestMinipoolManagement(t *testing.T) {
 
-    // Create temporary input file
-    passwordInput, err := test.NewInputFile("foobarbaz" + "\n")
-    if err != nil { t.Fatal(err) }
-    defer passwordInput.Close()
-
     // Create temporary output file
     output, err := ioutil.TempFile("", "")
     if err != nil { t.Fatal(err) }
@@ -44,7 +39,7 @@ func TestMinipoolManagement(t *testing.T) {
     app.Action = func(c *cli.Context) error {
 
         // Initialise and register node
-        if err := testapp.AppInitNode(appOptions, passwordInput); err != nil { return err }
+        if err := testapp.AppInitNode(appOptions); err != nil { return err }
         if err := testapp.AppRegisterNode(appOptions); err != nil { return err }
 
         // Create and launch minipools under node
