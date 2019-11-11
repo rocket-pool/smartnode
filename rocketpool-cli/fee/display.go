@@ -18,6 +18,7 @@ func displayUserFee(c *cli.Context) error {
         DB: true,
         CM: true,
         LoadContracts: []string{"rocketNodeSettings"},
+        WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
     })

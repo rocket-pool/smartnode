@@ -26,6 +26,7 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
         CM: true,
         LoadContracts: []string{"rocketPoolToken", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
+        WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
     })

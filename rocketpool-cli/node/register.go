@@ -20,6 +20,7 @@ func registerNode(c *cli.Context) error {
         Client: true,
         CM: true,
         LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+        WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
     })
