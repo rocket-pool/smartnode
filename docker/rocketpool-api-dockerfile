@@ -12,10 +12,11 @@ RUN apk update && apk add --no-cache build-base git linux-headers
 # Copy source files
 ADD ./rocketpool-api /go/src/github.com/rocket-pool/smartnode/rocketpool-api
 ADD ./shared /go/src/github.com/rocket-pool/smartnode/shared
+ADD ./vendor /go/src/github.com/rocket-pool/smartnode/vendor
 
 # Install go dependencies
 WORKDIR /go/src/github.com/rocket-pool/smartnode
-RUN go get -d ./...
+RUN go get -d github.com/ethereum/go-ethereum
 
 # Compile & install
 RUN go install github.com/rocket-pool/smartnode/rocketpool-api
