@@ -40,13 +40,18 @@ func main() {
             Value: "8545",
         },
         cli.StringFlag{
+            Name:  "providerUrl",
+            Usage: "External Eth 1.0 provider `URL` (defaults to Infura)",
+            Value: "",
+        },
+        cli.StringFlag{
             Name:  "network",
-            Usage: "Network to connect to via Infura",
+            Usage: "`Network` to connect to via Infura",
             Value: "goerli",
         },
         cli.StringFlag{
             Name:  "projectId",
-            Usage: "Infura project ID to use for connection",
+            Usage: "Infura `project ID` to use for connection",
             Value: "",
         },
     };
@@ -55,7 +60,7 @@ func main() {
     app.Action = func(c *cli.Context) error {
 
         // Initialise and start proxy server
-        proxyServer := proxy.NewProxyServer(c.GlobalString("port"), c.GlobalString("network"), c.GlobalString("projectId"))
+        proxyServer := proxy.NewProxyServer(c.GlobalString("port"), c.GlobalString("providerUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
         return proxyServer.Start()
 
     }

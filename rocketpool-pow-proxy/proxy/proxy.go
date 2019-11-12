@@ -16,20 +16,26 @@ const INFURA_URL = "https://%s.infura.io/v3/%s";
 // Proxy server
 type ProxyServer struct {
     Port string
-    Network string
-    ProjectId string
+    ProviderUrl string
 }
 
 
 /**
  * Create proxy server
  */
-func NewProxyServer(port string, network string, projectId string) *ProxyServer {
+func NewProxyServer(port string, providerUrl string, network string, projectId string) *ProxyServer {
+
+    // Default provider to Infura
+    if providerUrl == "" {
+        providerUrl = fmt.Sprintf(INFURA_URL, network, projectId)
+    }
+
+    // Create and return proxy server
     return &ProxyServer{
         Port: port,
-        Network: network,
-        ProjectId: projectId,
+        ProviderUrl: providerUrl,
     }
+
 }
 
 
@@ -63,8 +69,8 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Forward request to infura
-    response, err := http.Post(fmt.Sprintf(INFURA_URL, p.Network, p.ProjectId), contentTypes[0], r.Body)
+    // Forward request to provider
+    response, err := http.Post(p.ProviderUrl, contentTypes[0], r.Body)
     if err != nil {
         log.Println(errors.New("Error forwarding request to remote server: " + err.Error()))
         fmt.Fprintln(w, errors.New("Error forwarding request to remote server: " + err.Error()))
@@ -72,7 +78,7 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
     defer response.Body.Close()
 
-    // Copy infura response body to response writer
+    // Copy provider response body to response writer
     _, err = io.Copy(w, response.Body)
     if err != nil {
         log.Println(errors.New("Error reading response from remote server: " + err.Error()))
