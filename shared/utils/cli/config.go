@@ -52,6 +52,11 @@ func Configure(app *cli.App) {
             Value: "0x2CaBe1D447092CB2A0740c30F43c68624B2cbaD4", // RP2 Beta network
         }),
         altsrc.NewStringFlag(cli.StringFlag{
+            Name:  "uniswapAddress",
+            Usage: "PoW chain Uniswap factory contract `address`",
+            Value: "0x9c83dCE8CA20E9aAF9D3efc003b2ea62aBC08351", // Ropsten
+        }),
+        altsrc.NewStringFlag(cli.StringFlag{
             Name:  "input",
             Usage: "Rocket Pool CLI input file `path` (advanced use only)",
         }),
