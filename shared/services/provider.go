@@ -44,6 +44,7 @@ type ProviderOpts struct {
     NodeContractAddress bool
     NodeContract        bool
     Uniswap             bool
+    RPLExchangeAddress  bool
     RPLExchange         bool
 
     // Misc
@@ -91,6 +92,7 @@ type Provider struct {
     NodeContractAddress *common.Address
     NodeContract        *bind.BoundContract
     Uniswap             *contracts.UniswapFactory
+    RPLExchangeAddress  *common.Address
     RPLExchange         *contracts.UniswapExchange
 
     // Misc
@@ -124,9 +126,12 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
         opts.Publisher = true
     } // Beacon chain client requires publisher
     if opts.RPLExchange {
+        opts.RPLExchangeAddress = true
+    } // RPL Exchange contract requires RPL Exchange address
+    if opts.RPLExchangeAddress {
         opts.Uniswap = true
         opts.CM = true
-    } // RPL Exchange contract requires uniswap & RP contract manager
+    } // RPL Exchange address requires uniswap & RP contract manager
     if opts.Uniswap {
         opts.Client = true
     } // Uniswap requires eth client
@@ -308,20 +313,27 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     // Initialise uniswap contract
     if opts.Uniswap {
         if uniswap, err := contracts.NewUniswapFactory(common.HexToAddress(c.GlobalString("uniswapAddress")), p.Client); err != nil {
-            return nil, errors.New("Error initialising Uniswap: " + err.Error())
+            return nil, errors.New("Error initialising Uniswap contract: " + err.Error())
         } else {
             p.Uniswap = uniswap
         }
     }
 
+    // Initialise RPL exchange address
+    if opts.RPLExchangeAddress {
+        if rplTokenAddress, ok := p.CM.Addresses["rocketPoolToken"]; !ok {
+            return nil, errors.New("Error retrieving RPL exchange address: RPL contract address not loaded")
+        } else if rplExchangeAddress, err := p.Uniswap.GetExchange(rplTokenAddress); err != nil {
+            return nil, errors.New("Error retrieving RPL exchange address: " + err.Error())
+        } else {
+            p.RPLExchangeAddress = rplExchangeAddress
+        }
+    }
+
     // Initialise RPL exchange contract
     if opts.RPLExchange {
-        if rplTokenAddress, ok := p.CM.Addresses["rocketPoolToken"]; !ok {
-            return nil, errors.New("Error initialising RPL exchange: RPL contract address not loaded")
-        } else if rplExchangeAddress, err := p.Uniswap.GetExchange(rplTokenAddress); err != nil {
-            return nil, errors.New("Error initialising RPL exchange: Error retrieving exchange address: " + err.Error())
-        } else if rplExchange, err := contracts.NewUniswapExchange(rplExchangeAddress, p.Client); err != nil {
-            return nil, errors.New("Error initialising RPL exchange: " + err.Error())
+        if rplExchange, err := contracts.NewUniswapExchange(p.RPLExchangeAddress, p.Client); err != nil {
+            return nil, errors.New("Error initialising RPL exchange contract: " + err.Error())
         } else {
             p.RPLExchange = rplExchange
         }
