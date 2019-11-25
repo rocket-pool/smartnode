@@ -323,16 +323,16 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.RPLExchangeAddress {
         if rplTokenAddress, ok := p.CM.Addresses["rocketPoolToken"]; !ok {
             return nil, errors.New("Error retrieving RPL exchange address: RPL contract address not loaded")
-        } else if rplExchangeAddress, err := p.Uniswap.GetExchange(rplTokenAddress); err != nil {
+        } else if rplExchangeAddress, err := p.Uniswap.GetExchange(nil, *rplTokenAddress); err != nil {
             return nil, errors.New("Error retrieving RPL exchange address: " + err.Error())
         } else {
-            p.RPLExchangeAddress = rplExchangeAddress
+            p.RPLExchangeAddress = &rplExchangeAddress
         }
     }
 
     // Initialise RPL exchange contract
     if opts.RPLExchange {
-        if rplExchange, err := contracts.NewUniswapExchange(p.RPLExchangeAddress, p.Client); err != nil {
+        if rplExchange, err := contracts.NewUniswapExchange(*(p.RPLExchangeAddress), p.Client); err != nil {
             return nil, errors.New("Error initialising RPL exchange contract: " + err.Error())
         } else {
             p.RPLExchange = rplExchange
