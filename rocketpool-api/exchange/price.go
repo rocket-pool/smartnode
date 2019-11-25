@@ -16,7 +16,7 @@ func getTokenPrice(c *cli.Context, amount float64, token string) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         CM: true,
-        RPLExchangeAddress: true,
+        RPLExchange: true,
         LoadContracts: []string{"rocketPoolToken"},
         ClientConn: true,
         ClientSync: true,
