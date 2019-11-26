@@ -89,6 +89,49 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Buy tokens with ether
+            cli.Command{
+                Name:      "buy",
+                Aliases:   []string{"b"},
+                Usage:     "Buy tokens with ether",
+                UsageText: "rocketpool exchange buy etherAmount tokenAmount token",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var etherAmount float64
+                    var tokenAmount float64
+                    var token string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 3, func(messages *[]string) {
+                        var err error
+
+                        // Parse amounts
+                        if etherAmount, err = strconv.ParseFloat(c.Args().Get(0), 64); err != nil || etherAmount <= 0 {
+                            *messages = append(*messages, "Invalid ether amount - must be a positive decimal number")
+                        }
+                        if tokenAmount, err = strconv.ParseFloat(c.Args().Get(1), 64); err != nil || tokenAmount <= 0 {
+                            *messages = append(*messages, "Invalid token amount - must be a positive decimal number")
+                        }
+
+                        // Parse token type
+                        token = strings.ToUpper(c.Args().Get(2))
+                        switch token {
+                            case "RPL":
+                            default:
+                                *messages = append(*messages, "Invalid token - valid tokens are 'RPL'")
+                        }
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return buyTokens(c, etherAmount, tokenAmount, token)
+
+                },
+            },
+
         },
     })
 }
