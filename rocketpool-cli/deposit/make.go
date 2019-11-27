@@ -167,7 +167,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 }
 
                 // Purchase RPL
-                _, err := exchange.BuyTokens(p, price.MaxEtherPriceWei, canComplete.RplShortByWei, "RPL")
+                _, err = exchange.BuyTokens(p, price.MaxEtherPriceWei, canComplete.RplShortByWei, "RPL")
                 if err != nil { return err }
 
             }
