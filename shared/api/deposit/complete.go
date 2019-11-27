@@ -36,6 +36,7 @@ type CanCompleteDepositResponse struct {
     // Deposit info
     EtherRequiredWei *big.Int           `json:"etherRequiredWei"`
     RplRequiredWei *big.Int             `json:"rplRequiredWei"`
+    RplShortByWei *big.Int              `json:"rplShortByWei"`
     DepositDurationId string            `json:"depositDurationId"`
 
 }
@@ -52,6 +53,7 @@ func CanCompleteDeposit(p *services.Provider) (*CanCompleteDepositResponse, erro
     response := &CanCompleteDepositResponse{
         EtherRequiredWei: big.NewInt(0),
         RplRequiredWei: big.NewInt(0),
+        RplShortByWei: big.NewInt(0),
     }
 
     // Status channels
@@ -196,6 +198,7 @@ func CanCompleteDeposit(p *services.Provider) (*CanCompleteDepositResponse, erro
         response.RplRequiredWei.Sub(requiredBalances.RplWei, nodeBalances.RplWei)
         if accountBalances.RplWei.Cmp(response.RplRequiredWei) < 0 {
             response.InsufficientNodeRplBalance = true
+            response.RplShortByWei.Sub(response.RplRequiredWei, accountBalances.RplWei)
         }
     }
 

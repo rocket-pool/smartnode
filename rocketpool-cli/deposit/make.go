@@ -8,6 +8,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/api/deposit"
+    "github.com/rocket-pool/smartnode/shared/api/exchange"
     "github.com/rocket-pool/smartnode/shared/api/node"
     "github.com/rocket-pool/smartnode/shared/services"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -26,6 +27,8 @@ func makeDeposit(c *cli.Context, durationId string) error {
         CM: true,
         NodeContractAddress: true,
         NodeContract: true,
+        RPLExchangeAddress: true,
+        RPLExchange: true,
         LoadContracts: []string{"rocketDepositQueue", "rocketETHToken", "rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings", "rocketPool", "rocketPoolToken"},
         LoadAbis: []string{"rocketNodeContract"},
         WaitClientConn: true,
@@ -116,15 +119,57 @@ func makeDeposit(c *cli.Context, durationId string) error {
                     eth.WeiToEth(status.NodeAccountBalanceEtherWei),
                     eth.WeiToEth(status.ReservationEtherRequiredWei)))
             }
-            if canComplete.InsufficientNodeRplBalance {
-                fmt.Fprintln(p.Output, fmt.Sprintf(
-                    "Node balance of %.2f RPL plus account balance of %.2f RPL is not enough to cover requirement of %.2f RPL",
-                    eth.WeiToEth(status.NodeContractBalanceRplWei),
-                    eth.WeiToEth(status.NodeAccountBalanceRplWei),
-                    eth.WeiToEth(status.ReservationRplRequiredWei)))
-            }
-            if !canComplete.Success {
+            if canComplete.DepositsDisabled || canComplete.MinipoolCreationDisabled || canComplete.InsufficientNodeEtherBalance {
                 return nil
+            }
+
+            // RPL purchase required
+            if canComplete.RplShortByWei.Cmp(big.NewInt(0)) > 0 {
+
+                // Get exchange liquidity
+                liquidity, err := exchange.GetTokenLiquidity(p, "RPL")
+                if err != nil { return err }
+
+                // Check exchange has sufficient liquidity
+                if liquidity.ExchangeTokenBalanceWei.Cmp(canComplete.RplShortByWei) < 0 {
+                    fmt.Fprintln(p.Output, fmt.Sprintf(
+                        "Node balance of %.2f RPL plus account balance of %.2f RPL is not enough to cover requirement of %.2f RPL",
+                        eth.WeiToEth(status.NodeContractBalanceRplWei),
+                        eth.WeiToEth(status.NodeAccountBalanceRplWei),
+                        eth.WeiToEth(status.ReservationRplRequiredWei)))
+                    return nil
+                }
+
+                // Get exchange token price
+                price, err := exchange.GetTokenPrice(p, canComplete.RplShortByWei, "RPL")
+                if err != nil { return err }
+
+                // Get total ether required including exchange price
+                totalEtherRequiredWei := big.NewInt(0)
+                totalEtherRequiredWei.Add(canComplete.EtherRequiredWei, price.MaxEtherPriceWei)
+
+                // Check total ether required
+                if status.NodeAccountBalanceEtherWei.Cmp(totalEtherRequiredWei) < 0 {
+                    fmt.Fprintln(p.Output, fmt.Sprintf(
+                        "Account balance of %.2f ETH is not enough to cover total of %.2f ETH (including ETH requirement & RPL purchase)",
+                        eth.WeiToEth(status.NodeAccountBalanceEtherWei),
+                        eth.WeiToEth(totalEtherRequiredWei)))
+                    return nil
+                }
+
+                // Confirm purchase of RPL account is short by
+                rplPurchaseConfirmed := cliutils.Prompt(p.Input, p.Output,
+                    fmt.Sprintf("Deposit requires an additional %.2f RPL, would you like to purchase this amount via Uniswap for %.2f ETH? [y/n]", eth.WeiToEth(canComplete.RplShortByWei), eth.WeiToEth(price.MaxEtherPriceWei)),
+                    "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+                if strings.ToLower(rplPurchaseConfirmed[:1]) == "n" {
+                    fmt.Fprintln(p.Output, "Deposit not completed")
+                    return nil
+                }
+
+                // Purchase RPL
+                _, err := exchange.BuyTokens(p, price.MaxEtherPriceWei, canComplete.RplShortByWei, "RPL")
+                if err != nil { return err }
+
             }
 
             // Confirm transfer of remaining required ETH
