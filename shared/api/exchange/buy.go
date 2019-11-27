@@ -99,7 +99,7 @@ func BuyTokens(p *services.Provider, etherAmountWei *big.Int, tokenAmountWei *bi
     }
 
     // Get token swap deadline
-    deadline := header.Time + DEADLINE_DELAY
+    deadline := big.NewInt(int64(header.Time + DEADLINE_DELAY))
 
     // Buy tokens from exchange
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
