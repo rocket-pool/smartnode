@@ -92,7 +92,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
         status.ReservationStakingDurationID,
         status.ReservationExpiryTime.Format("2006-01-02, 15:04 -0700 MST")))
     fmt.Fprintln(p.Output, fmt.Sprintf(
-        "Node has a total balance of %.2f ETH and %.2f RPL",
+        "Node has a combined balance of %.2f ETH and %.2f RPL",
         eth.WeiToEth(nodeTotalBalanceEtherWei),
         eth.WeiToEth(nodeTotalBalanceRplWei)))
 
@@ -116,9 +116,12 @@ func makeDeposit(c *cli.Context, durationId string) error {
             }
             if canComplete.InsufficientNodeEtherBalance {
                 fmt.Fprintln(p.Output, fmt.Sprintf(
-                    "Node balance of %.2f ETH is not enough to cover requirement of %.2f ETH",
+                    "Combined node balance of %.2f ETH is not enough to cover requirement of %.2f ETH" + "\r\n" +
+                    "(Node account contains %.2f ETH and node contract contains %.2f ETH)",
                     eth.WeiToEth(nodeTotalBalanceEtherWei),
-                    eth.WeiToEth(status.ReservationEtherRequiredWei)))
+                    eth.WeiToEth(status.ReservationEtherRequiredWei),
+                    eth.WeiToEth(status.NodeAccountBalanceEtherWei),
+                    eth.WeiToEth(status.NodeContractBalanceEtherWei)))
             }
             if canComplete.DepositsDisabled || canComplete.MinipoolCreationDisabled || canComplete.InsufficientNodeEtherBalance {
                 return nil
@@ -134,10 +137,13 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 // Check exchange has sufficient liquidity
                 if liquidity.ExchangeTokenBalanceWei.Cmp(canComplete.RplShortByWei) < 0 {
                     fmt.Fprintln(p.Output, fmt.Sprintf(
-                        "Node balance of %.2f RPL plus Uniswap exchange liquidity of %.2f RPL is not enough to cover requirement of %.2f RPL",
+                        "Combined node balance of %.2f RPL plus Uniswap exchange liquidity of %.2f RPL is not enough to cover requirement of %.2f RPL" + "\r\n" +
+                        "(Node account contains %.2f RPL and node contract contains %.2f RPL)",
                         eth.WeiToEth(nodeTotalBalanceRplWei),
                         eth.WeiToEth(liquidity.ExchangeTokenBalanceWei),
-                        eth.WeiToEth(status.ReservationRplRequiredWei)))
+                        eth.WeiToEth(status.ReservationRplRequiredWei),
+                        eth.WeiToEth(status.NodeAccountBalanceRplWei),
+                        eth.WeiToEth(status.NodeContractBalanceRplWei)))
                     return nil
                 }
 
@@ -156,15 +162,24 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 // Check total ether required
                 if status.NodeAccountBalanceEtherWei.Cmp(totalEtherRequiredWei) < 0 {
                     fmt.Fprintln(p.Output, fmt.Sprintf(
-                        "Node account balance of %.2f ETH is not enough to cover remaining requirement of %.2f ETH (including RPL purchase)",
+                        "Node account balance of %.2f ETH is not enough to cover remaining requirement of %.2f ETH" + "\r\n" +
+                        "(%.2f ETH required by node contract and %.2f ETH required for Uniswap RPL purchase)",
                         eth.WeiToEth(status.NodeAccountBalanceEtherWei),
-                        eth.WeiToEth(totalEtherRequiredWei)))
+                        eth.WeiToEth(totalEtherRequiredWei),
+                        eth.WeiToEth(canComplete.EtherRequiredWei),
+                        eth.WeiToEth(price.MaxEtherPriceWei)))
                     return nil
                 }
 
                 // Confirm purchase of RPL
                 rplPurchaseConfirmed := cliutils.Prompt(p.Input, p.Output,
-                    fmt.Sprintf("Deposit requires a total of %.2f ETH, would you like to continue? [y/n]", eth.WeiToEth(totalDepositEtherAmountWei)),
+                    fmt.Sprintf(
+                        "Deposit requires a total of %.2f ETH, would you like to continue? [y/n]" + "\r\n" +
+                        "(%.2f ETH already on node contract with %.2f ETH still required, and %.2f ETH required for Uniswap RPL purchase)",
+                        eth.WeiToEth(totalDepositEtherAmountWei),
+                        eth.WeiToEth(status.NodeContractBalanceEtherWei),
+                        eth.WeiToEth(canComplete.EtherRequiredWei),
+                        eth.WeiToEth(price.MaxEtherPriceWei)),
                     "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
                 if strings.ToLower(rplPurchaseConfirmed[:1]) == "n" {
                     fmt.Fprintln(p.Output, "Deposit not completed")
