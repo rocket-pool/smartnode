@@ -78,6 +78,12 @@ func makeDeposit(c *cli.Context, durationId string) error {
 
     }
 
+    // Get node balance totals
+    nodeTotalBalanceEtherWei := big.NewInt(0)
+    nodeTotalBalanceEtherWei.Add(status.NodeContractBalanceEtherWei, status.NodeAccountBalanceEtherWei)
+    nodeTotalBalanceRplWei := big.NewInt(0)
+    nodeTotalBalanceRplWei.Add(status.NodeContractBalanceRplWei, status.NodeAccountBalanceRplWei)
+
     // Print deposit status
     fmt.Fprintln(p.Output, fmt.Sprintf(
         statusFormat,
@@ -86,13 +92,9 @@ func makeDeposit(c *cli.Context, durationId string) error {
         status.ReservationStakingDurationID,
         status.ReservationExpiryTime.Format("2006-01-02, 15:04 -0700 MST")))
     fmt.Fprintln(p.Output, fmt.Sprintf(
-        "Node deposit contract has a balance of %.2f ETH and %.2f RPL",
-        eth.WeiToEth(status.NodeContractBalanceEtherWei),
-        eth.WeiToEth(status.NodeContractBalanceRplWei)))
-    fmt.Fprintln(p.Output, fmt.Sprintf(
-        "Node account has a balance of %.2f ETH and %.2f RPL",
-        eth.WeiToEth(status.NodeAccountBalanceEtherWei),
-        eth.WeiToEth(status.NodeAccountBalanceRplWei)))
+        "Node has a total balance of %.2f ETH and %.2f RPL",
+        eth.WeiToEth(nodeTotalBalanceEtherWei),
+        eth.WeiToEth(nodeTotalBalanceRplWei)))
 
     // Prompt for action
     action := cliutils.Prompt(p.Input, p.Output, "Would you like to:\n1. Complete the deposit;\n2. Cancel the deposit; or\n3. Finish later?", "^(1|2|3)$", "Please answer '1', '2' or '3'")
@@ -114,9 +116,8 @@ func makeDeposit(c *cli.Context, durationId string) error {
             }
             if canComplete.InsufficientNodeEtherBalance {
                 fmt.Fprintln(p.Output, fmt.Sprintf(
-                    "Node balance of %.2f ETH plus account balance of %.2f ETH is not enough to cover requirement of %.2f ETH",
-                    eth.WeiToEth(status.NodeContractBalanceEtherWei),
-                    eth.WeiToEth(status.NodeAccountBalanceEtherWei),
+                    "Node balance of %.2f ETH is not enough to cover requirement of %.2f ETH",
+                    eth.WeiToEth(nodeTotalBalanceEtherWei),
                     eth.WeiToEth(status.ReservationEtherRequiredWei)))
             }
             if canComplete.DepositsDisabled || canComplete.MinipoolCreationDisabled || canComplete.InsufficientNodeEtherBalance {
@@ -133,9 +134,8 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 // Check exchange has sufficient liquidity
                 if liquidity.ExchangeTokenBalanceWei.Cmp(canComplete.RplShortByWei) < 0 {
                     fmt.Fprintln(p.Output, fmt.Sprintf(
-                        "Node balance of %.2f RPL plus account balance of %.2f RPL and Uniswap exchange liquidity of %.2f RPL are not enough to cover requirement of %.2f RPL",
-                        eth.WeiToEth(status.NodeContractBalanceRplWei),
-                        eth.WeiToEth(status.NodeAccountBalanceRplWei),
+                        "Node balance of %.2f RPL plus Uniswap exchange liquidity of %.2f RPL is not enough to cover requirement of %.2f RPL",
+                        eth.WeiToEth(nodeTotalBalanceRplWei),
                         eth.WeiToEth(liquidity.ExchangeTokenBalanceWei),
                         eth.WeiToEth(status.ReservationRplRequiredWei)))
                     return nil
@@ -149,10 +149,14 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 totalEtherRequiredWei := big.NewInt(0)
                 totalEtherRequiredWei.Add(canComplete.EtherRequiredWei, price.MaxEtherPriceWei)
 
+                // Get total deposit amount including exchange price
+                totalDepositEtherAmountWei := big.NewInt(0)
+                totalDepositEtherAmountWei.Add(status.ReservationEtherRequiredWei, price.MaxEtherPriceWei)
+
                 // Check total ether required
                 if status.NodeAccountBalanceEtherWei.Cmp(totalEtherRequiredWei) < 0 {
                     fmt.Fprintln(p.Output, fmt.Sprintf(
-                        "Account balance of %.2f ETH is not enough to cover remaining requirement of %.2f ETH (including RPL purchase)",
+                        "Node account balance of %.2f ETH is not enough to cover remaining requirement of %.2f ETH (including RPL purchase)",
                         eth.WeiToEth(status.NodeAccountBalanceEtherWei),
                         eth.WeiToEth(totalEtherRequiredWei)))
                     return nil
@@ -160,7 +164,7 @@ func makeDeposit(c *cli.Context, durationId string) error {
 
                 // Confirm purchase of RPL
                 rplPurchaseConfirmed := cliutils.Prompt(p.Input, p.Output,
-                    fmt.Sprintf("Deposit requires an additional %.2f ETH, would you like to continue? [y/n]", eth.WeiToEth(totalEtherRequiredWei)),
+                    fmt.Sprintf("Deposit requires a total of %.2f ETH, would you like to continue? [y/n]", eth.WeiToEth(totalDepositEtherAmountWei)),
                     "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
                 if strings.ToLower(rplPurchaseConfirmed[:1]) == "n" {
                     fmt.Fprintln(p.Output, "Deposit not completed")
