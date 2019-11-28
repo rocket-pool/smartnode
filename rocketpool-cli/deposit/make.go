@@ -133,9 +133,10 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 // Check exchange has sufficient liquidity
                 if liquidity.ExchangeTokenBalanceWei.Cmp(canComplete.RplShortByWei) < 0 {
                     fmt.Fprintln(p.Output, fmt.Sprintf(
-                        "Node balance of %.2f RPL plus account balance of %.2f RPL is not enough to cover requirement of %.2f RPL",
+                        "Node balance of %.2f RPL plus account balance of %.2f RPL and Uniswap exchange liquidity of %.2f RPL are not enough to cover requirement of %.2f RPL",
                         eth.WeiToEth(status.NodeContractBalanceRplWei),
                         eth.WeiToEth(status.NodeAccountBalanceRplWei),
+                        eth.WeiToEth(liquidity.ExchangeTokenBalanceWei),
                         eth.WeiToEth(status.ReservationRplRequiredWei)))
                     return nil
                 }
@@ -151,15 +152,15 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 // Check total ether required
                 if status.NodeAccountBalanceEtherWei.Cmp(totalEtherRequiredWei) < 0 {
                     fmt.Fprintln(p.Output, fmt.Sprintf(
-                        "Account balance of %.2f ETH is not enough to cover total of %.2f ETH (including ETH requirement & RPL purchase)",
+                        "Account balance of %.2f ETH is not enough to cover remaining requirement of %.2f ETH (including RPL purchase)",
                         eth.WeiToEth(status.NodeAccountBalanceEtherWei),
                         eth.WeiToEth(totalEtherRequiredWei)))
                     return nil
                 }
 
-                // Confirm purchase of RPL account is short by
+                // Confirm purchase of RPL
                 rplPurchaseConfirmed := cliutils.Prompt(p.Input, p.Output,
-                    fmt.Sprintf("Deposit requires an additional %.2f RPL, would you like to purchase this amount via Uniswap for %.2f ETH? [y/n]", eth.WeiToEth(canComplete.RplShortByWei), eth.WeiToEth(price.MaxEtherPriceWei)),
+                    fmt.Sprintf("Deposit requires an additional %.2f ETH, would you like to continue? [y/n]", eth.WeiToEth(totalEtherRequiredWei)),
                     "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
                 if strings.ToLower(rplPurchaseConfirmed[:1]) == "n" {
                     fmt.Fprintln(p.Output, "Deposit not completed")
@@ -170,28 +171,6 @@ func makeDeposit(c *cli.Context, durationId string) error {
                 _, err = exchange.BuyTokens(p, price.MaxEtherPriceWei, canComplete.RplShortByWei, "RPL")
                 if err != nil { return err }
 
-            }
-
-            // Confirm transfer of remaining required ETH
-            if canComplete.EtherRequiredWei.Cmp(big.NewInt(0)) > 0 {
-                ethTransferConfirmed := cliutils.Prompt(p.Input, p.Output,
-                    fmt.Sprintf("Node contract requires %.2f ETH to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(canComplete.EtherRequiredWei)),
-                    "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-                if strings.ToLower(ethTransferConfirmed[:1]) == "n" {
-                    fmt.Fprintln(p.Output, "Deposit not completed")
-                    return nil
-                }
-            }
-
-            // Confirm transfer of remaining required RPL
-            if canComplete.RplRequiredWei.Cmp(big.NewInt(0)) > 0 {
-                rplTransferConfirmed := cliutils.Prompt(p.Input, p.Output,
-                    fmt.Sprintf("Node contract requires %.2f RPL to complete deposit, would you like to pay now from your node account? [y/n]", eth.WeiToEth(canComplete.RplRequiredWei)),
-                    "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-                if strings.ToLower(rplTransferConfirmed[:1]) == "n" {
-                    fmt.Fprintln(p.Output, "Deposit not completed")
-                    return nil
-                }
             }
 
             // Transfer remaining required RPL
