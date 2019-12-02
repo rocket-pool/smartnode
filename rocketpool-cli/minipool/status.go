@@ -1,11 +1,8 @@
 package minipool
 
 import (
-    "context"
-    "errors"
     "fmt"
     "strings"
-    "time"
 
     "github.com/urfave/cli"
 
@@ -22,7 +19,6 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        Client: true,
         CM: true,
         LoadContracts: []string{"rocketPoolToken", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
@@ -33,11 +29,13 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
+    /*
     // Get latest block header
     header, err := p.Client.HeaderByNumber(context.Background(), nil)
     if err != nil {
         return errors.New("Error retrieving latest block header: " + err.Error())
     }
+    */
 
     // Get minipool statuses
     status, err := minipoolapi.GetMinipoolStatus(p)
