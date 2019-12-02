@@ -33,7 +33,6 @@ type Details struct {
     StatusBlock *big.Int            `json:"statusBlock"`
     StakingDurationId string        `json:"stakingDurationId"`
     StakingDuration *big.Int        `json:"stakingDuration"`
-    StakingExitBlock *big.Int       `json:"stakingExitBlock"`
     NodeDepositExists bool          `json:"nodeDepositExists"`
     NodeEtherBalanceWei *big.Int    `json:"nodeEtherBalanceWei"`
     NodeRplBalanceWei *big.Int      `json:"nodeRplBalanceWei"`
@@ -235,12 +234,6 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
             case err := <-errorChannel:
                 return nil, err
         }
-    }
-
-    // Set exit block
-    if details.Status == STAKING {
-        details.StakingExitBlock = new(big.Int)
-        details.StakingExitBlock.Add(details.StatusBlock, details.StakingDuration)
     }
 
     // Return

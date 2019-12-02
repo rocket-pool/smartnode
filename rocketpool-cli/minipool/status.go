@@ -105,6 +105,7 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
     fmt.Fprintln(p.Output, strings.Repeat("=", len(poolsTitle)))
     for _, details := range filteredMinipoolDetails {
 
+        /*
         // Get staking info
         var stakingBlocksLeft int64
         var stakingCompleteAt time.Time
@@ -114,6 +115,7 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
             stakingTimeLeft, _ := time.ParseDuration(fmt.Sprintf("%dm", stakingBlocksLeft / 4))
             stakingCompleteAt = time.Now().Add(stakingTimeLeft)
         }
+        */
 
         // Print
         fmt.Fprintln(p.Output, "")
@@ -123,12 +125,16 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
         fmt.Fprintln(p.Output, "Status Updated @ Block:  ", details.StatusBlock.String())
         fmt.Fprintln(p.Output, "")
         fmt.Fprintln(p.Output, "Staking Duration:        ", details.StakingDurationId)
-        fmt.Fprintln(p.Output, "Staking Total Blocks:    ", details.StakingDuration.String())
+        fmt.Fprintln(p.Output, "Staking Total Epochs:    ", details.StakingDuration.String())
+
+        /*
         if details.StakingExitBlock != nil {
         fmt.Fprintln(p.Output, "Staking Until Block:     ", details.StakingExitBlock.String())
         fmt.Fprintln(p.Output, "Staking Blocks Left:     ", stakingBlocksLeft)
         fmt.Fprintln(p.Output, "Staking Complete Approx: ", stakingCompleteAt.Format("2006-01-02, 15:04 -0700 MST"))
         }
+        */
+
         fmt.Fprintln(p.Output, "")
         if details.Status >= minipool.WITHDRAWN {
         fmt.Fprintln(p.Output, "Node Deposit Withdrawn:  ", fmt.Sprintf("%t", !details.NodeDepositExists))
