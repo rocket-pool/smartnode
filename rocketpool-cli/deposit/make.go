@@ -51,12 +51,15 @@ func makeDeposit(c *cli.Context, durationId string) error {
         if err != nil { return err }
 
         // Check node deposit can be reserved
-        canReserve, err := deposit.CanReserveDeposit(p, validatorKey)
+        canReserve, err := deposit.CanReserveDeposit(p, validatorKey, durationId)
         if err != nil { return err }
 
         // Check response
         if canReserve.DepositsDisabled {
             fmt.Fprintln(p.Output, "Node deposits are currently disabled in Rocket Pool")
+        }
+        if canReserve.StakingDurationDisabled {
+            fmt.Fprintln(p.Output, fmt.Sprintf("The staking duration '%s' is invalid or disabled", durationId))
         }
         if canReserve.PubkeyUsed {
             fmt.Fprintln(p.Output, "The validator public key is already in use")

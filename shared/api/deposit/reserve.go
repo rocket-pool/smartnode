@@ -35,6 +35,7 @@ type CanReserveDepositResponse struct {
     // Failure reasons
     HadExistingReservation bool     `json:"hadExistingReservation"`
     DepositsDisabled bool           `json:"depositsDisabled"`
+    StakingDurationDisabled bool    `json:"stakingDurationDisabled"`
     PubkeyUsed bool                 `json:"pubkeyUsed"`
 
 }
@@ -44,7 +45,7 @@ type ReserveDepositResponse struct {
 
 
 // Check node deposit can be reserved
-func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*CanReserveDepositResponse, error) {
+func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId string) (*CanReserveDepositResponse, error) {
 
     // Response
     response := &CanReserveDepositResponse{}
@@ -55,6 +56,7 @@ func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*CanRe
     // Status channels
     hasExistingReservationChannel := make(chan bool)
     depositsDisabledChannel := make(chan bool)
+    stakingDurationDisabledChannel := make(chan bool)
     pubkeyUsedChannel := make(chan bool)
     errorChannel := make(chan error)
 
@@ -78,6 +80,16 @@ func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*CanRe
         }
     })()
 
+    // Check staking duration is enabled
+    go (func() {
+        stakingDurationEnabled := new(bool)
+        if err := p.CM.Contracts["rocketMinipoolSettings"].Call(nil, stakingDurationEnabled, "getMinipoolStakingDurationEnabled", durationId); err != nil {
+            errorChannel <- errors.New("Error checking staking duration enabled status: " + err.Error())
+        } else {
+            stakingDurationDisabledChannel <- !*stakingDurationEnabled
+        }
+    })()
+
     // Check pubkey is not in use
     go (func() {
         pubkeyUsedKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("validator.pubkey.used"), validatorPubkey}, []byte{}))
@@ -95,6 +107,8 @@ func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*CanRe
                 received++
             case response.DepositsDisabled = <-depositsDisabledChannel:
                 received++
+            case response.StakingDurationDisabled = <-stakingDurationDisabledChannel:
+                received++
             case response.PubkeyUsed = <- pubkeyUsedChannel:
                 received++
             case err := <-errorChannel:
@@ -103,7 +117,7 @@ func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key) (*CanRe
     }
 
     // Update & return response
-    response.Success = !(response.HadExistingReservation || response.DepositsDisabled || response.PubkeyUsed)
+    response.Success = !(response.HadExistingReservation || response.DepositsDisabled || response.StakingDurationDisabled || response.PubkeyUsed)
     return response, nil
 
 }
