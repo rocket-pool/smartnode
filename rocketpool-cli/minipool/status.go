@@ -1,6 +1,7 @@
 package minipool
 
 import (
+    "errors"
     "fmt"
     "strings"
 
@@ -9,6 +10,7 @@ import (
     minipoolapi "github.com/rocket-pool/smartnode/shared/api/minipool"
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/settings"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
@@ -20,7 +22,7 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
         CM: true,
-        LoadContracts: []string{"rocketPoolToken", "utilAddressSetStorage"},
+        LoadContracts: []string{"rocketMinipoolSettings", "rocketPoolToken", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
         WaitClientConn: true,
         WaitClientSync: true,
@@ -58,11 +60,19 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
         }
     }
 
+    // Get minipool staking durations
+    stakingDurations, err := settings.GetMinipoolStakingDurations(p.CM)
+    if err != nil {
+        return errors.New("Error retrieving minipool staking durations: " + err.Error())
+    }
+
     // Get minipool overview details
-    overview := map[string]map[string]uint64{"total": map[string]uint64{"3m": 0, "6m": 0, "12m": 0, "total": 0}}
+    overview := map[string]map[string]uint64{"total": map[string]uint64{"total": 0}}
+    for _, duration := range stakingDurations { overview["total"][duration.Id] = 0 }
     for _, details := range filteredMinipoolDetails {
         if _, ok := overview[details.StatusType]; !ok {
-            overview[details.StatusType] = map[string]uint64{"3m": 0, "6m": 0, "12m": 0, "total": 0}
+            overview[details.StatusType] = map[string]uint64{"total": 0}
+            for _, duration := range stakingDurations { overview[details.StatusType][duration.Id] = 0 }
         }
         overview[details.StatusType][details.StakingDurationId]++
         overview[details.StatusType]["total"]++
@@ -72,26 +82,41 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
 
     // Print minipool overview
     if len(filteredMinipoolDetails) > 0 {
+
+        // Header
         fmt.Fprintln(p.Output, "========================")
         fmt.Fprintln(p.Output, "Node minipools overview:")
         fmt.Fprintln(p.Output, "========================")
         fmt.Fprintln(p.Output, "")
-        fmt.Fprintln(p.Output, fmt.Sprintf("%-13v | %-3v | %-3v | %-3v | %v", "Status", "3m", "6m", "12m", "Total"))
-        fmt.Fprintln(p.Output, strings.Repeat("-", 39))
+
+        // Heading row
+        rowText := fmt.Sprintf("%-13v | ", "Status")
+        for _, duration := range stakingDurations { rowText += fmt.Sprintf("%-3v | ", duration.Id) }
+        rowText += fmt.Sprintf("%v", "Total")
+        fmt.Fprintln(p.Output, rowText)
+
+        // Divider
+        rowLength := 16
+        for _, _ = range stakingDurations { rowLength += 6 }
+        rowLength += 5
+        fmt.Fprintln(p.Output, strings.Repeat("-", rowLength))
+
+        // Content
         rowsPrinted := 0
         for _, status := range []string{"initialized", "prelaunch", "staking", "loggedout", "withdrawn", "timedout", "total"} {
             if _, ok := overview[status]; !ok { continue }
             if status == "total" && rowsPrinted < 2 { continue }
-            fmt.Fprintln(p.Output, fmt.Sprintf(
-                "%-13v | %-3v | %-3v | %-3v | %v",
-                strings.Title(status) + ":",
-                overview[status]["3m"],
-                overview[status]["6m"],
-                overview[status]["12m"],
-                overview[status]["total"]))
+
+            // Row
+            rowText := fmt.Sprintf("%-13v | ", strings.Title(status) + ":")
+            for _, duration := range stakingDurations { rowText += fmt.Sprintf("%-3v | ", overview[status][duration.Id]) }
+            rowText += fmt.Sprintf("%v", overview[status]["total"])
+            fmt.Fprintln(p.Output, rowText)
+
             rowsPrinted++
         }
         fmt.Fprintln(p.Output, "")
+
     }
 
     // Print minipool statuses
