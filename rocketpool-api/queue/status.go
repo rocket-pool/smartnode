@@ -16,7 +16,6 @@ func getQueueStatus(c *cli.Context) error {
     p, err := services.NewProvider(c, services.ProviderOpts{
         CM: true,
         LoadContracts: []string{"rocketDepositQueue", "rocketDepositSettings", "rocketMinipoolSettings"},
-        LoadAbis: []string{},
         ClientConn: true,
         ClientSync: true,
         RocketStorage: true,
