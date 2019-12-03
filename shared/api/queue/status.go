@@ -12,11 +12,11 @@ import (
 // Get queue status response type
 type GetQueueStatusResponse struct {
     Queues []*QueueStatus   `json:"queues"`
-    ChunkSize *big.Int      `json:"chunkSize"`
 }
 type QueueStatus struct {
     DurationId string       `json:"durationId"`
     Balance *big.Int        `json:"balance"`
+    Chunks uint64           `json:"chunks"`
 }
 
 
@@ -30,8 +30,6 @@ func GetQueueStatus(p *services.Provider) (*GetQueueStatusResponse, error) {
     chunkSize := new(*big.Int)
     if err := p.CM.Contracts["rocketDepositSettings"].Call(nil, chunkSize, "getDepositChunkSize"); err != nil {
         return nil, errors.New("Error retrieving deposit chunk size: " + err.Error())
-    } else {
-        response.ChunkSize = *chunkSize
     }
 
     // Get minipool staking durations
@@ -61,9 +59,12 @@ func GetQueueStatus(p *services.Provider) (*GetQueueStatusResponse, error) {
     for di := 0; di < stakingDurationCount; di++ {
         select {
             case balance := <-balanceChannels[di]:
+                chunks := big.NewInt(0)
+                chunks.Div(balance, *chunkSize)
                 response.Queues[di] = &QueueStatus{
                     DurationId: stakingDurations[di].Id,
                     Balance: balance,
+                    Chunks: chunks.Uint64(),
                 }
             case err := <-errorChannel:
                 return nil, err
