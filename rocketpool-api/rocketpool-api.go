@@ -9,6 +9,7 @@ import (
     "github.com/rocket-pool/smartnode/rocketpool-api/fee"
     "github.com/rocket-pool/smartnode/rocketpool-api/minipool"
     "github.com/rocket-pool/smartnode/rocketpool-api/node"
+    "github.com/rocket-pool/smartnode/rocketpool-api/queue"
     "github.com/rocket-pool/smartnode/shared/utils/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -44,6 +45,7 @@ func main() {
          fee.RegisterCommands(app, "fee",      []string{"f"})
     minipool.RegisterCommands(app, "minipool", []string{"m"})
         node.RegisterCommands(app, "node",     []string{"n"})
+       queue.RegisterCommands(app, "queue",    []string{"q"})
 
     // Run application
     if err := app.Run(os.Args); err != nil {
