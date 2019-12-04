@@ -8,12 +8,6 @@ import (
 
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/rocketpool-cli/deposit"
-    "github.com/rocket-pool/smartnode/rocketpool-cli/fee"
-    "github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
-    "github.com/rocket-pool/smartnode/rocketpool-cli/node"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-
     test "github.com/rocket-pool/smartnode/tests/utils"
 )
 
@@ -27,27 +21,7 @@ type AppOptions struct {
     ProviderPow string
     ProviderBeacon string
     StorageAddress string
-}
-
-
-// Create a test app
-func NewApp() *cli.App {
-
-    // Create app
-    app := cli.NewApp()
-
-    // Configure
-    cliutils.Configure(app)
-
-    // Register commands
-    deposit.RegisterCommands(app, "deposit", []string{"d"})
-    fee.RegisterCommands(app, "fee", []string{"f"})
-    minipool.RegisterCommands(app, "minipool", []string{"m"})
-    node.RegisterCommands(app, "node", []string{"n"})
-
-    // Return
-    return app
-
+    UniswapAddress string
 }
 
 
@@ -62,6 +36,7 @@ func GetAppArgs(dataPath string, inputPath string, outputPath string) []string {
         "--providerPow", test.POW_PROVIDER_URL,
         "--providerBeacon", test.BEACON_PROVIDER_URL,
         "--storageAddress", test.ROCKET_STORAGE_ADDRESS,
+        "--uniswapAddress", test.UNISWAP_FACTORY_ADDRESS,
         "--input", inputPath,
         "--output", outputPath,
     }
@@ -80,6 +55,7 @@ func GetAppContext(dataPath string) *cli.Context {
     fs.String("providerPow", "", "")
     fs.String("providerBeacon", "", "")
     fs.String("storageAddress", "", "")
+    fs.String("uniswapAddress", "", "")
 
     // Initialise context
     c := cli.NewContext(nil, fs, nil)
@@ -92,6 +68,7 @@ func GetAppContext(dataPath string) *cli.Context {
     c.GlobalSet("providerPow", test.POW_PROVIDER_URL)
     c.GlobalSet("providerBeacon", test.BEACON_PROVIDER_URL)
     c.GlobalSet("storageAddress", test.ROCKET_STORAGE_ADDRESS)
+    c.GlobalSet("uniswapAddress", test.UNISWAP_FACTORY_ADDRESS)
 
     // Return context
     return c
@@ -109,6 +86,7 @@ func GetAppOptions(dataPath string) AppOptions {
         ProviderPow: test.POW_PROVIDER_URL,
         ProviderBeacon: test.BEACON_PROVIDER_URL,
         StorageAddress: test.ROCKET_STORAGE_ADDRESS,
+        UniswapAddress: test.UNISWAP_FACTORY_ADDRESS,
     }
 }
 
