@@ -34,6 +34,33 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            // Process a deposit queue
+            cli.Command{
+                Name:      "process",
+                Aliases:   []string{"p"},
+                Usage:     "Process a deposit queue",
+                UsageText: "rocketpool queue process durationID",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var durationId string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateArgs(c, 1, func(messages *[]string) {
+
+                        // Get duration ID
+                        durationId = c.Args().Get(0)
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return processQueue(c, durationId)
+
+                },
+            },
+
         },
     })
 }
