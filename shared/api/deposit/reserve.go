@@ -103,13 +103,13 @@ func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key, duratio
     // Receive status
     for received := 0; received < 4; {
         select {
-            case response.HadExistingReservation = <- hasExistingReservationChannel:
+            case response.HadExistingReservation = <-hasExistingReservationChannel:
                 received++
             case response.DepositsDisabled = <-depositsDisabledChannel:
                 received++
             case response.StakingDurationDisabled = <-stakingDurationDisabledChannel:
                 received++
-            case response.PubkeyUsed = <- pubkeyUsedChannel:
+            case response.PubkeyUsed = <-pubkeyUsedChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
