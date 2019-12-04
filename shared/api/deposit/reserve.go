@@ -101,7 +101,7 @@ func CanReserveDeposit(p *services.Provider, validatorKey *keystore.Key, duratio
     })()
 
     // Receive status
-    for received := 0; received < 3; {
+    for received := 0; received < 4; {
         select {
             case response.HadExistingReservation = <- hasExistingReservationChannel:
                 received++
