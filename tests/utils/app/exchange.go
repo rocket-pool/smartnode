@@ -57,7 +57,7 @@ func AppAddTokenLiquidity(options AppOptions, token string, etherAmountWei *big.
 
     // Seed node account
     etherSeedAmountWei := big.NewInt(0)
-    etherSeedAmountWei.Mul(etherAmountWei, big.NewInt(2))
+    etherSeedAmountWei.Add(etherAmountWei, eth.EthToWei(1))
     if err := AppSeedNodeAccount(options, etherSeedAmountWei, tokenAmountWei); err != nil { return err }
 
     // Set exchange token allowance
