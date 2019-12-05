@@ -51,10 +51,6 @@ func AppAddTokenLiquidity(options AppOptions, token string, etherAmountWei *big.
             tokenExchangeAbi, _ = abi.JSON(strings.NewReader(contracts.UniswapExchangeABI))
     }
 
-    // Initialise node account
-    if err := pm.SetPassword("foobarbaz"); err != nil { return err }
-    if _, err := am.CreateNodeAccount(); err != nil { return err }
-
     // Seed node account
     etherSeedAmountWei := big.NewInt(0)
     etherSeedAmountWei.Add(etherAmountWei, eth.EthToWei(1))

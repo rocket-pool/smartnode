@@ -24,6 +24,9 @@ func TestExchangeLiquidity(t *testing.T) {
     c := testapp.GetAppContext(dataPath)
     appOptions := testapp.GetAppOptions(dataPath)
 
+    // Initialise node
+    if err := testapp.AppInitNode(appOptions); err != nil { t.Fatal(err) }
+
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         CM: true,
