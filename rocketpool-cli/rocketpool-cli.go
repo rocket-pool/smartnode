@@ -12,6 +12,7 @@ import (
     "github.com/rocket-pool/smartnode/rocketpool-cli/fee"
     "github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
     "github.com/rocket-pool/smartnode/rocketpool-cli/node"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/queue"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -57,10 +58,11 @@ ______           _        _    ______           _
     cliutils.Configure(app)
 
     // Register commands
-    deposit.RegisterCommands(app, "deposit", []string{"d"})
-    fee.RegisterCommands(app, "fee", []string{"f"})
+     deposit.RegisterCommands(app, "deposit",  []string{"d"})
+         fee.RegisterCommands(app, "fee",      []string{"f"})
     minipool.RegisterCommands(app, "minipool", []string{"m"})
-    node.RegisterCommands(app, "node", []string{"n"})
+        node.RegisterCommands(app, "node",     []string{"n"})
+       queue.RegisterCommands(app, "queue",    []string{"q"})
 
     // Run application
     if err := app.Run(os.Args); err != nil {
