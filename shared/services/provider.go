@@ -12,6 +12,7 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/contracts"
     "github.com/rocket-pool/smartnode/shared/services/accounts"
     beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
     "github.com/rocket-pool/smartnode/shared/services/database"
@@ -30,19 +31,32 @@ const DOCKER_API_VERSION string = "1.39"
 
 // Service provider options
 type ProviderOpts struct {
+
+    // Core
     DB                  bool
     PM                  bool
     AM                  bool
     KM                  bool
+
+    // Eth
     Client              bool
     CM                  bool
     NodeContractAddress bool
     NodeContract        bool
+    Uniswap             bool
+    RPLExchangeAddress  bool
+    RPLExchange         bool
+
+    // Misc
     Publisher           bool
     Beacon              bool
     Docker              bool
+
+    // Contracts
     LoadContracts       []string
     LoadAbis            []string
+
+    // Sync
     ClientConn          bool
     ClientSync          bool
     RocketStorage       bool
@@ -54,25 +68,38 @@ type ProviderOpts struct {
     WaitRocketStorage   bool
     PasswordOptional    bool
     NodeAccountOptional bool
+
 }
 
 
 // Service provider
 type Provider struct {
+
+    // I/O
     Input               *os.File
     Output              *os.File
     Log                 *log.Logger
+
+    // Core
     DB                  *database.Database
     PM                  *passwords.PasswordManager
     AM                  *accounts.AccountManager
     KM                  *validators.KeyManager
+
+    // Eth
     Client              *ethclient.Client
     CM                  *rocketpool.ContractManager
     NodeContractAddress *common.Address
     NodeContract        *bind.BoundContract
+    Uniswap             *contracts.UniswapFactory
+    RPLExchangeAddress  *common.Address
+    RPLExchange         *contracts.UniswapExchange
+
+    // Misc
     Publisher           *messaging.Publisher
     Beacon              *beaconchain.Client
     Docker              *client.Client
+
 }
 
 
@@ -98,6 +125,16 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.Beacon {
         opts.Publisher = true
     } // Beacon chain client requires publisher
+    if opts.RPLExchange {
+        opts.RPLExchangeAddress = true
+    } // RPL Exchange contract requires RPL Exchange address
+    if opts.RPLExchangeAddress {
+        opts.Uniswap = true
+        opts.CM = true
+    } // RPL Exchange address requires uniswap & RP contract manager
+    if opts.Uniswap {
+        opts.Client = true
+    } // Uniswap requires eth client
     if opts.NodeContract {
         opts.NodeContractAddress = true
     } // Node contract requires node contract address
@@ -271,6 +308,35 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
             p.NodeContract = nodeContract
         }
 
+    }
+
+    // Initialise uniswap contract
+    if opts.Uniswap {
+        if uniswap, err := contracts.NewUniswapFactory(common.HexToAddress(c.GlobalString("uniswapAddress")), p.Client); err != nil {
+            return nil, errors.New("Error initialising Uniswap contract: " + err.Error())
+        } else {
+            p.Uniswap = uniswap
+        }
+    }
+
+    // Initialise RPL exchange address
+    if opts.RPLExchangeAddress {
+        if rplTokenAddress, ok := p.CM.Addresses["rocketPoolToken"]; !ok {
+            return nil, errors.New("Error retrieving RPL exchange address: RPL contract address not loaded")
+        } else if rplExchangeAddress, err := p.Uniswap.GetExchange(nil, *rplTokenAddress); err != nil {
+            return nil, errors.New("Error retrieving RPL exchange address: " + err.Error())
+        } else {
+            p.RPLExchangeAddress = &rplExchangeAddress
+        }
+    }
+
+    // Initialise RPL exchange contract
+    if opts.RPLExchange {
+        if rplExchange, err := contracts.NewUniswapExchange(*(p.RPLExchangeAddress), p.Client); err != nil {
+            return nil, errors.New("Error initialising RPL exchange contract: " + err.Error())
+        } else {
+            p.RPLExchange = rplExchange
+        }
     }
 
     // Initialise publisher
