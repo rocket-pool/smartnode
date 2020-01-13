@@ -36,7 +36,7 @@ func TestDepositReserve(t *testing.T) {
         CM: true,
         NodeContractAddress: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+        LoadContracts: []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeSettings"},
         LoadAbis: []string{"rocketNodeContract"},
         ClientConn: true,
         ClientSync: true,
@@ -50,7 +50,7 @@ func TestDepositReserve(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Check deposit can be reserved
-    if canReserve, err := deposit.CanReserveDeposit(p, validatorKey); err != nil {
+    if canReserve, err := deposit.CanReserveDeposit(p, validatorKey, "3m"); err != nil {
         t.Error(err)
     } else if !canReserve.Success {
         t.Error("Deposit cannot be reserved")
@@ -64,7 +64,7 @@ func TestDepositReserve(t *testing.T) {
     }
 
     // Check deposit cannot be reserved with existing reservation
-    if canReserve, err := deposit.CanReserveDeposit(p, validatorKey); err != nil {
+    if canReserve, err := deposit.CanReserveDeposit(p, validatorKey, "3m"); err != nil {
         t.Error(err)
     } else if canReserve.Success || !canReserve.HadExistingReservation {
         t.Error("HadExistingReservation flag was not set with an existing deposit reservation")

@@ -20,7 +20,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
         CM: true,
         NodeContractAddress: true,
         NodeContract: true,
-        LoadContracts: []string{"rocketNodeAPI", "rocketNodeSettings"},
+        LoadContracts: []string{"rocketNodeAPI", "rocketMinipoolSettings", "rocketNodeSettings"},
         LoadAbis: []string{"rocketNodeContract"},
         ClientConn: true,
         ClientSync: true,
@@ -34,7 +34,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if err != nil { return err }
 
     // Check node deposit can be reserved
-    canReserve, err := deposit.CanReserveDeposit(p, validatorKey)
+    canReserve, err := deposit.CanReserveDeposit(p, validatorKey, durationId)
     if err != nil { return err }
 
     // Check response

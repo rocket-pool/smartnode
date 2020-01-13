@@ -67,15 +67,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Validate arguments
                     if err := cliutils.ValidateAPIArgs(c, 1, func(messages *[]string) {
 
-                        // Parse duration ID
+                        // Get duration ID
                         durationId = c.Args().Get(0)
-                        switch durationId {
-                            case "3m":
-                            case "6m":
-                            case "12m":
-                            default:
-                                *messages = append(*messages, "Invalid durationID - valid IDs are '3m', '6m' and '12m'")
-                        }
 
                     }); err != nil {
                         return err

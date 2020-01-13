@@ -105,7 +105,7 @@ func TestGetStatus(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Check minipool status
-    expectedStakingDuration := big.NewInt(526000)
+    expectedStakingDuration := big.NewInt(20250)
     if status.Status != minipool.INITIALIZED { t.Errorf("Incorrect minipool status: expected %d, got %d", minipool.INITIALIZED, status.Status) }
     if status.StakingDuration.Cmp(expectedStakingDuration) != 0 { t.Errorf("Incorrect minipool staking duration: expected %s, got %s", expectedStakingDuration.String(), status.StakingDuration.String()) }
     if _, err := km.GetValidatorKey(status.ValidatorPubkey); err != nil { t.Error("Minipool validator pubkey does not match local validator key") }

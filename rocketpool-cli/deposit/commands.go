@@ -39,8 +39,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "make",
                 Aliases:   []string{"m"},
                 Usage:     "Make a deposit into Rocket Pool",
-                UsageText: "rocketpool deposit make durationID" + "\n   " +
-                           "- durationID must be '3m', '6m' or '12m'",
+                UsageText: "rocketpool deposit make durationID",
                 Action: func(c *cli.Context) error {
 
                     // Arguments
@@ -49,15 +48,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Validate arguments
                     if err := cliutils.ValidateArgs(c, 1, func(messages *[]string) {
 
-                        // Parse duration ID
+                        // Get duration ID
                         durationId = c.Args().Get(0)
-                        switch durationId {
-                            case "3m":
-                            case "6m":
-                            case "12m":
-                            default:
-                                *messages = append(*messages, "Invalid durationID - valid IDs are '3m', '6m' and '12m'")
-                        }
 
                     }); err != nil {
                         return err
