@@ -107,14 +107,20 @@ func ReserveNodeDeposit(client *ethclient.Client, cm *rocketpool.ContractManager
     depositData.Amount = DEPOSIT_AMOUNT
 
     // Build signature
-    signingRoot, err := ssz.SigningRoot(depositData)
+    if signingRoot, err := ssz.SigningRoot(depositData); err != nil {
+        return err
+    } else {
+        depositData.Signature = key.SecretKey.Sign(signingRoot[:]).Marshal()
+    }
+
+    // Get deposit data root
+    depositDataRoot, err := ssz.HashTreeRoot(depositData)
     if err != nil { return err }
-    signature := key.SecretKey.Sign(signingRoot[:]).Marshal()
 
     // Reserve deposit
     txor, err := am.GetNodeAccountTransactor()
     if err != nil { return err }
-    if _, err := eth.ExecuteContractTransaction(client, txor, &nodeContractAddress, cm.Abis["rocketNodeContract"], "depositReserve", durationId, pubkey, signature); err != nil { return err }
+    if _, err := eth.ExecuteContractTransaction(client, txor, &nodeContractAddress, cm.Abis["rocketNodeContract"], "depositReserve", durationId, pubkey, depositData.Signature, depositDataRoot); err != nil { return err }
 
     // Return
     return nil
