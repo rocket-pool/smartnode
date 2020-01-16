@@ -149,7 +149,8 @@ func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId
     if signingRoot, err := ssz.SigningRoot(depositData); err != nil {
         return nil, errors.New("Error retrieving deposit data signing root: " + err.Error())
     } else {
-        depositData.Signature = validatorKey.SecretKey.Sign(signingRoot[:]).Marshal()
+        signature := validatorKey.SecretKey.Sign(signingRoot[:]).Marshal()
+        copy(depositData.Signature[:], signature)
     }
 
     // Get deposit data root

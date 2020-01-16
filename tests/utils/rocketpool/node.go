@@ -110,7 +110,8 @@ func ReserveNodeDeposit(client *ethclient.Client, cm *rocketpool.ContractManager
     if signingRoot, err := ssz.SigningRoot(depositData); err != nil {
         return err
     } else {
-        depositData.Signature = key.SecretKey.Sign(signingRoot[:]).Marshal()
+        signature := key.SecretKey.Sign(signingRoot[:]).Marshal()
+        copy(depositData.Signature[:], signature)
     }
 
     // Get deposit data root
