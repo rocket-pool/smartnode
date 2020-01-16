@@ -146,12 +146,12 @@ func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId
     depositData.Amount = DEPOSIT_AMOUNT
 
     // Build signature
-    if signingRoot, err := ssz.SigningRoot(depositData); err != nil {
+    signingRoot, err := ssz.SigningRoot(depositData)
+    if err != nil {
         return nil, errors.New("Error retrieving deposit data signing root: " + err.Error())
-    } else {
-        signature := validatorKey.SecretKey.Sign(signingRoot[:]).Marshal()
-        copy(depositData.Signature[:], signature)
     }
+    signature := validatorKey.SecretKey.Sign(signingRoot[:]).Marshal()
+    copy(depositData.Signature[:], signature)
 
     // Get deposit data root
     depositDataRoot, err := ssz.HashTreeRoot(depositData)
@@ -163,7 +163,7 @@ func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return nil, err
     } else {
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, validatorPubkey, depositData.Signature, depositDataRoot); err != nil {
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, validatorPubkey, signature, depositDataRoot); err != nil {
             return nil, errors.New("Error making deposit reservation: " + err.Error())
         }
     }
