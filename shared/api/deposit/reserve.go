@@ -148,15 +148,22 @@ func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId
     // Build signature
     signingRoot, err := ssz.SigningRoot(depositData)
     if err != nil {
-        return nil, errors.New("Error retrieving deposit data hash tree root: " + err.Error())
+        return nil, errors.New("Error retrieving deposit data signing root: " + err.Error())
     }
     signature := validatorKey.SecretKey.Sign(signingRoot[:]).Marshal()
+    copy(depositData.Signature[:], signature)
+
+    // Get deposit data root
+    depositDataRoot, err := ssz.HashTreeRoot(depositData)
+    if err != nil {
+        return nil, errors.New("Error retrieving deposit data hash tree root: " + err.Error())
+    }
 
     // Create deposit reservation
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return nil, err
     } else {
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, validatorPubkey, signature); err != nil {
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, validatorPubkey, signature, depositDataRoot); err != nil {
             return nil, errors.New("Error making deposit reservation: " + err.Error())
         }
     }
