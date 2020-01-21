@@ -10,7 +10,7 @@ import (
 // Prysm keystore wrapper
 type Keystore struct {
     path string
-    ks *pks.Store
+    ks pks.Store
 }
 
 
@@ -24,13 +24,13 @@ func NewKeystore(directory string) *Keystore {
 
 
 // Get keys from the keystore directory
-func (ks *Keystore) GetStoredKeys(password string) (map[string]*Key, error) {
+func (ks *Keystore) GetStoredKeys(password string) (map[string]*pks.Key, error) {
     return ks.ks.GetKeys(ks.path, "", password)
 }
 
 
 // Create, store and return a new key
-func (ks *Keystore) NewKey(password string) (*Key, error) {
+func (ks *Keystore) NewKey(password string) (*pks.Key, error) {
     key, err := pks.NewKey(rand.Reader)
     if err != nil {
         return nil, err

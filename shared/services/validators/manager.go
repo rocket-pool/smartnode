@@ -13,7 +13,7 @@ import (
 
 // Key manager
 type KeyManager struct {
-    ks keystore.Keystore
+    ks *keystore.Keystore
     pm *passwords.PasswordManager
 }
 
