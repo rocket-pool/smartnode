@@ -71,6 +71,6 @@ The Rocket Pool Smart Node test suite requires a number of external dependencies
 
 ## Testing
 
-- Run ganache-cli: `ganache-cli -l 8000000 -e 1000000 -m "cute equal tide control local garment maid nature unusual coyote choice dynamic"`
+- Run ganache-cli: `ganache-cli -l 8000000 -e 1000000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet"`
 - Deploy the Rocket Pool contracts (under Rocket Pool repository path): `truffle migrate --reset`
 - Run the test suite (under Smart Node repository path): `go test -p 1 ./...`
