@@ -67,10 +67,13 @@ func main() {
         depositData, depositDataRoot, err := getValidatorDepositData(km)
         if err != nil { log.Fatal(errors.New("Could not get validator deposit data: " + err.Error())) }
 
-        // Deposit
+        // Get account txor
         txor, err := am.GetNodeAccountTransactor()
         if err != nil { log.Fatal(errors.New("Could not get node account transactor: " + err.Error())) }
+        txor.Value = eth.EthToWei(32)
         txor.GasLimit = GAS_LIMIT
+
+        // Deposit
         _, err = depositContract.Deposit(txor, depositData.Pubkey[:], depositData.WithdrawalCredentials[:], depositData.Signature[:], depositDataRoot)
         if err != nil { log.Fatal(errors.New("Could not deposit to deposit contract: " + err.Error())) }
 
