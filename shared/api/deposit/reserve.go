@@ -6,6 +6,8 @@ import (
     "errors"
 
     "github.com/prysmaticlabs/go-ssz"
+    "github.com/prysmaticlabs/prysm/shared/bls"
+    "github.com/prysmaticlabs/prysm/shared/bytesutil"
     "github.com/prysmaticlabs/prysm/shared/keystore"
 
     "github.com/rocket-pool/smartnode/shared/services"
@@ -15,6 +17,10 @@ import (
 
 // Deposit amount in gwei
 const DEPOSIT_AMOUNT uint64 = 32000000000
+
+
+// BLS deposit domain
+const DOMAIN_DEPOSIT uint64 = 3
 
 
 // DepositData data
@@ -145,12 +151,15 @@ func ReserveDeposit(p *services.Provider, validatorKey *keystore.Key, durationId
     copy(depositData.WithdrawalCredentials[:], withdrawalCredentials[:])
     depositData.Amount = DEPOSIT_AMOUNT
 
-    // Build signature
+    // Get deposit data signing root
     signingRoot, err := ssz.SigningRoot(depositData)
     if err != nil {
         return nil, errors.New("Error retrieving deposit data signing root: " + err.Error())
     }
-    signature := validatorKey.SecretKey.Sign(signingRoot[:]).Marshal()
+
+    // Sign deposit data
+    domain := bls.ComputeDomain(bytesutil.Bytes4(DOMAIN_DEPOSIT))
+    signature := validatorKey.SecretKey.Sign(signingRoot[:], domain).Marshal()
     copy(depositData.Signature[:], signature)
 
     // Get deposit data root

@@ -9,6 +9,8 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/prysmaticlabs/go-ssz"
+    "github.com/prysmaticlabs/prysm/shared/bls"
+    "github.com/prysmaticlabs/prysm/shared/bytesutil"
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -22,6 +24,10 @@ import (
 
 // Deposit amount in gwei
 const DEPOSIT_AMOUNT uint64 = 32000000000
+
+
+// BLS deposit domain
+const DOMAIN_DEPOSIT uint64 = 3
 
 
 // RocketNodeAPI NodeAdd event
@@ -106,10 +112,13 @@ func ReserveNodeDeposit(client *ethclient.Client, cm *rocketpool.ContractManager
     copy(depositData.WithdrawalCredentials[:], withdrawalCredentials[:])
     depositData.Amount = DEPOSIT_AMOUNT
 
-    // Build signature
+    // Get deposit data signing root
     signingRoot, err := ssz.SigningRoot(depositData)
     if err != nil { return err }
-    signature := key.SecretKey.Sign(signingRoot[:]).Marshal()
+
+    // Sign deposit data
+    domain := bls.ComputeDomain(bytesutil.Bytes4(DOMAIN_DEPOSIT))
+    signature := key.SecretKey.Sign(signingRoot[:], domain).Marshal()
     copy(depositData.Signature[:], signature)
 
     // Get deposit data root
