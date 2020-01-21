@@ -4,6 +4,8 @@ import (
     "encoding/hex"
     "errors"
 
+    pks "github.com/prysmaticlabs/prysm/shared/keystore"
+
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/utils/bls/keystore"
 )
@@ -11,7 +13,7 @@ import (
 
 // Key manager
 type KeyManager struct {
-    ks keystore.Store
+    ks keystore.Keystore
     pm *passwords.PasswordManager
 }
 
@@ -30,7 +32,7 @@ func NewKeyManager(keychainPath string, passwordManager *passwords.PasswordManag
 /**
  * Get a validator key by public key bytes
  */
-func (km *KeyManager) GetValidatorKey(pubkey []byte) (*keystore.Key, error) {
+func (km *KeyManager) GetValidatorKey(pubkey []byte) (*pks.Key, error) {
 
     // Get keystore passphrase
     passphrase, err := km.pm.GetPassphrase()
@@ -62,7 +64,7 @@ func (km *KeyManager) GetValidatorKey(pubkey []byte) (*keystore.Key, error) {
 /**
  * Create a validator key
  */
-func (km *KeyManager) CreateValidatorKey() (*keystore.Key, error) {
+func (km *KeyManager) CreateValidatorKey() (*pks.Key, error) {
 
     // Get keystore passphrase
     passphrase, err := km.pm.GetPassphrase()

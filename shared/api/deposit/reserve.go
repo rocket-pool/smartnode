@@ -6,9 +6,9 @@ import (
     "errors"
 
     "github.com/prysmaticlabs/go-ssz"
+    "github.com/prysmaticlabs/prysm/shared/keystore"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/utils/bls/keystore"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
 
