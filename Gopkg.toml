@@ -41,10 +41,6 @@ ignored = ["github.com/ethereum/go-ethereum*"]
 
 [[constraint]]
   branch = "master"
-  name = "github.com/phoreproject/bls"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/prysmaticlabs/go-ssz"
 
 [[constraint]]
@@ -66,3 +62,7 @@ ignored = ["github.com/ethereum/go-ethereum*"]
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/prysmaticlabs/prysm"
+  version = "0.3.1"
