@@ -44,3 +44,11 @@ func toISO8601(t time.Time) string {
     }
     return fmt.Sprintf("%04d-%02d-%02dT%02d-%02d-%02d.%09d%s", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), tz)
 }
+
+// Prysm key filename prefix
+const PRYSM_KEY_FILENAME_PREFIX string = "validatorprivatekey"
+
+// Get key filename formatted as per Prysm conventions
+func prysmKeyFileName(pubkey *bls.PublicKey) string {
+    return PRYSM_KEY_FILENAME_PREFIX + hex.EncodeToString(pubkey.Marshal())[:12]
+}

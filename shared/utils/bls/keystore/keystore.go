@@ -35,7 +35,7 @@ func (ks *Keystore) NewKey(password string) (*pks.Key, error) {
     if err != nil {
         return nil, err
     }
-    if err := ks.ks.StoreKey(ks.ks.JoinPath(keyFileName(key.PublicKey)), key, password); err != nil {
+    if err := ks.ks.StoreKey(ks.ks.JoinPath(prysmKeyFileName(key.PublicKey)), key, password); err != nil {
         return nil, err
     }
     return key, nil
