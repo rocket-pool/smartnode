@@ -29,6 +29,9 @@ RUN go install github.com/rocket-pool/smartnode/rocketpool-api
 # Start from ubuntu image
 FROM ubuntu:18.04
 
+# Install OS dependencies
+RUN apt-get update && apt-get install -y ca-certificates
+
 # Copy binary
 COPY --from=builder /go/bin/rocketpool-api /go/bin/rocketpool-api
 
