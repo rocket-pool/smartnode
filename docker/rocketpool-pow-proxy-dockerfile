@@ -33,7 +33,7 @@ RUN go install github.com/rocket-pool/smartnode/rocketpool-pow-proxy
 FROM alpine
 
 # Install OS dependencies
-RUN apk add ca-certificates
+RUN apk add --no-cache ca-certificates libstdc++ libgcc
 
 # Copy binary
 COPY --from=builder /go/bin/rocketpool-pow-proxy /go/bin/rocketpool-pow-proxy

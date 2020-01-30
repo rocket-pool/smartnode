@@ -32,6 +32,9 @@ RUN go install github.com/rocket-pool/smartnode/rocketpool-node
 # Start from alpine image
 FROM alpine
 
+# Install OS dependencies
+RUN apk add --no-cache ca-certificates libstdc++ libgcc
+
 # Copy binary
 COPY --from=builder /go/bin/rocketpool-node /go/bin/rocketpool-node
 
