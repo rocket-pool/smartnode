@@ -3,11 +3,8 @@
 ###
 
 
-# Start from golang alpine image
-FROM golang:alpine AS builder
-
-# Install OS dependencies
-RUN apk update && apk add --no-cache build-base git linux-headers
+# Start from golang image
+FROM golang:latest AS builder
 
 # Copy source files
 ADD ./rocketpool-api /go/src/github.com/rocket-pool/smartnode/rocketpool-api
@@ -29,11 +26,8 @@ RUN go install github.com/rocket-pool/smartnode/rocketpool-api
 ###
 
 
-# Start from alpine image
-FROM alpine
-
-# Install OS dependencies
-RUN apk add --no-cache ca-certificates libstdc++ libgcc
+# Start from ubuntu image
+FROM ubuntu:18.04
 
 # Copy binary
 COPY --from=builder /go/bin/rocketpool-api /go/bin/rocketpool-api
