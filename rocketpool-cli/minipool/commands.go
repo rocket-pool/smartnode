@@ -25,7 +25,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Usage:     "Get the node's current minipool statuses",
                 UsageText: "rocketpool minipool status [filter]" + "\n   " +
                            "- optionally filter by comma-delimited status codes, from:" + "\n   " +
-                           "  'initialized', 'prelaunch', 'staking', 'loggedout', 'withdrawn', 'timedout'",
+                           "  'initialized', 'depositassigned', 'prelaunch', 'staking', 'loggedout', 'withdrawn', 'timedout'",
                 Action: func(c *cli.Context) error {
 
                     // Check argument count
@@ -39,14 +39,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         statusFilters = strings.Split(c.Args().Get(0), ",")
                         for _, statusFilter := range statusFilters {
                             filterExists := false
-                            for _, filterOption := range []string{"initialized", "prelaunch", "staking", "loggedout", "withdrawn", "timedout"} {
+                            for _, filterOption := range []string{"initialized", "depositassigned", "prelaunch", "staking", "loggedout", "withdrawn", "timedout"} {
                                 if statusFilter == filterOption {
                                     filterExists = true
                                     break
                                 }
                             }
                             if !filterExists {
-                                return cli.NewExitError(fmt.Sprintf("Invalid filter '%s' - valid options are 'initialized', 'prelaunch', 'staking', 'loggedout', 'withdrawn', 'timedout'", statusFilter), 1)
+                                return cli.NewExitError(fmt.Sprintf("Invalid filter '%s' - valid options are 'initialized', 'depositassigned', 'prelaunch', 'staking', 'loggedout', 'withdrawn', 'timedout'", statusFilter), 1)
                             }
                         }
                     }

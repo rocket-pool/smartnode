@@ -15,12 +15,13 @@ import (
 // Minipoool status types
 const (
     INITIALIZED = 0
-    PRELAUNCH = 1
-    STAKING = 2
-    LOGGED_OUT = 3
-    WITHDRAWN = 4
-    CLOSED = 5
-    TIMED_OUT = 6
+    DEPOSIT_ASSIGNED = 1
+    PRELAUNCH = 2
+    STAKING = 3
+    LOGGED_OUT = 4
+    WITHDRAWN = 5
+    CLOSED = 6
+    TIMED_OUT = 7
 )
 
 
@@ -528,6 +529,7 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
 func getStatusType(value uint8) string {
     switch value {
         case INITIALIZED: return "initialized"
+        case DEPOSIT_ASSIGNED return "depositassigned"
         case PRELAUNCH: return "prelaunch"
         case STAKING: return "staking"
         case LOGGED_OUT: return "loggedout"
