@@ -1,16 +1,12 @@
 package rocketpool
 
 import (
-    "encoding/hex"
     "errors"
     "math/big"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
-    "github.com/prysmaticlabs/go-ssz"
-    "github.com/prysmaticlabs/prysm/shared/bls"
-    "github.com/prysmaticlabs/prysm/shared/bytesutil"
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -19,14 +15,6 @@ import (
 
     test "github.com/rocket-pool/smartnode/tests/utils"
 )
-
-
-// Deposit amount in gwei
-const DEPOSIT_AMOUNT uint64 = 32000000000
-
-
-// BLS deposit domain
-const DOMAIN_DEPOSIT uint64 = 3
 
 
 // RocketNodeAPI NodeAdd event
@@ -42,15 +30,6 @@ type PoolCreated struct {
     Address common.Address
     DurationID [32]byte
     Created *big.Int
-}
-
-
-// DepositData data
-type DepositData struct {
-    Pubkey [48]byte
-    WithdrawalCredentials [32]byte
-    Amount uint64
-    Signature [96]byte
 }
 
 
