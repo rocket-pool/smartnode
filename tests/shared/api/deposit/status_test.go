@@ -31,7 +31,6 @@ func TestDepositStatus(t *testing.T) {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        KM: true,
         Client: true,
         CM: true,
         NodeContractAddress: true,
@@ -53,9 +52,7 @@ func TestDepositStatus(t *testing.T) {
     }
 
     // Reserve deposit
-    if validatorKey, err := p.KM.CreateValidatorKey(); err != nil {
-        t.Fatal(err)
-    } else if _, err := deposit.ReserveDeposit(p, validatorKey, "3m"); err != nil {
+    if _, err := deposit.ReserveDeposit(p, "3m"); err != nil {
         t.Fatal(err)
     }
 
