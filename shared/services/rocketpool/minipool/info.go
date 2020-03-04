@@ -529,7 +529,7 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
 func getStatusType(value uint8) string {
     switch value {
         case INITIALIZED: return "initialized"
-        case DEPOSIT_ASSIGNED return "depositassigned"
+        case DEPOSIT_ASSIGNED: return "depositassigned"
         case PRELAUNCH: return "prelaunch"
         case STAKING: return "staking"
         case LOGGED_OUT: return "loggedout"

@@ -32,10 +32,10 @@ type DepositData struct {
 
 
 // Stake minipool
-func Stake(p *services.Provider, minipool *Minipool) error {
+func Stake(p *services.Provider, pool *Minipool) error {
 
     // Check minipool status
-    if status, err := minipool.GetStatusCode(p.CM, minipool.Address); err != nil {
+    if status, err := minipool.GetStatusCode(p.CM, pool.Address); err != nil {
         return errors.New("Error retrieving minipool status: " + err.Error())
     } else if status != minipool.PRELAUNCH {
         return nil
@@ -79,7 +79,7 @@ func Stake(p *services.Provider, minipool *Minipool) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "stakeMinipool", minipool.Address, validatorPubkey, signature, depositDataRoot); err != nil {
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "stakeMinipool", pool.Address, validatorPubkey, signature, depositDataRoot); err != nil {
             return errors.New("Error staking minipool: " + err.Error())
         }
     }
@@ -88,7 +88,7 @@ func Stake(p *services.Provider, minipool *Minipool) error {
     validatorPubkeyHex := make([]byte, hex.EncodedLen(len(validatorPubkey)))
     hex.Encode(validatorPubkeyHex, validatorPubkey)
     validatorPubkeyStr := string(validatorPubkeyHex)
-    minipool.Pubkey = validatorPubkeyStr
+    pool.Pubkey = validatorPubkeyStr
 
     // Return
     return nil
