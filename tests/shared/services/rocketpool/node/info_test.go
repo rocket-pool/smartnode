@@ -105,10 +105,6 @@ func TestGetRequiredBalances(t *testing.T) {
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
 
-    // Create key manager
-    km, err := test.NewInitKeyManager("foobarbaz")
-    if err != nil { t.Fatal(err) }
-
     // Initialise ethereum client
     client, err := ethclient.Dial(test.POW_PROVIDER_URL)
     if err != nil { t.Fatal(err) }
@@ -124,7 +120,7 @@ func TestGetRequiredBalances(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Reserve node deposit
-    if err := rp.ReserveNodeDeposit(client, cm, am, km, nodeContractAddress, "3m"); err != nil { t.Fatal(err) }
+    if err := rp.ReserveNodeDeposit(client, cm, am, nodeContractAddress, "3m"); err != nil { t.Fatal(err) }
 
     // Get required balances
     balances, err := node.GetRequiredBalances(nodeContract)
@@ -142,10 +138,6 @@ func TestGetReservationDetails(t *testing.T) {
 
     // Create account manager
     am, err := test.NewInitAccountManager("foobarbaz")
-    if err != nil { t.Fatal(err) }
-
-    // Create key manager
-    km, err := test.NewInitKeyManager("foobarbaz")
     if err != nil { t.Fatal(err) }
 
     // Initialise ethereum client
@@ -177,7 +169,7 @@ func TestGetReservationDetails(t *testing.T) {
     if details.RplRequiredWei != nil { t.Error("Required ETH value should be undefined") }
 
     // Reserve node deposit
-    if err := rp.ReserveNodeDeposit(client, cm, am, km, nodeContractAddress, "3m"); err != nil { t.Fatal(err) }
+    if err := rp.ReserveNodeDeposit(client, cm, am, nodeContractAddress, "3m"); err != nil { t.Fatal(err) }
 
     // Get reservation details
     details, err = node.GetReservationDetails(nodeContract, cm)
@@ -199,10 +191,6 @@ func TestGetMinipoolAddresses(t *testing.T) {
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
     account, err := am.GetNodeAccount()
-    if err != nil { t.Fatal(err) }
-
-    // Create key manager
-    km, err := test.NewInitKeyManager("foobarbaz")
     if err != nil { t.Fatal(err) }
 
     // Initialise ethereum client
@@ -238,11 +226,11 @@ func TestGetMinipoolAddresses(t *testing.T) {
     if len(minipoolAddresses) > 0 { t.Error("Minipool address list should be empty for new node") }
 
     // Create minipools
-    minipool1Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    minipool1Address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
-    minipool2Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "6m")
+    minipool2Address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "6m")
     if err != nil { t.Fatal(err) }
-    minipool3Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "12m")
+    minipool3Address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "12m")
     if err != nil { t.Fatal(err) }
 
     // Get minipool addresses

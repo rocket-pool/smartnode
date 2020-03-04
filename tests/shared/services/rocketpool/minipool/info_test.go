@@ -23,10 +23,6 @@ func TestGetDetails(t *testing.T) {
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
 
-    // Create key manager
-    km, err := test.NewInitKeyManager("foobarbaz")
-    if err != nil { t.Fatal(err) }
-
     // Initialise ethereum client
     client, err := ethclient.Dial(test.POW_PROVIDER_URL)
     if err != nil { t.Fatal(err) }
@@ -42,7 +38,7 @@ func TestGetDetails(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Create minipool
-    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
 
     // Get minipool details without rocketMinipool ABI; load ABI
@@ -74,10 +70,6 @@ func TestGetStatus(t *testing.T) {
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
 
-    // Create key manager
-    km, err := test.NewInitKeyManager("foobarbaz")
-    if err != nil { t.Fatal(err) }
-
     // Initialise ethereum client
     client, err := ethclient.Dial(test.POW_PROVIDER_URL)
     if err != nil { t.Fatal(err) }
@@ -93,7 +85,7 @@ func TestGetStatus(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Create minipool
-    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
 
     // Get minipool status without rocketMinipool ABI; load ABI
@@ -108,7 +100,6 @@ func TestGetStatus(t *testing.T) {
     expectedStakingDuration := big.NewInt(20250)
     if status.Status != minipool.INITIALIZED { t.Errorf("Incorrect minipool status: expected %d, got %d", minipool.INITIALIZED, status.Status) }
     if status.StakingDuration.Cmp(expectedStakingDuration) != 0 { t.Errorf("Incorrect minipool staking duration: expected %s, got %s", expectedStakingDuration.String(), status.StakingDuration.String()) }
-    if _, err := km.GetValidatorKey(status.ValidatorPubkey); err != nil { t.Error("Minipool validator pubkey does not match local validator key") }
 
     // Get status for nonexistent minipool
     address := common.HexToAddress("0x0000000000000000000000000000000000000000")
@@ -124,10 +115,6 @@ func TestGetNodeStatus(t *testing.T) {
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
 
-    // Create key manager
-    km, err := test.NewInitKeyManager("foobarbaz")
-    if err != nil { t.Fatal(err) }
-
     // Initialise ethereum client
     client, err := ethclient.Dial(test.POW_PROVIDER_URL)
     if err != nil { t.Fatal(err) }
@@ -143,7 +130,7 @@ func TestGetNodeStatus(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Create minipool
-    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
 
     // Get minipool node status without rocketMinipool ABI; load ABI
@@ -172,10 +159,6 @@ func TestGetStatusCode(t *testing.T) {
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
 
-    // Create key manager
-    km, err := test.NewInitKeyManager("foobarbaz")
-    if err != nil { t.Fatal(err) }
-
     // Initialise ethereum client
     client, err := ethclient.Dial(test.POW_PROVIDER_URL)
     if err != nil { t.Fatal(err) }
@@ -191,7 +174,7 @@ func TestGetStatusCode(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Create minipool
-    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    minipoolAddress, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
 
     // Get minipool status code without rocketMinipool ABI; load ABI
@@ -219,10 +202,6 @@ func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
 
-    // Create key manager
-    km, err := test.NewInitKeyManager("foobarbaz")
-    if err != nil { t.Fatal(err) }
-
     // Initialise ethereum client
     client, err := ethclient.Dial(test.POW_PROVIDER_URL)
     if err != nil { t.Fatal(err) }
@@ -238,11 +217,11 @@ func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Create minipools
-    minipool1Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "3m")
+    minipool1Address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "3m")
     if err != nil { t.Fatal(err) }
-    minipool2Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "6m")
+    minipool2Address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "6m")
     if err != nil { t.Fatal(err) }
-    minipool3Address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, nodeContractAddress, "12m")
+    minipool3Address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "12m")
     if err != nil { t.Fatal(err) }
 
     // Get active minipools without rocketMinipool ABI; load ABI
