@@ -1,6 +1,7 @@
 package minipool
 
 import (
+    "bytes"
     "encoding/hex"
     "errors"
 
@@ -42,9 +43,15 @@ func Stake(p *services.Provider, pool *Minipool) error {
     }
 
     // Get Rocket Pool withdrawal credentials
-    withdrawalCredentials := new([32]byte)
-    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, withdrawalCredentials, "getWithdrawalCredentials"); err != nil {
+    withdrawalCredentialsBytes32 := new([32]byte)
+    if err := p.CM.Contracts["rocketNodeAPI"].Call(nil, withdrawalCredentialsBytes32, "getWithdrawalCredentials"); err != nil {
         return errors.New("Error retrieving Rocket Pool withdrawal credentials: " + err.Error())
+    }
+    withdrawalCredentials := (*withdrawalCredentialsBytes32)[:]
+
+    // Check withdrawal credentials
+    if bytes.Equal(withdrawalCredentials, make([]byte, 32)) {
+        return errors.New("Rocket Pool withdrawal credentials have not been initialized")
     }
 
     // Generate new validator key
@@ -55,7 +62,7 @@ func Stake(p *services.Provider, pool *Minipool) error {
     // Build DepositData object
     depositData := &DepositData{}
     copy(depositData.Pubkey[:], validatorPubkey)
-    copy(depositData.WithdrawalCredentials[:], withdrawalCredentials[:])
+    copy(depositData.WithdrawalCredentials[:], withdrawalCredentials)
     depositData.Amount = DEPOSIT_AMOUNT
 
     // Get deposit data signing root
