@@ -17,8 +17,8 @@ import (
 
 
 // Config
-const CHECK_MINIPOOLS_INTERVAL string = "1m"
-var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
+const CHECK_MINIPOOL_INTERVAL string = "1m"
+var checkMinipoolInterval, _ = time.ParseDuration(CHECK_MINIPOOL_INTERVAL)
 
 
 // Withdrawal process
@@ -58,7 +58,7 @@ func (p *WithdrawalProcess) start() {
 
     // Check minipool for withdrawal on interval while checking
     go (func() {
-        checkMinipoolsTimer := time.NewTicker(checkMinipoolsInterval)
+        checkMinipoolsTimer := time.NewTicker(checkMinipoolInterval)
         checking := true
         for checking {
             select {
