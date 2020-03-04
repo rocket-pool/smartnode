@@ -95,7 +95,7 @@ func ReserveDeposit(p *services.Provider, durationId string) (*ReserveDepositRes
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return nil, err
     } else {
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId, validatorPubkey, signature, depositDataRoot); err != nil {
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "depositReserve", durationId); err != nil {
             return nil, errors.New("Error making deposit reservation: " + err.Error())
         }
     }

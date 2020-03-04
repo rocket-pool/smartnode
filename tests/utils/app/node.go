@@ -13,7 +13,6 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
-    "github.com/rocket-pool/smartnode/shared/services/validators"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
@@ -185,7 +184,6 @@ func AppCreateNodeMinipools(options AppOptions, durationId string, minipoolCount
     // Create password manager, account manager & key manager
     pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
-    km := validators.NewKeyManager(options.KeychainBeacon, pm)
 
     // Get node account
     nodeAccount, err := am.GetNodeAccount()
@@ -216,7 +214,7 @@ func AppCreateNodeMinipools(options AppOptions, durationId string, minipoolCount
     // Create minipools
     minipoolAddresses := []common.Address{}
     for mi := 0; mi < minipoolCount; mi++ {
-        if address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, *nodeContractAddress, durationId); err != nil {
+        if address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, *nodeContractAddress, durationId); err != nil {
             return []common.Address{}, err
         } else {
             minipoolAddresses = append(minipoolAddresses, address)

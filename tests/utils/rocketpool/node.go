@@ -15,7 +15,6 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
-    "github.com/rocket-pool/smartnode/shared/services/validators"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
@@ -89,46 +88,12 @@ func RegisterNode(client *ethclient.Client, cm *rocketpool.ContractManager, am *
 
 
 // Create a node deposit reservation
-func ReserveNodeDeposit(client *ethclient.Client, cm *rocketpool.ContractManager, am *accounts.AccountManager, km *validators.KeyManager, nodeContractAddress common.Address, durationId string) error {
-
-    // Generate new validator key
-    key, err := km.CreateValidatorKey()
-    if err != nil { return err }
-    pubkey := key.PublicKey.Marshal()
-
-    // Get RP withdrawal pubkey
-    // :TODO: replace with correct withdrawal pubkey once available
-    withdrawalPubkeyHex := []byte("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
-    withdrawalPubkey := make([]byte, hex.DecodedLen(len(withdrawalPubkeyHex)))
-    _,_ = hex.Decode(withdrawalPubkey, withdrawalPubkeyHex)
-
-    // Build withdrawal credentials
-    withdrawalCredentials := eth.KeccakBytes(withdrawalPubkey) // Withdrawal pubkey hash
-    withdrawalCredentials[0] = 0 // Replace first byte with BLS_WITHDRAWAL_PREFIX_BYTE
-
-    // Build DepositData object
-    depositData := &DepositData{}
-    copy(depositData.Pubkey[:], pubkey)
-    copy(depositData.WithdrawalCredentials[:], withdrawalCredentials[:])
-    depositData.Amount = DEPOSIT_AMOUNT
-
-    // Get deposit data signing root
-    signingRoot, err := ssz.SigningRoot(depositData)
-    if err != nil { return err }
-
-    // Sign deposit data
-    domain := bls.ComputeDomain(bytesutil.Bytes4(DOMAIN_DEPOSIT))
-    signature := key.SecretKey.Sign(signingRoot[:], domain).Marshal()
-    copy(depositData.Signature[:], signature)
-
-    // Get deposit data root
-    depositDataRoot, err := ssz.HashTreeRoot(depositData)
-    if err != nil { return err }
+func ReserveNodeDeposit(client *ethclient.Client, cm *rocketpool.ContractManager, am *accounts.AccountManager, nodeContractAddress common.Address, durationId string) error {
 
     // Reserve deposit
     txor, err := am.GetNodeAccountTransactor()
     if err != nil { return err }
-    if _, err := eth.ExecuteContractTransaction(client, txor, &nodeContractAddress, cm.Abis["rocketNodeContract"], "depositReserve", durationId, pubkey, signature, depositDataRoot); err != nil { return err }
+    if _, err := eth.ExecuteContractTransaction(client, txor, &nodeContractAddress, cm.Abis["rocketNodeContract"], "depositReserve", durationId); err != nil { return err }
 
     // Return
     return nil
@@ -137,10 +102,10 @@ func ReserveNodeDeposit(client *ethclient.Client, cm *rocketpool.ContractManager
 
 
 // Create a minipool under a node
-func CreateNodeMinipool(client *ethclient.Client, cm *rocketpool.ContractManager, am *accounts.AccountManager, km *validators.KeyManager, nodeContract *bind.BoundContract, nodeContractAddress common.Address, durationId string) (common.Address, error) {
+func CreateNodeMinipool(client *ethclient.Client, cm *rocketpool.ContractManager, am *accounts.AccountManager, nodeContract *bind.BoundContract, nodeContractAddress common.Address, durationId string) (common.Address, error) {
 
     // Reserve deposit
-    if err := ReserveNodeDeposit(client, cm, am, km, nodeContractAddress, durationId); err != nil { return common.Address{}, err }
+    if err := ReserveNodeDeposit(client, cm, am, nodeContractAddress, durationId); err != nil { return common.Address{}, err }
 
     // Get required balances
     requiredBalances, err := node.GetRequiredBalances(nodeContract)
