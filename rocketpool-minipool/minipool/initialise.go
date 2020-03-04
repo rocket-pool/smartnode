@@ -3,7 +3,6 @@ package minipool
 import (
     "bytes"
     "context"
-    "encoding/hex"
     "errors"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -49,33 +48,11 @@ func Initialise(p *services.Provider, minipoolAddressStr string) (*Minipool, err
         return nil, errors.New("Minipool is not owned by this node")
     }
 
-    // Get minipool validator pubkey
-    validatorPubkey := new([]byte)
-    if err := minipoolContract.Call(nil, validatorPubkey, "getValidatorPubkey"); err != nil {
-        return nil, errors.New("Error retrieving minipool validator pubkey: " + err.Error())
-    }
-
-    /*
-    REMOVED due to excess memory consumption
-    TODO: Replace implementation with something less memory intensive!
-    
-    // Check for local validator key
-    validatorKey, err := p.KM.GetValidatorKey(*validatorPubkey)
-    if err != nil {
-        return nil, errors.New("Local minipool validator key not found")
-    }
-    */
-
-    // Encode validator pubkey
-    validatorPubkeyHex := make([]byte, hex.EncodedLen(len(*validatorPubkey)))
-    hex.Encode(validatorPubkeyHex, *validatorPubkey)
-    validatorPubkeyStr := string(validatorPubkeyHex)
-
     // Return
     return &Minipool{
         Address: &minipoolAddress,
         Contract: minipoolContract,
-        Pubkey: validatorPubkeyStr,
+        Pubkey: "",
     }, nil
 
 }
