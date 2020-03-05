@@ -2,6 +2,7 @@ package minipool
 
 import (
     "bytes"
+    "io/ioutil"
     "math/big"
     "testing"
 
@@ -12,6 +13,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
+    testapp "github.com/rocket-pool/smartnode/tests/utils/app"
     rp "github.com/rocket-pool/smartnode/tests/utils/rocketpool"
 )
 
@@ -198,6 +200,11 @@ func TestGetStatusCode(t *testing.T) {
 // Test active minipools by validator pubkey getter
 func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
 
+    // Create test app options
+    dataPath, err := ioutil.TempDir("", "")
+    if err != nil { t.Fatal(err) }    
+    appOptions := testapp.GetAppOptions(dataPath)
+
     // Create account manager
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
@@ -223,6 +230,13 @@ func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
     if err != nil { t.Fatal(err) }
     minipool3Address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, nodeContractAddress, "12m")
     if err != nil { t.Fatal(err) }
+
+    // Stake minipools
+    _, accessorAddress, err := testapp.AppCreateGroupAccessor(appOptions)
+    if err != nil { t.Fatal(err) }
+    if err := testapp.AppStakeAllMinipools(appOptions, "3m", accessorAddress, []common.Address{minipool1Address}); err != nil { t.Fatal(err) }
+    if err := testapp.AppStakeAllMinipools(appOptions, "6m", accessorAddress, []common.Address{minipool2Address}); err != nil { t.Fatal(err) }
+    if err := testapp.AppStakeAllMinipools(appOptions, "12m", accessorAddress, []common.Address{minipool3Address}); err != nil { t.Fatal(err) }
 
     // Get active minipools without rocketMinipool ABI; load ABI
     if _, err := minipool.GetActiveMinipoolsByValidatorPubkey(cm); err == nil { t.Error("GetActiveMinipoolsByValidatorPubkey() method should return error without rocketMinipool ABI loaded") }
