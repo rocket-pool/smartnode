@@ -1,19 +1,42 @@
 package app
 
 import (
+    "bytes"
+    "errors"
     "math/big"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/prysmaticlabs/go-ssz"
+    "github.com/prysmaticlabs/prysm/shared/bls"
+    "github.com/prysmaticlabs/prysm/shared/bytesutil"
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/services/validators"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
 )
+
+
+// Deposit amount in gwei
+const DEPOSIT_AMOUNT uint64 = 32000000000
+
+
+// BLS deposit domain
+const DOMAIN_DEPOSIT uint64 = 3
+
+
+// DepositData data
+type DepositData struct {
+    Pubkey [48]byte
+    WithdrawalCredentials [32]byte
+    Amount uint64
+    Signature [96]byte
+}
 
 
 // RocketDepositQueue DepositChunkFragmentAssign event
@@ -28,7 +51,7 @@ type DepositChunkFragmentAssign struct {
 
 
 // Progress all minipools to staking from app options
-func AppStakeAllMinipools(options AppOptions, durationId string, depositorAddress common.Address) error {
+func AppStakeAllMinipools(options AppOptions, durationId string, depositorAddress common.Address, minipoolAddresses []common.Address) error {
 
     // Initialise ethereum client
     client, err := ethclient.Dial(options.ProviderPow)
@@ -53,7 +76,7 @@ func AppStakeAllMinipools(options AppOptions, durationId string, depositorAddres
     if err != nil { return err }
 
     // Deposit until no assignments are made
-    for {
+    for depositing := true; depositing; {
 
         // Deposit
         txor := bind.NewKeyedTransactor(ownerPrivateKey)
@@ -66,10 +89,97 @@ func AppStakeAllMinipools(options AppOptions, durationId string, depositorAddres
         if chunkAssignEvents, err := eth.GetTransactionEvents(client, txReceipt, cm.Addresses["rocketDepositQueue"], cm.Abis["rocketDepositQueue"], "DepositChunkFragmentAssign", DepositChunkFragmentAssign{}); err != nil {
             return err
         } else if len(chunkAssignEvents) == 0 {
-            return nil
+            depositing = false
         }
 
     }
+
+    // Set RP withdrawal credentials
+    if err := AppSetWithdrawalCredentials(options); err != nil { return err }
+
+    // Stake minipools
+    for _, minipoolAddress := range minipoolAddresses {
+        if err := AppStakeMinipool(options, minipoolAddress); err != nil { return err }
+    }
+
+    // Return
+    return nil
+
+}
+
+
+// Stake a minipool
+func AppStakeMinipool(options AppOptions, minipoolAddress common.Address) error {
+
+    // Create password manager, account manager & key manager
+    pm := passwords.NewPasswordManager(options.Password)
+    am := accounts.NewAccountManager(options.KeychainPow, pm)
+    km := validators.NewKeyManager(options.KeychainBeacon, pm)
+
+    // Get node account
+    nodeAccount, err := am.GetNodeAccount()
+    if err != nil { return err }
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(options.ProviderPow)
+    if err != nil { return err }
+
+    // Initialise contract manager & load contracts
+    cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
+    if err != nil { return err }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI"}); err != nil { return err }
+    if err := cm.LoadABIs([]string{"rocketNodeContract"}); err != nil { return err }
+
+    // Get Rocket Pool withdrawal credentials
+    withdrawalCredentialsBytes32 := new([32]byte)
+    if err := cm.Contracts["rocketNodeAPI"].Call(nil, withdrawalCredentialsBytes32, "getWithdrawalCredentials"); err != nil {
+        return errors.New("Error retrieving Rocket Pool withdrawal credentials: " + err.Error())
+    }
+    withdrawalCredentials := (*withdrawalCredentialsBytes32)[:]
+
+    // Get node contract address
+    nodeContractAddress := new(common.Address)
+    if err := cm.Contracts["rocketNodeAPI"].Call(nil, nodeContractAddress, "getContract", nodeAccount.Address); err != nil {
+        return errors.New("Error checking node registration: " + err.Error())
+    } else if bytes.Equal(nodeContractAddress.Bytes(), make([]byte, common.AddressLength)) {
+        return errors.New("Node is not registered with Rocket Pool")
+    }
+
+    // Generate new validator key
+    validatorKey, err := km.CreateValidatorKey()
+    if err != nil { return err }
+    validatorPubkey := validatorKey.PublicKey.Marshal()
+
+    // Build DepositData object
+    depositData := &DepositData{}
+    copy(depositData.Pubkey[:], validatorPubkey)
+    copy(depositData.WithdrawalCredentials[:], withdrawalCredentials)
+    depositData.Amount = DEPOSIT_AMOUNT
+
+    // Get deposit data signing root
+    signingRoot, err := ssz.SigningRoot(depositData)
+    if err != nil {
+        return errors.New("Error retrieving deposit data signing root: " + err.Error())
+    }
+
+    // Sign deposit data
+    domain := bls.ComputeDomain(bytesutil.Bytes4(DOMAIN_DEPOSIT))
+    signature := validatorKey.SecretKey.Sign(signingRoot[:], domain).Marshal()
+    copy(depositData.Signature[:], signature)
+
+    // Get deposit data root
+    depositDataRoot, err := ssz.HashTreeRoot(depositData)
+    if err != nil {
+        return errors.New("Error retrieving deposit data hash tree root: " + err.Error())
+    }
+
+    // Stake minipool
+    txor, err := am.GetNodeAccountTransactor()
+    if err != nil { return err }
+    if _, err := eth.ExecuteContractTransaction(client, txor, nodeContractAddress, cm.Abis["rocketNodeContract"], "stakeMinipool", minipoolAddress, validatorPubkey, signature, depositDataRoot); err != nil { return err }
+
+    // Return
+    return nil
 
 }
 
