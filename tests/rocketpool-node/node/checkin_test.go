@@ -55,7 +55,7 @@ func TestNodeCheckin(t *testing.T) {
         go node.StartCheckinProcess(p)
 
         // Give node time to checkin
-        time.Sleep(5 * time.Second)
+        time.Sleep(10 * time.Second)
 
         // Check output
         prefix := "(?i)^\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2} "
