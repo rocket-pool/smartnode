@@ -11,6 +11,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
+    "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
     testapp "github.com/rocket-pool/smartnode/tests/utils/app"
@@ -205,6 +206,15 @@ func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
     if err != nil { t.Fatal(err) }    
     appOptions := testapp.GetAppOptions(dataPath)
 
+    // Initialise & register node
+    if err := testapp.AppInitNode(appOptions); err != nil { t.Fatal(err) }
+    if err := testapp.AppSeedNodeAccount(appOptions, eth.EthToWei(10), nil); err != nil { t.Fatal(err) }
+    if err := testapp.AppRegisterNode(appOptions); err != nil { t.Fatal(err) }
+
+    // Create group accessor
+    _, accessorAddress, err := testapp.AppCreateGroupAccessor(appOptions)
+    if err != nil { t.Fatal(err) }
+
     // Create account manager
     am, err := test.NewInitAccountManager("foobarbaz")
     if err != nil { t.Fatal(err) }
@@ -232,8 +242,6 @@ func TestGetActiveMinipoolsByValidatorPubkey(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Stake minipools
-    _, accessorAddress, err := testapp.AppCreateGroupAccessor(appOptions)
-    if err != nil { t.Fatal(err) }
     if err := testapp.AppStakeAllMinipools(appOptions, "3m", accessorAddress, []common.Address{minipool1Address}); err != nil { t.Fatal(err) }
     if err := testapp.AppStakeAllMinipools(appOptions, "6m", accessorAddress, []common.Address{minipool2Address}); err != nil { t.Fatal(err) }
     if err := testapp.AppStakeAllMinipools(appOptions, "12m", accessorAddress, []common.Address{minipool3Address}); err != nil { t.Fatal(err) }
