@@ -504,7 +504,7 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
             if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
                 errorChannel <- errors.New("Error retrieving minipool status: " + err.Error())
             } else {
-                statusChannels[mi] <- status
+                statusChannels[mi] <- *status
             }
 
             // Get validator pubkey
