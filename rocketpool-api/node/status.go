@@ -22,6 +22,8 @@ func getNodeStatus(c *cli.Context) error {
         ClientConn: true,
         ClientSync: true,
         RocketStorage: true,
+        PasswordOptional: true,
+        NodeAccountOptional: true,
     })
     if err != nil { return err }
     defer p.Cleanup()
