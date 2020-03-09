@@ -103,7 +103,7 @@ func getMinipoolStatus(c *cli.Context, statusFilters []string) error {
 
         // Content
         rowsPrinted := 0
-        for _, status := range []string{"initialized", "prelaunch", "staking", "loggedout", "withdrawn", "timedout", "total"} {
+        for _, status := range []string{"initialized", "depositassigned", "prelaunch", "staking", "loggedout", "withdrawn", "timedout", "total"} {
             if _, ok := overview[status]; !ok { continue }
             if status == "total" && rowsPrinted < 2 { continue }
 

@@ -78,11 +78,14 @@ func run(c *cli.Context, address string) error {
         KM: true,
         Client: true,
         CM: true,
+        NodeContractAddress: true,
         Publisher: true,
         Beacon: true,
-        LoadAbis: []string{"rocketMinipool"},
+        LoadContracts: []string{"rocketNodeAPI"},
+        LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
         WaitPassword: true,
         WaitNodeAccount: true,
+        WaitNodeRegistered: true,
         WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
@@ -93,6 +96,9 @@ func run(c *cli.Context, address string) error {
     // Initialise minipool
     pool, err := minipool.Initialise(p, address)
     if err != nil { return err }
+
+    // Stake minipool
+    if err := minipool.Stake(p, pool); err != nil { return err }
 
     // Process done channel
     done := make(chan struct{})

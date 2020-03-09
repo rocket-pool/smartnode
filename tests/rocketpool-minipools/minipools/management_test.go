@@ -47,7 +47,7 @@ func TestMinipoolManagement(t *testing.T) {
         if err != nil { return err }
         if _, accessorAddress, err := testapp.AppCreateGroupAccessor(appOptions); err != nil {
             return err
-        } else if err := testapp.AppStakeAllMinipools(appOptions, "3m", accessorAddress); err != nil {
+        } else if err := testapp.AppStakeAllMinipools(appOptions, "3m", accessorAddress, minipoolAddresses); err != nil {
             return err
         }
 
@@ -65,7 +65,7 @@ func TestMinipoolManagement(t *testing.T) {
         go minipools.StartManagementProcess(p, os.Getenv("HOME") + "/.rptest", "rocketpool/smartnode-minipool:" + test.IMAGE_VERSION, "rocketpool_minipool_", "none")
 
         // Allow time to launch minipool containers
-        time.Sleep(5 * time.Second)
+        time.Sleep(10 * time.Second)
 
         // Check output
         prefix := "(?i)^\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2} "

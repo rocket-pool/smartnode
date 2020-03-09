@@ -17,7 +17,6 @@ func completeDeposit(c *cli.Context) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        KM: true,
         Client: true,
         CM: true,
         NodeContractAddress: true,

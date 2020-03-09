@@ -15,12 +15,13 @@ import (
 // Minipoool status types
 const (
     INITIALIZED = 0
-    PRELAUNCH = 1
-    STAKING = 2
-    LOGGED_OUT = 3
-    WITHDRAWN = 4
-    CLOSED = 5
-    TIMED_OUT = 6
+    DEPOSIT_ASSIGNED = 1
+    PRELAUNCH = 2
+    STAKING = 3
+    LOGGED_OUT = 4
+    WITHDRAWN = 5
+    CLOSED = 6
+    TIMED_OUT = 7
 )
 
 
@@ -457,6 +458,7 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
 
     // Data channels
     addressChannels := make([]chan *common.Address, minipoolCount)
+    statusChannels := make([]chan uint8, minipoolCount)
     validatorPubkeyChannels := make([]chan string, minipoolCount)
     errorChannel := make(chan error)
 
@@ -484,8 +486,9 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
         }
     }
 
-    // Get minipool validator pubkeys
+    // Get minipool statuses & validator pubkeys
     for mi := int64(0); mi < minipoolCount; mi++ {
+        statusChannels[mi] = make(chan uint8)
         validatorPubkeyChannels[mi] = make(chan string)
         go (func(mi int64) {
 
@@ -494,6 +497,14 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
             if err != nil {
                 errorChannel <- errors.New("Error initialising minipool contract: " + err.Error())
                 return
+            }
+
+            // Get status
+            status := new(uint8)
+            if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
+                errorChannel <- errors.New("Error retrieving minipool status: " + err.Error())
+            } else {
+                statusChannels[mi] <- *status
             }
 
             // Get validator pubkey
@@ -507,15 +518,29 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
         })(mi)
     }
 
-    // Receive minipool validator pubkeys & build map
+    // Receive minipool statuses & validator pubkeys & build map
     activeMinipools := make(map[string]common.Address)
     for mi := int64(0); mi < minipoolCount; mi++ {
-        select {
-            case validatorPubkey := <-validatorPubkeyChannels[mi]:
-                activeMinipools[validatorPubkey] = *minipoolAddresses[mi];
-            case err := <-errorChannel:
-                return nil, err
+
+        // Receive data
+        var status uint8
+        var validatorPubkey string
+        for received := 0; received < 2; {
+            select {
+                case status = <- statusChannels[mi]:
+                    received++
+                case validatorPubkey = <-validatorPubkeyChannels[mi]:
+                    received++
+                case err := <-errorChannel:
+                    return nil, err
+            }
         }
+
+        // Filter by status & add to map
+        if status >= STAKING && status <= LOGGED_OUT {
+            activeMinipools[validatorPubkey] = *minipoolAddresses[mi];
+        }
+
     }
 
     // Return
@@ -528,6 +553,7 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
 func getStatusType(value uint8) string {
     switch value {
         case INITIALIZED: return "initialized"
+        case DEPOSIT_ASSIGNED: return "depositassigned"
         case PRELAUNCH: return "prelaunch"
         case STAKING: return "staking"
         case LOGGED_OUT: return "loggedout"

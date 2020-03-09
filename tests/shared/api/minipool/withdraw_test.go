@@ -54,7 +54,7 @@ func TestMinipoolWithdraw(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Stake minipools
-    if err := testapp.AppStakeAllMinipools(appOptions, "12m", accessorAddress); err != nil { t.Fatal(err) }
+    if err := testapp.AppStakeAllMinipools(appOptions, "12m", accessorAddress, minipoolAddresses); err != nil { t.Fatal(err) }
 
     // Check withdrawable minipools with no withdrawable minipools
     if withdrawable, err := minipool.GetWithdrawableMinipools(p); err != nil {

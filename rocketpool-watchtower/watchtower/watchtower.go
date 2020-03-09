@@ -170,14 +170,6 @@ func (p *WatchtowerProcess) checkMinipools() {
     for pubkey, minipoolAddress := range p.activeMinipools {
         go (func(pubkey string, minipoolAddress common.Address) {
 
-            // Check minipool status
-            if status, err := getMinipoolStatus(p.p, &minipoolAddress); err != nil {
-                p.p.Log.Println(err)
-                return
-            } else if *status < minipool.STAKING || *status > minipool.LOGGED_OUT {
-                return
-            }
-
             // Log
             p.p.Log.Println(fmt.Sprintf("Checking minipool %s status...", minipoolAddress.Hex()))
 

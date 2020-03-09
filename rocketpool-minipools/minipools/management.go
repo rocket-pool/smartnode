@@ -109,14 +109,14 @@ func (p *ManagementProcess) pullMinipoolImage() error {
 func (p *ManagementProcess) checkMinipools() {
 
     // Data channels
-    stakingMinipoolAddressesChannel := make(chan []*common.Address)
+    activeMinipoolAddressesChannel := make(chan []*common.Address)
     minipoolContainersChannel := make(chan []types.Container)
     errorChannel := make(chan error)
 
     // Wait for node to sync
     eth.WaitSync(p.p.Client, true, false)
 
-    // Get staking minipool addresses
+    // Get active minipool addresses
     go (func() {
 
         // Get minipool addresses
@@ -142,20 +142,20 @@ func (p *ManagementProcess) checkMinipools() {
             })(mi)
         }
 
-        // Receive minipool statuses & filter staking minipools
-        stakingMinipoolAddresses := []*common.Address{}
+        // Receive minipool statuses & filter active minipools
+        activeMinipoolAddresses := []*common.Address{}
         for mi := 0; mi < minipoolCount; mi++ {
             select {
                 case status := <-statusChannels[mi]:
-                    if status == minipool.STAKING { stakingMinipoolAddresses = append(stakingMinipoolAddresses, minipoolAddresses[mi]) }
+                    if status == minipool.PRELAUNCH || status == minipool.STAKING { activeMinipoolAddresses = append(activeMinipoolAddresses, minipoolAddresses[mi]) }
                 case err := <-statusErrorChannel:
                     errorChannel <- err
                     return
             }
         }
 
-        // Send staking minipool addresses
-        stakingMinipoolAddressesChannel <- stakingMinipoolAddresses
+        // Send active minipool addresses
+        activeMinipoolAddressesChannel <- activeMinipoolAddresses
 
     })()
 
@@ -181,11 +181,11 @@ func (p *ManagementProcess) checkMinipools() {
     })()
 
     // Receive minipool data
-    var stakingMinipoolAddresses []*common.Address
+    var activeMinipoolAddresses []*common.Address
     var minipoolContainers []types.Container
     for received := 0; received < 2; {
         select {
-            case stakingMinipoolAddresses = <-stakingMinipoolAddressesChannel:
+            case activeMinipoolAddresses = <-activeMinipoolAddressesChannel:
                 received++
             case minipoolContainers = <-minipoolContainersChannel:
                 received++
@@ -196,14 +196,14 @@ func (p *ManagementProcess) checkMinipools() {
     }
 
     // Run minipool containers
-    for _, minipoolAddress := range stakingMinipoolAddresses {
+    for _, minipoolAddress := range activeMinipoolAddresses {
         go p.runMinipoolContainer(minipoolAddress, minipoolContainers)
     }
 
     // Check inactive minipool containers
     for _, container := range minipoolContainers {
         if container.State == "exited" {
-            go p.checkInactiveMinipoolContainer(container, stakingMinipoolAddresses)
+            go p.checkInactiveMinipoolContainer(container, activeMinipoolAddresses)
         }
     }
 
@@ -276,7 +276,7 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
 /**
  * Check inactive minipool container
  */
-func (p *ManagementProcess) checkInactiveMinipoolContainer(container types.Container, stakingMinipoolAddresses []*common.Address) {
+func (p *ManagementProcess) checkInactiveMinipoolContainer(container types.Container, activeMinipoolAddresses []*common.Address) {
 
     // Get minipool container name
     containerName := container.Names[0]
@@ -292,15 +292,15 @@ func (p *ManagementProcess) checkInactiveMinipoolContainer(container types.Conta
     }
     address := common.HexToAddress(addressStr)
 
-    // Check if minipool is staking
-    staking := false
-    for _, stakingMinipoolAddress := range stakingMinipoolAddresses {
-        if bytes.Equal(address.Bytes(), stakingMinipoolAddress.Bytes()) {
-            staking = true
+    // Check if minipool is active
+    active := false
+    for _, activeMinipoolAddress := range activeMinipoolAddresses {
+        if bytes.Equal(address.Bytes(), activeMinipoolAddress.Bytes()) {
+            active = true
             break
         }
     }
-    if staking { return }
+    if active { return }
 
     // Remove container
     p.p.Log.Println(fmt.Sprintf("Removing minipool container %s...", containerName))

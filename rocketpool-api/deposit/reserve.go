@@ -15,7 +15,6 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        KM: true,
         Client: true,
         CM: true,
         NodeContractAddress: true,
@@ -29,12 +28,8 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Generate new validator key
-    validatorKey, err := p.KM.CreateValidatorKey()
-    if err != nil { return err }
-
     // Check node deposit can be reserved
-    canReserve, err := deposit.CanReserveDeposit(p, validatorKey, durationId)
+    canReserve, err := deposit.CanReserveDeposit(p, durationId)
     if err != nil { return err }
 
     // Check response
@@ -44,7 +39,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     }
 
     // Reserve node deposit
-    reserved, err := deposit.ReserveDeposit(p, validatorKey, durationId)
+    reserved, err := deposit.ReserveDeposit(p, durationId)
     if err != nil { return err }
 
     // Print response
