@@ -111,17 +111,6 @@ func CanCompleteDeposit(p *services.Provider) (*CanCompleteDepositResponse, erro
         return response, nil
     }
 
-    // Get deposit reservation validator pubkey
-    validatorPubkey := new([]byte)
-    if err := p.NodeContract.Call(nil, validatorPubkey, "getDepositReserveValidatorPubkey"); err != nil {
-        return nil, errors.New("Error retrieving deposit reservation validator pubkey: " + err.Error())
-    }
-
-    // Check for local validator key
-    if _, err := p.KM.GetValidatorKey(*validatorPubkey); err != nil {
-        return nil, errors.New("Local validator key matching deposit reservation validator pubkey not found")
-    }
-
     // Data channels
     accountBalancesChannel := make(chan *node.Balances)
     nodeBalancesChannel := make(chan *node.Balances)

@@ -22,7 +22,6 @@ func makeDeposit(c *cli.Context, durationId string) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        KM: true,
         Client: true,
         CM: true,
         NodeContractAddress: true,
@@ -49,12 +48,8 @@ func makeDeposit(c *cli.Context, durationId string) error {
     } else {
         statusFormat = "Deposit reservation made successfully, requiring %.2f ETH and %.2f RPL, with a staking duration of %s and expiring at %s"
 
-        // Generate new validator key
-        validatorKey, err := p.KM.CreateValidatorKey()
-        if err != nil { return err }
-
         // Check node deposit can be reserved
-        canReserve, err := deposit.CanReserveDeposit(p, validatorKey, durationId)
+        canReserve, err := deposit.CanReserveDeposit(p, durationId)
         if err != nil { return err }
 
         // Check response
@@ -64,15 +59,12 @@ func makeDeposit(c *cli.Context, durationId string) error {
         if canReserve.StakingDurationDisabled {
             fmt.Fprintln(p.Output, fmt.Sprintf("The staking duration '%s' is invalid or disabled", durationId))
         }
-        if canReserve.PubkeyUsed {
-            fmt.Fprintln(p.Output, "The validator public key is already in use")
-        }
         if !canReserve.Success {
             return nil
         }
 
         // Reserve deposit
-        _, err = deposit.ReserveDeposit(p, validatorKey, durationId)
+        _, err = deposit.ReserveDeposit(p, durationId)
         if err != nil { return err }
 
         // Get deposit status

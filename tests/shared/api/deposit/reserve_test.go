@@ -31,7 +31,6 @@ func TestDepositReserve(t *testing.T) {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
-        KM: true,
         Client: true,
         CM: true,
         NodeContractAddress: true,
@@ -45,33 +44,29 @@ func TestDepositReserve(t *testing.T) {
     if err != nil { t.Fatal(err) }
     defer p.Cleanup()
 
-    // Create new validator key
-    validatorKey, err := p.KM.CreateValidatorKey()
-    if err != nil { t.Fatal(err) }
-
     // Check deposit can be reserved
-    if canReserve, err := deposit.CanReserveDeposit(p, validatorKey, "3m"); err != nil {
+    if canReserve, err := deposit.CanReserveDeposit(p, "3m"); err != nil {
         t.Error(err)
     } else if !canReserve.Success {
         t.Error("Deposit cannot be reserved")
     }
 
     // Reserve deposit
-    if reserved, err := deposit.ReserveDeposit(p, validatorKey, "3m"); err != nil {
+    if reserved, err := deposit.ReserveDeposit(p, "3m"); err != nil {
         t.Error(err)
     } else if !reserved.Success {
         t.Error("Deposit was not reserved successfully")
     }
 
     // Check deposit cannot be reserved with existing reservation
-    if canReserve, err := deposit.CanReserveDeposit(p, validatorKey, "3m"); err != nil {
+    if canReserve, err := deposit.CanReserveDeposit(p, "3m"); err != nil {
         t.Error(err)
     } else if canReserve.Success || !canReserve.HadExistingReservation {
         t.Error("HadExistingReservation flag was not set with an existing deposit reservation")
     }
 
     // Attempt to reserve deposit
-    if _, err := deposit.ReserveDeposit(p, validatorKey, "3m"); err == nil {
+    if _, err := deposit.ReserveDeposit(p, "3m"); err == nil {
         t.Error("ReserveDeposit() method did not return error with an existing deposit reservation")
     }
 

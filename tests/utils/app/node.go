@@ -2,6 +2,7 @@ package app
 
 import (
     "bytes"
+    "encoding/hex"
     "errors"
     "math/big"
 
@@ -13,7 +14,6 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/node"
-    "github.com/rocket-pool/smartnode/shared/services/validators"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
@@ -185,7 +185,6 @@ func AppCreateNodeMinipools(options AppOptions, durationId string, minipoolCount
     // Create password manager, account manager & key manager
     pm := passwords.NewPasswordManager(options.Password)
     am := accounts.NewAccountManager(options.KeychainPow, pm)
-    km := validators.NewKeyManager(options.KeychainBeacon, pm)
 
     // Get node account
     nodeAccount, err := am.GetNodeAccount()
@@ -216,7 +215,7 @@ func AppCreateNodeMinipools(options AppOptions, durationId string, minipoolCount
     // Create minipools
     minipoolAddresses := []common.Address{}
     for mi := 0; mi < minipoolCount; mi++ {
-        if address, err := rp.CreateNodeMinipool(client, cm, am, km, nodeContract, *nodeContractAddress, durationId); err != nil {
+        if address, err := rp.CreateNodeMinipool(client, cm, am, nodeContract, *nodeContractAddress, durationId); err != nil {
             return []common.Address{}, err
         } else {
             minipoolAddresses = append(minipoolAddresses, address)
@@ -256,6 +255,51 @@ func AppSetNodeTrusted(options AppOptions) error {
     // Set node trusted status
     txor := bind.NewKeyedTransactor(ownerPrivateKey)
     if _, err := eth.ExecuteContractTransaction(client, txor, cm.Addresses["rocketAdmin"], cm.Abis["rocketAdmin"], "setNodeTrusted", nodeAccount.Address, true); err != nil { return err }
+
+    // Return
+    return nil
+
+}
+
+
+// Set RP withdrawal credentials
+func AppSetWithdrawalCredentials(options AppOptions) error {
+
+    // Create password manager & account manager
+    pm := passwords.NewPasswordManager(options.Password)
+    am := accounts.NewAccountManager(options.KeychainPow, pm)
+
+    // Initialise ethereum client
+    client, err := ethclient.Dial(options.ProviderPow)
+    if err != nil { return err }
+
+    // Initialise contract manager & load contracts
+    cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
+    if err != nil { return err }
+    if err := cm.LoadContracts([]string{"rocketNodeAPI", "rocketNodeWatchtower"}); err != nil { return err }
+
+    // Check for existing withdrawal credentials
+    currentWithdrawalCredentialsBytes32 := new([32]byte)
+    if err := cm.Contracts["rocketNodeAPI"].Call(nil, currentWithdrawalCredentialsBytes32, "getWithdrawalCredentials"); err != nil { return err }
+    currentWithdrawalCredentials := (*currentWithdrawalCredentialsBytes32)[:]
+    if !bytes.Equal(currentWithdrawalCredentials, make([]byte, 32)) { return nil }
+
+    // Get RP withdrawal pubkey
+    withdrawalPubkeyHex := []byte("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+    withdrawalPubkey := make([]byte, hex.DecodedLen(len(withdrawalPubkeyHex)))
+    _,_ = hex.Decode(withdrawalPubkey, withdrawalPubkeyHex)
+
+    // Build withdrawal credentials
+    withdrawalCredentials := eth.KeccakBytes(withdrawalPubkey) // Withdrawal pubkey hash
+    withdrawalCredentials[0] = 0 // Replace first byte with BLS_WITHDRAWAL_PREFIX_BYTE
+
+    // Make node trusted
+    if err := AppSetNodeTrusted(options); err != nil { return err }
+
+    // Set withdrawal credentials
+    txor, err := am.GetNodeAccountTransactor()
+    if err != nil { return err }
+    if _, err := eth.ExecuteContractTransaction(client, txor, cm.Addresses["rocketNodeWatchtower"], cm.Abis["rocketNodeWatchtower"], "updateWithdrawalKey", withdrawalPubkey, withdrawalCredentials); err != nil { return err }
 
     // Return
     return nil
