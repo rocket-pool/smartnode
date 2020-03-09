@@ -21,6 +21,7 @@ type GetNodeStatusResponse struct {
     AccountBalanceEtherWei *big.Int     `json:"accountBalanceEtherWei"`
     AccountBalanceRethWei *big.Int      `json:"accountBalanceRethWei"`
     AccountBalanceRplWei *big.Int       `json:"accountBalanceRplWei"`
+    Initialised bool                    `json:"initialised"`
 
     // Node contract info
     ContractAddress common.Address      `json:"contractAddress"`
@@ -41,8 +42,16 @@ func GetNodeStatus(p *services.Provider) (*GetNodeStatusResponse, error) {
     response := &GetNodeStatusResponse{}
 
     // Get node account
-    nodeAccount, _ := p.AM.GetNodeAccount()
-    response.AccountAddress = nodeAccount.Address
+    nodeAccount, err := p.AM.GetNodeAccount()
+    if err == nil {
+        response.Initialised = true
+        response.AccountAddress = nodeAccount.Address
+    }
+
+    // Check node initialisation
+    if !response.Initialised {
+        return response, nil
+    }
 
     // Get node account balances
     if accountBalances, err := node.GetAccountBalances(nodeAccount.Address, p.Client, p.CM); err != nil {
