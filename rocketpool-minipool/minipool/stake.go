@@ -72,7 +72,7 @@ func Stake(p *services.Provider, pool *Minipool) error {
     }
 
     // Sign deposit data
-    domain := bls.ComputeDomain(bytesutil.Bytes4(DOMAIN_DEPOSIT))
+    domain := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(DOMAIN_DEPOSIT)))
     signature := validatorKey.SecretKey.Sign(signingRoot[:], domain).Marshal()
     copy(depositData.Signature[:], signature)
 

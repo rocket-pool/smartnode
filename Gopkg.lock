@@ -288,7 +288,7 @@
   revision = "e24db4d9e9637cf88ee9e4a779e339a1686a84ee"
 
 [[projects]]
-  digest = "1:dfebc716db46780944ec16adfc1832daacabaad1e4e1d6b3a261c20f87667f11"
+  digest = "1:9e7403978086f7c0d8fe047300ad510c87221b62eadec3c259380b3007b3d403"
   name = "github.com/prysmaticlabs/prysm"
   packages = [
     "shared/bls",
@@ -299,8 +299,8 @@
     "shared/params",
   ]
   pruneopts = "UT"
-  revision = "67c380b197536a3cf2309c200897ba5d2d8b1ddd"
-  version = "v0.3.1"
+  revision = "ed7ad4525e3da5310507e2beeadf7aa24af571c5"
+  version = "v0.3.4"
 
 [[projects]]
   branch = "master"
@@ -478,6 +478,7 @@
     "github.com/gorilla/websocket",
     "github.com/prysmaticlabs/go-ssz",
     "github.com/prysmaticlabs/prysm/shared/bls",
+    "github.com/prysmaticlabs/prysm/shared/bytesutil",
     "github.com/prysmaticlabs/prysm/shared/keystore",
     "github.com/rapidloop/skv",
     "github.com/shirou/gopsutil/cpu",
