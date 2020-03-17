@@ -116,7 +116,7 @@ func getValidatorDepositData(km *validators.KeyManager) (*DepositData, [32]byte,
     if err != nil { return nil, [32]byte{}, err }
 
     // Sign deposit data
-    domain := bls.ComputeDomain(bytesutil.Bytes4(DOMAIN_DEPOSIT))
+    domain := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(DOMAIN_DEPOSIT)))
     signature := key.SecretKey.Sign(signingRoot[:], domain).Marshal()
     copy(depositData.Signature[:], signature)
 
