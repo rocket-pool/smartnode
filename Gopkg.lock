@@ -142,16 +142,13 @@
   version = "v1.2.1"
 
 [[projects]]
-  digest = "1:c9cffc5a4ef5aa7271985801928f30f19b4d87ce98fea5fee278821ce07a2a4c"
+  digest = "1:f5ce1529abc1204444ec73779f44f94e2fa8fcdb7aca3c355b0c95947e4005c6"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
-    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
-    "ptypes/empty",
-    "ptypes/struct",
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
@@ -173,14 +170,6 @@
   pruneopts = "UT"
   revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
   version = "v1.4.0"
-
-[[projects]]
-  digest = "1:75cebddcac0eeadefff0e09f0fa12e2169d1db4732d66653a30ad1660cf97222"
-  name = "github.com/grpc-ecosystem/grpc-gateway"
-  packages = ["protoc-gen-swagger/options"]
-  pruneopts = "UT"
-  revision = "f7120437bb4f6c71f7f5076ad65a45310de2c009"
-  version = "v1.12.1"
 
 [[projects]]
   digest = "1:f78ea16984dfebdb301aee2ce9e3b105b0bb2cc28a056583dd6ded3c6afd9baa"
@@ -262,14 +251,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d38eace5697aa059a1b787484fca7bf5d075b4092184e24320f9b17a8c452cca"
-  name = "github.com/prysmaticlabs/ethereumapis"
-  packages = ["eth/v1alpha1"]
-  pruneopts = "UT"
-  revision = "47cde13fd25e8d3ec2d7c94c495bc79f85ff9f59"
-
-[[projects]]
-  branch = "master"
   digest = "1:d2afd6743032576338b6e6b93e6469a1fed8d39559b2fd180e337c87b21b16dc"
   name = "github.com/prysmaticlabs/go-bitfield"
   packages = ["."]
@@ -286,21 +267,6 @@
   ]
   pruneopts = "UT"
   revision = "e24db4d9e9637cf88ee9e4a779e339a1686a84ee"
-
-[[projects]]
-  digest = "1:9e7403978086f7c0d8fe047300ad510c87221b62eadec3c259380b3007b3d403"
-  name = "github.com/prysmaticlabs/prysm"
-  packages = [
-    "shared/bls",
-    "shared/bytesutil",
-    "shared/featureconfig",
-    "shared/hashutil",
-    "shared/keystore",
-    "shared/params",
-  ]
-  pruneopts = "UT"
-  revision = "ed7ad4525e3da5310507e2beeadf7aa24af571c5"
-  version = "v0.3.4"
 
 [[projects]]
   branch = "master"
@@ -343,29 +309,19 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e6376be4bdbe1732e9a023c6d5197024c5c04114e4d06a31d4cd5fe1b93af218"
+  digest = "1:9c4fed825c10231651e81bf0ab2c12e3a6cc349dcc62a78f8d3a9dfb6744855e"
   name = "golang.org/x/crypto"
-  packages = [
-    "pbkdf2",
-    "scrypt",
-    "sha3",
-  ]
+  packages = ["sha3"]
   pruneopts = "UT"
   revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
 [[projects]]
   branch = "master"
-  digest = "1:a87086ff03a596e3d117a557e5ae04193bd99f10cbd8456bad997f81181098b4"
+  digest = "1:3e0062766e6b0bcfe1ba1ed1d3f08a8e1e99cd5831426e2596dc9537d28f2adb"
   name = "golang.org/x/net"
   packages = [
-    "http/httpguts",
-    "http2",
-    "http2/hpack",
-    "idna",
     "internal/socks",
-    "internal/timeseries",
     "proxy",
-    "trace",
   ]
   pruneopts = "UT"
   revision = "74dc4d7220e7acc4e100824340f3e66577424772"
@@ -383,78 +339,22 @@
   revision = "fde4db37ae7ad8191b03d30d27f258b5291ae4e3"
 
 [[projects]]
-  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
-  name = "golang.org/x/text"
-  packages = [
-    "collate",
-    "collate/build",
-    "internal/colltab",
-    "internal/gen",
-    "internal/language",
-    "internal/language/compact",
-    "internal/tag",
-    "internal/triegen",
-    "internal/ucd",
-    "language",
-    "secure/bidirule",
-    "transform",
-    "unicode/bidi",
-    "unicode/cldr",
-    "unicode/norm",
-    "unicode/rangetable",
-  ]
-  pruneopts = "UT"
-  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
-  version = "v0.3.2"
-
-[[projects]]
   branch = "master"
-  digest = "1:21a386effcf814b07fda8b1f53b96a5b355f556b495e0aeeafe9c29a390137a8"
+  digest = "1:583a0c80f5e3a9343d33aea4aead1e1afcc0043db66fdf961ddd1fe8cd3a4faf"
   name = "google.golang.org/genproto"
-  packages = [
-    "googleapis/api/annotations",
-    "googleapis/rpc/status",
-  ]
+  packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
   revision = "fa694d86fc64c7654a660f8908de4e879866748d"
 
 [[projects]]
-  digest = "1:3b97661db2e5d4c87f7345e875ea28f911e54c715ba0a74be08e1649d67e05cd"
+  digest = "1:dd9e017df31acd9cf78ad0df2c8a1132fb3f724ec9287240ee7306364130bafc"
   name = "google.golang.org/grpc"
   packages = [
-    ".",
-    "balancer",
-    "balancer/base",
-    "balancer/roundrobin",
-    "binarylog/grpc_binarylog_v1",
     "codes",
     "connectivity",
-    "credentials",
-    "credentials/internal",
-    "encoding",
-    "encoding/proto",
     "grpclog",
     "internal",
-    "internal/backoff",
-    "internal/balancerload",
-    "internal/binarylog",
-    "internal/channelz",
-    "internal/envconfig",
-    "internal/grpcrand",
-    "internal/grpcsync",
-    "internal/syscall",
-    "internal/transport",
-    "keepalive",
-    "metadata",
-    "naming",
-    "peer",
-    "resolver",
-    "resolver/dns",
-    "resolver/passthrough",
-    "serviceconfig",
-    "stats",
     "status",
-    "tap",
   ]
   pruneopts = "UT"
   revision = "6eaf6f47437a6b4e2153a190160ef39a92c7eceb"
@@ -472,14 +372,15 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/dgraph-io/ristretto",
     "github.com/docker/docker/api/types",
     "github.com/docker/docker/api/types/container",
     "github.com/docker/docker/client",
     "github.com/gorilla/websocket",
+    "github.com/herumi/bls-eth-go-binary/bls",
+    "github.com/pborman/uuid",
+    "github.com/pkg/errors",
     "github.com/prysmaticlabs/go-ssz",
-    "github.com/prysmaticlabs/prysm/shared/bls",
-    "github.com/prysmaticlabs/prysm/shared/bytesutil",
-    "github.com/prysmaticlabs/prysm/shared/keystore",
     "github.com/rapidloop/skv",
     "github.com/shirou/gopsutil/cpu",
     "github.com/shirou/gopsutil/load",
