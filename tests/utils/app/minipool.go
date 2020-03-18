@@ -138,7 +138,7 @@ func AppStakeMinipool(options AppOptions, minipoolAddress common.Address) error 
     // Stake minipool
     txor, err := am.GetNodeAccountTransactor()
     if err != nil { return err }
-    if _, err := eth.ExecuteContractTransaction(client, txor, nodeContractAddress, cm.Abis["rocketNodeContract"], "stakeMinipool", minipoolAddress, validatorPubkey, depositData.Signature, depositDataRoot); err != nil { return err }
+    if _, err := eth.ExecuteContractTransaction(client, txor, nodeContractAddress, cm.Abis["rocketNodeContract"], "stakeMinipool", minipoolAddress, validatorPubkey, depositData.Signature[:], depositDataRoot); err != nil { return err }
 
     // Return
     return nil

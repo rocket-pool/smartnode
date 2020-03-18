@@ -47,7 +47,7 @@ func Stake(p *services.Provider, pool *Minipool) error {
     if txor, err := p.AM.GetNodeAccountTransactor(); err != nil {
         return err
     } else {
-        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "stakeMinipool", pool.Address, validatorPubkey, depositData.Signature, depositDataRoot); err != nil {
+        if _, err := eth.ExecuteContractTransaction(p.Client, txor, p.NodeContractAddress, p.CM.Abis["rocketNodeContract"], "stakeMinipool", pool.Address, validatorPubkey, depositData.Signature[:], depositDataRoot); err != nil {
             return errors.New("Error staking minipool: " + err.Error())
         }
     }
