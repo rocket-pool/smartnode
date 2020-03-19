@@ -19,22 +19,22 @@ func Configure(app *cli.App) {
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "database",
             Usage: "Rocket Pool CLI database absolute `path`",
-            Value: "/.rocketpool/rocketpool.db",
+            Value: "/.rocketpool/data/rocketpool.db",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "password",
             Usage: "Rocket Pool CLI keystore password `path`",
-            Value: "/.rocketpool/password",
+            Value: "/.rocketpool/data/password",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "keychainPow",
             Usage: "PoW chain account keychain absolute `path`",
-            Value: "/.rocketpool/accounts",
+            Value: "/.rocketpool/data/accounts",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "keychainBeacon",
             Usage: "Beacon chain account keychain absolute `path`",
-            Value: "/.rocketpool/validators",
+            Value: "/.rocketpool/data/validators",
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "providerPow",
@@ -44,17 +44,17 @@ func Configure(app *cli.App) {
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "providerBeacon",
             Usage: "Beacon chain provider `url`",
-            Value: "ws://127.0.0.1:9545", // Local simulator
+            Value: "http://127.0.0.1:5052", // Local node
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "storageAddress",
             Usage: "PoW chain Rocket Pool storage contract `address`",
-            Value: "0xbAB4E89E74f5dcdc90e36B32e7D780DC328E34cd", // Workshop network
+            Value: "0x5709b6E58A390534c81dD8EE0E9E1423b843FF5a", // Goerli
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "uniswapAddress",
             Usage: "PoW chain Uniswap factory contract `address`",
-            Value: "0x9c83dCE8CA20E9aAF9D3efc003b2ea62aBC08351", // Ropsten
+            Value: "0x6A603658DD351C65379A6fc9f7DD30742ae8bf3c", // Goerli
         }),
         altsrc.NewStringFlag(cli.StringFlag{
             Name:  "input",
