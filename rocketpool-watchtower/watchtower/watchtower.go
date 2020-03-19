@@ -1,7 +1,6 @@
 package watchtower
 
 import (
-    "encoding/json"
     "errors"
     "fmt"
     "math/big"

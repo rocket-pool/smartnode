@@ -2,8 +2,6 @@ package minipool
 
 import (
     "context"
-    "encoding/hex"
-    "encoding/json"
     "errors"
     "fmt"
     "math/big"
