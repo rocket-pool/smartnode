@@ -21,7 +21,7 @@ func main() {
 
     // Set application info
     app.Name = "rocketpool-minipool"
-    app.Usage = "Rocket Pool minipool activity daemon"
+    app.Usage = "Rocket Pool minipool daemon"
     app.Version = "0.0.1"
     app.Authors = []cli.Author{
         cli.Author{
@@ -79,8 +79,6 @@ func run(c *cli.Context, address string) error {
         Client: true,
         CM: true,
         NodeContractAddress: true,
-        Publisher: true,
-        Beacon: true,
         LoadContracts: []string{"rocketNodeAPI"},
         LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
         WaitPassword: true,
@@ -104,11 +102,7 @@ func run(c *cli.Context, address string) error {
     done := make(chan struct{})
 
     // Start minipool processes
-    go minipool.StartActivityProcess(p, pool, done)
     go minipool.StartWithdrawalProcess(p, pool, done)
-
-    // Start services
-    p.Beacon.Connect()
 
     // Block thread until done
     for received := 0; received < 2; {

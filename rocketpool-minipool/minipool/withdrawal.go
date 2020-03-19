@@ -10,7 +10,6 @@ import (
     "time"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
@@ -32,7 +31,7 @@ type WithdrawalProcess struct {
 
 
 /**
- * Start beacon withdrawal process
+ * Start withdrawal process
  */
 func StartWithdrawalProcess(p *services.Provider, minipool *Minipool, done chan struct{}) {
 
@@ -67,25 +66,6 @@ func (p *WithdrawalProcess) start() {
                 case <-p.stop:
                     checkMinipoolsTimer.Stop()
                     checking = false
-            }
-        }
-    })()
-
-    // Subscribe to beacon chain events
-    messageChannel := make(chan interface{})
-    p.p.Publisher.AddSubscriber("beacon.client.message", messageChannel)
-
-    // Handle beacon chain events while subscribed
-    go (func() {
-        subscribed := true
-        for subscribed {
-            select {
-                case eventData := <-messageChannel:
-                    event := (eventData).(struct{Client *beaconchain.Client; Message []byte})
-                    go p.onBeaconClientMessage(event.Message)
-                case <-p.stop:
-                    p.p.Publisher.RemoveSubscriber("beacon.client.message", messageChannel)
-                    subscribed = false
             }
         }
     })()
@@ -162,86 +142,11 @@ func (p *WithdrawalProcess) checkWithdrawal() {
     p.minipoolExiting = true
     p.p.Log.Println(fmt.Sprintf("Minipool %s is ready to withdraw, since block %s...", p.minipool.Address.Hex(), exitBlock.String()))
 
-    // Request validator status
-    if payload, err := json.Marshal(beaconchain.ClientMessage{
-        Message: "get_validator_status",
-        Pubkey: hex.EncodeToString(status.ValidatorPubkey),
-    }); err != nil {
-        p.p.Log.Println(errors.New("Error encoding get validator status payload: " + err.Error()))
-    } else if err := p.p.Beacon.Send(payload); err != nil {
-        p.p.Log.Println(errors.New("Error sending get validator status message: " + err.Error()))
-    }
-
-}
-
-
-/**
- * Handle beacon chain client messages
- */
-func (p *WithdrawalProcess) onBeaconClientMessage(messageData []byte) {
-
-    // Parse message
-    message := new(beaconchain.ServerMessage)
-    if err := json.Unmarshal(messageData, message); err != nil {
-        p.p.Log.Println(errors.New("Error decoding beacon message: " + err.Error()))
-        return
-    }
-
-    // Handle message by type
-    switch message.Message {
-
-        // Validator status
-        case "validator_status":
-
-            // Check validator pubkey and minipool status
-            if p.minipool.Pubkey != message.Pubkey { break }
-            if !p.minipoolExiting { break }
-
-            // Handle statuses
-            switch message.Status.Code {
-
-                // Not exited
-                case "inactive": fallthrough
-                case "active":
-                    if message.Status.Initiated.Exit == 0 {
-
-                        // Log status
-                        p.p.Log.Println(fmt.Sprintf("Minipool %s has not exited yet, exiting...", p.minipool.Address.Hex()))
-
-                        // Send exit message
-                        if payload, err := json.Marshal(beaconchain.ClientMessage{
-                            Message: "exit",
-                            Pubkey: message.Pubkey,
-                        }); err != nil {
-                            p.p.Log.Println(errors.New("Error encoding exit payload: " + err.Error()))
-                        } else if err := p.p.Beacon.Send(payload); err != nil {
-                            p.p.Log.Println(errors.New("Error sending exit message: " + err.Error()))
-                        }
-
-                    } else {
-                        p.p.Log.Println(fmt.Sprintf("Minipool %s is already exiting...", p.minipool.Address.Hex()))
-                    }
-
-                // Exited
-                case "exited": fallthrough
-                case "withdrawable": fallthrough
-                case "withdrawn":
-                    p.p.Log.Println(fmt.Sprintf("Minipool %s has exited successfully...", p.minipool.Address.Hex()))
-                    close(p.stop)
-
-            }
-
-        // Success response
-        case "success":
-            if message.Action == "initiate_exit" {
-                p.p.Log.Println(fmt.Sprintf("Minipool %s initiated exit successfully...", p.minipool.Address.Hex()))
-            }
-
-        // Error
-        case "error":
-            p.p.Log.Println("A beacon server error occurred: ", message.Error)
-
-    }
+    // Exit validator
+    // TODO:
+    //   - request validator status & check if active
+    //   - send voluntary exit message
+    //   - poll validator status until exit initiated
 
 }
 

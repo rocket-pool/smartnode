@@ -62,8 +62,6 @@ func run(c *cli.Context) error {
         AM: true,
         Client: true,
         CM: true,
-        Publisher: true,
-        Beacon: true,
         LoadContracts: []string{"rocketMinipoolSettings", "rocketNodeAPI", "rocketNodeWatchtower", "rocketPool"},
         LoadAbis: []string{"rocketMinipool"},
         WaitPassword: true,
@@ -76,9 +74,6 @@ func run(c *cli.Context) error {
 
     // Start minipool processes
     go watchtower.StartWatchtowerProcess(p)
-
-    // Start services
-    p.Beacon.Connect()
 
     // Block thread
     select {}

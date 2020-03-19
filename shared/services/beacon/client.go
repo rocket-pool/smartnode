@@ -1,4 +1,4 @@
-package beaconchain
+package beacon
 
 import (
     "errors"
