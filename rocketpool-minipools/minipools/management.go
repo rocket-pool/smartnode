@@ -22,6 +22,7 @@ import (
 
 // Config
 const CONTAINER_BASE_PATH string = "/.rocketpool"
+const DOCKER_SOCKET_PATH string = "/var/run/docker.sock"
 const CHECK_MINIPOOLS_INTERVAL string = "1m"
 var checkMinipoolsInterval, _ = time.ParseDuration(CHECK_MINIPOOLS_INTERVAL)
 
@@ -238,7 +239,10 @@ func (p *ManagementProcess) runMinipoolContainer(minipoolAddress *common.Address
             Image: p.imageName,
             Cmd: []string{minipoolAddress.Hex()},
         }, &container.HostConfig{
-            Binds: []string{p.rpPath + ":" + CONTAINER_BASE_PATH},
+            Binds: []string{
+                p.rpPath + ":" + CONTAINER_BASE_PATH,
+                DOCKER_SOCKET_PATH + ":" + DOCKER_SOCKET_PATH,
+            },
             NetworkMode: container.NetworkMode(p.rpNetwork),
             RestartPolicy: container.RestartPolicy{Name: "on-failure"},
         }, nil, containerName); err != nil {
