@@ -79,6 +79,7 @@ func run(c *cli.Context, address string) error {
         Client: true,
         CM: true,
         NodeContractAddress: true,
+        Docker: true,
         LoadContracts: []string{"rocketNodeAPI"},
         LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
         WaitPassword: true,

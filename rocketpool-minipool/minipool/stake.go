@@ -2,14 +2,24 @@ package minipool
 
 import (
     "bytes"
+    "context"
     "encoding/hex"
     "errors"
+    "time"
+
+    "github.com/docker/docker/api/types"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
     "github.com/rocket-pool/smartnode/shared/utils/validator"
 )
+
+
+// Docker config
+const VALIDATOR_CONTAINER_NAME string = "rocketpool_validator_1"
+const VALIDATOR_RESTART_TIMEOUT string = "5s"
+var validatorRestartTimeout, _ = time.ParseDuration(VALIDATOR_RESTART_TIMEOUT)
 
 
 // Stake minipool
@@ -55,11 +65,45 @@ func Stake(p *services.Provider, pool *Minipool) error {
     // Log
     p.Log.Println("Successfully staked minipool...")
 
+    // Restart validator container
+    if err := restartValidator(p); err != nil { return err }
+
     // Encode validator pubkey and add to minipool data
     validatorPubkeyHex := make([]byte, hex.EncodedLen(len(validatorPubkey)))
     hex.Encode(validatorPubkeyHex, validatorPubkey)
     validatorPubkeyStr := string(validatorPubkeyHex)
     pool.Pubkey = validatorPubkeyStr
+
+    // Return
+    return nil
+
+}
+
+
+// Restart validator container
+func restartValidator(p *services.Provider) error {
+
+    // Get all containers
+    containers, err := p.Docker.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+    if err != nil { return errors.New("Error retrieving docker containers: " + err.Error()) }
+
+    // Get validator container ID
+    var validatorContainerId string
+    for _, container := range containers {
+        if container.Names[0] == "/" + VALIDATOR_CONTAINER_NAME {
+            validatorContainerId = container.ID
+            break
+        }
+    }
+    if validatorContainerId == "" { return errors.New("Validator container not found") }
+
+    // Restart validator container
+    if err := p.Docker.ContainerRestart(context.Background(), validatorContainerId, &validatorRestartTimeout); err != nil {
+        return errors.New("Error restarting validator container: " + err.Error())
+    }
+
+    // Log
+    p.Log.Println("Successfully restarted validator container...")
 
     // Return
     return nil
