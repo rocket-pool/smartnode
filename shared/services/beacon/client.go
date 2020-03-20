@@ -1,185 +1,219 @@
 package beacon
 
 import (
+    "bytes"
+    "encoding/json"
     "errors"
-    "fmt"
-    "log"
-    "sync"
-    "time"
-
-    "github.com/gorilla/websocket"
-
-    "github.com/rocket-pool/smartnode/shared/utils/messaging"
+    "io/ioutil"
+    "net/http"
+    "strconv"
 )
 
 
-// Config
-const RECONNECT_INTERVAL string = "10s"
-var reconnectInterval, _ = time.ParseDuration(RECONNECT_INTERVAL)
+// Beacon config
+const REQUEST_CONTENT_TYPE string = "application/json"
+
+// Beacon endpoints
+const REQUEST_ETH2_CONFIG_PATH string = "/spec"
+const REQUEST_SLOTS_PER_EPOCH_PATH string = "/spec/slots_per_epoch"
+const REQUEST_BEACON_HEAD_PATH string = "/beacon/head"
+const REQUEST_VALIDATORS_PATH string = "/beacon/validators"
+
+
+// Beacon request types
+type ValidatorsRequest struct {
+    Pubkeys []string                `json:"pubkeys"`
+}
+
+// Beacon response types
+type Eth2ConfigResponse struct {
+    GenesisForkVersion string       `json:"genesis_fork_version"`
+    BLSWithdrawalPrefixByte string  `json:"bls_withdrawal_prefix_byte"`
+    DomainBeaconProposer uint64     `json:"domain_beacon_proposer"`
+    DomainBeaonAttester uint64      `json:"domain_beacon_attester"`
+    DomainRandao uint64             `json:"domain_randao"`
+    DomainDeposit uint64            `json:"domain_deposit"`
+    DomainVoluntaryExit uint64      `json:"domain_voluntary_exit"`
+    SlotsPerEpoch uint64
+}
+type BeaconHeadResponse struct {
+    Slot uint64                     `json:"slot"`
+    FinalizedSlot uint64            `json:"finalized_slot"`
+    JustifiedSlot uint64            `json:"justified_slot"`
+}
+type ValidatorResponse struct {
+    Pubkey string                   `json:"pubkey"`
+    ValidatorIndex uint64           `json:"validator_index"`
+    Balance uint64                  `json:"balance"`
+    Validator struct {
+        WithdrawalCredentials string        `json:"withdrawal_credentials"`
+        EffectiveBalance uint64             `json:"effective_balance"`
+        Slashed bool                        `json:"slashed"`
+        ActivationEligibilityEpoch uint64   `json:"activation_eligibility_epoch"`
+        ActivationEpoch uint64              `json:"activation_epoch"`
+        ExitEpoch uint64                    `json:"exit_epoch"`
+        WithdrawableEpoch uint64            `json:"withdrawable_epoch"`
+    }                               `json:"validator"`
+}
 
 
 // Client
 type Client struct {
     providerUrl string
-    publisher *messaging.Publisher
-    log *log.Logger
-    connection *websocket.Conn
-    connectionTimer *time.Timer
-    readLock sync.Mutex
-    writeLock sync.Mutex
-}
-
-
-// Client message to server
-type ClientMessage struct {
-    Message string  `json:"message"`
-    Pubkey string   `json:"pubkey"`
-}
-
-
-// Server message to client
-type ServerMessage struct {
-    Message string  `json:"message"`
-    Pubkey string   `json:"pubkey"`
-    Status struct {
-        Code string     `json:"code"`
-        Initiated struct {
-            Exit uint       `json:"exit"`
-        }               `json:"initiated"`
-    }               `json:"status"`
-    Balance uint    `json:"balance"`
-    Number uint     `json:"number"`
-    Action string   `json:"action"`
-    Error string    `json:"error"`
 }
 
 
 /**
  * Create client
  */
-func NewClient(providerUrl string, publisher *messaging.Publisher, logger *log.Logger) *Client {
+func NewClient(providerUrl string) *Client {
     return &Client{
         providerUrl: providerUrl,
-        publisher: publisher,
-        log: logger,
     }
 }
 
 
 /**
- * Get persistent connection to beacon chain server
+ * Get the eth2 config
  */
-func (c *Client) Connect() {
+func (c *Client) GetEth2Config() (*Eth2ConfigResponse, error) {
 
-    // Cancel if already maintaining connection
-    if c.connectionTimer != nil {
-        return
-    }
+    // Data channels
+    responseChannel := make(chan Eth2ConfigResponse)
+    slotsPerEpochChannel := make(chan uint64)
+    errorChannel := make(chan error)
 
-    // Initialise beacon connection timer
+    // Request eth2 config
     go (func() {
-        now, _ := time.ParseDuration("0s")
-        c.connectionTimer = time.NewTimer(now)
-        for _ = range c.connectionTimer.C {
-            c.connect()
+        var response Eth2ConfigResponse
+        if responseBody, err := c.getRequest(REQUEST_ETH2_CONFIG_PATH); err != nil {
+            errorChannel <- errors.New("Error retrieving eth2 config: " + err.Error())
+        } else if err := json.Unmarshal(responseBody, &response); err != nil {
+            errorChannel <- errors.New("Error unpacking eth2 config: " + err.Error())
+        } else {
+            responseChannel <- response
         }
     })()
 
-}
-
-
-/**
- * Send message to beacon chain server
- */
-func (c *Client) Send(payload []byte) error {
-
-    // Lock for write
-    c.writeLock.Lock()
-    defer c.writeLock.Unlock()
-
-    // Check connection is open
-    if c.connection == nil {
-        return errors.New("Cannot send to beacon chain server while connection is closed")
-    }
-
-    // Send
-    return c.connection.WriteMessage(websocket.TextMessage, payload)
-
-}
-
-
-/**
- * Connect to beacon chain server
- */
-func (c *Client) connect() {
-
-    // Open websocket connection to beacon chain server
-    if connection, _, err := websocket.DefaultDialer.Dial(c.providerUrl, nil); err != nil {
-
-        // Log connection errors and retry
-        c.log.Println(errors.New("Error connecting to beacon chain server: " + err.Error()))
-        c.log.Println(fmt.Sprintf("Retrying in %s...", reconnectInterval.String()))
-        c.connectionTimer.Reset(reconnectInterval)
-        return
-
-    } else {
-
-        // Log success & notify
-        defer connection.Close()
-        c.connection = connection
-        c.log.Println("Connected to beacon chain server at", c.providerUrl)
-        c.publisher.Notify("beacon.client.connected", struct{Client *Client}{c})
-
-    }
-
-    // Handle beacon messages
-    closed := make(chan struct{})
+    // Request slots per epoch
     go (func() {
-        defer close(closed)
-        for {
-            if message, err, didClose := c.readMessage(); err != nil {
-                c.log.Println(err)
-                if didClose { return }
-            } else {
-                c.publisher.Notify("beacon.client.message", struct{Client *Client; Message []byte}{c, message})
-            }
+        if responseBody, err := c.getRequest(REQUEST_SLOTS_PER_EPOCH_PATH); err != nil {
+            errorChannel <- errors.New("Error retrieving slots per epoch: " + err.Error())
+        } else if slotsPerEpoch, err := strconv.Atoi(string(responseBody)); err != nil {
+            errorChannel <- errors.New("Error unpacking slots per epoch: " + err.Error())
+        } else {
+            slotsPerEpochChannel <- uint64(slotsPerEpoch)
         }
     })()
 
-    // Block thread until closed, notify & reconnect
-    select {
-        case <-closed:
-            c.connection = nil
-            c.publisher.Notify("beacon.client.disconnected", struct{Client *Client}{c})
-            c.log.Println(fmt.Sprintf("Connection closed, reconnecting in %s...", reconnectInterval.String()))
-            c.connectionTimer.Reset(reconnectInterval)
+    // Receive data
+    var response Eth2ConfigResponse
+    var slotsPerEpoch uint64
+    for received := 0; received < 2; {
+        select {
+            case response = <-responseChannel:
+                received++
+            case slotsPerEpoch = <-slotsPerEpochChannel:
+                received++
+            case err := <-errorChannel:
+                return nil, err
+        }
     }
+
+    // Update response & return
+    response.SlotsPerEpoch = slotsPerEpoch
+    return &response, nil
 
 }
 
 
 /**
- * Read message from beacon chain server
+ * Get the beacon head
  */
-func (c *Client) readMessage() ([]byte, error, bool) {
+func (c *Client) GetBeaconHead() (*BeaconHeadResponse, error) {
 
-    // Lock for read
-    c.readLock.Lock()
-    defer c.readLock.Unlock()
-
-    // Read message
-    messageType, message, err := c.connection.ReadMessage()
+    // Request
+    responseBody, err := c.getRequest(REQUEST_BEACON_HEAD_PATH)
     if err != nil {
-        return nil, errors.New("Error reading beacon message: " + err.Error()), websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err)
+        return nil, errors.New("Error retrieving beacon head: " + err.Error())
     }
 
-    // Check message type
-    if messageType != websocket.TextMessage {
-        return nil, errors.New("Unrecognised beacon message type"), false
+    // Unmarshal response
+    var response BeaconHeadResponse
+    if err := json.Unmarshal(responseBody, &response); err != nil {
+        return nil, errors.New("Error unpacking beacon head: " + err.Error())
     }
 
     // Return
-    return message, nil, false
+    return &response, nil
+
+}
+
+
+/**
+ * Get a validator's status
+ */
+func (c *Client) GetValidatorStatus(pubkey string) (*ValidatorResponse, error) {
+
+    // Request
+    responseBody, err := c.postRequest(REQUEST_VALIDATORS_PATH, ValidatorsRequest{Pubkeys: []string{pubkey}})
+    if err != nil {
+        return nil, errors.New("Error retrieving validator status: " + err.Error())
+    }
+
+    // Unmarshal response
+    var response []ValidatorResponse
+    if err := json.Unmarshal(responseBody, &response); err != nil {
+        return nil, errors.New("Error unpacking validator status: " + err.Error())
+    }
+
+    // Return
+    return &(response[0]), nil
+
+}
+
+
+/**
+ * Make GET request to beacon server
+ */
+func (c *Client) getRequest(requestPath string) ([]byte, error) {
+
+    // Send request
+    response, err := http.Get(c.providerUrl + requestPath)
+    if err != nil { return nil, err }
+    defer response.Body.Close()
+
+    // Get response
+    body, err := ioutil.ReadAll(response.Body)
+    if err != nil { return nil, err }
+
+    // Return
+    return body, nil
+
+}
+
+
+/**
+ * Make POST request to beacon server
+ */
+func (c *Client) postRequest(requestPath string, requestBody interface{}) ([]byte, error) {
+
+    // Get request body
+    requestBodyBytes, err := json.Marshal(requestBody)
+    if err != nil { return nil, err }
+    requestBodyReader := bytes.NewReader(requestBodyBytes)
+
+    // Send request
+    response, err := http.Post(c.providerUrl + requestPath, REQUEST_CONTENT_TYPE, requestBodyReader)
+    if err != nil { return nil, err }
+    defer response.Body.Close()
+
+    // Get response
+    body, err := ioutil.ReadAll(response.Body)
+    if err != nil { return nil, err }
+
+    // Return
+    return body, nil
 
 }
 

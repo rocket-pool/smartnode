@@ -122,9 +122,6 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.WaitClientConn || opts.WaitClientSync || opts.WaitRocketStorage {
         opts.Client = true
     } // Connected client, synced client and RS contract require eth client
-    if opts.Beacon {
-        opts.Publisher = true
-    } // Beacon chain client requires publisher
     if opts.RPLExchange {
         opts.RPLExchangeAddress = true
     } // RPL Exchange contract requires RPL Exchange address
@@ -346,7 +343,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Initialise beacon chain client
     if opts.Beacon {
-        p.Beacon = beacon.NewClient(c.GlobalString("providerBeacon"), p.Publisher, p.Log)
+        p.Beacon = beacon.NewClient(c.GlobalString("providerBeacon"))
     }
 
     // Initialise docker client
