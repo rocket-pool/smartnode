@@ -4,7 +4,6 @@ import (
     "context"
     "errors"
     "fmt"
-    "math/big"
     "time"
 
     "github.com/rocket-pool/smartnode/shared/services"
@@ -55,14 +54,14 @@ func (p *WithdrawalProcess) start() {
 
     // Check minipool for withdrawal on interval while checking
     go (func() {
-        checkMinipoolsTimer := time.NewTicker(checkMinipoolInterval)
+        checkMinipoolTimer := time.NewTicker(checkMinipoolInterval)
         checking := true
         for checking {
             select {
-                case <-checkMinipoolsTimer.C:
+                case <-checkMinipoolTimer.C:
                     p.checkWithdrawal()
                 case <-p.stop:
-                    checkMinipoolsTimer.Stop()
+                    checkMinipoolTimer.Stop()
                     checking = false
             }
         }
@@ -86,6 +85,9 @@ func (p *WithdrawalProcess) checkWithdrawal() {
     // Wait for node to sync
     eth.WaitSync(p.p.Client, true, false)
 
+    // Wait for beacon to sync
+    // TODO: implement
+
     // Check minipool contract still exists
     if code, err := p.p.Client.CodeAt(context.Background(), *(p.minipool.Address), nil); err != nil {
         p.p.Log.Println(errors.New("Error retrieving contract code at minipool address: " + err.Error()))
@@ -96,22 +98,12 @@ func (p *WithdrawalProcess) checkWithdrawal() {
         return
     }
 
-    // Get latest block header
-    header, err := p.p.Client.HeaderByNumber(context.Background(), nil)
-    if err != nil {
-        p.p.Log.Println(errors.New("Error retrieving latest block header: " + err.Error()))
-        return
-    }
-
     // Get minipool status
     status, err := minipool.GetStatus(p.p.CM, p.minipool.Address)
     if err != nil {
         p.p.Log.Println(errors.New("Error retrieving minipool status: " + err.Error()))
         return
     }
-
-    // Log
-    p.p.Log.Println(fmt.Sprintf("Checking minipool %s for withdrawal at block %s...", p.minipool.Address.Hex(), header.Number.String()))
 
     // Check minipool status
     if status.Status > minipool.STAKING {
@@ -123,13 +115,27 @@ func (p *WithdrawalProcess) checkWithdrawal() {
         return
     }
 
-    // Get minipool exit block
-    var exitBlock big.Int
-    exitBlock.Add(status.StatusBlock, status.StakingDuration)
+    // Get current beacon head
+    head, err := p.p.Beacon.GetBeaconHead()
+    if err != nil {
+        p.p.Log.Println(errors.New("Error retrieving current beacon head: " + err.Error()))
+        return
+    }
 
-    // Check exit block
-    if header.Number.Cmp(&exitBlock) == -1 {
-        p.p.Log.Println(fmt.Sprintf("Minipool %s is not ready to withdraw until block %s...", p.minipool.Address.Hex(), exitBlock.String()))
+    // Get validator status & minipool exit epoch
+    validator, err := p.p.Beacon.GetValidatorStatus(p.minipool.Pubkey)
+    if err != nil {
+        p.p.Log.Println(errors.New("Error retrieving validator status: " + err.Error()))
+        return
+    }
+    exitEpoch := validator.Validator.ActivationEpoch + status.StakingDuration.Uint64()
+
+    // Log
+    p.p.Log.Println(fmt.Sprintf("Checking minipool %s for withdrawal at epoch %d...", p.minipool.Address.Hex(), head.Epoch))
+
+    // Check exit epoch
+    if head.Epoch < exitEpoch {
+        p.p.Log.Println(fmt.Sprintf("Minipool %s is not ready to withdraw until epoch %d...", p.minipool.Address.Hex(), exitEpoch))
         return
     }
 
@@ -138,13 +144,21 @@ func (p *WithdrawalProcess) checkWithdrawal() {
 
     // Mark minipool for exit and log
     p.minipoolExiting = true
-    p.p.Log.Println(fmt.Sprintf("Minipool %s is ready to withdraw, since block %s...", p.minipool.Address.Hex(), exitBlock.String()))
+    p.p.Log.Println(fmt.Sprintf("Minipool %s is ready to withdraw, since epoch %d...", p.minipool.Address.Hex(), exitEpoch))
 
-    // Exit validator
-    // TODO:
-    //   - request validator status & check if active
-    //   - send voluntary exit message
-    //   - poll validator status until exit initiated
+    // Withdraw minipool
+    p.withdraw()
+
+}
+
+
+/**
+ * Withdraw minipool
+ */
+func (p *WithdrawalProcess) withdraw() {
+
+    // Log
+    p.p.Log.Println("Minipool withdrawal process not yet implemented...")
 
 }
 
