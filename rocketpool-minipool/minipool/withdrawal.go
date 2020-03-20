@@ -122,16 +122,21 @@ func (p *WithdrawalProcess) checkWithdrawal() {
         return
     }
 
-    // Get validator status & minipool exit epoch
+    // Get & check validator status
     validator, err := p.p.Beacon.GetValidatorStatus(p.minipool.Pubkey)
     if err != nil {
         p.p.Log.Println(errors.New("Error retrieving validator status: " + err.Error()))
         return
+    } else if validator.Validator.ActivationEpoch == 0 {
+        p.p.Log.Println(fmt.Sprintf("Minipool %s validator does not yet exist on beacon chain...", p.minipool.Address.Hex()))
+        return
     }
-    exitEpoch := validator.Validator.ActivationEpoch + status.StakingDuration.Uint64()
 
     // Log
     p.p.Log.Println(fmt.Sprintf("Checking minipool %s for withdrawal at epoch %d...", p.minipool.Address.Hex(), head.Epoch))
+
+    // Get minipool exit epoch
+    exitEpoch := validator.Validator.ActivationEpoch + status.StakingDuration.Uint64()
 
     // Check exit epoch
     if head.Epoch < exitEpoch {
