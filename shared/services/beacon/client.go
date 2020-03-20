@@ -40,6 +40,9 @@ type BeaconHeadResponse struct {
     Slot uint64                     `json:"slot"`
     FinalizedSlot uint64            `json:"finalized_slot"`
     JustifiedSlot uint64            `json:"justified_slot"`
+    Epoch uint64
+    FinalizedEpoch uint64
+    JustifiedEpoch uint64
 }
 type ValidatorResponse struct {
     Pubkey string                   `json:"pubkey"`
@@ -132,19 +135,52 @@ func (c *Client) GetEth2Config() (*Eth2ConfigResponse, error) {
  */
 func (c *Client) GetBeaconHead() (*BeaconHeadResponse, error) {
 
-    // Request
-    responseBody, err := c.getRequest(REQUEST_BEACON_HEAD_PATH)
-    if err != nil {
-        return nil, errors.New("Error retrieving beacon head: " + err.Error())
-    }
+    // Data channels
+    responseChannel := make(chan BeaconHeadResponse)
+    slotsPerEpochChannel := make(chan uint64)
+    errorChannel := make(chan error)
 
-    // Unmarshal response
+    // Request beacon head
+    go (func() {
+        var response BeaconHeadResponse
+        if responseBody, err := c.getRequest(REQUEST_BEACON_HEAD_PATH); err != nil {
+            errorChannel <- errors.New("Error retrieving beacon head: " + err.Error())
+        } else if err := json.Unmarshal(responseBody, &response); err != nil {
+            errorChannel <- errors.New("Error unpacking beacon head: " + err.Error())
+        } else {
+            responseChannel <- response
+        }
+    })()
+
+    // Request slots per epoch
+    go (func() {
+        if responseBody, err := c.getRequest(REQUEST_SLOTS_PER_EPOCH_PATH); err != nil {
+            errorChannel <- errors.New("Error retrieving slots per epoch: " + err.Error())
+        } else if slotsPerEpoch, err := strconv.Atoi(string(responseBody)); err != nil {
+            errorChannel <- errors.New("Error unpacking slots per epoch: " + err.Error())
+        } else {
+            slotsPerEpochChannel <- uint64(slotsPerEpoch)
+        }
+    })()
+
+    // Receive data
     var response BeaconHeadResponse
-    if err := json.Unmarshal(responseBody, &response); err != nil {
-        return nil, errors.New("Error unpacking beacon head: " + err.Error())
+    var slotsPerEpoch uint64
+    for received := 0; received < 2; {
+        select {
+            case response = <-responseChannel:
+                received++
+            case slotsPerEpoch = <-slotsPerEpochChannel:
+                received++
+            case err := <-errorChannel:
+                return nil, err
+        }
     }
 
-    // Return
+    // Update response & return
+    response.Epoch = response.Slot / slotsPerEpoch
+    response.FinalizedEpoch = response.FinalizedSlot / slotsPerEpoch
+    response.JustifiedEpoch = response.JustifiedSlot / slotsPerEpoch
     return &response, nil
 
 }
