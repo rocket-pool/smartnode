@@ -62,17 +62,14 @@ func Stake(p *services.Provider, pool *Minipool) error {
         }
     }
 
+    // Update minipool pubkey
+    pool.Pubkey = "0x" + hex.EncodeToString(validatorPubkey)
+
     // Log
     p.Log.Println("Successfully staked minipool...")
 
     // Restart validator container
     if err := restartValidator(p); err != nil { return err }
-
-    // Encode validator pubkey and add to minipool data
-    validatorPubkeyHex := make([]byte, hex.EncodedLen(len(validatorPubkey)))
-    hex.Encode(validatorPubkeyHex, validatorPubkey)
-    validatorPubkeyStr := string(validatorPubkeyHex)
-    pool.Pubkey = validatorPubkeyStr
 
     // Return
     return nil
