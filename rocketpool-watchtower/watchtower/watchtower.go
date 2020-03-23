@@ -13,6 +13,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
+    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 
@@ -186,7 +187,7 @@ func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey
     }
 
     // Get validator status
-    validator, err := p.p.Beacon.GetValidatorStatus("0x" + pubkey)
+    validator, err := p.p.Beacon.GetValidatorStatus(hexutil.AddPrefix(pubkey))
     if err != nil {
         p.p.Log.Println(errors.New("Error retrieving validator status: " + err.Error()))
         return

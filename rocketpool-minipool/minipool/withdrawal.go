@@ -9,6 +9,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
+    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 
@@ -126,7 +127,7 @@ func (p *WithdrawalProcess) checkWithdrawal() {
     p.p.Log.Println(fmt.Sprintf("Checking minipool %s for withdrawal at epoch %d...", p.minipool.Address.Hex(), head.Epoch))
 
     // Get & check validator status; get minipool exit epoch
-    validator, err := p.p.Beacon.GetValidatorStatus("0x" + p.minipool.Pubkey)
+    validator, err := p.p.Beacon.GetValidatorStatus(hexutil.AddPrefix(p.minipool.Pubkey))
     if err != nil {
         p.p.Log.Println(errors.New("Error retrieving validator status: " + err.Error()))
         return
