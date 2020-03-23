@@ -59,7 +59,7 @@ func Initialise(p *services.Provider, minipoolAddressStr string) (*Minipool, err
     return &Minipool{
         Address: &minipoolAddress,
         Contract: minipoolContract,
-        Pubkey: "0x" + hex.EncodeToString(*validatorPubkey),
+        Pubkey: hex.EncodeToString(*validatorPubkey),
     }, nil
 
 }

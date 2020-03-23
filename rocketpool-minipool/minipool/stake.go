@@ -65,7 +65,7 @@ func Stake(p *services.Provider, pool *Minipool) error {
     }
 
     // Update minipool pubkey
-    pool.Pubkey = "0x" + hex.EncodeToString(validatorPubkey)
+    pool.Pubkey = hex.EncodeToString(validatorPubkey)
 
     // Log
     p.Log.Println("Successfully staked minipool...")

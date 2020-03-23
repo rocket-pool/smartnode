@@ -186,7 +186,7 @@ func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey
     }
 
     // Get validator status
-    validator, err := p.p.Beacon.GetValidatorStatus(pubkey)
+    validator, err := p.p.Beacon.GetValidatorStatus("0x" + pubkey)
     if err != nil {
         p.p.Log.Println(errors.New("Error retrieving validator status: " + err.Error()))
         return

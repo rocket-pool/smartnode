@@ -126,7 +126,7 @@ func (p *WithdrawalProcess) checkWithdrawal() {
     p.p.Log.Println(fmt.Sprintf("Checking minipool %s for withdrawal at epoch %d...", p.minipool.Address.Hex(), head.Epoch))
 
     // Get & check validator status; get minipool exit epoch
-    validator, err := p.p.Beacon.GetValidatorStatus(p.minipool.Pubkey)
+    validator, err := p.p.Beacon.GetValidatorStatus("0x" + p.minipool.Pubkey)
     if err != nil {
         p.p.Log.Println(errors.New("Error retrieving validator status: " + err.Error()))
         return
