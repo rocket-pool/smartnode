@@ -24,7 +24,7 @@ func setTargetUserFee(c *cli.Context, feePercent float64) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, feeSet)
+    api.PrintResponse(p.Output, feeSet, "")
     return nil
 
 }

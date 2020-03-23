@@ -37,7 +37,19 @@ func withdrawMinipool(c *cli.Context, address string) error {
 
     // Check response
     if !canWithdraw.Success {
-        api.PrintResponse(p.Output, canWithdraw)
+        var message string
+        if canWithdraw.MinipoolDidNotExist {
+            message = "The specified minipool does not exist"
+        } else if canWithdraw.WithdrawalsDisabled {
+            message = "Minipool withdrawals are currently disabled in Rocket Pool"
+        } else if canWithdraw.InvalidNodeOwner {
+            message = "The specified minipool is not owned by the node"
+        } else if canWithdraw.InvalidStatus {
+            message = "The specified minipool is not ready for withdrawal"
+        } else if canWithdraw.NodeDepositDidNotExist {
+            message = "The node deposit has already been withdrawn from the specified minipool"
+        }
+        api.PrintResponse(p.Output, canWithdraw, message)
         return nil
     }
 
@@ -46,7 +58,7 @@ func withdrawMinipool(c *cli.Context, address string) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, withdrawn)
+    api.PrintResponse(p.Output, withdrawn, "")
     return nil
 
 }

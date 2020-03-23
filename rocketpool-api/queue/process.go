@@ -31,7 +31,15 @@ func processQueue(c *cli.Context, durationId string) error {
 
     // Check response
     if !canProcess.Success {
-        api.PrintResponse(p.Output, canProcess)
+        var message string
+        if canProcess.InvalidStakingDuration {
+            message = "The specified staking duration is invalid or disabled"
+        } else if canProcess.InsufficientBalance {
+            message = "The queue has an insufficient ETH balance for processing"
+        } else if canProcess.NoAvailableNodes {
+            message = "No minipools are currently available for assignment"
+        }
+        api.PrintResponse(p.Output, canProcess, message)
         return nil
     }
 
@@ -40,7 +48,7 @@ func processQueue(c *cli.Context, durationId string) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, processed)
+    api.PrintResponse(p.Output, processed, "")
     return nil
 
 }

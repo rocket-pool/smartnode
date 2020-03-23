@@ -29,7 +29,7 @@ func getUserFee(c *cli.Context) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, userFee)
+    api.PrintResponse(p.Output, userFee, "")
     return nil
 
 }
