@@ -179,7 +179,7 @@ func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey
     p.p.Log.Println(fmt.Sprintf("Checking minipool %s status...", minipoolAddress.Hex()))
 
     // Get minipool status
-    status, err := getMinipoolStatus(p.p, &minipoolAddress)
+    status, err := minipool.GetStatusCode(p.p.CM, &minipoolAddress)
     if err != nil {
         p.p.Log.Println(err)
         return
@@ -261,27 +261,6 @@ func (p *WatchtowerProcess) scheduleCheckMinipools() {
                 checkMinipoolsTimer.Stop()
         }
     })()
-
-}
-
-
-// Get a minipool's status
-func getMinipoolStatus(p *services.Provider, address *common.Address) (uint8, error) {
-
-    // Initialise minipool contract
-    minipoolContract, err := p.CM.NewContract(address, "rocketMinipool")
-    if err != nil {
-        return 0, errors.New("Error initialising minipool contract: " + err.Error())
-    }
-
-    // Get minipool's current status
-    status := new(uint8)
-    if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
-        return 0, errors.New("Error retrieving minipool status: " + err.Error())
-    }
-
-    // Return
-    return *status, nil
 
 }
 
