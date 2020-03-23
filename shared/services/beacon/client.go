@@ -129,13 +129,13 @@ func (c *Client) GetEth2Config() (*Eth2ConfigResponse, error) {
         }
     }
 
-    // Decode hex data
-    if genesisForkVersionBytes, err := hex.DecodeString(response.GenesisForkVersion); err != nil {
+    // Decode hex data (strip prefix)
+    if genesisForkVersionBytes, err := hex.DecodeString(response.GenesisForkVersion[2:]); err != nil {
         return nil, errors.New("Error decoding genesis fork version: " + err.Error())
     } else {
         response.GenesisForkVersionBytes = genesisForkVersionBytes
     }
-    if blsWithdrawalPrefixByteBytes, err := hex.DecodeString(response.BLSWithdrawalPrefixByte); err != nil {
+    if blsWithdrawalPrefixByteBytes, err := hex.DecodeString(response.BLSWithdrawalPrefixByte[2:]); err != nil {
         return nil, errors.New("Error decoding BLS withdrawal prefix byte: " + err.Error())
     } else {
         response.BLSWithdrawalPrefixByteBytes = blsWithdrawalPrefixByteBytes
@@ -222,13 +222,13 @@ func (c *Client) GetValidatorStatus(pubkey string) (*ValidatorResponse, error) {
     }
     response := validators[0]
 
-    // Decode hex data
-    if pubkeyBytes, err := hex.DecodeString(response.Pubkey); err != nil {
+    // Decode hex data (strip prefix)
+    if pubkeyBytes, err := hex.DecodeString(response.Pubkey[2:]); err != nil {
         return nil, errors.New("Error decoding validator pubkey: " + err.Error())
     } else {
         response.PubkeyBytes = pubkeyBytes
     }
-    if withdrawalCredentialsBytes, err := hex.DecodeString(response.Validator.WithdrawalCredentials); err != nil {
+    if withdrawalCredentialsBytes, err := hex.DecodeString(response.Validator.WithdrawalCredentials[2:]); err != nil {
         return nil, errors.New("Error decoding validator withdrawal credentials: " + err.Error())
     } else {
         response.Validator.WithdrawalCredentialsBytes = withdrawalCredentialsBytes
