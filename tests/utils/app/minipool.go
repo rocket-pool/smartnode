@@ -10,6 +10,7 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/validators"
@@ -105,6 +106,9 @@ func AppStakeMinipool(options AppOptions, minipoolAddress common.Address) error 
     client, err := ethclient.Dial(options.ProviderPow)
     if err != nil { return err }
 
+    // Initialise beacon client
+    beaconClient := beacon.NewClient(options.ProviderBeacon)
+
     // Initialise contract manager & load contracts
     cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
     if err != nil { return err }
@@ -132,7 +136,9 @@ func AppStakeMinipool(options AppOptions, minipoolAddress common.Address) error 
     validatorPubkey := validatorKey.PublicKey.Marshal()
 
     // Get validator deposit data
-    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials)
+    eth2Config, err := beaconClient.GetEth2Config()
+    if err != nil { return err }
+    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
     if err != nil { return errors.New("Error building validator deposit data: " + err.Error()) }
 
     // Stake minipool

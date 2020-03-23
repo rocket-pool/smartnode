@@ -50,7 +50,9 @@ func Stake(p *services.Provider, pool *Minipool) error {
     validatorPubkey := validatorKey.PublicKey.Marshal()
 
     // Get validator deposit data
-    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials)
+    eth2Config, err := p.Beacon.GetEth2Config()
+    if err != nil { return err }
+    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
     if err != nil { return errors.New("Error building validator deposit data: " + err.Error()) }
 
     // Stake minipool
