@@ -29,7 +29,7 @@ func getTokenLiquidity(c *cli.Context, token string) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, liquidity)
+    api.PrintResponse(p.Output, liquidity, "")
     return nil
 
 }

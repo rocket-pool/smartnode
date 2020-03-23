@@ -33,7 +33,7 @@ func getTokenPrice(c *cli.Context, amount float64, token string) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, price)
+    api.PrintResponse(p.Output, price, "")
     return nil
 
 }

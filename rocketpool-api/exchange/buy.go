@@ -37,7 +37,13 @@ func buyTokens(c *cli.Context, etherAmount float64, tokenAmount float64, token s
 
     // Check response
     if !canBuy.Success {
-        api.PrintResponse(p.Output, canBuy)
+        var message string
+        if canBuy.InsufficientAccountBalance {
+            message = "Node has insufficient ETH balance to complete trade"
+        } else if canBuy.InsufficientExchangeLiquidity {
+            message = "Exchange has insufficient liquidity to cover trade"
+        }
+        api.PrintResponse(p.Output, canBuy, message)
         return nil
     }
 
@@ -46,7 +52,7 @@ func buyTokens(c *cli.Context, etherAmount float64, tokenAmount float64, token s
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, bought)
+    api.PrintResponse(p.Output, bought, "")
     return nil
 
 }
