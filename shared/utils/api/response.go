@@ -7,26 +7,46 @@ import (
 )
 
 
-// Error response type
-type ErrorResponse struct {
-    Success bool `json:"success"`
-    Error string `json:"error"`
+// API response type
+type Response struct {
+    Status string       `json:"status"`
+    Data interface{}    `json:"data"`
+    Error string        `json:"error"`
 }
 
 
-// Print a response
-func PrintResponse(output *os.File, response interface{}) {
-    if output == nil { output = os.Stdout }
-    responseBytes, err := json.Marshal(response)
-    if err == nil { fmt.Fprintln(output, string(responseBytes)) }
+// Print an API response
+func PrintResponse(output *os.File, response interface{}, errorMessage string) {
+
+    // Get status
+    var status string
+    if errorMessage == "" { status = "success" }
+    else { status = "error" }
+
+    // Print
+    printResponse(output, Response{
+        Status: status,
+        Data: response,
+        Error: errorMessage,
+    })
+
 }
 
 
 // Print an error response
 func PrintErrorResponse(output *os.File, err error) {
-    PrintResponse(output, ErrorResponse{
-        Success: false,
+    printResponse(output, Response{
+        Status: "error",
+        Data: struct{}{},
         Error: err.Error(),
     })
+}
+
+
+// Print a response
+func printResponse(output *os.File, response interface{}) {
+    if output == nil { output = os.Stdout }
+    responseBytes, err := json.Marshal(response)
+    if err == nil { fmt.Fprintln(output, string(responseBytes)) }
 }
 

@@ -34,7 +34,11 @@ func cancelDeposit(c *cli.Context) error {
 
     // Check response
     if !canCanel.Success {
-        api.PrintResponse(p.Output, canCanel)
+        var message string
+        if canCanel.ReservationDidNotExist {
+            message = "Node does not have an existing deposit reservation"
+        }
+        api.PrintResponse(p.Output, canCanel, message)
         return nil
     }
 
@@ -43,7 +47,7 @@ func cancelDeposit(c *cli.Context) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, cancelled)
+    api.PrintResponse(p.Output, cancelled, "")
     return nil
 
 }

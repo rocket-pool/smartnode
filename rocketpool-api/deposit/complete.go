@@ -34,7 +34,7 @@ func completeDeposit(c *cli.Context) error {
     canComplete, err := deposit.CanCompleteDeposit(p)
     if err != nil { return err }
 
-    // RPL send not available
+    // RPL send not available via API
     if canComplete.RplRequiredWei.Cmp(big.NewInt(0)) > 0 {
         canComplete.InsufficientNodeRplBalance = true
         canComplete.Success = false
@@ -42,7 +42,19 @@ func completeDeposit(c *cli.Context) error {
 
     // Check response
     if !canComplete.Success {
-        api.PrintResponse(p.Output, canComplete)
+        var message string
+        if canComplete.ReservationDidNotExist {
+            message = "Node does not have an existing deposit reservation"
+        } else if canComplete.DepositsDisabled {
+            message = "Node deposits are currently disabled"
+        } else if canComplete.MinipoolCreationDisabled {
+            message = "Minipool creation is currently disabled"
+        } else if canComplete.InsufficientNodeEtherBalance {
+            message = "Node has insufficient ETH balance to complete deposit"
+        } else if canComplete.InsufficientNodeRplBalance {
+            message = "Node has insufficient RPL balance to complete deposit"
+        }
+        api.PrintResponse(p.Output, canComplete, message)
         return nil
     }
 
@@ -51,7 +63,7 @@ func completeDeposit(c *cli.Context) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, completed)
+    api.PrintResponse(p.Output, completed, "")
     return nil
 
 }

@@ -28,7 +28,7 @@ func getRplRequired(c *cli.Context) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, required)
+    api.PrintResponse(p.Output, required, "")
     return nil
 
 }
