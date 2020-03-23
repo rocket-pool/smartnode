@@ -25,7 +25,7 @@ func exportNodeAccount(c *cli.Context) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, account)
+    api.PrintResponse(p.Output, account, "")
     return nil
 
 }

@@ -30,7 +30,7 @@ func setNodeTimezone(c *cli.Context, timezone string) error {
     if err != nil { return err }
 
     // Return response
-    api.PrintResponse(p.Output, timezoneSet)
+    api.PrintResponse(p.Output, timezoneSet, "")
     return nil
 
 }

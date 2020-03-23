@@ -31,7 +31,15 @@ func registerNode(c *cli.Context, timezone string) error {
 
     // Check response
     if !canRegister.Success {
-        api.PrintResponse(p.Output, canRegister)
+        var message string
+        if canRegister.HadExistingContract {
+            message = "Node is already registered with Rocket Pool"
+        } else if canRegister.RegistrationsDisabled {
+            message = "Node registrations are currently disabled in Rocket Pool"
+        } else if canRegister.InsufficientAccountBalance {
+            message = "Node account has insufficient ETH balance for registration"
+        }
+        api.PrintResponse(p.Output, canRegister, message)
         return nil
     }
 
@@ -40,7 +48,7 @@ func registerNode(c *cli.Context, timezone string) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, registered)
+    api.PrintResponse(p.Output, registered, "")
     return nil
 
 }

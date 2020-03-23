@@ -33,7 +33,7 @@ func getNodeStatus(c *cli.Context) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, status)
+    api.PrintResponse(p.Output, status, "")
     return nil
 
 }
