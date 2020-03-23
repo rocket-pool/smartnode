@@ -224,6 +224,9 @@ func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey
         return
     }
 
+    // Log
+    p.p.Log.Println(fmt.Sprintf("Minipool %s status is up to date with validator", minipoolAddress.Hex()))
+
 }
 
 
