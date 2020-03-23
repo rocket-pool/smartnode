@@ -37,7 +37,11 @@ func sendFromNode(c *cli.Context, address string, amount float64, unit string) e
 
     // Check response
     if !canSend.Success {
-        api.PrintResponse(p.Output, canSend)
+        var message string
+        if canSend.InsufficientAccountBalance {
+            message = "Node account has insufficient balance for transfer"
+        }
+        api.PrintResponse(p.Output, canSend, message)
         return nil
     }
 
@@ -46,7 +50,7 @@ func sendFromNode(c *cli.Context, address string, amount float64, unit string) e
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, sent)
+    api.PrintResponse(p.Output, sent, "")
     return nil
 
 }

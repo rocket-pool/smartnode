@@ -36,7 +36,11 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
 
     // Check response
     if !canWithdraw.Success {
-        api.PrintResponse(p.Output, canWithdraw)
+        var message string
+        if canWithdraw.InsufficientNodeBalance {
+            message = "Node contract has insufficient balance for withdrawal"
+        }
+        api.PrintResponse(p.Output, canWithdraw, message)
         return nil
     }
 
@@ -45,7 +49,7 @@ func withdrawFromNode(c *cli.Context, amount float64, unit string) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, withdrawn)
+    api.PrintResponse(p.Output, withdrawn, "")
     return nil
 
 }
