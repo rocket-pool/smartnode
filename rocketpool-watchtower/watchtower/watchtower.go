@@ -10,6 +10,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
@@ -140,6 +141,9 @@ func (p *WatchtowerProcess) checkMinipools() {
     // Wait for node to sync
     eth.WaitSync(p.p.Client, true, false)
 
+    // Wait for beacon to sync
+    // TODO: implement
+
     // Get active minipools
     if activeMinipools, err := minipool.GetActiveMinipoolsByValidatorPubkey(p.p.CM); err != nil {
         p.p.Log.Println(errors.New("Error getting active minipools: " + err.Error()))
@@ -148,49 +152,77 @@ func (p *WatchtowerProcess) checkMinipools() {
         p.activeMinipools = *activeMinipools
     }
 
+    // Get current beacon head
+    head, err := p.p.Beacon.GetBeaconHead()
+    if err != nil {
+        p.p.Log.Println(errors.New("Error retrieving current beacon head: " + err.Error()))
+        return
+    }
+
     // Request validator statuses for active minipools
     for pubkey, minipoolAddress := range p.activeMinipools {
-        go (func(pubkey string, minipoolAddress common.Address) {
-
-            // Log
-            p.p.Log.Println(fmt.Sprintf("Checking minipool %s status...", minipoolAddress.Hex()))
-
-            // Check & update minipool status
-            // TODO:
-            //   - Get minipool status
-            //   - Request validator status
-            //   - If minipool is STAKING & validator is exited, log minipool out
-            //   - If minipool is LOGGED_OUT & validator is withdrawable, withdraw minipool
-
-            /*
-            // Log minipool out
-            if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
-                p.p.Log.Println(err)
-            } else {
-                if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.CM.Addresses["rocketNodeWatchtower"], p.p.CM.Abis["rocketNodeWatchtower"], "logoutMinipool", minipoolAddress); err != nil {
-                    p.p.Log.Println(errors.New("Error logging out minipool: " + err.Error()))
-                } else {
-                    p.p.Log.Println(fmt.Sprintf("Minipool %s was successfully logged out", minipoolAddress.Hex()))
-                }
-            }
-
-            // Withdraw minipool
-            if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
-                p.p.Log.Println(err)
-            } else {
-                if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.CM.Addresses["rocketNodeWatchtower"], p.p.CM.Abis["rocketNodeWatchtower"], "withdrawMinipool", minipoolAddress, balanceWei); err != nil {
-                    p.p.Log.Println(errors.New("Error withdrawing minipool: " + err.Error()))
-                } else {
-                    p.p.Log.Println(fmt.Sprintf("Minipool %s was successfully withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), eth.WeiToEth(balanceWei)))
-                }
-            }
-            */
-
-        })(pubkey, minipoolAddress)
+        go p.checkMinipool(minipoolAddress, pubkey, head)
     }
 
     // Schedule next minipool check
     p.scheduleCheckMinipools()
+
+}
+
+
+/**
+ * Check minipool
+ */
+func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey string, head *beacon.BeaconHeadResponse) {
+
+    // Log
+    p.p.Log.Println(fmt.Sprintf("Checking minipool %s status...", minipoolAddress.Hex()))
+
+    // Get minipool status
+    status, err := getMinipoolStatus(p.p, &minipoolAddress)
+    if err != nil {
+        p.p.Log.Println(err)
+        return
+    }
+
+    // Get validator status
+    validator, err := p.p.Beacon.GetValidatorStatus(pubkey)
+    if err != nil {
+        p.p.Log.Println(errors.New("Error retrieving validator status: " + err.Error()))
+        return
+    } else if validator.Validator.ActivationEpoch == 0 {
+        p.p.Log.Println(fmt.Sprintf("Minipool %s validator does not yet exist on beacon chain...", minipoolAddress.Hex()))
+        return
+    }
+
+    // Log minipool out if validator has exited
+    if status == minipool.STAKING && head.Epoch >= validator.Validator.ExitEpoch {
+        if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
+            p.p.Log.Println(err)
+        } else {
+            if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.CM.Addresses["rocketNodeWatchtower"], p.p.CM.Abis["rocketNodeWatchtower"], "logoutMinipool", minipoolAddress); err != nil {
+                p.p.Log.Println(errors.New("Error logging out minipool: " + err.Error()))
+            } else {
+                p.p.Log.Println(fmt.Sprintf("Minipool %s was successfully logged out", minipoolAddress.Hex()))
+            }
+        }
+        return
+    }
+
+    // Withdraw minipool if validator is withdrawable
+    if status == minipool.LOGGED_OUT && head.Epoch >= validator.Validator.WithdrawableEpoch {
+        if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
+            p.p.Log.Println(err)
+        } else {
+            validatorBalanceWei := eth.GweiToWei(float64(validator.Balance))
+            if _, err := eth.ExecuteContractTransaction(p.p.Client, txor, p.p.CM.Addresses["rocketNodeWatchtower"], p.p.CM.Abis["rocketNodeWatchtower"], "withdrawMinipool", minipoolAddress, validatorBalanceWei); err != nil {
+                p.p.Log.Println(errors.New("Error withdrawing minipool: " + err.Error()))
+            } else {
+                p.p.Log.Println(fmt.Sprintf("Minipool %s was successfully withdrawn with a balance of %.2f ETH", minipoolAddress.Hex(), eth.WeiToEth(validatorBalanceWei)))
+            }
+        }
+        return
+    }
 
 }
 
@@ -231,22 +263,22 @@ func (p *WatchtowerProcess) scheduleCheckMinipools() {
 
 
 // Get a minipool's status
-func getMinipoolStatus(p *services.Provider, address *common.Address) (*uint8, error) {
+func getMinipoolStatus(p *services.Provider, address *common.Address) (uint8, error) {
 
     // Initialise minipool contract
     minipoolContract, err := p.CM.NewContract(address, "rocketMinipool")
     if err != nil {
-        return nil, errors.New("Error initialising minipool contract: " + err.Error())
+        return 0, errors.New("Error initialising minipool contract: " + err.Error())
     }
 
     // Get minipool's current status
     status := new(uint8)
     if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
-        return nil, errors.New("Error retrieving minipool status: " + err.Error())
+        return 0, errors.New("Error retrieving minipool status: " + err.Error())
     }
 
     // Return
-    return status, nil
+    return *status, nil
 
 }
 
