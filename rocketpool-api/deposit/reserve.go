@@ -34,7 +34,15 @@ func reserveDeposit(c *cli.Context, durationId string) error {
 
     // Check response
     if !canReserve.Success {
-        api.PrintResponse(p.Output, canReserve)
+        var message string
+        if canReserve.HadExistingReservation {
+            message = "Node has an existing deposit reservation"
+        } else if canReserve.DepositsDisabled {
+            message = "Node deposits are currently disabled in Rocket Pool"
+        } else if canReserve.StakingDurationDisabled {
+            message = "The specified staking duration is invalid or disabled"
+        }
+        api.PrintResponse(p.Output, canReserve, message)
         return nil
     }
 
@@ -43,7 +51,7 @@ func reserveDeposit(c *cli.Context, durationId string) error {
     if err != nil { return err }
 
     // Print response
-    api.PrintResponse(p.Output, reserved)
+    api.PrintResponse(p.Output, reserved, "")
     return nil
 
 }

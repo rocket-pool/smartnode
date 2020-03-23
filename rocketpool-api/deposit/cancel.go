@@ -29,16 +29,16 @@ func cancelDeposit(c *cli.Context) error {
     defer p.Cleanup()
 
     // Check deposit reservation can be cancelled
-    canCanel, err := deposit.CanCancelDeposit(p)
+    canCancel, err := deposit.CanCancelDeposit(p)
     if err != nil { return err }
 
     // Check response
-    if !canCanel.Success {
+    if !canCancel.Success {
         var message string
-        if canCanel.ReservationDidNotExist {
+        if canCancel.ReservationDidNotExist {
             message = "Node does not have an existing deposit reservation"
         }
-        api.PrintResponse(p.Output, canCanel, message)
+        api.PrintResponse(p.Output, canCancel, message)
         return nil
     }
 

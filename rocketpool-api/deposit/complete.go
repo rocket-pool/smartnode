@@ -46,9 +46,9 @@ func completeDeposit(c *cli.Context) error {
         if canComplete.ReservationDidNotExist {
             message = "Node does not have an existing deposit reservation"
         } else if canComplete.DepositsDisabled {
-            message = "Node deposits are currently disabled"
+            message = "Node deposits are currently disabled in Rocket Pool"
         } else if canComplete.MinipoolCreationDisabled {
-            message = "Minipool creation is currently disabled"
+            message = "Minipool creation is currently disabled in Rocket Pool"
         } else if canComplete.InsufficientNodeEtherBalance {
             message = "Node has insufficient ETH balance to complete deposit"
         } else if canComplete.InsufficientNodeRplBalance {
