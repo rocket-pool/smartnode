@@ -190,7 +190,7 @@ func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey
     if err != nil {
         p.p.Log.Println(errors.New("Error retrieving validator status: " + err.Error()))
         return
-    } else if validator.Validator.ActivationEpoch == 0 {
+    } else if !validator.Exists {
         p.p.Log.Println(fmt.Sprintf("Minipool %s validator does not yet exist on beacon chain...", minipoolAddress.Hex()))
         return
     }

@@ -57,6 +57,7 @@ type ValidatorResponse struct {
         ExitEpoch uint64                    `json:"exit_epoch"`
         WithdrawableEpoch uint64            `json:"withdrawable_epoch"`
     }                               `json:"validator"`
+    Exists bool
 }
 
 
@@ -203,8 +204,10 @@ func (c *Client) GetValidatorStatus(pubkey string) (*ValidatorResponse, error) {
         return nil, errors.New("Error unpacking validator status: " + err.Error())
     }
 
-    // Return
-    return &(response[0]), nil
+    // Update response & return
+    validator := response[0]
+    validator.Exists = validator.Validator.ActivationEpoch != 0 // Set to default value of 0 only if validator is null in JSON response
+    return &validator, nil
 
 }
 
