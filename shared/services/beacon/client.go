@@ -2,6 +2,7 @@ package beacon
 
 import (
     "bytes"
+    "encoding/hex"
     "encoding/json"
     "errors"
     "io/ioutil"
@@ -34,6 +35,8 @@ type Eth2ConfigResponse struct {
     DomainRandao uint64             `json:"domain_randao"`
     DomainDeposit uint64            `json:"domain_deposit"`
     DomainVoluntaryExit uint64      `json:"domain_voluntary_exit"`
+    GenesisForkVersionBytes []byte
+    BLSWithdrawalPrefixByteBytes []byte
     SlotsPerEpoch uint64
 }
 type BeaconHeadResponse struct {
@@ -56,7 +59,9 @@ type ValidatorResponse struct {
         ActivationEpoch uint64              `json:"activation_epoch"`
         ExitEpoch uint64                    `json:"exit_epoch"`
         WithdrawableEpoch uint64            `json:"withdrawable_epoch"`
+        WithdrawalCredentialsBytes []byte
     }                               `json:"validator"`
+    PubkeyBytes []byte
     Exists bool
 }
 
@@ -122,6 +127,18 @@ func (c *Client) GetEth2Config() (*Eth2ConfigResponse, error) {
             case err := <-errorChannel:
                 return nil, err
         }
+    }
+
+    // Decode hex data
+    if genesisForkVersionBytes, err := hex.DecodeString(response.GenesisForkVersion); err != nil {
+        return nil, errors.New("Error decoding genesis fork version: " + err.Error())
+    } else {
+        response.GenesisForkVersionBytes = genesisForkVersionBytes
+    }
+    if blsWithdrawalPrefixByteBytes, err := hex.DecodeString(response.BLSWithdrawalPrefixByte); err != nil {
+        return nil, errors.New("Error decoding BLS withdrawal prefix byte: " + err.Error())
+    } else {
+        response.BLSWithdrawalPrefixByteBytes = blsWithdrawalPrefixByteBytes
     }
 
     // Update response & return
@@ -199,15 +216,27 @@ func (c *Client) GetValidatorStatus(pubkey string) (*ValidatorResponse, error) {
     }
 
     // Unmarshal response
-    var response []ValidatorResponse
-    if err := json.Unmarshal(responseBody, &response); err != nil {
+    var validators []ValidatorResponse
+    if err := json.Unmarshal(responseBody, &validators); err != nil {
         return nil, errors.New("Error unpacking validator status: " + err.Error())
+    }
+    response := validators[0]
+
+    // Decode hex data
+    if pubkeyBytes, err := hex.DecodeString(response.Pubkey); err != nil {
+        return nil, errors.New("Error decoding validator pubkey: " + err.Error())
+    } else {
+        response.PubkeyBytes = pubkeyBytes
+    }
+    if withdrawalCredentialsBytes, err := hex.DecodeString(response.Validator.WithdrawalCredentials); err != nil {
+        return nil, errors.New("Error decoding validator withdrawal credentials: " + err.Error())
+    } else {
+        response.Validator.WithdrawalCredentialsBytes = withdrawalCredentialsBytes
     }
 
     // Update response & return
-    validator := response[0]
-    validator.Exists = validator.Validator.ActivationEpoch != 0 // Set to default value of 0 only if validator is null in JSON response
-    return &validator, nil
+    response.Exists = response.Validator.ActivationEpoch != 0 // Set to default value of 0 only if validator is null in JSON response
+    return &response, nil
 
 }
 

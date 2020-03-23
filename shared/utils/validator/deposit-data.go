@@ -3,6 +3,7 @@ package validator
 import (
     "github.com/prysmaticlabs/go-ssz"
 
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/utils/bls"
     bytesutil "github.com/rocket-pool/smartnode/shared/utils/bytes"
 )
@@ -10,10 +11,6 @@ import (
 
 // Deposit settings
 const DEPOSIT_AMOUNT uint64 = 32000000000
-
-// BLS settings
-const BLS_DOMAIN_DEPOSIT uint64 = 3
-var GenesisForkVersion []byte = []byte{1,3,3,7}
 
 
 // Deposit data
@@ -33,10 +30,10 @@ type SigningRoot struct {
 
 
 // Get deposit data & root for a given validator key and withdrawal credentials
-func GetDepositData(validatorKey *bls.Key, withdrawalCredentials []byte) (*DepositData, [32]byte, error) {
+func GetDepositData(validatorKey *bls.Key, withdrawalCredentials []byte, eth2Config *beacon.Eth2ConfigResponse) (*DepositData, [32]byte, error) {
 
     // Compute domain
-    domain := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(BLS_DOMAIN_DEPOSIT)), GenesisForkVersion)
+    domain := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(eth2Config.DomainDeposit)), eth2Config.GenesisForkVersionBytes)
 
     // Build deposit data
     depositData := &DepositData{}
