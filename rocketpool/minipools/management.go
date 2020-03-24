@@ -62,12 +62,6 @@ func StartManagementProcess(p *services.Provider, rpPath string, imageName strin
  */
 func (p *ManagementProcess) start() {
 
-    // Pull down minipool image
-    if err := p.pullMinipoolImage(); err != nil {
-        p.p.Log.Println(err)
-        return
-    }
-
     // Check minipools on interval
     go (func() {
         p.checkMinipools()
@@ -76,30 +70,6 @@ func (p *ManagementProcess) start() {
             p.checkMinipools()
         }
     })()
-
-}
-
-
-/**
- * Pull down minipool image
- */
-func (p *ManagementProcess) pullMinipoolImage() error {
-
-    // Pull image
-    if rc, err := p.p.Docker.ImagePull(context.Background(), p.imageName, types.ImagePullOptions{}); err != nil {
-        return errors.New("Error loading minipool image: " + err.Error())
-    } else {
-        defer rc.Close()
-
-        // Read docker response
-        if _, err := ioutil.ReadAll(rc); err != nil {
-            return errors.New("Error reading load minipool image response: " + err.Error())
-        }
-
-    }
-
-    // Return
-    return nil
 
 }
 
