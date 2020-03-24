@@ -13,6 +13,7 @@ import (
     //"github.com/rocket-pool/smartnode/rocketpool/node"
     //proxy "github.com/rocket-pool/smartnode/rocketpool/pow-proxy"
     //"github.com/rocket-pool/smartnode/rocketpool/watchtower"
+    apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -53,7 +54,11 @@ func main() {
 
     // Run application
     if err := app.Run(os.Args); err != nil {
-        log.Fatal(err)
+        if len(os.Args) > 1 && os.Args[1] == "api" {
+            apiutils.PrintErrorResponse(nil, err)
+        } else {
+            log.Fatal(err)
+        }
     }
 
 }
