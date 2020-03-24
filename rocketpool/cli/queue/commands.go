@@ -7,9 +7,9 @@ import (
 )
 
 
-// Register queue commands
-func RegisterCommands(app *cli.App, name string, aliases []string) {
-    app.Commands = append(app.Commands, cli.Command{
+// Register queue subcommands
+func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
+    command.Subcommands = append(command.Subcommands, cli.Command{
         Name:      name,
         Aliases:   aliases,
         Usage:     "Manage deposit queues",
