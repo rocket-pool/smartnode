@@ -7,7 +7,7 @@
 FROM golang:latest AS builder
 
 # Copy source files
-ADD ./rocketpool-node /go/src/github.com/rocket-pool/smartnode/rocketpool-node
+ADD ./rocketpool /go/src/github.com/rocket-pool/smartnode/rocketpool
 ADD ./shared /go/src/github.com/rocket-pool/smartnode/shared
 ADD ./vendor /go/src/github.com/rocket-pool/smartnode/vendor
 
@@ -18,7 +18,7 @@ RUN go get -d github.com/ethereum/go-ethereum/internal/ethapi
 RUN go get -d github.com/ethereum/go-ethereum/accounts/usbwallet
 
 # Compile & install
-RUN go install github.com/rocket-pool/smartnode/rocketpool-node
+RUN go install github.com/rocket-pool/smartnode/rocketpool
 
 
 ###
@@ -33,7 +33,7 @@ FROM ubuntu:18.04
 RUN apt-get update && apt-get install -y ca-certificates
 
 # Copy binary
-COPY --from=builder /go/bin/rocketpool-node /go/bin/rocketpool-node
+COPY --from=builder /go/bin/rocketpool /go/bin/rocketpool
 
 # Container entry point
-ENTRYPOINT ["/go/bin/rocketpool-node"]
+ENTRYPOINT ["/go/bin/rocketpool"]
