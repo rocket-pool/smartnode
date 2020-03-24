@@ -6,7 +6,7 @@ import (
 
     "github.com/urfave/cli"
 
-    //"github.com/rocket-pool/smartnode/rocketpool/api"
+    "github.com/rocket-pool/smartnode/rocketpool/api"
     rpcli "github.com/rocket-pool/smartnode/rocketpool/cli"
     //"github.com/rocket-pool/smartnode/rocketpool/minipool"
     //"github.com/rocket-pool/smartnode/rocketpool/minipools"
@@ -43,7 +43,7 @@ func main() {
     cliutils.Configure(app)
 
     // Register commands
-    //       api.RegisterCommands(app, "api",        []string{"a"})
+           api.RegisterCommands(app, "api",        []string{"a"})
          rpcli.RegisterCommands(app, "run",        []string{"r"})
     //  minipool.RegisterCommands(app, "minipool",   []string{"m"})
     // minipools.RegisterCommands(app, "minipools",  []string{"p"})
