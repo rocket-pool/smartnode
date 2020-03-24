@@ -20,7 +20,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 }
 
 
-// Run command
+// Run process
 func run(c *cli.Context) error {
 
     // Initialise services
