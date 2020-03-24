@@ -7,18 +7,14 @@
 FROM golang:latest AS builder
 
 # Copy source files
-ADD ./rocketpool /go/src/github.com/rocket-pool/smartnode/rocketpool
-ADD ./shared /go/src/github.com/rocket-pool/smartnode/shared
-ADD ./vendor /go/src/github.com/rocket-pool/smartnode/vendor
-
-# Install go dependencies
-WORKDIR /go/src/github.com/rocket-pool/smartnode
-RUN go get -d github.com/ethereum/go-ethereum
-RUN go get -d github.com/ethereum/go-ethereum/internal/ethapi
-RUN go get -d github.com/ethereum/go-ethereum/accounts/usbwallet
+ADD ./rocketpool /src/rocketpool
+ADD ./shared /src/shared
+ADD ./go.mod /src/go.mod
+ADD ./go.sum /src/go.sum
 
 # Compile & install
-RUN go install github.com/rocket-pool/smartnode/rocketpool
+WORKDIR /src
+RUN go install ./rocketpool
 
 
 ###
