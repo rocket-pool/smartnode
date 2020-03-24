@@ -9,15 +9,8 @@ import (
 )
 
 
-// Node initialization response type
-type NodeInitResponse struct {
-    Password *node.InitNodePasswordResponse  `json:"password"`
-    Account *node.InitNodeAccountResponse    `json:"account"`
-}
-
-
-// Initialise the node with a password and an account
-func initNode(c *cli.Context, password string) error {
+// Initialise the node account
+func initNodeAccount(c *cli.Context) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
@@ -29,13 +22,6 @@ func initNode(c *cli.Context, password string) error {
     if err != nil { return err }
     defer p.Cleanup()
 
-    // Check & init password
-    passwordSet := node.CanInitNodePassword(p)
-    if !passwordSet.HadExistingPassword {
-        passwordSet, err = node.InitNodePassword(p, password)
-        if err != nil { return err }
-    }
-
     // Check & init account
     accountSet := node.CanInitNodeAccount(p)
     if !accountSet.HadExistingAccount {
@@ -43,11 +29,16 @@ func initNode(c *cli.Context, password string) error {
         if err != nil { return err }
     }
 
+    // Get error message
+    var message string
+    if accountSet.NodePasswordDidNotExist {
+        message = "Node password is not set"
+    } else if accountSet.HadExistingAccount {
+        message = "Node account is already initialized"
+    }
+
     // Print response
-    api.PrintResponse(p.Output, NodeInitResponse{
-        Password: passwordSet,
-        Account: accountSet,
-    })
+    api.PrintResponse(p.Output, accountSet, message)
     return nil
 
 }

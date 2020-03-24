@@ -20,8 +20,11 @@ func PrintResponse(output *os.File, response interface{}, errorMessage string) {
 
     // Get status
     var status string
-    if errorMessage == "" { status = "success" }
-    else { status = "error" }
+    if errorMessage == "" {
+        status = "success"
+    } else {
+        status = "error"
+    }
 
     // Print
     printResponse(output, Response{

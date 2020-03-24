@@ -39,12 +39,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
-            // Initialise the node with an account
+            // Initialise the node password
             cli.Command{
-                Name:      "init",
-                Aliases:   []string{"i"},
-                Usage:     "Initialize the node with an account",
-                UsageText: "rocketpool node init password",
+                Name:      "initPassword",
+                Aliases:   []string{"p"},
+                Usage:     "Initialize the node password",
+                UsageText: "rocketpool node initPassword password",
                 Action: func(c *cli.Context) error {
 
                     // Arguments
@@ -63,7 +63,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    return initNode(c, password)
+                    return initNodePassword(c, password)
+
+                },
+            },
+
+            // Initialise the node account
+            cli.Command{
+                Name:      "initAccount",
+                Aliases:   []string{"a"},
+                Usage:     "Initialize the node account",
+                UsageText: "rocketpool node initAccount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return initNodeAccount(c)
 
                 },
             },
