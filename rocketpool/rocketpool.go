@@ -43,11 +43,11 @@ func main() {
     cliutils.Configure(app)
 
     // Register commands
-           api.RegisterCommands(app, "api",        []string{"a"})
          rpcli.RegisterCommands(app, "run",        []string{"r"})
-      minipool.RegisterCommands(app, "minipool",   []string{"m"})
-     minipools.RegisterCommands(app, "minipools",  []string{"p"})
+           api.RegisterCommands(app, "api",        []string{"a"})
           node.RegisterCommands(app, "node",       []string{"n"})
+     minipools.RegisterCommands(app, "minipools",  []string{"m"})
+      minipool.RegisterCommands(app, "minipool",   []string{"p"})
     watchtower.RegisterCommands(app, "watchtower", []string{"w"})
 
     // Run application
