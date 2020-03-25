@@ -10,7 +10,7 @@ import (
 
 
 // Config
-const INFURA_URL = "https://%s.infura.io/v3/%s";
+const INFURA_URL = "https://%s.infura.io/v3/%s"
 
 
 // Proxy server
