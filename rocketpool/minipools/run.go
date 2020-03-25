@@ -14,38 +14,29 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Aliases:   aliases,
         Usage:     "Run Rocket Pool minipool management daemon",
         Action: func(c *cli.Context) error {
-
-            // Check argument count
-            if len(c.Args()) != 4 {
-                return cli.NewExitError("USAGE:" + "\n   " + "rocketpool minipools rpPath imageName containerPrefix rpNetwork", 1)
-            }
-
-            // Get arguments
-            rpPath := c.Args().Get(0)
-            imageName := c.Args().Get(1)
-            containerPrefix := c.Args().Get(2)
-            rpNetwork := c.Args().Get(3)
-
-            // Run process
-            return run(c, rpPath, imageName, containerPrefix, rpNetwork)
-
+            return run(c)
         },
     })
 }
 
 
 // Run process
-func run(c *cli.Context, rpPath string, imageName string, containerPrefix string, rpNetwork string) error {
+func run(c *cli.Context) error {
 
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         AM: true,
+        KM: true,
+        Client: true,
         CM: true,
+        NodeContractAddress: true,
+        Beacon: true,
         Docker: true,
-        LoadContracts: []string{"utilAddressSetStorage"},
-        LoadAbis: []string{"rocketMinipool"},
+        LoadContracts: []string{"utilAddressSetStorage", "rocketNodeAPI"},
+        LoadAbis: []string{"rocketMinipool", "rocketNodeContract"},
         WaitPassword: true,
         WaitNodeAccount: true,
+        WaitNodeRegistered: true,
         WaitClientConn: true,
         WaitClientSync: true,
         WaitRocketStorage: true,
@@ -53,7 +44,7 @@ func run(c *cli.Context, rpPath string, imageName string, containerPrefix string
     if err != nil { return err }
 
     // Start minipools management process
-    go StartManagementProcess(p, rpPath, imageName, containerPrefix, rpNetwork)
+    go StartMinipoolsProcess(p)
 
     // Block thread
     select {}
