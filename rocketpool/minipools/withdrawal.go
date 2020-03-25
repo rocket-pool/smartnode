@@ -1,6 +1,7 @@
 package minipools
 
 import (
+    "encoding/hex"
     "errors"
     "fmt"
 
@@ -54,7 +55,7 @@ func (p *MinipoolsProcess) checkStakingMinipool(minipoolAddress *common.Address,
     }
 
     // Get & check validator status; get minipool exit epoch
-    validator, err := p.p.Beacon.GetValidatorStatus(hexutil.AddPrefix(string(status.ValidatorPubkey)))
+    validator, err := p.p.Beacon.GetValidatorStatus(hexutil.AddPrefix(hex.EncodeToString(status.ValidatorPubkey)))
     if err != nil {
         p.p.Log.Println(errors.New(fmt.Sprintf("Error retrieving minipool %s validator status: " + err.Error(), minipoolAddress.Hex())))
         return
