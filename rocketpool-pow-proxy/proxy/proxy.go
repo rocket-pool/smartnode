@@ -78,6 +78,9 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
     defer response.Body.Close()
 
+    // Set response writer header
+    w.Header().Set("Content-Type", "application/json")
+
     // Copy provider response body to response writer
     _, err = io.Copy(w, response.Body)
     if err != nil {
