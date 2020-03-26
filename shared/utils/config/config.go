@@ -50,7 +50,7 @@ func Load(path string) (*RocketPoolConfig, error) {
     for _, filePath := range filePaths {
         if config, err := loadFile(filePath); err != nil {
             return nil, err
-        } else {
+        } else if config != nil {
             configs = append(configs, config)
         }
     }
