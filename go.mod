@@ -27,4 +27,5 @@ require (
 	github.com/urfave/cli v1.22.3
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 	google.golang.org/grpc v1.28.0 // indirect
+	gopkg.in/yaml.v2 v2.2.2
 )
