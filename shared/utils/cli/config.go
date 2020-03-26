@@ -1,29 +1,12 @@
 package cli
 
 import (
-    "io/ioutil"
     "os"
 
     "github.com/urfave/cli"
-    "gopkg.in/yaml.v2"
+
+    "github.com/rocket-pool/smartnode/shared/utils/config"
 )
-
-
-// Rocket Pool config structure
-type RocketPoolConfig struct {
-    Rocketpool struct {
-        StorageAddress string       `yaml:"storageAddress"`
-        UniswapAddress string       `yaml:"uniswapAddress"`
-    }                           `yaml:"rocketpool"`
-    Chains struct {
-        Eth1 struct {
-            Provider string             `yaml:"provider"`
-        }                           `yaml:"eth1"`
-        Eth2 struct {
-            Provider string             `yaml:"provider"`
-        }                           `yaml:"eth2"`
-    }                           `yaml:"chains"`
-}
 
 
 // Configure the application options
@@ -33,8 +16,8 @@ func Configure(app *cli.App) {
     app.Flags = []cli.Flag{
         cli.StringFlag{
             Name:  "config",
-            Usage: "Rocket Pool CLI config file absolute `path`",
-            Value: "/.rocketpool/config.yml",
+            Usage: "Rocket Pool CLI configs absolute `path`",
+            Value: "/.rocketpool",
         },
         cli.StringFlag{
             Name:  "database",
@@ -86,18 +69,18 @@ func Configure(app *cli.App) {
         },
     }
 
-    // Load config file & set flags
+    // Load RP config & set flags
     app.Before = func(c *cli.Context) error {
 
         // Load config
-        config, err := loadConfigFile(c.GlobalString("config"))
+        rpConfig, err := config.Load(c.GlobalString("config"))
         if err != nil { return err }
 
-        // Set flag values from config
-        applyFlagConfig(c, "providerPow",    config.Chains.Eth1.Provider)
-        applyFlagConfig(c, "providerBeacon", config.Chains.Eth2.Provider)
-        applyFlagConfig(c, "storageAddress", config.Rocketpool.StorageAddress)
-        applyFlagConfig(c, "uniswapAddress", config.Rocketpool.UniswapAddress)
+        // Set flags from config
+        applyFlagConfig(c, "providerPow",    rpConfig.Chains.Eth1.Provider)
+        applyFlagConfig(c, "providerBeacon", rpConfig.Chains.Eth2.Provider)
+        applyFlagConfig(c, "storageAddress", rpConfig.Rocketpool.StorageAddress)
+        applyFlagConfig(c, "uniswapAddress", rpConfig.Rocketpool.UniswapAddress)
 
         // Return
         return nil
@@ -107,27 +90,10 @@ func Configure(app *cli.App) {
 }
 
 
-// Load and parse a YAML config file
-func loadConfigFile(path string) (*RocketPoolConfig, error) {
-
-    // Read file
-    bytes, err := ioutil.ReadFile(path)
-    if err != nil { return nil, nil } // Squelch errors from config file not existing
-
-    // Parse
-    var config RocketPoolConfig
-    if err := yaml.Unmarshal(bytes, &config); err != nil { return nil, err }
-
-    // Return
-    return &config, nil
-
-}
-
-
 // Set a flag value from a config value
 func applyFlagConfig(c *cli.Context, flagName string, value string) {
 
-    // Cancel if config value is undefined
+    // Cancel if config value is not set
     if value == "" { return }
 
     // Cancel if flag was set from CLI argument

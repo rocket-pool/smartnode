@@ -12,6 +12,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/ethereum/go-ethereum v1.9.12
 	github.com/herumi/bls-eth-go-binary v0.0.0-20200324061828-b0acd35e6dbe
+	github.com/imdario/mergo v0.3.9
 	github.com/minio/highwayhash v1.0.0 // indirect
 	github.com/minio/sha256-simd v0.1.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
