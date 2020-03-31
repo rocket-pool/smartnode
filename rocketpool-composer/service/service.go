@@ -2,6 +2,7 @@ package service
 
 import (
     "bufio"
+    "errors"
     "fmt"
     "os"
     "os/exec"
@@ -9,12 +10,15 @@ import (
     "strings"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/shared/utils/config"
 )
 
 
 // Start Rocket Pool service
 func startService() error {
-    return printOutput(compose("up", "-d"))
+    cmd, err := compose("up", "-d")
+    if err != nil { return err }
+    return printOutput(cmd)
 }
 
 
@@ -26,7 +30,9 @@ func pauseService() error {
     if strings.ToLower(response[:1]) == "n" { return nil }
 
     // Pause service
-    return printOutput(compose("stop"))
+    cmd, err := compose("stop")
+    if err != nil { return err }
+    return printOutput(cmd)
 
 }
 
@@ -39,20 +45,26 @@ func stopService() error {
     if strings.ToLower(response[:1]) == "n" { return nil }
 
     // Stop service
-    return printOutput(compose("down", "-v"))
+    cmd, err := compose("down", "-v")
+    if err != nil { return err }
+    return printOutput(cmd)
 
 }
 
 
 // Scale Rocket Pool service
 func scaleService(args ...string) error {
-    return printOutput(compose(append([]string{"scale"}, args...)...))
+    cmd, err := compose(append([]string{"scale"}, args...)...)
+    if err != nil { return err }
+    return printOutput(cmd)
 }
 
 
 // Print Rocket Pool service logs
 func serviceLogs(args ...string) error {
-    return printOutput(compose(append([]string{"logs", "-f"}, args...)...))
+    cmd, err := compose(append([]string{"logs", "-f"}, args...)...)
+    if err != nil { return err }
+    return printOutput(cmd)
 }
 
 
@@ -60,7 +72,9 @@ func serviceLogs(args ...string) error {
 func serviceStats() error {
 
     // Get service container IDs
-    containerIds, err := readOutputLines(compose("ps", "-q"))
+    cmd, err := compose("ps", "-q")
+    if err != nil { return err }
+    containerIds, err := readOutputLines(cmd)
     if err != nil { return err }
 
     // Print stats
@@ -71,31 +85,46 @@ func serviceStats() error {
 
 // Execute a Rocket Pool CLI command
 func execCommand(args ...string) error {
-    return printOutput(compose(append([]string{"exec", "-T", "cli", "/go/bin/rocketpool", "run"}, args...)...))
+    cmd, err := compose(append([]string{"exec", "-T", "cli", "/go/bin/rocketpool", "run"}, args...)...)
+    if err != nil { return err }
+    return printOutput(cmd)
 }
 
 
 // Build a docker-compose command with the given arguments
-func compose(args ...string) *exec.Cmd {
+func compose(args ...string) (*exec.Cmd, error) {
+
+    // Get RP_PATH
+    rpPath := os.Getenv("RP_PATH")
+
+    // Load RP config
+    rpConfig, err := config.Load(rpPath)
+    if err != nil { return nil, err }
+
+    // Check config
+    if rpConfig.Chains.Eth1.Client.Selected == "" {
+        return nil, errors.New("No Eth1 client selected. Please run 'rocketpool config' and try again.")
+    }
+    if rpConfig.Chains.Eth2.Client.Selected == "" {
+        return nil, errors.New("No Eth2 client selected. Please run 'rocketpool config' and try again.")
+    }
 
     // Initialise command
-    rpPath := os.Getenv("RP_PATH")
     cmd := exec.Command("docker-compose", append([]string{"-f", filepath.Join(rpPath, "docker-compose.yml"), "--project-directory", rpPath}, args...)...)
 
     // Add environment variables
     cmd.Env = append(os.Environ(),
         "COMPOSE_PROJECT_NAME=rocketpool",
-        "POW_CLIENT=Infura",
-        "POW_IMAGE=rocketpool/smartnode-pow-proxy:v0.0.1",
-        "POW_INFURA_NETWORK=goerli",
+        fmt.Sprintf("POW_CLIENT=%s",       rpConfig.GetSelectedEth1Client().Name),
+        fmt.Sprintf("POW_IMAGE=%s",        rpConfig.GetSelectedEth1Client().Image),
         "POW_INFURA_PROJECT_ID=d690a0156a994dd785c0a64423586f52",
-        "BEACON_CLIENT=Lighthouse",
-        "BEACON_IMAGE=sigp/lighthouse:latest",
-        "VALIDATOR_CLIENT=Lighthouse",
-        "VALIDATOR_IMAGE=sigp/lighthouse:latest")
+        fmt.Sprintf("BEACON_CLIENT=%s",    rpConfig.GetSelectedEth2Client().Name),
+        fmt.Sprintf("BEACON_IMAGE=%s",     rpConfig.GetSelectedEth2Client().Image),
+        fmt.Sprintf("VALIDATOR_CLIENT=%s", rpConfig.GetSelectedEth2Client().Name),
+        fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().Image))
 
     // Return
-    return cmd
+    return cmd, nil
 
 }
 
