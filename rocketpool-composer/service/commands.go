@@ -114,7 +114,7 @@ func RegisterServiceCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    return nil
+                    return serviceStats()
 
                 },
             },

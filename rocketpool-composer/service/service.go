@@ -52,7 +52,20 @@ func scaleService(args ...string) error {
 
 // Print Rocket Pool service logs
 func serviceLogs(args ...string) error {
-    return printOutput(compose(append([]string{"logs"}, args...)...))
+    return printOutput(compose(append([]string{"logs", "-f"}, args...)...))
+}
+
+
+// Print Rocket Pool service resource stats
+func serviceStats() error {
+
+    // Get service container IDs
+    containerIds, err := readOutputLines(compose("ps", "-q"))
+    if err != nil { return err }
+
+    // Print stats
+    return printOutput(exec.Command("docker", append([]string{"stats"}, containerIds...)...))
+
 }
 
 
@@ -87,7 +100,7 @@ func compose(args ...string) *exec.Cmd {
 }
 
 
-// Run a command and print its buffered stdout/stderr output
+// Run a command and print its buffered output
 func printOutput(cmd *exec.Cmd) error {
 
     // Get stdout & stderr pipes
@@ -111,6 +124,30 @@ func printOutput(cmd *exec.Cmd) error {
 
     // Return
     return nil
+
+}
+
+
+// Run a command and return its output as lines
+func readOutputLines(cmd *exec.Cmd) ([]string, error) {
+
+    // Get stdout pipe
+    cmdOut, err := cmd.StdoutPipe()
+    if err != nil { return nil, err }
+
+    // Start command
+    if err := cmd.Start(); err != nil { return nil, err }
+
+    // Read buffered output
+    output := []string{}
+    outScanner := bufio.NewScanner(cmdOut)
+    for outScanner.Scan() { output = append(output, outScanner.Text()) }
+
+    // Wait for command to complete
+    if err := cmd.Wait(); err != nil { return nil, err }
+
+    // Return
+    return output, nil
 
 }
 
