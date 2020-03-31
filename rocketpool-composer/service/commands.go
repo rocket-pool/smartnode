@@ -81,7 +81,7 @@ func RegisterServiceCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Run command
-                    return nil
+                    return scaleService(c.Args()...)
 
                 },
             },
@@ -95,7 +95,7 @@ func RegisterServiceCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Run command
-                    return nil
+                    return serviceLogs(c.Args()...)
 
                 },
             },

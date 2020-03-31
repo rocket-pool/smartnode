@@ -49,6 +49,22 @@ func stopService() error {
 }
 
 
+// Scale Rocket Pool service
+func scaleService(args ...string) error {
+    out, _ := compose(append([]string{"scale"}, args...)...)
+    fmt.Println(string(out))
+    return nil
+}
+
+
+// Print Rocket Pool service logs
+func serviceLogs(args ...string) error {
+    out, _ := compose(append([]string{"logs"}, args...)...)
+    fmt.Println(string(out))
+    return nil
+}
+
+
 // Run a docker-compose subcommand with the given arguments and return combined output
 func compose(args ...string) ([]byte, error) {
 
