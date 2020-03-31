@@ -1,6 +1,7 @@
 package service
 
 import (
+    "bufio"
     "fmt"
     "os"
     "os/exec"
@@ -59,9 +60,8 @@ func scaleService(args ...string) error {
 
 // Print Rocket Pool service logs
 func serviceLogs(args ...string) error {
-    out, _ := compose(append([]string{"logs"}, args...)...).CombinedOutput()
-    fmt.Println(string(out))
-    return nil
+    cmd := compose(append([]string{"logs"}, args...)...)
+    return printCommandOutput(cmd)
 }
 
 
@@ -94,6 +94,37 @@ func compose(args ...string) *exec.Cmd {
 
     // Return
     return cmd
+
+}
+
+
+// Run a command and print its buffered stdout/stderr output
+func printCommandOutput(cmd *exec.Cmd) error {
+
+    // Get stdout & stderr pipes
+    cmdOut, err := cmd.StdoutPipe()
+    if err != nil { return err }
+    cmdErr, err := cmd.StderrPipe()
+    if err != nil { return err }
+
+    // Start command
+    if err := cmd.Start(); err != nil { return err }
+
+    // Print buffered stdout/stderr output
+    go (func() {
+        outScanner := bufio.NewScanner(cmdOut)
+        for outScanner.Scan() { fmt.Println(outScanner.Text()) }
+    })()
+    go (func() {
+        errScanner := bufio.NewScanner(cmdErr)
+        for errScanner.Scan() { fmt.Println(errScanner.Text()) }
+    })()
+
+    // Wait for command to complete
+    if err := cmd.Wait(); err != nil { return err }
+
+    // Return
+    return nil
 
 }
 
