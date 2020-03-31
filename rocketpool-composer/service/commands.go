@@ -133,7 +133,7 @@ func RegisterRunCommands(app *cli.App, name string, aliases []string) {
         Action: func(c *cli.Context) error {
 
             // Run command
-            return nil
+            return execCommand(c.Args()...)
 
         },
     })

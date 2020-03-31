@@ -65,6 +65,14 @@ func serviceLogs(args ...string) error {
 }
 
 
+// Execute a Rocket Pool CLI command
+func execCommand(args ...string) error {
+    out, _ := compose(append([]string{"exec", "-T", "cli", "/go/bin/rocketpool", "run"}, args...)...).CombinedOutput()
+    fmt.Println(string(out))
+    return nil
+}
+
+
 // Build a docker-compose command with the given arguments
 func compose(args ...string) *exec.Cmd {
 
@@ -78,7 +86,7 @@ func compose(args ...string) *exec.Cmd {
         "POW_CLIENT=Infura",
         "POW_IMAGE=rocketpool/smartnode-pow-proxy:v0.0.1",
         "POW_INFURA_NETWORK=goerli",
-        "POW_INFURA_PROJECT_ID=",
+        "POW_INFURA_PROJECT_ID=d690a0156a994dd785c0a64423586f52",
         "BEACON_CLIENT=Lighthouse",
         "BEACON_IMAGE=sigp/lighthouse:latest",
         "VALIDATOR_CLIENT=Lighthouse",
