@@ -13,7 +13,7 @@ import (
 
 // Start Rocket Pool service
 func startService() error {
-    out, _ := compose("up", "-d")
+    out, _ := compose("up", "-d").CombinedOutput()
     fmt.Println(string(out))
     return nil
 }
@@ -27,7 +27,7 @@ func pauseService() error {
     if strings.ToLower(response[:1]) == "n" { return nil }
 
     // Pause service
-    out, _ := compose("stop")
+    out, _ := compose("stop").CombinedOutput()
     fmt.Println(string(out))
     return nil
 
@@ -42,7 +42,7 @@ func stopService() error {
     if strings.ToLower(response[:1]) == "n" { return nil }
 
     // Stop service
-    out, _ := compose("down", "-v")
+    out, _ := compose("down", "-v").CombinedOutput()
     fmt.Println(string(out))
     return nil
 
@@ -51,7 +51,7 @@ func stopService() error {
 
 // Scale Rocket Pool service
 func scaleService(args ...string) error {
-    out, _ := compose(append([]string{"scale"}, args...)...)
+    out, _ := compose(append([]string{"scale"}, args...)...).CombinedOutput()
     fmt.Println(string(out))
     return nil
 }
@@ -59,16 +59,16 @@ func scaleService(args ...string) error {
 
 // Print Rocket Pool service logs
 func serviceLogs(args ...string) error {
-    out, _ := compose(append([]string{"logs"}, args...)...)
+    out, _ := compose(append([]string{"logs"}, args...)...).CombinedOutput()
     fmt.Println(string(out))
     return nil
 }
 
 
-// Run a docker-compose subcommand with the given arguments and return combined output
-func compose(args ...string) ([]byte, error) {
+// Build a docker-compose command with the given arguments
+func compose(args ...string) *exec.Cmd {
 
-    // Initialise docker-compose command
+    // Initialise command
     rpPath := os.Getenv("RP_PATH")
     cmd := exec.Command("docker-compose", append([]string{"-f", filepath.Join(rpPath, "docker-compose.yml"), "--project-directory", rpPath}, args...)...)
 
@@ -84,9 +84,8 @@ func compose(args ...string) ([]byte, error) {
         "VALIDATOR_CLIENT=Lighthouse",
         "VALIDATOR_IMAGE=sigp/lighthouse:latest")
 
-    // Run command & return output
-    out, err := cmd.CombinedOutput()
-    return out, err
+    // Return
+    return cmd
 
 }
 
