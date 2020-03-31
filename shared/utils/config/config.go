@@ -28,11 +28,21 @@ type RocketPoolConfig struct {
     Chains struct {
         Eth1 struct {
             Provider string             `yaml:"provider"`
+            Client struct {
+                Options []ClientOption  `yaml:"options"`
+            }                           `yaml:"client"`
         }                               `yaml:"eth1"`
         Eth2 struct {
             Provider string             `yaml:"provider"`
+            Client struct {
+                Options []ClientOption  `yaml:"options"`
+            }                           `yaml:"client"`
         }                               `yaml:"eth2"`
     }                                   `yaml:"chains"`
+}
+type ClientOption struct {
+    Name string     `yaml:"name"`
+    Image string    `yaml:"image"`
 }
 
 

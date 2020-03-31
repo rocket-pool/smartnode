@@ -80,10 +80,16 @@ func checkEnv() error {
         return errors.New(fmt.Sprintf("The RP_PATH directory (%s) does not exist. Please create the directory and try again.", rpPath))
     }
 
-    // Check docker-compose.yml exists
+    // Check config file exists
+    configFilePath := filepath.Join(rpPath, "config.yml")
+    if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+        return errors.New(fmt.Sprintf("The Rocket Pool configuration file (%s) does not exist. Please create the file and try again.", configFilePath))
+    }
+
+    // Check docker-compose file exists
     composeFilePath := filepath.Join(rpPath, "docker-compose.yml")
     if _, err := os.Stat(composeFilePath); os.IsNotExist(err) {
-        return errors.New(fmt.Sprintf("The docker-compose configuration file (%s) does not exist. Please create the file and try again.", composeFilePath))
+        return errors.New(fmt.Sprintf("The Rocket Pool docker-compose configuration file (%s) does not exist. Please create the file and try again.", composeFilePath))
     }
 
     // Return
