@@ -5,6 +5,7 @@ import(
     "fmt"
     "log"
     "os"
+    "path/filepath"
 
     "github.com/urfave/cli"
 
@@ -69,8 +70,20 @@ ______           _        _    ______           _
 func checkEnv() error {
 
     // Check RP_PATH environment variable
-    if os.Getenv("RP_PATH") == "" {
+    rpPath := os.Getenv("RP_PATH")
+    if rpPath == "" {
         return errors.New("The RP_PATH environment variable is not set. If you've just installed Rocket Pool, please start a new terminal session and try again.")
+    }
+
+    // Check RP_PATH exists
+    if _, err := os.Stat(rpPath); os.IsNotExist(err) {
+        return errors.New(fmt.Sprintf("The RP_PATH directory (%s) does not exist. Please create the directory and try again.", rpPath))
+    }
+
+    // Check docker-compose.yml exists
+    composeFilePath := filepath.Join(rpPath, "docker-compose.yml")
+    if _, err := os.Stat(composeFilePath); os.IsNotExist(err) {
+        return errors.New(fmt.Sprintf("The docker-compose configuration file (%s) does not exist. Please create the file and try again.", composeFilePath))
     }
 
     // Return
