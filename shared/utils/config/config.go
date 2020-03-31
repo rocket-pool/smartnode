@@ -49,6 +49,25 @@ type ClientOption struct {
 }
 
 
+// Get the selected clients from a config
+func (config *RocketPoolConfig) GetSelectedEth1Client() *ClientOption {
+    for _, option := range config.Chains.Eth1.Client.Options {
+        if option.Name == config.Chains.Eth1.Client.Selected {
+            return &option
+        }
+    }
+    return nil
+}
+func (config *RocketPoolConfig) GetSelectedEth2Client() *ClientOption {
+    for _, option := range config.Chains.Eth2.Client.Options {
+        if option.Name == config.Chains.Eth2.Client.Selected {
+            return &option
+        }
+    }
+    return nil
+}
+
+
 // Load merged Rocket Pool config from config files
 func Load(path string) (*RocketPoolConfig, error) {
 
