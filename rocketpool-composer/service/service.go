@@ -5,6 +5,9 @@ import (
     "os"
     "os/exec"
     "path/filepath"
+    "strings"
+
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -13,6 +16,36 @@ func startService() error {
     out, _ := compose("up", "-d")
     fmt.Println(string(out))
     return nil
+}
+
+
+// Pause Rocket Pool service
+func pauseService() error {
+
+    // Prompt for confirmation
+    response := cliutils.Prompt(nil, nil, "Are you sure you want to pause the Rocket Pool services? Any staking minipools will be penalized! [y/n]", "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+    if strings.ToLower(response[:1]) == "n" { return nil }
+
+    // Pause service
+    out, _ := compose("stop")
+    fmt.Println(string(out))
+    return nil
+
+}
+
+
+// Stop Rocket Pool service
+func stopService() error {
+
+    // Prompt for confirmation
+    response := cliutils.Prompt(nil, nil, "Are you sure you want to stop the Rocket Pool services? Any staking minipools will be penalized, and ethereum nodes will lose sync progress! [y/n]", "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+    if strings.ToLower(response[:1]) == "n" { return nil }
+
+    // Stop service
+    out, _ := compose("down", "-v")
+    fmt.Println(string(out))
+    return nil
+
 }
 
 

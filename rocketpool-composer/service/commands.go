@@ -48,7 +48,7 @@ func RegisterServiceCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    return nil
+                    return pauseService()
 
                 },
             },
@@ -67,7 +67,7 @@ func RegisterServiceCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    return nil
+                    return stopService()
 
                 },
             },
