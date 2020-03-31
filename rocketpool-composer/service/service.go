@@ -14,9 +14,7 @@ import (
 
 // Start Rocket Pool service
 func startService() error {
-    out, _ := compose("up", "-d").CombinedOutput()
-    fmt.Println(string(out))
-    return nil
+    return printOutput(compose("up", "-d"))
 }
 
 
@@ -28,9 +26,7 @@ func pauseService() error {
     if strings.ToLower(response[:1]) == "n" { return nil }
 
     // Pause service
-    out, _ := compose("stop").CombinedOutput()
-    fmt.Println(string(out))
-    return nil
+    return printOutput(compose("stop"))
 
 }
 
@@ -43,33 +39,26 @@ func stopService() error {
     if strings.ToLower(response[:1]) == "n" { return nil }
 
     // Stop service
-    out, _ := compose("down", "-v").CombinedOutput()
-    fmt.Println(string(out))
-    return nil
+    return printOutput(compose("down", "-v"))
 
 }
 
 
 // Scale Rocket Pool service
 func scaleService(args ...string) error {
-    out, _ := compose(append([]string{"scale"}, args...)...).CombinedOutput()
-    fmt.Println(string(out))
-    return nil
+    return printOutput(compose(append([]string{"scale"}, args...)...))
 }
 
 
 // Print Rocket Pool service logs
 func serviceLogs(args ...string) error {
-    cmd := compose(append([]string{"logs"}, args...)...)
-    return printCommandOutput(cmd)
+    return printOutput(compose(append([]string{"logs"}, args...)...))
 }
 
 
 // Execute a Rocket Pool CLI command
 func execCommand(args ...string) error {
-    out, _ := compose(append([]string{"exec", "-T", "cli", "/go/bin/rocketpool", "run"}, args...)...).CombinedOutput()
-    fmt.Println(string(out))
-    return nil
+    return printOutput(compose(append([]string{"exec", "-T", "cli", "/go/bin/rocketpool", "run"}, args...)...))
 }
 
 
@@ -99,16 +88,13 @@ func compose(args ...string) *exec.Cmd {
 
 
 // Run a command and print its buffered stdout/stderr output
-func printCommandOutput(cmd *exec.Cmd) error {
+func printOutput(cmd *exec.Cmd) error {
 
     // Get stdout & stderr pipes
     cmdOut, err := cmd.StdoutPipe()
     if err != nil { return err }
     cmdErr, err := cmd.StderrPipe()
     if err != nil { return err }
-
-    // Start command
-    if err := cmd.Start(); err != nil { return err }
 
     // Print buffered stdout/stderr output
     go (func() {
@@ -120,8 +106,8 @@ func printCommandOutput(cmd *exec.Cmd) error {
         for errScanner.Scan() { fmt.Println(errScanner.Text()) }
     })()
 
-    // Wait for command to complete
-    if err := cmd.Wait(); err != nil { return err }
+    // Run command
+    if err := cmd.Run(); err != nil { return err }
 
     // Return
     return nil
