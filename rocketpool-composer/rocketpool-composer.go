@@ -1,6 +1,7 @@
 package main
 
 import(
+    "errors"
     "fmt"
     "log"
     "os"
@@ -8,7 +9,6 @@ import(
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool-composer/config"
-    "github.com/rocket-pool/smartnode/rocketpool-composer/run"
     "github.com/rocket-pool/smartnode/rocketpool-composer/service"
 )
 
@@ -47,14 +47,34 @@ ______           _        _    ______           _
     app.Copyright = "(c) 2020 Rocket Pool Pty Ltd"
 
     // Register commands
-     config.RegisterCommands(app, "config",  []string{"c"})
-    service.RegisterCommands(app, "service", []string{"s"})
-        run.RegisterCommands(app, "run",     []string{"r"})
+            config.RegisterCommands(app, "config",  []string{"c"})
+    service.RegisterServiceCommands(app, "service", []string{"s"})
+        service.RegisterRunCommands(app, "run",     []string{"r"})
+
+    // Check environment conditions before run
+    app.Before = func(c *cli.Context) error {
+        if err := checkEnv(); err != nil { log.Fatal(err) }
+        return nil
+    }
 
     // Run application
     if err := app.Run(os.Args); err != nil {
         log.Fatal(err)
     }
+
+}
+
+
+// Check environment conditions
+func checkEnv() error {
+
+    // Check RP_PATH environment variable
+    if os.Getenv("RP_PATH") == "" {
+        return errors.New("The RP_PATH environment variable is not set. If you've just installed Rocket Pool, please start a new terminal session and try again.")
+    }
+
+    // Return
+    return nil
 
 }
 

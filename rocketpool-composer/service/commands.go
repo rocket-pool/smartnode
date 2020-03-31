@@ -8,7 +8,7 @@ import (
 
 
 // Register service commands
-func RegisterCommands(app *cli.App, name string, aliases []string) {
+func RegisterServiceCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
         Name:      name,
         Aliases:   aliases,
@@ -29,7 +29,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
 
                     // Run command
-                    return nil
+                    return startService()
 
                 },
             },
@@ -118,6 +118,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                 },
             },
+
+        },
+    })
+}
+
+
+// Register run commands
+func RegisterRunCommands(app *cli.App, name string, aliases []string) {
+    app.Commands = append(app.Commands, cli.Command{
+        Name:      name,
+        Aliases:   aliases,
+        Usage:     "Run Rocket Pool command",
+        Action: func(c *cli.Context) error {
+
+            // Run command
+            return nil
 
         },
     })
