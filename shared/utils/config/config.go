@@ -30,12 +30,14 @@ type RocketPoolConfig struct {
             Provider string             `yaml:"provider"`
             Client struct {
                 Options []ClientOption  `yaml:"options"`
+                Selected string         `yaml:"selected"`
             }                           `yaml:"client"`
         }                               `yaml:"eth1"`
         Eth2 struct {
             Provider string             `yaml:"provider"`
             Client struct {
                 Options []ClientOption  `yaml:"options"`
+                Selected string         `yaml:"selected"`
             }                           `yaml:"client"`
         }                               `yaml:"eth2"`
     }                                   `yaml:"chains"`
@@ -69,6 +71,12 @@ func Load(path string) (*RocketPoolConfig, error) {
     config := mergeConfigs(configs)
     return config, nil
 
+}
+
+
+// Save Rocket Pool config to user config file
+func Save(path string, config *RocketPoolConfig) error {
+    return nil
 }
 
 
