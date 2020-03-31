@@ -46,7 +46,7 @@ func configureService() error {
 
     // Update config
     rpConfig.Chains.Eth1.Client.Selected = eth1Client
-    rpConfig.Chains.Eth1.Client.Selected = eth1Client
+    rpConfig.Chains.Eth2.Client.Selected = eth2Client
     if err := configutils.Save(rpPath, rpConfig); err != nil { return err }
 
     // Log

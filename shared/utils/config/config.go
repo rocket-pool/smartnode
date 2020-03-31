@@ -2,6 +2,7 @@ package config
 
 import (
     "io/ioutil"
+    "path/filepath"
 
     "github.com/imdario/mergo"
     "gopkg.in/yaml.v2"
@@ -53,8 +54,8 @@ func Load(path string) (*RocketPoolConfig, error) {
 
     // Config file paths
     filePaths := []string{
-        path + "/" + GLOBAL_CONFIG_FILENAME,
-        path + "/" + USER_CONFIG_FILENAME,
+        filepath.Join(path, GLOBAL_CONFIG_FILENAME),
+        filepath.Join(path, USER_CONFIG_FILENAME),
     }
 
     // Load configs
@@ -76,7 +77,20 @@ func Load(path string) (*RocketPoolConfig, error) {
 
 // Save Rocket Pool config to user config file
 func Save(path string, config *RocketPoolConfig) error {
+
+    // Config file path
+    filePath := filepath.Join(path, USER_CONFIG_FILENAME)
+
+    // Encode config
+    fileContents, err := yaml.Marshal(config)
+    if err != nil { return err }
+
+    // Write file
+    if err := ioutil.WriteFile(filePath, fileContents, 0644); err != nil { return err }
+
+    // Return
     return nil
+
 }
 
 
