@@ -113,15 +113,18 @@ func compose(args ...string) (*exec.Cmd, error) {
     cmd := exec.Command("docker-compose", append([]string{"-f", filepath.Join(rpPath, "docker-compose.yml"), "--project-directory", rpPath}, args...)...)
 
     // Add environment variables
-    cmd.Env = append(os.Environ(),
+    env := []string{
         "COMPOSE_PROJECT_NAME=rocketpool",
         fmt.Sprintf("POW_CLIENT=%s",       rpConfig.GetSelectedEth1Client().Name),
         fmt.Sprintf("POW_IMAGE=%s",        rpConfig.GetSelectedEth1Client().Image),
-        "POW_INFURA_PROJECT_ID=d690a0156a994dd785c0a64423586f52",
         fmt.Sprintf("BEACON_CLIENT=%s",    rpConfig.GetSelectedEth2Client().Name),
         fmt.Sprintf("BEACON_IMAGE=%s",     rpConfig.GetSelectedEth2Client().Image),
         fmt.Sprintf("VALIDATOR_CLIENT=%s", rpConfig.GetSelectedEth2Client().Name),
-        fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().Image))
+        fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().Image),
+    }
+    for _, param := range rpConfig.Chains.Eth1.Client.Params { env = append(env, param) }
+    for _, param := range rpConfig.Chains.Eth2.Client.Params { env = append(env, param) }
+    cmd.Env = append(os.Environ(), env...)
 
     // Return
     return cmd, nil
