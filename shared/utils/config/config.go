@@ -32,6 +32,7 @@ type RocketPoolConfig struct {
             Client struct {
                 Options []ClientOption  `yaml:"options"`
                 Selected string         `yaml:"selected"`
+                Params []string         `yaml:"params"`
             }                           `yaml:"client"`
         }                               `yaml:"eth1"`
         Eth2 struct {
@@ -39,13 +40,15 @@ type RocketPoolConfig struct {
             Client struct {
                 Options []ClientOption  `yaml:"options"`
                 Selected string         `yaml:"selected"`
+                Params []string         `yaml:"params"`
             }                           `yaml:"client"`
         }                               `yaml:"eth2"`
     }                                   `yaml:"chains"`
 }
 type ClientOption struct {
-    Name string     `yaml:"name"`
-    Image string    `yaml:"image"`
+    Name string                         `yaml:"name"`
+    Image string                        `yaml:"image"`
+    Params []string                     `yaml:"params"`
 }
 
 
