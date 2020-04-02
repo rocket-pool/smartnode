@@ -85,9 +85,18 @@ func serviceStats() error {
 
 // Execute a Rocket Pool CLI command
 func execCommand(args ...string) error {
-    cmd, err := compose(append([]string{"exec", "-T", "cli", "/go/bin/rocketpool", "run"}, args...)...)
+
+    // Check CLI container is running
+    psCmd, err := compose("ps", "-q", "cli")
     if err != nil { return err }
-    return printOutput(cmd)
+    containerIds, err := readOutputLines(psCmd)
+    if len(containerIds) == 0 { return errors.New("The Rocket Pool service is not running. Please run 'rocketpool service start'.") }
+
+    // Execute command
+    execCmd, err := compose(append([]string{"exec", "-T", "cli", "/go/bin/rocketpool", "run"}, args...)...)
+    if err != nil { return err }
+    return printOutput(execCmd)
+
 }
 
 
