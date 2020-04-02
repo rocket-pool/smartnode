@@ -115,10 +115,10 @@ func compose(args ...string) (*exec.Cmd, error) {
     // Add config environment variables
     env := []string{
         "COMPOSE_PROJECT_NAME=rocketpool",
-        fmt.Sprintf("POW_CLIENT=%s",       rpConfig.GetSelectedEth1Client().Name),
-        fmt.Sprintf("POW_IMAGE=%s",        rpConfig.GetSelectedEth1Client().Image),
-        fmt.Sprintf("BEACON_CLIENT=%s",    rpConfig.GetSelectedEth2Client().Name),
-        fmt.Sprintf("BEACON_IMAGE=%s",     rpConfig.GetSelectedEth2Client().Image),
+        fmt.Sprintf("ETH1_CLIENT=%s",      rpConfig.GetSelectedEth1Client().Name),
+        fmt.Sprintf("ETH1_IMAGE=%s",       rpConfig.GetSelectedEth1Client().Image),
+        fmt.Sprintf("ETH2_CLIENT=%s",      rpConfig.GetSelectedEth2Client().Name),
+        fmt.Sprintf("ETH2_IMAGE=%s",       rpConfig.GetSelectedEth2Client().Image),
         fmt.Sprintf("VALIDATOR_CLIENT=%s", rpConfig.GetSelectedEth2Client().Name),
         fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().Image),
     }
