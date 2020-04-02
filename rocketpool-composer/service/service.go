@@ -122,8 +122,8 @@ func compose(args ...string) (*exec.Cmd, error) {
         fmt.Sprintf("VALIDATOR_CLIENT=%s", rpConfig.GetSelectedEth2Client().Name),
         fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().Image),
     }
-    //for _, param := range rpConfig.Chains.Eth1.Client.Params { env = append(env, param) }
-    //for _, param := range rpConfig.Chains.Eth2.Client.Params { env = append(env, param) }
+    for _, param := range rpConfig.Chains.Eth1.Client.Params { env = append(env, fmt.Sprintf("%s=%s", param.Env, param.Value)) }
+    for _, param := range rpConfig.Chains.Eth2.Client.Params { env = append(env, fmt.Sprintf("%s=%s", param.Env, param.Value)) }
     cmd.Env = append(os.Environ(), env...)
 
     // Return
