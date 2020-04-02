@@ -46,7 +46,7 @@ type ClientParam struct {
 }
 type UserParam struct {
     Env string                          `yaml:"env,omitempty"`
-    Value string                        `yaml:"value,omitempty"`
+    Value string                        `yaml:"value"`
 }
 
 
