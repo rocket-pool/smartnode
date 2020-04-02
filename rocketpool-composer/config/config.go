@@ -4,8 +4,9 @@ import (
     "errors"
     "fmt"
     "os"
+    "path/filepath"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+    //cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
     configutils "github.com/rocket-pool/smartnode/shared/utils/config"
 )
 
@@ -13,9 +14,13 @@ import (
 // Configure the Rocket Pool service
 func configureService() error {
 
-    // Load config
+    // Get config paths
     rpPath := os.Getenv("RP_PATH")
-    rpConfig, err := configutils.Load(rpPath)
+    globalPath := filepath.Join(rpPath, "config.yml")
+    userPath := filepath.Join(rpPath, "settings.yml")
+
+    // Load config
+    globalConfig, rpConfig, err := configutils.Load(globalPath, userPath)
     if err != nil { return err }
 
     // Check config options
@@ -26,6 +31,14 @@ func configureService() error {
         return errors.New("There are no available Eth2 client options.")
     }
 
+    // Select some shit
+    rpConfig.Chains.Eth1.Client.Selected = "Infura"
+    rpConfig.Chains.Eth2.Client.Selected = "Lighthouse"
+
+    // Update config
+    if err := configutils.Save(userPath, globalConfig, rpConfig); err != nil { return err }
+
+    /*
     // Prompt for eth1 client
     eth1ClientOptions := []string{}
     for _, option := range rpConfig.Chains.Eth1.Client.Options { eth1ClientOptions = append(eth1ClientOptions, option.Name) }
@@ -71,6 +84,7 @@ func configureService() error {
 
     // Update config
     if err := configutils.Save(rpPath, rpConfig); err != nil { return err }
+    */
 
     // Log
     fmt.Println("Done! Run 'rocketpool service start' to apply new configuration settings.")

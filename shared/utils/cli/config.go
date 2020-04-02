@@ -16,8 +16,13 @@ func Configure(app *cli.App) {
     app.Flags = []cli.Flag{
         cli.StringFlag{
             Name:  "config",
-            Usage: "Rocket Pool CLI configs absolute `path`",
-            Value: "/.rocketpool",
+            Usage: "Rocket Pool CLI global config absolute `path`",
+            Value: "/.rocketpool/config.yml",
+        },
+        cli.StringFlag{
+            Name:  "settings",
+            Usage: "Rocket Pool CLI user config absolute `path`",
+            Value: "/.rocketpool/settings.yml",
         },
         cli.StringFlag{
             Name:  "database",
@@ -73,10 +78,14 @@ func Configure(app *cli.App) {
     app.Before = func(c *cli.Context) error {
 
         // Load config
-        rpConfig, err := config.Load(c.GlobalString("config"))
+        _, rpConfig, err := config.Load(c.GlobalString("config"), c.GlobalString("settings"))
         if err != nil { return err }
 
         // Set flags from config
+        applyFlagConfig(c, "database",       rpConfig.Smartnode.DatabasePath)
+        applyFlagConfig(c, "password",       rpConfig.Smartnode.PasswordPath)
+        applyFlagConfig(c, "keychainPow",    rpConfig.Smartnode.NodeKeychainPath)
+        applyFlagConfig(c, "keychainBeacon", rpConfig.Smartnode.ValidatorKeychainPath)
         applyFlagConfig(c, "providerPow",    rpConfig.Chains.Eth1.Provider)
         applyFlagConfig(c, "providerBeacon", rpConfig.Chains.Eth2.Provider)
         applyFlagConfig(c, "storageAddress", rpConfig.Rocketpool.StorageAddress)

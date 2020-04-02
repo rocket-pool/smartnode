@@ -98,21 +98,21 @@ func compose(args ...string) (*exec.Cmd, error) {
     rpPath := os.Getenv("RP_PATH")
 
     // Load RP config
-    rpConfig, err := config.Load(rpPath)
+    _, rpConfig, err := config.Load(filepath.Join(rpPath, "config.yml"), filepath.Join(rpPath, "settings.yml"))
     if err != nil { return nil, err }
 
     // Check config
-    if rpConfig.Chains.Eth1.Client.Selected == "" {
+    if rpConfig.GetSelectedEth1Client() == nil {
         return nil, errors.New("No Eth1 client selected. Please run 'rocketpool config' and try again.")
     }
-    if rpConfig.Chains.Eth2.Client.Selected == "" {
+    if rpConfig.GetSelectedEth2Client() == nil {
         return nil, errors.New("No Eth2 client selected. Please run 'rocketpool config' and try again.")
     }
 
     // Initialise command
     cmd := exec.Command("docker-compose", append([]string{"-f", filepath.Join(rpPath, "docker-compose.yml"), "--project-directory", rpPath}, args...)...)
 
-    // Add environment variables
+    // Add config environment variables
     env := []string{
         "COMPOSE_PROJECT_NAME=rocketpool",
         fmt.Sprintf("POW_CLIENT=%s",       rpConfig.GetSelectedEth1Client().Name),
@@ -122,8 +122,8 @@ func compose(args ...string) (*exec.Cmd, error) {
         fmt.Sprintf("VALIDATOR_CLIENT=%s", rpConfig.GetSelectedEth2Client().Name),
         fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().Image),
     }
-    for _, param := range rpConfig.Chains.Eth1.Client.Params { env = append(env, param) }
-    for _, param := range rpConfig.Chains.Eth2.Client.Params { env = append(env, param) }
+    //for _, param := range rpConfig.Chains.Eth1.Client.Params { env = append(env, param) }
+    //for _, param := range rpConfig.Chains.Eth2.Client.Params { env = append(env, param) }
     cmd.Env = append(os.Environ(), env...)
 
     // Return
