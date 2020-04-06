@@ -19,6 +19,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v0.9.1
 	github.com/protolambda/zssz v0.1.4 // indirect
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20200322041314-62c2aee71669 // indirect
 	github.com/prysmaticlabs/go-ssz v0.0.0-20200101200214-e24db4d9e963
