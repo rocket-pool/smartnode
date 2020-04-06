@@ -35,12 +35,14 @@ func run(c *cli.Context) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         Client: true,
+        Beacon: true,
         WaitClientConn: true,
     })
     if err != nil { return err }
 
     // Start metrics processes
     go StartEth1MetricsProcess(p)
+    go StartEth2MetricsProcess(p)
 
     // Serve metrics
     http.Handle("/metrics", promhttp.Handler())
