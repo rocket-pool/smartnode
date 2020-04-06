@@ -12,10 +12,10 @@ import (
 
 // Eth2 metrics process
 type Eth2MetricsProcess struct {
-    p                   *services.Provider
-    epochNumber         prometheus.Gauge
-    finalizedEpoch      prometheus.Gauge
-    justifiedEpoch      prometheus.Gauge
+    p               *services.Provider
+    epochNumber     prometheus.Gauge
+    finalizedEpoch  prometheus.Gauge
+    justifiedEpoch  prometheus.Gauge
 }
 
 

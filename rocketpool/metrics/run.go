@@ -43,6 +43,7 @@ func run(c *cli.Context) error {
     // Start metrics processes
     go StartEth1MetricsProcess(p)
     go StartEth2MetricsProcess(p)
+    go StartRocketPoolMetricsProcess(p)
 
     // Serve metrics
     http.Handle("/metrics", promhttp.Handler())
