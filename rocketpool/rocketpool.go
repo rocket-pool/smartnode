@@ -8,6 +8,7 @@ import (
 
     "github.com/rocket-pool/smartnode/rocketpool/api"
     rpcli "github.com/rocket-pool/smartnode/rocketpool/cli"
+    "github.com/rocket-pool/smartnode/rocketpool/metrics"
     "github.com/rocket-pool/smartnode/rocketpool/minipools"
     "github.com/rocket-pool/smartnode/rocketpool/node"
     "github.com/rocket-pool/smartnode/rocketpool/watchtower"
@@ -47,6 +48,7 @@ func main() {
           node.RegisterCommands(app, "node",       []string{"n"})
      minipools.RegisterCommands(app, "minipools",  []string{"m"})
     watchtower.RegisterCommands(app, "watchtower", []string{"w"})
+       metrics.RegisterCommands(app, "metrics",    []string{"t"})
 
     // Run application
     if err := app.Run(os.Args); err != nil {
