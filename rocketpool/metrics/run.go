@@ -2,12 +2,18 @@ package metrics
 
 import (
     "net/http"
+    "time"
 
     "github.com/prometheus/client_golang/prometheus/promhttp"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
 )
+
+
+// Config
+const UPDATE_METRICS_INTERVAL string = "15s"
+var updateMetricsInterval, _ = time.ParseDuration(UPDATE_METRICS_INTERVAL)
 
 
 // Register metrics command
@@ -33,8 +39,8 @@ func run(c *cli.Context) error {
     })
     if err != nil { return err }
 
-    // Register metrics
-    registerEth1Metrics(p)
+    // Start metrics processes
+    go StartEth1MetricsProcess(p)
 
     // Serve metrics
     http.Handle("/metrics", promhttp.Handler())
