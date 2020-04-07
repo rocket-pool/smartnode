@@ -35,7 +35,9 @@ func run(c *cli.Context) error {
     // Initialise services
     p, err := services.NewProvider(c, services.ProviderOpts{
         Client: true,
+        CM: true,
         Beacon: true,
+        LoadContracts: []string{"rocketDepositQueue", "rocketMinipoolSettings", "rocketNodeAPI", "rocketPool"},
         WaitClientConn: true,
     })
     if err != nil { return err }
