@@ -24,6 +24,7 @@ type RocketPoolMetricsProcess struct {
     networkEthAssigned      map[string]prometheus.Gauge
     networkUtilisation      map[string]prometheus.Gauge
     rplRatio                map[string]prometheus.Gauge
+    queueBalance            map[string]prometheus.Gauge
 
 }
 
@@ -35,6 +36,7 @@ type StakingDurationMetrics struct {
     NetworkEthAssigned float64
     NetworkUtilisation float64
     RplRatio float64
+    QueueBalance float64
 }
 
 
@@ -49,6 +51,7 @@ func StartRocketPoolMetricsProcess(p *services.Provider) {
         networkEthAssigned:     make(map[string]prometheus.Gauge),
         networkUtilisation:     make(map[string]prometheus.Gauge),
         rplRatio:               make(map[string]prometheus.Gauge),
+        queueBalance:           make(map[string]prometheus.Gauge),
     }
 
     // Start
@@ -173,6 +176,17 @@ func (p *RocketPoolMetricsProcess) update() {
         }
         p.rplRatio[duration.Id].Set(metrics.RplRatio)
 
+        // Queue balance
+        if _, ok := p.queueBalance[duration.Id]; !ok {
+            p.queueBalance[duration.Id] = promauto.NewGauge(prometheus.GaugeOpts{
+                Namespace:  "smartnode",
+                Subsystem:  "rocketpool",
+                Name:       fmt.Sprintf("queue_balance_%s", duration.Id),
+                Help:       fmt.Sprintf("The current ETH balance of the '%s' deposit queue", duration.Id),
+            })
+        }
+        p.queueBalance[duration.Id].Set(metrics.QueueBalance)
+
     }
 
 }
@@ -186,6 +200,7 @@ func getStakingDurationMetrics(cm *rocketpool.ContractManager, durationId string
     networkEthAssignedChannel := make(chan float64)
     networkUtilisationChannel := make(chan float64)
     rplRatioChannel := make(chan float64)
+    queueBalanceChannel := make(chan float64)
     errorChannel := make(chan error)
 
     // Get network ETH capacity
@@ -228,12 +243,23 @@ func getStakingDurationMetrics(cm *rocketpool.ContractManager, durationId string
         }
     })()
 
+    // Get queue balance
+    go (func() {
+        queueBalanceWei := new(*big.Int)
+        if err := cm.Contracts["rocketDepositQueue"].Call(nil, queueBalanceWei, "getBalance", durationId); err != nil {
+            errorChannel <- errors.New("Error retrieving deposit queue balance: " + err.Error())
+        } else {
+            queueBalanceChannel <- eth.WeiToEth(*queueBalanceWei)
+        }
+    })()
+
     // Receive data
     var networkEthCapacity float64
     var networkEthAssigned float64
     var networkUtilisation float64
     var rplRatio float64
-    for received := 0; received < 4; {
+    var queueBalance float64
+    for received := 0; received < 5; {
         select {
             case networkEthCapacity = <-networkEthCapacityChannel:
                 received++
@@ -242,6 +268,8 @@ func getStakingDurationMetrics(cm *rocketpool.ContractManager, durationId string
             case networkUtilisation = <-networkUtilisationChannel:
                 received++
             case rplRatio = <-rplRatioChannel:
+                received++
+            case queueBalance = <-queueBalanceChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
@@ -255,6 +283,7 @@ func getStakingDurationMetrics(cm *rocketpool.ContractManager, durationId string
         NetworkEthAssigned: networkEthAssigned,
         NetworkUtilisation: networkUtilisation,
         RplRatio: rplRatio,
+        QueueBalance: queueBalance,
     }, nil
 
 }
