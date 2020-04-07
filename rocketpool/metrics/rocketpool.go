@@ -6,11 +6,13 @@ import (
     "math/big"
     "time"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/prometheus/client_golang/prometheus"
     "github.com/prometheus/client_golang/prometheus/promauto"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/settings"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
 )
@@ -25,7 +27,8 @@ type RocketPoolMetricsProcess struct {
     networkUtilisation      map[string]prometheus.Gauge
     rplRatio                map[string]prometheus.Gauge
     queueBalance            map[string]prometheus.Gauge
-
+    totalMinipools          prometheus.Gauge
+    statusMinipools         map[uint8]prometheus.Gauge
 }
 
 
@@ -52,6 +55,22 @@ func StartRocketPoolMetricsProcess(p *services.Provider) {
         networkUtilisation:     make(map[string]prometheus.Gauge),
         rplRatio:               make(map[string]prometheus.Gauge),
         queueBalance:           make(map[string]prometheus.Gauge),
+        totalMinipools:         promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:  "smartnode",
+            Subsystem:  "rocketpool",
+            Name:       "minipool_total_count",
+            Help:       "The total number of minipools in Rocket Pool",
+        }),
+        statusMinipools:        make(map[uint8]prometheus.Gauge),
+    }
+    for status := uint8(0); status < uint8(8); status++ {
+        statusType := minipool.GetStatusType(status)
+        process.statusMinipools[status] = promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:  "smartnode",
+            Subsystem:  "rocketpool",
+            Name:       fmt.Sprintf("minipool_%s_count", statusType),
+            Help:       fmt.Sprintf("The number of '%s' minipools in Rocket Pool", statusType),
+        })
     }
 
     // Start
@@ -77,8 +96,15 @@ func (p *RocketPoolMetricsProcess) start() {
 
 // Update metrics
 func (p *RocketPoolMetricsProcess) update() {
+    go p.updateStakingDurationMetrics()
+    go p.updateMinipoolMetrics()
+}
 
-    // Get minipool staking durations
+
+// Update staking duration metrics
+func (p *RocketPoolMetricsProcess) updateStakingDurationMetrics() {
+
+    // Get staking durations
     stakingDurations, err := settings.GetMinipoolStakingDurations(p.p.CM)
     if err != nil {
         p.p.Log.Println(err)
@@ -253,38 +279,111 @@ func getStakingDurationMetrics(cm *rocketpool.ContractManager, durationId string
         }
     })()
 
-    // Receive data
-    var networkEthCapacity float64
-    var networkEthAssigned float64
-    var networkUtilisation float64
-    var rplRatio float64
-    var queueBalance float64
+    // Receive data & return
+    metrics := &StakingDurationMetrics{DurationId: durationId}
     for received := 0; received < 5; {
         select {
-            case networkEthCapacity = <-networkEthCapacityChannel:
+            case metrics.NetworkEthCapacity = <-networkEthCapacityChannel:
                 received++
-            case networkEthAssigned = <-networkEthAssignedChannel:
+            case metrics.NetworkEthAssigned = <-networkEthAssignedChannel:
                 received++
-            case networkUtilisation = <-networkUtilisationChannel:
+            case metrics.NetworkUtilisation = <-networkUtilisationChannel:
                 received++
-            case rplRatio = <-rplRatioChannel:
+            case metrics.RplRatio = <-rplRatioChannel:
                 received++
-            case queueBalance = <-queueBalanceChannel:
+            case metrics.QueueBalance = <-queueBalanceChannel:
                 received++
             case err := <-errorChannel:
                 return nil, err
         }
     }
+    return metrics, nil
 
-    // Return
-    return &StakingDurationMetrics{
-        DurationId: durationId,
-        NetworkEthCapacity: networkEthCapacity,
-        NetworkEthAssigned: networkEthAssigned,
-        NetworkUtilisation: networkUtilisation,
-        RplRatio: rplRatio,
-        QueueBalance: queueBalance,
-    }, nil
+}
+
+
+// Update minipool metrics
+func (p *RocketPoolMetricsProcess) updateMinipoolMetrics() {
+
+    // Get minipool count
+    minipoolCountV := new(*big.Int)
+    if err := p.p.CM.Contracts["rocketPool"].Call(nil, minipoolCountV, "getPoolsCount"); err != nil {
+        p.p.Log.Println(errors.New("Error retrieving minipool count: " + err.Error()))
+        return
+    }
+    minipoolCount := (*minipoolCountV).Int64()
+
+    // Data channels
+    addressChannels := make([]chan *common.Address, minipoolCount)
+    statusChannels := make([]chan uint8, minipoolCount)
+    errorChannel := make(chan error)
+
+    // Get minipool addresses
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        addressChannels[mi] = make(chan *common.Address)
+        go (func(mi int64) {
+            minipoolAddress := new(common.Address)
+            if err := p.p.CM.Contracts["rocketPool"].Call(nil, minipoolAddress, "getPoolAt", big.NewInt(mi)); err != nil {
+                errorChannel <- errors.New("Error retrieving minipool address: " + err.Error())
+            } else {
+                addressChannels[mi] <- minipoolAddress
+            }
+        })(mi)
+    }
+
+    // Receive minipool addresses
+    minipoolAddresses := make([]*common.Address, minipoolCount)
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        select {
+            case address := <-addressChannels[mi]:
+                minipoolAddresses[mi] = address
+            case err := <-errorChannel:
+                p.p.Log.Println(err)
+                return
+        }
+    }
+
+    // Get minipool statuses
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        statusChannels[mi] = make(chan uint8)
+        go (func(mi int64) {
+
+            // Initialise minipool contract
+            minipoolContract, err := p.p.CM.NewContract(minipoolAddresses[mi], "rocketMinipool")
+            if err != nil {
+                errorChannel <- errors.New("Error initialising minipool contract: " + err.Error())
+                return
+            }
+
+            // Get status
+            status := new(uint8)
+            if err := minipoolContract.Call(nil, status, "getStatus"); err != nil {
+                errorChannel <- errors.New("Error retrieving minipool status: " + err.Error())
+            } else {
+                statusChannels[mi] <- *status
+            }
+
+        })(mi)
+    }
+
+    // Receive minipool statuses
+    statusCounts := make(map[uint8]uint64)
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        select {
+            case status := <-statusChannels[mi]:
+                if _, ok := statusCounts[status]; !ok { statusCounts[status] = 0 }
+                statusCounts[status]++
+            case err := <-errorChannel:
+                p.p.Log.Println(err)
+                return
+        }
+    }
+
+    // Update minipool metrics
+    p.totalMinipools.Set(float64(minipoolCount))
+    for status, count := range statusCounts {
+        p.statusMinipools[status].Set(float64(count))
+    }
 
 }
 

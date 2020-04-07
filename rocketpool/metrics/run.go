@@ -38,6 +38,7 @@ func run(c *cli.Context) error {
         CM: true,
         Beacon: true,
         LoadContracts: []string{"rocketDepositQueue", "rocketMinipoolSettings", "rocketNodeAPI", "rocketPool"},
+        LoadAbis: []string{"rocketMinipool"},
         WaitClientConn: true,
     })
     if err != nil { return err }
