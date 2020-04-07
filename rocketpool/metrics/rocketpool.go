@@ -1,6 +1,7 @@
 package metrics
 
 import (
+    "bytes"
     "errors"
     "fmt"
     "math/big"
@@ -29,6 +30,8 @@ type RocketPoolMetricsProcess struct {
     queueBalance            map[string]prometheus.Gauge
     totalMinipools          prometheus.Gauge
     statusMinipools         map[uint8]prometheus.Gauge
+    totalNodes              prometheus.Gauge
+    activeNodes             prometheus.Gauge
 }
 
 
@@ -62,6 +65,18 @@ func StartRocketPoolMetricsProcess(p *services.Provider) {
             Help:       "The total number of minipools in Rocket Pool",
         }),
         statusMinipools:        make(map[uint8]prometheus.Gauge),
+        totalNodes:             promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:  "smartnode",
+            Subsystem:  "rocketpool",
+            Name:       "node_total_count",
+            Help:       "The total number of nodes in Rocket Pool",
+        }),
+        activeNodes:            promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:  "smartnode",
+            Subsystem:  "rocketpool",
+            Name:       "node_active_count",
+            Help:       "The number of active nodes in Rocket Pool",
+        }),
     }
     for status := uint8(0); status < uint8(8); status++ {
         statusType := minipool.GetStatusType(status)
@@ -98,6 +113,7 @@ func (p *RocketPoolMetricsProcess) start() {
 func (p *RocketPoolMetricsProcess) update() {
     go p.updateStakingDurationMetrics()
     go p.updateMinipoolMetrics()
+    go p.updateNodeMetrics()
 }
 
 
@@ -384,6 +400,82 @@ func (p *RocketPoolMetricsProcess) updateMinipoolMetrics() {
     for status, count := range statusCounts {
         p.statusMinipools[status].Set(float64(count))
     }
+
+}
+
+
+// Update node metrics
+func (p *RocketPoolMetricsProcess) updateNodeMetrics() {
+
+    // Get node list key
+    nodeListKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("nodes"), []byte("list")}, []byte{}))
+
+    // Get node count
+    nodeCountV := new(*big.Int)
+    if err := p.p.CM.Contracts["utilAddressSetStorage"].Call(nil, nodeCountV, "getCount", nodeListKey); err != nil {
+        p.p.Log.Println(errors.New("Error retrieving node count: " + err.Error()))
+        return
+    }
+    nodeCount := (*nodeCountV).Int64()
+
+    // Data channels
+    addressChannels := make([]chan *common.Address, nodeCount)
+    activeChannels := make([]chan bool, nodeCount)
+    errorChannel := make(chan error)
+
+    // Get node addresses
+    for ni := int64(0); ni < nodeCount; ni++ {
+        addressChannels[ni] = make(chan *common.Address)
+        go (func(ni int64) {
+            nodeAddress := new(common.Address)
+            if err := p.p.CM.Contracts["utilAddressSetStorage"].Call(nil, nodeAddress, "getItem", nodeListKey, big.NewInt(ni)); err != nil {
+                errorChannel <- errors.New("Error retrieving node address: " + err.Error())
+            } else {
+                addressChannels[ni] <- nodeAddress
+            }
+        })(ni)
+    }
+
+    // Receive node addresses
+    nodeAddresses := make([]*common.Address, nodeCount)
+    for ni := int64(0); ni < nodeCount; ni++ {
+        select {
+            case address := <-addressChannels[ni]:
+                nodeAddresses[ni] = address
+            case err := <-errorChannel:
+                p.p.Log.Println(err)
+                return
+        }
+    }
+
+    // Get node statuses
+    for ni := int64(0); ni < nodeCount; ni++ {
+        activeChannels[ni] = make(chan bool)
+        go (func(ni int64) {
+            nodeActiveKey := eth.KeccakBytes(bytes.Join([][]byte{[]byte("node.active"), nodeAddresses[ni].Bytes()}, []byte{}))
+            if active, err := p.p.CM.RocketStorage.GetBool(nil, nodeActiveKey); err != nil {
+                errorChannel <- errors.New("Error retrieving node active status: " + err.Error())
+            } else {
+                activeChannels[ni] <- active
+            }
+        })(ni)
+    }
+
+    // Receive node status
+    activeNodes := 0
+    for ni := int64(0); ni < nodeCount; ni++ {
+        select {
+            case active := <-activeChannels[ni]:
+                if active { activeNodes++ }
+            case err := <-errorChannel:
+                p.p.Log.Println(err)
+                return
+        }
+    }
+
+    // Update node metrics
+    p.totalNodes.Set(float64(nodeCount))
+    p.activeNodes.Set(float64(activeNodes))
 
 }
 

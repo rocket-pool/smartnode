@@ -37,7 +37,7 @@ func run(c *cli.Context) error {
         Client: true,
         CM: true,
         Beacon: true,
-        LoadContracts: []string{"rocketDepositQueue", "rocketMinipoolSettings", "rocketNodeAPI", "rocketPool"},
+        LoadContracts: []string{"rocketDepositQueue", "rocketMinipoolSettings", "rocketNodeAPI", "rocketPool", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
         WaitClientConn: true,
     })
