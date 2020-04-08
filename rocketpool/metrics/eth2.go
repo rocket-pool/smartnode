@@ -5,6 +5,7 @@ import (
 
     "github.com/prometheus/client_golang/prometheus"
     "github.com/prometheus/client_golang/prometheus/promauto"
+    "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
 )
@@ -20,7 +21,16 @@ type Eth2MetricsProcess struct {
 
 
 // Start eth2 metrics process
-func StartEth2MetricsProcess(p *services.Provider) {
+func StartEth2MetricsProcess(c *cli.Context) {
+
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        Beacon: true,
+    })
+    if err != nil {
+        p.Log.Println(err)
+        return
+    }
 
     // Initialise process / register metrics
     process := &Eth2MetricsProcess{

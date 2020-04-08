@@ -10,6 +10,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/prometheus/client_golang/prometheus"
     "github.com/prometheus/client_golang/prometheus/promauto"
+    "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -47,7 +48,22 @@ type StakingDurationMetrics struct {
 
 
 // Start RP metrics process
-func StartRocketPoolMetricsProcess(p *services.Provider) {
+func StartRocketPoolMetricsProcess(c *cli.Context) {
+
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        Client: true,
+        CM: true,
+        LoadContracts: []string{"rocketDepositQueue", "rocketMinipoolSettings", "rocketNodeAPI", "rocketPool", "utilAddressSetStorage"},
+        LoadAbis: []string{"rocketMinipool"},
+        WaitClientConn: true,
+        WaitClientSync: true,
+        WaitRocketStorage: true,
+    })
+    if err != nil {
+        p.Log.Println(err)
+        return
+    }
 
     // Initialise process / register metrics
     process := &RocketPoolMetricsProcess{

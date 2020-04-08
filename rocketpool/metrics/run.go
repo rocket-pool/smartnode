@@ -6,8 +6,6 @@ import (
 
     "github.com/prometheus/client_golang/prometheus/promhttp"
     "github.com/urfave/cli"
-
-    "github.com/rocket-pool/smartnode/shared/services"
 )
 
 
@@ -32,21 +30,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 // Run process
 func run(c *cli.Context) error {
 
-    // Initialise services
-    p, err := services.NewProvider(c, services.ProviderOpts{
-        Client: true,
-        CM: true,
-        Beacon: true,
-        LoadContracts: []string{"rocketDepositQueue", "rocketMinipoolSettings", "rocketNodeAPI", "rocketPool", "utilAddressSetStorage"},
-        LoadAbis: []string{"rocketMinipool"},
-        WaitClientConn: true,
-    })
-    if err != nil { return err }
-
     // Start metrics processes
-    go StartEth1MetricsProcess(p)
-    go StartEth2MetricsProcess(p)
-    go StartRocketPoolMetricsProcess(p)
+    go StartEth1MetricsProcess(c)
+    go StartEth2MetricsProcess(c)
+    go StartRocketPoolMetricsProcess(c)
 
     // Serve metrics
     http.Handle("/metrics", promhttp.Handler())
