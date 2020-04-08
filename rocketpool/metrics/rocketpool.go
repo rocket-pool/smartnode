@@ -23,12 +23,13 @@ import (
 // RP metrics process
 type RocketPoolMetricsProcess struct {
     p                       *services.Provider
+    depositQueueSize        prometheus.Gauge
     stakingDurationEnabled  map[string]prometheus.Gauge
     networkEthCapacity      map[string]prometheus.Gauge
     networkEthAssigned      map[string]prometheus.Gauge
     networkUtilisation      map[string]prometheus.Gauge
     rplRatio                map[string]prometheus.Gauge
-    queueBalance            map[string]prometheus.Gauge
+    depositQueueBalance     map[string]prometheus.Gauge
     totalMinipools          prometheus.Gauge
     statusMinipools         map[uint8]prometheus.Gauge
     totalNodes              prometheus.Gauge
@@ -54,7 +55,7 @@ func StartRocketPoolMetricsProcess(c *cli.Context) {
     p, err := services.NewProvider(c, services.ProviderOpts{
         Client: true,
         CM: true,
-        LoadContracts: []string{"rocketDepositQueue", "rocketMinipoolSettings", "rocketNodeAPI", "rocketPool", "utilAddressSetStorage"},
+        LoadContracts: []string{"rocketDepositQueue", "rocketDepositSettings", "rocketMinipoolSettings", "rocketNodeAPI", "rocketPool", "utilAddressSetStorage"},
         LoadAbis: []string{"rocketMinipool"},
         WaitClientConn: true,
         WaitClientSync: true,
@@ -68,12 +69,18 @@ func StartRocketPoolMetricsProcess(c *cli.Context) {
     // Initialise process / register metrics
     process := &RocketPoolMetricsProcess{
         p:                      p,
+        depositQueueSize:       promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:  "smartnode",
+            Subsystem:  "rocketpool",
+            Name:       "queue_max_size",
+            Help:       "The maximum size of a deposit queue in ETH",
+        }),
         stakingDurationEnabled: make(map[string]prometheus.Gauge),
         networkEthCapacity:     make(map[string]prometheus.Gauge),
         networkEthAssigned:     make(map[string]prometheus.Gauge),
         networkUtilisation:     make(map[string]prometheus.Gauge),
         rplRatio:               make(map[string]prometheus.Gauge),
-        queueBalance:           make(map[string]prometheus.Gauge),
+        depositQueueBalance:    make(map[string]prometheus.Gauge),
         totalMinipools:         promauto.NewGauge(prometheus.GaugeOpts{
             Namespace:  "smartnode",
             Subsystem:  "rocketpool",
@@ -127,9 +134,45 @@ func (p *RocketPoolMetricsProcess) start() {
 
 // Update metrics
 func (p *RocketPoolMetricsProcess) update() {
+    go p.updateSettingsMetrics()
     go p.updateStakingDurationMetrics()
     go p.updateMinipoolMetrics()
     go p.updateNodeMetrics()
+}
+
+
+// Update settings metrics
+func (p *RocketPoolMetricsProcess) updateSettingsMetrics() {
+
+    // Data channels
+    depositQueueSizeChannel := make(chan float64)
+    errorChannel := make(chan error)
+
+    // Get queue size
+    go (func() {
+        depositQueueSize := new(*big.Int)
+        if err := p.p.CM.Contracts["rocketDepositSettings"].Call(nil, depositQueueSize, "getDepositQueueSizeMax"); err != nil {
+            errorChannel <- errors.New("Error retrieving deposit queue size: " + err.Error())
+        } else {
+            depositQueueSizeChannel <- eth.WeiToEth(*depositQueueSize)
+        }
+    })()
+
+    // Receive data
+    var depositQueueSize float64
+    for received := 0; received < 1; {
+        select {
+            case depositQueueSize = <-depositQueueSizeChannel:
+                received++
+            case err := <-errorChannel:
+                p.p.Log.Println(err)
+                return
+        }
+    }
+
+    // Update settings metrics
+    p.depositQueueSize.Set(depositQueueSize)
+
 }
 
 
@@ -235,15 +278,15 @@ func (p *RocketPoolMetricsProcess) updateStakingDurationMetrics() {
         p.rplRatio[duration.Id].Set(metrics.RplRatio)
 
         // Queue balance
-        if _, ok := p.queueBalance[duration.Id]; !ok {
-            p.queueBalance[duration.Id] = promauto.NewGauge(prometheus.GaugeOpts{
+        if _, ok := p.depositQueueBalance[duration.Id]; !ok {
+            p.depositQueueBalance[duration.Id] = promauto.NewGauge(prometheus.GaugeOpts{
                 Namespace:  "smartnode",
                 Subsystem:  "rocketpool",
                 Name:       fmt.Sprintf("queue_balance_%s", duration.Id),
                 Help:       fmt.Sprintf("The current ETH balance of the '%s' deposit queue", duration.Id),
             })
         }
-        p.queueBalance[duration.Id].Set(metrics.QueueBalance)
+        p.depositQueueBalance[duration.Id].Set(metrics.QueueBalance)
 
     }
 
