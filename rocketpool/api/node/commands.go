@@ -39,6 +39,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
+            // Get the node's account address
+            cli.Command{
+                Name:      "account",
+                Aliases:   []string{"c"},
+                Usage:     "Get the node's account address",
+                UsageText: "rocketpool node account",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return getNodeAccount(c)
+
+                },
+            },
+
             // Initialise the node password
             cli.Command{
                 Name:      "initPassword",
