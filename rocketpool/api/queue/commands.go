@@ -36,6 +36,30 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             // Process a deposit queue
             cli.Command{
+                Name:      "canProcess",
+                Usage:     "Process a deposit queue",
+                UsageText: "rocketpool queue canProcess durationID",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var durationId string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 1, func(messages *[]string) {
+
+                        // Get duration ID
+                        durationId = c.Args().Get(0)
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return canProcessQueue(c, durationId)
+
+                },
+            },
+            cli.Command{
                 Name:      "process",
                 Aliases:   []string{"p"},
                 Usage:     "Process a deposit queue",
