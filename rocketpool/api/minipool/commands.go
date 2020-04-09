@@ -37,6 +37,33 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             // Withdraw node deposit from a minipool
             cli.Command{
+                Name:      "canWithdraw",
+                Usage:     "Can withdraw deposit from a minipool",
+                UsageText: "rocketpool minipool canWithdraw address",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var address string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 1, func(messages *[]string) {
+
+                        // Validate address
+                        address = c.Args().Get(0)
+                        if !common.IsHexAddress(address) {
+                            *messages = append(*messages, "Invalid minipool address - must be a valid Ethereum address")
+                        }
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return canWithdrawMinipool(c, address)
+
+                },
+            },
+            cli.Command{
                 Name:      "withdraw",
                 Aliases:   []string{"w"},
                 Usage:     "Withdraw deposit from a minipool",
