@@ -9,6 +9,37 @@ import (
 )
 
 
+// Can initialise the node account
+func canInitNodeAccount(c *cli.Context) error {
+
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        PM: true,
+        AM: true,
+        PasswordOptional: true,
+        NodeAccountOptional: true,
+    })
+    if err != nil { return err }
+    defer p.Cleanup()
+
+    // Check
+    canInit := node.CanInitNodeAccount(p)
+
+    // Get error message
+    var message string
+    if canInit.NodePasswordDidNotExist {
+        message = "Node password is not set"
+    } else if canInit.HadExistingAccount {
+        message = "Node account is already initialized"
+    }
+
+    // Print response
+    api.PrintResponse(p.Output, canInit, message)
+    return nil
+
+}
+
+
 // Initialise the node account
 func initNodeAccount(c *cli.Context) error {
 

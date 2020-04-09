@@ -60,6 +60,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             // Initialise the node password
             cli.Command{
+                Name:      "canInitPassword",
+                Usage:     "Can initialize the node password",
+                UsageText: "rocketpool node canInitPassword",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return canInitNodePassword(c)
+
+                },
+            },
+            cli.Command{
                 Name:      "initPassword",
                 Aliases:   []string{"p"},
                 Usage:     "Initialize the node password",
@@ -88,6 +104,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             // Initialise the node account
+            cli.Command{
+                Name:      "canInitAccount",
+                Usage:     "Can initialize the node account",
+                UsageText: "rocketpool node canInitAccount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return canInitNodeAccount(c)
+
+                },
+            },
             cli.Command{
                 Name:      "initAccount",
                 Aliases:   []string{"a"},
