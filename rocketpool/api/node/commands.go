@@ -159,6 +159,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             // Register the node with Rocket Pool
             cli.Command{
+                Name:      "canRegister",
+                Usage:     "Can register the node on the Rocket Pool network",
+                UsageText: "rocketpool node canRegister",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return canRegisterNode(c)
+
+                },
+            },
+            cli.Command{
                 Name:      "register",
                 Aliases:   []string{"r"},
                 Usage:     "Register the node on the Rocket Pool network",
