@@ -9,6 +9,46 @@ import (
 )
 
 
+// Can reserve a node deposit
+func canReserveDeposit(c *cli.Context, durationId string) error {
+
+    // Initialise services
+    p, err := services.NewProvider(c, services.ProviderOpts{
+        AM: true,
+        Client: true,
+        CM: true,
+        NodeContractAddress: true,
+        NodeContract: true,
+        LoadContracts: []string{"rocketNodeAPI", "rocketMinipoolSettings", "rocketNodeSettings"},
+        LoadAbis: []string{"rocketNodeContract"},
+        ClientConn: true,
+        ClientSync: true,
+        RocketStorage: true,
+    })
+    if err != nil { return err }
+    defer p.Cleanup()
+
+    // Check node deposit can be reserved
+    canReserve, err := deposit.CanReserveDeposit(p, durationId)
+    if err != nil { return err }
+
+    // Get error message
+    var message string
+    if canReserve.HadExistingReservation {
+        message = "Node has an existing deposit reservation"
+    } else if canReserve.DepositsDisabled {
+        message = "Node deposits are currently disabled in Rocket Pool"
+    } else if canReserve.StakingDurationDisabled {
+        message = "The specified staking duration is invalid or disabled"
+    }
+
+    // Print response
+    api.PrintResponse(p.Output, canReserve, message)
+    return nil
+
+}
+
+
 // Reserve a node deposit
 func reserveDeposit(c *cli.Context, durationId string) error {
 

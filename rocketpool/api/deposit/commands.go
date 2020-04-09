@@ -55,6 +55,30 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             // Reserve a deposit
             cli.Command{
+                Name:      "canReserve",
+                Usage:     "Can reserve a node deposit",
+                UsageText: "rocketpool deposit canReserve durationID",
+                Action: func(c *cli.Context) error {
+
+                    // Arguments
+                    var durationId string
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 1, func(messages *[]string) {
+
+                        // Get duration ID
+                        durationId = c.Args().Get(0)
+
+                    }); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return canReserveDeposit(c, durationId)
+
+                },
+            },
+            cli.Command{
                 Name:      "reserve",
                 Aliases:   []string{"r"},
                 Usage:     "Reserve a node deposit",
@@ -82,6 +106,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             // Complete a deposit
             cli.Command{
+                Name:      "canComplete",
+                Usage:     "Can complete a reserved node deposit",
+                UsageText: "rocketpool deposit canComplete",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return canCompleteDeposit(c)
+
+                },
+            },
+            cli.Command{
                 Name:      "complete",
                 Aliases:   []string{"c"},
                 Usage:     "Complete a reserved node deposit",
@@ -100,6 +140,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             // Cancel a deposit
+            cli.Command{
+                Name:      "canCancel",
+                Usage:     "Can cancel a reserved node deposit",
+                UsageText: "rocketpool deposit canCancel",
+                Action: func(c *cli.Context) error {
+
+                    // Validate arguments
+                    if err := cliutils.ValidateAPIArgs(c, 0, nil); err != nil {
+                        return err
+                    }
+
+                    // Run command
+                    return canCancelDeposit(c)
+
+                },
+            },
             cli.Command{
                 Name:      "cancel",
                 Aliases:   []string{"a"},
