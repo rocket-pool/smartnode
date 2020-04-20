@@ -106,9 +106,6 @@ func AppStakeMinipool(options AppOptions, minipoolAddress common.Address) error 
     client, err := ethclient.Dial(options.ProviderPow)
     if err != nil { return err }
 
-    // Initialise beacon client
-    beaconClient := beacon.NewClient(options.ProviderBeacon)
-
     // Initialise contract manager & load contracts
     cm, err := rocketpool.NewContractManager(client, options.StorageAddress)
     if err != nil { return err }
@@ -136,8 +133,10 @@ func AppStakeMinipool(options AppOptions, minipoolAddress common.Address) error 
     validatorPubkey := validatorKey.PublicKey.Marshal()
 
     // Get validator deposit data
-    eth2Config, err := beaconClient.GetEth2Config()
-    if err != nil { return err }
+    eth2Config := &beacon.Eth2ConfigResponse{
+        DomainDeposit: 3,
+        GenesisForkVersionBytes: []byte{0,0,0,0},
+    }
     depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
     if err != nil { return errors.New("Error building validator deposit data: " + err.Error()) }
 
