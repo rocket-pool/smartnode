@@ -7,7 +7,7 @@ import (
 
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/rocketpool-node/node"
+    "github.com/rocket-pool/smartnode/rocketpool/node"
     "github.com/rocket-pool/smartnode/shared/services"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 

@@ -15,7 +15,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/validators"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
-    "github.com/rocket-pool/smartnode/shared/utils/eth/validator"
+    "github.com/rocket-pool/smartnode/shared/utils/validator"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
 )
