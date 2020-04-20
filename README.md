@@ -30,23 +30,23 @@ The package also contains several services that operate in the background called
 
 Rocket Pool Smart Nodes are primarily managed by the `rocketpool` CLI application. The following commands are available:
 
-- `rocketpool node status` - Displays information about the status of the smart node
-- `rocketpool node init` - Initialises the smart node with an account used for all transactions with the Rocket Pool network
-- `rocketpool node register` - Registers the smart node with the Rocket Pool network
-- `rocketpool node withdraw` - Withdraws resources from the smart node contract back to the node account
-- `rocketpool node timezone` - Set's the smart node's timezone information for display on the Rocket Pool website
+- `rocketpool run node status` - Displays information about the status of the smart node
+- `rocketpool run node init` - Initialises the smart node with an account used for all transactions with the Rocket Pool network
+- `rocketpool run node register` - Registers the smart node with the Rocket Pool network
+- `rocketpool run node withdraw` - Withdraws resources from the smart node contract back to the node account
+- `rocketpool run node timezone` - Set's the smart node's timezone information for display on the Rocket Pool website
 
-- `rocketpool deposit status` - Displays information about the smart node's current pending deposit, if any
-- `rocketpool deposit required` - Displays the required deposit amount, RPL requirement and RPL ratio for the specified staking duration
-- `rocketpool deposit reserve` - Reserves a deposit with the Rocket Pool network and calculates the ETH and RPL requirements to finalize it
-- `rocketpool deposit cancel` - Cancels the smart node's current pending deposit
-- `rocketpool deposit complete` - Completes the smart node's current pending deposit, sending any required ETH and RPL, and displays information about the created minipool
+- `rocketpool run deposit status` - Displays information about the smart node's current pending deposit, if any
+- `rocketpool run deposit required` - Displays the required deposit amount, RPL requirement and RPL ratio for the specified staking duration
+- `rocketpool run deposit reserve` - Reserves a deposit with the Rocket Pool network and calculates the ETH and RPL requirements to finalize it
+- `rocketpool run deposit cancel` - Cancels the smart node's current pending deposit
+- `rocketpool run deposit complete` - Completes the smart node's current pending deposit, sending any required ETH and RPL, and displays information about the created minipool
 
-- `rocketpool minipool status` - Displays information about the node's current minipools
-- `rocketpool minipool withdraw` - Withdraws the node's deposit from an initialized, withdrawn or timed out minipool
+- `rocketpool run minipool status` - Displays information about the node's current minipools
+- `rocketpool run minipool withdraw` - Withdraws the node's deposit from an initialized, withdrawn or timed out minipool
 
-- `rocketpool fee display` - Displays the current user fee charged by all node operators in the Rocket Pool network, and the target fee to vote for, if set locally
-- `rocketpool fee set` - Sets the target user fee to vote for during node checkin, locally
+- `rocketpool run fee display` - Displays the current user fee charged by all node operators in the Rocket Pool network, and the target fee to vote for, if set locally
+- `rocketpool run fee set` - Sets the target user fee to vote for during node checkin, locally
 
 # Tests
 
