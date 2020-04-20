@@ -32,15 +32,14 @@ Rocket Pool Smart Nodes are primarily managed by the `rocketpool` CLI applicatio
 
 - `rocketpool run node status` - Displays information about the status of the smart node
 - `rocketpool run node init` - Initialises the smart node with an account used for all transactions with the Rocket Pool network
+- `rocketpool run node export` - Displays the node account and password information
 - `rocketpool run node register` - Registers the smart node with the Rocket Pool network
 - `rocketpool run node withdraw` - Withdraws resources from the smart node contract back to the node account
+- `rocketpool run node send` - Sends resources from the node account to an ethereum address
 - `rocketpool run node timezone` - Set's the smart node's timezone information for display on the Rocket Pool website
 
-- `rocketpool run deposit status` - Displays information about the smart node's current pending deposit, if any
 - `rocketpool run deposit required` - Displays the required deposit amount, RPL requirement and RPL ratio for the specified staking duration
-- `rocketpool run deposit reserve` - Reserves a deposit with the Rocket Pool network and calculates the ETH and RPL requirements to finalize it
-- `rocketpool run deposit cancel` - Cancels the smart node's current pending deposit
-- `rocketpool run deposit complete` - Completes the smart node's current pending deposit, sending any required ETH and RPL, and displays information about the created minipool
+- `rocketpool run deposit make` - Make a deposit with Rocket Pool to create a minipool, ready for user deposits to be assigned to
 
 - `rocketpool run minipool status` - Displays information about the node's current minipools
 - `rocketpool run minipool withdraw` - Withdraws the node's deposit from an initialized, withdrawn or timed out minipool
