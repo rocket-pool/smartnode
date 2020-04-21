@@ -2,11 +2,11 @@
 // This file is part of the Prysm ethereum 2.0 client.
 //
 // Modified by Rocket Pool 2020
+// (from: /shared/bls/bls.go)
 //
 // Package bls implements a go-wrapper around a library implementing the
 // the BLS12-381 curve and signature scheme. This package exposes a public API for
 // verifying and aggregating BLS signatures used by Ethereum 2.0.
-
 
 package bls
 
@@ -20,18 +20,13 @@ import (
 )
 
 func init() {
-	err := bls12.Init(bls12.BLS12_381)
-	if err != nil {
+	if err := bls12.Init(bls12.BLS12_381); err != nil {
 		panic(err)
 	}
-	bls12.SetETHmode(1)
+	if err := bls12.SetETHmode(1); err != nil {
+		panic(err)
+	}
 }
-
-// DomainByteLength length of domain byte array.
-const DomainByteLength = 4
-
-// ForkVersionByteLength length of fork version byte array.
-const ForkVersionByteLength = 4
 
 // BLS type lengths
 const BLSSecretKeyLength = 32
@@ -152,8 +147,7 @@ func (s *SecretKey) Marshal() []byte {
 
 // Marshal a public key into a LittleEndian byte slice.
 func (p *PublicKey) Marshal() []byte {
-	rawBytes := p.p.Serialize()
-	return rawBytes
+	return p.p.Serialize()
 }
 
 // Copy the public key to a new pointer reference.
@@ -218,7 +212,6 @@ func (s *Signature) FastAggregateVerify(pubKeys []*PublicKey, msg [32]byte) bool
 	if len(pubKeys) == 0 {
 		return false
 	}
-	//#nosec G104
 	rawKeys := make([]bls12.PublicKey, len(pubKeys))
 	for i := 0; i < len(pubKeys); i++ {
 		rawKeys[i] = *pubKeys[i].p
@@ -242,55 +235,16 @@ func AggregateSignatures(sigs []*Signature) *Signature {
 	if len(sigs) == 0 {
 		return nil
 	}
-	marshalled := sigs[0].s.Serialize()
-	signature := &bls12.Sign{}
-	//#nosec G104
-	signature.Deserialize(marshalled)
 
+	// Copy signature
+	signature := *sigs[0].s
 	for i := 1; i < len(sigs); i++ {
 		signature.Add(sigs[i].s)
 	}
-	return &Signature{s: signature}
+	return &Signature{s: &signature}
 }
 
 // Marshal a signature into a LittleEndian byte slice.
 func (s *Signature) Marshal() []byte {
-	rawBytes := s.s.Serialize()
-	return rawBytes
-}
-
-// Domain returns the bls domain given by the domain type and the operation 4 byte fork version.
-//
-// Spec pseudocode definition:
-//  def get_domain(state: BeaconState, domain_type: DomainType, message_epoch: Epoch=None) -> Domain:
-//    """
-//    Return the signature domain (fork version concatenated with domain type) of a message.
-//    """
-//    epoch = get_current_epoch(state) if message_epoch is None else message_epoch
-//    fork_version = state.fork.previous_version if epoch < state.fork.epoch else state.fork.current_version
-//    return compute_domain(domain_type, fork_version)
-func Domain(domainType [DomainByteLength]byte, forkVersion [ForkVersionByteLength]byte) []byte {
-	b := []byte{}
-	b = append(b, domainType[:4]...)
-	b = append(b, forkVersion[:4]...)
-	return b
-}
-
-// ComputeDomain returns the domain version for BLS private key to sign and verify with a zeroed 4-byte
-// array as the fork version.
-//
-// def compute_domain(domain_type: DomainType, fork_version: Optional[Version]=None) -> Domain:
-//    """
-//    Return the domain for the ``domain_type`` and ``fork_version``.
-//    """
-//    if fork_version is None:
-//        fork_version = GENESIS_FORK_VERSION
-//    return Domain(domain_type + fork_version)
-func ComputeDomain(domainType [DomainByteLength]byte, forkVersion []byte) []byte {
-	if forkVersion == nil {
-		forkVersion = []byte{0, 0, 0, 0} // Genesis fork version
-	}
-	forkBytes := [ForkVersionByteLength]byte{}
-	copy(forkBytes[:], forkVersion)
-	return Domain(domainType, forkBytes)
+	return s.s.Serialize()
 }

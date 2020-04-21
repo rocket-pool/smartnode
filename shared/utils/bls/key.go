@@ -3,6 +3,7 @@
 //
 // Modified by Prysmatic Labs 2018
 // Modified by Rocket Pool 2020
+// (from: /shared/keystore/key.go)
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -22,6 +23,9 @@ package bls
 import (
 	"encoding/hex"
 	"encoding/json"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"github.com/pborman/uuid"
 )
@@ -150,4 +154,45 @@ func NewKeyFromBLS(blsKey *SecretKey) (*Key, error) {
 func NewKey() (*Key, error) {
 	secretKey := RandKey()
 	return NewKeyFromBLS(secretKey)
+}
+
+func storeNewRandomKey(ks keyStore, password string) error {
+	key, err := NewKey()
+	if err != nil {
+		return err
+	}
+	if err := ks.StoreKey(ks.JoinPath(keyFileName(key.PublicKey)), key, password); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeKeyFile(file string, content []byte) error {
+	// Create the keystore directory with appropriate permissions
+	// in case it is not present yet.
+	const dirPerm = 0700
+	if err := os.MkdirAll(filepath.Dir(file), dirPerm); err != nil {
+		return err
+	}
+	// Atomic write: create a temporary hidden file first
+	// then move it into place. TempFile assigns mode 0600.
+	f, err := ioutil.TempFile(filepath.Dir(file), "."+filepath.Base(file)+".tmp")
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(content); err != nil {
+		newErr := f.Close()
+		if newErr != nil {
+			err = newErr
+		}
+		newErr = os.Remove(f.Name())
+		if newErr != nil {
+			err = newErr
+		}
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Rename(f.Name(), file)
 }
