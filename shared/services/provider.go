@@ -14,7 +14,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/contracts"
     "github.com/rocket-pool/smartnode/shared/services/accounts"
-    beaconchain "github.com/rocket-pool/smartnode/shared/services/beacon-chain"
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/database"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -97,7 +97,7 @@ type Provider struct {
 
     // Misc
     Publisher           *messaging.Publisher
-    Beacon              *beaconchain.Client
+    Beacon              *beacon.Client
     Docker              *client.Client
 
 }
@@ -122,9 +122,6 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
     if opts.WaitClientConn || opts.WaitClientSync || opts.WaitRocketStorage {
         opts.Client = true
     } // Connected client, synced client and RS contract require eth client
-    if opts.Beacon {
-        opts.Publisher = true
-    } // Beacon chain client requires publisher
     if opts.RPLExchange {
         opts.RPLExchangeAddress = true
     } // RPL Exchange contract requires RPL Exchange address
@@ -346,7 +343,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Initialise beacon chain client
     if opts.Beacon {
-        p.Beacon = beaconchain.NewClient(c.GlobalString("providerBeacon"), p.Publisher, p.Log)
+        p.Beacon = beacon.NewClient(c.GlobalString("providerBeacon"))
     }
 
     // Initialise docker client

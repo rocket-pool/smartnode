@@ -4,16 +4,15 @@ import (
     "encoding/hex"
     "errors"
 
-    pks "github.com/prysmaticlabs/prysm/shared/keystore"
-
     "github.com/rocket-pool/smartnode/shared/services/passwords"
-    "github.com/rocket-pool/smartnode/shared/utils/bls/keystore"
+    "github.com/rocket-pool/smartnode/shared/utils/bls"
+    "github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 
 // Key manager
 type KeyManager struct {
-    ks *keystore.Keystore
+    ks *validator.Keystore
     pm *passwords.PasswordManager
 }
 
@@ -23,7 +22,7 @@ type KeyManager struct {
  */
 func NewKeyManager(keychainPath string, passwordManager *passwords.PasswordManager) *KeyManager {
     return &KeyManager{
-        ks: keystore.NewKeystore(keychainPath),
+        ks: validator.NewKeystore(keychainPath),
         pm: passwordManager,
     }
 }
@@ -32,7 +31,7 @@ func NewKeyManager(keychainPath string, passwordManager *passwords.PasswordManag
 /**
  * Get a validator key by public key bytes
  */
-func (km *KeyManager) GetValidatorKey(pubkey []byte) (*pks.Key, error) {
+func (km *KeyManager) GetValidatorKey(pubkey []byte) (*bls.Key, error) {
 
     // Get keystore passphrase
     passphrase, err := km.pm.GetPassphrase()
@@ -64,7 +63,7 @@ func (km *KeyManager) GetValidatorKey(pubkey []byte) (*pks.Key, error) {
 /**
  * Create a validator key
  */
-func (km *KeyManager) CreateValidatorKey() (*pks.Key, error) {
+func (km *KeyManager) CreateValidatorKey() (*bls.Key, error) {
 
     // Get keystore passphrase
     passphrase, err := km.pm.GetPassphrase()

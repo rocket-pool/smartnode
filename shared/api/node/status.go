@@ -13,6 +13,13 @@ import (
 )
 
 
+// Get node account response type
+type GetNodeAccountResponse struct {
+    AccountAddress common.Address       `json:"accountAddress"`
+    Initialised bool                    `json:"initialised"`
+}
+
+
 // Get node status response type
 type GetNodeStatusResponse struct {
 
@@ -31,6 +38,25 @@ type GetNodeStatusResponse struct {
     Active bool                         `json:"active"`
     Trusted bool                        `json:"trusted"`
     Timezone string                     `json:"timezone"`
+
+}
+
+
+// Get node account
+func GetNodeAccount(p *services.Provider) *GetNodeAccountResponse {
+
+    // Response
+    response := &GetNodeAccountResponse{}
+
+    // Get node account
+    nodeAccount, err := p.AM.GetNodeAccount()
+    if err == nil {
+        response.Initialised = true
+        response.AccountAddress = nodeAccount.Address
+    }
+
+    // Return
+    return response
 
 }
 

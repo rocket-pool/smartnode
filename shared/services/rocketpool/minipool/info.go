@@ -210,7 +210,7 @@ func GetDetails(cm *rocketpool.ContractManager, minipoolAddress *common.Address)
     for received := 0; received < 11; {
         select {
             case details.Status = <-statusChannel:
-                details.StatusType = getStatusType(details.Status)
+                details.StatusType = GetStatusType(details.Status)
                 received++
             case details.StatusTime = <-statusTimeChannel:
                 received++
@@ -397,7 +397,7 @@ func GetNodeStatus(cm *rocketpool.ContractManager, minipoolAddress *common.Addre
     for received := 0; received < 4; {
         select {
             case nodeStatus.Status = <-statusChannel:
-                nodeStatus.StatusType = getStatusType(nodeStatus.Status)
+                nodeStatus.StatusType = GetStatusType(nodeStatus.Status)
                 received++
             case nodeStatus.StatusTime = <-statusTimeChannel:
                 received++
@@ -550,7 +550,7 @@ func GetActiveMinipoolsByValidatorPubkey(cm *rocketpool.ContractManager) (*map[s
 
 
 // Get the status type by value
-func getStatusType(value uint8) string {
+func GetStatusType(value uint8) string {
     switch value {
         case INITIALIZED: return "initialized"
         case DEPOSIT_ASSIGNED: return "depositassigned"

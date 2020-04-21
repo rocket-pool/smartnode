@@ -10,7 +10,7 @@ import (
 )
 
 
-// Run application
+// Run
 func main() {
 
     // Initialise application
@@ -30,7 +30,7 @@ func main() {
             Email: "jake@rocketpool.net",
         },
     }
-    app.Copyright = "(c) 2019 Rocket Pool Pty Ltd"
+    app.Copyright = "(c) 2020 Rocket Pool Pty Ltd"
 
     // Configure application
     app.Flags = []cli.Flag{

@@ -1,0 +1,35 @@
+###
+# Builder
+###
+
+
+# Start from golang image
+FROM golang:latest AS builder
+
+# Copy source files
+ADD ./rocketpool /src/rocketpool
+ADD ./shared /src/shared
+ADD ./go.mod /src/go.mod
+ADD ./go.sum /src/go.sum
+
+# Compile & install
+WORKDIR /src
+RUN go install ./rocketpool
+
+
+###
+# Process
+###
+
+
+# Start from ubuntu image
+FROM ubuntu:18.04
+
+# Install OS dependencies
+RUN apt-get update && apt-get install -y ca-certificates
+
+# Copy binary
+COPY --from=builder /go/bin/rocketpool /go/bin/rocketpool
+
+# Container entry point
+ENTRYPOINT ["/go/bin/rocketpool"]

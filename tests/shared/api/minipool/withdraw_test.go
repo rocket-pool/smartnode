@@ -88,7 +88,6 @@ func TestMinipoolWithdraw(t *testing.T) {
     }
 
     // Logout and withdraw minipools
-    if err := testapp.AppSetNodeTrusted(appOptions); err != nil { t.Fatal(err) }
     if err := testapp.AppWithdrawMinipools(appOptions, minipoolAddresses, eth.EthToWei(40)); err != nil { t.Fatal(err) }
 
     // Check withdrawable minipools

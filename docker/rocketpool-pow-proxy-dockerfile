@@ -7,18 +7,13 @@
 FROM golang:latest AS builder
 
 # Copy source files
-ADD ./rocketpool-pow-proxy /go/src/github.com/rocket-pool/smartnode/rocketpool-pow-proxy
-ADD ./shared /go/src/github.com/rocket-pool/smartnode/shared
-ADD ./vendor /go/src/github.com/rocket-pool/smartnode/vendor
-
-# Install go dependencies
-WORKDIR /go/src/github.com/rocket-pool/smartnode
-RUN go get -d github.com/ethereum/go-ethereum
-RUN go get -d github.com/ethereum/go-ethereum/internal/ethapi
-RUN go get -d github.com/ethereum/go-ethereum/accounts/usbwallet
+ADD ./rocketpool-pow-proxy /src/rocketpool-pow-proxy
+ADD ./go.mod /src/go.mod
+ADD ./go.sum /src/go.sum
 
 # Compile & install
-RUN go install github.com/rocket-pool/smartnode/rocketpool-pow-proxy
+WORKDIR /src
+RUN go install ./rocketpool-pow-proxy
 
 
 ###

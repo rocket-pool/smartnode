@@ -6,6 +6,8 @@ import (
     "io"
     "os"
     "regexp"
+    "strconv"
+    "strings"
 )
 
 
@@ -38,6 +40,35 @@ func Prompt(input *os.File, output *os.File, initialPrompt string, expectedForma
 
     // Return user input
     return scanner.Text()
+
+}
+
+
+// Prompt for user selection
+func PromptSelect(input *os.File, output *os.File, initialPrompt string, options []string) string {
+
+    // Get prompt
+    prompt := initialPrompt
+    for i, option := range options {
+        prompt += fmt.Sprintf("\n%d: %s", (i + 1), option)
+    }
+
+    // Get expected response format
+    optionNumbers := []string{}
+    for i, _ := range options {
+        optionNumbers = append(optionNumbers, strconv.Itoa(i + 1))
+    }
+    expectedFormat := fmt.Sprintf("^(%s)$", strings.Join(optionNumbers, "|"))
+
+    // Prompt user
+    response := Prompt(input, output, prompt, expectedFormat, "Please enter a number corresponding to an option")
+
+    // Get selected option
+    index, _ := strconv.Atoi(response)
+    selected := options[index - 1]
+
+    // Return
+    return selected
 
 }
 

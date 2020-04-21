@@ -8,35 +8,17 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
-    "github.com/prysmaticlabs/go-ssz"
-    "github.com/prysmaticlabs/prysm/shared/bls"
-    "github.com/prysmaticlabs/prysm/shared/bytesutil"
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/validators"
     "github.com/rocket-pool/smartnode/shared/utils/eth"
+    "github.com/rocket-pool/smartnode/shared/utils/validator"
 
     test "github.com/rocket-pool/smartnode/tests/utils"
 )
-
-
-// Deposit amount in gwei
-const DEPOSIT_AMOUNT uint64 = 32000000000
-
-
-// BLS deposit domain
-const DOMAIN_DEPOSIT uint64 = 3
-
-
-// DepositData data
-type DepositData struct {
-    Pubkey [48]byte
-    WithdrawalCredentials [32]byte
-    Amount uint64
-    Signature [96]byte
-}
 
 
 // RocketDepositQueue DepositChunkFragmentAssign event
@@ -150,33 +132,18 @@ func AppStakeMinipool(options AppOptions, minipoolAddress common.Address) error 
     if err != nil { return err }
     validatorPubkey := validatorKey.PublicKey.Marshal()
 
-    // Build DepositData object
-    depositData := &DepositData{}
-    copy(depositData.Pubkey[:], validatorPubkey)
-    copy(depositData.WithdrawalCredentials[:], withdrawalCredentials)
-    depositData.Amount = DEPOSIT_AMOUNT
-
-    // Get deposit data signing root
-    signingRoot, err := ssz.SigningRoot(depositData)
-    if err != nil {
-        return errors.New("Error retrieving deposit data signing root: " + err.Error())
+    // Get validator deposit data
+    eth2Config := &beacon.Eth2ConfigResponse{
+        DomainDeposit: 3,
+        GenesisForkVersionBytes: []byte{0,0,0,0},
     }
-
-    // Sign deposit data
-    domain := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(DOMAIN_DEPOSIT)))
-    signature := validatorKey.SecretKey.Sign(signingRoot[:], domain).Marshal()
-    copy(depositData.Signature[:], signature)
-
-    // Get deposit data root
-    depositDataRoot, err := ssz.HashTreeRoot(depositData)
-    if err != nil {
-        return errors.New("Error retrieving deposit data hash tree root: " + err.Error())
-    }
+    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
+    if err != nil { return errors.New("Error building validator deposit data: " + err.Error()) }
 
     // Stake minipool
     txor, err := am.GetNodeAccountTransactor()
     if err != nil { return err }
-    if _, err := eth.ExecuteContractTransaction(client, txor, nodeContractAddress, cm.Abis["rocketNodeContract"], "stakeMinipool", minipoolAddress, validatorPubkey, signature, depositDataRoot); err != nil { return err }
+    if _, err := eth.ExecuteContractTransaction(client, txor, nodeContractAddress, cm.Abis["rocketNodeContract"], "stakeMinipool", minipoolAddress, validatorPubkey, depositData.Signature[:], depositDataRoot); err != nil { return err }
 
     // Return
     return nil

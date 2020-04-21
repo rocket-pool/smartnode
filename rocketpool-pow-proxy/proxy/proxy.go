@@ -10,7 +10,7 @@ import (
 
 
 // Config
-const INFURA_URL = "https://%s.infura.io/v3/%s";
+const INFURA_URL = "https://%s.infura.io/v3/%s"
 
 
 // Proxy server
@@ -77,6 +77,9 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         return
     }
     defer response.Body.Close()
+
+    // Set response writer header
+    w.Header().Set("Content-Type", "application/json")
 
     // Copy provider response body to response writer
     _, err = io.Copy(w, response.Body)
