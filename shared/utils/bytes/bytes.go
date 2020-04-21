@@ -1,6 +1,9 @@
-// Package bytesutil defines helper methods for converting integers to byte slices.
+// Copyright 2020 Prysmatic Labs
+// This file is part of the Prysm ethereum 2.0 client.
 //
 // Modified by Rocket Pool 2020
+//
+// Package bytesutil defines helper methods for converting integers to byte slices.
 
 package bytes
 
