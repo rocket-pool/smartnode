@@ -6,7 +6,7 @@ type Eth2Config struct {
     GenesisForkVersion []byte
     BLSWithdrawalPrefixByte []byte
     DomainBeaconProposer uint64
-    DomainBeaonAttester uint64
+    DomainBeaconAttester uint64
     DomainRandao uint64
     DomainDeposit uint64
     DomainVoluntaryExit uint64
@@ -19,10 +19,8 @@ type BeaconHead struct {
 }
 type ValidatorStatus struct {
     Pubkey []byte
-    ValidatorIndex uint64
-    Balance uint64
-    EffectiveBalance uint64
     WithdrawalCredentials []byte
+    EffectiveBalance uint64
     Slashed bool
     ActivationEligibilityEpoch uint64
     ActivationEpoch uint64
@@ -32,7 +30,7 @@ type ValidatorStatus struct {
 }
 
 
-// Beaon client interface
+// Beacon client interface
 type Client interface {
     GetEth2Config() (*Eth2Config, error)
     GetBeaconHead() (*BeaconHead, error)

@@ -34,7 +34,7 @@ type Eth2ConfigResponse struct {
     GenesisForkVersion string       `json:"genesis_fork_version"`
     BLSWithdrawalPrefixByte string  `json:"bls_withdrawal_prefix_byte"`
     DomainBeaconProposer uint64     `json:"domain_beacon_proposer"`
-    DomainBeaonAttester uint64      `json:"domain_beacon_attester"`
+    DomainBeaconAttester uint64     `json:"domain_beacon_attester"`
     DomainRandao uint64             `json:"domain_randao"`
     DomainDeposit uint64            `json:"domain_deposit"`
     DomainVoluntaryExit uint64      `json:"domain_voluntary_exit"`
@@ -46,8 +46,6 @@ type BeaconHeadResponse struct {
 }
 type ValidatorResponse struct {
     Pubkey string                   `json:"pubkey"`
-    ValidatorIndex uint64           `json:"validator_index"`
-    Balance uint64                  `json:"balance"`
     Validator struct {
         WithdrawalCredentials string        `json:"withdrawal_credentials"`
         EffectiveBalance uint64             `json:"effective_balance"`
@@ -126,7 +124,7 @@ func (c *Client) GetEth2Config() (*beacon.Eth2Config, error) {
     // Create response
     response := &beacon.Eth2Config{
         DomainBeaconProposer: config.DomainBeaconProposer,
-        DomainBeaonAttester: config.DomainBeaonAttester,
+        DomainBeaconAttester: config.DomainBeaconAttester,
         DomainRandao: config.DomainRandao,
         DomainDeposit: config.DomainDeposit,
         DomainVoluntaryExit: config.DomainVoluntaryExit,
@@ -228,8 +226,6 @@ func (c *Client) GetValidatorStatus(pubkey string) (*beacon.ValidatorStatus, err
 
     // Create response
     response := &beacon.ValidatorStatus{
-        ValidatorIndex: validator.ValidatorIndex,
-        Balance: validator.Balance,
         EffectiveBalance: validator.Validator.EffectiveBalance,
         Slashed: validator.Validator.Slashed,
         ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,
