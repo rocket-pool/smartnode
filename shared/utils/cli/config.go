@@ -65,6 +65,11 @@ func Configure(app *cli.App) {
             Value: "0x6A603658DD351C65379A6fc9f7DD30742ae8bf3c", // Goerli
         },
         cli.StringFlag{
+            Name:  "beaconApiMode",
+            Usage: "Beacon API mode ('lighthouse' or 'prysm')",
+            Value: "",
+        },
+        cli.StringFlag{
             Name:  "input",
             Usage: "Rocket Pool CLI input file `path` (advanced use only)",
         },
@@ -81,6 +86,11 @@ func Configure(app *cli.App) {
         _, rpConfig, err := config.Load(c.GlobalString("config"), c.GlobalString("settings"))
         if err != nil { return err }
 
+        // Get selected eth2 client ID
+        var eth2ClientId string
+        eth2Client := rpConfig.GetSelectedEth2Client()
+        if eth2Client != nil { eth2ClientId = eth2Client.ID }
+
         // Set flags from config
         setFlagFromConfig(c, "database",       rpConfig.Smartnode.DatabasePath)
         setFlagFromConfig(c, "password",       rpConfig.Smartnode.PasswordPath)
@@ -90,6 +100,7 @@ func Configure(app *cli.App) {
         setFlagFromConfig(c, "providerBeacon", rpConfig.Chains.Eth2.Provider)
         setFlagFromConfig(c, "storageAddress", rpConfig.Rocketpool.StorageAddress)
         setFlagFromConfig(c, "uniswapAddress", rpConfig.Rocketpool.UniswapAddress)
+        setFlagFromConfig(c, "beaconApiMode",  eth2ClientId)
 
         // Return
         return nil

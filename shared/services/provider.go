@@ -345,10 +345,13 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Initialise beacon chain client
     if opts.Beacon {
-        if true {
-            p.Beacon = lighthouse.NewClient(c.GlobalString("providerBeacon"))
-        } else {
-            p.Beacon = prysm.NewClient(c.GlobalString("providerBeacon"))
+        switch c.GlobalString("beaconApiMode") {
+            case "lighthouse":
+                p.Beacon = lighthouse.NewClient(c.GlobalString("providerBeacon"))
+            case "prysm":
+                p.Beacon = prysm.NewClient(c.GlobalString("providerBeacon"))
+            default:
+                return nil, errors.New("No Eth 2.0 API mode specified")
         }
     }
 
