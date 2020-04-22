@@ -133,7 +133,7 @@ func AppStakeMinipool(options AppOptions, minipoolAddress common.Address) error 
     validatorPubkey := validatorKey.PublicKey.Marshal()
 
     // Get validator deposit data
-    eth2Config := &beacon.Eth2ConfigResponse{
+    eth2Config := &beacon.Eth2Config{
         DomainDeposit: 3,
         GenesisForkVersionBytes: []byte{0,0,0,0},
     }

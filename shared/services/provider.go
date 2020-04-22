@@ -15,6 +15,8 @@ import (
     "github.com/rocket-pool/smartnode/shared/contracts"
     "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
+    "github.com/rocket-pool/smartnode/shared/services/beacon/lighthouse"
+    "github.com/rocket-pool/smartnode/shared/services/beacon/prysm"
     "github.com/rocket-pool/smartnode/shared/services/database"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -97,7 +99,7 @@ type Provider struct {
 
     // Misc
     Publisher           *messaging.Publisher
-    Beacon              *beacon.Client
+    Beacon              beacon.Client
     Docker              *client.Client
 
 }
@@ -343,7 +345,11 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
 
     // Initialise beacon chain client
     if opts.Beacon {
-        p.Beacon = beacon.NewClient(c.GlobalString("providerBeacon"))
+        if true {
+            p.Beacon = lighthouse.NewClient(c.GlobalString("providerBeacon"))
+        } else {
+            p.Beacon = prysm.NewClient(c.GlobalString("providerBeacon"))
+        }
     }
 
     // Initialise docker client

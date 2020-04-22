@@ -171,7 +171,7 @@ func (p *WatchtowerProcess) checkMinipools() {
 /**
  * Check minipool
  */
-func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey string, head *beacon.BeaconHeadResponse) {
+func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey string, head *beacon.BeaconHead) {
 
     // Log
     p.p.Log.Println(fmt.Sprintf("Checking minipool %s status...", minipoolAddress.Hex()))
@@ -194,7 +194,7 @@ func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey
     }
 
     // Log minipool out if validator has exited
-    if status == minipool.STAKING && head.Epoch >= validator.Validator.ExitEpoch {
+    if status == minipool.STAKING && head.Epoch >= validator.ExitEpoch {
         p.txLock.Lock()
         defer p.txLock.Unlock()
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {
@@ -210,7 +210,7 @@ func (p *WatchtowerProcess) checkMinipool(minipoolAddress common.Address, pubkey
     }
 
     // Withdraw minipool if validator is withdrawable
-    if status == minipool.LOGGED_OUT && head.Epoch >= validator.Validator.WithdrawableEpoch {
+    if status == minipool.LOGGED_OUT && head.Epoch >= validator.WithdrawableEpoch {
         p.txLock.Lock()
         defer p.txLock.Unlock()
         if txor, err := p.p.AM.GetNodeAccountTransactor(); err != nil {

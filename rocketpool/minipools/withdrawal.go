@@ -42,7 +42,7 @@ func (p *MinipoolsProcess) checkStakingMinipools(minipoolAddresses []*common.Add
 /**
  * Check a staking minipool for withdrawal
  */
-func (p *MinipoolsProcess) checkStakingMinipool(minipoolAddress *common.Address, head *beacon.BeaconHeadResponse) {
+func (p *MinipoolsProcess) checkStakingMinipool(minipoolAddress *common.Address, head *beacon.BeaconHead) {
 
     // Log
     p.p.Log.Println(fmt.Sprintf("Checking minipool %s for withdrawal at epoch %d...", minipoolAddress.Hex(), head.Epoch))
@@ -63,7 +63,7 @@ func (p *MinipoolsProcess) checkStakingMinipool(minipoolAddress *common.Address,
         p.p.Log.Println(fmt.Sprintf("Minipool %s validator does not yet exist on beacon chain...", minipoolAddress.Hex()))
         return
     }
-    exitEpoch := validator.Validator.ActivationEpoch + status.StakingDuration.Uint64()
+    exitEpoch := validator.ActivationEpoch + status.StakingDuration.Uint64()
 
     // Check exit epoch
     if head.Epoch < exitEpoch {

@@ -30,10 +30,10 @@ type SigningRoot struct {
 
 
 // Get deposit data & root for a given validator key and withdrawal credentials
-func GetDepositData(validatorKey *bls.Key, withdrawalCredentials []byte, eth2Config *beacon.Eth2ConfigResponse) (*DepositData, [32]byte, error) {
+func GetDepositData(validatorKey *bls.Key, withdrawalCredentials []byte, eth2Config *beacon.Eth2Config) (*DepositData, [32]byte, error) {
 
     // Compute domain
-    domain, err := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(eth2Config.DomainDeposit)), eth2Config.GenesisForkVersionBytes, nil)
+    domain, err := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(eth2Config.DomainDeposit)), eth2Config.GenesisForkVersion, nil)
     if err != nil { return nil, [32]byte{}, err }
 
     // Build deposit data

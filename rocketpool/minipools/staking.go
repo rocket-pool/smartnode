@@ -70,7 +70,7 @@ func (p *MinipoolsProcess) stakePrelaunchMinipools(minipoolAddresses []*common.A
 /**
  * Stake a pre-launch minipool
  */
-func (p *MinipoolsProcess) stakePrelaunchMinipool(minipoolAddress *common.Address, withdrawalCredentials []byte, eth2Config *beacon.Eth2ConfigResponse, done chan struct{}) {
+func (p *MinipoolsProcess) stakePrelaunchMinipool(minipoolAddress *common.Address, withdrawalCredentials []byte, eth2Config *beacon.Eth2Config, done chan struct{}) {
 
     // Send done signal on return
     defer (func() {
