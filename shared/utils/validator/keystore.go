@@ -2,12 +2,16 @@ package validator
 
 import (
     "github.com/rocket-pool/smartnode/shared/utils/bls"
+    "github.com/rocket-pool/smartnode/shared/utils/validator/lighthouse"
+    "github.com/rocket-pool/smartnode/shared/utils/validator/prysm"
 )
 
 
 // Validator keystore
 type Keystore struct {
     path string
+    lighthouse *lighthouse.Keystore
+    prysm *prysm.Keystore
 }
 
 
@@ -15,13 +19,15 @@ type Keystore struct {
 func NewKeystore(directory string) *Keystore {
     return &Keystore{
         path: directory,
+        lighthouse: lighthouse.NewKeystore(directory),
+        prysm: prysm.NewKeystore(directory),
     }
 }
 
 
 // Get keys from the keystore directory
 func (ks *Keystore) GetStoredKeys(password string) (map[string]*bls.Key, error) {
-    return readLighthouseKeys(ks.path)
+    return ks.prysm.GetStoredKeys()
 }
 
 
@@ -35,8 +41,8 @@ func (ks *Keystore) NewKey(password string) (*bls.Key, error) {
     }
 
     // Write to client keystores
-    if err := writeLighthouseKey(ks.path, key); err != nil { return nil, err }
-    if err := writePrysmKey(ks.path, key); err != nil { return nil, err }
+    if err := ks.lighthouse.StoreKey(key); err != nil { return nil, err }
+    if err := ks.prysm.StoreKey(key); err != nil { return nil, err }
 
     // Return
     return key, nil

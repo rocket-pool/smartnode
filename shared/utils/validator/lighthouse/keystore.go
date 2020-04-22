@@ -1,4 +1,4 @@
-package validator
+package lighthouse
 
 import (
     "bytes"
@@ -13,18 +13,29 @@ import (
 
 
 // Lighthouse keystore settings
-const LIGHTHOUSE_KEYSTORE_PATH string = "lighthouse"
-const LIGHTHOUSE_KEY_FILENAME string = "voting_keypair"
+const KEYSTORE_PATH string = "lighthouse"
+const KEY_FILENAME string = "voting_keypair"
 
 
-// Read Lighthouse keys from keystore
-func readLighthouseKeys(keystorePath string) (map[string]*bls.Key, error) {
+// Lighthouse keystore
+type Keystore struct {
+    path string
+}
 
-    // Get lighthouse keystore path
-    path := filepath.Join(keystorePath, LIGHTHOUSE_KEYSTORE_PATH)
+
+// Create new keystore
+func NewKeystore(directory string) *Keystore {
+    return &Keystore{
+        path: filepath.Join(directory, KEYSTORE_PATH),
+    }
+}
+
+
+// Get keys from the keystore directory
+func (ks *Keystore) GetStoredKeys() (map[string]*bls.Key, error) {
 
     // Load all key dirs
-    keyDirs, err := ioutil.ReadDir(path)
+    keyDirs, err := ioutil.ReadDir(ks.path)
     if err != nil {
         return nil, err
     }
@@ -34,7 +45,7 @@ func readLighthouseKeys(keystorePath string) (map[string]*bls.Key, error) {
     for _, keyDir := range keyDirs {
 
         // Get key file path
-        keyFilePath := filepath.Clean(filepath.Join(path, keyDir.Name(), LIGHTHOUSE_KEY_FILENAME))
+        keyFilePath := filepath.Clean(filepath.Join(ks.path, keyDir.Name(), KEY_FILENAME))
 
         // Read key file
         keyBytes, err := ioutil.ReadFile(keyFilePath)
@@ -66,11 +77,11 @@ func readLighthouseKeys(keystorePath string) (map[string]*bls.Key, error) {
 }
 
 
-// Write Lighthouse key to keystore
-func writeLighthouseKey(keystorePath string, key *bls.Key) error {
+// Write a key to the keystore directory
+func (ks *Keystore) StoreKey(key *bls.Key) error {
 
     // Get key filename
-    filename := filepath.Join(keystorePath, LIGHTHOUSE_KEYSTORE_PATH, hexutil.AddPrefix(hex.EncodeToString(key.PublicKey.Marshal())), LIGHTHOUSE_KEY_FILENAME)
+    filename := filepath.Join(ks.path, hexutil.AddPrefix(hex.EncodeToString(key.PublicKey.Marshal())), KEY_FILENAME)
 
     // Get key file contents (public key - 16 null bytes - private key)
     contents := bytes.Join([][]byte{key.PublicKey.Marshal(), key.SecretKey.Marshal()}, make([]byte, 16))
