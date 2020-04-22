@@ -33,7 +33,8 @@ type SigningRoot struct {
 func GetDepositData(validatorKey *bls.Key, withdrawalCredentials []byte, eth2Config *beacon.Eth2ConfigResponse) (*DepositData, [32]byte, error) {
 
     // Compute domain
-    domain := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(eth2Config.DomainDeposit)), eth2Config.GenesisForkVersionBytes)
+    domain, err := bls.ComputeDomain(bytesutil.ToBytes4(bytesutil.Bytes4(eth2Config.DomainDeposit)), eth2Config.GenesisForkVersionBytes, nil)
+    if err != nil { return nil, [32]byte{}, err }
 
     // Build deposit data
     depositData := &DepositData{}

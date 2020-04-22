@@ -3,7 +3,7 @@
 //
 // Modified by Prysmatic Labs 2018
 // Modified by Rocket Pool 2020
-// (from: /shared/keystore/key.go)
+// (from Prysm v1.0.0-alpha: /shared/keystore/key.go)
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by

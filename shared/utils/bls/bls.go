@@ -2,7 +2,7 @@
 // This file is part of the Prysm ethereum 2.0 client.
 //
 // Modified by Rocket Pool 2020
-// (from: /shared/bls/bls.go)
+// (from Prysm v1.0.0-alpha: /shared/bls/bls.go)
 //
 // Package bls implements a go-wrapper around a library implementing the
 // the BLS12-381 curve and signature scheme. This package exposes a public API for

@@ -2,7 +2,7 @@
 // This file is part of the Prysm ethereum 2.0 client.
 //
 // Modified by Rocket Pool 2020
-// (from: /shared/bytesutil/bytes.go)
+// (from Prysm v1.0.0-alpha: /shared/bytesutil/bytes.go)
 //
 // Package bytesutil defines helper methods for converting integers to byte slices.
 
