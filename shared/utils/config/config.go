@@ -188,6 +188,7 @@ func diffChains(chainA *Chain, chainB *Chain) {
     }
 }
 func diffClientOptions(clientA *ClientOption, clientB *ClientOption) {
+    if clientA.ID    == clientB.ID    { clientB.ID = "" }
     if clientA.Name  == clientB.Name  { clientB.Name = "" }
     if clientA.Image == clientB.Image { clientB.Image = "" }
     for i := len(clientA.Params) - 1; i >= 0; i-- {
