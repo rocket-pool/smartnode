@@ -51,10 +51,18 @@ func configureChain(chain *config.Chain, chainName string) error {
     // Prompt for client
     clientOptions := []string{}
     for _, option := range chain.Client.Options { clientOptions = append(clientOptions, option.Name) }
-    chain.Client.Selected = cli.PromptSelect(nil, nil, fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
+    clientName := cli.PromptSelect(nil, nil, fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
+
+    // Set selected client
+    for _, option := range chain.Client.Options {
+        if option.Name == clientName {
+            chain.Client.Selected = option.ID
+            break
+        }
+    }
 
     // Log
-    fmt.Println(fmt.Sprintf("%s %s client selected.", chain.Client.Selected, chainName))
+    fmt.Println(fmt.Sprintf("%s %s client selected.", clientName, chainName))
     fmt.Println("")
 
     // Prompt for params
