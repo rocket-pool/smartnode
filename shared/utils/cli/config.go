@@ -82,14 +82,14 @@ func Configure(app *cli.App) {
         if err != nil { return err }
 
         // Set flags from config
-        applyFlagConfig(c, "database",       rpConfig.Smartnode.DatabasePath)
-        applyFlagConfig(c, "password",       rpConfig.Smartnode.PasswordPath)
-        applyFlagConfig(c, "keychainPow",    rpConfig.Smartnode.NodeKeychainPath)
-        applyFlagConfig(c, "keychainBeacon", rpConfig.Smartnode.ValidatorKeychainPath)
-        applyFlagConfig(c, "providerPow",    rpConfig.Chains.Eth1.Provider)
-        applyFlagConfig(c, "providerBeacon", rpConfig.Chains.Eth2.Provider)
-        applyFlagConfig(c, "storageAddress", rpConfig.Rocketpool.StorageAddress)
-        applyFlagConfig(c, "uniswapAddress", rpConfig.Rocketpool.UniswapAddress)
+        setFlagFromConfig(c, "database",       rpConfig.Smartnode.DatabasePath)
+        setFlagFromConfig(c, "password",       rpConfig.Smartnode.PasswordPath)
+        setFlagFromConfig(c, "keychainPow",    rpConfig.Smartnode.NodeKeychainPath)
+        setFlagFromConfig(c, "keychainBeacon", rpConfig.Smartnode.ValidatorKeychainPath)
+        setFlagFromConfig(c, "providerPow",    rpConfig.Chains.Eth1.Provider)
+        setFlagFromConfig(c, "providerBeacon", rpConfig.Chains.Eth2.Provider)
+        setFlagFromConfig(c, "storageAddress", rpConfig.Rocketpool.StorageAddress)
+        setFlagFromConfig(c, "uniswapAddress", rpConfig.Rocketpool.UniswapAddress)
 
         // Return
         return nil
@@ -100,7 +100,7 @@ func Configure(app *cli.App) {
 
 
 // Set a flag value from a config value
-func applyFlagConfig(c *cli.Context, flagName string, value string) {
+func setFlagFromConfig(c *cli.Context, flagName string, value string) {
 
     // Cancel if config value is not set
     if value == "" { return }

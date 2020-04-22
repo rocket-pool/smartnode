@@ -34,6 +34,7 @@ type Chain struct {
     }                                   `yaml:"client,omitempty"`
 }
 type ClientOption struct {
+    ID string                           `yaml:"id,omitempty"`
     Name string                         `yaml:"name,omitempty"`
     Image string                        `yaml:"image,omitempty"`
     Params []ClientParam                `yaml:"params,omitempty"`
@@ -52,7 +53,7 @@ type UserParam struct {
 
 // Config type empty checks
 func (c *ClientOption) IsEmpty() bool {
-    return c.Name == "" && c.Image == "" && len(c.Params) == 0
+    return c.ID == "" && c.Name == "" && c.Image == "" && len(c.Params) == 0
 }
 func (c *ClientParam) IsEmpty() bool {
     return c.Name == "" && c.Env == "" && c.Required == false && c.Regex == ""
@@ -71,7 +72,7 @@ func (config *RocketPoolConfig) GetSelectedEth2Client() *ClientOption {
 }
 func (chain *Chain) GetSelectedClient() *ClientOption {
     for _, option := range chain.Client.Options {
-        if option.Name == chain.Client.Selected {
+        if option.ID == chain.Client.Selected {
             return &option
         }
     }
