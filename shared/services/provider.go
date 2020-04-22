@@ -3,6 +3,7 @@ package services
 import (
     "bytes"
     "errors"
+    "fmt"
     "log"
     "os"
 
@@ -351,7 +352,7 @@ func NewProvider(c *cli.Context, opts ProviderOpts) (*Provider, error) {
             case "prysm":
                 p.Beacon = prysm.NewClient(c.GlobalString("providerBeacon"))
             default:
-                return nil, errors.New("No Eth 2.0 API mode specified")
+                return nil, errors.New(fmt.Sprintf("Invalid Eth 2.0 API mode '%s' specified", c.GlobalString("beaconApiMode")))
         }
     }
 
