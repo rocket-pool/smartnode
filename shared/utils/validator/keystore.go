@@ -26,12 +26,14 @@ func NewKeystore(directory string) *Keystore {
 
 
 // Get keys from the keystore directory
+// TODO: encryption not implemented
 func (ks *Keystore) GetStoredKeys(password string) (map[string]*bls.Key, error) {
     return ks.prysm.GetStoredKeys()
 }
 
 
 // Create, store and return a new key
+// TODO: encryption not implemented
 func (ks *Keystore) NewKey(password string) (*bls.Key, error) {
 
     // Create new key
