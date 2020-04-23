@@ -74,7 +74,7 @@ func (c *Client) GetEth2Config() (*beacon.Eth2Config, error) {
 
     // Get config
     var config Eth2ConfigResponse
-    if responseBody, err := c.getRequest(REQUEST_ETH2_CONFIG_PATH); err != nil {
+    if responseBody, _, err := c.getRequest(REQUEST_ETH2_CONFIG_PATH); err != nil {
         return nil, errors.New("Error retrieving eth2 config: " + err.Error())
     } else if err := json.Unmarshal(responseBody, &config); err != nil {
         return nil, errors.New("Error unpacking eth2 config: " + err.Error())
@@ -138,7 +138,7 @@ func (c *Client) GetBeaconHead() (*beacon.BeaconHead, error) {
 
     // Get beacon head
     var head BeaconHeadResponse
-    if responseBody, err := c.getRequest(REQUEST_BEACON_HEAD_PATH); err != nil {
+    if responseBody, _, err := c.getRequest(REQUEST_BEACON_HEAD_PATH); err != nil {
         return nil, errors.New("Error retrieving beacon head: " + err.Error())
     } else if err := json.Unmarshal(responseBody, &head); err != nil {
         return nil, errors.New("Error unpacking beacon head: " + err.Error())
@@ -181,8 +181,10 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, err
 
     // Get validator status
     var validator ValidatorResponse
-    if responseBody, err := c.getRequest(REQUEST_VALIDATOR_PATH + "?" + params.Encode()); err != nil {
+    if responseBody, status, err := c.getRequest(REQUEST_VALIDATOR_PATH + "?" + params.Encode()); err != nil {
         return nil, errors.New("Error retrieving validator status: " + err.Error())
+    } else if status == 404 {
+        return &beacon.ValidatorStatus{Exists: false}, nil
     } else if err := json.Unmarshal(responseBody, &validator); err != nil {
         return nil, errors.New("Error unpacking validator status: " + err.Error())
     }
@@ -239,19 +241,19 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, err
 /**
  * Make GET request to beacon server
  */
-func (c *Client) getRequest(requestPath string) ([]byte, error) {
+func (c *Client) getRequest(requestPath string) ([]byte, int, error) {
 
     // Send request
     response, err := http.Get(c.providerUrl + requestPath)
-    if err != nil { return nil, err }
+    if err != nil { return nil, 0, err }
     defer response.Body.Close()
 
     // Get response
     body, err := ioutil.ReadAll(response.Body)
-    if err != nil { return nil, err }
+    if err != nil { return nil, 0, err }
 
     // Return
-    return body, nil
+    return body, response.StatusCode, nil
 
 }
 
