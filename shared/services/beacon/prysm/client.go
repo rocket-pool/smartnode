@@ -133,7 +133,38 @@ func (c *Client) GetEth2Config() (*beacon.Eth2Config, error) {
  * Get the beacon head
  */
 func (c *Client) GetBeaconHead() (*beacon.BeaconHead, error) {
-    return &beacon.BeaconHead{}, nil
+
+    // Get beacon head
+    var head BeaconHeadResponse
+    if responseBody, err := c.getRequest(REQUEST_BEACON_HEAD_PATH); err != nil {
+        return nil, errors.New("Error retrieving beacon head: " + err.Error())
+    } else if err := json.Unmarshal(responseBody, &head); err != nil {
+        return nil, errors.New("Error unpacking beacon head: " + err.Error())
+    }
+
+    // Create response
+    response := &beacon.BeaconHead{}
+
+    // Decode data and update
+    if headEpoch, err := strconv.Atoi(head.HeadEpoch); err != nil {
+        return nil, errors.New("Error decoding head epoch: " + err.Error())
+    } else {
+        response.Epoch = uint64(headEpoch)
+    }
+    if finalizedEpoch, err := strconv.Atoi(head.FinalizedEpoch); err != nil {
+        return nil, errors.New("Error decoding finalized epoch: " + err.Error())
+    } else {
+        response.FinalizedEpoch = uint64(finalizedEpoch)
+    }
+    if justifiedEpoch, err := strconv.Atoi(head.JustifiedEpoch); err != nil {
+        return nil, errors.New("Error decoding justified epoch: " + err.Error())
+    } else {
+        response.JustifiedEpoch = uint64(justifiedEpoch)
+    }
+
+    // Return
+    return response, nil
+
 }
 
 
