@@ -214,7 +214,7 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, err
 
     // Request
     responseBody, err := c.postRequest(REQUEST_VALIDATORS_PATH, ValidatorsRequest{
-        Pubkeys: []string{hexutil.AddPrefix(hex.EncodeToString(pubkey))}
+        Pubkeys: []string{hexutil.AddPrefix(hex.EncodeToString(pubkey))},
     })
     if err != nil {
         return nil, errors.New("Error retrieving validator status: " + err.Error())
