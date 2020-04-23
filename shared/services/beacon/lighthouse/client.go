@@ -101,10 +101,10 @@ func (c *Client) GetEth2Config() (*beacon.Eth2Config, error) {
     go (func() {
         if responseBody, err := c.getRequest(REQUEST_SLOTS_PER_EPOCH_PATH); err != nil {
             errorChannel <- errors.New("Error retrieving slots per epoch: " + err.Error())
-        } else if slotsPerEpoch, err := strconv.Atoi(string(responseBody)); err != nil {
+        } else if slotsPerEpoch, err := strconv.ParseUint(string(responseBody), 10, 64); err != nil {
             errorChannel <- errors.New("Error unpacking slots per epoch: " + err.Error())
         } else {
-            slotsPerEpochChannel <- uint64(slotsPerEpoch)
+            slotsPerEpochChannel <- slotsPerEpoch
         }
     })()
 
@@ -176,10 +176,10 @@ func (c *Client) GetBeaconHead() (*beacon.BeaconHead, error) {
     go (func() {
         if responseBody, err := c.getRequest(REQUEST_SLOTS_PER_EPOCH_PATH); err != nil {
             errorChannel <- errors.New("Error retrieving slots per epoch: " + err.Error())
-        } else if slotsPerEpoch, err := strconv.Atoi(string(responseBody)); err != nil {
+        } else if slotsPerEpoch, err := strconv.ParseUint(string(responseBody), 10, 64); err != nil {
             errorChannel <- errors.New("Error unpacking slots per epoch: " + err.Error())
         } else {
-            slotsPerEpochChannel <- uint64(slotsPerEpoch)
+            slotsPerEpochChannel <- slotsPerEpoch
         }
     })()
 
@@ -210,10 +210,12 @@ func (c *Client) GetBeaconHead() (*beacon.BeaconHead, error) {
 /**
  * Get a validator's status
  */
-func (c *Client) GetValidatorStatus(pubkey string) (*beacon.ValidatorStatus, error) {
+func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, error) {
 
     // Request
-    responseBody, err := c.postRequest(REQUEST_VALIDATORS_PATH, ValidatorsRequest{Pubkeys: []string{pubkey}})
+    responseBody, err := c.postRequest(REQUEST_VALIDATORS_PATH, ValidatorsRequest{
+        Pubkeys: []string{hexutil.AddPrefix(hex.EncodeToString(pubkey))}
+    })
     if err != nil {
         return nil, errors.New("Error retrieving validator status: " + err.Error())
     }

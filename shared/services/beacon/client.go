@@ -34,6 +34,6 @@ type ValidatorStatus struct {
 type Client interface {
     GetEth2Config() (*Eth2Config, error)
     GetBeaconHead() (*BeaconHead, error)
-    GetValidatorStatus(pubkey string) (*ValidatorStatus, error)
+    GetValidatorStatus(pubkey []byte) (*ValidatorStatus, error)
 }
 

@@ -1,10 +1,12 @@
 package prysm
 
 import (
+    "encoding/base64"
     "encoding/json"
     "errors"
     "io/ioutil"
     "net/http"
+    "net/url"
     "regexp"
     "strconv"
     "strings"
@@ -87,7 +89,7 @@ func (c *Client) GetEth2Config() (*beacon.Eth2Config, error) {
     } else {
         response.GenesisForkVersion = genesisForkVersion
     }
-    if blsWithdrawalPrefixByteInt, err := strconv.Atoi(config.Config.BLSWithdrawalPrefixByte); err != nil {
+    if blsWithdrawalPrefixByteInt, err := strconv.ParseUint(config.Config.BLSWithdrawalPrefixByte, 10, 8); err != nil {
         return nil, errors.New("Error decoding BLS withdrawal prefix byte: " + err.Error())
     } else {
         response.BLSWithdrawalPrefixByte = byte(blsWithdrawalPrefixByteInt)
@@ -117,10 +119,10 @@ func (c *Client) GetEth2Config() (*beacon.Eth2Config, error) {
     } else {
         response.DomainVoluntaryExit = domainVoluntaryExit
     }
-    if slotsPerEpoch, err := strconv.Atoi(config.Config.SlotsPerEpoch); err != nil {
+    if slotsPerEpoch, err := strconv.ParseUint(config.Config.SlotsPerEpoch, 10, 64); err != nil {
         return nil, errors.New("Error decoding slots per epoch: " + err.Error())
     } else {
-        response.SlotsPerEpoch = uint64(slotsPerEpoch)
+        response.SlotsPerEpoch = slotsPerEpoch
     }
 
     // Return
@@ -146,20 +148,20 @@ func (c *Client) GetBeaconHead() (*beacon.BeaconHead, error) {
     response := &beacon.BeaconHead{}
 
     // Decode data and update
-    if headEpoch, err := strconv.Atoi(head.HeadEpoch); err != nil {
+    if headEpoch, err := strconv.ParseUint(head.HeadEpoch, 10, 64); err != nil {
         return nil, errors.New("Error decoding head epoch: " + err.Error())
     } else {
-        response.Epoch = uint64(headEpoch)
+        response.Epoch = headEpoch
     }
-    if finalizedEpoch, err := strconv.Atoi(head.FinalizedEpoch); err != nil {
+    if finalizedEpoch, err := strconv.ParseUint(head.FinalizedEpoch, 10, 64); err != nil {
         return nil, errors.New("Error decoding finalized epoch: " + err.Error())
     } else {
-        response.FinalizedEpoch = uint64(finalizedEpoch)
+        response.FinalizedEpoch = finalizedEpoch
     }
-    if justifiedEpoch, err := strconv.Atoi(head.JustifiedEpoch); err != nil {
+    if justifiedEpoch, err := strconv.ParseUint(head.JustifiedEpoch, 10, 64); err != nil {
         return nil, errors.New("Error decoding justified epoch: " + err.Error())
     } else {
-        response.JustifiedEpoch = uint64(justifiedEpoch)
+        response.JustifiedEpoch = justifiedEpoch
     }
 
     // Return
@@ -171,8 +173,66 @@ func (c *Client) GetBeaconHead() (*beacon.BeaconHead, error) {
 /**
  * Get a validator's status
  */
-func (c *Client) GetValidatorStatus(pubkey string) (*beacon.ValidatorStatus, error) {
-    return &beacon.ValidatorStatus{}, nil
+func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, error) {
+
+    // Get request params
+    params := url.Values{}
+    params.Set("publicKey", base64.StdEncoding.EncodeToString(pubkey))
+
+    // Get validator status
+    var validator ValidatorResponse
+    if responseBody, err := c.getRequest(REQUEST_VALIDATOR_PATH + "?" + params.Encode()); err != nil {
+        return nil, errors.New("Error retrieving validator status: " + err.Error())
+    } else if err := json.Unmarshal(responseBody, &validator); err != nil {
+        return nil, errors.New("Error unpacking validator status: " + err.Error())
+    }
+
+    // Create response
+    response := &beacon.ValidatorStatus{
+        Slashed: validator.Slashed,
+        Exists: true,
+    }
+
+    // Decode data and update
+    if publicKey, err := base64.StdEncoding.DecodeString(validator.PublicKey); err != nil {
+        return nil, errors.New("Error decoding public key: " + err.Error())
+    } else {
+        response.Pubkey = publicKey
+    }
+    if withdrawalCredentials, err := base64.StdEncoding.DecodeString(validator.WithdrawalCredentials); err != nil {
+        return nil, errors.New("Error decoding withdrawal credentials: " + err.Error())
+    } else {
+        response.WithdrawalCredentials = withdrawalCredentials
+    }
+    if effectiveBalance, err := strconv.ParseUint(validator.EffectiveBalance, 10, 64); err != nil {
+        return nil, errors.New("Error decoding effective balance: " + err.Error())
+    } else {
+        response.EffectiveBalance = effectiveBalance
+    }
+    if activationEligibilityEpoch, err := strconv.ParseUint(validator.ActivationEligibilityEpoch, 10, 64); err != nil {
+        return nil, errors.New("Error decoding activation eligibility epoch: " + err.Error())
+    } else {
+        response.ActivationEligibilityEpoch = activationEligibilityEpoch
+    }
+    if activationEpoch, err := strconv.ParseUint(validator.ActivationEpoch, 10, 64); err != nil {
+        return nil, errors.New("Error decoding activation epoch: " + err.Error())
+    } else {
+        response.ActivationEpoch = activationEpoch
+    }
+    if exitEpoch, err := strconv.ParseUint(validator.ExitEpoch, 10, 64); err != nil {
+        return nil, errors.New("Error decoding exit epoch: " + err.Error())
+    } else {
+        response.ExitEpoch = exitEpoch
+    }
+    if withdrawableEpoch, err := strconv.ParseUint(validator.WithdrawableEpoch, 10, 64); err != nil {
+        return nil, errors.New("Error decoding withdrawable epoch: " + err.Error())
+    } else {
+        response.WithdrawableEpoch = withdrawableEpoch
+    }
+
+    // Return
+    return response, nil
+
 }
 
 
@@ -210,7 +270,7 @@ func deserializeBytes(value string) ([]byte, error) {
     // Get and return bytes
     bytes := []byte{}
     for _, byteString := range byteStrings {
-        if byteInt, err := strconv.Atoi(byteString); err != nil {
+        if byteInt, err := strconv.ParseUint(byteString, 10, 8); err != nil {
             return nil, errors.New("Invalid byte")
         } else {
             bytes = append(bytes, byte(byteInt))

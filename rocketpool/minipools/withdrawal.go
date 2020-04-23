@@ -1,7 +1,6 @@
 package minipools
 
 import (
-    "encoding/hex"
     "errors"
     "fmt"
 
@@ -9,7 +8,6 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool/minipool"
-    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 
@@ -55,7 +53,7 @@ func (p *MinipoolsProcess) checkStakingMinipool(minipoolAddress *common.Address,
     }
 
     // Get & check validator status; get minipool exit epoch
-    validator, err := p.p.Beacon.GetValidatorStatus(hexutil.AddPrefix(hex.EncodeToString(status.ValidatorPubkey)))
+    validator, err := p.p.Beacon.GetValidatorStatus(status.ValidatorPubkey)
     if err != nil {
         p.p.Log.Println(errors.New(fmt.Sprintf("Error retrieving minipool %s validator status: " + err.Error(), minipoolAddress.Hex())))
         return
