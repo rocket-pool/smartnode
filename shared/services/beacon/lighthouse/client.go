@@ -46,8 +46,8 @@ type BeaconHeadResponse struct {
     JustifiedSlot uint64            `json:"justified_slot"`
 }
 type ValidatorResponse struct {
-    Pubkey string                   `json:"pubkey"`
     Validator struct {
+        Pubkey string                       `json:"pubkey"`
         WithdrawalCredentials string        `json:"withdrawal_credentials"`
         EffectiveBalance uint64             `json:"effective_balance"`
         Slashed bool                        `json:"slashed"`
@@ -228,8 +228,8 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, err
     validator := validators[0]
 
     // Check if validator exists
-    // Activation epoch is 0 only if validator is null in JSON response
-    if validator.Validator.ActivationEpoch == 0 {
+    // Pubkey is empty if validator is null in response
+    if validator.Validator.Pubkey == "" {
         return &beacon.ValidatorStatus{Exists: false}, nil
     }
 
@@ -245,7 +245,7 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, err
     }
 
     // Decode hex data and update
-    if pubkey, err := hex.DecodeString(hexutil.RemovePrefix(validator.Pubkey)); err != nil {
+    if pubkey, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.Pubkey)); err != nil {
         return nil, errors.New("Error decoding validator pubkey: " + err.Error())
     } else {
         response.Pubkey = pubkey
