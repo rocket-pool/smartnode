@@ -4,12 +4,12 @@ package beacon
 // API response types
 type Eth2Config struct {
     GenesisForkVersion []byte
-    BLSWithdrawalPrefixByte []byte
-    DomainBeaconProposer uint64
-    DomainBeaconAttester uint64
-    DomainRandao uint64
-    DomainDeposit uint64
-    DomainVoluntaryExit uint64
+    BLSWithdrawalPrefixByte byte
+    DomainBeaconProposer []byte
+    DomainBeaconAttester []byte
+    DomainRandao []byte
+    DomainDeposit []byte
+    DomainVoluntaryExit []byte
     SlotsPerEpoch uint64
 }
 type BeaconHead struct {

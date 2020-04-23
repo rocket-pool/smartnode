@@ -10,6 +10,7 @@ import (
     "strconv"
 
     "github.com/rocket-pool/smartnode/shared/services/beacon"
+    bytesutil "github.com/rocket-pool/smartnode/shared/utils/bytes"
     hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -123,24 +124,24 @@ func (c *Client) GetEth2Config() (*beacon.Eth2Config, error) {
 
     // Create response
     response := &beacon.Eth2Config{
-        DomainBeaconProposer: config.DomainBeaconProposer,
-        DomainBeaconAttester: config.DomainBeaconAttester,
-        DomainRandao: config.DomainRandao,
-        DomainDeposit: config.DomainDeposit,
-        DomainVoluntaryExit: config.DomainVoluntaryExit,
+        DomainBeaconProposer: bytesutil.Bytes4(config.DomainBeaconProposer),
+        DomainBeaconAttester: bytesutil.Bytes4(config.DomainBeaconAttester),
+        DomainRandao: bytesutil.Bytes4(config.DomainRandao),
+        DomainDeposit: bytesutil.Bytes4(config.DomainDeposit),
+        DomainVoluntaryExit: bytesutil.Bytes4(config.DomainVoluntaryExit),
         SlotsPerEpoch: slotsPerEpoch,
     }
 
     // Decode hex data and update
-    if genesisForkVersionBytes, err := hex.DecodeString(hexutil.RemovePrefix(config.GenesisForkVersion)); err != nil {
+    if genesisForkVersion, err := hex.DecodeString(hexutil.RemovePrefix(config.GenesisForkVersion)); err != nil {
         return nil, errors.New("Error decoding genesis fork version: " + err.Error())
     } else {
-        response.GenesisForkVersion = genesisForkVersionBytes
+        response.GenesisForkVersion = genesisForkVersion
     }
-    if blsWithdrawalPrefixByteBytes, err := hex.DecodeString(hexutil.RemovePrefix(config.BLSWithdrawalPrefixByte)); err != nil {
+    if blsWithdrawalPrefixBytes, err := hex.DecodeString(hexutil.RemovePrefix(config.BLSWithdrawalPrefixByte)); err != nil {
         return nil, errors.New("Error decoding BLS withdrawal prefix byte: " + err.Error())
     } else {
-        response.BLSWithdrawalPrefixByte = blsWithdrawalPrefixByteBytes
+        response.BLSWithdrawalPrefixByte = blsWithdrawalPrefixBytes[0]
     }
 
     // Return
@@ -224,6 +225,12 @@ func (c *Client) GetValidatorStatus(pubkey string) (*beacon.ValidatorStatus, err
     }
     validator := validators[0]
 
+    // Check if validator exists
+    // Activation epoch is 0 only if validator is null in JSON response
+    if validator.Validator.ActivationEpoch == 0 {
+        return &beacon.ValidatorStatus{Exists: false}, nil
+    }
+
     // Create response
     response := &beacon.ValidatorStatus{
         EffectiveBalance: validator.Validator.EffectiveBalance,
@@ -232,19 +239,19 @@ func (c *Client) GetValidatorStatus(pubkey string) (*beacon.ValidatorStatus, err
         ActivationEpoch: validator.Validator.ActivationEpoch,
         ExitEpoch: validator.Validator.ExitEpoch,
         WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
-        Exists: (validator.Validator.ActivationEpoch != 0), // Activation epoch is 0 only if validator is null in JSON response
+        Exists: true, 
     }
 
     // Decode hex data and update
-    if pubkeyBytes, err := hex.DecodeString(hexutil.RemovePrefix(validator.Pubkey)); err != nil {
+    if pubkey, err := hex.DecodeString(hexutil.RemovePrefix(validator.Pubkey)); err != nil {
         return nil, errors.New("Error decoding validator pubkey: " + err.Error())
     } else {
-        response.Pubkey = pubkeyBytes
+        response.Pubkey = pubkey
     }
-    if withdrawalCredentialsBytes, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.WithdrawalCredentials)); err != nil {
+    if withdrawalCredentials, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.WithdrawalCredentials)); err != nil {
         return nil, errors.New("Error decoding validator withdrawal credentials: " + err.Error())
     } else {
-        response.WithdrawalCredentials = withdrawalCredentialsBytes
+        response.WithdrawalCredentials = withdrawalCredentials
     }
 
     // Return
