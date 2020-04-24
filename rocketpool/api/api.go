@@ -9,6 +9,7 @@ import (
     "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
     "github.com/rocket-pool/smartnode/rocketpool/api/node"
     "github.com/rocket-pool/smartnode/rocketpool/api/queue"
+    "github.com/rocket-pool/smartnode/rocketpool/api/storage"
 )
 
 
@@ -30,6 +31,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
     minipool.RegisterSubcommands(&command, "minipool", []string{"m"})
         node.RegisterSubcommands(&command, "node",     []string{"n"})
        queue.RegisterSubcommands(&command, "queue",    []string{"q"})
+     storage.RegisterSubcommands(&command, "storage",  []string{"s"})
 
     // Register CLI command
     app.Commands = append(app.Commands, command)
