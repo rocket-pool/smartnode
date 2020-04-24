@@ -20,6 +20,7 @@ type BeaconHead struct {
 type ValidatorStatus struct {
     Pubkey []byte
     WithdrawalCredentials []byte
+    Balance uint64
     EffectiveBalance uint64
     Slashed bool
     ActivationEligibilityEpoch uint64

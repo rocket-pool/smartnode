@@ -46,6 +46,7 @@ type BeaconHeadResponse struct {
     JustifiedSlot uint64            `json:"justified_slot"`
 }
 type ValidatorResponse struct {
+    Balance uint64                  `json:"balance"`
     Validator struct {
         Pubkey string                       `json:"pubkey"`
         WithdrawalCredentials string        `json:"withdrawal_credentials"`
@@ -235,6 +236,7 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, err
 
     // Create response
     response := &beacon.ValidatorStatus{
+        Balance: validator.Balance,
         EffectiveBalance: validator.Validator.EffectiveBalance,
         Slashed: validator.Validator.Slashed,
         ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,

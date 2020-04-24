@@ -196,6 +196,7 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (*beacon.ValidatorStatus, err
     }
 
     // Decode data and update
+    // TODO: add validator balance
     if publicKey, err := base64.StdEncoding.DecodeString(validator.PublicKey); err != nil {
         return nil, errors.New("Error decoding public key: " + err.Error())
     } else {
