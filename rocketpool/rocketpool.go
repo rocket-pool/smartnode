@@ -65,7 +65,7 @@ func NewRocketPool(client *ethclient.Client, rocketStorageAddress common.Address
 }
 
 
-// Load a Rocket Pool contract address
+// Load Rocket Pool contract addresses
 func (rp *RocketPool) GetAddress(contractName string) (*common.Address, error) {
 
     // Check for cached address
@@ -93,9 +93,34 @@ func (rp *RocketPool) GetAddress(contractName string) (*common.Address, error) {
     return &address, nil
 
 }
+func (rp *RocketPool) GetAddresses(contractNames ...string) ([]*common.Address, error) {
+
+    // Data
+    var wg errgroup.Group
+    addresses := make([]*common.Address, len(contractNames))
+
+    // Load addresses
+    for ci, contractName := range contractNames {
+        ci, contractName := ci, contractName
+        wg.Go(func() error {
+            address, err := rp.GetAddress(contractName)
+            if err == nil { addresses[ci] = address }
+            return err
+        })
+    }
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Return
+    return addresses, nil
+
+}
 
 
-// Load a Rocket Pool contract ABI
+// Load Rocket Pool contract ABIs
 func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
 
     // Check for cached ABI
@@ -129,9 +154,34 @@ func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
     return abi, nil
 
 }
+func (rp *RocketPool) GetABIs(contractNames ...string) ([]*abi.ABI, error) {
+
+    // Data
+    var wg errgroup.Group
+    abis := make([]*abi.ABI, len(contractNames))
+
+    // Load ABIs
+    for ci, contractName := range contractNames {
+        ci, contractName := ci, contractName
+        wg.Go(func() error {
+            abi, err := rp.GetABI(contractName)
+            if err == nil { abis[ci] = abi }
+            return err
+        })
+    }
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Return
+    return abis, nil
+
+}
 
 
-// Load a Rocket Pool contract
+// Load Rocket Pool contracts
 func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, error) {
 
     // Contract data
@@ -160,6 +210,31 @@ func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, err
 
     // Create and return
     return bind.NewBoundContract(*contractAddress, *contractAbi, rp.Client, rp.Client, rp.Client), nil
+
+}
+func (rp *RocketPool) GetContracts(contractNames ...string) ([]*bind.BoundContract, error) {
+
+    // Data
+    var wg errgroup.Group
+    contracts := make([]*bind.BoundContract, len(contractNames))
+
+    // Load contracts
+    for ci, contractName := range contractNames {
+        ci, contractName := ci, contractName
+        wg.Go(func() error {
+            contract, err := rp.GetContract(contractName)
+            if err == nil { contracts[ci] = contract }
+            return err
+        })
+    }
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Return
+    return contracts, nil
 
 }
 
