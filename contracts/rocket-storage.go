@@ -20,7 +20,6 @@ var (
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = ethereum.NotFound
-	_ = abi.U256
 	_ = bind.Bind
 	_ = common.Big1
 	_ = types.BloomLookup
@@ -174,7 +173,7 @@ func (_RocketStorage *RocketStorageTransactorRaw) Transact(opts *bind.TransactOp
 
 // GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
 //
-// Solidity: function getAddress(bytes32 _key) constant returns(address)
+// Solidity: function getAddress(bytes32 _key) view returns(address)
 func (_RocketStorage *RocketStorageCaller) GetAddress(opts *bind.CallOpts, _key [32]byte) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
@@ -186,21 +185,21 @@ func (_RocketStorage *RocketStorageCaller) GetAddress(opts *bind.CallOpts, _key 
 
 // GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
 //
-// Solidity: function getAddress(bytes32 _key) constant returns(address)
+// Solidity: function getAddress(bytes32 _key) view returns(address)
 func (_RocketStorage *RocketStorageSession) GetAddress(_key [32]byte) (common.Address, error) {
 	return _RocketStorage.Contract.GetAddress(&_RocketStorage.CallOpts, _key)
 }
 
 // GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
 //
-// Solidity: function getAddress(bytes32 _key) constant returns(address)
+// Solidity: function getAddress(bytes32 _key) view returns(address)
 func (_RocketStorage *RocketStorageCallerSession) GetAddress(_key [32]byte) (common.Address, error) {
 	return _RocketStorage.Contract.GetAddress(&_RocketStorage.CallOpts, _key)
 }
 
 // GetBool is a free data retrieval call binding the contract method 0x7ae1cfca.
 //
-// Solidity: function getBool(bytes32 _key) constant returns(bool)
+// Solidity: function getBool(bytes32 _key) view returns(bool)
 func (_RocketStorage *RocketStorageCaller) GetBool(opts *bind.CallOpts, _key [32]byte) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -212,21 +211,21 @@ func (_RocketStorage *RocketStorageCaller) GetBool(opts *bind.CallOpts, _key [32
 
 // GetBool is a free data retrieval call binding the contract method 0x7ae1cfca.
 //
-// Solidity: function getBool(bytes32 _key) constant returns(bool)
+// Solidity: function getBool(bytes32 _key) view returns(bool)
 func (_RocketStorage *RocketStorageSession) GetBool(_key [32]byte) (bool, error) {
 	return _RocketStorage.Contract.GetBool(&_RocketStorage.CallOpts, _key)
 }
 
 // GetBool is a free data retrieval call binding the contract method 0x7ae1cfca.
 //
-// Solidity: function getBool(bytes32 _key) constant returns(bool)
+// Solidity: function getBool(bytes32 _key) view returns(bool)
 func (_RocketStorage *RocketStorageCallerSession) GetBool(_key [32]byte) (bool, error) {
 	return _RocketStorage.Contract.GetBool(&_RocketStorage.CallOpts, _key)
 }
 
 // GetBytes is a free data retrieval call binding the contract method 0xc031a180.
 //
-// Solidity: function getBytes(bytes32 _key) constant returns(bytes)
+// Solidity: function getBytes(bytes32 _key) view returns(bytes)
 func (_RocketStorage *RocketStorageCaller) GetBytes(opts *bind.CallOpts, _key [32]byte) ([]byte, error) {
 	var (
 		ret0 = new([]byte)
@@ -238,21 +237,21 @@ func (_RocketStorage *RocketStorageCaller) GetBytes(opts *bind.CallOpts, _key [3
 
 // GetBytes is a free data retrieval call binding the contract method 0xc031a180.
 //
-// Solidity: function getBytes(bytes32 _key) constant returns(bytes)
+// Solidity: function getBytes(bytes32 _key) view returns(bytes)
 func (_RocketStorage *RocketStorageSession) GetBytes(_key [32]byte) ([]byte, error) {
 	return _RocketStorage.Contract.GetBytes(&_RocketStorage.CallOpts, _key)
 }
 
 // GetBytes is a free data retrieval call binding the contract method 0xc031a180.
 //
-// Solidity: function getBytes(bytes32 _key) constant returns(bytes)
+// Solidity: function getBytes(bytes32 _key) view returns(bytes)
 func (_RocketStorage *RocketStorageCallerSession) GetBytes(_key [32]byte) ([]byte, error) {
 	return _RocketStorage.Contract.GetBytes(&_RocketStorage.CallOpts, _key)
 }
 
 // GetBytes32 is a free data retrieval call binding the contract method 0xa6ed563e.
 //
-// Solidity: function getBytes32(bytes32 _key) constant returns(bytes32)
+// Solidity: function getBytes32(bytes32 _key) view returns(bytes32)
 func (_RocketStorage *RocketStorageCaller) GetBytes32(opts *bind.CallOpts, _key [32]byte) ([32]byte, error) {
 	var (
 		ret0 = new([32]byte)
@@ -264,21 +263,21 @@ func (_RocketStorage *RocketStorageCaller) GetBytes32(opts *bind.CallOpts, _key 
 
 // GetBytes32 is a free data retrieval call binding the contract method 0xa6ed563e.
 //
-// Solidity: function getBytes32(bytes32 _key) constant returns(bytes32)
+// Solidity: function getBytes32(bytes32 _key) view returns(bytes32)
 func (_RocketStorage *RocketStorageSession) GetBytes32(_key [32]byte) ([32]byte, error) {
 	return _RocketStorage.Contract.GetBytes32(&_RocketStorage.CallOpts, _key)
 }
 
 // GetBytes32 is a free data retrieval call binding the contract method 0xa6ed563e.
 //
-// Solidity: function getBytes32(bytes32 _key) constant returns(bytes32)
+// Solidity: function getBytes32(bytes32 _key) view returns(bytes32)
 func (_RocketStorage *RocketStorageCallerSession) GetBytes32(_key [32]byte) ([32]byte, error) {
 	return _RocketStorage.Contract.GetBytes32(&_RocketStorage.CallOpts, _key)
 }
 
 // GetInt is a free data retrieval call binding the contract method 0xdc97d962.
 //
-// Solidity: function getInt(bytes32 _key) constant returns(int256)
+// Solidity: function getInt(bytes32 _key) view returns(int256)
 func (_RocketStorage *RocketStorageCaller) GetInt(opts *bind.CallOpts, _key [32]byte) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -290,21 +289,21 @@ func (_RocketStorage *RocketStorageCaller) GetInt(opts *bind.CallOpts, _key [32]
 
 // GetInt is a free data retrieval call binding the contract method 0xdc97d962.
 //
-// Solidity: function getInt(bytes32 _key) constant returns(int256)
+// Solidity: function getInt(bytes32 _key) view returns(int256)
 func (_RocketStorage *RocketStorageSession) GetInt(_key [32]byte) (*big.Int, error) {
 	return _RocketStorage.Contract.GetInt(&_RocketStorage.CallOpts, _key)
 }
 
 // GetInt is a free data retrieval call binding the contract method 0xdc97d962.
 //
-// Solidity: function getInt(bytes32 _key) constant returns(int256)
+// Solidity: function getInt(bytes32 _key) view returns(int256)
 func (_RocketStorage *RocketStorageCallerSession) GetInt(_key [32]byte) (*big.Int, error) {
 	return _RocketStorage.Contract.GetInt(&_RocketStorage.CallOpts, _key)
 }
 
 // GetString is a free data retrieval call binding the contract method 0x986e791a.
 //
-// Solidity: function getString(bytes32 _key) constant returns(string)
+// Solidity: function getString(bytes32 _key) view returns(string)
 func (_RocketStorage *RocketStorageCaller) GetString(opts *bind.CallOpts, _key [32]byte) (string, error) {
 	var (
 		ret0 = new(string)
@@ -316,21 +315,21 @@ func (_RocketStorage *RocketStorageCaller) GetString(opts *bind.CallOpts, _key [
 
 // GetString is a free data retrieval call binding the contract method 0x986e791a.
 //
-// Solidity: function getString(bytes32 _key) constant returns(string)
+// Solidity: function getString(bytes32 _key) view returns(string)
 func (_RocketStorage *RocketStorageSession) GetString(_key [32]byte) (string, error) {
 	return _RocketStorage.Contract.GetString(&_RocketStorage.CallOpts, _key)
 }
 
 // GetString is a free data retrieval call binding the contract method 0x986e791a.
 //
-// Solidity: function getString(bytes32 _key) constant returns(string)
+// Solidity: function getString(bytes32 _key) view returns(string)
 func (_RocketStorage *RocketStorageCallerSession) GetString(_key [32]byte) (string, error) {
 	return _RocketStorage.Contract.GetString(&_RocketStorage.CallOpts, _key)
 }
 
 // GetUint is a free data retrieval call binding the contract method 0xbd02d0f5.
 //
-// Solidity: function getUint(bytes32 _key) constant returns(uint256)
+// Solidity: function getUint(bytes32 _key) view returns(uint256)
 func (_RocketStorage *RocketStorageCaller) GetUint(opts *bind.CallOpts, _key [32]byte) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -342,14 +341,14 @@ func (_RocketStorage *RocketStorageCaller) GetUint(opts *bind.CallOpts, _key [32
 
 // GetUint is a free data retrieval call binding the contract method 0xbd02d0f5.
 //
-// Solidity: function getUint(bytes32 _key) constant returns(uint256)
+// Solidity: function getUint(bytes32 _key) view returns(uint256)
 func (_RocketStorage *RocketStorageSession) GetUint(_key [32]byte) (*big.Int, error) {
 	return _RocketStorage.Contract.GetUint(&_RocketStorage.CallOpts, _key)
 }
 
 // GetUint is a free data retrieval call binding the contract method 0xbd02d0f5.
 //
-// Solidity: function getUint(bytes32 _key) constant returns(uint256)
+// Solidity: function getUint(bytes32 _key) view returns(uint256)
 func (_RocketStorage *RocketStorageCallerSession) GetUint(_key [32]byte) (*big.Int, error) {
 	return _RocketStorage.Contract.GetUint(&_RocketStorage.CallOpts, _key)
 }
