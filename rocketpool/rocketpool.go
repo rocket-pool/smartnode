@@ -342,20 +342,20 @@ func decodeAbi(abiEncoded string) (*abi.ABI, error) {
     // Base 64 decode
     abiCompressed, err := base64.StdEncoding.DecodeString(abiEncoded)
     if err != nil {
-        return nil, fmt.Errorf("Could not decode ABI base64 string: %w", err)
+        return nil, fmt.Errorf("Could not decode base64 data: %w", err)
     }
 
     // Zlib decompress
     byteReader := bytes.NewReader(abiCompressed)
     zlibReader, err := zlib.NewReader(byteReader)
     if err != nil {
-        return nil, fmt.Errorf("Could not decompress ABI zlib data: %w", err)
+        return nil, fmt.Errorf("Could not decompress zlib data: %w", err)
     }
 
     // Parse ABI
     abiParsed, err := abi.JSON(zlibReader)
     if err != nil {
-        return nil, fmt.Errorf("Could not parse ABI JSON: %w", err)
+        return nil, fmt.Errorf("Could not parse JSON: %w", err)
     }
 
     // Return

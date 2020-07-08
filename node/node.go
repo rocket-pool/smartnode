@@ -114,7 +114,11 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
     if err != nil {
         return nil, err
     }
-    return contract.Transact(rp.Client, rocketNodeManager, opts, "registerNode", timezoneLocation)
+    txReceipt, err := contract.Transact(rp.Client, rocketNodeManager, opts, "registerNode", timezoneLocation)
+    if err != nil {
+        return nil, fmt.Errorf("Could not register node: %w", err)
+    }
+    return txReceipt, nil
 }
 
 

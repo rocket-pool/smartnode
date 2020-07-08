@@ -3,7 +3,6 @@ package contract
 import (
     "context"
     "errors"
-    "fmt"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
@@ -17,13 +16,13 @@ func Transact(client *ethclient.Client, contract *bind.BoundContract, opts *bind
     // Send transaction
     tx, err := contract.Transact(opts, method, params...)
     if err != nil {
-        return nil, fmt.Errorf("Could not transact on contract: %w", err)
+        return nil, err
     }
 
     // Wait for transaction to be mined
     txReceipt, err := bind.WaitMined(context.Background(), client, tx)
     if err != nil {
-        return nil, fmt.Errorf("Could not get transaction receipt: %w", err)
+        return nil, err
     }
 
     // Check transaction status
