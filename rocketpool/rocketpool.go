@@ -32,6 +32,10 @@ type cachedABI struct {
     abi *abi.ABI
     time int64
 }
+type cachedContract struct {
+    contract *bind.BoundContract
+    time int64
+}
 
 
 // Rocket Pool contract manager
@@ -40,8 +44,10 @@ type RocketPool struct {
     RocketStorage   *contracts.RocketStorage
     addresses       map[string]cachedAddress
     abis            map[string]cachedABI
+    contracts       map[string]cachedContract
     addressesLock   sync.RWMutex
     abisLock        sync.RWMutex
+    contractsLock   sync.RWMutex
 }
 
 
@@ -60,6 +66,7 @@ func NewRocketPool(client *ethclient.Client, rocketStorageAddress common.Address
         RocketStorage: rocketStorage,
         addresses: make(map[string]cachedAddress),
         abis: make(map[string]cachedABI),
+        contracts: make(map[string]cachedContract),
     }, nil
 
 }
@@ -184,6 +191,15 @@ func (rp *RocketPool) GetABIs(contractNames ...string) ([]*abi.ABI, error) {
 // Load Rocket Pool contracts
 func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, error) {
 
+    // Check for cached contract
+    if cached, ok := rp.getCachedContract(contractName); ok {
+        if (time.Now().Unix() - cached.time <= CACHE_TTL) {
+            return cached.contract, nil
+        } else {
+            rp.deleteCachedContract(contractName)
+        }
+    }
+
     // Contract data
     var wg errgroup.Group
     var contractAddress *common.Address
@@ -208,8 +224,17 @@ func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, err
         return nil, err
     }
 
-    // Create and return
-    return bind.NewBoundContract(*contractAddress, *contractAbi, rp.Client, rp.Client, rp.Client), nil
+    // Create contract
+    contract := bind.NewBoundContract(*contractAddress, *contractAbi, rp.Client, rp.Client, rp.Client)
+
+    // Cache contract
+    rp.setCachedContract(contractName, cachedContract{
+        contract: contract,
+        time: time.Now().Unix(),
+    })
+
+    // Return
+    return contract, nil
 
 }
 func (rp *RocketPool) GetContracts(contractNames ...string) ([]*bind.BoundContract, error) {
@@ -289,6 +314,25 @@ func (rp *RocketPool) deleteCachedABI(contractName string) {
     rp.abisLock.Lock()
     defer rp.abisLock.Unlock()
     delete(rp.abis, contractName)
+}
+
+
+// Contract cache control
+func (rp *RocketPool) getCachedContract(contractName string) (cachedContract, bool) {
+    rp.contractsLock.RLock()
+    defer rp.contractsLock.RUnlock()
+    value, ok := rp.contracts[contractName]
+    return value, ok
+}
+func (rp *RocketPool) setCachedContract(contractName string, value cachedContract) {
+    rp.contractsLock.Lock()
+    defer rp.contractsLock.Unlock()
+    rp.contracts[contractName] = value
+}
+func (rp *RocketPool) deleteCachedContract(contractName string) {
+    rp.contractsLock.Lock()
+    defer rp.contractsLock.Unlock()
+    delete(rp.contracts, contractName)
 }
 
 
