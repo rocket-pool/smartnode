@@ -22,7 +22,7 @@ type NodeDetails struct {
 
 
 // Get a node's details
-func GetDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*NodeDetails, error) {
+func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*NodeDetails, error) {
 
     // Node data
     var wg errgroup.Group
@@ -32,21 +32,21 @@ func GetDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*NodeDet
 
     // Get exists status
     wg.Go(func() error {
-        exists, err := GetExists(rp, nodeAddress)
+        exists, err := GetNodeExists(rp, nodeAddress)
         if err == nil { nodeExists = exists }
         return err
     })
 
     // Get trusted status
     wg.Go(func() error {
-        trusted, err := GetTrusted(rp, nodeAddress)
+        trusted, err := GetNodeTrusted(rp, nodeAddress)
         if err == nil { nodeTrusted = trusted }
         return err
     })
 
     // Get timezone location
     wg.Go(func() error {
-        timezoneLocation, err := GetTimezoneLocation(rp, nodeAddress)
+        timezoneLocation, err := GetNodeTimezoneLocation(rp, nodeAddress)
         if err == nil { nodeTimezoneLocation = timezoneLocation }
         return err
     })
@@ -67,79 +67,59 @@ func GetDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*NodeDet
 
 
 // Check whether a node exists
-func GetExists(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool, error) {
-
-    // Get rocketNodeManager contract
-    rocketNodeManager, err := rp.GetContract("rocketNodeManager")
+func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return false, err
     }
-
-    // Get node exists status
     exists := new(bool)
     if err := rocketNodeManager.Call(nil, exists, "getNodeExists", nodeAddress); err != nil {
         return false, fmt.Errorf("Could not get node %v exists status: %w", nodeAddress.Hex(), err)
     }
-
-    // Return
     return *exists, nil
-
 }
 
 
 // Get a node's trusted status
-func GetTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool, error) {
-
-    // Get rocketNodeManager contract
-    rocketNodeManager, err := rp.GetContract("rocketNodeManager")
+func GetNodeTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return false, err
     }
-
-    // Get node trusted status
     trusted := new(bool)
     if err := rocketNodeManager.Call(nil, trusted, "getNodeTrusted", nodeAddress); err != nil {
         return false, fmt.Errorf("Could not get node %v trusted status: %w", nodeAddress.Hex(), err)
     }
-
-    // Return
     return *trusted, nil
-
 }
 
 
 // Get a node's timezone location
-func GetTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Address) (string, error) {
-
-    // Get rocketNodeManager contract
-    rocketNodeManager, err := rp.GetContract("rocketNodeManager")
+func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Address) (string, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return "", err
     }
-
-    // Get node timezone location
     timezoneLocation := new(string)
     if err := rocketNodeManager.Call(nil, timezoneLocation, "getNodeTimezoneLocation", nodeAddress); err != nil {
         return "", fmt.Errorf("Could not get node %v timezone location: %w", nodeAddress.Hex(), err)
     }
-
-    // Return
     return *timezoneLocation, nil
-
 }
 
 
 // Register a node
-func Register(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (*types.Receipt, error) {
-
-    // Get rocketNodeManager contract
-    rocketNodeManager, err := rp.GetContract("rocketNodeManager")
+func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return nil, err
     }
-
-    // Register & return
     return contract.Transact(rp.Client, rocketNodeManager, opts, "registerNode", timezoneLocation)
+}
 
+
+// Get contracts
+func getRocketNodeManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+    return rp.GetContract("rocketNodeManager")
 }
 
