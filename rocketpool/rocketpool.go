@@ -116,7 +116,7 @@ func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
     // Decode ABI
     abi, err := decodeAbi(abiEncoded)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("Could not decode contract %v ABI: %w", contractName, err)
     }
 
     // Cache ABI
@@ -166,7 +166,16 @@ func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, err
 
 // Create a Rocket Pool contract instance
 func (rp *RocketPool) MakeContract(contractName string, address common.Address) (*bind.BoundContract, error) {
-    return nil, nil
+
+    // Load ABI
+    abi, err := rp.GetABI(contractName)
+    if err != nil {
+        return nil, err
+    }
+
+    // Create and return
+    return bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client), nil
+
 }
 
 
@@ -214,20 +223,20 @@ func decodeAbi(abiEncoded string) (*abi.ABI, error) {
     // Base 64 decode
     abiCompressed, err := base64.StdEncoding.DecodeString(abiEncoded)
     if err != nil {
-        return nil, fmt.Errorf("Could not decode contract ABI base64 string: %w", err)
+        return nil, fmt.Errorf("Could not decode ABI base64 string: %w", err)
     }
 
     // Zlib decompress
     byteReader := bytes.NewReader(abiCompressed)
     zlibReader, err := zlib.NewReader(byteReader)
     if err != nil {
-        return nil, fmt.Errorf("Could not decompress contract ABI zlib data: %w", err)
+        return nil, fmt.Errorf("Could not decompress ABI zlib data: %w", err)
     }
 
     // Parse ABI
     abiParsed, err := abi.JSON(zlibReader)
     if err != nil {
-        return nil, fmt.Errorf("Could not parse contract ABI JSON: %w", err)
+        return nil, fmt.Errorf("Could not parse ABI JSON: %w", err)
     }
 
     // Return
