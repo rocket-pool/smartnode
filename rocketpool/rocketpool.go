@@ -20,7 +20,7 @@ import (
 
 
 // Cache settings
-const CACHE_TTL = 60 // Seconds
+const CACHE_TTL = 300 // 5 minutes
 
 
 // Cached data types
