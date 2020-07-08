@@ -3,10 +3,13 @@ package node
 import (
     "fmt"
 
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/core/types"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -122,6 +125,21 @@ func GetTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Address) 
 
     // Return
     return *timezoneLocation, nil
+
+}
+
+
+// Register a node
+func Register(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (*types.Receipt, error) {
+
+    // Get rocketNodeManager contract
+    rocketNodeManager, err := rp.GetContract("rocketNodeManager")
+    if err != nil {
+        return nil, err
+    }
+
+    // Register & return
+    return contract.Transact(rp.Client, rocketNodeManager, opts, "registerNode", timezoneLocation)
 
 }
 
