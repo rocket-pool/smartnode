@@ -13,6 +13,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/crypto"
     "github.com/ethereum/go-ethereum/ethclient"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/contracts"
 )
@@ -79,7 +80,7 @@ func (rp *RocketPool) Address(contractName string) (*common.Address, error) {
     // Get address
     address, err := rp.RocketStorage.GetAddress(nil, crypto.Keccak256Hash([]byte("contract.name"), []byte(contractName)))
     if err != nil {
-        return nil, fmt.Errorf("Could not get contract %v address: %w", contractName, err)
+        return nil, fmt.Errorf("Could not load contract %v address: %w", contractName, err)
     }
 
     // Cache address
@@ -109,7 +110,7 @@ func (rp *RocketPool) ABI(contractName string) (*abi.ABI, error) {
     // Get ABI
     abiEncoded, err := rp.RocketStorage.GetString(nil, crypto.Keccak256Hash([]byte("contract.abi"), []byte(contractName)))
     if err != nil {
-        return nil, fmt.Errorf("Could not get contract %v ABI: %w", contractName, err)
+        return nil, fmt.Errorf("Could not load contract %v ABI: %w", contractName, err)
     }
 
     // Decode ABI
@@ -132,7 +133,34 @@ func (rp *RocketPool) ABI(contractName string) (*abi.ABI, error) {
 
 // Load a Rocket Pool contract
 func (rp *RocketPool) Get(contractName string) (*bind.BoundContract, error) {
-    return nil, nil
+
+    // Contract data
+    var wg errgroup.Group
+    var contractAddress *common.Address
+    var contractAbi *abi.ABI
+
+    // Load address
+    wg.Go(func() error {
+        address, err := rp.Address(contractName)
+        if err == nil { contractAddress = address }
+        return err
+    })
+
+    // Load ABI
+    wg.Go(func() error {
+        abi, err := rp.ABI(contractName)
+        if err == nil { contractAbi = abi }
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Create and return
+    return bind.NewBoundContract(*contractAddress, *contractAbi, rp.Client, rp.Client, rp.Client), nil
+
 }
 
 
