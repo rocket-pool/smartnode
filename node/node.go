@@ -122,6 +122,20 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
 }
 
 
+// Set a node's timezone location
+func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := contract.Transact(rp.Client, rocketNodeManager, opts, "setTimezoneLocation", timezoneLocation)
+    if err != nil {
+        return nil, fmt.Errorf("Could not set node timezone location: %w", err)
+    }
+    return txReceipt, nil
+}
+
+
 // Get contracts
 func getRocketNodeManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     return rp.GetContract("rocketNodeManager")
