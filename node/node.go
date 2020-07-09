@@ -31,30 +31,26 @@ type NodeDetails struct {
 // Get a node's details
 func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*NodeDetails, error) {
 
-    // Node data
+    // Data
     var wg errgroup.Group
-    var nodeExists bool
-    var nodeTrusted bool
-    var nodeTimezoneLocation string
+    var exists bool
+    var trusted bool
+    var timezoneLocation string
 
-    // Get exists status
+    // Load data
     wg.Go(func() error {
-        exists, err := GetNodeExists(rp, nodeAddress)
-        if err == nil { nodeExists = exists }
+        var err error
+        exists, err = GetNodeExists(rp, nodeAddress)
         return err
     })
-
-    // Get trusted status
     wg.Go(func() error {
-        trusted, err := GetNodeTrusted(rp, nodeAddress)
-        if err == nil { nodeTrusted = trusted }
+        var err error
+        trusted, err = GetNodeTrusted(rp, nodeAddress)
         return err
     })
-
-    // Get timezone location
     wg.Go(func() error {
-        timezoneLocation, err := GetNodeTimezoneLocation(rp, nodeAddress)
-        if err == nil { nodeTimezoneLocation = timezoneLocation }
+        var err error
+        timezoneLocation, err = GetNodeTimezoneLocation(rp, nodeAddress)
         return err
     })
 
@@ -65,9 +61,9 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*Nod
 
     // Return
     return &NodeDetails{
-        Exists: nodeExists,
-        Trusted: nodeTrusted,
-        TimezoneLocation: nodeTimezoneLocation,
+        Exists: exists,
+        Trusted: trusted,
+        TimezoneLocation: timezoneLocation,
     }, nil
 
 }

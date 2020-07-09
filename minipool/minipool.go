@@ -105,54 +105,44 @@ func GetNodeMinipoolAddresses(rp *rocketpool.RocketPool, nodeAddress common.Addr
 // Get a minipool's details
 func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address) (*MinipoolDetails, error) {
 
-    // Minipool data
+    // Data
     var wg errgroup.Group
-    var minipoolExists bool
-    var minipoolPubkey []byte
-    var minipoolWithdrawalTotalBalance *big.Int
-    var minipoolWithdrawalNodeBalance *big.Int
-    var minipoolWithdrawable bool
-    var minipoolWithdrawalProcessed bool
+    var exists bool
+    var pubkey []byte
+    var withdrawalTotalBalance *big.Int
+    var withdrawalNodeBalance *big.Int
+    var withdrawable bool
+    var withdrawalProcessed bool
 
-    // Get exists status
+    // Load data
     wg.Go(func() error {
-        exists, err := GetMinipoolExists(rp, minipoolAddress)
-        if err == nil { minipoolExists = exists }
+        var err error
+        exists, err = GetMinipoolExists(rp, minipoolAddress)
         return err
     })
-
-    // Get pubkey
     wg.Go(func() error {
-        pubkey, err := GetMinipoolPubkey(rp, minipoolAddress)
-        if err == nil { minipoolPubkey = pubkey }
+        var err error
+        pubkey, err = GetMinipoolPubkey(rp, minipoolAddress)
         return err
     })
-
-    // Get withdrawal total balance
     wg.Go(func() error {
-        withdrawalTotalBalance, err := GetMinipoolWithdrawalTotalBalance(rp, minipoolAddress)
-        if err == nil { minipoolWithdrawalTotalBalance = withdrawalTotalBalance }
+        var err error
+        withdrawalTotalBalance, err = GetMinipoolWithdrawalTotalBalance(rp, minipoolAddress)
         return err
     })
-
-    // Get withdrawal node balance
     wg.Go(func() error {
-        withdrawalNodeBalance, err := GetMinipoolWithdrawalNodeBalance(rp, minipoolAddress)
-        if err == nil { minipoolWithdrawalNodeBalance = withdrawalNodeBalance }
+        var err error
+        withdrawalNodeBalance, err = GetMinipoolWithdrawalNodeBalance(rp, minipoolAddress)
         return err
     })
-
-    // Get withdrawable status
     wg.Go(func() error {
-        withdrawable, err := GetMinipoolWithdrawable(rp, minipoolAddress)
-        if err == nil { minipoolWithdrawable = withdrawable }
+        var err error
+        withdrawable, err = GetMinipoolWithdrawable(rp, minipoolAddress)
         return err
     })
-
-    // Get withdrawal processed status
     wg.Go(func() error {
-        withdrawalProcessed, err := GetMinipoolWithdrawalProcessed(rp, minipoolAddress)
-        if err == nil { minipoolWithdrawalProcessed = withdrawalProcessed }
+        var err error
+        withdrawalProcessed, err = GetMinipoolWithdrawalProcessed(rp, minipoolAddress)
         return err
     })
 
@@ -164,12 +154,12 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
     // Return
     return &MinipoolDetails{
         Address: minipoolAddress,
-        Exists: minipoolExists,
-        Pubkey: minipoolPubkey,
-        WithdrawalTotalBalance: minipoolWithdrawalTotalBalance,
-        WithdrawalNodeBalance: minipoolWithdrawalNodeBalance,
-        Withdrawable: minipoolWithdrawable,
-        WithdrawalProcessed: minipoolWithdrawalProcessed,
+        Exists: exists,
+        Pubkey: pubkey,
+        WithdrawalTotalBalance: withdrawalTotalBalance,
+        WithdrawalNodeBalance: withdrawalNodeBalance,
+        Withdrawable: withdrawable,
+        WithdrawalProcessed: withdrawalProcessed,
     }, nil
 
 }

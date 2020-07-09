@@ -200,22 +200,20 @@ func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, err
         }
     }
 
-    // Contract data
+    // Data
     var wg errgroup.Group
-    var contractAddress *common.Address
-    var contractAbi *abi.ABI
+    var address *common.Address
+    var abi *abi.ABI
 
-    // Load address
+    // Load data
     wg.Go(func() error {
-        address, err := rp.GetAddress(contractName)
-        if err == nil { contractAddress = address }
+        var err error
+        address, err = rp.GetAddress(contractName)
         return err
     })
-
-    // Load ABI
     wg.Go(func() error {
-        abi, err := rp.GetABI(contractName)
-        if err == nil { contractAbi = abi }
+        var err error
+        abi, err = rp.GetABI(contractName)
         return err
     })
 
@@ -225,7 +223,7 @@ func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, err
     }
 
     // Create contract
-    contract := bind.NewBoundContract(*contractAddress, *contractAbi, rp.Client, rp.Client, rp.Client)
+    contract := bind.NewBoundContract(*address, *abi, rp.Client, rp.Client, rp.Client)
 
     // Cache contract
     rp.setCachedContract(contractName, cachedContract{
