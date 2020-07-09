@@ -8,6 +8,7 @@ import (
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -19,10 +20,29 @@ var rocketMinipoolLock sync.Mutex
 
 
 // Minipool detail types
-type StatusDetails struct {}
-type NodeDetails struct {}
-type UserDetails struct {}
-type StakingDetails struct {}
+type StatusDetails struct {
+    Status MinipoolStatus
+    StatusBlock int64
+    StatusTime time.Time
+}
+type NodeDetails struct {
+    Address common.Address
+    Fee float64
+    DepositBalance *big.Int
+    RefundBalance *big.Int
+    DepositAssigned bool
+}
+type UserDetails struct {
+    DepositBalance *big.Int
+    DepositAssigned bool
+}
+type StakingDetails struct {
+    StartBalance *big.Int
+    EndBalance *big.Int
+    StartBlock int64
+    UserStartBlock int64
+    EndBlock int64
+}
 
 
 // Minipool contract
@@ -52,6 +72,44 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address) (*Minipool, 
 
 
 // Get status details
+func (mp *Minipool) GetStatusDetails() (*StatusDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var status MinipoolStatus
+    var statusBlock int64
+    var statusTime time.Time
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        status, err = mp.GetStatus()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        statusBlock, err = mp.GetStatusBlock()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        statusTime, err = mp.GetStatusTime()
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Return
+    return &StatusDetails{
+        Status: status,
+        StatusBlock: statusBlock,
+        StatusTime: statusTime,
+    }, nil
+
+}
 func (mp *Minipool) GetStatus() (MinipoolStatus, error) {
     status := new(uint8)
     if err := mp.Contract.Call(nil, status, "getStatus"); err != nil {
