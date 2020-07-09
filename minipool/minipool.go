@@ -18,6 +18,7 @@ import (
 
 // Contract access locks
 var rocketMinipoolManagerLock sync.Mutex
+var rocketMinipoolQueueLock sync.Mutex
 var rocketMinipoolStatusLock sync.Mutex
 
 
@@ -300,6 +301,34 @@ func GetMinipoolWithdrawalProcessed(rp *rocketpool.RocketPool, minipoolAddress c
 }
 
 
+// Get the total length of the minipool queue
+func GetQueueTotalLength(rp *rocketpool.RocketPool) (int64, error) {
+    rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+    if err != nil {
+        return 0, err
+    }
+    length := new(*big.Int)
+    if err := rocketMinipoolQueue.Call(nil, length, "getTotalLength"); err != nil {
+        return 0, fmt.Errorf("Could not get minipool queue total length: %w", err)
+    }
+    return (*length).Int64(), nil
+}
+
+
+// Get the total capacity of the minipool queue
+func GetQueueTotalCapacity(rp *rocketpool.RocketPool) (*big.Int, error) {
+    rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+    if err != nil {
+        return nil, err
+    }
+    capacity := new(*big.Int)
+    if err := rocketMinipoolQueue.Call(nil, capacity, "getTotalCapacity"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool queue total capacity: %w", err)
+    }
+    return *capacity, nil
+}
+
+
 // Submit a minipool exited event
 func SubmitMinipoolExited(rp *rocketpool.RocketPool, minipoolAddress common.Address, epoch int64, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
@@ -333,6 +362,11 @@ func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*bind.BoundContract, e
     rocketMinipoolManagerLock.Lock()
     defer rocketMinipoolManagerLock.Unlock()
     return rp.GetContract("rocketMinipoolManager")
+}
+func getRocketMinipoolQueue(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+    rocketMinipoolQueueLock.Lock()
+    defer rocketMinipoolQueueLock.Unlock()
+    return rp.GetContract("rocketMinipoolQueue")
 }
 func getRocketMinipoolStatus(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     rocketMinipoolStatusLock.Lock()
