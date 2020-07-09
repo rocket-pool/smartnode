@@ -10,6 +10,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/contract"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -136,8 +137,25 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
 }
 
 
+// Make a node deposit
+func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketNodeDeposit, err := getRocketNodeDeposit(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := contract.Transact(rp.Client, rocketNodeDeposit, opts, "deposit", eth.EthToWei(minimumNodeFee))
+    if err != nil {
+        return nil, fmt.Errorf("Could not make node deposit: %w", err)
+    }
+    return txReceipt, nil
+}
+
+
 // Get contracts
 func getRocketNodeManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     return rp.GetContract("rocketNodeManager")
+}
+func getRocketNodeDeposit(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+    return rp.GetContract("rocketNodeDeposit")
 }
 
