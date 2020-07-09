@@ -1,6 +1,7 @@
 package minipool
 
 import (
+    "encoding/hex"
     "fmt"
     "math/big"
     "sync"
@@ -195,6 +196,20 @@ func GetNodeMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.Address, in
     minipoolAddress := new(common.Address)
     if err := rocketMinipoolManager.Call(nil, minipoolAddress, "getNodeMinipoolAt", nodeAddress, big.NewInt(index)); err != nil {
         return common.Address{}, fmt.Errorf("Could not get node %v minipool %v address: %w", nodeAddress.Hex(), index, err)
+    }
+    return *minipoolAddress, nil
+}
+
+
+// Get a minipool address by validator pubkey
+func GetMinipoolByPubkey(rp *rocketpool.RocketPool, pubkey []byte) (common.Address, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return common.Address{}, err
+    }
+    minipoolAddress := new(common.Address)
+    if err := rocketMinipoolManager.Call(nil, minipoolAddress, "getMinipoolByPubkey", pubkey); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get validator %v minipool address: %w", hex.EncodeToString(pubkey), err)
     }
     return *minipoolAddress, nil
 }
