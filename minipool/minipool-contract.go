@@ -125,28 +125,56 @@ func (mp *Minipool) GetNodeDepositAssigned() (bool, error) {
 
 // Get user deposit details
 func (mp *Minipool) GetUserDepositBalance() (*big.Int, error) {
-    return nil, nil
+    userDepositBalance := new(*big.Int)
+    if err := mp.Contract.Call(nil, userDepositBalance, "getUserDepositBalance"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool %v user deposit balance: %w", mp.Address.Hex(), err)
+    }
+    return *userDepositBalance, nil
 }
 func (mp *Minipool) GetUserDepositAssigned() (bool, error) {
-    return false, nil
+    userDepositAssigned := new(bool)
+    if err := mp.Contract.Call(nil, userDepositAssigned, "getUserDepositAssigned"); err != nil {
+        return false, fmt.Errorf("Could not get minipool %v user deposit assigned status: %w", mp.Address.Hex(), err)
+    }
+    return *userDepositAssigned, nil
 }
 
 
 // Get staking details
 func (mp *Minipool) GetStakingStartBalance() (*big.Int, error) {
-    return nil, nil
+    stakingStartBalance := new(*big.Int)
+    if err := mp.Contract.Call(nil, stakingStartBalance, "getStakingStartBalance"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool %v staking start balance: %w", mp.Address.Hex(), err)
+    }
+    return *stakingStartBalance, nil
 }
 func (mp *Minipool) GetStakingEndBalance() (*big.Int, error) {
-    return nil, nil
+    stakingEndBalance := new(*big.Int)
+    if err := mp.Contract.Call(nil, stakingEndBalance, "getStakingEndBalance"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool %v staking end balance: %w", mp.Address.Hex(), err)
+    }
+    return *stakingEndBalance, nil
 }
 func (mp *Minipool) GetStakingStartBlock() (int64, error) {
-    return 0, nil
+    stakingStartBlock := new(*big.Int)
+    if err := mp.Contract.Call(nil, stakingStartBlock, "getStakingStartBlock"); err != nil {
+        return 0, fmt.Errorf("Could not get minipool %v staking start block: %w", mp.Address.Hex(), err)
+    }
+    return (*stakingStartBlock).Int64(), nil
 }
 func (mp *Minipool) GetStakingUserStartBlock() (int64, error) {
-    return 0, nil
+    stakingUserStartBlock := new(*big.Int)
+    if err := mp.Contract.Call(nil, stakingUserStartBlock, "getStakingUserStartBlock"); err != nil {
+        return 0, fmt.Errorf("Could not get minipool %v staking user start block: %w", mp.Address.Hex(), err)
+    }
+    return (*stakingUserStartBlock).Int64(), nil
 }
 func (mp *Minipool) GetStakingEndBlock() (int64, error) {
-    return 0, nil
+    stakingEndBlock := new(*big.Int)
+    if err := mp.Contract.Call(nil, stakingEndBlock, "getStakingEndBlock"); err != nil {
+        return 0, fmt.Errorf("Could not get minipool %v staking end block: %w", mp.Address.Hex(), err)
+    }
+    return (*stakingEndBlock).Int64(), nil
 }
 
 
