@@ -1,6 +1,7 @@
 package minipool
 
 import (
+    "fmt"
     "math/big"
     "sync"
     "time"
@@ -14,6 +15,13 @@ import (
 
 // Contract access locks
 var rocketMinipoolLock sync.Mutex
+
+
+// Minipool detail types
+type StatusDetails struct {}
+type NodeDetails struct {}
+type UserDetails struct {}
+type StakingDetails struct {}
 
 
 // Minipool contract
@@ -44,13 +52,25 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address) (*Minipool, 
 
 // Get status details
 func (mp *Minipool) GetStatus() (MinipoolStatus, error) {
-    return 0, nil
+    status := new(uint8)
+    if err := mp.Contract.Call(nil, status, "getStatus"); err != nil {
+        return MinipoolStatus(0), fmt.Errorf("Could not get minipool %v status: %w", mp.Address.Hex(), err)
+    }
+    return MinipoolStatus(*status), nil
 }
 func (mp *Minipool) GetStatusBlock() (int64, error) {
-    return 0, nil
+    statusBlock := new(*big.Int)
+    if err := mp.Contract.Call(nil, statusBlock, "getStatusBlock"); err != nil {
+        return 0, fmt.Errorf("Could not get minipool %v status changed block: %w", mp.Address.Hex(), err)
+    }
+    return (*statusBlock).Int64(), nil
 }
 func (mp *Minipool) GetStatusTime() (time.Time, error) {
-    return time.Time{}, nil
+    statusTime := new(*big.Int)
+    if err := mp.Contract.Call(nil, statusTime, "getStatusTime"); err != nil {
+        return time.Unix(0, 0), fmt.Errorf("Could not get minipool %v status changed time: %w", mp.Address.Hex(), err)
+    }
+    return time.Unix((*statusTime).Int64(), 0), nil
 }
 
 

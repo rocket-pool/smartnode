@@ -2,7 +2,7 @@ package minipool
 
 
 // Minipool statuses
-type MinipoolStatus int
+type MinipoolStatus uint8
 const (
     Initialized MinipoolStatus = iota
     Prelaunch
@@ -17,7 +17,7 @@ func (s MinipoolStatus) String() string {
 
 
 // Minipool deposit types
-type MinipoolDeposit int
+type MinipoolDeposit uint8
 const (
     None MinipoolDeposit = iota
     Full
