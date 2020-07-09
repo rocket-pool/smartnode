@@ -2,6 +2,7 @@ package node
 
 import (
     "fmt"
+    "sync"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
@@ -12,6 +13,11 @@ import (
     "github.com/rocket-pool/rocketpool-go/utils/contract"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
+
+
+// Contract access locks
+var rocketNodeManagerLock sync.Mutex
+var rocketNodeDepositLock sync.Mutex
 
 
 // Node details
@@ -153,9 +159,13 @@ func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.Trans
 
 // Get contracts
 func getRocketNodeManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+    rocketNodeManagerLock.Lock()
+    defer rocketNodeManagerLock.Unlock()
     return rp.GetContract("rocketNodeManager")
 }
 func getRocketNodeDeposit(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+    rocketNodeDepositLock.Lock()
+    defer rocketNodeDepositLock.Unlock()
     return rp.GetContract("rocketNodeDeposit")
 }
 
