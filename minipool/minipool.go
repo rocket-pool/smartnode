@@ -8,16 +8,17 @@ import (
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
-    //"github.com/ethereum/go-ethereum/core/types"
+    "github.com/ethereum/go-ethereum/core/types"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    //"github.com/rocket-pool/rocketpool-go/utils/contract"
+    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
 // Contract access locks
 var rocketMinipoolManagerLock sync.Mutex
+var rocketMinipoolStatusLock sync.Mutex
 
 
 // Minipool details
@@ -299,10 +300,43 @@ func GetMinipoolWithdrawalProcessed(rp *rocketpool.RocketPool, minipoolAddress c
 }
 
 
+// Submit a minipool exited event
+func SubmitMinipoolExited(rp *rocketpool.RocketPool, minipoolAddress common.Address, epoch int64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolStatus, opts, "submitMinipoolExited", minipoolAddress, big.NewInt(epoch))
+    if err != nil {
+        return nil, fmt.Errorf("Could not submit minipool exited event: %w", err)
+    }
+    return txReceipt, nil
+}
+
+
+// Submit a minipool withdrawable event
+func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, withdrawalBalance *big.Int, epoch int64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolStatus, opts, "submitMinipoolWithdrawable", minipoolAddress, withdrawalBalance, big.NewInt(epoch))
+    if err != nil {
+        return nil, fmt.Errorf("Could not submit minipool withdrawable event: %w", err)
+    }
+    return txReceipt, nil
+}
+
+
 // Get contracts
 func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     rocketMinipoolManagerLock.Lock()
     defer rocketMinipoolManagerLock.Unlock()
     return rp.GetContract("rocketMinipoolManager")
+}
+func getRocketMinipoolStatus(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+    rocketMinipoolStatusLock.Lock()
+    defer rocketMinipoolStatusLock.Unlock()
+    return rp.GetContract("rocketMinipoolStatus")
 }
 
