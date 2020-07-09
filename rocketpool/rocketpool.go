@@ -20,7 +20,7 @@ import (
 
 
 // Cache settings
-const CACHE_TTL = 300 // 5 minutes
+const CacheTTL = 300 // 5 minutes
 
 
 // Cached data types
@@ -77,7 +77,7 @@ func (rp *RocketPool) GetAddress(contractName string) (*common.Address, error) {
 
     // Check for cached address
     if cached, ok := rp.getCachedAddress(contractName); ok {
-        if (time.Now().Unix() - cached.time <= CACHE_TTL) {
+        if (time.Now().Unix() - cached.time <= CacheTTL) {
             return cached.address, nil
         } else {
             rp.deleteCachedAddress(contractName)
@@ -132,7 +132,7 @@ func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
 
     // Check for cached ABI
     if cached, ok := rp.getCachedABI(contractName); ok {
-        if (time.Now().Unix() - cached.time <= CACHE_TTL) {
+        if (time.Now().Unix() - cached.time <= CacheTTL) {
             return cached.abi, nil
         } else {
             rp.deleteCachedABI(contractName)
@@ -193,7 +193,7 @@ func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, err
 
     // Check for cached contract
     if cached, ok := rp.getCachedContract(contractName); ok {
-        if (time.Now().Unix() - cached.time <= CACHE_TTL) {
+        if (time.Now().Unix() - cached.time <= CacheTTL) {
             return cached.contract, nil
         } else {
             rp.deleteCachedContract(contractName)

@@ -6,8 +6,8 @@ import (
 
 
 // Conversion factors
-const WEI_PER_ETH float64 = 1e18
-const WEI_PER_GWEI float64 = 1e9
+const WeiPerEth float64 = 1e18
+const WeiPerGwei float64 = 1e9
 
 
 // Convert wei to eth
@@ -15,7 +15,7 @@ func WeiToEth(wei *big.Int) float64 {
     var weiFloat big.Float
     var eth big.Float
     weiFloat.SetInt(wei)
-    eth.Quo(&weiFloat, big.NewFloat(WEI_PER_ETH))
+    eth.Quo(&weiFloat, big.NewFloat(WeiPerEth))
     eth64, _ := eth.Float64()
     return eth64
 }
@@ -25,7 +25,7 @@ func WeiToEth(wei *big.Int) float64 {
 func EthToWei(eth float64) *big.Int {
     var weiFloat big.Float
     var wei big.Int
-    weiFloat.Mul(big.NewFloat(eth), big.NewFloat(WEI_PER_ETH))
+    weiFloat.Mul(big.NewFloat(eth), big.NewFloat(WeiPerEth))
     weiFloat.Int(&wei)
     return &wei
 }
@@ -36,7 +36,7 @@ func WeiToGwei(wei *big.Int) float64 {
     var weiFloat big.Float
     var gwei big.Float
     weiFloat.SetInt(wei)
-    gwei.Quo(&weiFloat, big.NewFloat(WEI_PER_GWEI))
+    gwei.Quo(&weiFloat, big.NewFloat(WeiPerGwei))
     gwei64, _ := gwei.Float64()
     return gwei64
 }
@@ -46,7 +46,7 @@ func WeiToGwei(wei *big.Int) float64 {
 func GweiToWei(gwei float64) *big.Int {
     var weiFloat big.Float
     var wei big.Int
-    weiFloat.Mul(big.NewFloat(gwei), big.NewFloat(WEI_PER_GWEI))
+    weiFloat.Mul(big.NewFloat(gwei), big.NewFloat(WeiPerGwei))
     weiFloat.Int(&wei)
     return &wei
 }
