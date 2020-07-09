@@ -10,6 +10,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -76,25 +77,49 @@ func (mp *Minipool) GetStatusTime() (time.Time, error) {
 
 // Get deposit type
 func (mp *Minipool) GetDepositType() (MinipoolDeposit, error) {
-    return 0, nil
+    depositType := new(uint8)
+    if err := mp.Contract.Call(nil, depositType, "getDepositType"); err != nil {
+        return MinipoolDeposit(0), fmt.Errorf("Could not get minipool %v deposit type: %w", mp.Address.Hex(), err)
+    }
+    return MinipoolDeposit(*depositType), nil
 }
 
 
 // Get node details
 func (mp *Minipool) GetNodeAddress() (common.Address, error) {
-    return common.Address{}, nil
+    nodeAddress := new(common.Address)
+    if err := mp.Contract.Call(nil, nodeAddress, "getNodeAddress"); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get minipool %v node address: %w", mp.Address.Hex(), err)
+    }
+    return *nodeAddress, nil
 }
 func (mp *Minipool) GetNodeFee() (float64, error) {
-    return 0, nil
+    nodeFee := new(*big.Int)
+    if err := mp.Contract.Call(nil, nodeFee, "getNodeFee"); err != nil {
+        return 0, fmt.Errorf("Could not get minipool %v node fee: %w", mp.Address.Hex(), err)
+    }
+    return eth.WeiToEth(*nodeFee), nil
 }
 func (mp *Minipool) GetNodeDepositBalance() (*big.Int, error) {
-    return nil, nil
+    nodeDepositBalance := new(*big.Int)
+    if err := mp.Contract.Call(nil, nodeDepositBalance, "getNodeDepositBalance"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool %v node deposit balance: %w", mp.Address.Hex(), err)
+    }
+    return *nodeDepositBalance, nil
 }
 func (mp *Minipool) GetNodeRefundBalance() (*big.Int, error) {
-    return nil, nil
+    nodeRefundBalance := new(*big.Int)
+    if err := mp.Contract.Call(nil, nodeRefundBalance, "getNodeRefundBalance"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool %v node refund balance: %w", mp.Address.Hex(), err)
+    }
+    return *nodeRefundBalance, nil
 }
 func (mp *Minipool) GetNodeDepositAssigned() (bool, error) {
-    return false, nil
+    nodeDepositAssigned := new(bool)
+    if err := mp.Contract.Call(nil, nodeDepositAssigned, "getNodeDepositAssigned"); err != nil {
+        return false, fmt.Errorf("Could not get minipool %v node deposit assigned status: %w", mp.Address.Hex(), err)
+    }
+    return *nodeDepositAssigned, nil
 }
 
 
