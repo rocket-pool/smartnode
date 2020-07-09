@@ -144,6 +144,58 @@ func (mp *Minipool) GetDepositType() (MinipoolDeposit, error) {
 
 
 // Get node details
+func (mp *Minipool) GetNodeDetails() (*NodeDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var address common.Address
+    var fee float64
+    var depositBalance *big.Int
+    var refundBalance *big.Int
+    var depositAssigned bool
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        address, err = mp.GetNodeAddress()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        fee, err = mp.GetNodeFee()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        depositBalance, err = mp.GetNodeDepositBalance()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        refundBalance, err = mp.GetNodeRefundBalance()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        depositAssigned, err = mp.GetNodeDepositAssigned()
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Return
+    return &NodeDetails{
+        Address: address,
+        Fee: fee,
+        DepositBalance: depositBalance,
+        RefundBalance: refundBalance,
+        DepositAssigned: depositAssigned,
+    }, nil
+
+}
 func (mp *Minipool) GetNodeAddress() (common.Address, error) {
     nodeAddress := new(common.Address)
     if err := mp.Contract.Call(nil, nodeAddress, "getNodeAddress"); err != nil {
@@ -182,6 +234,37 @@ func (mp *Minipool) GetNodeDepositAssigned() (bool, error) {
 
 
 // Get user deposit details
+func (mp *Minipool) GetUserDetails() (*UserDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var depositBalance *big.Int
+    var depositAssigned bool
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        depositBalance, err = mp.GetUserDepositBalance()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        depositAssigned, err = mp.GetUserDepositAssigned()
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Return
+    return &UserDetails{
+        DepositBalance: depositBalance,
+        DepositAssigned: depositAssigned,
+    }, nil
+
+}
 func (mp *Minipool) GetUserDepositBalance() (*big.Int, error) {
     userDepositBalance := new(*big.Int)
     if err := mp.Contract.Call(nil, userDepositBalance, "getUserDepositBalance"); err != nil {
@@ -199,6 +282,58 @@ func (mp *Minipool) GetUserDepositAssigned() (bool, error) {
 
 
 // Get staking details
+func (mp *Minipool) GetStakingDetails() (*StakingDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var startBalance *big.Int
+    var endBalance *big.Int
+    var startBlock int64
+    var userStartBlock int64
+    var endBlock int64
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        startBalance, err = mp.GetStakingStartBalance()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        endBalance, err = mp.GetStakingEndBalance()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        startBlock, err = mp.GetStakingStartBlock()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        userStartBlock, err = mp.GetStakingUserStartBlock()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        endBlock, err = mp.GetStakingEndBlock()
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Return
+    return &StakingDetails{
+        StartBalance: startBalance,
+        EndBalance: endBalance,
+        StartBlock: startBlock,
+        UserStartBlock: userStartBlock,
+        EndBlock: endBlock,
+    }, nil
+
+}
 func (mp *Minipool) GetStakingStartBalance() (*big.Int, error) {
     stakingStartBalance := new(*big.Int)
     if err := mp.Contract.Call(nil, stakingStartBalance, "getStakingStartBalance"); err != nil {
