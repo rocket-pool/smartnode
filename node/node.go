@@ -22,9 +22,9 @@ var rocketNodeDepositLock sync.Mutex
 
 // Node details
 type NodeDetails struct {
-    exists bool
-    trusted bool
-    timezoneLocation string
+    Exists bool
+    Trusted bool
+    TimezoneLocation string
 }
 
 
@@ -65,9 +65,9 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*Nod
 
     // Return
     return &NodeDetails{
-        exists: nodeExists,
-        trusted: nodeTrusted,
-        timezoneLocation: nodeTimezoneLocation,
+        Exists: nodeExists,
+        Trusted: nodeTrusted,
+        TimezoneLocation: nodeTimezoneLocation,
     }, nil
 
 }
