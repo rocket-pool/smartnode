@@ -19,7 +19,7 @@ func GetAssignDepositsEnabled(rp *rocketpool.RocketPool) (bool, error) {
     }
     assignDepositsEnabled := new(bool)
     if err := rocketDepositSettings.Call(nil, assignDepositsEnabled, "getAssignDepositsEnabled"); err != nil {
-        return false, fmt.Errorf("Could not get deposit assignment enabled status: %w", err)
+        return false, fmt.Errorf("Could not get deposit assignments enabled status: %w", err)
     }
     return *assignDepositsEnabled, nil
 }

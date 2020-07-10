@@ -10,13 +10,31 @@ import (
 )
 
 
+// Node registrations currently enabled
 func GetNodeRegistrationEnabled(rp *rocketpool.RocketPool) (bool, error) {
-
+    rocketNodeSettings, err := getRocketNodeSettings(rp)
+    if err != nil {
+        return false, err
+    }
+    registrationEnabled := new(bool)
+    if err := rocketNodeSettings.Call(nil, registrationEnabled, "getRegistrationEnabled"); err != nil {
+        return false, fmt.Errorf("Could not get node registrations enabled status: %w", err)
+    }
+    return *registrationEnabled, nil
 }
 
 
+// Node deposits currently enabled
 func GetNodeDepositEnabled(rp *rocketpool.RocketPool) (bool, error) {
-
+    rocketNodeSettings, err := getRocketNodeSettings(rp)
+    if err != nil {
+        return false, err
+    }
+    depositEnabled := new(bool)
+    if err := rocketNodeSettings.Call(nil, depositEnabled, "getDepositEnabled"); err != nil {
+        return false, fmt.Errorf("Could not get node deposits enabled status: %w", err)
+    }
+    return *depositEnabled, nil
 }
 
 
