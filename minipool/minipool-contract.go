@@ -8,15 +8,13 @@ import (
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/core/types"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/contract"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
-
-// Contract access locks
-var rocketMinipoolLock sync.Mutex
 
 
 // Minipool detail types
@@ -49,7 +47,7 @@ type StakingDetails struct {
 type Minipool struct {
     Address common.Address
     Contract *bind.BoundContract
-    rp *rocketpool.RocketPool
+    RocketPool *rocketpool.RocketPool
 }
 
 
@@ -66,7 +64,7 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address) (*Minipool, 
     return &Minipool{
         Address: address,
         Contract: contract,
-        rp: rp,
+        RocketPool: rp,
     }, nil
 }
 
@@ -371,7 +369,58 @@ func (mp *Minipool) GetStakingEndBlock() (int64, error) {
 }
 
 
+// Refund node ETH from the minipool
+func (mp *Minipool) Refund(opts *bind.TransactOpts) (*types.Receipt, error) {
+    txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "refund")
+    if err != nil {
+        return nil, fmt.Errorf("Could not refund from minipool %v: %w", mp.Address.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
+// Progress the prelaunch minipool to staking
+func (mp *Minipool) Stake(validatorPubkey [48]byte, validatorSignature [96]byte, depositDataRoot [32]byte, opts *bind.TransactOpts) (*types.Receipt, error) {
+    txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)
+    if err != nil {
+        return nil, fmt.Errorf("Could not stake minipool %v: %w", mp.Address.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
+// Withdraw node balances & rewards from the withdrawable minipool and close it
+func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (*types.Receipt, error) {
+    txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "withdraw")
+    if err != nil {
+        return nil, fmt.Errorf("Could not withdraw from minipool %v: %w", mp.Address.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
+// Dissolve the initialized or prelaunch minipool
+func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (*types.Receipt, error) {
+    txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "dissolve")
+    if err != nil {
+        return nil, fmt.Errorf("Could not dissolve minipool %v: %w", mp.Address.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
+// Withdraw node balances from the dissolved minipool and close it
+func (mp *Minipool) Close(opts *bind.TransactOpts) (*types.Receipt, error) {
+    txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "close")
+    if err != nil {
+        return nil, fmt.Errorf("Could not close minipool %v: %w", mp.Address.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
 // Get a minipool contract
+var rocketMinipoolLock sync.Mutex
 func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Address) (*bind.BoundContract, error) {
     rocketMinipoolLock.Lock()
     defer rocketMinipoolLock.Unlock()
