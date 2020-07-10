@@ -16,12 +16,6 @@ import (
 )
 
 
-// Contract access locks
-var rocketMinipoolManagerLock sync.Mutex
-var rocketMinipoolQueueLock sync.Mutex
-var rocketMinipoolStatusLock sync.Mutex
-
-
 // Minipool details
 type MinipoolDetails struct {
     Address common.Address
@@ -348,16 +342,19 @@ func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress commo
 
 
 // Get contracts
+var rocketMinipoolManagerLock sync.Mutex
 func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     rocketMinipoolManagerLock.Lock()
     defer rocketMinipoolManagerLock.Unlock()
     return rp.GetContract("rocketMinipoolManager")
 }
+var rocketMinipoolQueueLock sync.Mutex
 func getRocketMinipoolQueue(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     rocketMinipoolQueueLock.Lock()
     defer rocketMinipoolQueueLock.Unlock()
     return rp.GetContract("rocketMinipoolQueue")
 }
+var rocketMinipoolStatusLock sync.Mutex
 func getRocketMinipoolStatus(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     rocketMinipoolStatusLock.Lock()
     defer rocketMinipoolStatusLock.Unlock()

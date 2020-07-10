@@ -15,11 +15,6 @@ import (
 )
 
 
-// Contract access locks
-var rocketNodeManagerLock sync.Mutex
-var rocketNodeDepositLock sync.Mutex
-
-
 // Node details
 type NodeDetails struct {
     Exists bool
@@ -154,11 +149,13 @@ func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.Trans
 
 
 // Get contracts
+var rocketNodeManagerLock sync.Mutex
 func getRocketNodeManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     rocketNodeManagerLock.Lock()
     defer rocketNodeManagerLock.Unlock()
     return rp.GetContract("rocketNodeManager")
 }
+var rocketNodeDepositLock sync.Mutex
 func getRocketNodeDeposit(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
     rocketNodeDepositLock.Lock()
     defer rocketNodeDepositLock.Unlock()
