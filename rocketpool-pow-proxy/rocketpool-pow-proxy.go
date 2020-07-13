@@ -54,7 +54,7 @@ func main() {
             Usage: "Infura `project ID` to use for connection",
             Value: "",
         },
-    };
+    }
 
     // Set application action
     app.Action = func(c *cli.Context) error {
