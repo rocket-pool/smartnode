@@ -7,6 +7,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool/api"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -31,6 +32,9 @@ func main() {
         },
     }
     app.Copyright = "(c) 2020 Rocket Pool Pty Ltd"
+
+    // Configure application
+    cliutils.Configure(app)
 
     // Register commands
     api.RegisterCommands(app, "api", []string{"a"})
