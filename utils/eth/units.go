@@ -6,8 +6,10 @@ import (
 
 
 // Conversion factors
-const WeiPerEth float64 = 1e18
-const WeiPerGwei float64 = 1e9
+const (
+    WeiPerEth float64 = 1e18
+    WeiPerGwei float64 = 1e9
+)
 
 
 // Convert wei to eth
