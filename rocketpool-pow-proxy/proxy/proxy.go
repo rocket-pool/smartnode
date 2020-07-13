@@ -20,9 +20,7 @@ type ProxyServer struct {
 }
 
 
-/**
- * Create proxy server
- */
+// Create new proxy server
 func NewProxyServer(port string, providerUrl string, network string, projectId string) *ProxyServer {
 
     // Default provider to Infura
@@ -39,9 +37,7 @@ func NewProxyServer(port string, providerUrl string, network string, projectId s
 }
 
 
-/**
- * Start proxy server
- */
+// Start proxy server
 func (p *ProxyServer) Start() error {
 
     // Log
@@ -53,9 +49,7 @@ func (p *ProxyServer) Start() error {
 }
 
 
-/**
- * Handle request / serve response
- */
+// Handle request / serve response
 func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
     // Log request
@@ -72,8 +66,8 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     // Forward request to provider
     response, err := http.Post(p.ProviderUrl, contentTypes[0], r.Body)
     if err != nil {
-        log.Println(errors.New("Error forwarding request to remote server: " + err.Error()))
-        fmt.Fprintln(w, errors.New("Error forwarding request to remote server: " + err.Error()))
+        log.Println(fmt.Errorf("Error forwarding request to remote server: %w", err))
+        fmt.Fprintln(w, fmt.Errorf("Error forwarding request to remote server: %w", err))
         return
     }
     defer response.Body.Close()
@@ -84,8 +78,8 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     // Copy provider response body to response writer
     _, err = io.Copy(w, response.Body)
     if err != nil {
-        log.Println(errors.New("Error reading response from remote server: " + err.Error()))
-        fmt.Fprintln(w, errors.New("Error reading response from remote server: " + err.Error()))
+        log.Println(fmt.Errorf("Error reading response from remote server: %w", err))
+        fmt.Fprintln(w, fmt.Errorf("Error reading response from remote server: %w", err))
         return
     }
 
