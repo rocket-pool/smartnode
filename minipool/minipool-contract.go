@@ -70,7 +70,7 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address) (*Minipool, 
 
 
 // Get status details
-func (mp *Minipool) GetStatusDetails() (*StatusDetails, error) {
+func (mp *Minipool) GetStatusDetails() (StatusDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -97,11 +97,11 @@ func (mp *Minipool) GetStatusDetails() (*StatusDetails, error) {
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return nil, err
+        return StatusDetails{}, err
     }
 
     // Return
-    return &StatusDetails{
+    return StatusDetails{
         Status: status,
         StatusBlock: statusBlock,
         StatusTime: statusTime,
@@ -142,7 +142,7 @@ func (mp *Minipool) GetDepositType() (MinipoolDeposit, error) {
 
 
 // Get node details
-func (mp *Minipool) GetNodeDetails() (*NodeDetails, error) {
+func (mp *Minipool) GetNodeDetails() (NodeDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -181,11 +181,11 @@ func (mp *Minipool) GetNodeDetails() (*NodeDetails, error) {
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return nil, err
+        return NodeDetails{}, err
     }
 
     // Return
-    return &NodeDetails{
+    return NodeDetails{
         Address: address,
         Fee: fee,
         DepositBalance: depositBalance,
@@ -232,7 +232,7 @@ func (mp *Minipool) GetNodeDepositAssigned() (bool, error) {
 
 
 // Get user deposit details
-func (mp *Minipool) GetUserDetails() (*UserDetails, error) {
+func (mp *Minipool) GetUserDetails() (UserDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -253,11 +253,11 @@ func (mp *Minipool) GetUserDetails() (*UserDetails, error) {
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return nil, err
+        return UserDetails{}, err
     }
 
     // Return
-    return &UserDetails{
+    return UserDetails{
         DepositBalance: depositBalance,
         DepositAssigned: depositAssigned,
     }, nil
@@ -280,7 +280,7 @@ func (mp *Minipool) GetUserDepositAssigned() (bool, error) {
 
 
 // Get staking details
-func (mp *Minipool) GetStakingDetails() (*StakingDetails, error) {
+func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -319,11 +319,11 @@ func (mp *Minipool) GetStakingDetails() (*StakingDetails, error) {
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return nil, err
+        return StakingDetails{}, err
     }
 
     // Return
-    return &StakingDetails{
+    return StakingDetails{
         StartBalance: startBalance,
         EndBalance: endBalance,
         StartBlock: startBlock,

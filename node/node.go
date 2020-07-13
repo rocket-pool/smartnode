@@ -24,7 +24,7 @@ type NodeDetails struct {
 
 
 // Get a node's details
-func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*NodeDetails, error) {
+func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (NodeDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -51,11 +51,11 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (*Nod
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return nil, err
+        return NodeDetails{}, err
     }
 
     // Return
-    return &NodeDetails{
+    return NodeDetails{
         Exists: exists,
         Trusted: trusted,
         TimezoneLocation: timezoneLocation,

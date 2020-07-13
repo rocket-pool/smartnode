@@ -29,17 +29,17 @@ type MinipoolDetails struct {
 
 
 // Get a node's minipool details
-func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]*MinipoolDetails, error) {
+func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]MinipoolDetails, error) {
 
     // Get minipool addresses
     minipoolAddresses, err := GetNodeMinipoolAddresses(rp, nodeAddress)
     if err != nil {
-        return []*MinipoolDetails{}, err
+        return []MinipoolDetails{}, err
     }
 
     // Data
     var wg errgroup.Group
-    details := make([]*MinipoolDetails, len(minipoolAddresses))
+    details := make([]MinipoolDetails, len(minipoolAddresses))
 
     // Load details
     for mi, minipoolAddress := range minipoolAddresses {
@@ -53,7 +53,7 @@ func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return []*MinipoolDetails{}, err
+        return []MinipoolDetails{}, err
     }
 
     // Return
@@ -97,7 +97,7 @@ func GetNodeMinipoolAddresses(rp *rocketpool.RocketPool, nodeAddress common.Addr
 
 
 // Get a minipool's details
-func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address) (*MinipoolDetails, error) {
+func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address) (MinipoolDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -142,11 +142,11 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return nil, err
+        return MinipoolDetails{}, err
     }
 
     // Return
-    return &MinipoolDetails{
+    return MinipoolDetails{
         Address: minipoolAddress,
         Exists: exists,
         Pubkey: pubkey,

@@ -24,7 +24,7 @@ type Balances struct {
 
 
 // Get token balances of an address
-func GetBalances(rp *rocketpool.RocketPool, address common.Address) (*Balances, error) {
+func GetBalances(rp *rocketpool.RocketPool, address common.Address) (Balances, error) {
 
     // Data
     var wg errgroup.Group
@@ -45,11 +45,11 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address) (*Balances, 
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return nil, err
+        return Balances{}, err
     }
 
     // Return
-    return &Balances{
+    return Balances{
         ETH: ethBalance,
         NETH: nethBalance,
     }, nil
