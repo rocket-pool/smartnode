@@ -2,6 +2,7 @@ package config
 
 import (
     "flag"
+    "fmt"
     "io/ioutil"
 
     "github.com/imdario/mergo"
@@ -104,7 +105,7 @@ func loadFile(path string) (RocketPoolConfig, error) {
     // Parse config
     var config RocketPoolConfig
     if err := yaml.Unmarshal(bytes, &config); err != nil {
-        return RocketPoolConfig{}, err
+        return RocketPoolConfig{}, fmt.Errorf("Could not parse config file at %s: %w", path, err)
     }
 
     // Return
@@ -125,25 +126,15 @@ func getCliConfig() RocketPoolConfig {
     eth2Provider :=      flag.String("eth2Provider",      "", "Eth 2.0 provider address")
     flag.Parse()
 
-    // Return
-    return RocketPoolConfig{
-        Rocketpool: {
-            StorageAddress: *storageAddress,
-        },
-        Smartnode: {
-            PasswordPath: *password,
-            NodeKeychainPath: *nodeKeychain,
-            ValidatorKeychainPath: *validatorKeychain,
-        },
-        Chains: {
-            Eth1: {
-                Provider: *eth1Provider,
-            },
-            Eth2: {
-                Provider: *eth2Provider,
-            },
-        },
-    }
+    // Create and return
+    var config RocketPoolConfig
+    config.Rocketpool.StorageAddress = *storageAddress
+    config.Smartnode.PasswordPath = *password
+    config.Smartnode.NodeKeychainPath = *nodeKeychain
+    config.Smartnode.ValidatorKeychainPath = *validatorKeychain
+    config.Chains.Eth1.Provider = *eth1Provider
+    config.Chains.Eth2.Provider = *eth2Provider
+    return config
 
 }
 

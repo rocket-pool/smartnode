@@ -42,7 +42,7 @@ func (pm *PasswordManager) GetPassword() (string, error) {
     }
 
     // Return
-    return password, nil
+    return string(password), nil
 
 }
 

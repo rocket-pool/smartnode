@@ -58,7 +58,7 @@ func (am *AccountManager) CreateNodeAccount() (accounts.Account, error) {
     }
 
     // Get keystore password
-    password, err := am.pm.Password()
+    password, err := am.pm.GetPassword()
     if err != nil {
         return accounts.Account{}, fmt.Errorf("Error retrieving node keystore password: %w", err)
     }
@@ -91,7 +91,7 @@ func (am *AccountManager) GetNodeAccountTransactor() (*bind.TransactOpts, error)
     }
 
     // Get keystore password
-    password, err := am.pm.Password()
+    password, err := am.pm.GetPassword()
     if err != nil {
         return nil, fmt.Errorf("Error retrieving node keystore password: %w", err)
     }
