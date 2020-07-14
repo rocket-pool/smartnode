@@ -29,12 +29,11 @@ func getStatus(c *cli.Context) error {
     }
 
     // Print response
-    api.PrintResponse(&types.AccountStatusResponse{
+    return api.PrintResponse(&types.AccountStatusResponse{
         PasswordExists: passwordExists,
         AccountExists: accountExists,
         AccountAddress: accountAddress,
     })
-    return nil
 
 }
 

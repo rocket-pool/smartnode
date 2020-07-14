@@ -40,18 +40,16 @@ func exportAccount(c *cli.Context) error {
     }
 
     // Print response
-    api.PrintResponse(&types.ExportAccountResponse{
+    return api.PrintResponse(&types.ExportAccountResponse{
         Password: password,
         KeystorePath: nodeAccount.URL.Path,
         KeystoreFile: string(keystoreFile),
     })
-    return nil
 
 }
 
 
 func exportAccountError(err error) error {
-    api.PrintResponse(&types.ExportAccountResponse{Error: err.Error()})
-    return nil
+    return api.PrintResponse(&types.ExportAccountResponse{Error: err.Error()})
 }
 

@@ -36,7 +36,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Aliases:   []string{"a"},
                 Usage:     "Initialize the node account",
                 UsageText: "rocketpool api account init-account",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+                    return initAccount(c)
+                },
             },
 
             cli.Command{
