@@ -30,7 +30,7 @@ var (
 func getConfig(c *cli.Context) (config.RocketPoolConfig, error) {
     var err error
     initCfg.Do(func() {
-        _, cfg, err = config.Load(c.GlobalString("config"), c.GlobalString("settings"))
+        _, cfg, err = config.Load(c)
     })
     return cfg, err
 }

@@ -1,11 +1,11 @@
 package config
 
 import (
-    "flag"
     "fmt"
     "io/ioutil"
 
     "github.com/imdario/mergo"
+    "github.com/urfave/cli"
     "gopkg.in/yaml.v2"
 )
 
@@ -70,18 +70,18 @@ func (chain *chain) GetSelectedClient() *clientOption {
 
 // Load Rocket Pool config from files
 // Returns global config and merged config
-func Load(globalPath string, userPath string) (RocketPoolConfig, RocketPoolConfig, error) {
+func Load(c *cli.Context) (RocketPoolConfig, RocketPoolConfig, error) {
 
     // Load configs
-    globalConfig, err := loadFile(globalPath)
+    globalConfig, err := loadFile(c.GlobalString("config"))
     if err != nil {
         return RocketPoolConfig{}, RocketPoolConfig{}, err
     }
-    userConfig, err := loadFile(userPath)
+    userConfig, err := loadFile(c.GlobalString("settings"))
     if err != nil {
         return RocketPoolConfig{}, RocketPoolConfig{}, err
     }
-    cliConfig := getCliConfig()
+    cliConfig := getCliConfig(c)
 
     // Merge
     mergedConfig := mergeConfigs(&globalConfig, &userConfig, &cliConfig)
@@ -115,27 +115,15 @@ func loadFile(path string) (RocketPoolConfig, error) {
 
 
 // Create Rocket Pool config from CLI arguments
-func getCliConfig() RocketPoolConfig {
-
-    // Define & parse flags
-    storageAddress :=    flag.String("storageAddress",    "", "Rocket Pool storage contract address")
-    password :=          flag.String("password",          "", "Keystore password path")
-    nodeKeychain :=      flag.String("nodeKeychain",      "", "Eth 1.0 account keychain path")
-    validatorKeychain := flag.String("validatorKeychain", "", "Eth 2.0 account keychain path")
-    eth1Provider :=      flag.String("eth1Provider",      "", "Eth 1.0 provider address")
-    eth2Provider :=      flag.String("eth2Provider",      "", "Eth 2.0 provider address")
-    flag.Parse()
-
-    // Create and return
+func getCliConfig(c *cli.Context) RocketPoolConfig {
     var config RocketPoolConfig
-    config.Rocketpool.StorageAddress = *storageAddress
-    config.Smartnode.PasswordPath = *password
-    config.Smartnode.NodeKeychainPath = *nodeKeychain
-    config.Smartnode.ValidatorKeychainPath = *validatorKeychain
-    config.Chains.Eth1.Provider = *eth1Provider
-    config.Chains.Eth2.Provider = *eth2Provider
+    config.Rocketpool.StorageAddress = c.GlobalString("storageAddress")
+    config.Smartnode.PasswordPath = c.GlobalString("password")
+    config.Smartnode.NodeKeychainPath = c.GlobalString("nodeKeychain")
+    config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
+    config.Chains.Eth1.Provider = c.GlobalString("eth1Provider")
+    config.Chains.Eth2.Provider = c.GlobalString("eth2Provider")
     return config
-
 }
 
 
