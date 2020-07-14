@@ -7,6 +7,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool/api"
+    apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -39,9 +40,20 @@ func main() {
     // Register commands
     api.RegisterCommands(app, "api", []string{"a"})
 
+    // Get command being run
+    var commandName string
+    app.Before = func(c *cli.Context) error {
+        commandName = c.Args().First()
+        return nil
+    }
+
     // Run application
     if err := app.Run(os.Args); err != nil {
-        log.Fatal(err)
+        if commandName == "api" {
+            apiutils.PrintErrorResponse(err)
+        } else {
+            log.Fatal(err)
+        }
     }
 
 }
