@@ -27,7 +27,9 @@ func initAccount(c *cli.Context) error {
     // Create node account
     nodeAccount, err := am.CreateNodeAccount()
     if err != nil {
-        return initAccountError(err)
+        return api.PrintResponse(&types.InitAccountResponse{
+            Error: err.Error(),
+        })
     }
 
     // Print response
@@ -35,10 +37,5 @@ func initAccount(c *cli.Context) error {
         AccountAddress: nodeAccount.Address.Hex(),
     })
 
-}
-
-
-func initAccountError(err error) error {
-    return api.PrintResponse(&types.InitAccountResponse{Error: err.Error()})
 }
 

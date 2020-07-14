@@ -1,7 +1,6 @@
 package account
 
 import (
-    "errors"
     "fmt"
     "io/ioutil"
 
@@ -24,19 +23,25 @@ func exportAccount(c *cli.Context) error {
     // Get password
     password, err := pm.GetPassword()
     if err != nil {
-        return exportAccountError(errors.New("The node password is not set"))
+        return api.PrintResponse(&types.ExportAccountResponse{
+            Error: "The node password is not set",
+        })
     }
 
     // Get node account
     nodeAccount, err := am.GetNodeAccount()
     if err != nil {
-        return exportAccountError(errors.New("The node account does not exist"))
+        return api.PrintResponse(&types.ExportAccountResponse{
+            Error: "The node account does not exist",
+        })
     }
 
     // Read node account keystore file
     keystoreFile, err := ioutil.ReadFile(nodeAccount.URL.Path)
     if err != nil {
-        return exportAccountError(fmt.Errorf("Could not read the node account keystore file: %w", err))
+        return api.PrintResponse(&types.ExportAccountResponse{
+            Error: fmt.Sprintf("Could not read the node account keystore file: %v", err),
+        })
     }
 
     // Print response
@@ -46,10 +51,5 @@ func exportAccount(c *cli.Context) error {
         KeystoreFile: string(keystoreFile),
     })
 
-}
-
-
-func exportAccountError(err error) error {
-    return api.PrintResponse(&types.ExportAccountResponse{Error: err.Error()})
 }
 
