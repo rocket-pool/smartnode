@@ -23,11 +23,11 @@ var (
 
 
 //
-// Service instance initializers
+// Service instance getters
 //
 
 
-func initializeConfig(c *cli.Context) (config.RocketPoolConfig, error) {
+func getConfig(c *cli.Context) (config.RocketPoolConfig, error) {
     var err error
     initCfg.Do(func() {
         _, cfg, err = config.Load(c.GlobalString("config"), c.GlobalString("settings"))
@@ -36,7 +36,7 @@ func initializeConfig(c *cli.Context) (config.RocketPoolConfig, error) {
 }
 
 
-func initializePasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager {
+func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager {
     initPasswordManager.Do(func() {
         passwordManager = passwords.NewPasswordManager(cfg.Smartnode.PasswordPath)
     })
@@ -44,7 +44,7 @@ func initializePasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordM
 }
 
 
-func initializeAccountManager(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) *accounts.AccountManager {
+func getAccountManager(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) *accounts.AccountManager {
     initAccountManager.Do(func() {
         accountManager = accounts.NewAccountManager(cfg.Smartnode.NodeKeychainPath, pm)
     })
@@ -53,30 +53,30 @@ func initializeAccountManager(cfg config.RocketPoolConfig, pm *passwords.Passwor
 
 
 //
-// Service getters
+// Service providers
 //
 
 
 func GetConfig(c *cli.Context) (config.RocketPoolConfig, error) {
-    return initializeConfig(c)
+    return getConfig(c)
 }
 
 
 func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
-    cfg, err := initializeConfig(c)
+    cfg, err := getConfig(c)
     if err != nil {
         return nil, err
     }
-    return initializePasswordManager(cfg), nil
+    return getPasswordManager(cfg), nil
 }
 
 
 func GetAccountManager(c *cli.Context) (*accounts.AccountManager, error) {
-    cfg, err := initializeConfig(c)
+    cfg, err := getConfig(c)
     if err != nil {
         return nil, err
     }
-    pm := initializePasswordManager(cfg)
-    return initializeAccountManager(cfg, pm), nil
+    pm := getPasswordManager(cfg)
+    return getAccountManager(cfg, pm), nil
 }
 
