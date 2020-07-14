@@ -71,7 +71,7 @@ func (chain *chain) GetSelectedClient() *clientOption {
 // Returns global config and merged config
 func Load(globalPath string, userPath string) (RocketPoolConfig, RocketPoolConfig, error) {
 
-    // Load config files
+    // Load configs
     globalConfig, err := loadFile(globalPath)
     if err != nil {
         return RocketPoolConfig{}, RocketPoolConfig{}, err
@@ -80,9 +80,7 @@ func Load(globalPath string, userPath string) (RocketPoolConfig, RocketPoolConfi
     if err != nil {
         return RocketPoolConfig{}, RocketPoolConfig{}, err
     }
-
-    // Load CLI config
-    cliConfig := loadCliConfig()
+    cliConfig := getCliConfig()
 
     // Merge
     mergedConfig := mergeConfigs(&globalConfig, &userConfig, &cliConfig)
@@ -116,7 +114,7 @@ func loadFile(path string) (RocketPoolConfig, error) {
 
 
 // Create Rocket Pool config from CLI arguments
-func loadCliConfig() RocketPoolConfig {
+func getCliConfig() RocketPoolConfig {
 
     // Define & parse flags
     storageAddress :=    flag.String("storageAddress",    "", "Rocket Pool storage contract address")
