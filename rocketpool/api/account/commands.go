@@ -44,7 +44,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Aliases:   []string{"e"},
                 Usage:     "Export the node account in JSON format",
                 UsageText: "rocketpool api account export",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+                    return exportAccount(c)
+                },
             },
 
         },

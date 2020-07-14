@@ -9,3 +9,12 @@ type AccountStatusResponse struct {
     AccountAddress string   `json:"accountAddress"`
 }
 
+
+type ExportAccountResponse struct {
+    Status string           `json:"status"`
+    Error string            `json:"error"`
+    Password string         `json:"password"`
+    KeystorePath string     `json:"keystorePath"`
+    KeystoreFile string     `json:"keystoreFile"`
+}
+
