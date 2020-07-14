@@ -18,7 +18,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Aliases:   []string{"s"},
                 Usage:     "Get the node password and account status",
                 UsageText: "rocketpool api account status",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+                    return getStatus(c)
+                },
             },
 
             cli.Command{
