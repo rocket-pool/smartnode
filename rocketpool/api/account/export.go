@@ -1,6 +1,8 @@
 package account
 
 import (
+    "errors"
+    "fmt"
     "io/ioutil"
 
     "github.com/urfave/cli"
@@ -22,19 +24,19 @@ func exportAccount(c *cli.Context) error {
     // Get password
     password, err := pm.GetPassword()
     if err != nil {
-        return exportAccountError("The node password is not set")
+        return exportAccountError(errors.New("The node password is not set"))
     }
 
     // Get node account
     nodeAccount, err := am.GetNodeAccount()
     if err != nil {
-        return exportAccountError("The node account does not exist")
+        return exportAccountError(errors.New("The node account does not exist"))
     }
 
     // Read node account keystore file
     keystoreFile, err := ioutil.ReadFile(nodeAccount.URL.Path)
     if err != nil {
-        return exportAccountError("Could not read the node account keystore file")
+        return exportAccountError(fmt.Errorf("Could not read the node account keystore file: %w", err))
     }
 
     // Print response
@@ -48,8 +50,8 @@ func exportAccount(c *cli.Context) error {
 }
 
 
-func exportAccountError(message string) error {
-    api.PrintResponse(&types.ExportAccountResponse{Error: message})
+func exportAccountError(err error) error {
+    api.PrintResponse(&types.ExportAccountResponse{Error: err.Error()})
     return nil
 }
 
