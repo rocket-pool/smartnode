@@ -40,8 +40,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.CheckAPIArgCount(c, 1); err != nil { return err }
-
-                    // Get args
                     password := c.Args().Get(0)
 
                     // Run
