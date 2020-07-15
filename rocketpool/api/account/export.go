@@ -24,13 +24,13 @@ func exportAccount(c *cli.Context) error {
     response := &types.ExportAccountResponse{}
 
     // Get password
-    if password, err := pm.GetPassword(); err != nil {
+    password, err := pm.GetPassword()
+    if err != nil {
         return api.PrintResponse(&types.ExportAccountResponse{
             Error: "The node password is not set",
         })
-    } else {
-        response.Password = password
     }
+    response.Password = password
 
     // Get node account
     nodeAccount, err := am.GetNodeAccount()
@@ -38,18 +38,17 @@ func exportAccount(c *cli.Context) error {
         return api.PrintResponse(&types.ExportAccountResponse{
             Error: "The node account does not exist",
         })
-    } else {
-        response.KeystorePath = nodeAccount.URL.Path
     }
+    response.KeystorePath = nodeAccount.URL.Path
 
     // Read node account keystore file
-    if keystoreFile, err := ioutil.ReadFile(nodeAccount.URL.Path); err != nil {
+    keystoreFile, err := ioutil.ReadFile(nodeAccount.URL.Path)
+    if err != nil {
         return api.PrintResponse(&types.ExportAccountResponse{
             Error: fmt.Sprintf("Could not read the node account keystore file: %s", err),
         })
-    } else {
-        response.KeystoreFile = string(keystoreFile)
     }
+    response.KeystoreFile = string(keystoreFile)
 
     // Print response
     return api.PrintResponse(response)

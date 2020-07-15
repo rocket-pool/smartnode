@@ -63,9 +63,10 @@ func (pm *PasswordManager) SetPassword(password string) error {
     // Write to file
     if err := ioutil.WriteFile(pm.passwordPath, []byte(password), 0600); err != nil {
         return errors.New("Could not write password to disk")
-    } else {
-        return nil
     }
+
+    // Return
+    return nil
 
 }
 

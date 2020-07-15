@@ -22,7 +22,8 @@ func PrintResponse(response interface{}) error {
     }
 
     // Encode, print and return
-    if responseBytes, err := json.Marshal(response); err != nil {
+    responseBytes, err := json.Marshal(response)
+    if err != nil {
         PrintErrorResponse(fmt.Errorf("Could not encode API response: %w", err))
     } else {
         fmt.Println(string(responseBytes))

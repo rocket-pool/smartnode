@@ -68,7 +68,9 @@ func getStatus(c *cli.Context) error {
 
         // Get minipool addresses
         addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAccount.Address)
-        if err != nil { return err }
+        if err != nil {
+            return err
+        }
 
         // Update total count
         response.MinipoolCounts.Total = len(addresses)
@@ -81,26 +83,30 @@ func getStatus(c *cli.Context) error {
 
                 // Create minipool
                 mp, err := minipool.NewMinipool(rp, addresses[mi])
-                if err != nil { return err }
+                if err != nil {
+                    return err
+                }
 
                 // Update status counts
-                if status, err := mp.GetStatus(); err != nil {
+                status, err := mp.GetStatus()
+                if err != nil {
                     return err
-                } else {
-                    switch status {
-                        case minipool.Initialized:  response.MinipoolCounts.Initialized++
-                        case minipool.Prelaunch:    response.MinipoolCounts.Prelaunch++
-                        case minipool.Staking:      response.MinipoolCounts.Staking++
-                        case minipool.Exited:       response.MinipoolCounts.Exited++
-                        case minipool.Withdrawable: response.MinipoolCounts.Withdrawable++
-                        case minipool.Dissolved:    response.MinipoolCounts.Dissolved++
-                    }
+                }
+                switch status {
+                    case minipool.Initialized:  response.MinipoolCounts.Initialized++
+                    case minipool.Prelaunch:    response.MinipoolCounts.Prelaunch++
+                    case minipool.Staking:      response.MinipoolCounts.Staking++
+                    case minipool.Exited:       response.MinipoolCounts.Exited++
+                    case minipool.Withdrawable: response.MinipoolCounts.Withdrawable++
+                    case minipool.Dissolved:    response.MinipoolCounts.Dissolved++
                 }
 
                 // Update refundable count
-                if refundBalance, err := mp.GetNodeRefundBalance(); err != nil {
+                refundBalance, err := mp.GetNodeRefundBalance()
+                if err != nil {
                     return err
-                } else if refundBalance.Cmp(big.NewInt(0)) > 0 {
+                }
+                if refundBalance.Cmp(big.NewInt(0)) > 0 {
                     response.MinipoolCounts.Refundable++
                 }
 
@@ -109,7 +115,9 @@ func getStatus(c *cli.Context) error {
 
             })
         }
-        if err := wg.Wait(); err != nil { return err }
+        if err := wg.Wait(); err != nil {
+            return err
+        }
 
         // Return
         return nil

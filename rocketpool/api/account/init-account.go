@@ -28,13 +28,13 @@ func initAccount(c *cli.Context) error {
     }
 
     // Create node account
-    if nodeAccount, err := am.CreateNodeAccount(); err != nil {
+    nodeAccount, err := am.CreateNodeAccount()
+    if err != nil {
         return api.PrintResponse(&types.InitAccountResponse{
             Error: err.Error(),
         })
-    } else {
-        response.AccountAddress = nodeAccount.Address.Hex()
     }
+    response.AccountAddress = nodeAccount.Address.Hex()
 
     // Print response
     return api.PrintResponse(response)
