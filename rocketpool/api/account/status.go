@@ -17,23 +17,21 @@ func getStatus(c *cli.Context) error {
     am, err := services.GetAccountManager(c)
     if err != nil { return err }
 
+    // Response
+    response := &types.AccountStatusResponse{}
+
     // Get account status
-    passwordExists := pm.PasswordExists()
-    accountExists := am.NodeAccountExists()
+    response.PasswordExists = pm.PasswordExists()
+    response.AccountExists = am.NodeAccountExists()
 
     // Get account address
-    var accountAddress string
-    if accountExists {
+    if response.AccountExists {
         nodeAccount, _ := am.GetNodeAccount()
-        accountAddress = nodeAccount.Address.Hex()
+        response.AccountAddress = nodeAccount.Address.Hex()
     }
 
     // Print response
-    return api.PrintResponse(&types.AccountStatusResponse{
-        PasswordExists: passwordExists,
-        AccountExists: accountExists,
-        AccountAddress: accountAddress,
-    })
+    return api.PrintResponse(response)
 
 }
 

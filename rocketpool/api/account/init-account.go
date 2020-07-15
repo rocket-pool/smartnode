@@ -15,6 +15,9 @@ func initAccount(c *cli.Context) error {
     am, err := services.GetAccountManager(c)
     if err != nil { return err }
 
+    // Response
+    response := &types.InitAccountResponse{}
+
     // Check if node account already exists
     if am.NodeAccountExists() {
         nodeAccount, _ := am.GetNodeAccount()
@@ -25,17 +28,16 @@ func initAccount(c *cli.Context) error {
     }
 
     // Create node account
-    nodeAccount, err := am.CreateNodeAccount()
-    if err != nil {
+    if nodeAccount, err := am.CreateNodeAccount(); err != nil {
         return api.PrintResponse(&types.InitAccountResponse{
             Error: err.Error(),
         })
+    } else {
+        response.AccountAddress = nodeAccount.Address.Hex()
     }
 
     // Print response
-    return api.PrintResponse(&types.InitAccountResponse{
-        AccountAddress: nodeAccount.Address.Hex(),
-    })
+    return api.PrintResponse(response)
 
 }
 

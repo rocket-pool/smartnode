@@ -29,7 +29,7 @@ func getStatus(c *cli.Context) error {
     // Get account status
     response.PasswordExists = pm.PasswordExists()
     response.AccountExists = am.NodeAccountExists()
-    if !response.PasswordExists || !response.AccountExists {
+    if !(response.PasswordExists && response.AccountExists) {
         return api.PrintResponse(response)
     }
 
@@ -71,7 +71,11 @@ func getStatus(c *cli.Context) error {
     })
 
     // Wait for data
-    if err := wg.Wait(); err != nil { return err }
+    if err := wg.Wait(); err != nil {
+        return api.PrintResponse(&types.NodeStatusResponse{
+            Error: err.Error(),
+        })
+    }
 
     // Print response
     return api.PrintResponse(response)
