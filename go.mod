@@ -7,5 +7,6 @@ require (
 	github.com/imdario/mergo v0.3.9
 	github.com/rocket-pool/rocketpool-go v0.0.0-20200715005008-4e3ab8950b66
 	github.com/urfave/cli v1.22.4
+	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f
 	gopkg.in/yaml.v2 v2.2.2
 )
