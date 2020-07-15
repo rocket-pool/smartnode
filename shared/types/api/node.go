@@ -12,7 +12,16 @@ type NodeStatusResponse struct {
     TimezoneLocation string `json:"timezoneLocation"`
     EthBalance string       `json:"ethBalance"`
     NethBalance string      `json:"nethBalance"`
-    MinipoolCount int       `json:"minipoolCount"`
+    MinipoolCounts struct {
+        Total int               `json:"total"`
+        Initialized int         `json:"initialized"`
+        Prelaunch int           `json:"prelaunch"`
+        Staking int             `json:"staking"`
+        Exited int              `json:"exited"`
+        Withdrawable int        `json:"withdrawable"`
+        Dissolved int           `json:"dissolved"`
+        Refundable int          `json:"refundable"`
+    }                       `json:"minipoolCounts"`
 }
 
 
