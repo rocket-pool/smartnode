@@ -111,21 +111,21 @@ func (mp *Minipool) GetStatusDetails() (StatusDetails, error) {
 func (mp *Minipool) GetStatus() (MinipoolStatus, error) {
     status := new(uint8)
     if err := mp.Contract.Call(nil, status, "getStatus"); err != nil {
-        return MinipoolStatus(0), fmt.Errorf("Could not get minipool %v status: %w", mp.Address.Hex(), err)
+        return MinipoolStatus(0), fmt.Errorf("Could not get minipool %s status: %w", mp.Address.Hex(), err)
     }
     return MinipoolStatus(*status), nil
 }
 func (mp *Minipool) GetStatusBlock() (int64, error) {
     statusBlock := new(*big.Int)
     if err := mp.Contract.Call(nil, statusBlock, "getStatusBlock"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %v status changed block: %w", mp.Address.Hex(), err)
+        return 0, fmt.Errorf("Could not get minipool %s status changed block: %w", mp.Address.Hex(), err)
     }
     return (*statusBlock).Int64(), nil
 }
 func (mp *Minipool) GetStatusTime() (time.Time, error) {
     statusTime := new(*big.Int)
     if err := mp.Contract.Call(nil, statusTime, "getStatusTime"); err != nil {
-        return time.Unix(0, 0), fmt.Errorf("Could not get minipool %v status changed time: %w", mp.Address.Hex(), err)
+        return time.Unix(0, 0), fmt.Errorf("Could not get minipool %s status changed time: %w", mp.Address.Hex(), err)
     }
     return time.Unix((*statusTime).Int64(), 0), nil
 }
@@ -135,7 +135,7 @@ func (mp *Minipool) GetStatusTime() (time.Time, error) {
 func (mp *Minipool) GetDepositType() (MinipoolDeposit, error) {
     depositType := new(uint8)
     if err := mp.Contract.Call(nil, depositType, "getDepositType"); err != nil {
-        return MinipoolDeposit(0), fmt.Errorf("Could not get minipool %v deposit type: %w", mp.Address.Hex(), err)
+        return MinipoolDeposit(0), fmt.Errorf("Could not get minipool %s deposit type: %w", mp.Address.Hex(), err)
     }
     return MinipoolDeposit(*depositType), nil
 }
@@ -197,35 +197,35 @@ func (mp *Minipool) GetNodeDetails() (NodeDetails, error) {
 func (mp *Minipool) GetNodeAddress() (common.Address, error) {
     nodeAddress := new(common.Address)
     if err := mp.Contract.Call(nil, nodeAddress, "getNodeAddress"); err != nil {
-        return common.Address{}, fmt.Errorf("Could not get minipool %v node address: %w", mp.Address.Hex(), err)
+        return common.Address{}, fmt.Errorf("Could not get minipool %s node address: %w", mp.Address.Hex(), err)
     }
     return *nodeAddress, nil
 }
 func (mp *Minipool) GetNodeFee() (float64, error) {
     nodeFee := new(*big.Int)
     if err := mp.Contract.Call(nil, nodeFee, "getNodeFee"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %v node fee: %w", mp.Address.Hex(), err)
+        return 0, fmt.Errorf("Could not get minipool %s node fee: %w", mp.Address.Hex(), err)
     }
     return eth.WeiToEth(*nodeFee), nil
 }
 func (mp *Minipool) GetNodeDepositBalance() (*big.Int, error) {
     nodeDepositBalance := new(*big.Int)
     if err := mp.Contract.Call(nil, nodeDepositBalance, "getNodeDepositBalance"); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %v node deposit balance: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not get minipool %s node deposit balance: %w", mp.Address.Hex(), err)
     }
     return *nodeDepositBalance, nil
 }
 func (mp *Minipool) GetNodeRefundBalance() (*big.Int, error) {
     nodeRefundBalance := new(*big.Int)
     if err := mp.Contract.Call(nil, nodeRefundBalance, "getNodeRefundBalance"); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %v node refund balance: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not get minipool %s node refund balance: %w", mp.Address.Hex(), err)
     }
     return *nodeRefundBalance, nil
 }
 func (mp *Minipool) GetNodeDepositAssigned() (bool, error) {
     nodeDepositAssigned := new(bool)
     if err := mp.Contract.Call(nil, nodeDepositAssigned, "getNodeDepositAssigned"); err != nil {
-        return false, fmt.Errorf("Could not get minipool %v node deposit assigned status: %w", mp.Address.Hex(), err)
+        return false, fmt.Errorf("Could not get minipool %s node deposit assigned status: %w", mp.Address.Hex(), err)
     }
     return *nodeDepositAssigned, nil
 }
@@ -266,14 +266,14 @@ func (mp *Minipool) GetUserDetails() (UserDetails, error) {
 func (mp *Minipool) GetUserDepositBalance() (*big.Int, error) {
     userDepositBalance := new(*big.Int)
     if err := mp.Contract.Call(nil, userDepositBalance, "getUserDepositBalance"); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %v user deposit balance: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not get minipool %s user deposit balance: %w", mp.Address.Hex(), err)
     }
     return *userDepositBalance, nil
 }
 func (mp *Minipool) GetUserDepositAssigned() (bool, error) {
     userDepositAssigned := new(bool)
     if err := mp.Contract.Call(nil, userDepositAssigned, "getUserDepositAssigned"); err != nil {
-        return false, fmt.Errorf("Could not get minipool %v user deposit assigned status: %w", mp.Address.Hex(), err)
+        return false, fmt.Errorf("Could not get minipool %s user deposit assigned status: %w", mp.Address.Hex(), err)
     }
     return *userDepositAssigned, nil
 }
@@ -335,35 +335,35 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
 func (mp *Minipool) GetStakingStartBalance() (*big.Int, error) {
     stakingStartBalance := new(*big.Int)
     if err := mp.Contract.Call(nil, stakingStartBalance, "getStakingStartBalance"); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %v staking start balance: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not get minipool %s staking start balance: %w", mp.Address.Hex(), err)
     }
     return *stakingStartBalance, nil
 }
 func (mp *Minipool) GetStakingEndBalance() (*big.Int, error) {
     stakingEndBalance := new(*big.Int)
     if err := mp.Contract.Call(nil, stakingEndBalance, "getStakingEndBalance"); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %v staking end balance: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not get minipool %s staking end balance: %w", mp.Address.Hex(), err)
     }
     return *stakingEndBalance, nil
 }
 func (mp *Minipool) GetStakingStartBlock() (int64, error) {
     stakingStartBlock := new(*big.Int)
     if err := mp.Contract.Call(nil, stakingStartBlock, "getStakingStartBlock"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %v staking start block: %w", mp.Address.Hex(), err)
+        return 0, fmt.Errorf("Could not get minipool %s staking start block: %w", mp.Address.Hex(), err)
     }
     return (*stakingStartBlock).Int64(), nil
 }
 func (mp *Minipool) GetStakingUserStartBlock() (int64, error) {
     stakingUserStartBlock := new(*big.Int)
     if err := mp.Contract.Call(nil, stakingUserStartBlock, "getStakingUserStartBlock"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %v staking user start block: %w", mp.Address.Hex(), err)
+        return 0, fmt.Errorf("Could not get minipool %s staking user start block: %w", mp.Address.Hex(), err)
     }
     return (*stakingUserStartBlock).Int64(), nil
 }
 func (mp *Minipool) GetStakingEndBlock() (int64, error) {
     stakingEndBlock := new(*big.Int)
     if err := mp.Contract.Call(nil, stakingEndBlock, "getStakingEndBlock"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %v staking end block: %w", mp.Address.Hex(), err)
+        return 0, fmt.Errorf("Could not get minipool %s staking end block: %w", mp.Address.Hex(), err)
     }
     return (*stakingEndBlock).Int64(), nil
 }
@@ -373,7 +373,7 @@ func (mp *Minipool) GetStakingEndBlock() (int64, error) {
 func (mp *Minipool) Refund(opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "refund")
     if err != nil {
-        return nil, fmt.Errorf("Could not refund from minipool %v: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not refund from minipool %s: %w", mp.Address.Hex(), err)
     }
     return txReceipt, nil
 }
@@ -383,7 +383,7 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (*types.Receipt, error) {
 func (mp *Minipool) Stake(validatorPubkey [48]byte, validatorSignature [96]byte, depositDataRoot [32]byte, opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)
     if err != nil {
-        return nil, fmt.Errorf("Could not stake minipool %v: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
     }
     return txReceipt, nil
 }
@@ -393,7 +393,7 @@ func (mp *Minipool) Stake(validatorPubkey [48]byte, validatorSignature [96]byte,
 func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "withdraw")
     if err != nil {
-        return nil, fmt.Errorf("Could not withdraw from minipool %v: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not withdraw from minipool %s: %w", mp.Address.Hex(), err)
     }
     return txReceipt, nil
 }
@@ -403,7 +403,7 @@ func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (*types.Receipt, error) {
 func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "dissolve")
     if err != nil {
-        return nil, fmt.Errorf("Could not dissolve minipool %v: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err)
     }
     return txReceipt, nil
 }
@@ -413,7 +413,7 @@ func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (*types.Receipt, error) {
 func (mp *Minipool) Close(opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "close")
     if err != nil {
-        return nil, fmt.Errorf("Could not close minipool %v: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not close minipool %s: %w", mp.Address.Hex(), err)
     }
     return txReceipt, nil
 }

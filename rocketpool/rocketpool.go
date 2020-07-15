@@ -87,7 +87,7 @@ func (rp *RocketPool) GetAddress(contractName string) (*common.Address, error) {
     // Get address
     address, err := rp.RocketStorage.GetAddress(nil, crypto.Keccak256Hash([]byte("contract.name"), []byte(contractName)))
     if err != nil {
-        return nil, fmt.Errorf("Could not load contract %v address: %w", contractName, err)
+        return nil, fmt.Errorf("Could not load contract %s address: %w", contractName, err)
     }
 
     // Cache address
@@ -142,13 +142,13 @@ func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
     // Get ABI
     abiEncoded, err := rp.RocketStorage.GetString(nil, crypto.Keccak256Hash([]byte("contract.abi"), []byte(contractName)))
     if err != nil {
-        return nil, fmt.Errorf("Could not load contract %v ABI: %w", contractName, err)
+        return nil, fmt.Errorf("Could not load contract %s ABI: %w", contractName, err)
     }
 
     // Decode ABI
     abi, err := decodeAbi(abiEncoded)
     if err != nil {
-        return nil, fmt.Errorf("Could not decode contract %v ABI: %w", contractName, err)
+        return nil, fmt.Errorf("Could not decode contract %s ABI: %w", contractName, err)
     }
 
     // Cache ABI

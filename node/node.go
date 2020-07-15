@@ -72,7 +72,7 @@ func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool,
     }
     exists := new(bool)
     if err := rocketNodeManager.Call(nil, exists, "getNodeExists", nodeAddress); err != nil {
-        return false, fmt.Errorf("Could not get node %v exists status: %w", nodeAddress.Hex(), err)
+        return false, fmt.Errorf("Could not get node %s exists status: %w", nodeAddress.Hex(), err)
     }
     return *exists, nil
 }
@@ -86,7 +86,7 @@ func GetNodeTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool
     }
     trusted := new(bool)
     if err := rocketNodeManager.Call(nil, trusted, "getNodeTrusted", nodeAddress); err != nil {
-        return false, fmt.Errorf("Could not get node %v trusted status: %w", nodeAddress.Hex(), err)
+        return false, fmt.Errorf("Could not get node %s trusted status: %w", nodeAddress.Hex(), err)
     }
     return *trusted, nil
 }
@@ -100,7 +100,7 @@ func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Addre
     }
     timezoneLocation := new(string)
     if err := rocketNodeManager.Call(nil, timezoneLocation, "getNodeTimezoneLocation", nodeAddress); err != nil {
-        return "", fmt.Errorf("Could not get node %v timezone location: %w", nodeAddress.Hex(), err)
+        return "", fmt.Errorf("Could not get node %s timezone location: %w", nodeAddress.Hex(), err)
     }
     return *timezoneLocation, nil
 }

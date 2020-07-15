@@ -61,7 +61,7 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address) (Balances, e
 func balanceOf(tokenContract *bind.BoundContract, tokenName string, address common.Address) (*big.Int, error) {
     balance := new(*big.Int)
     if err := tokenContract.Call(nil, balance, "balanceOf", address); err != nil {
-        return nil, fmt.Errorf("Could not get %v balance of %v: %w", tokenName, address.Hex(), err)
+        return nil, fmt.Errorf("Could not get %s balance of %s: %w", tokenName, address.Hex(), err)
     }
     return *balance, nil
 }
@@ -71,7 +71,7 @@ func balanceOf(tokenContract *bind.BoundContract, tokenName string, address comm
 func transfer(client *ethclient.Client, tokenContract *bind.BoundContract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := contract.Transact(client, tokenContract, opts, "transfer", to, amount)
     if err != nil {
-        return nil, fmt.Errorf("Could not transfer %v to %v: %w", tokenName, to.Hex(), err)
+        return nil, fmt.Errorf("Could not transfer %s to %s: %w", tokenName, to.Hex(), err)
     }
     return txReceipt, nil
 }
