@@ -55,7 +55,7 @@ func ValidateTokenAmount(name, value string) (*big.Int, error) {
 // Validate a deposit amount
 func ValidateDepositAmount(name, value string) (*big.Int, error) {
     val, err := strconv.ParseFloat(value, 64)
-    if err != nil || (val != 0 && val != 16 && val != 32) {
+    if err != nil || !(val == 0 || val == 16 || val == 32) {
         return nil, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32", name, value)
     }
     return eth.EthToWei(val), nil
@@ -65,7 +65,7 @@ func ValidateDepositAmount(name, value string) (*big.Int, error) {
 // Validate a token type
 func ValidateTokenType(name, value string) (string, error) {
     val := strings.ToLower(value)
-    if val != "eth" && val != "neth" {
+    if !(val == "eth" || val == "neth") {
         return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH' and 'nETH'", name, value)
     }
     return val, nil
@@ -75,7 +75,7 @@ func ValidateTokenType(name, value string) (string, error) {
 // Validate a burnable token type
 func ValidateBurnableType(name, value string) (string, error) {
     val := strings.ToLower(value)
-    if val != "neth" {
+    if !(val == "neth") {
         return "", fmt.Errorf("Invalid %s '%s' - valid types are 'nETH'", name, value)
     }
     return val, nil
