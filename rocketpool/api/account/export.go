@@ -40,7 +40,7 @@ func exportAccount(c *cli.Context) error {
     keystoreFile, err := ioutil.ReadFile(nodeAccount.URL.Path)
     if err != nil {
         return api.PrintResponse(&types.ExportAccountResponse{
-            Error: fmt.Sprintf("Could not read the node account keystore file: %v", err),
+            Error: fmt.Sprintf("Could not read the node account keystore file: %s", err),
         })
     }
 
