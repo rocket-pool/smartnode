@@ -40,8 +40,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.CheckAPIArgCount(c, 1); err != nil { return err }
-                    timezoneLocation := c.Args().Get(0)
-                    if err := cliutils.ValidateTimezoneLocation("timezone location", timezoneLocation); err != nil { return err }
+                    timezoneLocation, err := cliutils.ValidateTimezoneLocation("timezone location", c.Args().Get(0))
+                    if err != nil { return err }
 
                     // Run
                     return registerNode(c, timezoneLocation)
@@ -58,8 +58,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.CheckAPIArgCount(c, 1); err != nil { return err }
-                    timezoneLocation := c.Args().Get(0)
-                    if err := cliutils.ValidateTimezoneLocation("timezone location", timezoneLocation); err != nil { return err }
+                    timezoneLocation, err := cliutils.ValidateTimezoneLocation("timezone location", c.Args().Get(0))
+                    if err != nil { return err }
 
                     // Run
                     return setTimezoneLocation(c, timezoneLocation)
@@ -76,11 +76,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.CheckAPIArgCount(c, 2); err != nil { return err }
-                    amount := c.Args().Get(0)
-                    minNodeFeeStr := c.Args().Get(1)
-                    amountWei, err := cliutils.ValidateTokenAmount("deposit amount", amount)
+                    amountWei, err := cliutils.ValidateDepositAmount("deposit amount", c.Args().Get(0))
                     if err != nil { return err }
-                    minNodeFee, err := cliutils.ValidateFraction("minimum node fee", minNodeFeeStr)
+                    minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
                     if err != nil { return err }
 
                     // Run
@@ -98,13 +96,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.CheckAPIArgCount(c, 3); err != nil { return err }
-                    amount := c.Args().Get(0)
-                    token := c.Args().Get(1)
-                    toAddressStr := c.Args().Get(2)
-                    amountWei, err := cliutils.ValidateTokenAmount("send amount", amount)
+                    amountWei, err := cliutils.ValidateTokenAmount("send amount", c.Args().Get(0))
                     if err != nil { return err }
-                    if err := cliutils.ValidateTokenType("token type", token); err != nil { return err }
-                    toAddress, err := cliutils.ValidateAddress("to address", toAddressStr)
+                    token, err := cliutils.ValidateTokenType("token type", c.Args().Get(1))
+                    if err != nil { return err }
+                    toAddress, err := cliutils.ValidateAddress("to address", c.Args().Get(2))
                     if err != nil { return err }
 
                     // Run
@@ -122,11 +118,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.CheckAPIArgCount(c, 2); err != nil { return err }
-                    amount := c.Args().Get(0)
-                    token := c.Args().Get(1)
-                    amountWei, err := cliutils.ValidateTokenAmount("burn amount", amount)
+                    amountWei, err := cliutils.ValidateTokenAmount("burn amount", c.Args().Get(0))
                     if err != nil { return err }
-                    if err := cliutils.ValidateBurnableType("token type", token); err != nil { return err }
+                    token, err := cliutils.ValidateBurnableType("token type", c.Args().Get(1))
+                    if err != nil { return err }
 
                     // Run
                     return nodeBurn(c, amountWei, token)
