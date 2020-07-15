@@ -3,6 +3,9 @@ package services
 import (
     "sync"
 
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
@@ -16,9 +19,14 @@ var (
     cfg config.RocketPoolConfig
     passwordManager *passwords.PasswordManager
     accountManager *accounts.AccountManager
+    ethClient *ethclient.Client
+    rocketPool *rocketpool.RocketPool
+
     initCfg sync.Once
     initPasswordManager sync.Once
     initAccountManager sync.Once
+    initEthClient sync.Once
+    initRocketPool sync.Once
 )
 
 
@@ -52,6 +60,24 @@ func getAccountManager(cfg config.RocketPoolConfig, pm *passwords.PasswordManage
 }
 
 
+func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
+    var err error
+    initEthClient.Do(func() {
+        ethClient, err = ethclient.Dial(cfg.Chains.Eth1.Provider)
+    })
+    return ethClient, err
+}
+
+
+func getRocketPool(cfg config.RocketPoolConfig, client *ethclient.Client) (*rocketpool.RocketPool, error) {
+    var err error
+    initRocketPool.Do(func() {
+        rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Rocketpool.StorageAddress))
+    })
+    return rocketPool, err
+}
+
+
 //
 // Service providers
 //
@@ -78,5 +104,27 @@ func GetAccountManager(c *cli.Context) (*accounts.AccountManager, error) {
     }
     pm := getPasswordManager(cfg)
     return getAccountManager(cfg, pm), nil
+}
+
+
+func GetEthClient(c *cli.Context) (*ethclient.Client, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    return getEthClient(cfg)
+}
+
+
+func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    client, err := getEthClient(cfg)
+    if err != nil {
+        return nil, err
+    }
+    return getRocketPool(cfg, client)
 }
 
