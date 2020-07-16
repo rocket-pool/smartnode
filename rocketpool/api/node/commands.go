@@ -82,6 +82,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "can-deposit",
+                Usage:     "Check whether the node can make a deposit",
+                UsageText: "rocketpool api node can-deposit amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    return canNodeDeposit(c, amountWei)
+
+                },
+            },
+            cli.Command{
                 Name:      "deposit",
                 Aliases:   []string{"d"},
                 Usage:     "Make a deposit and create a minipool",

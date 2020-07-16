@@ -44,9 +44,20 @@ type SetNodeTimezoneResponse struct {
 }
 
 
+type CanNodeDepositResponse struct {
+    Status string               `json:"status"`
+    Error string                `json:"error"`
+    CanDeposit bool             `json:"canDeposit"`
+    InsufficientBalance bool    `json:"insufficientBalance"`
+    InvalidAmount bool          `json:"invalidAmount"`
+    DepositDisabled bool        `json:"depositDisabled"`
+}
+
+
 type NodeDepositResponse struct {
     Status string               `json:"status"`
     Error string                `json:"error"`
+    MinipoolAddress string      `json:"minipoolAddress"`
 }
 
 
