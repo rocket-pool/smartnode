@@ -11,7 +11,7 @@ import (
 )
 
 
-func nodeBurn(c *cli.Context, amount *big.Int, token string) error {
+func nodeBurn(c *cli.Context, amountWei *big.Int, token string) error {
     return nil
 }
 

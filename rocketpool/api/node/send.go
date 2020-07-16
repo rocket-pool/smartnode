@@ -12,7 +12,7 @@ import (
 )
 
 
-func nodeSend(c *cli.Context, amount *big.Int, token string, to common.Address) error {
+func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) error {
     return nil
 }
 
