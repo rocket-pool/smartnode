@@ -11,6 +11,16 @@ import (
 )
 
 
+func runCanNodeBurn(c *cli.Context, amountWei *big.Int, token string) {
+    response, err := canNodeBurn(c, amountWei, token)
+    if err != nil {
+        api.PrintResponse(&types.CanNodeBurnResponse{Error: err.Error()})
+    } else {
+        api.PrintResponse(response)
+    }
+}
+
+
 func runNodeBurn(c *cli.Context, amountWei *big.Int, token string) {
     response, err := nodeBurn(c, amountWei, token)
     if err != nil {
@@ -18,6 +28,11 @@ func runNodeBurn(c *cli.Context, amountWei *big.Int, token string) {
     } else {
         api.PrintResponse(response)
     }
+}
+
+
+func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*types.CanNodeBurnResponse, error) {
+    return nil, nil
 }
 
 

@@ -124,6 +124,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "can-send",
+                Usage:     "Check whether the node can send ETH or tokens to an address",
+                UsageText: "rocketpool api node can-send amount token",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    amountWei, err := cliutils.ValidateWeiAmount("send amount", c.Args().Get(0))
+                    if err != nil { return err }
+                    token, err := cliutils.ValidateTokenType("token type", c.Args().Get(1))
+                    if err != nil { return err }
+
+                    // Run
+                    runCanNodeSend(c, amountWei, token)
+                    return nil
+
+                },
+            },
+            cli.Command{
                 Name:      "send",
                 Aliases:   []string{"n"},
                 Usage:     "Send ETH or tokens from the node account to an address",
@@ -146,6 +165,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "can-burn",
+                Usage:     "Check whether the node can burn tokens for ETH",
+                UsageText: "rocketpool api node can-burn amount token",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    amountWei, err := cliutils.ValidateWeiAmount("burn amount", c.Args().Get(0))
+                    if err != nil { return err }
+                    token, err := cliutils.ValidateBurnableTokenType("token type", c.Args().Get(1))
+                    if err != nil { return err }
+
+                    // Run
+                    runCanNodeBurn(c, amountWei, token)
+                    return nil
+
+                },
+            },
             cli.Command{
                 Name:      "burn",
                 Aliases:   []string{"b"},

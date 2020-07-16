@@ -12,6 +12,16 @@ import (
 )
 
 
+func runCanNodeSend(c *cli.Context, amountWei *big.Int, token string) {
+    response, err := canNodeSend(c, amountWei, token)
+    if err != nil {
+        api.PrintResponse(&types.CanNodeSendResponse{Error: err.Error()})
+    } else {
+        api.PrintResponse(response)
+    }
+}
+
+
 func runNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) {
     response, err := nodeSend(c, amountWei, token, to)
     if err != nil {
@@ -19,6 +29,11 @@ func runNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
     } else {
         api.PrintResponse(response)
     }
+}
+
+
+func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*types.CanNodeSendResponse, error) {
+    return nil, nil
 }
 
 
