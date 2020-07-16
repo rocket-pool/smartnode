@@ -1,8 +1,6 @@
 package node
 
 import (
-    "math/big"
-
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/tokens"
@@ -65,34 +63,11 @@ func getStatus(c *cli.Context) error {
 
     // Get node minipool counts
     wg.Go(func() error {
-
-        // Get minipool addresses
-        addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAccount.Address)
-        if err != nil {
-            return err
-        }
-
-        // Update total count
-        response.MinipoolCounts.Total = len(addresses)
-
-        // Get minipool details
-        var wg errgroup.Group
-        for mi := 0; mi < len(addresses); mi++ {
-            mi := mi
-            wg.Go(func() error {
-
-                // Create minipool
-                mp, err := minipool.NewMinipool(rp, addresses[mi])
-                if err != nil {
-                    return err
-                }
-
-                // Update status counts
-                status, err := mp.GetStatus()
-                if err != nil {
-                    return err
-                }
-                switch status {
+        details, err := getNodeMinipoolCountDetails(rp, nodeAccount.Address)
+        if err == nil {
+            response.MinipoolCounts.Total = len(details)
+            for _, mpDetails := range details {
+                switch mpDetails.Status {
                     case minipool.Initialized:  response.MinipoolCounts.Initialized++
                     case minipool.Prelaunch:    response.MinipoolCounts.Prelaunch++
                     case minipool.Staking:      response.MinipoolCounts.Staking++
@@ -100,28 +75,12 @@ func getStatus(c *cli.Context) error {
                     case minipool.Withdrawable: response.MinipoolCounts.Withdrawable++
                     case minipool.Dissolved:    response.MinipoolCounts.Dissolved++
                 }
-
-                // Update refundable count
-                refundBalance, err := mp.GetNodeRefundBalance()
-                if err != nil {
-                    return err
-                }
-                if refundBalance.Cmp(big.NewInt(0)) > 0 {
+                if mpDetails.Refundable {
                     response.MinipoolCounts.Refundable++
                 }
-
-                // Return
-                return nil
-
-            })
+            }
         }
-        if err := wg.Wait(); err != nil {
-            return err
-        }
-
-        // Return
-        return nil
-
+        return err
     })
 
     // Wait for data
