@@ -1,10 +1,12 @@
 package services
 
 import (
+    "errors"
     "sync"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/urfave/cli"
 
@@ -126,5 +128,46 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
         return nil, err
     }
     return getRocketPool(cfg, client)
+}
+
+
+//
+// Service requirements
+//
+
+
+func RequireNodeAccount(c *cli.Context) error {
+    am, err := GetAccountManager(c)
+    if err != nil {
+        return err
+    }
+    if !am.NodeAccountExists() {
+        return errors.New("The node account has not been created. Please initialize the node and try again.")
+    }
+    return nil
+}
+
+
+func RequireNodeRegistered(c *cli.Context) error {
+    if err := RequireNodeAccount(c); err != nil {
+        return err
+    }
+    rp, err := GetRocketPool(c)
+    if err != nil {
+        return err
+    }
+    am, err := GetAccountManager(c)
+    if err != nil {
+        return err
+    }
+    nodeAccount, _ := am.GetNodeAccount()
+    exists, err := node.GetNodeExists(rp, nodeAccount.Address)
+    if err != nil {
+        return err
+    }
+    if !exists {
+        return errors.New("The node is not registered with Rocket Pool. Please register and try again.")
+    }
+    return nil
 }
 

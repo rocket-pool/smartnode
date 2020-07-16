@@ -16,22 +16,16 @@ import (
 func getStatus(c *cli.Context) error {
 
     // Get services
-    pm, err := services.GetPasswordManager(c)
-    if err != nil { return err }
     am, err := services.GetAccountManager(c)
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
 
+    // Check service requirements
+    if err := services.RequireNodeAccount(c); err != nil { return err }
+
     // Response
     response := &types.NodeStatusResponse{}
-
-    // Get account status
-    response.PasswordExists = pm.PasswordExists()
-    response.AccountExists = am.NodeAccountExists()
-    if !(response.PasswordExists && response.AccountExists) {
-        return api.PrintResponse(response)
-    }
 
     // Get node account
     nodeAccount, _ := am.GetNodeAccount()
