@@ -77,7 +77,6 @@ type CanNodeBurnResponse struct {
     Status string               `json:"status"`
     Error string                `json:"error"`
     CanBurn bool                `json:"canBurn"`
-    InvalidAmount bool          `json:"invalidAmount"`
     InsufficientBalance bool    `json:"insufficientBalance"`
     InsufficientCollateral bool `json:"insufficientCollateral"`
 }
