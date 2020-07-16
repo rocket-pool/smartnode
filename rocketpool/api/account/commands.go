@@ -41,7 +41,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    password, err := cliutils.ValidatePassword("node password", c.Args().Get(0))
+                    password, err := cliutils.ValidateNodePassword("node password", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run

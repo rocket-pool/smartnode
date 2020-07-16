@@ -93,7 +93,7 @@ func ValidateBurnableTokenType(name, value string) (string, error) {
 
 
 // Validate a node password
-func ValidatePassword(name, value string) (string, error) {
+func ValidateNodePassword(name, value string) (string, error) {
     if len(value) < passwords.MinPasswordLength {
         return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, passwords.MinPasswordLength)
     }
