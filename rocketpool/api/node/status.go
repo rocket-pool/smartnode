@@ -16,13 +16,11 @@ import (
 func getStatus(c *cli.Context) error {
 
     // Get services
+    if err := services.RequireNodeAccount(c); err != nil { return err }
     am, err := services.GetAccountManager(c)
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
-
-    // Check service requirements
-    if err := services.RequireNodeAccount(c); err != nil { return err }
 
     // Response
     response := &types.NodeStatusResponse{}
