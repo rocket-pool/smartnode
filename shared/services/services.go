@@ -152,11 +152,11 @@ func RequireNodeRegistered(c *cli.Context) error {
     if err := RequireNodeAccount(c); err != nil {
         return err
     }
-    rp, err := GetRocketPool(c)
+    am, err := GetAccountManager(c)
     if err != nil {
         return err
     }
-    am, err := GetAccountManager(c)
+    rp, err := GetRocketPool(c)
     if err != nil {
         return err
     }
