@@ -23,7 +23,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 0); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
                     return getStatus(c)
@@ -39,7 +39,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 1); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
                     password, err := cliutils.ValidatePassword("node password", c.Args().Get(0))
                     if err != nil { return err }
 
@@ -57,7 +57,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 0); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
                     return initAccount(c)
@@ -73,7 +73,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 0); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
                     return exportAccount(c)

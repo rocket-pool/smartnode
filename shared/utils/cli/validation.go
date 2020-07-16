@@ -8,24 +8,19 @@ import (
     "strings"
 
     "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/passwords"
 )
 
 
-// Check command argument count
-func CheckArgCount(c *cli.Context, count int) error {
-    if len(c.Args()) != count {
-        return cli.NewExitError(fmt.Sprintf("USAGE:\n   %s", c.Command.UsageText), 1)
-    }
-    return nil
-}
+//
+// General types
+//
 
 
-// Check API command argument count
-func CheckAPIArgCount(c *cli.Context, count int) error {
+// Validate command argument count
+func ValidateArgCount(c *cli.Context, count int) error {
     if len(c.Args()) != count {
         return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
     }
@@ -42,23 +37,23 @@ func ValidateAddress(name, value string) (common.Address, error) {
 }
 
 
-// Validate a token amount
-func ValidateTokenAmount(name, value string) (*big.Int, error) {
-    val, err := strconv.ParseFloat(value, 64)
-    if err != nil {
+// Validate a wei amount
+func ValidateWeiAmount(name, value string) (*big.Int, error) {
+    val := new(big.Int)
+    if _, ok := val.SetString(value, 10); !ok {
         return nil, fmt.Errorf("Invalid %s '%s'", name, value)
     }
-    return eth.EthToWei(val), nil
+    return val, nil
 }
 
 
-// Validate a deposit amount
-func ValidateDepositAmount(name, value string) (*big.Int, error) {
+// Validate a fraction
+func ValidateFraction(name, value string) (float64, error) {
     val, err := strconv.ParseFloat(value, 64)
-    if err != nil || !(val == 0 || val == 16 || val == 32) {
-        return nil, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32", name, value)
+    if err != nil || val < 0 || val > 1 {
+        return 0, fmt.Errorf("Invalid %s '%s' - must be a number between 0 and 1", name, value)
     }
-    return eth.EthToWei(val), nil
+    return val, nil
 }
 
 
@@ -72,21 +67,26 @@ func ValidateTokenType(name, value string) (string, error) {
 }
 
 
-// Validate a burnable token type
-func ValidateBurnableType(name, value string) (string, error) {
-    val := strings.ToLower(value)
-    if !(val == "neth") {
-        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'nETH'", name, value)
+//
+// Command specific types
+//
+
+
+// Validate a deposit amount
+func ValidateDepositWeiAmount(name, value string) (*big.Int, error) {
+    ether := strings.Repeat("0", 18)
+    if !(value == "0" || value == "16"+ether || value == "32"+ether) {
+        return nil, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32 ether", name, value)
     }
-    return val, nil
+    return ValidateWeiAmount(name, value)
 }
 
 
-// Validate a fraction
-func ValidateFraction(name, value string) (float64, error) {
-    val, err := strconv.ParseFloat(value, 64)
-    if err != nil || val < 0 || val > 1 {
-        return 0, fmt.Errorf("Invalid %s '%s' - must be a number between 0 and 1", name, value)
+// Validate a burnable token type
+func ValidateBurnableTokenType(name, value string) (string, error) {
+    val := strings.ToLower(value)
+    if !(val == "neth") {
+        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'nETH'", name, value)
     }
     return val, nil
 }

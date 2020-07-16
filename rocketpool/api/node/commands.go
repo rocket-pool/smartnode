@@ -23,7 +23,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 0); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
                     return getStatus(c)
@@ -39,7 +39,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 1); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
                     timezoneLocation, err := cliutils.ValidateTimezoneLocation("timezone location", c.Args().Get(0))
                     if err != nil { return err }
 
@@ -57,7 +57,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 1); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
                     timezoneLocation, err := cliutils.ValidateTimezoneLocation("timezone location", c.Args().Get(0))
                     if err != nil { return err }
 
@@ -75,8 +75,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 2); err != nil { return err }
-                    amountWei, err := cliutils.ValidateDepositAmount("deposit amount", c.Args().Get(0))
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
                     if err != nil { return err }
                     minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
                     if err != nil { return err }
@@ -95,8 +95,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 3); err != nil { return err }
-                    amountWei, err := cliutils.ValidateTokenAmount("send amount", c.Args().Get(0))
+                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
+                    amountWei, err := cliutils.ValidateWeiAmount("send amount", c.Args().Get(0))
                     if err != nil { return err }
                     token, err := cliutils.ValidateTokenType("token type", c.Args().Get(1))
                     if err != nil { return err }
@@ -117,10 +117,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.CheckAPIArgCount(c, 2); err != nil { return err }
-                    amountWei, err := cliutils.ValidateTokenAmount("burn amount", c.Args().Get(0))
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    amountWei, err := cliutils.ValidateWeiAmount("burn amount", c.Args().Get(0))
                     if err != nil { return err }
-                    token, err := cliutils.ValidateBurnableType("token type", c.Args().Get(1))
+                    token, err := cliutils.ValidateBurnableTokenType("token type", c.Args().Get(1))
                     if err != nil { return err }
 
                     // Run
