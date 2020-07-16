@@ -26,7 +26,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    return getStatus(c)
+                    runGetStatus(c)
+                    return nil
 
                 },
             },
@@ -41,7 +42,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    return canRegisterNode(c)
+                    runCanRegisterNode(c)
+                    return nil
 
                 },
             },
@@ -58,7 +60,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    return registerNode(c, timezoneLocation)
+                    runRegisterNode(c, timezoneLocation)
+                    return nil
 
                 },
             },
@@ -76,7 +79,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    return setTimezoneLocation(c, timezoneLocation)
+                    runSetTimezoneLocation(c, timezoneLocation)
+                    return nil
 
                 },
             },
@@ -93,7 +97,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    return canNodeDeposit(c, amountWei)
+                    runCanNodeDeposit(c, amountWei)
+                    return nil
 
                 },
             },
@@ -112,7 +117,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    return nodeDeposit(c, amountWei, minNodeFee)
+                    runNodeDeposit(c, amountWei, minNodeFee)
+                    return nil
 
                 },
             },
@@ -134,7 +140,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    return nodeSend(c, amountWei, token, toAddress)
+                    runNodeSend(c, amountWei, token, toAddress)
+                    return nil
 
                 },
             },
@@ -154,7 +161,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    return nodeBurn(c, amountWei, token)
+                    runNodeBurn(c, amountWei, token)
+                    return nil
 
                 },
             },

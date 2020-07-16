@@ -15,19 +15,39 @@ import (
 )
 
 
-func canNodeDeposit(c *cli.Context, amountWei *big.Int) error {
+func runCanNodeDeposit(c *cli.Context, amountWei *big.Int) {
+    response, err := canNodeDeposit(c, amountWei)
+    if err != nil {
+        api.PrintResponse(&types.CanNodeDepositResponse{Error: err.Error()})
+    } else {
+        api.PrintResponse(response)
+    }
+}
+
+
+func runNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) {
+    response, err := nodeDeposit(c, amountWei, minNodeFee)
+    if err != nil {
+        api.PrintResponse(&types.NodeDepositResponse{Error: err.Error()})
+    } else {
+        api.PrintResponse(response)
+    }
+}
+
+
+func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*types.CanNodeDepositResponse, error) {
 
     // Get services
-    if err := services.RequireNodeRegistered(c); err != nil { return err }
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
     // Response
-    response := &types.CanNodeDepositResponse{}
+    response := types.CanNodeDepositResponse{}
 
     // Get node account
     nodeAccount, _ := am.GetNodeAccount()
@@ -67,45 +87,39 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) error {
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return api.PrintResponse(&types.CanNodeDepositResponse{
-            Error: err.Error(),
-        })
+        return nil, err
     }
 
-    // Update & print response
+    // Update & return response
     response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled)
-    return api.PrintResponse(response)
+    return &response, nil
 
 }
 
 
-func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) error {
+func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*types.NodeDepositResponse, error) {
 
     // Get services
-    if err := services.RequireNodeRegistered(c); err != nil { return err }
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
     // Response
-    response := &types.NodeDepositResponse{}
+    response := types.NodeDepositResponse{}
 
     // Get transactor
     opts, err := am.GetNodeAccountTransactor()
     if err != nil {
-        return api.PrintResponse(&types.NodeDepositResponse{
-            Error: err.Error(),
-        })
+        return nil, err
     }
     opts.Value = amountWei
 
     // Deposit
     txReceipt, err := node.Deposit(rp, minNodeFee, opts)
     if err != nil {
-        return api.PrintResponse(&types.NodeDepositResponse{
-            Error: err.Error(),
-        })
+        return nil, err
     }
     response.TxHash = txReceipt.TxHash.Hex()
 
@@ -113,8 +127,8 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) error {
     // TODO: implement
     _ = txReceipt
 
-    // Print response
-    return api.PrintResponse(response)
+    // Return response
+    return &response, nil
 
 }
 

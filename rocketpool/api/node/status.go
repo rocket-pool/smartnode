@@ -13,17 +13,27 @@ import (
 )
 
 
-func getStatus(c *cli.Context) error {
+func runGetStatus(c *cli.Context) {
+    response, err := getStatus(c)
+    if err != nil {
+        api.PrintResponse(&types.NodeStatusResponse{Error: err.Error()})
+    } else {
+        api.PrintResponse(response)
+    }
+}
+
+
+func getStatus(c *cli.Context) (*types.NodeStatusResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return err }
+    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
     // Response
-    response := &types.NodeStatusResponse{}
+    response := types.NodeStatusResponse{}
 
     // Get node account
     nodeAccount, _ := am.GetNodeAccount()
@@ -77,13 +87,11 @@ func getStatus(c *cli.Context) error {
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return api.PrintResponse(&types.NodeStatusResponse{
-            Error: err.Error(),
-        })
+        return nil, err
     }
 
-    // Print response
-    return api.PrintResponse(response)
+    // Return response
+    return &response, nil
 
 }
 

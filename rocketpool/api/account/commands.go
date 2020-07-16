@@ -26,7 +26,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    return getStatus(c)
+                    runGetStatus(c)
+                    return nil
 
                 },
             },
@@ -44,7 +45,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    return initPassword(c, password)
+                    runInitPassword(c, password)
+                    return nil
 
                 },
             },
@@ -60,7 +62,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    return initAccount(c)
+                    runInitAccount(c)
+                    return nil
 
                 },
             },
@@ -76,7 +79,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    return exportAccount(c)
+                    runExportAccount(c)
+                    return nil
 
                 },
             },

@@ -9,16 +9,26 @@ import (
 )
 
 
-func getStatus(c *cli.Context) error {
+func runGetStatus(c *cli.Context) {
+    response, err := getStatus(c)
+    if err != nil {
+        api.PrintResponse(&types.AccountStatusResponse{Error: err.Error()})
+    } else {
+        api.PrintResponse(response)
+    }
+}
+
+
+func getStatus(c *cli.Context) (*types.AccountStatusResponse, error) {
 
     // Get services
     pm, err := services.GetPasswordManager(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
     // Response
-    response := &types.AccountStatusResponse{}
+    response := types.AccountStatusResponse{}
 
     // Get account status
     response.PasswordExists = pm.PasswordExists()
@@ -30,8 +40,8 @@ func getStatus(c *cli.Context) error {
         response.AccountAddress = nodeAccount.Address.Hex()
     }
 
-    // Print response
-    return api.PrintResponse(response)
+    // Return response
+    return &response, nil
 
 }
 

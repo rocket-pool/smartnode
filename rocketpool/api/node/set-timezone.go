@@ -10,37 +10,43 @@ import (
 )
 
 
-func setTimezoneLocation(c *cli.Context, timezoneLocation string) error {
+func runSetTimezoneLocation(c *cli.Context, timezoneLocation string) {
+    response, err := setTimezoneLocation(c, timezoneLocation)
+    if err != nil {
+        api.PrintResponse(&types.SetNodeTimezoneResponse{Error: err.Error()})
+    } else {
+        api.PrintResponse(response)
+    }
+}
+
+
+func setTimezoneLocation(c *cli.Context, timezoneLocation string) (*types.SetNodeTimezoneResponse, error) {
 
     // Get services
-    if err := services.RequireNodeRegistered(c); err != nil { return err }
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
     // Response
-    response := &types.SetNodeTimezoneResponse{}
+    response := types.SetNodeTimezoneResponse{}
 
     // Get transactor
     opts, err := am.GetNodeAccountTransactor()
     if err != nil {
-        return api.PrintResponse(&types.SetNodeTimezoneResponse{
-            Error: err.Error(),
-        })
+        return nil, err
     }
 
     // Set timezone location
     txReceipt, err := node.SetTimezoneLocation(rp, timezoneLocation, opts)
     if err != nil {
-        return api.PrintResponse(&types.SetNodeTimezoneResponse{
-            Error: err.Error(),
-        })
+        return nil, err
     }
     response.TxHash = txReceipt.TxHash.Hex()
 
-    // Print response
-    return api.PrintResponse(response)
+    // Return response
+    return &response, nil
 
 }
 
