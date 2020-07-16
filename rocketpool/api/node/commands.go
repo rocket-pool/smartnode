@@ -131,7 +131,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
-                    amountWei, err := cliutils.ValidateWeiAmount("send amount", c.Args().Get(0))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("send amount", c.Args().Get(0))
                     if err != nil { return err }
                     token, err := cliutils.ValidateTokenType("token type", c.Args().Get(1))
                     if err != nil { return err }
@@ -151,7 +151,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
-                    amountWei, err := cliutils.ValidateWeiAmount("send amount", c.Args().Get(0))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("send amount", c.Args().Get(0))
                     if err != nil { return err }
                     token, err := cliutils.ValidateTokenType("token type", c.Args().Get(1))
                     if err != nil { return err }
@@ -173,7 +173,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
-                    amountWei, err := cliutils.ValidateWeiAmount("burn amount", c.Args().Get(0))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("burn amount", c.Args().Get(0))
                     if err != nil { return err }
                     token, err := cliutils.ValidateBurnableTokenType("token type", c.Args().Get(1))
                     if err != nil { return err }
@@ -193,7 +193,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
-                    amountWei, err := cliutils.ValidateWeiAmount("burn amount", c.Args().Get(0))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("burn amount", c.Args().Get(0))
                     if err != nil { return err }
                     token, err := cliutils.ValidateBurnableTokenType("token type", c.Args().Get(1))
                     if err != nil { return err }

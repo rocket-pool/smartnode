@@ -72,6 +72,19 @@ func ValidateTokenType(name, value string) (string, error) {
 //
 
 
+// Validate a positive wei amount
+func ValidatePositiveWeiAmount(name, value string) (*big.Int, error) {
+    val, err := ValidateWeiAmount(name, value)
+    if err != nil {
+        return nil, err
+    }
+    if val.Cmp(big.NewInt(0)) == 0 {
+        return nil, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
+    }
+    return val, nil
+}
+
+
 // Validate a deposit amount
 func ValidateDepositWeiAmount(name, value string) (*big.Int, error) {
     ether := strings.Repeat("0", 18)
