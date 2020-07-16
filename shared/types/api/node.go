@@ -30,17 +30,17 @@ type CanRegisterNodeResponse struct {
     AlreadyRegistered bool      `json:"alreadyRegistered"`
     RegistrationDisabled bool   `json:"registrationDisabled"`
 }
-
-
 type RegisterNodeResponse struct {
     Status string               `json:"status"`
     Error string                `json:"error"`
+    TxHash string               `json:"txHash"`
 }
 
 
 type SetNodeTimezoneResponse struct {
     Status string               `json:"status"`
     Error string                `json:"error"`
+    TxHash string               `json:"txHash"`
 }
 
 
@@ -52,23 +52,38 @@ type CanNodeDepositResponse struct {
     InvalidAmount bool          `json:"invalidAmount"`
     DepositDisabled bool        `json:"depositDisabled"`
 }
-
-
 type NodeDepositResponse struct {
     Status string               `json:"status"`
     Error string                `json:"error"`
+    TxHash string               `json:"txHash"`
     MinipoolAddress string      `json:"minipoolAddress"`
 }
 
 
+type CanNodeSendResponse struct {
+    Status string               `json:"status"`
+    Error string                `json:"error"`
+    CanSend bool                `json:"canSend"`
+    InsufficientBalance bool    `json:"insufficientBalance"`
+}
 type NodeSendResponse struct {
     Status string               `json:"status"`
     Error string                `json:"error"`
+    TxHash string               `json:"txHash"`
 }
 
 
+type CanNodeBurnResponse struct {
+    Status string               `json:"status"`
+    Error string                `json:"error"`
+    CanBurn bool                `json:"canBurn"`
+    InvalidAmount bool          `json:"invalidAmount"`
+    InsufficientBalance bool    `json:"insufficientBalance"`
+    InsufficientCollateral bool `json:"insufficientCollateral"`
+}
 type NodeBurnResponse struct {
     Status string               `json:"status"`
     Error string                `json:"error"`
+    TxHash string               `json:"txHash"`
 }
 

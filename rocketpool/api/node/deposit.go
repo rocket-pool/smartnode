@@ -107,6 +107,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) error {
             Error: err.Error(),
         })
     }
+    response.TxHash = txReceipt.TxHash.Hex()
 
     // Get created minipool address
     // TODO: implement

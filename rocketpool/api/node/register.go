@@ -69,6 +69,9 @@ func registerNode(c *cli.Context, timezoneLocation string) error {
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
 
+    // Response
+    response := &types.RegisterNodeResponse{}
+
     // Get transactor
     opts, err := am.GetNodeAccountTransactor()
     if err != nil {
@@ -78,14 +81,16 @@ func registerNode(c *cli.Context, timezoneLocation string) error {
     }
 
     // Register node
-    if _, err := node.RegisterNode(rp, timezoneLocation, opts); err != nil {
+    txReceipt, err := node.RegisterNode(rp, timezoneLocation, opts)
+    if err != nil {
         return api.PrintResponse(&types.RegisterNodeResponse{
             Error: err.Error(),
         })
     }
+    response.TxHash = txReceipt.TxHash.Hex()
 
     // Print response
-    return api.PrintResponse(&types.RegisterNodeResponse{})
+    return api.PrintResponse(response)
 
 }
 
