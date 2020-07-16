@@ -15,9 +15,6 @@ func initPassword(c *cli.Context, password string) error {
     pm, err := services.GetPasswordManager(c)
     if err != nil { return err }
 
-    // Response
-    response := &types.InitPasswordResponse{}
-
     // Check if password already exists
     if pm.PasswordExists() {
         return api.PrintResponse(&types.InitPasswordResponse{
@@ -33,7 +30,7 @@ func initPassword(c *cli.Context, password string) error {
     }
 
     // Print response
-    return api.PrintResponse(response)
+    return api.PrintResponse(&types.InitPasswordResponse{})
 
 }
 
