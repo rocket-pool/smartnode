@@ -69,7 +69,7 @@ func registerNode(c *cli.Context, timezoneLocation string) error {
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
 
-    // Get txor
+    // Get transactor
     opts, err := am.GetNodeAccountTransactor()
     if err != nil {
         return api.PrintResponse(&types.RegisterNodeResponse{
