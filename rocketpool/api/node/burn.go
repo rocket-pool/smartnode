@@ -67,6 +67,11 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
         return nil
     })
 
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
     // Update & return response
     response.CanBurn = !(response.InsufficientBalance || response.InsufficientCollateral)
     return &response, nil
