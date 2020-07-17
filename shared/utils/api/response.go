@@ -2,6 +2,7 @@ package api
 
 import (
     "encoding/json"
+    "errors"
     "fmt"
     "reflect"
 
@@ -10,24 +11,38 @@ import (
 
 
 // Print an API response
-// response MUST be a pointer to a struct type with Error and Status string fields
+// response must be a pointer to a struct type with Error and Status string fields
 func PrintResponse(response interface{}) {
 
-    // Set status
-    responseVal := reflect.ValueOf(response).Elem()
-    if responseVal.FieldByName("Error").String() == "" {
-        responseVal.FieldByName("Status").SetString("success")
-    } else {
-        responseVal.FieldByName("Status").SetString("error")
+    // Get and check response fields
+    r := reflect.ValueOf(response)
+    if r.Kind() != reflect.Ptr || r.IsNil() {
+        PrintErrorResponse(errors.New("Invalid API response"))
+        return
+    }
+    sf := r.Elem().FieldByName("Status")
+    ef := r.Elem().FieldByName("Error")
+    if !(sf.IsValid() && sf.CanSet() && sf.Kind() == reflect.String && ef.IsValid() && ef.Kind() == reflect.String) {
+        PrintErrorResponse(errors.New("Invalid API response"))
+        return
     }
 
-    // Encode and print
+    // Set status
+    if ef.String() == "" {
+        sf.SetString("success")
+    } else {
+        sf.SetString("error")
+    }
+
+    // Encode
     responseBytes, err := json.Marshal(response)
     if err != nil {
         PrintErrorResponse(fmt.Errorf("Could not encode API response: %w", err))
-    } else {
-        fmt.Println(string(responseBytes))
+        return
     }
+
+    // Print
+    fmt.Println(string(responseBytes))
 
 }
 
