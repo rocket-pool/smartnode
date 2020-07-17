@@ -52,7 +52,7 @@ func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Addr
         if err := contract.UnpackLog(event, eventName, *log); err != nil {
             return nil, fmt.Errorf("Could not unpack event data: %w", err)
         }
-        events = append(events, event)
+        events = append(events, *event)
 
     }
 
