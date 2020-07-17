@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/ethereum/go-ethereum v1.9.16
 	github.com/imdario/mergo v0.3.9
-	github.com/rocket-pool/rocketpool-go v0.0.0-20200717040510-ef46b7485afb
+	github.com/rocket-pool/rocketpool-go v0.0.0-20200717051531-d8279c47f92c
 	github.com/urfave/cli v1.22.4
 	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f
 	gopkg.in/yaml.v2 v2.2.2

@@ -2,16 +2,26 @@ package node
 
 import (
     "context"
+    "errors"
     "math/big"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/utils/contract"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+
+type minipoolCreated struct {
+    Minipool common.Address
+    Node common.Address
+    Time *big.Int
+}
 
 
 func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResponse, error) {
@@ -82,6 +92,8 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
     if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -102,9 +114,18 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     }
     response.TxHash = txReceipt.TxHash.Hex()
 
+    // Get minipool manager contract details
+    minipoolManagerAddress, minipoolManagerABI, err := contract.GetDetails(rp, "rocketMinipoolManager")
+    if err != nil {
+        return nil, err
+    }
+
     // Get created minipool address
-    // TODO: implement
-    _ = txReceipt
+    minipoolCreatedEvents, err := contract.GetTransactionEvents(ec, minipoolManagerAddress, minipoolManagerABI, txReceipt, "MinipoolCreated", minipoolCreated{})
+    if err != nil || len(minipoolCreatedEvents) == 0 {
+        return nil, errors.New("Could not get minipool created event")
+    }
+    response.MinipoolAddress = minipoolCreatedEvents[0].(minipoolCreated).Minipool.Hex()
 
     // Return response
     return &response, nil
