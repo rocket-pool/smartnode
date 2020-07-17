@@ -16,7 +16,7 @@ import (
 
 // Get contract events from a transaction
 // eventPrototype must be a struct type
-func GetTransactionEvents(client *ethclient.Client, contractAddress common.Address, contractAbi *abi.ABI, txReceipt *types.Receipt, eventName string, eventPrototype interface{}) ([]interface{}, error) {
+func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Address, contractAbi *abi.ABI, txReceipt *types.Receipt, eventName string, eventPrototype interface{}) ([]interface{}, error) {
 
     // Get event type
     eventType := reflect.TypeOf(eventPrototype)
@@ -31,7 +31,7 @@ func GetTransactionEvents(client *ethclient.Client, contractAddress common.Addre
     }
 
     // Create contract instance
-    contract := bind.NewBoundContract(contractAddress, *contractAbi, client, client, client)
+    contract := bind.NewBoundContract(*contractAddress, *contractAbi, client, client, client)
 
     // Process transaction receipt logs
     events := make([]interface{}, 0)
