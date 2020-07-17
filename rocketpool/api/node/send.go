@@ -6,6 +6,7 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/tokens"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
@@ -65,8 +66,8 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
     if err != nil { return nil, err }
-    //ec, err := services.GetEthClient(c)
-    //if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -84,7 +85,12 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
         case "eth":
 
             // Transfer ETH
-            // TODO: implement
+            opts.Value = amountWei
+            txReceipt, err := eth.SendEther(ec, to, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.TxHash = txReceipt.TxHash.Hex()
 
         case "neth":
 
