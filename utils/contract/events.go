@@ -15,7 +15,7 @@ import (
 
 
 // Get contract events from a transaction
-// eventPrototype must be a struct type
+// eventPrototype must be an event struct type
 func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Address, contractAbi *abi.ABI, txReceipt *types.Receipt, eventName string, eventPrototype interface{}) ([]interface{}, error) {
 
     // Get event type
