@@ -10,32 +10,11 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runCanNodeDeposit(c *cli.Context, amountWei *big.Int) {
-    response, err := canNodeDeposit(c, amountWei)
-    if err != nil {
-        api.PrintResponse(&types.CanNodeDepositResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func runNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) {
-    response, err := nodeDeposit(c, amountWei, minNodeFee)
-    if err != nil {
-        api.PrintResponse(&types.NodeDepositResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*types.CanNodeDepositResponse, error) {
+func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -47,7 +26,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*types.CanNodeDepositRe
     if err != nil { return nil, err }
 
     // Response
-    response := types.CanNodeDepositResponse{}
+    response := api.CanNodeDepositResponse{}
 
     // Get node account
     nodeAccount, _ := am.GetNodeAccount()
@@ -97,7 +76,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*types.CanNodeDepositRe
 }
 
 
-func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*types.NodeDepositResponse, error) {
+func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.NodeDepositResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -107,7 +86,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*types
     if err != nil { return nil, err }
 
     // Response
-    response := types.NodeDepositResponse{}
+    response := api.NodeDepositResponse{}
 
     // Get transactor
     opts, err := am.GetNodeAccountTransactor()

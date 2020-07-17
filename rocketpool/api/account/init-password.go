@@ -6,29 +6,18 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runInitPassword(c *cli.Context, password string) {
-    response, err := initPassword(c, password)
-    if err != nil {
-        api.PrintResponse(&types.InitPasswordResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func initPassword(c *cli.Context, password string) (*types.InitPasswordResponse, error) {
+func initPassword(c *cli.Context, password string) (*api.InitPasswordResponse, error) {
 
     // Get services
     pm, err := services.GetPasswordManager(c)
     if err != nil { return nil, err }
 
     // Response
-    response := types.InitPasswordResponse{}
+    response := api.InitPasswordResponse{}
 
     // Check if password already exists
     if pm.PasswordExists() {

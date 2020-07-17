@@ -9,32 +9,11 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runCanNodeBurn(c *cli.Context, amountWei *big.Int, token string) {
-    response, err := canNodeBurn(c, amountWei, token)
-    if err != nil {
-        api.PrintResponse(&types.CanNodeBurnResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func runNodeBurn(c *cli.Context, amountWei *big.Int, token string) {
-    response, err := nodeBurn(c, amountWei, token)
-    if err != nil {
-        api.PrintResponse(&types.NodeBurnResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*types.CanNodeBurnResponse, error) {
+func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNodeBurnResponse, error) {
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
@@ -46,7 +25,7 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*types.CanNo
     if err != nil { return nil, err }
 
     // Response
-    response := types.CanNodeBurnResponse{}
+    response := api.CanNodeBurnResponse{}
 
     // Sync
     var wg errgroup.Group
@@ -95,7 +74,7 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*types.CanNo
 }
 
 
-func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*types.NodeBurnResponse, error) {
+func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.NodeBurnResponse, error) {
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
@@ -105,7 +84,7 @@ func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*types.NodeBurn
     if err != nil { return nil, err }
 
     // Response
-    response := types.NodeBurnResponse{}
+    response := api.NodeBurnResponse{}
 
     // Get transactor
     opts, err := am.GetNodeAccountTransactor()

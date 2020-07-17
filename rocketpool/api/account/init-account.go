@@ -6,29 +6,18 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runInitAccount(c *cli.Context) {
-    response, err := initAccount(c)
-    if err != nil {
-        api.PrintResponse(&types.InitAccountResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func initAccount(c *cli.Context) (*types.InitAccountResponse, error) {
+func initAccount(c *cli.Context) (*api.InitAccountResponse, error) {
 
     // Get services
     am, err := services.GetAccountManager(c)
     if err != nil { return nil, err }
 
     // Response
-    response := types.InitAccountResponse{}
+    response := api.InitAccountResponse{}
 
     // Check if node account already exists
     if am.NodeAccountExists() {

@@ -4,22 +4,11 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runGetStatus(c *cli.Context) {
-    response, err := getStatus(c)
-    if err != nil {
-        api.PrintResponse(&types.AccountStatusResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func getStatus(c *cli.Context) (*types.AccountStatusResponse, error) {
+func getStatus(c *cli.Context) (*api.AccountStatusResponse, error) {
 
     // Get services
     pm, err := services.GetPasswordManager(c)
@@ -28,7 +17,7 @@ func getStatus(c *cli.Context) (*types.AccountStatusResponse, error) {
     if err != nil { return nil, err }
 
     // Response
-    response := types.AccountStatusResponse{}
+    response := api.AccountStatusResponse{}
 
     // Get account status
     response.PasswordExists = pm.PasswordExists()

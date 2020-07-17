@@ -3,6 +3,7 @@ package node
 import (
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/utils/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -26,7 +27,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    runGetStatus(c)
+                    api.PrintResponse(getStatus(c))
                     return nil
 
                 },
@@ -42,7 +43,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    runCanRegisterNode(c)
+                    api.PrintResponse(canRegisterNode(c))
                     return nil
 
                 },
@@ -60,7 +61,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runRegisterNode(c, timezoneLocation)
+                    api.PrintResponse(registerNode(c, timezoneLocation))
                     return nil
 
                 },
@@ -79,7 +80,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runSetTimezoneLocation(c, timezoneLocation)
+                    api.PrintResponse(setTimezoneLocation(c, timezoneLocation))
                     return nil
 
                 },
@@ -97,7 +98,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runCanNodeDeposit(c, amountWei)
+                    api.PrintResponse(canNodeDeposit(c, amountWei))
                     return nil
 
                 },
@@ -117,7 +118,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runNodeDeposit(c, amountWei, minNodeFee)
+                    api.PrintResponse(nodeDeposit(c, amountWei, minNodeFee))
                     return nil
 
                 },
@@ -137,7 +138,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runCanNodeSend(c, amountWei, token)
+                    api.PrintResponse(canNodeSend(c, amountWei, token))
                     return nil
 
                 },
@@ -159,7 +160,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runNodeSend(c, amountWei, token, toAddress)
+                    api.PrintResponse(nodeSend(c, amountWei, token, toAddress))
                     return nil
 
                 },
@@ -179,7 +180,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runCanNodeBurn(c, amountWei, token)
+                    api.PrintResponse(canNodeBurn(c, amountWei, token))
                     return nil
 
                 },
@@ -199,7 +200,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runNodeBurn(c, amountWei, token)
+                    api.PrintResponse(nodeBurn(c, amountWei, token))
                     return nil
 
                 },

@@ -8,22 +8,11 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runExportAccount(c *cli.Context) {
-    response, err := exportAccount(c)
-    if err != nil {
-        api.PrintResponse(&types.ExportAccountResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func exportAccount(c *cli.Context) (*types.ExportAccountResponse, error) {
+func exportAccount(c *cli.Context) (*api.ExportAccountResponse, error) {
 
     // Get services
     pm, err := services.GetPasswordManager(c)
@@ -32,7 +21,7 @@ func exportAccount(c *cli.Context) (*types.ExportAccountResponse, error) {
     if err != nil { return nil, err }
 
     // Response
-    response := types.ExportAccountResponse{}
+    response := api.ExportAccountResponse{}
 
     // Get password
     password, err := pm.GetPassword()

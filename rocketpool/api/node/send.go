@@ -9,32 +9,11 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runCanNodeSend(c *cli.Context, amountWei *big.Int, token string) {
-    response, err := canNodeSend(c, amountWei, token)
-    if err != nil {
-        api.PrintResponse(&types.CanNodeSendResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func runNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) {
-    response, err := nodeSend(c, amountWei, token, to)
-    if err != nil {
-        api.PrintResponse(&types.NodeSendResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*types.CanNodeSendResponse, error) {
+func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNodeSendResponse, error) {
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
@@ -46,7 +25,7 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*types.CanNo
     if err != nil { return nil, err }
 
     // Response
-    response := types.CanNodeSendResponse{}
+    response := api.CanNodeSendResponse{}
 
     // Get node account
     nodeAccount, _ := am.GetNodeAccount()
@@ -80,7 +59,7 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*types.CanNo
 }
 
 
-func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) (*types.NodeSendResponse, error) {
+func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) (*api.NodeSendResponse, error) {
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
@@ -92,7 +71,7 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
     if err != nil { return nil, err }
 
     // Response
-    response := types.NodeSendResponse{}
+    response := api.NodeSendResponse{}
 
     // Get transactor
     opts, err := am.GetNodeAccountTransactor()

@@ -3,6 +3,7 @@ package account
 import (
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/utils/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -26,7 +27,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    runGetStatus(c)
+                    api.PrintResponse(getStatus(c))
                     return nil
 
                 },
@@ -45,7 +46,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    runInitPassword(c, password)
+                    api.PrintResponse(initPassword(c, password))
                     return nil
 
                 },
@@ -62,7 +63,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    runInitAccount(c)
+                    api.PrintResponse(initAccount(c))
                     return nil
 
                 },
@@ -79,7 +80,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    runExportAccount(c)
+                    api.PrintResponse(exportAccount(c))
                     return nil
 
                 },

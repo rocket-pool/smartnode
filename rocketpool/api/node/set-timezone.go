@@ -5,22 +5,11 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runSetTimezoneLocation(c *cli.Context, timezoneLocation string) {
-    response, err := setTimezoneLocation(c, timezoneLocation)
-    if err != nil {
-        api.PrintResponse(&types.SetNodeTimezoneResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func setTimezoneLocation(c *cli.Context, timezoneLocation string) (*types.SetNodeTimezoneResponse, error) {
+func setTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.SetNodeTimezoneResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -30,7 +19,7 @@ func setTimezoneLocation(c *cli.Context, timezoneLocation string) (*types.SetNod
     if err != nil { return nil, err }
 
     // Response
-    response := types.SetNodeTimezoneResponse{}
+    response := api.SetNodeTimezoneResponse{}
 
     // Get transactor
     opts, err := am.GetNodeAccountTransactor()

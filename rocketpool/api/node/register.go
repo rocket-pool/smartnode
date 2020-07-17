@@ -7,32 +7,11 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runCanRegisterNode(c *cli.Context) {
-    response, err := canRegisterNode(c)
-    if err != nil {
-        api.PrintResponse(&types.CanRegisterNodeResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func runRegisterNode(c *cli.Context, timezoneLocation string) {
-    response, err := registerNode(c, timezoneLocation)
-    if err != nil {
-        api.PrintResponse(&types.RegisterNodeResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func canRegisterNode(c *cli.Context) (*types.CanRegisterNodeResponse, error) {
+func canRegisterNode(c *cli.Context) (*api.CanRegisterNodeResponse, error) {
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
@@ -42,7 +21,7 @@ func canRegisterNode(c *cli.Context) (*types.CanRegisterNodeResponse, error) {
     if err != nil { return nil, err }
 
     // Response
-    response := types.CanRegisterNodeResponse{}
+    response := api.CanRegisterNodeResponse{}
 
     // Sync
     var wg errgroup.Group
@@ -78,7 +57,7 @@ func canRegisterNode(c *cli.Context) (*types.CanRegisterNodeResponse, error) {
 }
 
 
-func registerNode(c *cli.Context, timezoneLocation string) (*types.RegisterNodeResponse, error) {
+func registerNode(c *cli.Context, timezoneLocation string) (*api.RegisterNodeResponse, error) {
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
@@ -88,7 +67,7 @@ func registerNode(c *cli.Context, timezoneLocation string) (*types.RegisterNodeR
     if err != nil { return nil, err }
 
     // Response
-    response := types.RegisterNodeResponse{}
+    response := api.RegisterNodeResponse{}
 
     // Get transactor
     opts, err := am.GetNodeAccountTransactor()

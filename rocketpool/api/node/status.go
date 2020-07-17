@@ -8,22 +8,11 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    types "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/api"
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func runGetStatus(c *cli.Context) {
-    response, err := getStatus(c)
-    if err != nil {
-        api.PrintResponse(&types.NodeStatusResponse{Error: err.Error()})
-    } else {
-        api.PrintResponse(response)
-    }
-}
-
-
-func getStatus(c *cli.Context) (*types.NodeStatusResponse, error) {
+func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
@@ -33,7 +22,7 @@ func getStatus(c *cli.Context) (*types.NodeStatusResponse, error) {
     if err != nil { return nil, err }
 
     // Response
-    response := types.NodeStatusResponse{}
+    response := api.NodeStatusResponse{}
 
     // Get node account
     nodeAccount, _ := am.GetNodeAccount()
