@@ -16,6 +16,7 @@ import (
 
 // Get contract events from a transaction
 // eventPrototype must be an event struct type
+// Returns a slice of pointers to untyped values; assert returned events to *eventType
 func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Address, contractAbi *abi.ABI, txReceipt *types.Receipt, eventName string, eventPrototype interface{}) ([]interface{}, error) {
 
     // Get event type
@@ -48,8 +49,8 @@ func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Addr
         }
 
         // Unpack event
-        event := reflect.Zero(eventType).Interface()
-        if err := contract.UnpackLog(&event, eventName, *log); err != nil {
+        event := reflect.New(eventType).Interface()
+        if err := contract.UnpackLog(event, eventName, *log); err != nil {
             return nil, fmt.Errorf("Could not unpack event data: %w", err)
         }
         events = append(events, event)
