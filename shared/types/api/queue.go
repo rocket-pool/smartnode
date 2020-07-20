@@ -1,12 +1,18 @@
 package api
 
+import (
+    "math/big"
+
+    "github.com/ethereum/go-ethereum/common"
+)
+
 
 type QueueStatusResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    DepositPoolBalance string       `json:"depositPoolBalance"`
-    MinipoolQueueLength int         `json:"minipoolQueueLength"`
-    MinipoolQueueCapacity string    `json:"minipoolQueueCapacity"`
+    DepositPoolBalance *big.Int     `json:"depositPoolBalance"`
+    MinipoolQueueLength int64       `json:"minipoolQueueLength"`
+    MinipoolQueueCapacity *big.Int  `json:"minipoolQueueCapacity"`
 }
 
 
@@ -21,6 +27,6 @@ type CanProcessQueueResponse struct {
 type ProcessQueueResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    TxHash string                   `json:"txHash"`
+    TxHash common.Hash              `json:"txHash"`
 }
 
