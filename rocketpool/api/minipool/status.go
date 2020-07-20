@@ -33,23 +33,23 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
     response.Minipools = make([]api.MinipoolDetails, len(details))
     for mi, minipoolDetails := range details {
         response.Minipools[mi] = api.MinipoolDetails{
-            Address:                minipoolDetails.Address.Hex(),
+            Address:                minipoolDetails.Address,
             ValidatorPubkey:        hex.EncodeToString(minipoolDetails.ValidatorPubkey),
             Status:                 minipoolDetails.Status.Status,
-            StatusBlock:            int(minipoolDetails.Status.StatusBlock),
+            StatusBlock:            minipoolDetails.Status.StatusBlock,
             StatusTime:             minipoolDetails.Status.StatusTime,
             DepositType:            minipoolDetails.DepositType,
             NodeFee:                minipoolDetails.Node.Fee,
-            NodeDepositBalance:     minipoolDetails.Node.DepositBalance.String(),
-            NodeRefundBalance:      minipoolDetails.Node.RefundBalance.String(),
-            NethBalance:            minipoolDetails.NethBalance.String(),
-            UserDepositBalance:     minipoolDetails.User.DepositBalance.String(),
+            NodeDepositBalance:     minipoolDetails.Node.DepositBalance,
+            NodeRefundBalance:      minipoolDetails.Node.RefundBalance,
+            NethBalance:            minipoolDetails.NethBalance,
+            UserDepositBalance:     minipoolDetails.User.DepositBalance,
             UserDepositAssigned:    minipoolDetails.User.DepositAssigned,
-            StakingStartBalance:    minipoolDetails.Staking.StartBalance.String(),
-            StakingEndBalance:      minipoolDetails.Staking.EndBalance.String(),
-            StakingStartBlock:      int(minipoolDetails.Staking.StartBlock),
-            StakingUserStartBlock:  int(minipoolDetails.Staking.UserStartBlock),
-            StakingEndBlock:        int(minipoolDetails.Staking.EndBlock),
+            StakingStartBalance:    minipoolDetails.Staking.StartBalance,
+            StakingEndBalance:      minipoolDetails.Staking.EndBalance,
+            StakingStartBlock:      minipoolDetails.Staking.StartBlock,
+            StakingUserStartBlock:  minipoolDetails.Staking.UserStartBlock,
+            StakingEndBlock:        minipoolDetails.Staking.EndBlock,
         }
     }
 

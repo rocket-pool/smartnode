@@ -1,7 +1,10 @@
 package api
 
 import (
+    "math/big"
     "time"
+
+    "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/rocketpool-go/minipool"
 )
@@ -13,23 +16,23 @@ type MinipoolStatusResponse struct {
     Minipools []MinipoolDetails     `json:"minipools"`
 }
 type MinipoolDetails struct {
-    Address string                          `json:"address"`
+    Address common.Address                  `json:"address"`
     ValidatorPubkey string                  `json:"validatorPubkey"`
     Status minipool.MinipoolStatus          `json:"status"`
-    StatusBlock int                         `json:"statusBlock"`
+    StatusBlock int64                       `json:"statusBlock"`
     StatusTime time.Time                    `json:"statusTime"`
     DepositType minipool.MinipoolDeposit    `json:"depositType"`
     NodeFee float64                         `json:"nodeFee"`
-    NodeDepositBalance string               `json:"nodeDepositBalance"`
-    NodeRefundBalance string                `json:"nodeRefundBalance"`
-    NethBalance string                      `json:"nethBalance"`
-    UserDepositBalance string               `json:"userDepositBalance"`
+    NodeDepositBalance *big.Int             `json:"nodeDepositBalance"`
+    NodeRefundBalance *big.Int              `json:"nodeRefundBalance"`
+    NethBalance *big.Int                    `json:"nethBalance"`
+    UserDepositBalance *big.Int             `json:"userDepositBalance"`
     UserDepositAssigned bool                `json:"userDepositAssigned"`
-    StakingStartBalance string              `json:"stakingStartBalance"`
-    StakingEndBalance string                `json:"stakingEndBalance"`
-    StakingStartBlock int                   `json:"stakingStartBlock"`
-    StakingUserStartBlock int               `json:"stakingUserStartBlock"`
-    StakingEndBlock int                     `json:"stakingEndBlock"`
+    StakingStartBalance *big.Int            `json:"stakingStartBalance"`
+    StakingEndBalance *big.Int              `json:"stakingEndBalance"`
+    StakingStartBlock int64                 `json:"stakingStartBlock"`
+    StakingUserStartBlock int64             `json:"stakingUserStartBlock"`
+    StakingEndBlock int64                   `json:"stakingEndBlock"`
 }
 
 
@@ -42,7 +45,7 @@ type CanRefundMinipoolResponse struct {
 type RefundMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    TxHash string                   `json:"txHash"`
+    TxHash common.Hash              `json:"txHash"`
 }
 
 
@@ -55,7 +58,7 @@ type CanDissolveMinipoolResponse struct {
 type DissolveMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    TxHash string                   `json:"txHash"`
+    TxHash common.Hash              `json:"txHash"`
 }
 
 
@@ -68,7 +71,7 @@ type CanExitMinipoolResponse struct {
 type ExitMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    TxHash string                   `json:"txHash"`
+    TxHash common.Hash              `json:"txHash"`
 }
 
 
@@ -82,7 +85,7 @@ type CanWithdrawMinipoolResponse struct {
 type WithdrawMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    TxHash string                   `json:"txHash"`
+    TxHash common.Hash              `json:"txHash"`
 }
 
 
@@ -95,6 +98,6 @@ type CanCloseMinipoolResponse struct {
 type CloseMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    TxHash string                   `json:"txHash"`
+    TxHash common.Hash              `json:"txHash"`
 }
 
