@@ -313,6 +313,20 @@ func GetQueueTotalCapacity(rp *rocketpool.RocketPool) (*big.Int, error) {
 }
 
 
+// Get the capacity of the next minipool in the queue
+func GetQueueNextCapacity(rp *rocketpool.RocketPool) (*big.Int, error) {
+    rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+    if err != nil {
+        return nil, err
+    }
+    capacity := new(*big.Int)
+    if err := rocketMinipoolQueue.Call(nil, capacity, "getNextCapacity"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool queue next item capacity: %w", err)
+    }
+    return *capacity, nil
+}
+
+
 // Submit a minipool exited event
 func SubmitMinipoolExited(rp *rocketpool.RocketPool, minipoolAddress common.Address, epoch int64, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
