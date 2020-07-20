@@ -2,6 +2,9 @@ package minipool
 
 import (
     "github.com/urfave/cli"
+
+    "github.com/rocket-pool/smartnode/shared/utils/api"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -18,7 +21,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Aliases:   []string{"s"},
                 Usage:     "Get a list of the node's minipools",
                 UsageText: "rocketpool api minipool status",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getStatus(c))
+                    return nil
+
+                },
             },
 
             cli.Command{

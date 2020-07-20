@@ -10,25 +10,26 @@ import (
 type MinipoolStatusResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    Minipools []struct {
-        Address string                          `json:"address"`
-        ValidatorPubkey string                  `json:"validatorPubkey"`
-        Status minipool.MinipoolStatus          `json:"status"`
-        StatusBlock int                         `json:"statusBlock"`
-        StatusTime time.Time                    `json:"statusTime"`
-        DepositType minipool.MinipoolDeposit    `json:"depositType"`
-        NodeFee float64                         `json:"nodeFee"`
-        NodeDepositBalance string               `json:"nodeDepositBalance"`
-        NodeRefundBalance string                `json:"nodeRefundBalance"`
-        NethBalance string                      `json:"nethBalance"`
-        UserDepositBalance string               `json:"userDepositBalance"`
-        UserDepositAssigned bool                `json:"userDepositAssigned"`
-        StakingStartBalance string              `json:"stakingStartBalance"`
-        StakingEndBalance string                `json:"stakingEndBalance"`
-        StakingStartBlock int                   `json:"stakingStartBlock"`
-        StakingUserStartBlock int               `json:"stakingUserStartBlock"`
-        StakingEndBlock int                     `json:"stakingEndBlock"`
-    }                               `json:"minipools"`
+    Minipools []MinipoolDetails     `json:"minipools"`
+}
+type MinipoolDetails struct {
+    Address string                          `json:"address"`
+    ValidatorPubkey string                  `json:"validatorPubkey"`
+    Status minipool.MinipoolStatus          `json:"status"`
+    StatusBlock int                         `json:"statusBlock"`
+    StatusTime time.Time                    `json:"statusTime"`
+    DepositType minipool.MinipoolDeposit    `json:"depositType"`
+    NodeFee float64                         `json:"nodeFee"`
+    NodeDepositBalance string               `json:"nodeDepositBalance"`
+    NodeRefundBalance string                `json:"nodeRefundBalance"`
+    NethBalance string                      `json:"nethBalance"`
+    UserDepositBalance string               `json:"userDepositBalance"`
+    UserDepositAssigned bool                `json:"userDepositAssigned"`
+    StakingStartBalance string              `json:"stakingStartBalance"`
+    StakingEndBalance string                `json:"stakingEndBalance"`
+    StakingStartBlock int                   `json:"stakingStartBlock"`
+    StakingUserStartBlock int               `json:"stakingUserStartBlock"`
+    StakingEndBlock int                     `json:"stakingEndBlock"`
 }
 
 
