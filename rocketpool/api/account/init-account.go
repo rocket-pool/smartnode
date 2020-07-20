@@ -30,7 +30,7 @@ func initAccount(c *cli.Context) (*api.InitAccountResponse, error) {
     if err != nil {
         return nil, err
     }
-    response.AccountAddress = nodeAccount.Address.Hex()
+    response.AccountAddress = nodeAccount.Address
 
     // Return response
     return &response, nil

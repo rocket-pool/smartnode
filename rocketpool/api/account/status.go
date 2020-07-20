@@ -26,7 +26,7 @@ func getStatus(c *cli.Context) (*api.AccountStatusResponse, error) {
     // Get account address
     if response.AccountExists {
         nodeAccount, _ := am.GetNodeAccount()
-        response.AccountAddress = nodeAccount.Address.Hex()
+        response.AccountAddress = nodeAccount.Address
     }
 
     // Return response
