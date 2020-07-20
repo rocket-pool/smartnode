@@ -1,6 +1,7 @@
 package services
 
 import (
+    "context"
     "errors"
     "sync"
 
@@ -123,11 +124,11 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     if err != nil {
         return nil, err
     }
-    client, err := getEthClient(cfg)
+    ec, err := getEthClient(cfg)
     if err != nil {
         return nil, err
     }
-    return getRocketPool(cfg, client)
+    return getRocketPool(cfg, ec)
 }
 
 
@@ -136,7 +137,22 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 //
 
 
+func RequireNodePassword(c *cli.Context) error {
+    pm, err := GetPasswordManager(c)
+    if err != nil {
+        return err
+    }
+    if !pm.PasswordExists() {
+        return errors.New("The node password has not been set. Please initialize the node and try again.")
+    }
+    return nil
+}
+
+
 func RequireNodeAccount(c *cli.Context) error {
+    if err := RequireNodePassword(c); err != nil {
+        return err
+    }
     am, err := GetAccountManager(c)
     if err != nil {
         return err
@@ -148,8 +164,50 @@ func RequireNodeAccount(c *cli.Context) error {
 }
 
 
+func RequireClientSynced(c *cli.Context) error {
+    ec, err := GetEthClient(c)
+    if err != nil {
+        return err
+    }
+    progress, err := ec.SyncProgress(context.Background())
+    if err != nil {
+        return err
+    }
+    if progress != nil {
+        return errors.New("The Eth 1.0 node is currently syncing. Please try again later.")
+    }
+    return nil
+}
+
+
+func RequireRocketStorage(c *cli.Context) error {
+    if err := RequireClientSynced(c); err != nil {
+        return err
+    }
+    cfg, err := GetConfig(c)
+    if err != nil {
+        return err
+    }
+    ec, err := GetEthClient(c)
+    if err != nil {
+        return err
+    }
+    code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Rocketpool.StorageAddress), nil)
+    if err != nil {
+        return err
+    }
+    if len(code) == 0 {
+        return errors.New("The Rocket Pool storage contract was not found; the configured address may be incorrect, or the Eth 1.0 node may not be synced. Please try again later.")
+    }
+    return nil
+}
+
+
 func RequireNodeRegistered(c *cli.Context) error {
     if err := RequireNodeAccount(c); err != nil {
+        return err
+    }
+    if err := RequireRocketStorage(c); err != nil {
         return err
     }
     am, err := GetAccountManager(c)
