@@ -13,6 +13,7 @@ import (
 func initAccount(c *cli.Context) (*api.InitAccountResponse, error) {
 
     // Get services
+    if err := services.RequireNodePassword(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
     if err != nil { return nil, err }
 

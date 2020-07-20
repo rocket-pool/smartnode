@@ -15,6 +15,7 @@ import (
 func exportAccount(c *cli.Context) (*api.ExportAccountResponse, error) {
 
     // Get services
+    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
     pm, err := services.GetPasswordManager(c)
     if err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
@@ -24,17 +25,11 @@ func exportAccount(c *cli.Context) (*api.ExportAccountResponse, error) {
     response := api.ExportAccountResponse{}
 
     // Get password
-    password, err := pm.GetPassword()
-    if err != nil {
-        return nil, errors.New("The node password is not set")
-    }
+    password, _ := pm.GetPassword()
     response.Password = password
 
     // Get node account
-    nodeAccount, err := am.GetNodeAccount()
-    if err != nil {
-        return nil, errors.New("The node account does not exist")
-    }
+    nodeAccount, _ := am.GetNodeAccount()
     response.KeystorePath = nodeAccount.URL.Path
 
     // Read node account keystore file

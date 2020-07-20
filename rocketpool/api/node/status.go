@@ -16,6 +16,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)

@@ -17,6 +17,7 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
@@ -83,6 +84,7 @@ func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.NodeBurnRe
 
     // Get services
     if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     am, err := services.GetAccountManager(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
