@@ -1,4 +1,4 @@
-package minipool
+package types
 
 
 // Minipool statuses

@@ -12,6 +12,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/contract"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -19,7 +20,7 @@ import (
 
 // Minipool detail types
 type StatusDetails struct {
-    Status MinipoolStatus
+    Status rptypes.MinipoolStatus
     StatusBlock int64
     StatusTime time.Time
 }
@@ -74,7 +75,7 @@ func (mp *Minipool) GetStatusDetails() (StatusDetails, error) {
 
     // Data
     var wg errgroup.Group
-    var status MinipoolStatus
+    var status rptypes.MinipoolStatus
     var statusBlock int64
     var statusTime time.Time
 
@@ -108,12 +109,12 @@ func (mp *Minipool) GetStatusDetails() (StatusDetails, error) {
     }, nil
 
 }
-func (mp *Minipool) GetStatus() (MinipoolStatus, error) {
+func (mp *Minipool) GetStatus() (rptypes.MinipoolStatus, error) {
     status := new(uint8)
     if err := mp.Contract.Call(nil, status, "getStatus"); err != nil {
-        return MinipoolStatus(0), fmt.Errorf("Could not get minipool %s status: %w", mp.Address.Hex(), err)
+        return rptypes.MinipoolStatus(0), fmt.Errorf("Could not get minipool %s status: %w", mp.Address.Hex(), err)
     }
-    return MinipoolStatus(*status), nil
+    return rptypes.MinipoolStatus(*status), nil
 }
 func (mp *Minipool) GetStatusBlock() (int64, error) {
     statusBlock := new(*big.Int)
@@ -132,12 +133,12 @@ func (mp *Minipool) GetStatusTime() (time.Time, error) {
 
 
 // Get deposit type
-func (mp *Minipool) GetDepositType() (MinipoolDeposit, error) {
+func (mp *Minipool) GetDepositType() (rptypes.MinipoolDeposit, error) {
     depositType := new(uint8)
     if err := mp.Contract.Call(nil, depositType, "getDepositType"); err != nil {
-        return MinipoolDeposit(0), fmt.Errorf("Could not get minipool %s deposit type: %w", mp.Address.Hex(), err)
+        return rptypes.MinipoolDeposit(0), fmt.Errorf("Could not get minipool %s deposit type: %w", mp.Address.Hex(), err)
     }
-    return MinipoolDeposit(*depositType), nil
+    return rptypes.MinipoolDeposit(*depositType), nil
 }
 
 
