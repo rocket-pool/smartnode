@@ -34,43 +34,183 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "can-refund",
+                Usage:     "Check whether the node can refund ETH from the minipool",
+                UsageText: "rocketpool api minipool can-refund minipool-address",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canRefundMinipool(c, minipoolAddress))
+                    return nil
+
+                },
+            },
+            cli.Command{
                 Name:      "refund",
                 Aliases:   []string{"r"},
                 Usage:     "Refund ETH belonging to the node from a minipool",
                 UsageText: "rocketpool api minipool refund minipool-address",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(refundMinipool(c, minipoolAddress))
+                    return nil
+
+                },
             },
 
+            cli.Command{
+                Name:      "can-dissolve",
+                Usage:     "Check whether the minipool can be dissolved",
+                UsageText: "rocketpool api minipool can-dissolve minipool-address",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canDissolveMinipool(c, minipoolAddress))
+                    return nil
+
+                },
+            },
             cli.Command{
                 Name:      "dissolve",
                 Aliases:   []string{"d"},
                 Usage:     "Dissolve an initialized or prelaunch minipool",
                 UsageText: "rocketpool api minipool dissolve minipool-address",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(dissolveMinipool(c, minipoolAddress))
+                    return nil
+
+                },
             },
 
+            cli.Command{
+                Name:      "can-exit",
+                Usage:     "Check whether the minipool can be exited from the beacon chain",
+                UsageText: "rocketpool api minipool can-exit minipool-address",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canExitMinipool(c, minipoolAddress))
+                    return nil
+
+                },
+            },
             cli.Command{
                 Name:      "exit",
                 Aliases:   []string{"e"},
                 Usage:     "Exit a staking minipool from the beacon chain",
                 UsageText: "rocketpool api minipool exit minipool-address",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(exitMinipool(c, minipoolAddress))
+                    return nil
+
+                },
             },
 
+            cli.Command{
+                Name:      "can-withdraw",
+                Usage:     "Check whether the minipool can be withdrawn from",
+                UsageText: "rocketpool api minipool can-withdraw minipool-address",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canWithdrawMinipool(c, minipoolAddress))
+                    return nil
+
+                },
+            },
             cli.Command{
                 Name:      "withdraw",
                 Aliases:   []string{"w"},
                 Usage:     "Withdraw final balance and rewards from a withdrawable minipool and close it",
                 UsageText: "rocketpool api minipool withdraw minipool-address",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(withdrawMinipool(c, minipoolAddress))
+                    return nil
+
+                },
             },
 
+            cli.Command{
+                Name:      "can-close",
+                Usage:     "Check whether the minipool can be closed",
+                UsageText: "rocketpool api minipool can-close minipool-address",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canCloseMinipool(c, minipoolAddress))
+                    return nil
+
+                },
+            },
             cli.Command{
                 Name:      "close",
                 Aliases:   []string{"c"},
                 Usage:     "Withdraw balance from a dissolved minipool and close it",
                 UsageText: "rocketpool api minipool close minipool-address",
-                Action: func(c *cli.Context) error { return nil },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(closeMinipool(c, minipoolAddress))
+                    return nil
+
+                },
             },
 
         },
