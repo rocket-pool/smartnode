@@ -48,8 +48,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "withdraw",
                 Aliases:   []string{"w"},
-                Usage:     "Withdraw final balance and rewards from a minipool and close it",
+                Usage:     "Withdraw final balance and rewards from a withdrawable minipool and close it",
                 UsageText: "rocketpool api minipool withdraw minipool-address",
+                Action: func(c *cli.Context) error { return nil },
+            },
+
+            cli.Command{
+                Name:      "close",
+                Aliases:   []string{"c"},
+                Usage:     "Withdraw balance from a dissolved minipool and close it",
+                UsageText: "rocketpool api minipool close minipool-address",
                 Action: func(c *cli.Context) error { return nil },
             },
 
