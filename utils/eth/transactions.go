@@ -16,8 +16,8 @@ import (
 const DefaultGasLimit = 21000
 
 
-// Send ether to an address
-func SendEther(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+// Send a transaction to an address
+func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
 
     // Get from address nonce
     if opts.Nonce == nil {
