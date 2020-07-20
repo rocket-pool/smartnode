@@ -1,7 +1,6 @@
 package account
 
 import (
-    "errors"
     "fmt"
     "io/ioutil"
 
