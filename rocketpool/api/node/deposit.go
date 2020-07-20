@@ -112,7 +112,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash.Hex()
+    response.TxHash = txReceipt.TxHash
 
     // Get minipool manager contract details
     minipoolManagerAddress, minipoolManagerABI, err := contract.GetDetails(rp, "rocketMinipoolManager")
@@ -125,7 +125,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     if err != nil || len(minipoolCreatedEvents) == 0 {
         return nil, errors.New("Could not get minipool created event")
     }
-    response.MinipoolAddress = minipoolCreatedEvents[0].(minipoolCreated).Minipool.Hex()
+    response.MinipoolAddress = minipoolCreatedEvents[0].(minipoolCreated).Minipool
 
     // Return response
     return &response, nil

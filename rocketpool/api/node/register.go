@@ -82,7 +82,7 @@ func registerNode(c *cli.Context, timezoneLocation string) (*api.RegisterNodeRes
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash.Hex()
+    response.TxHash = txReceipt.TxHash
 
     // Return response
     return &response, nil

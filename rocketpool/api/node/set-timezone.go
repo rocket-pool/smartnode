@@ -32,7 +32,7 @@ func setTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.SetNodeT
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash.Hex()
+    response.TxHash = txReceipt.TxHash
 
     // Return response
     return &response, nil

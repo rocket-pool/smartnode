@@ -92,7 +92,7 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
             if err != nil {
                 return nil, err
             }
-            response.TxHash = txReceipt.TxHash.Hex()
+            response.TxHash = txReceipt.TxHash
 
         case "neth":
 
@@ -101,7 +101,7 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
             if err != nil {
                 return nil, err
             }
-            response.TxHash = txReceipt.TxHash.Hex()
+            response.TxHash = txReceipt.TxHash
 
     }
 

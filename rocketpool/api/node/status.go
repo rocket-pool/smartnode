@@ -27,7 +27,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
     // Get node account
     nodeAccount, _ := am.GetNodeAccount()
-    response.AccountAddress = nodeAccount.Address.Hex()
+    response.AccountAddress = nodeAccount.Address
 
     // Sync
     var wg errgroup.Group
@@ -47,8 +47,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     wg.Go(func() error {
         balances, err := tokens.GetBalances(rp, nodeAccount.Address)
         if err == nil {
-            response.EthBalance = balances.ETH.String()
-            response.NethBalance = balances.NETH.String()
+            response.EthBalance = balances.ETH
+            response.NethBalance = balances.NETH
         }
         return err
     })

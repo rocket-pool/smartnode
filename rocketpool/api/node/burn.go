@@ -108,7 +108,7 @@ func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.NodeBurnRe
             if err != nil {
                 return nil, err
             }
-            response.TxHash = txReceipt.TxHash.Hex()
+            response.TxHash = txReceipt.TxHash
 
     }
 
