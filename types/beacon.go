@@ -43,9 +43,8 @@ func (v ValidatorPubkey) MarshalJSON() ([]byte, error) {
 }
 func (v *ValidatorPubkey) UnmarshalJSON(data []byte) error {
     pubkey, err := HexToValidatorPubkey(string(data))
-    if err != nil { return err }
-    *v = pubkey
-    return nil
+    if err == nil { *v = pubkey }
+    return err
 }
 
 
@@ -87,8 +86,7 @@ func (v ValidatorSignature) MarshalJSON() ([]byte, error) {
 }
 func (v *ValidatorSignature) UnmarshalJSON(data []byte) error {
     signature, err := HexToValidatorSignature(string(data))
-    if err != nil { return err }
-    *v = signature
-    return nil
+    if err == nil { *v = signature }
+    return err
 }
 

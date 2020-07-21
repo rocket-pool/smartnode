@@ -39,9 +39,8 @@ func (s MinipoolStatus) MarshalJSON() ([]byte, error) {
 }
 func (s *MinipoolStatus) UnmarshalJSON(data []byte) error {
     status, err := StringToMinipoolStatus(string(data))
-    if err != nil { return err }
-    *s = status
-    return nil
+    if err == nil { *s = status }
+    return err
 }
 
 
@@ -77,8 +76,7 @@ func (d MinipoolDeposit) MarshalJSON() ([]byte, error) {
 }
 func (d *MinipoolDeposit) UnmarshalJSON(data []byte) error {
     depositType, err := StringToMinipoolDeposit(string(data))
-    if err != nil { return err }
-    *d = depositType
-    return nil
+    if err == nil { *d = depositType }
+    return err
 }
 
