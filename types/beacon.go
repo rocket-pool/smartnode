@@ -1,0 +1,90 @@
+package types
+
+import (
+    "encoding/hex"
+)
+
+
+// Validator pubkey
+const ValidatorPubkeyLength = 48 // bytes
+type ValidatorPubkey [ValidatorPubkeyLength]byte
+
+
+// Bytes conversion
+func (v ValidatorPubkey) Bytes() []byte {
+    return v[:]
+}
+func BytesToValidatorPubkey(value []byte) ValidatorPubkey {
+    var pubkey ValidatorPubkey
+    copy(pubkey[:], value)
+    return pubkey
+}
+
+
+// String conversion
+func (v ValidatorPubkey) Hex() string {
+    return hex.EncodeToString(v.Bytes())
+}
+func (v ValidatorPubkey) String() string {
+    return v.Hex()
+}
+func HexToValidatorPubkey(value string) (ValidatorPubkey, error) {
+    pubkey := make([]byte, ValidatorPubkeyLength)
+    _, err := hex.Decode(pubkey, []byte(value))
+    return BytesToValidatorPubkey(pubkey), err
+}
+
+
+// JSON encoding
+func (v ValidatorPubkey) MarshalJSON() ([]byte, error) {
+    return []byte(v.Hex()), nil
+}
+func (v *ValidatorPubkey) UnmarshalJSON(data []byte) error {
+    pubkey, err := HexToValidatorPubkey(string(data))
+    if err != nil { return err }
+    *v = pubkey
+    return nil
+}
+
+
+// Validator signature
+const ValidatorSignatureLength = 96 // bytes
+type ValidatorSignature [ValidatorSignatureLength]byte
+
+
+// Bytes conversion
+func (v ValidatorSignature) Bytes() []byte {
+    return v[:]
+}
+func BytesToValidatorSignature(value []byte) ValidatorSignature {
+    var signature ValidatorSignature
+    copy(signature[:], value)
+    return signature
+}
+
+
+// String conversion
+func (v ValidatorSignature) Hex() string {
+    return hex.EncodeToString(v.Bytes())
+}
+func (v ValidatorSignature) String() string {
+    return v.Hex()
+}
+func HexToValidatorSignature(value string) (ValidatorSignature, error) {
+    signature := make([]byte, ValidatorSignatureLength)
+    _, err := hex.Decode(signature, []byte(value))
+    return BytesToValidatorSignature(signature), err
+}
+
+
+// JSON encoding
+func (v ValidatorSignature) MarshalJSON() ([]byte, error) {
+    return []byte(v.Hex()), nil
+}
+func (v *ValidatorSignature) UnmarshalJSON(data []byte) error {
+    signature, err := HexToValidatorSignature(string(data))
+    if err != nil { return err }
+    *v = signature
+    return nil
+}
+
