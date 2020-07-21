@@ -30,8 +30,10 @@ func (v ValidatorPubkey) String() string {
 }
 func HexToValidatorPubkey(value string) (ValidatorPubkey, error) {
     pubkey := make([]byte, ValidatorPubkeyLength)
-    _, err := hex.Decode(pubkey, []byte(value))
-    return BytesToValidatorPubkey(pubkey), err
+    if _, err := hex.Decode(pubkey, []byte(value)); err != nil {
+        return ValidatorPubkey{}, err
+    }
+    return BytesToValidatorPubkey(pubkey), nil
 }
 
 
@@ -72,8 +74,10 @@ func (v ValidatorSignature) String() string {
 }
 func HexToValidatorSignature(value string) (ValidatorSignature, error) {
     signature := make([]byte, ValidatorSignatureLength)
-    _, err := hex.Decode(signature, []byte(value))
-    return BytesToValidatorSignature(signature), err
+    if _, err := hex.Decode(signature, []byte(value)); err != nil {
+        return ValidatorSignature{}, err
+    }
+    return BytesToValidatorSignature(signature), nil
 }
 
 

@@ -1,15 +1,16 @@
 package network
 
 import (
-    "encoding/hex"
     "fmt"
     "math/big"
     "sync"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/contract"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -44,14 +45,14 @@ func GetWithdrawalBalance(rp *rocketpool.RocketPool) (*big.Int, error) {
 
 
 // Get the current network validator withdrawal credentials
-func GetWithdrawalCredentials(rp *rocketpool.RocketPool) ([32]byte, error) {
+func GetWithdrawalCredentials(rp *rocketpool.RocketPool) (common.Hash, error) {
     rocketNetworkWithdrawal, err := getRocketNetworkWithdrawal(rp)
     if err != nil {
-        return [32]byte{}, err
+        return common.Hash{}, err
     }
-    withdrawalCredentials := new([32]byte)
+    withdrawalCredentials := new(common.Hash)
     if err := rocketNetworkWithdrawal.Call(nil, withdrawalCredentials, "getWithdrawalCredentials"); err != nil {
-        return [32]byte{}, fmt.Errorf("Could not get network withdrawal credentials: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not get network withdrawal credentials: %w", err)
     }
     return *withdrawalCredentials, nil
 }
@@ -72,14 +73,14 @@ func SubmitETHBalances(rp *rocketpool.RocketPool, epoch int64, total *big.Int, s
 
 
 // Process a validator withdrawal from the beacon chain
-func ProcessWithdrawal(rp *rocketpool.RocketPool, validatorPubkey []byte, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProcessWithdrawal(rp *rocketpool.RocketPool, validatorPubkey rptypes.ValidatorPubkey, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketNetworkWithdrawal, err := getRocketNetworkWithdrawal(rp)
     if err != nil {
         return nil, err
     }
     txReceipt, err := contract.Transact(rp.Client, rocketNetworkWithdrawal, opts, "processWithdrawal", validatorPubkey)
     if err != nil {
-        return nil, fmt.Errorf("Could not process validator %s withdrawal: %w", hex.EncodeToString(validatorPubkey), err)
+        return nil, fmt.Errorf("Could not process validator %s withdrawal: %w", validatorPubkey.Hex(), err)
     }
     return txReceipt, nil
 }

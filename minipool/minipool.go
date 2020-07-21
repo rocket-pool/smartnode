@@ -1,7 +1,6 @@
 package minipool
 
 import (
-    "encoding/hex"
     "fmt"
     "math/big"
     "sync"
@@ -12,6 +11,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
@@ -20,7 +20,7 @@ import (
 type MinipoolDetails struct {
     Address common.Address
     Exists bool
-    Pubkey []byte
+    Pubkey rptypes.ValidatorPubkey
     WithdrawalTotalBalance *big.Int
     WithdrawalNodeBalance *big.Int
     Withdrawable bool
@@ -102,7 +102,7 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
     // Data
     var wg errgroup.Group
     var exists bool
-    var pubkey []byte
+    var pubkey rptypes.ValidatorPubkey
     var withdrawalTotalBalance *big.Int
     var withdrawalNodeBalance *big.Int
     var withdrawable bool
@@ -188,14 +188,14 @@ func GetNodeMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.Address, in
 
 
 // Get a minipool address by validator pubkey
-func GetMinipoolByPubkey(rp *rocketpool.RocketPool, pubkey []byte) (common.Address, error) {
+func GetMinipoolByPubkey(rp *rocketpool.RocketPool, pubkey rptypes.ValidatorPubkey) (common.Address, error) {
     rocketMinipoolManager, err := getRocketMinipoolManager(rp)
     if err != nil {
         return common.Address{}, err
     }
     minipoolAddress := new(common.Address)
     if err := rocketMinipoolManager.Call(nil, minipoolAddress, "getMinipoolByPubkey", pubkey); err != nil {
-        return common.Address{}, fmt.Errorf("Could not get validator %s minipool address: %w", hex.EncodeToString(pubkey), err)
+        return common.Address{}, fmt.Errorf("Could not get validator %s minipool address: %w", pubkey.Hex(), err)
     }
     return *minipoolAddress, nil
 }
@@ -216,14 +216,14 @@ func GetMinipoolExists(rp *rocketpool.RocketPool, minipoolAddress common.Address
 
 
 // Get a minipool's validator pubkey
-func GetMinipoolPubkey(rp *rocketpool.RocketPool, minipoolAddress common.Address) ([]byte, error) {
+func GetMinipoolPubkey(rp *rocketpool.RocketPool, minipoolAddress common.Address) (rptypes.ValidatorPubkey, error) {
     rocketMinipoolManager, err := getRocketMinipoolManager(rp)
     if err != nil {
-        return []byte{}, err
+        return rptypes.ValidatorPubkey{}, err
     }
-    pubkey := new([]byte)
+    pubkey := new(rptypes.ValidatorPubkey)
     if err := rocketMinipoolManager.Call(nil, pubkey, "getMinipoolPubkey", minipoolAddress); err != nil {
-        return []byte{}, fmt.Errorf("Could not get minipool %s pubkey: %w", minipoolAddress.Hex(), err)
+        return rptypes.ValidatorPubkey{}, fmt.Errorf("Could not get minipool %s pubkey: %w", minipoolAddress.Hex(), err)
     }
     return *pubkey, nil
 }

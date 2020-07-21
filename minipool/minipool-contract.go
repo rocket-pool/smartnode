@@ -381,7 +381,7 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (*types.Receipt, error) {
 
 
 // Progress the prelaunch minipool to staking
-func (mp *Minipool) Stake(validatorPubkey [48]byte, validatorSignature [96]byte, depositDataRoot [32]byte, opts *bind.TransactOpts) (*types.Receipt, error) {
+func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := contract.Transact(mp.RocketPool.Client, mp.Contract, opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)
     if err != nil {
         return nil, fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
