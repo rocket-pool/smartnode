@@ -71,7 +71,6 @@ type CanExitMinipoolResponse struct {
 type ExitMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    TxHash common.Hash              `json:"txHash"`
 }
 
 
