@@ -1,6 +1,8 @@
 package minipool
 
 import (
+    "bytes"
+    "fmt"
     "math/big"
 
     "github.com/ethereum/go-ethereum/common"
@@ -22,6 +24,19 @@ type minipoolDetails struct {
     NethBalance *big.Int
     User minipool.UserDetails
     Staking minipool.StakingDetails
+}
+
+
+// Validate that a minipool belongs to a node
+func validateMinipoolOwner(mp *minipool.Minipool, nodeAddress common.Address) error {
+    owner, err := mp.GetNodeAddress()
+    if err != nil {
+        return err
+    }
+    if !bytes.Equal(owner.Bytes(), nodeAddress.Bytes()) {
+        return fmt.Errorf("Minipool %s does not belong to the node", mp.Address.Hex())
+    }
+    return nil
 }
 
 
