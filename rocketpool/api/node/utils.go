@@ -6,13 +6,14 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/types"
     "golang.org/x/sync/errgroup"
 )
 
 
 // Minipool count details
 type minipoolCountDetails struct {
-    Status minipool.MinipoolStatus
+    Status types.MinipoolStatus
     Refundable bool
 }
 
@@ -62,7 +63,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 
     // Data
     var wg errgroup.Group
-    var status minipool.MinipoolStatus
+    var status types.MinipoolStatus
     var refundBalance *big.Int
 
     // Load data

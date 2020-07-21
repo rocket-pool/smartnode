@@ -6,7 +6,7 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/minipool"
+    "github.com/rocket-pool/rocketpool-go/types"
 )
 
 
@@ -17,11 +17,11 @@ type MinipoolStatusResponse struct {
 }
 type MinipoolDetails struct {
     Address common.Address                  `json:"address"`
-    ValidatorPubkey string                  `json:"validatorPubkey"`
-    Status minipool.MinipoolStatus          `json:"status"`
+    ValidatorPubkey types.ValidatorPubkey   `json:"validatorPubkey"`
+    Status types.MinipoolStatus             `json:"status"`
     StatusBlock int64                       `json:"statusBlock"`
     StatusTime time.Time                    `json:"statusTime"`
-    DepositType minipool.MinipoolDeposit    `json:"depositType"`
+    DepositType types.MinipoolDeposit       `json:"depositType"`
     NodeFee float64                         `json:"nodeFee"`
     NodeDepositBalance *big.Int             `json:"nodeDepositBalance"`
     NodeRefundBalance *big.Int              `json:"nodeRefundBalance"`

@@ -7,6 +7,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tokens"
+    "github.com/rocket-pool/rocketpool-go/types"
     "golang.org/x/sync/errgroup"
 )
 
@@ -14,9 +15,9 @@ import (
 // Minipool details
 type minipoolDetails struct {
     Address common.Address
-    ValidatorPubkey []byte
+    ValidatorPubkey types.ValidatorPubkey
     Status minipool.StatusDetails
-    DepositType minipool.MinipoolDeposit
+    DepositType types.MinipoolDeposit
     Node minipool.NodeDetails
     NethBalance *big.Int
     User minipool.UserDetails

@@ -1,9 +1,9 @@
 package node
 
 import (
-    "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/tokens"
+    "github.com/rocket-pool/rocketpool-go/types"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -60,12 +60,12 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
             response.MinipoolCounts.Total = len(details)
             for _, mpDetails := range details {
                 switch mpDetails.Status {
-                    case minipool.Initialized:  response.MinipoolCounts.Initialized++
-                    case minipool.Prelaunch:    response.MinipoolCounts.Prelaunch++
-                    case minipool.Staking:      response.MinipoolCounts.Staking++
-                    case minipool.Exited:       response.MinipoolCounts.Exited++
-                    case minipool.Withdrawable: response.MinipoolCounts.Withdrawable++
-                    case minipool.Dissolved:    response.MinipoolCounts.Dissolved++
+                    case types.Initialized:  response.MinipoolCounts.Initialized++
+                    case types.Prelaunch:    response.MinipoolCounts.Prelaunch++
+                    case types.Staking:      response.MinipoolCounts.Staking++
+                    case types.Exited:       response.MinipoolCounts.Exited++
+                    case types.Withdrawable: response.MinipoolCounts.Withdrawable++
+                    case types.Dissolved:    response.MinipoolCounts.Dissolved++
                 }
                 if mpDetails.Refundable {
                     response.MinipoolCounts.Refundable++

@@ -1,8 +1,6 @@
 package minipool
 
 import (
-    "encoding/hex"
-
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
@@ -34,7 +32,7 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
     for mi, minipoolDetails := range details {
         response.Minipools[mi] = api.MinipoolDetails{
             Address:                minipoolDetails.Address,
-            ValidatorPubkey:        hex.EncodeToString(minipoolDetails.ValidatorPubkey),
+            ValidatorPubkey:        minipoolDetails.ValidatorPubkey,
             Status:                 minipoolDetails.Status.Status,
             StatusBlock:            minipoolDetails.Status.StatusBlock,
             StatusTime:             minipoolDetails.Status.StatusTime,
