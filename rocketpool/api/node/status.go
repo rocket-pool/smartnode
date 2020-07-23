@@ -46,7 +46,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     // Get node balances
     wg.Go(func() error {
         var err error
-        response.Balances, err := tokens.GetBalances(rp, nodeAccount.Address)
+        response.Balances, err = tokens.GetBalances(rp, nodeAccount.Address)
         return err
     })
 
