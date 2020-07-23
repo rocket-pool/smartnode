@@ -278,15 +278,15 @@ func waitClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error)
         }
 
         // Check sync progress
-        if progress == nil {
-            if statusPrinted { fmt.Print("\n") }
-            return true, nil
-        } else {
+        if progress != nil {
             if statusPrinted { fmt.Print("\r") }
             if verbose {
                 fmt.Printf("Node syncing: %.2f%%  ", (float64(progress.CurrentBlock - progress.StartingBlock) / float64(progress.HighestBlock - progress.StartingBlock)) * 100)
                 statusPrinted = true
             }
+        } else {
+            if statusPrinted { fmt.Print("\n") }
+            return true, nil
         }
 
     }
