@@ -140,10 +140,8 @@ func WaitNodeAccount(c *cli.Context, verbose bool) error {
 
 
 func WaitClientSynced(c *cli.Context, verbose bool) error {
-    if _, err := waitClientSynced(c, verbose, 0); err != nil {
-        return err
-    }
-    return nil
+    _, err := waitClientSynced(c, verbose, 0)
+    return err
 }
 
 
