@@ -85,7 +85,7 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     }
 
     // Check minipool withdrawal delay
-    response.WithdrawalDelayActive = ((currentBlock - statusBlock) >= withdrawalDelay)
+    response.WithdrawalDelayActive = ((currentBlock - statusBlock) < withdrawalDelay)
 
     // Update & return response
     response.CanWithdraw = !(response.InvalidStatus || response.WithdrawalDelayActive)
