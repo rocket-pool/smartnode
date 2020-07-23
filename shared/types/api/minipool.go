@@ -23,6 +23,9 @@ type MinipoolDetails struct {
     User minipool.UserDetails               `json:"user"`
     Staking minipool.StakingDetails         `json:"staking"`
     Balances tokens.Balances                `json:"balances"`
+    RefundAvailable bool                    `json:"refundAvailable"`
+    WithdrawalAvailable bool                `json:"withdrawalAvailable"`
+    CloseAvailable bool                     `json:"closeAvailable"`
 }
 
 

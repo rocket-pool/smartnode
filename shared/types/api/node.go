@@ -22,7 +22,9 @@ type NodeStatusResponse struct {
         Staking int                     `json:"staking"`
         Withdrawable int                `json:"withdrawable"`
         Dissolved int                   `json:"dissolved"`
-        Refundable int                  `json:"refundable"`
+        RefundAvailable int             `json:"refundAvailable"`
+        WithdrawalAvailable int         `json:"withdrawalAvailable"`
+        CloseAvailable int              `json:"closeAvailable"`
     }                               `json:"minipoolCounts"`
 }
 

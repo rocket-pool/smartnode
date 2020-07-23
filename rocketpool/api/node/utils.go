@@ -1,11 +1,13 @@
 package node
 
 import (
+    "context"
     "math/big"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/settings"
     "github.com/rocket-pool/rocketpool-go/types"
     "golang.org/x/sync/errgroup"
 )
@@ -14,35 +16,65 @@ import (
 // Minipool count details
 type minipoolCountDetails struct {
     Status types.MinipoolStatus
-    Refundable bool
+    RefundAvailable bool
+    WithdrawalAvailable bool
+    CloseAvailable bool
 }
 
 
 // Get all node minipool count details
 func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]minipoolCountDetails, error) {
 
+    // Data
+    var wg1 errgroup.Group
+    var addresses []common.Address
+    var currentBlock int64
+    var withdrawalDelay int64
+
     // Get minipool addresses
-    addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress)
-    if err != nil {
+    wg1.Go(func() error {
+        var err error
+        addresses, err = minipool.GetNodeMinipoolAddresses(rp, nodeAddress)
+        return err
+    })
+
+    // Get current block
+    wg1.Go(func() error {
+        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
+        if err == nil {
+            currentBlock = header.Number.Int64()
+        }
+        return err
+    })
+
+    // Get withdrawal delay
+    wg1.Go(func() error {
+        var err error
+        withdrawalDelay, err = settings.GetMinipoolWithdrawalDelay(rp)
+        return err
+    })
+
+    // Wait for data
+    if err := wg1.Wait(); err != nil {
         return []minipoolCountDetails{}, err
     }
 
     // Data
-    var wg errgroup.Group
+    var wg2 errgroup.Group
     details := make([]minipoolCountDetails, len(addresses))
 
     // Load details
     for mi, address := range addresses {
         mi, address := mi, address
-        wg.Go(func() error {
-            mpDetails, err := getMinipoolCountDetails(rp, address)
+        wg2.Go(func() error {
+            mpDetails, err := getMinipoolCountDetails(rp, address, currentBlock, withdrawalDelay)
             if err == nil { details[mi] = mpDetails }
             return err
         })
     }
 
     // Wait for data
-    if err := wg.Wait(); err != nil {
+    if err := wg2.Wait(); err != nil {
         return []minipoolCountDetails{}, err
     }
 
@@ -53,7 +85,7 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
 
 
 // Get a minipool's count details
-func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address) (minipoolCountDetails, error) {
+func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, currentBlock, withdrawalDelay int64) (minipoolCountDetails, error) {
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
@@ -64,12 +96,18 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     // Data
     var wg errgroup.Group
     var status types.MinipoolStatus
+    var statusBlock int64
     var refundBalance *big.Int
 
     // Load data
     wg.Go(func() error {
         var err error
         status, err = mp.GetStatus()
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        statusBlock, err = mp.GetStatusBlock()
         return err
     })
     wg.Go(func() error {
@@ -86,7 +124,9 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     // Return
     return minipoolCountDetails{
         Status: status,
-        Refundable: (refundBalance.Cmp(big.NewInt(0)) > 0),
+        RefundAvailable: (refundBalance.Cmp(big.NewInt(0)) > 0),
+        WithdrawalAvailable: (status == types.Withdrawable && (currentBlock - statusBlock) >= withdrawalDelay),
+        CloseAvailable: (status == types.Dissolved),
     }, nil
 
 }

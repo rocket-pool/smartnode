@@ -63,8 +63,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
                     case types.Withdrawable: response.MinipoolCounts.Withdrawable++
                     case types.Dissolved:    response.MinipoolCounts.Dissolved++
                 }
-                if mpDetails.Refundable {
-                    response.MinipoolCounts.Refundable++
+                if mpDetails.RefundAvailable {
+                    response.MinipoolCounts.RefundAvailable++
+                }
+                if mpDetails.WithdrawalAvailable {
+                    response.MinipoolCounts.WithdrawalAvailable++
+                }
+                if mpDetails.CloseAvailable {
+                    response.MinipoolCounts.CloseAvailable++
                 }
             }
         }
