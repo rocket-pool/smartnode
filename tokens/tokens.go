@@ -18,8 +18,8 @@ import (
 
 // Token balances
 type Balances struct {
-    ETH *big.Int
-    NETH *big.Int
+    ETH *big.Int    `json:"eth"`
+    NETH *big.Int   `json:"neth"`
 }
 
 

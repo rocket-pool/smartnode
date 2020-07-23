@@ -20,28 +20,28 @@ import (
 
 // Minipool detail types
 type StatusDetails struct {
-    Status rptypes.MinipoolStatus
-    StatusBlock int64
-    StatusTime time.Time
+    Status rptypes.MinipoolStatus   `json:"status"`
+    StatusBlock int64               `json:"statusBlock"`
+    StatusTime time.Time            `json:"statusTime"`
 }
 type NodeDetails struct {
-    Address common.Address
-    Fee float64
-    DepositBalance *big.Int
-    RefundBalance *big.Int
-    DepositAssigned bool
+    Address common.Address          `json:"address"`
+    Fee float64                     `json:"fee"`
+    DepositBalance *big.Int         `json:"depositBalance"`
+    RefundBalance *big.Int          `json:"refundBalance"`
+    DepositAssigned bool            `json:"depositAssigned"`
 }
 type UserDetails struct {
-    DepositBalance *big.Int
-    DepositAssigned bool
-    DepositAssignedTime time.Time
+    DepositBalance *big.Int         `json:"depositBalance"`
+    DepositAssigned bool            `json:"depositAssigned"`
+    DepositAssignedTime time.Time   `json:"depositAssignedTime"`
 }
 type StakingDetails struct {
-    StartBalance *big.Int
-    EndBalance *big.Int
-    StartEpoch int64
-    UserStartEpoch int64
-    EndEpoch int64
+    StartBalance *big.Int           `json:"startBalance"`
+    EndBalance *big.Int             `json:"endBalance"`
+    StartEpoch int64                `json:"startEpoch"`
+    EndEpoch int64                  `json:"endEpoch"`
+    UserStartEpoch int64            `json:"userStartEpoch"`
 }
 
 
@@ -303,8 +303,8 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
     var startBalance *big.Int
     var endBalance *big.Int
     var startEpoch int64
-    var userStartEpoch int64
     var endEpoch int64
+    var userStartEpoch int64
 
     // Load data
     wg.Go(func() error {
@@ -324,12 +324,12 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
     })
     wg.Go(func() error {
         var err error
-        userStartEpoch, err = mp.GetStakingUserStartEpoch()
+        endEpoch, err = mp.GetStakingEndEpoch()
         return err
     })
     wg.Go(func() error {
         var err error
-        endEpoch, err = mp.GetStakingEndEpoch()
+        userStartEpoch, err = mp.GetStakingUserStartEpoch()
         return err
     })
 
@@ -343,8 +343,8 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
         StartBalance: startBalance,
         EndBalance: endBalance,
         StartEpoch: startEpoch,
-        UserStartEpoch: userStartEpoch,
         EndEpoch: endEpoch,
+        UserStartEpoch: userStartEpoch,
     }, nil
 
 }
@@ -369,19 +369,19 @@ func (mp *Minipool) GetStakingStartEpoch() (int64, error) {
     }
     return (*stakingStartEpoch).Int64(), nil
 }
-func (mp *Minipool) GetStakingUserStartEpoch() (int64, error) {
-    stakingUserStartEpoch := new(*big.Int)
-    if err := mp.Contract.Call(nil, stakingUserStartEpoch, "getStakingUserStartEpoch"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %s staking user start epoch: %w", mp.Address.Hex(), err)
-    }
-    return (*stakingUserStartEpoch).Int64(), nil
-}
 func (mp *Minipool) GetStakingEndEpoch() (int64, error) {
     stakingEndEpoch := new(*big.Int)
     if err := mp.Contract.Call(nil, stakingEndEpoch, "getStakingEndEpoch"); err != nil {
         return 0, fmt.Errorf("Could not get minipool %s staking end epoch: %w", mp.Address.Hex(), err)
     }
     return (*stakingEndEpoch).Int64(), nil
+}
+func (mp *Minipool) GetStakingUserStartEpoch() (int64, error) {
+    stakingUserStartEpoch := new(*big.Int)
+    if err := mp.Contract.Call(nil, stakingUserStartEpoch, "getStakingUserStartEpoch"); err != nil {
+        return 0, fmt.Errorf("Could not get minipool %s staking user start epoch: %w", mp.Address.Hex(), err)
+    }
+    return (*stakingUserStartEpoch).Int64(), nil
 }
 
 

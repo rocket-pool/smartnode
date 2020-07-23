@@ -17,9 +17,9 @@ import (
 
 // Node details
 type NodeDetails struct {
-    Exists bool
-    Trusted bool
-    TimezoneLocation string
+    Exists bool                 `json:"exists"`
+    Trusted bool                `json:"trusted"`
+    TimezoneLocation string     `json:"timezoneLocation"`
 }
 
 

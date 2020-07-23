@@ -18,13 +18,13 @@ import (
 
 // Minipool details
 type MinipoolDetails struct {
-    Address common.Address
-    Exists bool
-    Pubkey rptypes.ValidatorPubkey
-    WithdrawalTotalBalance *big.Int
-    WithdrawalNodeBalance *big.Int
-    Withdrawable bool
-    WithdrawalProcessed bool
+    Address common.Address              `json:"address"`
+    Exists bool                         `json:"exists"`
+    Pubkey rptypes.ValidatorPubkey      `json:"pubkey"`
+    WithdrawalTotalBalance *big.Int     `json:"withdrawalTotalBalance"`
+    WithdrawalNodeBalance *big.Int      `json:"withdrawalNodeBalance"`
+    Withdrawable bool                   `json:"withdrawable"`
+    WithdrawalProcessed bool            `json:"withdrawalProcessed"`
 }
 
 
