@@ -11,11 +11,10 @@ const (
     Initialized MinipoolStatus = iota
     Prelaunch
     Staking
-    Exited
     Withdrawable
     Dissolved
 )
-var MinipoolStatuses = []string{"Initialized", "Prelaunch", "Staking", "Exited", "Withdrawable", "Dissolved"}
+var MinipoolStatuses = []string{"Initialized", "Prelaunch", "Staking", "Withdrawable", "Dissolved"}
 
 
 // String conversion

@@ -85,7 +85,7 @@ func (rp *RocketPool) GetAddress(contractName string) (*common.Address, error) {
     }
 
     // Get address
-    address, err := rp.RocketStorage.GetAddress(nil, crypto.Keccak256Hash([]byte("contract.name"), []byte(contractName)))
+    address, err := rp.RocketStorage.GetAddress(nil, crypto.Keccak256Hash([]byte("contract.address"), []byte(contractName)))
     if err != nil {
         return nil, fmt.Errorf("Could not load contract %s address: %w", contractName, err)
     }

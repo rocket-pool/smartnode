@@ -47,20 +47,6 @@ func GetMinipoolEmptyDepositNodeAmount(rp *rocketpool.RocketPool) (*big.Int, err
 }
 
 
-// Minipool exited event submissions currently enabled
-func GetMinipoolSubmitExitedEnabled(rp *rocketpool.RocketPool) (bool, error) {
-    rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
-    if err != nil {
-        return false, err
-    }
-    submitExitedEnabled := new(bool)
-    if err := rocketMinipoolSettings.Call(nil, submitExitedEnabled, "getSubmitExitedEnabled"); err != nil {
-        return false, fmt.Errorf("Could not get minipool exited submissions enabled status: %w", err)
-    }
-    return *submitExitedEnabled, nil
-}
-
-
 // Minipool withdrawable event submissions currently enabled
 func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool) (bool, error) {
     rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)

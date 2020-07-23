@@ -327,27 +327,13 @@ func GetQueueNextCapacity(rp *rocketpool.RocketPool) (*big.Int, error) {
 }
 
 
-// Submit a minipool exited event
-func SubmitMinipoolExited(rp *rocketpool.RocketPool, minipoolAddress common.Address, epoch int64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolStatus, opts, "submitMinipoolExited", minipoolAddress, big.NewInt(epoch))
-    if err != nil {
-        return nil, fmt.Errorf("Could not submit minipool exited event: %w", err)
-    }
-    return txReceipt, nil
-}
-
-
 // Submit a minipool withdrawable event
-func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, withdrawalBalance *big.Int, epoch int64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, withdrawalBalance *big.Int, startEpoch, endEpoch, userStartEpoch int64, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolStatus, opts, "submitMinipoolWithdrawable", minipoolAddress, withdrawalBalance, big.NewInt(epoch))
+    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolStatus, opts, "submitMinipoolWithdrawable", minipoolAddress, withdrawalBalance, big.NewInt(startEpoch), big.NewInt(endEpoch), big.NewInt(userStartEpoch))
     if err != nil {
         return nil, fmt.Errorf("Could not submit minipool withdrawable event: %w", err)
     }
