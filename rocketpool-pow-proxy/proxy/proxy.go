@@ -10,7 +10,7 @@ import (
 
 
 // Config
-const INFURA_URL = "https://%s.infura.io/v3/%s"
+const InfuraURL = "https://%s.infura.io/v3/%s"
 
 
 // Proxy server
@@ -25,7 +25,7 @@ func NewProxyServer(port string, providerUrl string, network string, projectId s
 
     // Default provider to Infura
     if providerUrl == "" {
-        providerUrl = fmt.Sprintf(INFURA_URL, network, projectId)
+        providerUrl = fmt.Sprintf(InfuraURL, network, projectId)
     }
 
     // Create and return proxy server
@@ -41,7 +41,7 @@ func NewProxyServer(port string, providerUrl string, network string, projectId s
 func (p *ProxyServer) Start() error {
 
     // Log
-    log.Println(fmt.Sprintf("Proxy server listening on port %s", p.Port))
+    log.Printf("Proxy server listening on port %s\n", p.Port)
 
     // Listen on RPC port
     return http.ListenAndServe(":" + p.Port, p)
@@ -53,7 +53,7 @@ func (p *ProxyServer) Start() error {
 func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
     // Log request
-    log.Println(fmt.Sprintf("New %s request received from %s", r.Method, r.RemoteAddr))
+    log.Printf("New %s request received from %s\n", r.Method, r.RemoteAddr)
 
     // Get request content type
     contentTypes, ok := r.Header["Content-Type"]
@@ -84,7 +84,7 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
 
     // Log success
-    log.Println(fmt.Sprintf("Response sent to %s successfully", r.RemoteAddr))
+    log.Printf("Response sent to %s successfully\n", r.RemoteAddr)
 
 }
 
