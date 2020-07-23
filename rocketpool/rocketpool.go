@@ -7,6 +7,8 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool/api"
+    "github.com/rocket-pool/smartnode/rocketpool/node"
+    "github.com/rocket-pool/smartnode/rocketpool/watchtower"
     apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -38,7 +40,9 @@ func main() {
     cliutils.Configure(app)
 
     // Register commands
-    api.RegisterCommands(app, "api", []string{"a"})
+           api.RegisterCommands(app, "api",        []string{"a"})
+          node.RegisterCommands(app, "node",       []string{"n"})
+    watchtower.RegisterCommands(app, "watchtower", []string{"w"})
 
     // Get command being run
     var commandName string
