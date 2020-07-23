@@ -45,11 +45,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
     // Get node balances
     wg.Go(func() error {
-        balances, err := tokens.GetBalances(rp, nodeAccount.Address)
-        if err == nil {
-            response.EthBalance = balances.ETH
-            response.NethBalance = balances.NETH
-        }
+        var err error
+        response.Balances, err := tokens.GetBalances(rp, nodeAccount.Address)
         return err
     })
 
@@ -63,7 +60,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
                     case types.Initialized:  response.MinipoolCounts.Initialized++
                     case types.Prelaunch:    response.MinipoolCounts.Prelaunch++
                     case types.Staking:      response.MinipoolCounts.Staking++
-                    case types.Exited:       response.MinipoolCounts.Exited++
                     case types.Withdrawable: response.MinipoolCounts.Withdrawable++
                     case types.Dissolved:    response.MinipoolCounts.Dissolved++
                 }

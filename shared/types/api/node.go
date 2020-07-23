@@ -4,6 +4,8 @@ import (
     "math/big"
 
     "github.com/ethereum/go-ethereum/common"
+
+    "github.com/rocket-pool/rocketpool-go/tokens"
 )
 
 
@@ -14,14 +16,12 @@ type NodeStatusResponse struct {
     Registered bool                 `json:"registered"`
     Trusted bool                    `json:"trusted"`
     TimezoneLocation string         `json:"timezoneLocation"`
-    EthBalance *big.Int             `json:"ethBalance"`
-    NethBalance *big.Int            `json:"nethBalance"`
+    Balances tokens.Balances        `json:"balances"`
     MinipoolCounts struct {
         Total int                       `json:"total"`
         Initialized int                 `json:"initialized"`
         Prelaunch int                   `json:"prelaunch"`
         Staking int                     `json:"staking"`
-        Exited int                      `json:"exited"`
         Withdrawable int                `json:"withdrawable"`
         Dissolved int                   `json:"dissolved"`
         Refundable int                  `json:"refundable"`

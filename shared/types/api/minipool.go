@@ -1,11 +1,10 @@
 package api
 
 import (
-    "math/big"
-    "time"
-
     "github.com/ethereum/go-ethereum/common"
 
+    "github.com/rocket-pool/rocketpool-go/minipool"
+    "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -18,21 +17,12 @@ type MinipoolStatusResponse struct {
 type MinipoolDetails struct {
     Address common.Address                  `json:"address"`
     ValidatorPubkey types.ValidatorPubkey   `json:"validatorPubkey"`
-    Status types.MinipoolStatus             `json:"status"`
-    StatusBlock int64                       `json:"statusBlock"`
-    StatusTime time.Time                    `json:"statusTime"`
+    Status minipool.StatusDetails           `json:"status"`
     DepositType types.MinipoolDeposit       `json:"depositType"`
-    NodeFee float64                         `json:"nodeFee"`
-    NodeDepositBalance *big.Int             `json:"nodeDepositBalance"`
-    NodeRefundBalance *big.Int              `json:"nodeRefundBalance"`
-    NethBalance *big.Int                    `json:"nethBalance"`
-    UserDepositBalance *big.Int             `json:"userDepositBalance"`
-    UserDepositAssigned bool                `json:"userDepositAssigned"`
-    StakingStartBalance *big.Int            `json:"stakingStartBalance"`
-    StakingEndBalance *big.Int              `json:"stakingEndBalance"`
-    StakingStartBlock int64                 `json:"stakingStartBlock"`
-    StakingUserStartBlock int64             `json:"stakingUserStartBlock"`
-    StakingEndBlock int64                   `json:"stakingEndBlock"`
+    Node minipool.NodeDetails               `json:"node"`
+    User minipool.UserDetails               `json:"user"`
+    Staking minipool.StakingDetails         `json:"staking"`
+    Balances tokens.Balances                `json:"balances"`
 }
 
 

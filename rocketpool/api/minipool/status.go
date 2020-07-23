@@ -26,30 +26,7 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
     if err != nil {
         return nil, err
     }
-
-    // Update response
-    response.Minipools = make([]api.MinipoolDetails, len(details))
-    for mi, minipoolDetails := range details {
-        response.Minipools[mi] = api.MinipoolDetails{
-            Address:                minipoolDetails.Address,
-            ValidatorPubkey:        minipoolDetails.ValidatorPubkey,
-            Status:                 minipoolDetails.Status.Status,
-            StatusBlock:            minipoolDetails.Status.StatusBlock,
-            StatusTime:             minipoolDetails.Status.StatusTime,
-            DepositType:            minipoolDetails.DepositType,
-            NodeFee:                minipoolDetails.Node.Fee,
-            NodeDepositBalance:     minipoolDetails.Node.DepositBalance,
-            NodeRefundBalance:      minipoolDetails.Node.RefundBalance,
-            NethBalance:            minipoolDetails.NethBalance,
-            UserDepositBalance:     minipoolDetails.User.DepositBalance,
-            UserDepositAssigned:    minipoolDetails.User.DepositAssigned,
-            StakingStartBalance:    minipoolDetails.Staking.StartBalance,
-            StakingEndBalance:      minipoolDetails.Staking.EndBalance,
-            StakingStartBlock:      minipoolDetails.Staking.StartBlock,
-            StakingUserStartBlock:  minipoolDetails.Staking.UserStartBlock,
-            StakingEndBlock:        minipoolDetails.Staking.EndBlock,
-        }
-    }
+    response.Minipools = details
 
     // Return response
     return &response, nil

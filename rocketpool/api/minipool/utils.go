@@ -3,28 +3,15 @@ package minipool
 import (
     "bytes"
     "fmt"
-    "math/big"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/types"
     "golang.org/x/sync/errgroup"
+
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
-
-
-// Minipool details
-type minipoolDetails struct {
-    Address common.Address
-    ValidatorPubkey types.ValidatorPubkey
-    Status minipool.StatusDetails
-    DepositType types.MinipoolDeposit
-    Node minipool.NodeDetails
-    NethBalance *big.Int
-    User minipool.UserDetails
-    Staking minipool.StakingDetails
-}
 
 
 // Validate that a minipool belongs to a node
@@ -41,17 +28,17 @@ func validateMinipoolOwner(mp *minipool.Minipool, nodeAddress common.Address) er
 
 
 // Get all node minipool details
-func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]minipoolDetails, error) {
+func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]api.MinipoolDetails, error) {
 
     // Get minipool addresses
     addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress)
     if err != nil {
-        return []minipoolDetails{}, err
+        return []api.MinipoolDetails{}, err
     }
 
     // Data
     var wg errgroup.Group
-    details := make([]minipoolDetails, len(addresses))
+    details := make([]api.MinipoolDetails, len(addresses))
 
     // Load details
     for mi, address := range addresses {
@@ -65,7 +52,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Addres
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return []minipoolDetails{}, err
+        return []api.MinipoolDetails{}, err
     }
 
     // Return
@@ -75,17 +62,17 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Addres
 
 
 // Get a minipool's details
-func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address) (minipoolDetails, error) {
+func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address) (api.MinipoolDetails, error) {
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
     if err != nil {
-        return minipoolDetails{}, err
+        return api.MinipoolDetails{}, err
     }
 
     // Data
     var wg errgroup.Group
-    details := minipoolDetails{Address: minipoolAddress}
+    details := api.MinipoolDetails{Address: minipoolAddress}
 
     // Load data
     wg.Go(func() error {
@@ -110,11 +97,6 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
     })
     wg.Go(func() error {
         var err error
-        details.NethBalance, err = tokens.GetNETHBalance(rp, minipoolAddress)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
         details.User, err = mp.GetUserDetails()
         return err
     })
@@ -123,10 +105,15 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
         details.Staking, err = mp.GetStakingDetails()
         return err
     })
+    wg.Go(func() error {
+        var err error
+        details.Balances, err = tokens.GetBalances(rp, minipoolAddress)
+        return err
+    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
-        return minipoolDetails{}, err
+        return api.MinipoolDetails{}, err
     }
 
     // Return
