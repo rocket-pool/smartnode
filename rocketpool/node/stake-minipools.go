@@ -76,7 +76,7 @@ func stakePrelaunchMinipools(c *cli.Context, am *accounts.AccountManager, rp *ro
     // Stake minipools
     for _, mp := range minipools {
         if err := stakeMinipool(mp); err != nil {
-            return fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
+            log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
         }
     }
 
