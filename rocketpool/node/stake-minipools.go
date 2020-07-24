@@ -74,7 +74,7 @@ func stakePrelaunchMinipools(c *cli.Context, am *accounts.AccountManager, rp *ro
     log.Printf("%d minipools are ready for staking...\n", len(minipools))
     for _, mp := range minipools {
         log.Printf("Staking minipool %s...\n", mp.Address.Hex())
-        if err := stakeMinipool(rp, mp); err != nil {
+        if err := stakeMinipool(mp); err != nil {
             return fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
         }
         log.Printf("Successfully staked minipool %s\n", mp.Address.Hex())
@@ -139,7 +139,7 @@ func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address
 
 
 // Stake a minipool
-func stakeMinipool(rp *rocketpool.RocketPool, mp *minipool.Minipool) error {
+func stakeMinipool(mp *minipool.Minipool) error {
 
     // TODO: implement
     log.Println("Minipool staking not implemented...")
