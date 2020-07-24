@@ -20,6 +20,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 // Run daemon
 func run(c *cli.Context) error {
-    return nil
+
+    // Start tasks
+    if err := startStakePrelaunchMinipools(c); err != nil {
+        return err
+    }
+
+    // Block thread
+    select {}
+
 }
 
