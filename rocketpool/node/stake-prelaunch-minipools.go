@@ -145,7 +145,7 @@ func stakeMinipool(am *accounts.AccountManager, mp *minipool.Minipool) error {
     log.Printf("Staking minipool %s...\n", mp.Address.Hex())
 
     // TODO: implement
-    log.Println("Minipool staking not implemented...")
+    log.Println("Staking minipools not implemented...")
 
     // Log
     log.Printf("Successfully staked minipool %s.\n", mp.Address.Hex())

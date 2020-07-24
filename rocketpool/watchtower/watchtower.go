@@ -25,6 +25,15 @@ func run(c *cli.Context) error {
     if err := startDissolveTimedOutMinipools(c); err != nil {
         return err
     }
+    if err := startSubmitWithdrawableMinipools(c); err != nil {
+        return err
+    }
+    if err := startSubmitNetworkBalances(c); err != nil {
+        return err
+    }
+    if err := startProcessWithdrawals(c); err != nil {
+        return err
+    }
 
     // Block thread
     select {}
