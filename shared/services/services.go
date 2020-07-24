@@ -1,6 +1,7 @@
 package services
 
 import (
+    "fmt"
     "sync"
 
     "github.com/ethereum/go-ethereum/common"
@@ -9,6 +10,9 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/accounts"
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
+    "github.com/rocket-pool/smartnode/shared/services/beacon/lighthouse"
+    "github.com/rocket-pool/smartnode/shared/services/beacon/prysm"
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
 )
@@ -21,12 +25,14 @@ var (
     accountManager *accounts.AccountManager
     ethClient *ethclient.Client
     rocketPool *rocketpool.RocketPool
+    beaconClient beacon.Client
 
     initCfg sync.Once
     initPasswordManager sync.Once
     initAccountManager sync.Once
     initEthClient sync.Once
     initRocketPool sync.Once
+    initBeaconClient sync.Once
 )
 
 
@@ -81,6 +87,15 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 }
 
 
+func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    return getBeaconClient(cfg)
+}
+
+
 //
 // Service instance getters
 //
@@ -126,5 +141,21 @@ func getRocketPool(cfg config.RocketPoolConfig, client *ethclient.Client) (*rock
         rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Rocketpool.StorageAddress))
     })
     return rocketPool, err
+}
+
+
+func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
+    var err error
+    initBeaconClient.Do(func() {
+        switch cfg.Chains.Eth2.Client.Selected {
+            case "lighthouse":
+                beaconClient = lighthouse.NewClient(cfg.Chains.Eth2.Provider)
+            case "prysm":
+                beaconClient = prysm.NewClient(cfg.Chains.Eth2.Provider)
+            default:
+                err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
+        }
+    })
+    return beaconClient, err
 }
 
