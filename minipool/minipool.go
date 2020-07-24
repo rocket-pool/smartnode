@@ -28,6 +28,74 @@ type MinipoolDetails struct {
 }
 
 
+// Get all minipool details
+func GetMinipools(rp *rocketpool.RocketPool) ([]MinipoolDetails, error) {
+
+    // Get minipool addresses
+    minipoolAddresses, err := GetMinipoolAddresses(rp)
+    if err != nil {
+        return []MinipoolDetails{}, err
+    }
+
+    // Data
+    var wg errgroup.Group
+    details := make([]MinipoolDetails, len(minipoolAddresses))
+
+    // Load details
+    for mi, minipoolAddress := range minipoolAddresses {
+        mi, minipoolAddress := mi, minipoolAddress
+        wg.Go(func() error {
+            minipoolDetails, err := GetMinipoolDetails(rp, minipoolAddress)
+            if err == nil { details[mi] = minipoolDetails }
+            return err
+        })
+    }
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return []MinipoolDetails{}, err
+    }
+
+    // Return
+    return details, nil
+
+}
+
+
+// Get all minipool addresses
+func GetMinipoolAddresses(rp *rocketpool.RocketPool) ([]common.Address, error) {
+
+    // Get minipool count
+    minipoolCount, err := GetMinipoolCount(rp)
+    if err != nil {
+        return []common.Address{}, err
+    }
+
+    // Data
+    var wg errgroup.Group
+    addresses := make([]common.Address, minipoolCount)
+
+    // Load addresses
+    for mi := int64(0); mi < minipoolCount; mi++ {
+        mi := mi
+        wg.Go(func() error {
+            address, err := GetMinipoolAt(rp, mi)
+            if err == nil { addresses[mi] = address }
+            return err
+        })
+    }
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return []common.Address{}, err
+    }
+
+    // Return
+    return addresses, nil
+
+}
+
+
 // Get a node's minipool details
 func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]MinipoolDetails, error) {
 
@@ -159,6 +227,34 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 }
 
 
+// Get the minipool count
+func GetMinipoolCount(rp *rocketpool.RocketPool) (int64, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return 0, err
+    }
+    minipoolCount := new(*big.Int)
+    if err := rocketMinipoolManager.Call(nil, minipoolCount, "getMinipoolCount"); err != nil {
+        return 0, fmt.Errorf("Could not get minipool count: %w", err)
+    }
+    return (*minipoolCount).Int64(), nil
+}
+
+
+// Get a minipool address by index
+func GetMinipoolAt(rp *rocketpool.RocketPool, index int64) (common.Address, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return common.Address{}, err
+    }
+    minipoolAddress := new(common.Address)
+    if err := rocketMinipoolManager.Call(nil, minipoolAddress, "getMinipoolAt", big.NewInt(index)); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get minipool %d address: %w", index, err)
+    }
+    return *minipoolAddress, nil
+}
+
+
 // Get a node's minipool count
 func GetNodeMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address) (int64, error) {
     rocketMinipoolManager, err := getRocketMinipoolManager(rp)
@@ -181,7 +277,7 @@ func GetNodeMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.Address, in
     }
     minipoolAddress := new(common.Address)
     if err := rocketMinipoolManager.Call(nil, minipoolAddress, "getNodeMinipoolAt", nodeAddress, big.NewInt(index)); err != nil {
-        return common.Address{}, fmt.Errorf("Could not get node %s minipool %s address: %w", nodeAddress.Hex(), index, err)
+        return common.Address{}, fmt.Errorf("Could not get node %s minipool %d address: %w", nodeAddress.Hex(), index, err)
     }
     return *minipoolAddress, nil
 }
