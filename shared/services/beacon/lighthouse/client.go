@@ -4,10 +4,12 @@ import (
     "bytes"
     "encoding/hex"
     "encoding/json"
-    "errors"
+    "fmt"
     "io/ioutil"
     "net/http"
     "strconv"
+
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     bytesutil "github.com/rocket-pool/smartnode/shared/utils/bytes"
@@ -77,46 +79,39 @@ func NewClient(providerUrl string) *Client {
 // Get the eth2 config
 func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
-    // Data channels
-    configChannel := make(chan Eth2ConfigResponse)
-    slotsPerEpochChannel := make(chan uint64)
-    errorChannel := make(chan error)
-
-    // Request eth2 config
-    go (func() {
-        var config Eth2ConfigResponse
-        if responseBody, err := c.getRequest(RequestEth2ConfigPath); err != nil {
-            errorChannel <- errors.New("Error retrieving eth2 config: " + err.Error())
-        } else if err := json.Unmarshal(responseBody, &config); err != nil {
-            errorChannel <- errors.New("Error unpacking eth2 config: " + err.Error())
-        } else {
-            configChannel <- config
-        }
-    })()
-
-    // Request slots per epoch
-    go (func() {
-        if responseBody, err := c.getRequest(RequestSlotsPerEpochPath); err != nil {
-            errorChannel <- errors.New("Error retrieving slots per epoch: " + err.Error())
-        } else if slotsPerEpoch, err := strconv.ParseUint(string(responseBody), 10, 64); err != nil {
-            errorChannel <- errors.New("Error unpacking slots per epoch: " + err.Error())
-        } else {
-            slotsPerEpochChannel <- slotsPerEpoch
-        }
-    })()
-
-    // Receive data
+    // Data
+    var wg errgroup.Group
     var config Eth2ConfigResponse
     var slotsPerEpoch uint64
-    for received := 0; received < 2; {
-        select {
-            case config = <-configChannel:
-                received++
-            case slotsPerEpoch = <-slotsPerEpochChannel:
-                received++
-            case err := <-errorChannel:
-                return beacon.Eth2Config{}, err
+
+    // Request eth2 config
+    wg.Go(func() error {
+        responseBody, err := c.getRequest(RequestEth2ConfigPath)
+        if err != nil {
+            return fmt.Errorf("Could not get eth2 config: %w", err)
         }
+        if err := json.Unmarshal(responseBody, &config); err != nil {
+            return fmt.Errorf("Could not decode eth2 config: %w", err)
+        }
+        return nil
+    })
+
+    // Request slots per epoch
+    wg.Go(func() error {
+        responseBody, err := c.getRequest(RequestSlotsPerEpochPath)
+        if err != nil {
+            return fmt.Errorf("Could not get slots per epoch: %w", err)
+        }
+        slotsPerEpoch, err = strconv.ParseUint(string(responseBody), 10, 64)
+        if err != nil {
+            return fmt.Errorf("Could not decode slots per epoch: %w", err)
+        }
+        return nil
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return beacon.Eth2Config{}, err
     }
 
     // Create response
@@ -131,12 +126,12 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Decode hex data and update
     if genesisForkVersion, err := hex.DecodeString(hexutil.RemovePrefix(config.GenesisForkVersion)); err != nil {
-        return beacon.Eth2Config{}, errors.New("Error decoding genesis fork version: " + err.Error())
+        return beacon.Eth2Config{}, fmt.Errorf("Could not decode genesis fork version: %w", err)
     } else {
         response.GenesisForkVersion = genesisForkVersion
     }
     if blsWithdrawalPrefixBytes, err := hex.DecodeString(hexutil.RemovePrefix(config.BLSWithdrawalPrefixByte)); err != nil {
-        return beacon.Eth2Config{}, errors.New("Error decoding BLS withdrawal prefix byte: " + err.Error())
+        return beacon.Eth2Config{}, fmt.Errorf("Could not decode BLS withdrawal prefix byte: %w", err)
     } else {
         response.BLSWithdrawalPrefixByte = blsWithdrawalPrefixBytes[0]
     }
@@ -150,46 +145,39 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 // Get the beacon head
 func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 
-    // Data channels
-    headChannel := make(chan BeaconHeadResponse)
-    slotsPerEpochChannel := make(chan uint64)
-    errorChannel := make(chan error)
-
-    // Request beacon head
-    go (func() {
-        var head BeaconHeadResponse
-        if responseBody, err := c.getRequest(RequestBeaconHeadPath); err != nil {
-            errorChannel <- errors.New("Error retrieving beacon head: " + err.Error())
-        } else if err := json.Unmarshal(responseBody, &head); err != nil {
-            errorChannel <- errors.New("Error unpacking beacon head: " + err.Error())
-        } else {
-            headChannel <- head
-        }
-    })()
-
-    // Request slots per epoch
-    go (func() {
-        if responseBody, err := c.getRequest(RequestSlotsPerEpochPath); err != nil {
-            errorChannel <- errors.New("Error retrieving slots per epoch: " + err.Error())
-        } else if slotsPerEpoch, err := strconv.ParseUint(string(responseBody), 10, 64); err != nil {
-            errorChannel <- errors.New("Error unpacking slots per epoch: " + err.Error())
-        } else {
-            slotsPerEpochChannel <- slotsPerEpoch
-        }
-    })()
-
-    // Receive data
+    // Data
+    var wg errgroup.Group
     var head BeaconHeadResponse
     var slotsPerEpoch uint64
-    for received := 0; received < 2; {
-        select {
-            case head = <-headChannel:
-                received++
-            case slotsPerEpoch = <-slotsPerEpochChannel:
-                received++
-            case err := <-errorChannel:
-                return beacon.BeaconHead{}, err
+
+    // Request beacon head
+    wg.Go(func() error {
+        responseBody, err := c.getRequest(RequestBeaconHeadPath)
+        if err != nil {
+            return fmt.Errorf("Could not get beacon head: %w", err)
         }
+        if err := json.Unmarshal(responseBody, &head); err != nil {
+            return fmt.Errorf("Could not decode beacon head: %w", err)
+        }
+        return nil
+    })
+
+    // Request slots per epoch
+    wg.Go(func() error {
+        responseBody, err := c.getRequest(RequestSlotsPerEpochPath)
+        if err != nil {
+            return fmt.Errorf("Could not get slots per epoch: %w", err)
+        }
+        slotsPerEpoch, err = strconv.ParseUint(string(responseBody), 10, 64)
+        if err != nil {
+            return fmt.Errorf("Could not decode slots per epoch: %w", err)
+        }
+        return nil
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return beacon.BeaconHead{}, err
     }
 
     // Return response
@@ -210,13 +198,13 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (beacon.ValidatorStatus, erro
         Pubkeys: []string{hexutil.AddPrefix(hex.EncodeToString(pubkey))},
     })
     if err != nil {
-        return beacon.ValidatorStatus{}, errors.New("Error retrieving validator status: " + err.Error())
+        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator status: %w", err)
     }
 
     // Unmarshal response
     var validators []ValidatorResponse
     if err := json.Unmarshal(responseBody, &validators); err != nil {
-        return beacon.ValidatorStatus{}, errors.New("Error unpacking validator status: " + err.Error())
+        return beacon.ValidatorStatus{}, fmt.Errorf("Could not decode validator status: %w", err)
     }
     validator := validators[0]
 
@@ -240,12 +228,12 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (beacon.ValidatorStatus, erro
 
     // Decode hex data and update
     if pubkey, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.Pubkey)); err != nil {
-        return beacon.ValidatorStatus{}, errors.New("Error decoding validator pubkey: " + err.Error())
+        return beacon.ValidatorStatus{}, fmt.Errorf("Could not decode validator pubkey: %w", err)
     } else {
         response.Pubkey = pubkey
     }
     if withdrawalCredentials, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.WithdrawalCredentials)); err != nil {
-        return beacon.ValidatorStatus{}, errors.New("Error decoding validator withdrawal credentials: " + err.Error())
+        return beacon.ValidatorStatus{}, fmt.Errorf("Could not decode validator withdrawal credentials: %w", err)
     } else {
         response.WithdrawalCredentials = withdrawalCredentials
     }
