@@ -125,8 +125,8 @@ github.com/prometheus/tsdb v0.6.2-0.20190402121629-4f204dcbc150 h1:ZeU+auZj1iNzN
 github.com/prometheus/tsdb v0.6.2-0.20190402121629-4f204dcbc150/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
 github.com/rjeczalik/notify v0.9.1 h1:CLCKso/QK1snAlnhNR/CNvNiFU2saUtjV0bx3EwNeCE=
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
-github.com/rocket-pool/rocketpool-go v0.0.0-20200723002925-4918dcc45f93 h1:7a3aIyAu6aRMBg54nwMNsiD3HdIHVB7SF9DrWjSt6io=
-github.com/rocket-pool/rocketpool-go v0.0.0-20200723002925-4918dcc45f93/go.mod h1:1Prh+giH948mU3t917HTA4r4TX/o4h7KsbVhQjU72fY=
+github.com/rocket-pool/rocketpool-go v0.0.0-20200724014135-6a7d494544d7 h1:S4zg7enEGrIPvbe/lOQOPxBAMgJ2YuMa0FBdxmyw/tM=
+github.com/rocket-pool/rocketpool-go v0.0.0-20200724014135-6a7d494544d7/go.mod h1:1Prh+giH948mU3t917HTA4r4TX/o4h7KsbVhQjU72fY=
 github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00/go.mod h1:gFx+x8UowdsKA9AchylcLynDq+nNFfI8FkUZdN/jGCU=
 github.com/rs/xhandler v0.0.0-20160618193221-ed27b6fd6521/go.mod h1:RvLn4FgxWubrpZHtQLnOf6EwhN2hEMusxZOhcW9H3UQ=
 github.com/russross/blackfriday/v2 v2.0.1 h1:lPqVAte+HuHNfhJ/0LC98ESWRz8afy9tM/0RK8m9o+Q=
