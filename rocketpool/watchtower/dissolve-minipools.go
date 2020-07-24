@@ -21,7 +21,7 @@ import (
 
 
 // Settings
-var checkMinipoolsInterval, _ = time.ParseDuration("1m")
+var dissolveTimedOutMinipoolsInterval, _ = time.ParseDuration("1m")
 
 
 // Start dissolve timed out minipools task
@@ -40,7 +40,7 @@ func startDissolveTimedOutMinipools(c *cli.Context) error {
             if err := dissolveTimedOutMinipools(c, am, rp); err != nil {
                 log.Println(err)
             }
-            time.Sleep(checkMinipoolsInterval)
+            time.Sleep(dissolveTimedOutMinipoolsInterval)
         }
     })()
 

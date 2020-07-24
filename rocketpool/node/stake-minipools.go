@@ -18,7 +18,7 @@ import (
 
 
 // Settings
-var checkMinipoolsInterval, _ = time.ParseDuration("1m")
+var stakePrelaunchMinipoolsInterval, _ = time.ParseDuration("1m")
 
 
 // Start stake prelaunch minipools task
@@ -37,7 +37,7 @@ func startStakePrelaunchMinipools(c *cli.Context) error {
             if err := stakePrelaunchMinipools(c, am, rp); err != nil {
                 log.Println(err)
             }
-            time.Sleep(checkMinipoolsInterval)
+            time.Sleep(stakePrelaunchMinipoolsInterval)
         }
     })()
 
