@@ -87,7 +87,7 @@ func dissolveTimedOutMinipools(c *cli.Context, am *accounts.AccountManager, rp *
 
     // Dissolve minipools
     for _, mp := range minipools {
-        if err := dissolveMinipool(mp); err != nil {
+        if err := dissolveMinipool(am, mp); err != nil {
             log.Println(fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err))
         }
     }
@@ -179,13 +179,21 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
 
 
 // Dissolve a minipool
-func dissolveMinipool(mp *minipool.Minipool) error {
+func dissolveMinipool(am *accounts.AccountManager, mp *minipool.Minipool) error {
 
     // Log
     log.Printf("Dissolving minipool %s...\n", mp.Address.Hex())
 
-    // TODO: implement
-    log.Println("Minipool dissolving not implemented...")
+    // Get transactor
+    opts, err := am.GetNodeAccountTransactor()
+    if err != nil {
+        return err
+    }
+
+    // Dissolve
+    if _, err := mp.Dissolve(opts); err != nil {
+        return err
+    }
 
     // Log
     log.Printf("Successfully dissolved minipool %s.\n", mp.Address.Hex())
