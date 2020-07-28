@@ -58,15 +58,15 @@ func GetWithdrawalCredentials(rp *rocketpool.RocketPool) (common.Hash, error) {
 }
 
 
-// Submit network ETH balances for an epoch
-func SubmitETHBalances(rp *rocketpool.RocketPool, epoch int64, total *big.Int, staking *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+// Submit network balances for an epoch
+func SubmitBalances(rp *rocketpool.RocketPool, block int64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketNetworkBalances, err := getRocketNetworkBalances(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNetworkBalances, opts, "submitETHBalances", big.NewInt(epoch), total, staking)
+    txReceipt, err := contract.Transact(rp.Client, rocketNetworkBalances, opts, "submitBalances", big.NewInt(block), totalEth, stakingEth, rethSupply)
     if err != nil {
-        return nil, fmt.Errorf("Could not submit network ETH balances: %w", err)
+        return nil, fmt.Errorf("Could not submit network balances: %w", err)
     }
     return txReceipt, nil
 }

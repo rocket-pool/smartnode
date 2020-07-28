@@ -26,6 +26,20 @@ func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool) (bool, error) {
 }
 
 
+// The frequency in blocks at which network balances should be submitted by trusted nodes
+func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool) (int64, error) {
+    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    if err != nil {
+        return 0, err
+    }
+    submitBalancesFrequency := new(*big.Int)
+    if err := rocketNetworkSettings.Call(nil, submitBalancesFrequency, "getSubmitBalancesFrequency"); err != nil {
+        return 0, fmt.Errorf("Could not get network balance submission frequency: %w", err)
+    }
+    return (*submitBalancesFrequency).Int64(), nil
+}
+
+
 // Processing validator withdrawals currently enabled
 func GetProcessWithdrawalsEnabled(rp *rocketpool.RocketPool) (bool, error) {
     rocketNetworkSettings, err := getRocketNetworkSettings(rp)

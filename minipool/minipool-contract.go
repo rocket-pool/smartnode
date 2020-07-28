@@ -39,9 +39,6 @@ type UserDetails struct {
 type StakingDetails struct {
     StartBalance *big.Int           `json:"startBalance"`
     EndBalance *big.Int             `json:"endBalance"`
-    StartEpoch int64                `json:"startEpoch"`
-    EndEpoch int64                  `json:"endEpoch"`
-    UserStartEpoch int64            `json:"userStartEpoch"`
 }
 
 
@@ -302,9 +299,6 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
     var wg errgroup.Group
     var startBalance *big.Int
     var endBalance *big.Int
-    var startEpoch int64
-    var endEpoch int64
-    var userStartEpoch int64
 
     // Load data
     wg.Go(func() error {
@@ -317,21 +311,6 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
         endBalance, err = mp.GetStakingEndBalance()
         return err
     })
-    wg.Go(func() error {
-        var err error
-        startEpoch, err = mp.GetStakingStartEpoch()
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        endEpoch, err = mp.GetStakingEndEpoch()
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        userStartEpoch, err = mp.GetStakingUserStartEpoch()
-        return err
-    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
@@ -342,9 +321,6 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
     return StakingDetails{
         StartBalance: startBalance,
         EndBalance: endBalance,
-        StartEpoch: startEpoch,
-        EndEpoch: endEpoch,
-        UserStartEpoch: userStartEpoch,
     }, nil
 
 }
@@ -361,27 +337,6 @@ func (mp *Minipool) GetStakingEndBalance() (*big.Int, error) {
         return nil, fmt.Errorf("Could not get minipool %s staking end balance: %w", mp.Address.Hex(), err)
     }
     return *stakingEndBalance, nil
-}
-func (mp *Minipool) GetStakingStartEpoch() (int64, error) {
-    stakingStartEpoch := new(*big.Int)
-    if err := mp.Contract.Call(nil, stakingStartEpoch, "getStakingStartEpoch"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %s staking start epoch: %w", mp.Address.Hex(), err)
-    }
-    return (*stakingStartEpoch).Int64(), nil
-}
-func (mp *Minipool) GetStakingEndEpoch() (int64, error) {
-    stakingEndEpoch := new(*big.Int)
-    if err := mp.Contract.Call(nil, stakingEndEpoch, "getStakingEndEpoch"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %s staking end epoch: %w", mp.Address.Hex(), err)
-    }
-    return (*stakingEndEpoch).Int64(), nil
-}
-func (mp *Minipool) GetStakingUserStartEpoch() (int64, error) {
-    stakingUserStartEpoch := new(*big.Int)
-    if err := mp.Contract.Call(nil, stakingUserStartEpoch, "getStakingUserStartEpoch"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool %s staking user start epoch: %w", mp.Address.Hex(), err)
-    }
-    return (*stakingUserStartEpoch).Int64(), nil
 }
 
 

@@ -13,6 +13,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/contract"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -423,13 +424,27 @@ func GetQueueNextCapacity(rp *rocketpool.RocketPool) (*big.Int, error) {
 }
 
 
-// Submit a minipool withdrawable event
-func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, withdrawalBalance *big.Int, startEpoch, endEpoch, userStartEpoch int64, opts *bind.TransactOpts) (*types.Receipt, error) {
+// Get the node reward amount for a minipool by node fee, user deposit balance, and staking start & end balances
+func GetMinipoolNodeRewardAmount(rp *rocketpool.RocketPool, nodeFee float64, userDepositBalance, startBalance, endBalance *big.Int) (*big.Int, error) {
     rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolStatus, opts, "submitMinipoolWithdrawable", minipoolAddress, withdrawalBalance, big.NewInt(startEpoch), big.NewInt(endEpoch), big.NewInt(userStartEpoch))
+    nodeAmount := new(*big.Int)
+    if err := rocketMinipoolStatus.Call(nil, nodeAmount, "getMinipoolNodeRewardAmount", eth.EthToWei(nodeFee), userDepositBalance, startBalance, endBalance); err != nil {
+        return nil, fmt.Errorf("Could not get minipool node reward amount: %w", err)
+    }
+    return *nodeAmount, nil
+}
+
+
+// Submit a minipool withdrawable event
+func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, stakingStartBalance, stakingEndBalance *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolStatus, opts, "submitMinipoolWithdrawable", minipoolAddress, stakingStartBalance, stakingEndBalance)
     if err != nil {
         return nil, fmt.Errorf("Could not submit minipool withdrawable event: %w", err)
     }
