@@ -69,7 +69,7 @@ func NewMinipool(rp *rocketpool.RocketPool, address common.Address) (*Minipool, 
 
 
 // Get status details
-func (mp *Minipool) GetStatusDetails() (StatusDetails, error) {
+func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -80,17 +80,17 @@ func (mp *Minipool) GetStatusDetails() (StatusDetails, error) {
     // Load data
     wg.Go(func() error {
         var err error
-        status, err = mp.GetStatus()
+        status, err = mp.GetStatus(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        statusBlock, err = mp.GetStatusBlock()
+        statusBlock, err = mp.GetStatusBlock(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        statusTime, err = mp.GetStatusTime()
+        statusTime, err = mp.GetStatusTime(opts)
         return err
     })
 
@@ -107,23 +107,23 @@ func (mp *Minipool) GetStatusDetails() (StatusDetails, error) {
     }, nil
 
 }
-func (mp *Minipool) GetStatus() (rptypes.MinipoolStatus, error) {
+func (mp *Minipool) GetStatus(opts *bind.CallOpts) (rptypes.MinipoolStatus, error) {
     status := new(rptypes.MinipoolStatus)
-    if err := mp.Contract.Call(nil, status, "getStatus"); err != nil {
+    if err := mp.Contract.Call(opts, status, "getStatus"); err != nil {
         return 0, fmt.Errorf("Could not get minipool %s status: %w", mp.Address.Hex(), err)
     }
     return *status, nil
 }
-func (mp *Minipool) GetStatusBlock() (int64, error) {
+func (mp *Minipool) GetStatusBlock(opts *bind.CallOpts) (int64, error) {
     statusBlock := new(*big.Int)
-    if err := mp.Contract.Call(nil, statusBlock, "getStatusBlock"); err != nil {
+    if err := mp.Contract.Call(opts, statusBlock, "getStatusBlock"); err != nil {
         return 0, fmt.Errorf("Could not get minipool %s status changed block: %w", mp.Address.Hex(), err)
     }
     return (*statusBlock).Int64(), nil
 }
-func (mp *Minipool) GetStatusTime() (time.Time, error) {
+func (mp *Minipool) GetStatusTime(opts *bind.CallOpts) (time.Time, error) {
     statusTime := new(*big.Int)
-    if err := mp.Contract.Call(nil, statusTime, "getStatusTime"); err != nil {
+    if err := mp.Contract.Call(opts, statusTime, "getStatusTime"); err != nil {
         return time.Unix(0, 0), fmt.Errorf("Could not get minipool %s status changed time: %w", mp.Address.Hex(), err)
     }
     return time.Unix((*statusTime).Int64(), 0), nil
@@ -131,9 +131,9 @@ func (mp *Minipool) GetStatusTime() (time.Time, error) {
 
 
 // Get deposit type
-func (mp *Minipool) GetDepositType() (rptypes.MinipoolDeposit, error) {
+func (mp *Minipool) GetDepositType(opts *bind.CallOpts) (rptypes.MinipoolDeposit, error) {
     depositType := new(rptypes.MinipoolDeposit)
-    if err := mp.Contract.Call(nil, depositType, "getDepositType"); err != nil {
+    if err := mp.Contract.Call(opts, depositType, "getDepositType"); err != nil {
         return 0, fmt.Errorf("Could not get minipool %s deposit type: %w", mp.Address.Hex(), err)
     }
     return *depositType, nil
@@ -141,7 +141,7 @@ func (mp *Minipool) GetDepositType() (rptypes.MinipoolDeposit, error) {
 
 
 // Get node details
-func (mp *Minipool) GetNodeDetails() (NodeDetails, error) {
+func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (NodeDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -154,27 +154,27 @@ func (mp *Minipool) GetNodeDetails() (NodeDetails, error) {
     // Load data
     wg.Go(func() error {
         var err error
-        address, err = mp.GetNodeAddress()
+        address, err = mp.GetNodeAddress(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        fee, err = mp.GetNodeFee()
+        fee, err = mp.GetNodeFee(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        depositBalance, err = mp.GetNodeDepositBalance()
+        depositBalance, err = mp.GetNodeDepositBalance(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        refundBalance, err = mp.GetNodeRefundBalance()
+        refundBalance, err = mp.GetNodeRefundBalance(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        depositAssigned, err = mp.GetNodeDepositAssigned()
+        depositAssigned, err = mp.GetNodeDepositAssigned(opts)
         return err
     })
 
@@ -193,37 +193,37 @@ func (mp *Minipool) GetNodeDetails() (NodeDetails, error) {
     }, nil
 
 }
-func (mp *Minipool) GetNodeAddress() (common.Address, error) {
+func (mp *Minipool) GetNodeAddress(opts *bind.CallOpts) (common.Address, error) {
     nodeAddress := new(common.Address)
-    if err := mp.Contract.Call(nil, nodeAddress, "getNodeAddress"); err != nil {
+    if err := mp.Contract.Call(opts, nodeAddress, "getNodeAddress"); err != nil {
         return common.Address{}, fmt.Errorf("Could not get minipool %s node address: %w", mp.Address.Hex(), err)
     }
     return *nodeAddress, nil
 }
-func (mp *Minipool) GetNodeFee() (float64, error) {
+func (mp *Minipool) GetNodeFee(opts *bind.CallOpts) (float64, error) {
     nodeFee := new(*big.Int)
-    if err := mp.Contract.Call(nil, nodeFee, "getNodeFee"); err != nil {
+    if err := mp.Contract.Call(opts, nodeFee, "getNodeFee"); err != nil {
         return 0, fmt.Errorf("Could not get minipool %s node fee: %w", mp.Address.Hex(), err)
     }
     return eth.WeiToEth(*nodeFee), nil
 }
-func (mp *Minipool) GetNodeDepositBalance() (*big.Int, error) {
+func (mp *Minipool) GetNodeDepositBalance(opts *bind.CallOpts) (*big.Int, error) {
     nodeDepositBalance := new(*big.Int)
-    if err := mp.Contract.Call(nil, nodeDepositBalance, "getNodeDepositBalance"); err != nil {
+    if err := mp.Contract.Call(opts, nodeDepositBalance, "getNodeDepositBalance"); err != nil {
         return nil, fmt.Errorf("Could not get minipool %s node deposit balance: %w", mp.Address.Hex(), err)
     }
     return *nodeDepositBalance, nil
 }
-func (mp *Minipool) GetNodeRefundBalance() (*big.Int, error) {
+func (mp *Minipool) GetNodeRefundBalance(opts *bind.CallOpts) (*big.Int, error) {
     nodeRefundBalance := new(*big.Int)
-    if err := mp.Contract.Call(nil, nodeRefundBalance, "getNodeRefundBalance"); err != nil {
+    if err := mp.Contract.Call(opts, nodeRefundBalance, "getNodeRefundBalance"); err != nil {
         return nil, fmt.Errorf("Could not get minipool %s node refund balance: %w", mp.Address.Hex(), err)
     }
     return *nodeRefundBalance, nil
 }
-func (mp *Minipool) GetNodeDepositAssigned() (bool, error) {
+func (mp *Minipool) GetNodeDepositAssigned(opts *bind.CallOpts) (bool, error) {
     nodeDepositAssigned := new(bool)
-    if err := mp.Contract.Call(nil, nodeDepositAssigned, "getNodeDepositAssigned"); err != nil {
+    if err := mp.Contract.Call(opts, nodeDepositAssigned, "getNodeDepositAssigned"); err != nil {
         return false, fmt.Errorf("Could not get minipool %s node deposit assigned status: %w", mp.Address.Hex(), err)
     }
     return *nodeDepositAssigned, nil
@@ -231,7 +231,7 @@ func (mp *Minipool) GetNodeDepositAssigned() (bool, error) {
 
 
 // Get user deposit details
-func (mp *Minipool) GetUserDetails() (UserDetails, error) {
+func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (UserDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -242,17 +242,17 @@ func (mp *Minipool) GetUserDetails() (UserDetails, error) {
     // Load data
     wg.Go(func() error {
         var err error
-        depositBalance, err = mp.GetUserDepositBalance()
+        depositBalance, err = mp.GetUserDepositBalance(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        depositAssigned, err = mp.GetUserDepositAssigned()
+        depositAssigned, err = mp.GetUserDepositAssigned(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        depositAssignedTime, err = mp.GetUserDepositAssignedTime()
+        depositAssignedTime, err = mp.GetUserDepositAssignedTime(opts)
         return err
     })
 
@@ -269,23 +269,23 @@ func (mp *Minipool) GetUserDetails() (UserDetails, error) {
     }, nil
 
 }
-func (mp *Minipool) GetUserDepositBalance() (*big.Int, error) {
+func (mp *Minipool) GetUserDepositBalance(opts *bind.CallOpts) (*big.Int, error) {
     userDepositBalance := new(*big.Int)
-    if err := mp.Contract.Call(nil, userDepositBalance, "getUserDepositBalance"); err != nil {
+    if err := mp.Contract.Call(opts, userDepositBalance, "getUserDepositBalance"); err != nil {
         return nil, fmt.Errorf("Could not get minipool %s user deposit balance: %w", mp.Address.Hex(), err)
     }
     return *userDepositBalance, nil
 }
-func (mp *Minipool) GetUserDepositAssigned() (bool, error) {
+func (mp *Minipool) GetUserDepositAssigned(opts *bind.CallOpts) (bool, error) {
     userDepositAssigned := new(bool)
-    if err := mp.Contract.Call(nil, userDepositAssigned, "getUserDepositAssigned"); err != nil {
+    if err := mp.Contract.Call(opts, userDepositAssigned, "getUserDepositAssigned"); err != nil {
         return false, fmt.Errorf("Could not get minipool %s user deposit assigned status: %w", mp.Address.Hex(), err)
     }
     return *userDepositAssigned, nil
 }
-func (mp *Minipool) GetUserDepositAssignedTime() (time.Time, error) {
+func (mp *Minipool) GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, error) {
     depositAssignedTime := new(*big.Int)
-    if err := mp.Contract.Call(nil, depositAssignedTime, "getUserDepositAssignedTime"); err != nil {
+    if err := mp.Contract.Call(opts, depositAssignedTime, "getUserDepositAssignedTime"); err != nil {
         return time.Unix(0, 0), fmt.Errorf("Could not get minipool %s user deposit assigned time: %w", mp.Address.Hex(), err)
     }
     return time.Unix((*depositAssignedTime).Int64(), 0), nil
@@ -293,7 +293,7 @@ func (mp *Minipool) GetUserDepositAssignedTime() (time.Time, error) {
 
 
 // Get staking details
-func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
+func (mp *Minipool) GetStakingDetails(opts *bind.CallOpts) (StakingDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -303,12 +303,12 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
     // Load data
     wg.Go(func() error {
         var err error
-        startBalance, err = mp.GetStakingStartBalance()
+        startBalance, err = mp.GetStakingStartBalance(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        endBalance, err = mp.GetStakingEndBalance()
+        endBalance, err = mp.GetStakingEndBalance(opts)
         return err
     })
 
@@ -324,16 +324,16 @@ func (mp *Minipool) GetStakingDetails() (StakingDetails, error) {
     }, nil
 
 }
-func (mp *Minipool) GetStakingStartBalance() (*big.Int, error) {
+func (mp *Minipool) GetStakingStartBalance(opts *bind.CallOpts) (*big.Int, error) {
     stakingStartBalance := new(*big.Int)
-    if err := mp.Contract.Call(nil, stakingStartBalance, "getStakingStartBalance"); err != nil {
+    if err := mp.Contract.Call(opts, stakingStartBalance, "getStakingStartBalance"); err != nil {
         return nil, fmt.Errorf("Could not get minipool %s staking start balance: %w", mp.Address.Hex(), err)
     }
     return *stakingStartBalance, nil
 }
-func (mp *Minipool) GetStakingEndBalance() (*big.Int, error) {
+func (mp *Minipool) GetStakingEndBalance(opts *bind.CallOpts) (*big.Int, error) {
     stakingEndBalance := new(*big.Int)
-    if err := mp.Contract.Call(nil, stakingEndBalance, "getStakingEndBalance"); err != nil {
+    if err := mp.Contract.Call(opts, stakingEndBalance, "getStakingEndBalance"); err != nil {
         return nil, fmt.Errorf("Could not get minipool %s staking end balance: %w", mp.Address.Hex(), err)
     }
     return *stakingEndBalance, nil

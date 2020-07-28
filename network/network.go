@@ -17,13 +17,13 @@ import (
 
 
 // Get the current network node commission rate
-func GetNodeFee(rp *rocketpool.RocketPool) (float64, error) {
+func GetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
     rocketNetworkFees, err := getRocketNetworkFees(rp)
     if err != nil {
         return 0, err
     }
     nodeFee := new(*big.Int)
-    if err := rocketNetworkFees.Call(nil, nodeFee, "getNodeFee"); err != nil {
+    if err := rocketNetworkFees.Call(opts, nodeFee, "getNodeFee"); err != nil {
         return 0, fmt.Errorf("Could not get network node fee: %w", err)
     }
     return eth.WeiToEth(*nodeFee), nil
@@ -31,13 +31,13 @@ func GetNodeFee(rp *rocketpool.RocketPool) (float64, error) {
 
 
 // Get the withdrawal pool balance
-func GetWithdrawalBalance(rp *rocketpool.RocketPool) (*big.Int, error) {
+func GetWithdrawalBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketNetworkWithdrawal, err := getRocketNetworkWithdrawal(rp)
     if err != nil {
         return nil, err
     }
     balance := new(*big.Int)
-    if err := rocketNetworkWithdrawal.Call(nil, balance, "getBalance"); err != nil {
+    if err := rocketNetworkWithdrawal.Call(opts, balance, "getBalance"); err != nil {
         return nil, fmt.Errorf("Could not get withdrawal pool balance: %w", err)
     }
     return *balance, nil
@@ -45,13 +45,13 @@ func GetWithdrawalBalance(rp *rocketpool.RocketPool) (*big.Int, error) {
 
 
 // Get the current network validator withdrawal credentials
-func GetWithdrawalCredentials(rp *rocketpool.RocketPool) (common.Hash, error) {
+func GetWithdrawalCredentials(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Hash, error) {
     rocketNetworkWithdrawal, err := getRocketNetworkWithdrawal(rp)
     if err != nil {
         return common.Hash{}, err
     }
     withdrawalCredentials := new(common.Hash)
-    if err := rocketNetworkWithdrawal.Call(nil, withdrawalCredentials, "getWithdrawalCredentials"); err != nil {
+    if err := rocketNetworkWithdrawal.Call(opts, withdrawalCredentials, "getWithdrawalCredentials"); err != nil {
         return common.Hash{}, fmt.Errorf("Could not get network withdrawal credentials: %w", err)
     }
     return *withdrawalCredentials, nil

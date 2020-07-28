@@ -24,7 +24,7 @@ type NodeDetails struct {
 
 
 // Get a node's details
-func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (NodeDetails, error) {
+func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (NodeDetails, error) {
 
     // Data
     var wg errgroup.Group
@@ -35,17 +35,17 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (Node
     // Load data
     wg.Go(func() error {
         var err error
-        exists, err = GetNodeExists(rp, nodeAddress)
+        exists, err = GetNodeExists(rp, nodeAddress, opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        trusted, err = GetNodeTrusted(rp, nodeAddress)
+        trusted, err = GetNodeTrusted(rp, nodeAddress, opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        timezoneLocation, err = GetNodeTimezoneLocation(rp, nodeAddress)
+        timezoneLocation, err = GetNodeTimezoneLocation(rp, nodeAddress, opts)
         return err
     })
 
@@ -65,13 +65,13 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) (Node
 
 
 // Check whether a node exists
-func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool, error) {
+func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return false, err
     }
     exists := new(bool)
-    if err := rocketNodeManager.Call(nil, exists, "getNodeExists", nodeAddress); err != nil {
+    if err := rocketNodeManager.Call(opts, exists, "getNodeExists", nodeAddress); err != nil {
         return false, fmt.Errorf("Could not get node %s exists status: %w", nodeAddress.Hex(), err)
     }
     return *exists, nil
@@ -79,13 +79,13 @@ func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool,
 
 
 // Get a node's trusted status
-func GetNodeTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool, error) {
+func GetNodeTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return false, err
     }
     trusted := new(bool)
-    if err := rocketNodeManager.Call(nil, trusted, "getNodeTrusted", nodeAddress); err != nil {
+    if err := rocketNodeManager.Call(opts, trusted, "getNodeTrusted", nodeAddress); err != nil {
         return false, fmt.Errorf("Could not get node %s trusted status: %w", nodeAddress.Hex(), err)
     }
     return *trusted, nil
@@ -93,13 +93,13 @@ func GetNodeTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool
 
 
 // Get a node's timezone location
-func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Address) (string, error) {
+func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (string, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return "", err
     }
     timezoneLocation := new(string)
-    if err := rocketNodeManager.Call(nil, timezoneLocation, "getNodeTimezoneLocation", nodeAddress); err != nil {
+    if err := rocketNodeManager.Call(opts, timezoneLocation, "getNodeTimezoneLocation", nodeAddress); err != nil {
         return "", fmt.Errorf("Could not get node %s timezone location: %w", nodeAddress.Hex(), err)
     }
     return *timezoneLocation, nil

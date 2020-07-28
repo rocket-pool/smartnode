@@ -24,7 +24,7 @@ type Balances struct {
 
 
 // Get token balances of an address
-func GetBalances(rp *rocketpool.RocketPool, address common.Address) (Balances, error) {
+func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (Balances, error) {
 
     // Data
     var wg errgroup.Group
@@ -34,12 +34,14 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address) (Balances, e
     // Load data
     wg.Go(func() error {
         var err error
-        ethBalance, err = rp.Client.BalanceAt(context.Background(), address, nil)
+        var blockNumber *big.Int
+        if opts != nil { blockNumber = opts.BlockNumber }
+        ethBalance, err = rp.Client.BalanceAt(context.Background(), address, blockNumber)
         return err
     })
     wg.Go(func() error {
         var err error
-        nethBalance, err = GetNETHBalance(rp, address)
+        nethBalance, err = GetNETHBalance(rp, address, opts)
         return err
     })
 
@@ -58,9 +60,9 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address) (Balances, e
 
 
 // Get a token balance
-func balanceOf(tokenContract *bind.BoundContract, tokenName string, address common.Address) (*big.Int, error) {
+func balanceOf(tokenContract *bind.BoundContract, tokenName string, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
     balance := new(*big.Int)
-    if err := tokenContract.Call(nil, balance, "balanceOf", address); err != nil {
+    if err := tokenContract.Call(opts, balance, "balanceOf", address); err != nil {
         return nil, fmt.Errorf("Could not get %s balance of %s: %w", tokenName, address.Hex(), err)
     }
     return *balance, nil

@@ -14,13 +14,13 @@ import (
 
 
 // Get the deposit pool balance
-func GetBalance(rp *rocketpool.RocketPool) (*big.Int, error) {
+func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketDepositPool, err := getRocketDepositPool(rp)
     if err != nil {
         return nil, err
     }
     balance := new(*big.Int)
-    if err := rocketDepositPool.Call(nil, balance, "getBalance"); err != nil {
+    if err := rocketDepositPool.Call(opts, balance, "getBalance"); err != nil {
         return nil, fmt.Errorf("Could not get deposit pool balance: %w", err)
     }
     return *balance, nil

@@ -15,12 +15,12 @@ import (
 
 
 // Get nETH balance
-func GetNETHBalance(rp *rocketpool.RocketPool, address common.Address) (*big.Int, error) {
+func GetNETHBalance(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
     rocketNodeETHToken, err := getRocketNodeETHToken(rp)
     if err != nil {
         return nil, err
     }
-    return balanceOf(rocketNodeETHToken, "nETH", address)
+    return balanceOf(rocketNodeETHToken, "nETH", address, opts)
 }
 
 
