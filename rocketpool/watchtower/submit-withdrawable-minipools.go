@@ -13,7 +13,7 @@ import (
 
 
 // Settings
-var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("384s") // 1 epoch
+var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("1m")
 
 
 // Start submit withdrawable minipools task
