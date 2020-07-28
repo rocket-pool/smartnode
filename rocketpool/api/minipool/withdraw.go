@@ -49,7 +49,7 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
 
     // Check minipool status
     wg.Go(func() error {
-        status, err := mp.GetStatus()
+        status, err := mp.GetStatus(nil)
         if err == nil {
             response.InvalidStatus = (status != types.Withdrawable)
         }
@@ -68,14 +68,14 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     // Get minipool status block
     wg.Go(func() error {
         var err error
-        statusBlock, err = mp.GetStatusBlock()
+        statusBlock, err = mp.GetStatusBlock(nil)
         return err
     })
 
     // Get withdrawal delay
     wg.Go(func() error {
         var err error
-        withdrawalDelay, err = settings.GetMinipoolWithdrawalDelay(rp)
+        withdrawalDelay, err = settings.GetMinipoolWithdrawalDelay(rp, nil)
         return err
     })
 

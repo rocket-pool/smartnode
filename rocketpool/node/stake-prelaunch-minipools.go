@@ -90,7 +90,7 @@ func stakePrelaunchMinipools(c *cli.Context, am *accounts.AccountManager, rp *ro
 func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]*minipool.Minipool, error) {
 
     // Get node minipool addresses
-    addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress)
+    addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, nil)
     if err != nil {
         return []*minipool.Minipool{}, err
     }
@@ -113,7 +113,7 @@ func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address
     for mi, mp := range minipools {
         mi, mp := mi, mp
         wg.Go(func() error {
-            status, err := mp.GetStatus()
+            status, err := mp.GetStatus(nil)
             if err == nil { statuses[mi] = status }
             return err
         })

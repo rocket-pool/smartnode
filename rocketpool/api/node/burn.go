@@ -38,7 +38,7 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 
                 // Check node nETH balance
                 nodeAccount, _ := am.GetNodeAccount()
-                nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address)
+                nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address, nil)
                 if err != nil {
                     return err
                 }

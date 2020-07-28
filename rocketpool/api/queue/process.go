@@ -32,7 +32,7 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 
     // Check deposit assignments are enabled
     wg.Go(func() error {
-        assignDepositsEnabled, err := settings.GetAssignDepositsEnabled(rp)
+        assignDepositsEnabled, err := settings.GetAssignDepositsEnabled(rp, nil)
         if err == nil {
             response.AssignDepositsDisabled = !assignDepositsEnabled
         }
@@ -42,14 +42,14 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
     // Get next available minipool capacity
     wg.Go(func() error {
         var err error
-        nextMinipoolCapacity, err = minipool.GetQueueNextCapacity(rp)
+        nextMinipoolCapacity, err = minipool.GetQueueNextCapacity(rp, nil)
         return err
     })
 
     // Get deposit pool balance
     wg.Go(func() error {
         var err error
-        depositPoolBalance, err = deposit.GetBalance(rp)
+        depositPoolBalance, err = deposit.GetBalance(rp, nil)
         return err
     })
 

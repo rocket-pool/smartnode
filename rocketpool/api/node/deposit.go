@@ -58,7 +58,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         if amountWei.Cmp(big.NewInt(0)) > 0 {
             return nil
         }
-        trusted, err := node.GetNodeTrusted(rp, nodeAccount.Address)
+        trusted, err := node.GetNodeTrusted(rp, nodeAccount.Address, nil)
         if err == nil {
             response.InvalidAmount = !trusted
         }
@@ -67,7 +67,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
 
     // Check node deposits are enabled
     wg.Go(func() error {
-        depositEnabled, err := settings.GetNodeRegistrationEnabled(rp)
+        depositEnabled, err := settings.GetNodeRegistrationEnabled(rp, nil)
         if err == nil {
             response.DepositDisabled = !depositEnabled
         }

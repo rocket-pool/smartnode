@@ -34,7 +34,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
     // Get node details
     wg.Go(func() error {
-        details, err := node.GetNodeDetails(rp, nodeAccount.Address)
+        details, err := node.GetNodeDetails(rp, nodeAccount.Address, nil)
         if err == nil {
             response.Registered = details.Exists
             response.Trusted = details.Trusted
@@ -46,7 +46,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     // Get node balances
     wg.Go(func() error {
         var err error
-        response.Balances, err = tokens.GetBalances(rp, nodeAccount.Address)
+        response.Balances, err = tokens.GetBalances(rp, nodeAccount.Address, nil)
         return err
     })
 

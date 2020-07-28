@@ -245,7 +245,7 @@ func getNodeRegistered(c *cli.Context) (bool, error) {
     if err != nil {
         return false, err
     }
-    return node.GetNodeExists(rp, nodeAccount.Address)
+    return node.GetNodeExists(rp, nodeAccount.Address, nil)
 }
 
 

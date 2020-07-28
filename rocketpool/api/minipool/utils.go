@@ -20,7 +20,7 @@ import (
 
 // Validate that a minipool belongs to a node
 func validateMinipoolOwner(mp *minipool.Minipool, nodeAddress common.Address) error {
-    owner, err := mp.GetNodeAddress()
+    owner, err := mp.GetNodeAddress(nil)
     if err != nil {
         return err
     }
@@ -43,7 +43,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Addres
     // Get minipool addresses
     wg1.Go(func() error {
         var err error
-        addresses, err = minipool.GetNodeMinipoolAddresses(rp, nodeAddress)
+        addresses, err = minipool.GetNodeMinipoolAddresses(rp, nodeAddress, nil)
         return err
     })
 
@@ -59,7 +59,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Addres
     // Get withdrawal delay
     wg1.Go(func() error {
         var err error
-        withdrawalDelay, err = settings.GetMinipoolWithdrawalDelay(rp)
+        withdrawalDelay, err = settings.GetMinipoolWithdrawalDelay(rp, nil)
         return err
     })
 
@@ -109,37 +109,37 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
     // Load data
     wg.Go(func() error {
         var err error
-        details.ValidatorPubkey, err = minipool.GetMinipoolPubkey(rp, minipoolAddress)
+        details.ValidatorPubkey, err = minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        details.Status, err = mp.GetStatusDetails()
+        details.Status, err = mp.GetStatusDetails(nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        details.DepositType, err = mp.GetDepositType()
+        details.DepositType, err = mp.GetDepositType(nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        details.Node, err = mp.GetNodeDetails()
+        details.Node, err = mp.GetNodeDetails(nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        details.User, err = mp.GetUserDetails()
+        details.User, err = mp.GetUserDetails(nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        details.Staking, err = mp.GetStakingDetails()
+        details.Staking, err = mp.GetStakingDetails(nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        details.Balances, err = tokens.GetBalances(rp, minipoolAddress)
+        details.Balances, err = tokens.GetBalances(rp, minipoolAddress, nil)
         return err
     })
 

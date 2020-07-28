@@ -34,7 +34,7 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
     // Get minipool addresses
     wg1.Go(func() error {
         var err error
-        addresses, err = minipool.GetNodeMinipoolAddresses(rp, nodeAddress)
+        addresses, err = minipool.GetNodeMinipoolAddresses(rp, nodeAddress, nil)
         return err
     })
 
@@ -50,7 +50,7 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
     // Get withdrawal delay
     wg1.Go(func() error {
         var err error
-        withdrawalDelay, err = settings.GetMinipoolWithdrawalDelay(rp)
+        withdrawalDelay, err = settings.GetMinipoolWithdrawalDelay(rp, nil)
         return err
     })
 
@@ -102,17 +102,17 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     // Load data
     wg.Go(func() error {
         var err error
-        status, err = mp.GetStatus()
+        status, err = mp.GetStatus(nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        statusBlock, err = mp.GetStatusBlock()
+        statusBlock, err = mp.GetStatusBlock(nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        refundBalance, err = mp.GetNodeRefundBalance()
+        refundBalance, err = mp.GetNodeRefundBalance(nil)
         return err
     })
 

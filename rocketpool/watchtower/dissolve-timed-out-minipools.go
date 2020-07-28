@@ -65,7 +65,7 @@ func dissolveTimedOutMinipools(c *cli.Context, am *accounts.AccountManager, rp *
     }
 
     // Check node trusted status
-    nodeTrusted, err := node.GetNodeTrusted(rp, nodeAccount.Address)
+    nodeTrusted, err := node.GetNodeTrusted(rp, nodeAccount.Address, nil)
     if err != nil {
         return err
     }
@@ -110,7 +110,7 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
     // Get minipool addresses
     wg1.Go(func() error {
         var err error
-        addresses, err = minipool.GetMinipoolAddresses(rp)
+        addresses, err = minipool.GetMinipoolAddresses(rp, nil)
         return err
     })
 
@@ -126,7 +126,7 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
     // Get launch timeout
     wg1.Go(func() error {
         var err error
-        launchTimeout, err = settings.GetMinipoolLaunchTimeout(rp)
+        launchTimeout, err = settings.GetMinipoolLaunchTimeout(rp, nil)
         return err
     })
 
@@ -153,7 +153,7 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
     for mi, mp := range minipools {
         mi, mp := mi, mp
         wg2.Go(func() error {
-            status, err := mp.GetStatusDetails()
+            status, err := mp.GetStatusDetails(nil)
             if err == nil { statuses[mi] = status }
             return err
         })

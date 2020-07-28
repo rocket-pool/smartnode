@@ -36,7 +36,7 @@ func canExitMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanEx
     }
 
     // Check minipool status
-    status, err := mp.GetStatus()
+    status, err := mp.GetStatus(nil)
     if err != nil {
         return nil, err
     }

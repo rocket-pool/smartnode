@@ -46,7 +46,7 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
         case "neth":
 
             // Check node nETH balance
-            nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address)
+            nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address, nil)
             if err != nil {
                 return nil, err
             }

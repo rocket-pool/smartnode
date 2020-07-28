@@ -20,7 +20,7 @@ func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
     response := api.NodeFeeResponse{}
 
     // Get node fee
-    nodeFee, err := network.GetNodeFee(rp)
+    nodeFee, err := network.GetNodeFee(rp, nil)
     if err != nil {
         return nil, err
     }

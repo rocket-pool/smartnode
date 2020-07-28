@@ -27,21 +27,21 @@ func getStatus(c *cli.Context) (*api.QueueStatusResponse, error) {
     // Get deposit pool balance
     wg.Go(func() error {
         var err error
-        response.DepositPoolBalance, err = deposit.GetBalance(rp)
+        response.DepositPoolBalance, err = deposit.GetBalance(rp, nil)
         return err
     })
 
     // Get minipool queue length
     wg.Go(func() error {
         var err error
-        response.MinipoolQueueLength, err = minipool.GetQueueTotalLength(rp)
+        response.MinipoolQueueLength, err = minipool.GetQueueTotalLength(rp, nil)
         return err
     })
 
     // Get minipool queue capacity
     wg.Go(func() error {
         var err error
-        response.MinipoolQueueCapacity, err = minipool.GetQueueTotalCapacity(rp)
+        response.MinipoolQueueCapacity, err = minipool.GetQueueTotalCapacity(rp, nil)
         return err
     })
 

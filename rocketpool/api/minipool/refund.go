@@ -37,7 +37,7 @@ func canRefundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Can
     }
 
     // Check node refund balance
-    refundBalance, err := mp.GetNodeRefundBalance()
+    refundBalance, err := mp.GetNodeRefundBalance(nil)
     if err != nil {
         return nil, err
     }
