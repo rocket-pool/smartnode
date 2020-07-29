@@ -291,7 +291,7 @@ func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, opts *bind.Call
         return err
     })
 
-    // Get beacon chain genesis time
+    // Get beacon chain config with: genesis time, genesis epoch & seconds per epoch
     // TODO: implement
 
     // Get block time
