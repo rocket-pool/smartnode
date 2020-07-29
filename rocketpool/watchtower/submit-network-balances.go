@@ -2,6 +2,7 @@ package watchtower
 
 import (
     "context"
+    "fmt"
     "log"
     "math/big"
     "time"
@@ -125,8 +126,13 @@ func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rock
     log.Printf("rETH contract balance: %.2f ETH\n", eth.WeiToEth(balances.RETHContract))
     log.Printf("rETH token supply: %.2f rETH\n", eth.WeiToEth(balances.RETHSupply))
 
-    // Submit balances and return
-    return submitBalances(am, rp, balances)
+    // Submit balances
+    if err := submitBalances(am, rp, balances); err != nil {
+        return fmt.Errorf("Could not submit network balances: %w", err)
+    }
+
+    // Return
+    return nil
 
 }
 
