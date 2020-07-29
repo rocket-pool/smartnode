@@ -32,6 +32,7 @@ var submitNetworkBalancesInterval, _ = time.ParseDuration("1m")
 
 // Network balance info
 type networkBalances struct {
+    Block int64
     DepositPool *big.Int
     MinipoolsTotal *big.Int
     MinipoolsStaking *big.Int
@@ -124,8 +125,8 @@ func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rock
     log.Printf("rETH contract balance: %.2f ETH\n", eth.WeiToEth(balances.RETHContract))
     log.Printf("rETH token supply: %.2f rETH\n", eth.WeiToEth(balances.RETHSupply))
 
-    // Return
-    return nil
+    // Submit balances and return
+    return submitBalances(am, rp, balances)
 
 }
 
@@ -255,6 +256,7 @@ func getNetworkBalances(rp *rocketpool.RocketPool, blockNumber int64) (networkBa
 
     // Balances
     balances := networkBalances{
+        Block: blockNumber,
         DepositPool: depositPoolBalance,
         MinipoolsTotal: big.NewInt(0),
         MinipoolsStaking: big.NewInt(0),
@@ -410,6 +412,41 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
     return minipoolBalanceDetails{
         UserBalance: big.NewInt(0),
     }, nil
+
+}
+
+
+// Submit network balances
+func submitBalances(am *accounts.AccountManager, rp *rocketpool.RocketPool, balances networkBalances) error {
+
+    // Log
+    log.Printf("Submitting network balances for block %d...\n", balances.Block)
+
+    // Calculate ETH balances
+    totalEth := big.NewInt(0)
+    totalEth.Add(totalEth, balances.DepositPool)
+    totalEth.Add(totalEth, balances.MinipoolsTotal)
+    totalEth.Add(totalEth, balances.MinipoolsStaking)
+    totalEth.Add(totalEth, balances.RETHContract)
+    stakingEth := big.NewInt(0)
+    stakingEth.Add(stakingEth, balances.MinipoolsStaking)
+
+    // Get transactor
+    opts, err := am.GetNodeAccountTransactor()
+    if err != nil {
+        return err
+    }
+
+    // Submit balances
+    if _, err := network.SubmitBalances(rp, balances.Block, totalEth, stakingEth, balances.RETHSupply, opts); err != nil {
+        return err
+    }
+
+    // Log
+    log.Printf("Successfully submitted network balances for block %d.\n", balances.Block)
+
+    // Return
+    return nil
 
 }
 
