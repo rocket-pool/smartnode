@@ -282,7 +282,7 @@ func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, opts *bind.Call
     // Data
     var wg1 errgroup.Group
     var addresses []common.Address
-    var blockTime uint64
+    var blockTime int64
 
     // Get minipool addresses
     wg1.Go(func() error {
@@ -295,7 +295,7 @@ func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, opts *bind.Call
     wg1.Go(func() error {
         header, err := rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
         if err == nil {
-            blockTime = header.Time
+            blockTime = int64(header.Time)
         }
         return err
     })
@@ -331,7 +331,7 @@ func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, opts *bind.Call
 
 
 // Get minipool balance details
-func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, blockTime uint64) (minipoolBalanceDetails, error) {
+func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, blockTime int64) (minipoolBalanceDetails, error) {
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
@@ -342,8 +342,9 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
     // Data
     var wg errgroup.Group
     var status types.MinipoolStatus
+    var nodeFee float64
     var userDepositBalance *big.Int
-    var userDepositAssignedTime time.Time
+    var userDepositTime int64
     var withdrawalProcessed bool
 
     // Load data
@@ -354,12 +355,19 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
     })
     wg.Go(func() error {
         var err error
-        userDepositBalance, err = mp.GetUserDepositBalance(opts)
+        nodeFee, err = mp.GetNodeFee(opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        userDepositAssignedTime, err = mp.GetUserDepositAssignedTime(opts)
+        userDepositBalance, err = mp.GetUserDepositBalance(opts)
+        return err
+    })
+    wg.Go(func() error {
+        userDepositAssignedTime, err := mp.GetUserDepositAssignedTime(opts)
+        if err == nil {
+            userDepositTime = userDepositAssignedTime.Unix()
+        }
         return err
     })
     wg.Go(func() error {
@@ -387,11 +395,12 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
         }, nil
     }
 
-    // Get validator balances at epochs
-    // If validator balances not found
-    // - Use user deposit balance for staking minipools
+    // Get validator start balance at userDepositTime (or activation) epoch
+    // Get validator current balance at blockTime epoch
+    // If validator current balance not found
+    // - Use minipool user deposit balance for staking minipools
     // - Error for withdrawable minipools
-    // Get user share of current validator balance
+    // Get user share of validator balance
     // TODO: implement
 
     // Return
