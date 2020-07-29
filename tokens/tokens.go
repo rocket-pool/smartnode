@@ -26,6 +26,10 @@ type Balances struct {
 // Get token balances of an address
 func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (Balances, error) {
 
+    // Get call options block number
+    var blockNumber *big.Int
+    if opts != nil { blockNumber = opts.BlockNumber }
+
     // Data
     var wg errgroup.Group
     var ethBalance *big.Int
@@ -34,8 +38,6 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
     // Load data
     wg.Go(func() error {
         var err error
-        var blockNumber *big.Int
-        if opts != nil { blockNumber = opts.BlockNumber }
         ethBalance, err = rp.Client.BalanceAt(context.Background(), address, blockNumber)
         return err
     })
@@ -56,6 +58,16 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
         NETH: nethBalance,
     }, nil
 
+}
+
+
+// Get a token's total supply
+func totalSupply(tokenContract *bind.BoundContract, tokenName string, opts *bind.CallOpts) (*big.Int, error) {
+    totalSupply := new(*big.Int)
+    if err := tokenContract.Call(opts, totalSupply, "totalSupply"); err != nil {
+        return nil, fmt.Errorf("Could not get %s total supply: %w", tokenName, err)
+    }
+    return *totalSupply, nil
 }
 
 
