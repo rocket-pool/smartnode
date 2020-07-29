@@ -10,11 +10,13 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/crypto"
     "github.com/rocket-pool/rocketpool-go/deposit"
+    "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/settings"
     "github.com/rocket-pool/rocketpool-go/tokens"
+    "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
@@ -31,8 +33,14 @@ var submitNetworkBalancesInterval, _ = time.ParseDuration("1m")
 // Network balance info
 type networkBalances struct {
     DepositPool *big.Int
+    MinipoolsTotal *big.Int
+    MinipoolsStaking *big.Int
     RETHContract *big.Int
     RETHSupply *big.Int
+}
+type minipoolBalanceDetails struct {
+    IsStaking bool
+    UserBalance *big.Int
 }
 
 
@@ -111,6 +119,8 @@ func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rock
 
     // Log
     log.Printf("Deposit pool balance: %.2f ETH\n", eth.WeiToEth(balances.DepositPool))
+    log.Printf("Total minipool user balance: %.2f ETH\n", eth.WeiToEth(balances.MinipoolsTotal))
+    log.Printf("Staking minipool user balance: %.2f ETH\n", eth.WeiToEth(balances.MinipoolsStaking))
     log.Printf("rETH contract balance: %.2f ETH\n", eth.WeiToEth(balances.RETHContract))
     log.Printf("rETH token supply: %.2f rETH\n", eth.WeiToEth(balances.RETHSupply))
 
@@ -202,12 +212,22 @@ func getNetworkBalances(rp *rocketpool.RocketPool, blockNumber int64) (networkBa
 
     // Data
     var wg errgroup.Group
-    balances := networkBalances{}
+    var depositPoolBalance *big.Int
+    var minipoolBalanceDetails []minipoolBalanceDetails
+    var rethContractBalance *big.Int
+    var rethTotalSupply *big.Int
 
     // Get deposit pool balance
     wg.Go(func() error {
         var err error
-        balances.DepositPool, err = deposit.GetBalance(rp, opts)
+        depositPoolBalance, err = deposit.GetBalance(rp, opts)
+        return err
+    })
+
+    // Get minipool balance details
+    wg.Go(func() error {
+        var err error
+        minipoolBalanceDetails, err = getNetworkMinipoolBalanceDetails(rp, opts)
         return err
     })
 
@@ -217,18 +237,14 @@ func getNetworkBalances(rp *rocketpool.RocketPool, blockNumber int64) (networkBa
         if err != nil {
             return err
         }
-        rethContractBalance, err := rp.Client.BalanceAt(context.Background(), *rethContractAddress, big.NewInt(blockNumber))
-        if err != nil {
-            return err
-        }
-        balances.RETHContract = rethContractBalance
-        return nil
+        rethContractBalance, err = rp.Client.BalanceAt(context.Background(), *rethContractAddress, big.NewInt(blockNumber))
+        return err
     })
 
     // Get rETH token supply
     wg.Go(func() error {
         var err error
-        balances.RETHSupply, err = tokens.GetRETHTotalSupply(rp, opts)
+        rethTotalSupply, err = tokens.GetRETHTotalSupply(rp, opts)
         return err
     })
 
@@ -237,8 +253,125 @@ func getNetworkBalances(rp *rocketpool.RocketPool, blockNumber int64) (networkBa
         return networkBalances{}, err
     }
 
+    // Balances
+    balances := networkBalances{
+        DepositPool: depositPoolBalance,
+        MinipoolsTotal: big.NewInt(0),
+        MinipoolsStaking: big.NewInt(0),
+        RETHContract: rethContractBalance,
+        RETHSupply: rethTotalSupply,
+    }
+
+    // Add minipool balances
+    for _, mp := range minipoolBalanceDetails {
+        balances.MinipoolsTotal.Add(balances.MinipoolsTotal, mp.UserBalance)
+        if mp.IsStaking {
+            balances.MinipoolsStaking.Add(balances.MinipoolsStaking, mp.UserBalance)
+        }
+    }
+
     // Return
     return balances, nil
+
+}
+
+
+// Get all minipool balance details
+func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+
+    // Get minipool addresses
+    addresses, err := minipool.GetMinipoolAddresses(rp, opts)
+    if err != nil {
+        return []minipoolBalanceDetails{}, err
+    }
+
+    // Data
+    var wg errgroup.Group
+    details := make([]minipoolBalanceDetails, len(addresses))
+
+    // Load details
+    for mi, address := range addresses {
+        mi, address := mi, address
+        wg.Go(func() error {
+            mpDetails, err := getMinipoolBalanceDetails(rp, address, opts)
+            if err == nil { details[mi] = mpDetails }
+            return err
+        })
+    }
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return []minipoolBalanceDetails{}, err
+    }
+
+    // Return
+    return details, nil
+
+}
+
+
+// Get minipool balance details
+func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (minipoolBalanceDetails, error) {
+
+    // Create minipool
+    mp, err := minipool.NewMinipool(rp, minipoolAddress)
+    if err != nil {
+        return minipoolBalanceDetails{}, err
+    }
+
+    // Data
+    var wg errgroup.Group
+    var status types.MinipoolStatus
+    var userDepositBalance *big.Int
+    var withdrawalProcessed bool
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        status, err = mp.GetStatus(opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        userDepositBalance, err = mp.GetUserDepositBalance(opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        withdrawalProcessed, err = minipool.GetMinipoolWithdrawalProcessed(rp, minipoolAddress, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return minipoolBalanceDetails{}, err
+    }
+
+    // No balance if dissolved or withdrawal has been processed
+    if status == types.Dissolved || withdrawalProcessed {
+        return minipoolBalanceDetails{
+            UserBalance: big.NewInt(0),
+        }, nil
+    }
+
+    // Use user deposit balance if initialized or prelaunch
+    if status == types.Initialized || status == types.Prelaunch {
+        return minipoolBalanceDetails{
+            UserBalance: userDepositBalance,
+        }, nil
+    }
+
+    // Get validator balance at epoch
+    // If validator balance not found
+    // - Use user deposit balance for staking minipools
+    // - Error for withdrawable minipools
+    // Get user share of validator balance
+    // TODO: implement
+
+    // Return
+    return minipoolBalanceDetails{
+        UserBalance: big.NewInt(0),
+    }, nil
 
 }
 
