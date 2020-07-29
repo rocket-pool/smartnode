@@ -291,6 +291,9 @@ func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, opts *bind.Call
         return err
     })
 
+    // Get beacon chain genesis time
+    // TODO: implement
+
     // Get block time
     wg1.Go(func() error {
         header, err := rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
