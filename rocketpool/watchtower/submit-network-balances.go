@@ -6,12 +6,16 @@ import (
     "math/big"
     "time"
 
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/crypto"
+    "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/tokens"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -22,6 +26,14 @@ import (
 
 // Settings
 var submitNetworkBalancesInterval, _ = time.ParseDuration("1m")
+
+
+// Network balance info
+type networkBalances struct {
+    DepositPool *big.Int
+    RETHContract *big.Int
+    RETHSupply *big.Int
+}
 
 
 // Start submit network balances task
@@ -88,7 +100,19 @@ func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rock
         return nil
     }
 
+    // Log
+    log.Printf("Calculating network balances for block %d...\n", blockNumber)
 
+    // Get network balances at block
+    balances, err := getNetworkBalances(rp, blockNumber)
+    if err != nil {
+        return err
+    }
+
+    // Log
+    log.Printf("Deposit pool balance: %.2f ETH\n", eth.WeiToEth(balances.DepositPool))
+    log.Printf("rETH contract balance: %.2f ETH\n", eth.WeiToEth(balances.RETHContract))
+    log.Printf("rETH token supply: %.2f rETH\n", eth.WeiToEth(balances.RETHSupply))
 
     // Return
     return nil
@@ -164,6 +188,57 @@ func canSubmitBlockBalances(rp *rocketpool.RocketPool, nodeAddress common.Addres
 
     // Return
     return (submitBalancesEnabled && blockNumber > currentBalancesBlock && !nodeSubmittedBlock), nil
+
+}
+
+
+// Get the network balances at a specific block
+func getNetworkBalances(rp *rocketpool.RocketPool, blockNumber int64) (networkBalances, error) {
+
+    // Initialize call options
+    opts := &bind.CallOpts{
+        BlockNumber: big.NewInt(blockNumber),
+    }
+
+    // Data
+    var wg errgroup.Group
+    balances := networkBalances{}
+
+    // Get deposit pool balance
+    wg.Go(func() error {
+        var err error
+        balances.DepositPool, err = deposit.GetBalance(rp, opts)
+        return err
+    })
+
+    // Get rETH contract balance
+    wg.Go(func() error {
+        rethContractAddress, err := rp.GetAddress("rocketETHToken")
+        if err != nil {
+            return err
+        }
+        rethContractBalance, err := rp.Client.BalanceAt(context.Background(), *rethContractAddress, big.NewInt(blockNumber))
+        if err != nil {
+            return err
+        }
+        balances.RETHContract = rethContractBalance
+        return nil
+    })
+
+    // Get rETH token supply
+    wg.Go(func() error {
+        var err error
+        balances.RETHSupply, err = tokens.GetRETHTotalSupply(rp, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return networkBalances{}, err
+    }
+
+    // Return
+    return balances, nil
 
 }
 
