@@ -356,6 +356,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
     var nodeFee float64
     var userDepositBalance *big.Int
     var userDepositTime int64
+    var pubkey types.ValidatorPubkey
     var withdrawalProcessed bool
 
     // Load data
@@ -379,6 +380,11 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
         if err == nil {
             userDepositTime = userDepositAssignedTime.Unix()
         }
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        pubkey, err = minipool.GetMinipoolPubkey(rp, minipoolAddress, opts)
         return err
     })
     wg.Go(func() error {
