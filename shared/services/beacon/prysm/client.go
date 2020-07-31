@@ -104,30 +104,43 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 // Get a validator's status
 func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
-    // Build list validators request
-    request := &pb.ListValidatorsRequest{
+    // Build validator requests
+    validatorsRequest := &pb.ListValidatorsRequest{
+        PublicKeys: [][]byte{pubkey.Bytes()},
+    }
+    balancesRequest := &pb.ListValidatorBalancesRequest{
         PublicKeys: [][]byte{pubkey.Bytes()},
     }
     if opts != nil {
-        request.QueryFilter = &pb.ListValidatorsRequest_Epoch{Epoch: opts.Epoch}
+        validatorsRequest.QueryFilter = &pb.ListValidatorsRequest_Epoch{Epoch: opts.Epoch}
+        balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
     }
 
     // Get validator
-    validators, err := c.bc.ListValidators(context.Background(), request)
+    validators, err := c.bc.ListValidators(context.Background(), validatorsRequest)
     if err != nil {
-        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get beacon validators: %w", err)
+        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator %s: %w", pubkey.Hex(), err)
     }
     if len(validators.ValidatorList) == 0 {
         return beacon.ValidatorStatus{}, nil
     }
     validator := validators.ValidatorList[0].Validator
 
+    // Get validator balance
+    balances, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
+    if err != nil {
+        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator %s balance: %w", pubkey.Hex(), err)
+    }
+    if len(balances.Balances) == 0 {
+        return beacon.ValidatorStatus{}, nil
+    }
+    validatorBalance := balances.Balances[0].Balance
+
     // Return response
-    // TODO: add actual balance
     return beacon.ValidatorStatus{
         Pubkey: types.BytesToValidatorPubkey(validator.PublicKey),
         WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
-        Balance: 0,
+        Balance: validatorBalance,
         EffectiveBalance: validator.EffectiveBalance,
         Slashed: validator.Slashed,
         ActivationEligibilityEpoch: validator.ActivationEligibilityEpoch,
