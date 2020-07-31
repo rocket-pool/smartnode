@@ -22,10 +22,10 @@ type Client struct {
 
 
 // Create new prysm client
-func NewClient(providerUrl string) (*Client, error) {
+func NewClient(providerAddress string) (*Client, error) {
 
     // Initialize gRPC connection
-    conn, err := grpc.Dial(providerUrl, grpc.WithInsecure(), grpc.WithBlock())
+    conn, err := grpc.Dial(providerAddress, grpc.WithInsecure(), grpc.WithBlock())
     if err != nil {
         return nil, fmt.Errorf("Could not connect to gRPC server: %w", err)
     }

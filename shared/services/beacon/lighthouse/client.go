@@ -9,6 +9,8 @@ import (
     "net/http"
     "strconv"
 
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/rocket-pool/rocketpool-go/types"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -19,26 +21,27 @@ import (
 
 // Config
 const (
+    RequestUrlFormat = "%s://%s%s"
+    RequestProtocol = "http"
     RequestContentType = "application/json"
+
     RequestEth2ConfigPath = "/spec"
     RequestSlotsPerEpochPath = "/spec/slots_per_epoch"
     RequestBeaconHeadPath = "/beacon/head"
+    RequestBeaconStateRootPath = "/beacon/state_root"
     RequestValidatorsPath = "/beacon/validators"
 )
 
 
 // Beacon request types
 type ValidatorsRequest struct {
+    StateRoot string                `json:"state_root,omitempty"`
     Pubkeys []string                `json:"pubkeys"`
 }
 
 // Beacon response types
 type Eth2ConfigResponse struct {
     GenesisForkVersion string       `json:"genesis_fork_version"`
-    BLSWithdrawalPrefixByte string  `json:"bls_withdrawal_prefix_byte"`
-    DomainBeaconProposer uint64     `json:"domain_beacon_proposer"`
-    DomainBeaconAttester uint64     `json:"domain_beacon_attester"`
-    DomainRandao uint64             `json:"domain_randao"`
     DomainDeposit uint64            `json:"domain_deposit"`
     DomainVoluntaryExit uint64      `json:"domain_voluntary_exit"`
 }
@@ -46,6 +49,7 @@ type BeaconHeadResponse struct {
     Slot uint64                     `json:"slot"`
     FinalizedSlot uint64            `json:"finalized_slot"`
     JustifiedSlot uint64            `json:"justified_slot"`
+    PreviousJustifiedSlot uint64    `json:"previous_justified_slot"`
 }
 type ValidatorResponse struct {
     Balance uint64                  `json:"balance"`
@@ -64,16 +68,20 @@ type ValidatorResponse struct {
 
 // Lighthouse client
 type Client struct {
-    providerUrl string
+    providerAddress string
 }
 
 
 // Create new lighthouse client
-func NewClient(providerUrl string) *Client {
+func NewClient(providerAddress string) *Client {
     return &Client{
-        providerUrl: providerUrl,
+        providerAddress: providerAddress,
     }
 }
+
+
+// Close the client connection
+func (c *Client) Close() {}
 
 
 // Get the eth2 config
@@ -104,7 +112,7 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
         }
         slotsPerEpoch, err = strconv.ParseUint(string(responseBody), 10, 64)
         if err != nil {
-            return fmt.Errorf("Could not decode slots per epoch: %w", err)
+            return fmt.Errorf("Could not parse slots per epoch: %w", err)
         }
         return nil
     })
@@ -116,12 +124,8 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Create response
     response := beacon.Eth2Config{
-        DomainBeaconProposer: bytesutil.Bytes4(config.DomainBeaconProposer),
-        DomainBeaconAttester: bytesutil.Bytes4(config.DomainBeaconAttester),
-        DomainRandao: bytesutil.Bytes4(config.DomainRandao),
         DomainDeposit: bytesutil.Bytes4(config.DomainDeposit),
         DomainVoluntaryExit: bytesutil.Bytes4(config.DomainVoluntaryExit),
-        SlotsPerEpoch: slotsPerEpoch,
     }
 
     // Decode hex data and update
@@ -129,11 +133,6 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
         return beacon.Eth2Config{}, fmt.Errorf("Could not decode genesis fork version: %w", err)
     } else {
         response.GenesisForkVersion = genesisForkVersion
-    }
-    if blsWithdrawalPrefixBytes, err := hex.DecodeString(hexutil.RemovePrefix(config.BLSWithdrawalPrefixByte)); err != nil {
-        return beacon.Eth2Config{}, fmt.Errorf("Could not decode BLS withdrawal prefix byte: %w", err)
-    } else {
-        response.BLSWithdrawalPrefixByte = blsWithdrawalPrefixBytes[0]
     }
 
     // Return
@@ -170,7 +169,7 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
         }
         slotsPerEpoch, err = strconv.ParseUint(string(responseBody), 10, 64)
         if err != nil {
-            return fmt.Errorf("Could not decode slots per epoch: %w", err)
+            return fmt.Errorf("Could not parse slots per epoch: %w", err)
         }
         return nil
     })
@@ -182,20 +181,25 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 
     // Return response
     return beacon.BeaconHead{
+        Slot: head.Slot,
+        FinalizedSlot: head.FinalizedSlot,
+        JustifiedSlot: head.JustifiedSlot,
+        PreviousJustifiedSlot: head.PreviousJustifiedSlot,
         Epoch: head.Slot / slotsPerEpoch,
         FinalizedEpoch: head.FinalizedSlot / slotsPerEpoch,
         JustifiedEpoch: head.JustifiedSlot / slotsPerEpoch,
+        PreviousJustifiedEpoch: head.PreviousJustifiedSlot / slotsPerEpoch,
     }, nil
 
 }
 
 
 // Get a validator's status
-func (c *Client) GetValidatorStatus(pubkey []byte) (beacon.ValidatorStatus, error) {
+func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
     // Request
     responseBody, err := c.postRequest(RequestValidatorsPath, ValidatorsRequest{
-        Pubkeys: []string{hexutil.AddPrefix(hex.EncodeToString(pubkey))},
+        Pubkeys: []string{hexutil.AddPrefix(pubkey.Hex())},
     })
     if err != nil {
         return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator status: %w", err)
@@ -211,7 +215,7 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (beacon.ValidatorStatus, erro
     // Check if validator exists
     // Pubkey is empty if validator is null in response
     if validator.Validator.Pubkey == "" {
-        return beacon.ValidatorStatus{Exists: false}, nil
+        return beacon.ValidatorStatus{}, nil
     }
 
     // Create response
@@ -230,12 +234,12 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (beacon.ValidatorStatus, erro
     if pubkey, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.Pubkey)); err != nil {
         return beacon.ValidatorStatus{}, fmt.Errorf("Could not decode validator pubkey: %w", err)
     } else {
-        response.Pubkey = pubkey
+        response.Pubkey = types.BytesToValidatorPubkey(pubkey)
     }
     if withdrawalCredentials, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.WithdrawalCredentials)); err != nil {
         return beacon.ValidatorStatus{}, fmt.Errorf("Could not decode validator withdrawal credentials: %w", err)
     } else {
-        response.WithdrawalCredentials = withdrawalCredentials
+        response.WithdrawalCredentials = common.BytesToHash(withdrawalCredentials)
     }
 
     // Return
@@ -248,7 +252,7 @@ func (c *Client) GetValidatorStatus(pubkey []byte) (beacon.ValidatorStatus, erro
 func (c *Client) getRequest(requestPath string) ([]byte, error) {
 
     // Send request
-    response, err := http.Get(c.providerUrl + requestPath)
+    response, err := http.Get(fmt.Sprintf(RequestUrlFormat, RequestProtocol, c.providerAddress, requestPath))
     if err != nil {
         return []byte{}, err
     }
@@ -277,7 +281,7 @@ func (c *Client) postRequest(requestPath string, requestBody interface{}) ([]byt
     requestBodyReader := bytes.NewReader(requestBodyBytes)
 
     // Send request
-    response, err := http.Post(c.providerUrl + requestPath, RequestContentType, requestBodyReader)
+    response, err := http.Post(fmt.Sprintf(RequestUrlFormat, RequestProtocol, c.providerAddress, requestPath), RequestContentType, requestBodyReader)
     if err != nil {
         return []byte{}, err
     }
