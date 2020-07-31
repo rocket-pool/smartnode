@@ -1,25 +1,37 @@
 package beacon
 
+import (
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/rocket-pool/rocketpool-go/types"
+)
+
+
+// API request options
+type ValidatorStatusOptions struct {
+    Epoch uint64
+}
+
 
 // API response types
 type Eth2Config struct {
     GenesisForkVersion []byte
-    BLSWithdrawalPrefixByte byte
-    DomainBeaconProposer []byte
-    DomainBeaconAttester []byte
-    DomainRandao []byte
     DomainDeposit []byte
     DomainVoluntaryExit []byte
-    SlotsPerEpoch uint64
+    GenesisEpoch uint64
 }
 type BeaconHead struct {
+    Slot uint64
+    FinalizedSlot uint64
+    JustifiedSlot uint64
+    PreviousJustifiedSlot uint64
     Epoch uint64
     FinalizedEpoch uint64
     JustifiedEpoch uint64
+    PreviousJustifiedEpoch uint64
 }
 type ValidatorStatus struct {
-    Pubkey []byte
-    WithdrawalCredentials []byte
+    Pubkey types.ValidatorPubkey
+    WithdrawalCredentials common.Hash
     Balance uint64
     EffectiveBalance uint64
     Slashed bool
@@ -35,6 +47,7 @@ type ValidatorStatus struct {
 type Client interface {
     GetEth2Config() (Eth2Config, error)
     GetBeaconHead() (BeaconHead, error)
-    GetValidatorStatus(pubkey []byte) (ValidatorStatus, error)
+    GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
+    Close()
 }
 
