@@ -43,9 +43,9 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
 
     // Data
     var wg errgroup.Group
-    var currentBlock int64
-    var statusBlock int64
-    var withdrawalDelay int64
+    var currentBlock uint64
+    var statusBlock uint64
+    var withdrawalDelay uint64
 
     // Check minipool status
     wg.Go(func() error {
@@ -60,7 +60,7 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     wg.Go(func() error {
         header, err := ec.HeaderByNumber(context.Background(), nil)
         if err == nil {
-            currentBlock = header.Number.Int64()
+            currentBlock = header.Number.Uint64()
         }
         return err
     })

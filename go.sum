@@ -166,8 +166,8 @@ github.com/prysmaticlabs/go-bitfield v0.0.0-20200322041314-62c2aee71669 h1:cX6YR
 github.com/prysmaticlabs/go-bitfield v0.0.0-20200322041314-62c2aee71669/go.mod h1:hCwmef+4qXWjv0jLDbQdWnL0Ol7cS7/lCSS26WR+u6s=
 github.com/rjeczalik/notify v0.9.1 h1:CLCKso/QK1snAlnhNR/CNvNiFU2saUtjV0bx3EwNeCE=
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
-github.com/rocket-pool/rocketpool-go v0.0.0-20200729003436-62f21cfd6caf h1:8X/jqpiuIwJVCwJrJA6fgnLuUYeakdwuqRqPmnzHmZc=
-github.com/rocket-pool/rocketpool-go v0.0.0-20200729003436-62f21cfd6caf/go.mod h1:1Prh+giH948mU3t917HTA4r4TX/o4h7KsbVhQjU72fY=
+github.com/rocket-pool/rocketpool-go v0.0.0-20200803053628-700d84f4679e h1:HN7xlHH45dunngO7yMt9JruXMpWs1Tj9IHt4rTRnUaM=
+github.com/rocket-pool/rocketpool-go v0.0.0-20200803053628-700d84f4679e/go.mod h1:1Prh+giH948mU3t917HTA4r4TX/o4h7KsbVhQjU72fY=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00/go.mod h1:gFx+x8UowdsKA9AchylcLynDq+nNFfI8FkUZdN/jGCU=
 github.com/rs/xhandler v0.0.0-20160618193221-ed27b6fd6521/go.mod h1:RvLn4FgxWubrpZHtQLnOf6EwhN2hEMusxZOhcW9H3UQ=

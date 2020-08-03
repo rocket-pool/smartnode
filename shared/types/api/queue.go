@@ -11,7 +11,7 @@ type QueueStatusResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     DepositPoolBalance *big.Int     `json:"depositPoolBalance"`
-    MinipoolQueueLength int64       `json:"minipoolQueueLength"`
+    MinipoolQueueLength uint64      `json:"minipoolQueueLength"`
     MinipoolQueueCapacity *big.Int  `json:"minipoolQueueCapacity"`
 }
 

@@ -37,8 +37,8 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Addres
     // Data
     var wg1 errgroup.Group
     var addresses []common.Address
-    var currentBlock int64
-    var withdrawalDelay int64
+    var currentBlock uint64
+    var withdrawalDelay uint64
 
     // Get minipool addresses
     wg1.Go(func() error {
@@ -51,7 +51,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Addres
     wg1.Go(func() error {
         header, err := rp.Client.HeaderByNumber(context.Background(), nil)
         if err == nil {
-            currentBlock = header.Number.Int64()
+            currentBlock = header.Number.Uint64()
         }
         return err
     })
@@ -94,7 +94,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, nodeAddress common.Addres
 
 
 // Get a minipool's details
-func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, currentBlock, withdrawalDelay int64) (api.MinipoolDetails, error) {
+func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, currentBlock, withdrawalDelay uint64) (api.MinipoolDetails, error) {
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)

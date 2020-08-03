@@ -104,8 +104,8 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
     // Data
     var wg1 errgroup.Group
     var addresses []common.Address
-    var currentBlock int64
-    var launchTimeout int64
+    var currentBlock uint64
+    var launchTimeout uint64
 
     // Get minipool addresses
     wg1.Go(func() error {
@@ -118,7 +118,7 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
     wg1.Go(func() error {
         header, err := rp.Client.HeaderByNumber(context.Background(), nil)
         if err == nil {
-            currentBlock = header.Number.Int64()
+            currentBlock = header.Number.Uint64()
         }
         return err
     })
