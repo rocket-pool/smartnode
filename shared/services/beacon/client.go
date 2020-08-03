@@ -18,6 +18,8 @@ type Eth2Config struct {
     DomainDeposit []byte
     DomainVoluntaryExit []byte
     GenesisEpoch uint64
+    GenesisTime uint64
+    SecondsPerEpoch uint64
 }
 type BeaconHead struct {
     Slot uint64

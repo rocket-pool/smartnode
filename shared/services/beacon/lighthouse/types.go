@@ -20,6 +20,7 @@ type Eth2ConfigResponse struct {
     DomainDeposit uint64            `json:"domain_deposit"`
     DomainVoluntaryExit uint64      `json:"domain_voluntary_exit"`
     GenesisSlot uint64              `json:"genesis_slot"`
+    MillisecondsPerSlot uint64      `json:"milliseconds_per_slot"`
 }
 type BeaconHeadResponse struct {
     Slot uint64                     `json:"slot"`

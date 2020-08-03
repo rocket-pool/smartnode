@@ -26,10 +26,12 @@ const (
     RequestContentType = "application/json"
 
     RequestEth2ConfigPath = "/spec"
-    RequestSlotsPerEpochPath = "/spec/slots_per_epoch"
     RequestBeaconHeadPath = "/beacon/head"
-    RequestBeaconStateRootPath = "/beacon/state_root"
     RequestValidatorsPath = "/beacon/validators"
+
+    RequestSlotsPerEpochPath = "/spec/slots_per_epoch"
+    RequestGenesisTimePath = "/beacon/genesis_time"
+    RequestBeaconStateRootPath = "/beacon/state_root"
 )
 
 
@@ -58,6 +60,7 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     var wg errgroup.Group
     var config Eth2ConfigResponse
     var slotsPerEpoch uint64
+    var genesisTime uint64
 
     // Request eth2 config
     wg.Go(func() error {
@@ -78,6 +81,13 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
         return err
     })
 
+    // Request genesis time
+    wg.Go(func() error {
+        var err error
+        genesisTime, err = c.getGenesisTime()
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return beacon.Eth2Config{}, err
@@ -89,6 +99,8 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
         DomainDeposit: bytesutil.Bytes4(config.DomainDeposit),
         DomainVoluntaryExit: bytesutil.Bytes4(config.DomainVoluntaryExit),
         GenesisEpoch: config.GenesisSlot / slotsPerEpoch,
+        GenesisTime: genesisTime,
+        SecondsPerEpoch: config.MillisecondsPerSlot * slotsPerEpoch / 1000,
     }, nil
 
 }
@@ -219,6 +231,27 @@ func (c *Client) getSlotsPerEpoch() (uint64, error) {
 
     // Return
     return slotsPerEpoch, nil
+
+}
+
+
+// Get the genesis timestamp
+func (c *Client) getGenesisTime() (uint64, error) {
+
+    // Request
+    responseBody, err := c.getRequest(RequestGenesisTimePath)
+    if err != nil {
+        return 0, fmt.Errorf("Could not get genesis time: %w", err)
+    }
+
+    // Unmarshal response
+    var genesisTime uint64
+    if err := json.Unmarshal(responseBody, &genesisTime); err != nil {
+        return 0, fmt.Errorf("Could not decode genesis time: %w", err)
+    }
+
+    // Return
+    return genesisTime, nil
 
 }
 

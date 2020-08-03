@@ -18,6 +18,7 @@ import (
 type Client struct {
     conn *grpc.ClientConn
     bc pb.BeaconChainClient
+    nc pb.NodeClient
 }
 
 
@@ -30,13 +31,15 @@ func NewClient(providerAddress string) (*Client, error) {
         return nil, fmt.Errorf("Could not connect to gRPC server: %w", err)
     }
 
-    // Initialize beacon chain client
+    // Initialize clients
     bc := pb.NewBeaconChainClient(conn)
+    nc := pb.NewNodeClient(conn)
 
     // Return client
     return &Client{
         conn: conn,
         bc: bc,
+        nc: nc,
     }, nil
 
 }
@@ -58,21 +61,35 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     }
     cfg := config.GetConfig()
 
-    // Build and return response
-    response := beacon.Eth2Config{}
-    if response.GenesisForkVersion, err = getConfigBytes(cfg, "GenesisForkVersion"); err != nil {
-        return beacon.Eth2Config{}, err
+    // Get genesis data
+    genesis, err := c.nc.GetGenesis(context.Background(), &pbtypes.Empty{})
+    if err != nil {
+        return beacon.Eth2Config{}, fmt.Errorf("Could not get genesis data: %w", err)
     }
-    if response.DomainDeposit, err = getConfigBytes(cfg, "DomainDeposit"); err != nil {
-        return beacon.Eth2Config{}, err
-    }
-    if response.DomainVoluntaryExit, err = getConfigBytes(cfg, "DomainVoluntaryExit"); err != nil {
-        return beacon.Eth2Config{}, err
-    }
-    if response.GenesisEpoch, err = getConfigUint(cfg, "GenesisEpoch"); err != nil {
-        return beacon.Eth2Config{}, err
-    }
-    return response, nil
+
+    // Get config settings
+    genesisForkVersion, err := getConfigBytes(cfg, "GenesisForkVersion")
+    if err != nil { return beacon.Eth2Config{}, err }
+    domainDeposit, err := getConfigBytes(cfg, "DomainDeposit")
+    if err != nil { return beacon.Eth2Config{}, err }
+    domainVoluntaryExit, err := getConfigBytes(cfg, "DomainVoluntaryExit")
+    if err != nil { return beacon.Eth2Config{}, err }
+    genesisEpoch, err := getConfigUint(cfg, "GenesisEpoch")
+    if err != nil { return beacon.Eth2Config{}, err }
+    secondsPerSlot, err := getConfigUint(cfg, "SecondsPerSlot")
+    if err != nil { return beacon.Eth2Config{}, err }
+    slotsPerEpoch, err := getConfigUint(cfg, "SlotsPerEpoch")
+    if err != nil { return beacon.Eth2Config{}, err }
+
+    // Return response
+    return beacon.Eth2Config{
+        GenesisForkVersion: genesisForkVersion,
+        DomainDeposit: domainDeposit,
+        DomainVoluntaryExit: domainVoluntaryExit,
+        GenesisEpoch: genesisEpoch,
+        GenesisTime: uint64(genesis.GenesisTime.Seconds),
+        SecondsPerEpoch: secondsPerSlot * slotsPerEpoch,
+    }, nil
 
 }
 
