@@ -62,7 +62,7 @@ func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, opts *bind.
 
 
 // Timeout period in blocks for prelaunch minipools to launch
-func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (int64, error) {
+func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
     if err != nil {
         return 0, err
@@ -71,12 +71,12 @@ func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (i
     if err := rocketMinipoolSettings.Call(opts, launchTimeout, "getLaunchTimeout"); err != nil {
         return 0, fmt.Errorf("Could not get minipool launch timeout: %w", err)
     }
-    return (*launchTimeout).Int64(), nil
+    return (*launchTimeout).Uint64(), nil
 }
 
 
 // Withdrawal delay in blocks before withdrawable minipools can be closed
-func GetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) (int64, error) {
+func GetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
     if err != nil {
         return 0, err
@@ -85,7 +85,7 @@ func GetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     if err := rocketMinipoolSettings.Call(opts, withdrawalDelay, "getWithdrawalDelay"); err != nil {
         return 0, fmt.Errorf("Could not get minipool withdrawal delay: %w", err)
     }
-    return (*withdrawalDelay).Int64(), nil
+    return (*withdrawalDelay).Uint64(), nil
 }
 
 

@@ -21,7 +21,7 @@ import (
 // Minipool detail types
 type StatusDetails struct {
     Status rptypes.MinipoolStatus   `json:"status"`
-    StatusBlock int64               `json:"statusBlock"`
+    StatusBlock uint64              `json:"statusBlock"`
     StatusTime time.Time            `json:"statusTime"`
 }
 type NodeDetails struct {
@@ -74,7 +74,7 @@ func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error)
     // Data
     var wg errgroup.Group
     var status rptypes.MinipoolStatus
-    var statusBlock int64
+    var statusBlock uint64
     var statusTime time.Time
 
     // Load data
@@ -114,12 +114,12 @@ func (mp *Minipool) GetStatus(opts *bind.CallOpts) (rptypes.MinipoolStatus, erro
     }
     return *status, nil
 }
-func (mp *Minipool) GetStatusBlock(opts *bind.CallOpts) (int64, error) {
+func (mp *Minipool) GetStatusBlock(opts *bind.CallOpts) (uint64, error) {
     statusBlock := new(*big.Int)
     if err := mp.Contract.Call(opts, statusBlock, "getStatusBlock"); err != nil {
         return 0, fmt.Errorf("Could not get minipool %s status changed block: %w", mp.Address.Hex(), err)
     }
-    return (*statusBlock).Int64(), nil
+    return (*statusBlock).Uint64(), nil
 }
 func (mp *Minipool) GetStatusTime(opts *bind.CallOpts) (time.Time, error) {
     statusTime := new(*big.Int)

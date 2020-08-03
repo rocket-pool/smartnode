@@ -17,7 +17,7 @@ import (
 
 
 // Get the block number which network balances are current for
-func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (int64, error) {
+func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rocketNetworkBalances, err := getRocketNetworkBalances(rp)
     if err != nil {
         return 0, err
@@ -26,7 +26,7 @@ func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (int64, er
     if err := rocketNetworkBalances.Call(opts, balancesBlock, "getBalancesBlock"); err != nil {
         return 0, fmt.Errorf("Could not get network balances block: %w", err)
     }
-    return (*balancesBlock).Int64(), nil
+    return (*balancesBlock).Uint64(), nil
 }
 
 

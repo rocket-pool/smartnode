@@ -26,7 +26,7 @@ func GetAssignDepositsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (b
 
 
 // Maximum deposit assignments per transaction
-func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts) (int64, error) {
+func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rocketDepositSettings, err := getRocketDepositSettings(rp)
     if err != nil {
         return 0, err
@@ -35,7 +35,7 @@ func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts
     if err := rocketDepositSettings.Call(opts, maximumDepositAssignments, "getMaximumDepositAssignments"); err != nil {
         return 0, fmt.Errorf("Could not get maximum deposit assignments: %w", err)
     }
-    return (*maximumDepositAssignments).Int64(), nil
+    return (*maximumDepositAssignments).Uint64(), nil
 }
 
 

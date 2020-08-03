@@ -27,7 +27,7 @@ func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (b
 
 
 // The frequency in blocks at which network balances should be submitted by trusted nodes
-func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (int64, error) {
+func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rocketNetworkSettings, err := getRocketNetworkSettings(rp)
     if err != nil {
         return 0, err
@@ -36,7 +36,7 @@ func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     if err := rocketNetworkSettings.Call(opts, submitBalancesFrequency, "getSubmitBalancesFrequency"); err != nil {
         return 0, fmt.Errorf("Could not get network balance submission frequency: %w", err)
     }
-    return (*submitBalancesFrequency).Int64(), nil
+    return (*submitBalancesFrequency).Uint64(), nil
 }
 
 
