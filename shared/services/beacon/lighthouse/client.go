@@ -2,7 +2,6 @@ package lighthouse
 
 import (
     "bytes"
-    "encoding/hex"
     "encoding/json"
     "fmt"
     "io/ioutil"
@@ -32,40 +31,6 @@ const (
     RequestBeaconStateRootPath = "/beacon/state_root"
     RequestValidatorsPath = "/beacon/validators"
 )
-
-
-// Beacon request types
-type ValidatorsRequest struct {
-    StateRoot string                `json:"state_root,omitempty"`
-    Pubkeys []string                `json:"pubkeys"`
-}
-
-// Beacon response types
-type Eth2ConfigResponse struct {
-    GenesisForkVersion string       `json:"genesis_fork_version"`
-    DomainDeposit uint64            `json:"domain_deposit"`
-    DomainVoluntaryExit uint64      `json:"domain_voluntary_exit"`
-    GenesisSlot uint64              `json:"genesis_slot"`
-}
-type BeaconHeadResponse struct {
-    Slot uint64                     `json:"slot"`
-    FinalizedSlot uint64            `json:"finalized_slot"`
-    JustifiedSlot uint64            `json:"justified_slot"`
-    PreviousJustifiedSlot uint64    `json:"previous_justified_slot"`
-}
-type ValidatorResponse struct {
-    Balance uint64                  `json:"balance"`
-    Validator struct {
-        Pubkey string                       `json:"pubkey"`
-        WithdrawalCredentials string        `json:"withdrawal_credentials"`
-        EffectiveBalance uint64             `json:"effective_balance"`
-        Slashed bool                        `json:"slashed"`
-        ActivationEligibilityEpoch uint64   `json:"activation_eligibility_epoch"`
-        ActivationEpoch uint64              `json:"activation_epoch"`
-        ExitEpoch uint64                    `json:"exit_epoch"`
-        WithdrawableEpoch uint64            `json:"withdrawable_epoch"`
-    }                               `json:"validator"`
-}
 
 
 // Lighthouse client
@@ -118,22 +83,13 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
         return beacon.Eth2Config{}, err
     }
 
-    // Create response
-    response := beacon.Eth2Config{
+    // Return response
+    return beacon.Eth2Config{
+        GenesisForkVersion: config.GenesisForkVersion,
         DomainDeposit: bytesutil.Bytes4(config.DomainDeposit),
         DomainVoluntaryExit: bytesutil.Bytes4(config.DomainVoluntaryExit),
         GenesisEpoch: config.GenesisSlot / slotsPerEpoch,
-    }
-
-    // Decode hex data and update
-    if genesisForkVersion, err := hex.DecodeString(hexutil.RemovePrefix(config.GenesisForkVersion)); err != nil {
-        return beacon.Eth2Config{}, fmt.Errorf("Could not decode genesis fork version: %w", err)
-    } else {
-        response.GenesisForkVersion = genesisForkVersion
-    }
-
-    // Return
-    return response, nil
+    }, nil
 
 }
 
@@ -225,12 +181,14 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 
     // Check if validator exists
     // Pubkey is empty if validator is null in response
-    if validator.Validator.Pubkey == "" {
+    if bytes.Equal(validator.Validator.Pubkey, []byte{}) {
         return beacon.ValidatorStatus{}, nil
     }
 
-    // Create response
-    response := beacon.ValidatorStatus{
+    // Return response
+    return beacon.ValidatorStatus{
+        Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+        WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
         Balance: validator.Balance,
         EffectiveBalance: validator.Validator.EffectiveBalance,
         Slashed: validator.Validator.Slashed,
@@ -239,22 +197,7 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
         ExitEpoch: validator.Validator.ExitEpoch,
         WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
         Exists: true, 
-    }
-
-    // Decode hex data and update
-    if pubkey, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.Pubkey)); err != nil {
-        return beacon.ValidatorStatus{}, fmt.Errorf("Could not decode validator pubkey: %w", err)
-    } else {
-        response.Pubkey = types.BytesToValidatorPubkey(pubkey)
-    }
-    if withdrawalCredentials, err := hex.DecodeString(hexutil.RemovePrefix(validator.Validator.WithdrawalCredentials)); err != nil {
-        return beacon.ValidatorStatus{}, fmt.Errorf("Could not decode validator withdrawal credentials: %w", err)
-    } else {
-        response.WithdrawalCredentials = common.BytesToHash(withdrawalCredentials)
-    }
-
-    // Return
-    return response, nil
+    }, nil
 
 }
 
