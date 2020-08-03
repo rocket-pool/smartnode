@@ -7,6 +7,7 @@ import (
     "fmt"
     "io/ioutil"
     "net/http"
+    "net/url"
     "strconv"
 
     "github.com/ethereum/go-ethereum/common"
@@ -44,6 +45,7 @@ type Eth2ConfigResponse struct {
     GenesisForkVersion string       `json:"genesis_fork_version"`
     DomainDeposit uint64            `json:"domain_deposit"`
     DomainVoluntaryExit uint64      `json:"domain_voluntary_exit"`
+    GenesisSlot uint64              `json:"genesis_slot"`
 }
 type BeaconHeadResponse struct {
     Slot uint64                     `json:"slot"`
@@ -106,15 +108,9 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Request slots per epoch
     wg.Go(func() error {
-        responseBody, err := c.getRequest(RequestSlotsPerEpochPath)
-        if err != nil {
-            return fmt.Errorf("Could not get slots per epoch: %w", err)
-        }
-        slotsPerEpoch, err = strconv.ParseUint(string(responseBody), 10, 64)
-        if err != nil {
-            return fmt.Errorf("Could not parse slots per epoch: %w", err)
-        }
-        return nil
+        var err error
+        slotsPerEpoch, err = c.getSlotsPerEpoch()
+        return err
     })
 
     // Wait for data
@@ -126,6 +122,7 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     response := beacon.Eth2Config{
         DomainDeposit: bytesutil.Bytes4(config.DomainDeposit),
         DomainVoluntaryExit: bytesutil.Bytes4(config.DomainVoluntaryExit),
+        GenesisEpoch: config.GenesisSlot / slotsPerEpoch,
     }
 
     // Decode hex data and update
@@ -163,15 +160,9 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 
     // Request slots per epoch
     wg.Go(func() error {
-        responseBody, err := c.getRequest(RequestSlotsPerEpochPath)
-        if err != nil {
-            return fmt.Errorf("Could not get slots per epoch: %w", err)
-        }
-        slotsPerEpoch, err = strconv.ParseUint(string(responseBody), 10, 64)
-        if err != nil {
-            return fmt.Errorf("Could not parse slots per epoch: %w", err)
-        }
-        return nil
+        var err error
+        slotsPerEpoch, err = c.getSlotsPerEpoch()
+        return err
     })
 
     // Wait for data
@@ -197,10 +188,30 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 // Get a validator's status
 func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
-    // Request
-    responseBody, err := c.postRequest(RequestValidatorsPath, ValidatorsRequest{
+    // Build validator request
+    request := ValidatorsRequest{
         Pubkeys: []string{hexutil.AddPrefix(pubkey.Hex())},
-    })
+    }
+    if opts != nil {
+
+        // Get slot number
+        slotsPerEpoch, err := c.getSlotsPerEpoch()
+        if err != nil {
+            return beacon.ValidatorStatus{}, err
+        }
+        slot := opts.Epoch * slotsPerEpoch
+
+        // Get slot state root
+        stateRoot, err := c.getStateRoot(slot)
+        if err != nil {
+            return beacon.ValidatorStatus{}, err
+        }
+        request.StateRoot = stateRoot
+
+    }
+
+    // Request
+    responseBody, err := c.postRequest(RequestValidatorsPath, request)
     if err != nil {
         return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator status: %w", err)
     }
@@ -244,6 +255,52 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 
     // Return
     return response, nil
+
+}
+
+
+// Get the number of slots per epoch
+func (c *Client) getSlotsPerEpoch() (uint64, error) {
+
+    // Request
+    responseBody, err := c.getRequest(RequestSlotsPerEpochPath)
+    if err != nil {
+        return 0, fmt.Errorf("Could not get slots per epoch: %w", err)
+    }
+
+    // Unmarshal response
+    var slotsPerEpoch uint64
+    if err := json.Unmarshal(responseBody, &slotsPerEpoch); err != nil {
+        return 0, fmt.Errorf("Could not decode slots per epoch: %w", err)
+    }
+
+    // Return
+    return slotsPerEpoch, nil
+
+}
+
+
+// Get the state root for a slot
+func (c *Client) getStateRoot(slot uint64) (string, error) {
+
+    // Get query params
+    params := url.Values{}
+    params.Set("slot", strconv.FormatInt(int64(slot), 10))
+
+    // Request
+    responseBody, err := c.getRequest(fmt.Sprintf("%s?%s", RequestBeaconStateRootPath, params.Encode()))
+    if err != nil {
+        return "", fmt.Errorf("Could not get state root for slot %d: %w", slot, err)
+    }
+
+    // Unmarshal response
+    var stateRoot string
+    if err := json.Unmarshal(responseBody, &stateRoot); err != nil {
+        return "", fmt.Errorf("Could not decode state root for slot %d: %w", slot, err)
+    }
+
+    // Return
+    return stateRoot, nil
 
 }
 
