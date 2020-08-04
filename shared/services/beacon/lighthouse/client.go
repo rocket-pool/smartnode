@@ -60,13 +60,13 @@ func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
     // Request
     responseBody, err := c.getRequest(RequestSyncStatusPath)
     if err != nil {
-        return beacon.SyncStatus{}, fmt.Errorf("Could not get sync status: %w", err)
+        return beacon.SyncStatus{}, fmt.Errorf("Could not get node sync status: %w", err)
     }
 
     // Unmarshal response
     var syncStatus SyncStatusResponse
     if err := json.Unmarshal(responseBody, &syncStatus); err != nil {
-        return beacon.SyncStatus{}, fmt.Errorf("Could not decode sync status: %w", err)
+        return beacon.SyncStatus{}, fmt.Errorf("Could not decode node sync status: %w", err)
     }
 
     // Return response
