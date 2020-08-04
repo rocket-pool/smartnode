@@ -14,7 +14,11 @@ type ValidatorsRequest struct {
     Pubkeys []string                `json:"pubkeys"`
 }
 
+
 // Response types
+type SyncStatusResponse struct {
+    IsSyncing bool                  `json:"is_syncing"`
+}
 type Eth2ConfigResponse struct {
     GenesisForkVersion byteArray    `json:"genesis_fork_version"`
     DomainDeposit uint64            `json:"domain_deposit"`

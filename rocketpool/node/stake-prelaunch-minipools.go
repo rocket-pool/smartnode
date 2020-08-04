@@ -51,7 +51,7 @@ func startStakePrelaunchMinipools(c *cli.Context) error {
 func stakePrelaunchMinipools(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool) error {
 
     // Wait for eth client to sync
-    if err := services.WaitClientSynced(c, true); err != nil {
+    if err := services.WaitEthClientSynced(c, true); err != nil {
         return err
     }
 

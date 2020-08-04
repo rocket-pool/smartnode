@@ -54,7 +54,7 @@ func startDissolveTimedOutMinipools(c *cli.Context) error {
 func dissolveTimedOutMinipools(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool) error {
 
     // Wait for eth client to sync
-    if err := services.WaitClientSynced(c, true); err != nil {
+    if err := services.WaitEthClientSynced(c, true); err != nil {
         return err
     }
 

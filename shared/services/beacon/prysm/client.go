@@ -51,6 +51,23 @@ func (c *Client) Close() {
 }
 
 
+// Get the node's sync status
+func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
+
+    // Get sync status
+    syncStatus, err := c.nc.GetSyncStatus(context.Background(), &pbtypes.Empty{})
+    if err != nil {
+        return beacon.SyncStatus{}, fmt.Errorf("Could not get node sync status: %w", err)
+    }
+
+    // Return
+    return beacon.SyncStatus{
+        Syncing: syncStatus.Syncing,
+    }, nil
+
+}
+
+
 // Get the eth2 config
 func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 

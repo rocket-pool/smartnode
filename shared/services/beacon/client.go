@@ -13,6 +13,9 @@ type ValidatorStatusOptions struct {
 
 
 // API response types
+type SyncStatus struct {
+    Syncing bool
+}
 type Eth2Config struct {
     GenesisForkVersion []byte
     DomainDeposit []byte
@@ -47,6 +50,7 @@ type ValidatorStatus struct {
 
 // Beacon client interface
 type Client interface {
+    GetSyncStatus() (SyncStatus, error)
     GetEth2Config() (Eth2Config, error)
     GetBeaconHead() (BeaconHead, error)
     GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)

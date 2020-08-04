@@ -78,8 +78,11 @@ func startSubmitNetworkBalances(c *cli.Context) error {
 // Submit network balances
 func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool, bc beacon.Client) error {
 
-    // Wait for eth client to sync
-    if err := services.WaitClientSynced(c, true); err != nil {
+    // Wait for eth clients to sync
+    if err := services.WaitEthClientSynced(c, true); err != nil {
+        return err
+    }
+    if err := services.WaitBeaconClientSynced(c, true); err != nil {
         return err
     }
 

@@ -13,7 +13,8 @@ import (
 
 
 // Settings
-const ClientSyncTimeout = 15 // 15 seconds
+const EthClientSyncTimeout = 15 // 15 seconds
+const BeaconClientSyncTimeout = 15 // 15 seconds
 var checkNodePasswordInterval, _ = time.ParseDuration("15s")
 var checkNodeAccountInterval, _ = time.ParseDuration("15s")
 var checkRocketStorageInterval, _ = time.ParseDuration("15s")
@@ -52,20 +53,32 @@ func RequireNodeAccount(c *cli.Context) error {
 }
 
 
-func RequireClientSynced(c *cli.Context) error {
-    clientSynced, err := waitClientSynced(c, false, ClientSyncTimeout)
+func RequireEthClientSynced(c *cli.Context) error {
+    ethClientSynced, err := waitEthClientSynced(c, false, EthClientSyncTimeout)
     if err != nil {
         return err
     }
-    if !clientSynced {
+    if !ethClientSynced {
         return errors.New("The Eth 1.0 node is currently syncing. Please try again later.")
     }
     return nil
 }
 
 
+func RequireBeaconClientSynced(c *cli.Context) error {
+    beaconClientSynced, err := waitBeaconClientSynced(c, false, BeaconClientSyncTimeout)
+    if err != nil {
+        return err
+    }
+    if !beaconClientSynced {
+        return errors.New("The Eth 2.0 node is currently syncing. Please try again later.")
+    }
+    return nil
+}
+
+
 func RequireRocketStorage(c *cli.Context) error {
-    if err := RequireClientSynced(c); err != nil {
+    if err := RequireEthClientSynced(c); err != nil {
         return err
     }
     rocketStorageLoaded, err := getRocketStorageLoaded(c)
@@ -139,14 +152,20 @@ func WaitNodeAccount(c *cli.Context, verbose bool) error {
 }
 
 
-func WaitClientSynced(c *cli.Context, verbose bool) error {
-    _, err := waitClientSynced(c, verbose, 0)
+func WaitEthClientSynced(c *cli.Context, verbose bool) error {
+    _, err := waitEthClientSynced(c, verbose, 0)
+    return err
+}
+
+
+func WaitBeaconClientSynced(c *cli.Context, verbose bool) error {
+    _, err := waitBeaconClientSynced(c, verbose, 0)
     return err
 }
 
 
 func WaitRocketStorage(c *cli.Context, verbose bool) error {
-    if err := WaitClientSynced(c, verbose); err != nil {
+    if err := WaitEthClientSynced(c, verbose); err != nil {
         return err
     }
     for {
@@ -251,7 +270,7 @@ func getNodeRegistered(c *cli.Context) (bool, error) {
 
 // Wait for the eth client to sync
 // timeout of 0 indicates no timeout
-func waitClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
+func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
 
     // Get eth client
     ec, err := GetEthClient(c)
@@ -279,9 +298,53 @@ func waitClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error)
 
         // Check sync progress
         if progress != nil {
-            if statusPrinted { fmt.Print("\r") }
             if verbose {
-                fmt.Printf("Node syncing: %.2f%%  ", (float64(progress.CurrentBlock - progress.StartingBlock) / float64(progress.HighestBlock - progress.StartingBlock)) * 100)
+                if statusPrinted { fmt.Print("\r") }
+                fmt.Printf("Eth 1.0 node syncing: %.2f%%   ", (float64(progress.CurrentBlock - progress.StartingBlock) / float64(progress.HighestBlock - progress.StartingBlock)) * 100)
+                statusPrinted = true
+            }
+        } else {
+            if statusPrinted { fmt.Print("\n") }
+            return true, nil
+        }
+
+    }
+
+}
+
+
+// Wait for the beacon client to sync
+// timeout of 0 indicates no timeout
+func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
+
+    // Get beacon client
+    bc, err := GetBeaconClient(c)
+    if err != nil {
+        return false, err
+    }
+
+    // Get start settings
+    startTime := time.Now().Unix()
+    statusPrinted := false
+
+    // Wait for sync
+    for {
+
+        // Check timeout
+        if (timeout > 0) && (time.Now().Unix() - startTime > timeout) {
+            return false, nil
+        }
+
+        // Get sync status
+        syncStatus, err := bc.GetSyncStatus()
+        if err != nil {
+            return false, err
+        }
+
+        // Check sync status
+        if syncStatus.Syncing {
+            if verbose && !statusPrinted {
+                fmt.Print("Eth 2.0 node syncing...   ")
                 statusPrinted = true
             }
         } else {
