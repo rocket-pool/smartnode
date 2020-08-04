@@ -45,8 +45,10 @@ func startSubmitWithdrawableMinipools(c *cli.Context) error {
 // Submit withdrawable minipools
 func submitWithdrawableMinipools(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool) error {
 
+    // Submit withdrawable minipools
     // TODO: implement
-    log.Println("Submitting withdrawable minipools not implemented...")
+
+    // Return
     return nil
 
 }

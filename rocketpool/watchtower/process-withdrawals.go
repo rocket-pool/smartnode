@@ -45,8 +45,10 @@ func startProcessWithdrawals(c *cli.Context) error {
 // Process withdrawals
 func processWithdrawals(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool) error {
 
+    // Process withdrawals
     // TODO: implement
-    log.Println("Processing withdrawals not implemented...")
+
+    // Return
     return nil
 
 }
