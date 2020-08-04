@@ -89,12 +89,30 @@ func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rock
         return err
     }
 
-    // Check node trusted status
-    nodeTrusted, err := node.GetNodeTrusted(rp, nodeAccount.Address, nil)
-    if err != nil {
+    // Data
+    var wg errgroup.Group
+    var nodeTrusted bool
+    var submitBalancesEnabled bool
+
+    // Get data
+    wg.Go(func() error {
+        var err error
+        nodeTrusted, err = node.GetNodeTrusted(rp, nodeAccount.Address, nil)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        submitBalancesEnabled, err = settings.GetSubmitBalancesEnabled(rp, nil)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
         return err
     }
-    if !nodeTrusted {
+
+    // Check node trusted status & settings
+    if !(nodeTrusted && submitBalancesEnabled) {
         return nil
     }
 
@@ -180,16 +198,10 @@ func canSubmitBlockBalances(rp *rocketpool.RocketPool, nodeAddress common.Addres
 
     // Data
     var wg errgroup.Group
-    var submitBalancesEnabled bool
     var currentBalancesBlock uint64
     var nodeSubmittedBlock bool
 
     // Get data
-    wg.Go(func() error {
-        var err error
-        submitBalancesEnabled, err = settings.GetSubmitBalancesEnabled(rp, nil)
-        return err
-    })
     wg.Go(func() error {
         var err error
         currentBalancesBlock, err = network.GetBalancesBlock(rp, nil)
@@ -207,7 +219,7 @@ func canSubmitBlockBalances(rp *rocketpool.RocketPool, nodeAddress common.Addres
     }
 
     // Return
-    return (submitBalancesEnabled && blockNumber > currentBalancesBlock && !nodeSubmittedBlock), nil
+    return (blockNumber > currentBalancesBlock && !nodeSubmittedBlock), nil
 
 }
 
@@ -464,9 +476,11 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, mini
         return minipoolBalanceDetails{}, fmt.Errorf("Could not get validator %s balance at epoch %d", pubkey.Hex(), startEpoch)
     }
 
-    // Get node & user balance at block
+    // Get validator balances at start epoch and at block
     startBalance := eth.GweiToWei(float64(validatorStart.Balance))
     blockBalance := eth.GweiToWei(float64(validator.Balance))
+
+    // Get node & user balance at block
     nodeBalance, err := minipool.GetMinipoolNodeRewardAmount(rp, nodeFee, userDepositBalance, startBalance, blockBalance, opts)
     if err != nil {
         return minipoolBalanceDetails{}, err
