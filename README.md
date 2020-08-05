@@ -6,7 +6,7 @@
 
 ---
 
-`Rocket Pool 2.0` is a next generation Ethereum proof of stake (PoS) infrastructure service designed to be highly decentralised, distributed and compatible with Casper 2.0, the new consensus protocol that Ethereum will transition to in 2020.
+`Rocket Pool 2.5` is a next generation Ethereum proof of stake (PoS) infrastructure service designed to be highly decentralised, distributed and compatible with Ethereum 2.0, the new consensus protocol that Ethereum will transition to in 2020.
 
 This repository contains the Smart Node package required to run a Smart Node in the Rocket Pool network and earn a higher return staking ether than you would outside the network.
 
