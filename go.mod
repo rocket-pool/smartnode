@@ -3,6 +3,8 @@ module github.com/rocket-pool/smartnode
 go 1.13
 
 require (
+	github.com/btcsuite/btcd v0.20.1-beta
+	github.com/btcsuite/btcutil v1.0.2
 	github.com/ethereum/go-ethereum v1.9.16
 	github.com/gogo/protobuf v1.3.1
 	github.com/imdario/mergo v0.3.9

@@ -6,6 +6,8 @@ import (
     "fmt"
     "io/ioutil"
 
+    "github.com/btcsuite/btcd/chaincfg"
+    "github.com/btcsuite/btcutil/hdkeychain"
     "github.com/tyler-smith/go-bip39"
     eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
@@ -27,6 +29,7 @@ type Wallet struct {
     encryptor *eth2ks.Encryptor
     ws *walletStore
     seed []byte
+    mk *hdkeychain.ExtendedKey
 }
 
 
@@ -63,7 +66,7 @@ func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*
 
 // Check if the wallet has been initialized
 func (w *Wallet) IsInitialized() bool {
-    return (w.ws != nil && w.seed != nil)
+    return (w.ws != nil && w.seed != nil && w.mk != nil)
 }
 
 
@@ -155,6 +158,12 @@ func (w *Wallet) loadStore() error {
         return fmt.Errorf("Could not decrypt wallet seed: %w", err)
     }
 
+    // Create master key
+    w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
+    if err != nil {
+        return fmt.Errorf("Could not create wallet master key: %w", err)
+    }
+
     // Return
     return nil
 
@@ -166,6 +175,13 @@ func (w *Wallet) initializeStore(mnemonic string) error {
 
     // Generate seed
     w.seed = bip39.NewSeed(mnemonic, "")
+
+    // Create master key
+    var err error
+    w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
+    if err != nil {
+        return fmt.Errorf("Could not create wallet master key: %w", err)
+    }
 
     // Get wallet password
     password, err := w.pm.GetPassword()
