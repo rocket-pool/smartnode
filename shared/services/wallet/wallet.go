@@ -201,7 +201,7 @@ func (w *Wallet) initializeStore(mnemonic string) error {
         name: w.encryptor.Name(),
         version: w.encryptor.Version(),
         uuid: "foo",
-        nextAccount: 1,
+        nextAccount: 0,
     }
 
     // Return

@@ -18,8 +18,8 @@ const NodeKeyPathTemplate = "m/44'/60'/0'/0/%d"
 
 // Node key cache
 var (
-    NodeKey *ecdsa.PrivateKey
-    NodeKeyPath string
+    nodeKey *ecdsa.PrivateKey
+    nodeKeyPath string
 )
 
 
@@ -80,8 +80,8 @@ func (w *Wallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
 func (w *Wallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 
     // Check for cached node key
-    if NodeKey != nil {
-        return NodeKey, NodeKeyPath, nil
+    if nodeKey != nil {
+        return nodeKey, nodeKeyPath, nil
     }
 
     // Get derived key
@@ -98,8 +98,8 @@ func (w *Wallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
     privateKeyECDSA := privateKey.ToECDSA()
 
     // Cache node key
-    NodeKey = privateKeyECDSA
-    NodeKeyPath = path
+    nodeKey = privateKeyECDSA
+    nodeKeyPath = path
 
     // Return
     return privateKeyECDSA, path, nil
