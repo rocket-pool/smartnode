@@ -5,6 +5,7 @@ import (
     "errors"
     "fmt"
 
+    "github.com/btcsuite/btcutil/hdkeychain"
     "github.com/ethereum/go-ethereum/accounts"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/crypto"
@@ -12,7 +13,14 @@ import (
 
 
 // Config
-const NodeKeyPath = "m/44'/60'/0'/0/0"
+const NodeKeyPathTemplate = "m/44'/60'/0'/0/%d"
+
+
+// Node key cache
+var (
+    NodeKey *ecdsa.PrivateKey
+    NodeKeyPath string
+)
 
 
 // Get the node account
@@ -24,7 +32,7 @@ func (w *Wallet) GetNodeAccount() (accounts.Account, error) {
     }
 
     // Get private key
-    privateKey, err := w.deriveNodeKey()
+    privateKey, path, err := w.getNodePrivateKey()
     if err != nil {
         return accounts.Account{}, err
     }
@@ -41,7 +49,7 @@ func (w *Wallet) GetNodeAccount() (accounts.Account, error) {
         Address: crypto.PubkeyToAddress(*publicKeyECDSA),
         URL: accounts.URL{
             Scheme: "",
-            Path: NodeKeyPath,
+            Path: path,
         },
     }, nil
 
@@ -57,7 +65,7 @@ func (w *Wallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
     }
 
     // Get private key
-    privateKey, err := w.deriveNodeKey()
+    privateKey, _, err := w.getNodePrivateKey()
     if err != nil {
         return nil, err
     }
@@ -68,32 +76,62 @@ func (w *Wallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
 }
 
 
-// Derive the node private key
-func (w *Wallet) deriveNodeKey() (*ecdsa.PrivateKey, error) {
+// Get the node private key
+func (w *Wallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 
-    // Parse node key derivation path
-    path, err := accounts.ParseDerivationPath(NodeKeyPath)
+    // Check for cached node key
+    if NodeKey != nil {
+        return NodeKey, NodeKeyPath, nil
+    }
+
+    // Get derived key
+    derivedKey, path, err := w.getNodeDerivedKey(0)
     if err != nil {
-        return nil, fmt.Errorf("Invalid node account derivation path: %w", err)
+        return nil, "", err
+    }
+
+    // Get private key
+    privateKey, err := derivedKey.ECPrivKey()
+    if err != nil {
+        return nil, "", fmt.Errorf("Could not get node private key: %w", err)
+    }
+    privateKeyECDSA := privateKey.ToECDSA()
+
+    // Cache node key
+    NodeKey = privateKeyECDSA
+    NodeKeyPath = path
+
+    // Return
+    return privateKeyECDSA, path, nil
+
+}
+
+
+// Get the derived key & derivation path for the node account at the index
+func (w *Wallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
+
+    // Get derivation path
+    derivationPath := fmt.Sprintf(NodeKeyPathTemplate, index)
+
+    // Parse derivation path
+    path, err := accounts.ParseDerivationPath(derivationPath)
+    if err != nil {
+        return nil, "", fmt.Errorf("Invalid node key derivation path '%s': %w", derivationPath, err)
     }
 
     // Follow derivation path
     key := w.mk
     for i, n := range path {
         key, err = key.Child(n)
-        if err != nil {
-            return nil, fmt.Errorf("Invalid child key at depth %d: %w", i, err)
+        if err == hdkeychain.ErrInvalidChild {
+            return w.getNodeDerivedKey(index + 1)
+        } else if err != nil {
+            return nil, "", fmt.Errorf("Invalid child key at depth %d: %w", i, err)
         }
     }
 
-    // Get private key
-    privateKey, err := key.ECPrivKey()
-    if err != nil {
-        return nil, fmt.Errorf("Could not get node private key: %w", err)
-    }
-
     // Return
-    return privateKey.ToECDSA(), nil
+    return key, derivationPath, nil
 
 }
 
