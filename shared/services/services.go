@@ -15,6 +15,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/beacon/prysm"
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
+    "github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
 
@@ -22,6 +23,7 @@ import (
 var (
     cfg config.RocketPoolConfig
     passwordManager *passwords.PasswordManager
+    nodeWallet *wallet.Wallet
     accountManager *accounts.AccountManager
     ethClient *ethclient.Client
     rocketPool *rocketpool.RocketPool
@@ -29,6 +31,7 @@ var (
 
     initCfg sync.Once
     initPasswordManager sync.Once
+    initNodeWallet sync.Once
     initAccountManager sync.Once
     initEthClient sync.Once
     initRocketPool sync.Once
@@ -52,6 +55,16 @@ func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
         return nil, err
     }
     return getPasswordManager(cfg), nil
+}
+
+
+func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    pm := getPasswordManager(cfg)
+    return getWallet(cfg, pm)
 }
 
 
@@ -115,6 +128,15 @@ func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager 
         passwordManager = passwords.NewPasswordManager(cfg.Smartnode.PasswordPath)
     })
     return passwordManager
+}
+
+
+func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
+    var err error
+    initNodeWallet.Do(func() {
+        nodeWallet, err = wallet.NewWallet(cfg.Smartnode.WalletPath, pm)
+    })
+    return nodeWallet, err
 }
 
 

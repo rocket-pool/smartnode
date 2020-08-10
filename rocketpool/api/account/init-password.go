@@ -19,8 +19,8 @@ func initPassword(c *cli.Context, password string) (*api.InitPasswordResponse, e
     // Response
     response := api.InitPasswordResponse{}
 
-    // Check if password already exists
-    if pm.PasswordExists() {
+    // Check if password is already set
+    if pm.IsPasswordSet() {
         return nil, errors.New("The node password is already set")
     }
 

@@ -8,7 +8,10 @@ import (
 
 
 // Config
-const MinPasswordLength = 8
+const (
+    MinPasswordLength = 8
+    FileMode = 0600
+)
 
 
 // Password manager
@@ -25,20 +28,20 @@ func NewPasswordManager(passwordPath string) *PasswordManager {
 }
 
 
-// Check if the stored password exists
-func (pm *PasswordManager) PasswordExists() bool {
+// Check if the password has been set
+func (pm *PasswordManager) IsPasswordSet() bool {
     _, err := ioutil.ReadFile(pm.passwordPath)
     return (err == nil)
 }
 
 
-// Get the stored password
+// Get the password
 func (pm *PasswordManager) GetPassword() (string, error) {
 
-    // Read the stored password from disk
+    // Read from disk
     password, err := ioutil.ReadFile(pm.passwordPath)
     if err != nil {
-        return "", errors.New("Could not read password from disk")
+        return "", fmt.Errorf("Could not read password from disk: %w", err)
     }
 
     // Return
@@ -47,11 +50,11 @@ func (pm *PasswordManager) GetPassword() (string, error) {
 }
 
 
-// Set the stored password
+// Set the password
 func (pm *PasswordManager) SetPassword(password string) error {
 
     // Check password is not set
-    if pm.PasswordExists() {
+    if pm.IsPasswordSet() {
         return errors.New("Password is already set")
     }
 
@@ -60,9 +63,9 @@ func (pm *PasswordManager) SetPassword(password string) error {
         return fmt.Errorf("Password must be at least %d characters long", MinPasswordLength)
     }
 
-    // Write to file
-    if err := ioutil.WriteFile(pm.passwordPath, []byte(password), 0600); err != nil {
-        return errors.New("Could not write password to disk")
+    // Write to disk
+    if err := ioutil.WriteFile(pm.passwordPath, []byte(password), FileMode); err != nil {
+        return fmt.Errorf("Could not write password to disk: %w", err)
     }
 
     // Return

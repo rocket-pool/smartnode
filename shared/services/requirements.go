@@ -16,6 +16,7 @@ import (
 const EthClientSyncTimeout = 15 // 15 seconds
 const BeaconClientSyncTimeout = 15 // 15 seconds
 var checkNodePasswordInterval, _ = time.ParseDuration("15s")
+var checkNodeWalletInterval, _ = time.ParseDuration("15s")
 var checkNodeAccountInterval, _ = time.ParseDuration("15s")
 var checkRocketStorageInterval, _ = time.ParseDuration("15s")
 var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
@@ -33,6 +34,21 @@ func RequireNodePassword(c *cli.Context) error {
     }
     if !nodePasswordSet {
         return errors.New("The node password has not been set. Please initialize the node and try again.")
+    }
+    return nil
+}
+
+
+func RequireNodeWallet(c *cli.Context) error {
+    if err := RequireNodePassword(c); err != nil {
+        return err
+    }
+    nodeWalletInitialized, err := getNodeWalletInitialized(c)
+    if err != nil {
+        return err
+    }
+    if !nodeWalletInitialized {
+        return errors.New("The node wallet has not been initialized. Please initialize the node and try again.")
     }
     return nil
 }
@@ -132,6 +148,26 @@ func WaitNodePassword(c *cli.Context, verbose bool) error {
 }
 
 
+func WaitNodeWallet(c *cli.Context, verbose bool) error {
+    if err := WaitNodePassword(c, verbose); err != nil {
+        return err
+    }
+    for {
+        nodeWalletInitialized, err := getNodeWalletInitialized(c)
+        if err != nil {
+            return err
+        }
+        if nodeWalletInitialized {
+            return nil
+        }
+        if verbose {
+            fmt.Printf("The node wallet has not been initialized, retrying in %s...\n", checkNodeWalletInterval.String())
+        }
+        time.Sleep(checkNodeWalletInterval)
+    }
+}
+
+
 func WaitNodeAccount(c *cli.Context, verbose bool) error {
     if err := WaitNodePassword(c, verbose); err != nil {
         return err
@@ -218,7 +254,17 @@ func getNodePasswordSet(c *cli.Context) (bool, error) {
     if err != nil {
         return false, err
     }
-    return pm.PasswordExists(), nil
+    return pm.IsPasswordSet(), nil
+}
+
+
+// Check if the node wallet is initialized
+func getNodeWalletInitialized(c *cli.Context) (bool, error) {
+    w, err := GetWallet(c)
+    if err != nil {
+        return false, err
+    }
+    return w.IsInitialized(), nil
 }
 
 

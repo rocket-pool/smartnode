@@ -20,7 +20,7 @@ func getStatus(c *cli.Context) (*api.AccountStatusResponse, error) {
     response := api.AccountStatusResponse{}
 
     // Get account status
-    response.PasswordExists = pm.PasswordExists()
+    response.PasswordSet = pm.IsPasswordSet()
     response.AccountExists = am.NodeAccountExists()
 
     // Get account address
