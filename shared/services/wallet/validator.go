@@ -16,8 +16,58 @@ import (
 const ValidatorKeyPath = "m/12381/3600/%d/0/0"
 
 
+// Get the number of validator keys recorded in the wallet
+func (w *Wallet) GetValidatorKeyCount() (uint, error) {
+
+    // Check wallet is initialized
+    if !w.IsInitialized() {
+        return 0, errors.New("Wallet is not initialized")
+    }
+
+    // Return validator key count
+    return w.ws.NextAccount, nil
+
+}
+
+
+// Get a validator key by index
+func (w *Wallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error) {
+
+    // Check wallet is initialized
+    if !w.IsInitialized() {
+        return nil, errors.New("Wallet is not initialized")
+    }
+
+    // Check for cached validator key
+    if privateKey, ok := w.validatorKeys[index]; ok {
+        return privateKey, nil
+    }
+
+    // Initialize BLS support
+    initializeBLS()
+
+    // Get private key
+    privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, fmt.Sprintf(ValidatorKeyPath, index))
+    if err != nil {
+        return nil, err
+    }
+
+    // Cache validator key
+    w.validatorKeys[index] = privateKey
+
+    // Return
+    return privateKey, nil
+
+}
+
+
 // Get a validator key by public key
-func (w *Wallet) GetValidatorKey(pubkey *eth2types.BLSPublicKey) (*eth2types.BLSPrivateKey, error) {
+func (w *Wallet) GetValidatorKeyByPubkey(pubkey *eth2types.BLSPublicKey) (*eth2types.BLSPrivateKey, error) {
+
+    // Check wallet is initialized
+    if !w.IsInitialized() {
+        return nil, errors.New("Wallet is not initialized")
+    }
 
     // Encode pubkey
     pubkeyBytes := pubkey.Marshal()
@@ -25,14 +75,14 @@ func (w *Wallet) GetValidatorKey(pubkey *eth2types.BLSPublicKey) (*eth2types.BLS
 
     // Check for cached validator key index
     if index, ok := w.validatorKeyIndices[pubkeyHex]; ok {
-        return w.getValidatorPrivateKey(index)
+        return w.GetValidatorKeyAt(index)
     }
 
     // Find matching validator key
     var index uint
     var validatorKey *eth2types.BLSPrivateKey
     for index = 0; index < w.ws.NextAccount; index++ {
-        key, err := w.getValidatorPrivateKey(index)
+        key, err := w.GetValidatorKeyAt(index)
         if err != nil {
             return nil, err
         }
@@ -56,7 +106,7 @@ func (w *Wallet) GetValidatorKey(pubkey *eth2types.BLSPublicKey) (*eth2types.BLS
 }
 
 
-// Create a validator key
+// Create a new validator key
 func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 
     // Check wallet is initialized
@@ -74,33 +124,7 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
     }
 
     // Return validator key
-    return w.getValidatorPrivateKey(index)
-
-}
-
-
-// Get a validator private key by index
-func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, error) {
-
-    // Check for cached validator key
-    if privateKey, ok := w.validatorKeys[index]; ok {
-        return privateKey, nil
-    }
-
-    // Initialize BLS support
-    initializeBLS()
-
-    // Get private key
-    privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, fmt.Sprintf(ValidatorKeyPath, index))
-    if err != nil {
-        return nil, err
-    }
-
-    // Cache validator key
-    w.validatorKeys[index] = privateKey
-
-    // Return
-    return privateKey, nil
+    return w.GetValidatorKeyAt(index)
 
 }
 
