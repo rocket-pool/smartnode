@@ -31,7 +31,7 @@ func (w *Wallet) GetValidatorKey(pubkey *eth2types.BLSPublicKey) (*eth2types.BLS
     // Find matching validator key
     var index uint
     var validatorKey *eth2types.BLSPrivateKey
-    for index = 0; index < w.ws.nextAccount; index++ {
+    for index = 0; index < w.ws.NextAccount; index++ {
         key, err := w.getValidatorPrivateKey(index)
         if err != nil {
             return nil, err
@@ -65,8 +65,8 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
     }
 
     // Get & increment account index
-    index := w.ws.nextAccount
-    w.ws.nextAccount++
+    index := w.ws.NextAccount
+    w.ws.NextAccount++
 
     // Save wallet store
     if err := w.saveStore(); err != nil {

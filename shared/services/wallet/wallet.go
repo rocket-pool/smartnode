@@ -52,11 +52,11 @@ type Wallet struct {
 
 // Encrypted wallet store
 type walletStore struct {
-    crypto map[string]interface{}   `json:"crypto"`
-    name string                     `json:"name"`
-    version uint                    `json:"version"`
-    uuid string                     `json:"uuid"`
-    nextAccount uint                `json:"next_account"`
+    Crypto map[string]interface{}   `json:"crypto"`
+    Name string                     `json:"name"`
+    Version uint                    `json:"version"`
+    UUID string                     `json:"uuid"`
+    NextAccount uint                `json:"next_account"`
 }
 
 
@@ -172,7 +172,7 @@ func (w *Wallet) loadStore() error {
     }
 
     // Decrypt seed
-    w.seed, err = w.encryptor.Decrypt(w.ws.crypto, password)
+    w.seed, err = w.encryptor.Decrypt(w.ws.Crypto, password)
     if err != nil {
         return fmt.Errorf("Could not decrypt wallet seed: %w", err)
     }
@@ -216,11 +216,11 @@ func (w *Wallet) initializeStore(mnemonic string) error {
 
     // Create wallet store
     w.ws = &walletStore{
-        crypto: encryptedSeed,
-        name: w.encryptor.Name(),
-        version: w.encryptor.Version(),
-        uuid: "foo",
-        nextAccount: 0,
+        Crypto: encryptedSeed,
+        Name: w.encryptor.Name(),
+        Version: w.encryptor.Version(),
+        UUID: "foo",
+        NextAccount: 0,
     }
 
     // Return
