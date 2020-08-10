@@ -215,6 +215,7 @@ func (w *Wallet) initializeStore(mnemonic string) error {
     }
 
     // Create wallet store
+    // TODO: implement real UUID
     w.ws = &walletStore{
         Crypto: encryptedSeed,
         Name: w.encryptor.Name(),
