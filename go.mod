@@ -7,6 +7,7 @@ require (
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/ethereum/go-ethereum v1.9.16
 	github.com/gogo/protobuf v1.3.1
+	github.com/google/uuid v1.1.1
 	github.com/imdario/mergo v0.3.9
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/rocket-pool/rocketpool-go v0.0.0-20200803053628-700d84f4679e

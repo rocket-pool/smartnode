@@ -9,6 +9,7 @@ import (
 
     "github.com/btcsuite/btcd/chaincfg"
     "github.com/btcsuite/btcutil/hdkeychain"
+    "github.com/google/uuid"
     "github.com/tyler-smith/go-bip39"
     eth2types "github.com/wealdtech/go-eth2-types/v2"
     eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -55,7 +56,7 @@ type walletStore struct {
     Crypto map[string]interface{}   `json:"crypto"`
     Name string                     `json:"name"`
     Version uint                    `json:"version"`
-    UUID string                     `json:"uuid"`
+    UUID uuid.UUID                  `json:"uuid"`
     NextAccount uint                `json:"next_account"`
 }
 
@@ -215,12 +216,11 @@ func (w *Wallet) initializeStore(mnemonic string) error {
     }
 
     // Create wallet store
-    // TODO: implement real UUID
     w.ws = &walletStore{
         Crypto: encryptedSeed,
         Name: w.encryptor.Name(),
         Version: w.encryptor.Version(),
-        UUID: "foo",
+        UUID: uuid.New(),
         NextAccount: 0,
     }
 
