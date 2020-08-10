@@ -13,14 +13,7 @@ import (
 
 
 // Config
-const ValidatorKeyPathTemplate = "m/12381/3600/%d/0/0"
-
-
-// Validator key cache
-var (
-    validatorKeys = map[uint]*eth2types.BLSPrivateKey{}
-    validatorKeyIndices = map[string]uint{}
-)
+const ValidatorKeyPath = "m/12381/3600/%d/0/0"
 
 
 // Get a validator key by public key
@@ -31,7 +24,7 @@ func (w *Wallet) GetValidatorKey(pubkey *eth2types.BLSPublicKey) (*eth2types.BLS
     pubkeyHex := hex.EncodeToString(pubkeyBytes)
 
     // Check for cached validator key index
-    if index, ok := validatorKeyIndices[pubkeyHex]; ok {
+    if index, ok := w.validatorKeyIndices[pubkeyHex]; ok {
         return w.getValidatorPrivateKey(index)
     }
 
@@ -55,7 +48,7 @@ func (w *Wallet) GetValidatorKey(pubkey *eth2types.BLSPublicKey) (*eth2types.BLS
     }
 
     // Cache validator key index
-    validatorKeyIndices[pubkeyHex] = index
+    w.validatorKeyIndices[pubkeyHex] = index
 
     // Return
     return validatorKey, nil
@@ -90,7 +83,7 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, error) {
 
     // Check for cached validator key
-    if privateKey, ok := validatorKeys[index]; ok {
+    if privateKey, ok := w.validatorKeys[index]; ok {
         return privateKey, nil
     }
 
@@ -98,13 +91,13 @@ func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, e
     initializeBLS()
 
     // Get private key
-    privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, fmt.Sprintf(ValidatorKeyPathTemplate, index))
+    privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, fmt.Sprintf(ValidatorKeyPath, index))
     if err != nil {
         return nil, err
     }
 
     // Cache validator key
-    validatorKeys[index] = privateKey
+    w.validatorKeys[index] = privateKey
 
     // Return
     return privateKey, nil

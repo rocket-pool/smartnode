@@ -13,14 +13,7 @@ import (
 
 
 // Config
-const NodeKeyPathTemplate = "m/44'/60'/0'/0/%d"
-
-
-// Node key cache
-var (
-    nodeKey *ecdsa.PrivateKey
-    nodeKeyPath string
-)
+const NodeKeyPath = "m/44'/60'/0'/0/%d"
 
 
 // Get the node account
@@ -80,8 +73,8 @@ func (w *Wallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
 func (w *Wallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 
     // Check for cached node key
-    if nodeKey != nil {
-        return nodeKey, nodeKeyPath, nil
+    if w.nodeKey != nil {
+        return w.nodeKey, w.nodeKeyPath, nil
     }
 
     // Get derived key
@@ -98,8 +91,8 @@ func (w *Wallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
     privateKeyECDSA := privateKey.ToECDSA()
 
     // Cache node key
-    nodeKey = privateKeyECDSA
-    nodeKeyPath = path
+    w.nodeKey = privateKeyECDSA
+    w.nodeKeyPath = path
 
     // Return
     return privateKeyECDSA, path, nil
@@ -111,7 +104,7 @@ func (w *Wallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 func (w *Wallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
 
     // Get derivation path
-    derivationPath := fmt.Sprintf(NodeKeyPathTemplate, index)
+    derivationPath := fmt.Sprintf(NodeKeyPath, index)
 
     // Parse derivation path
     path, err := accounts.ParseDerivationPath(derivationPath)

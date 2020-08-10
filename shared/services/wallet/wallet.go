@@ -1,6 +1,7 @@
 package wallet
 
 import (
+    "crypto/ecdsa"
     "encoding/json"
     "errors"
     "fmt"
@@ -9,6 +10,7 @@ import (
     "github.com/btcsuite/btcd/chaincfg"
     "github.com/btcsuite/btcutil/hdkeychain"
     "github.com/tyler-smith/go-bip39"
+    eth2types "github.com/wealdtech/go-eth2-types/v2"
     eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
     "github.com/rocket-pool/smartnode/shared/services/passwords"
@@ -24,12 +26,27 @@ const (
 
 // Wallet
 type Wallet struct {
+
+    // Core
     walletPath string
     pm *passwords.PasswordManager
     encryptor *eth2ks.Encryptor
+
+    // Encrypted store
     ws *walletStore
+
+    // Seed & master key
     seed []byte
     mk *hdkeychain.ExtendedKey
+
+    // Node key cache
+    nodeKey *ecdsa.PrivateKey
+    nodeKeyPath string
+
+    // Validator key cache
+    validatorKeys map[uint]*eth2types.BLSPrivateKey
+    validatorKeyIndices map[string]uint
+
 }
 
 
@@ -51,6 +68,8 @@ func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*
         walletPath: walletPath,
         pm: passwordManager,
         encryptor: eth2ks.New(),
+        validatorKeys: map[uint]*eth2types.BLSPrivateKey{},
+        validatorKeyIndices: map[string]uint{},
     }
 
     // Load & decrypt wallet store
