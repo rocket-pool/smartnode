@@ -8,6 +8,7 @@ import (
     "strings"
 
     "github.com/ethereum/go-ethereum/common"
+    "github.com/tyler-smith/go-bip39"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/passwords"
@@ -88,7 +89,7 @@ func ValidatePositiveWeiAmount(name, value string) (*big.Int, error) {
 // Validate a deposit amount
 func ValidateDepositWeiAmount(name, value string) (*big.Int, error) {
     ether := strings.Repeat("0", 18)
-    if !(value == "0" || value == "16"+ether || value == "32"+ether) {
+    if !(value == "0" || value == "16" + ether || value == "32" + ether) {
         return nil, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32 ether", name, value)
     }
     return ValidateWeiAmount(name, value)
@@ -109,6 +110,15 @@ func ValidateBurnableTokenType(name, value string) (string, error) {
 func ValidateNodePassword(name, value string) (string, error) {
     if len(value) < passwords.MinPasswordLength {
         return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, passwords.MinPasswordLength)
+    }
+    return value, nil
+}
+
+
+// Validate a wallet mnemonic phrase
+func ValidateWalletMnemonic(name, value string) (string, error) {
+    if !bip39.IsMnemonicValid(value) {
+        return "", fmt.Errorf("Invalid %s '%s'", name, value)
     }
     return value, nil
 }

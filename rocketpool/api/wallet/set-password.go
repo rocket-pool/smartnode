@@ -1,4 +1,4 @@
-package account
+package wallet
 
 import (
     "errors"
@@ -10,14 +10,14 @@ import (
 )
 
 
-func initPassword(c *cli.Context, password string) (*api.InitPasswordResponse, error) {
+func setPassword(c *cli.Context, password string) (*api.SetPasswordResponse, error) {
 
     // Get services
     pm, err := services.GetPasswordManager(c)
     if err != nil { return nil, err }
 
     // Response
-    response := api.InitPasswordResponse{}
+    response := api.SetPasswordResponse{}
 
     // Check if password is already set
     if pm.IsPasswordSet() {

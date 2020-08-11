@@ -5,33 +5,38 @@ import (
 )
 
 
-type AccountStatusResponse struct {
+type WalletStatusResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     PasswordSet bool                `json:"passwordSet"`
-    AccountExists bool              `json:"accountExists"`
+    WalletInitialized bool          `json:"walletInitialized"`
     AccountAddress common.Address   `json:"accountAddress"`
 }
 
 
-type InitPasswordResponse struct {
+type SetPasswordResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
 }
 
 
-type InitAccountResponse struct {
+type InitWalletResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    AccountAddress common.Address   `json:"accountAddress"`
+    Mnemonic string                 `json:"mnemonic"`
 }
 
 
-type ExportAccountResponse struct {
+type RecoverWalletResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+}
+
+
+type ExportWalletResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     Password string                 `json:"password"`
-    KeystorePath string             `json:"keystorePath"`
-    KeystoreFile string             `json:"keystoreFile"`
+    Wallet string                   `json:"wallet"`
 }
 

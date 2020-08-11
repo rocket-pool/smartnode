@@ -90,6 +90,26 @@ func (w *Wallet) IsInitialized() bool {
 }
 
 
+// Serialize the wallet to a JSON string
+func (w *Wallet) String() (string, error) {
+
+    // Check wallet is initialized
+    if !w.IsInitialized() {
+        return "", errors.New("Wallet is not initialized")
+    }
+
+    // Encode wallet store
+    wsBytes, err := json.Marshal(w.ws)
+    if err != nil {
+        return "", fmt.Errorf("Could not encode wallet: %w", err)
+    }
+
+    // Return
+    return string(wsBytes), nil
+
+}
+
+
 // Initialize the wallet from a random seed
 func (w *Wallet) Initialize() (string, error) {
 

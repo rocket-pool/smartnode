@@ -1,4 +1,4 @@
-package account
+package wallet
 
 import (
     "github.com/urfave/cli"
@@ -13,14 +13,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
     command.Subcommands = append(command.Subcommands, cli.Command{
         Name:      name,
         Aliases:   aliases,
-        Usage:     "Manage the node account",
+        Usage:     "Manage the node wallet",
         Subcommands: []cli.Command{
 
             cli.Command{
                 Name:      "status",
                 Aliases:   []string{"s"},
-                Usage:     "Get the node password and account status",
-                UsageText: "rocketpool api account status",
+                Usage:     "Get the node wallet status",
+                UsageText: "rocketpool api wallet status",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -34,36 +34,55 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "init-password",
+                Name:      "set-password",
                 Aliases:   []string{"p"},
-                Usage:     "Initialize the node password",
-                UsageText: "rocketpool api account init-password password",
+                Usage:     "Set the node wallet password",
+                UsageText: "rocketpool api wallet set-password password",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    password, err := cliutils.ValidateNodePassword("node password", c.Args().Get(0))
+                    password, err := cliutils.ValidateNodePassword("wallet password", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(initPassword(c, password))
+                    api.PrintResponse(setPassword(c, password))
                     return nil
 
                 },
             },
 
             cli.Command{
-                Name:      "init-account",
-                Aliases:   []string{"a"},
-                Usage:     "Initialize the node account",
-                UsageText: "rocketpool api account init-account",
+                Name:      "init",
+                Aliases:   []string{"i"},
+                Usage:     "Initialize the node wallet",
+                UsageText: "rocketpool api wallet init",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    api.PrintResponse(initAccount(c))
+                    api.PrintResponse(initWallet(c))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "recover",
+                Aliases:   []string{"r"},
+                Usage:     "Recover a node wallet from a mnemonic phrase",
+                UsageText: "rocketpool api wallet recover mnemonic",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(recoverWallet(c, mnemonic))
                     return nil
 
                 },
@@ -72,15 +91,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "export",
                 Aliases:   []string{"e"},
-                Usage:     "Export the node account in JSON format",
-                UsageText: "rocketpool api account export",
+                Usage:     "Export the node wallet in JSON format",
+                UsageText: "rocketpool api wallet export",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    api.PrintResponse(exportAccount(c))
+                    api.PrintResponse(exportWallet(c))
                     return nil
 
                 },
