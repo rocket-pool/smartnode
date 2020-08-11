@@ -56,7 +56,7 @@ func deserializeBytes(value string) ([]byte, error) {
     }
 
     // Get byte strings
-    byteStrings := strings.Split(value[1:len(value)-1], " ")
+    byteStrings := strings.Fields(value[1:len(value)-1])
 
     // Get and return bytes
     bytes := make([]byte, len(byteStrings))
