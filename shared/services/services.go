@@ -9,7 +9,6 @@ import (
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/beacon/lighthouse"
     "github.com/rocket-pool/smartnode/shared/services/beacon/prysm"
@@ -24,7 +23,6 @@ var (
     cfg config.RocketPoolConfig
     passwordManager *passwords.PasswordManager
     nodeWallet *wallet.Wallet
-    accountManager *accounts.AccountManager
     ethClient *ethclient.Client
     rocketPool *rocketpool.RocketPool
     beaconClient beacon.Client
@@ -32,7 +30,6 @@ var (
     initCfg sync.Once
     initPasswordManager sync.Once
     initNodeWallet sync.Once
-    initAccountManager sync.Once
     initEthClient sync.Once
     initRocketPool sync.Once
     initBeaconClient sync.Once
@@ -65,16 +62,6 @@ func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
     }
     pm := getPasswordManager(cfg)
     return getWallet(cfg, pm)
-}
-
-
-func GetAccountManager(c *cli.Context) (*accounts.AccountManager, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    pm := getPasswordManager(cfg)
-    return getAccountManager(cfg, pm), nil
 }
 
 
@@ -137,14 +124,6 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
         nodeWallet, err = wallet.NewWallet(cfg.Smartnode.WalletPath, pm)
     })
     return nodeWallet, err
-}
-
-
-func getAccountManager(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) *accounts.AccountManager {
-    initAccountManager.Do(func() {
-        accountManager = accounts.NewAccountManager(cfg.Smartnode.NodeKeychainPath, pm)
-    })
-    return accountManager
 }
 
 

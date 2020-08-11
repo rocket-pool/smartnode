@@ -18,7 +18,6 @@ type RocketPoolConfig struct {
     Smartnode struct {
         PasswordPath string             `yaml:"passwordPath,omitempty"`
         WalletPath string               `yaml:"walletPath,omitempty"`
-        NodeKeychainPath string         `yaml:"nodeKeychainPath,omitempty"`
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
@@ -121,7 +120,6 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     config.Rocketpool.StorageAddress = c.GlobalString("storageAddress")
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
-    config.Smartnode.NodeKeychainPath = c.GlobalString("nodeKeychain")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
     config.Chains.Eth1.Provider = c.GlobalString("eth1Provider")
     config.Chains.Eth2.Provider = c.GlobalString("eth2Provider")

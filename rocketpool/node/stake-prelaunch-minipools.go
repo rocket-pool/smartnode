@@ -13,7 +13,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
+    "github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
 
@@ -26,7 +26,7 @@ func startStakePrelaunchMinipools(c *cli.Context) error {
 
     // Get services
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
@@ -34,7 +34,7 @@ func startStakePrelaunchMinipools(c *cli.Context) error {
     // Stake prelaunch minipools at interval
     go (func() {
         for {
-            if err := stakePrelaunchMinipools(c, am, rp); err != nil {
+            if err := stakePrelaunchMinipools(c, w, rp); err != nil {
                 log.Println(err)
             }
             time.Sleep(stakePrelaunchMinipoolsInterval)
@@ -48,7 +48,7 @@ func startStakePrelaunchMinipools(c *cli.Context) error {
 
 
 // Stake prelaunch minipools
-func stakePrelaunchMinipools(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool) error {
+func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool) error {
 
     // Wait for eth client to sync
     if err := services.WaitEthClientSynced(c, true); err != nil {
@@ -56,7 +56,7 @@ func stakePrelaunchMinipools(c *cli.Context, am *accounts.AccountManager, rp *ro
     }
 
     // Get node account
-    nodeAccount, err := am.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return err
     }
@@ -75,7 +75,7 @@ func stakePrelaunchMinipools(c *cli.Context, am *accounts.AccountManager, rp *ro
 
     // Stake minipools
     for _, mp := range minipools {
-        if err := stakeMinipool(am, mp); err != nil {
+        if err := stakeMinipool(w, mp); err != nil {
             log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
         }
     }
@@ -139,7 +139,7 @@ func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address
 
 
 // Stake a minipool
-func stakeMinipool(am *accounts.AccountManager, mp *minipool.Minipool) error {
+func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool) error {
 
     // Log
     log.Printf("Staking minipool %s...\n", mp.Address.Hex())

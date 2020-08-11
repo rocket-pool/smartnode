@@ -16,7 +16,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
+    "github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
 
@@ -29,7 +29,7 @@ func startDissolveTimedOutMinipools(c *cli.Context) error {
 
     // Get services
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
@@ -37,7 +37,7 @@ func startDissolveTimedOutMinipools(c *cli.Context) error {
     // Dissolve timed out minipools at interval
     go (func() {
         for {
-            if err := dissolveTimedOutMinipools(c, am, rp); err != nil {
+            if err := dissolveTimedOutMinipools(c, w, rp); err != nil {
                 log.Println(err)
             }
             time.Sleep(dissolveTimedOutMinipoolsInterval)
@@ -51,7 +51,7 @@ func startDissolveTimedOutMinipools(c *cli.Context) error {
 
 
 // Dissolve timed out minipools
-func dissolveTimedOutMinipools(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool) error {
+func dissolveTimedOutMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool) error {
 
     // Wait for eth client to sync
     if err := services.WaitEthClientSynced(c, true); err != nil {
@@ -59,7 +59,7 @@ func dissolveTimedOutMinipools(c *cli.Context, am *accounts.AccountManager, rp *
     }
 
     // Get node account
-    nodeAccount, err := am.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return err
     }
@@ -87,7 +87,7 @@ func dissolveTimedOutMinipools(c *cli.Context, am *accounts.AccountManager, rp *
 
     // Dissolve minipools
     for _, mp := range minipools {
-        if err := dissolveMinipool(am, mp); err != nil {
+        if err := dissolveMinipool(w, mp); err != nil {
             log.Println(fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err))
         }
     }
@@ -179,13 +179,13 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
 
 
 // Dissolve a minipool
-func dissolveMinipool(am *accounts.AccountManager, mp *minipool.Minipool) error {
+func dissolveMinipool(w *wallet.Wallet, mp *minipool.Minipool) error {
 
     // Log
     log.Printf("Dissolving minipool %s...\n", mp.Address.Hex())
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return err
     }

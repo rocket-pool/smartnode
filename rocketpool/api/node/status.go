@@ -15,9 +15,9 @@ import (
 func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -26,7 +26,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     response := api.NodeStatusResponse{}
 
     // Get node account
-    nodeAccount, _ := am.GetNodeAccount()
+    nodeAccount, _ := w.GetNodeAccount()
     response.AccountAddress = nodeAccount.Address
 
     // Sync

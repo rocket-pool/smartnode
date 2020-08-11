@@ -17,7 +17,7 @@ import (
 func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -72,9 +72,9 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -83,7 +83,7 @@ func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
     response := api.ProcessQueueResponse{}
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
     }

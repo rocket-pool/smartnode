@@ -16,9 +16,9 @@ import (
 func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNodeBurnResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
     if err != nil { return nil, err }
@@ -37,7 +37,7 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
             case "neth":
 
                 // Check node nETH balance
-                nodeAccount, _ := am.GetNodeAccount()
+                nodeAccount, _ := w.GetNodeAccount()
                 nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address, nil)
                 if err != nil {
                     return err
@@ -83,9 +83,9 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.NodeBurnResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -94,7 +94,7 @@ func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.NodeBurnRe
     response := api.NodeBurnResponse{}
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
     }

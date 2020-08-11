@@ -17,7 +17,6 @@ const EthClientSyncTimeout = 15 // 15 seconds
 const BeaconClientSyncTimeout = 15 // 15 seconds
 var checkNodePasswordInterval, _ = time.ParseDuration("15s")
 var checkNodeWalletInterval, _ = time.ParseDuration("15s")
-var checkNodeAccountInterval, _ = time.ParseDuration("15s")
 var checkRocketStorageInterval, _ = time.ParseDuration("15s")
 var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
 
@@ -49,21 +48,6 @@ func RequireNodeWallet(c *cli.Context) error {
     }
     if !nodeWalletInitialized {
         return errors.New("The node wallet has not been initialized. Please initialize the node and try again.")
-    }
-    return nil
-}
-
-
-func RequireNodeAccount(c *cli.Context) error {
-    if err := RequireNodePassword(c); err != nil {
-        return err
-    }
-    nodeAccountExists, err := getNodeAccountExists(c)
-    if err != nil {
-        return err
-    }
-    if !nodeAccountExists {
-        return errors.New("The node account has not been created. Please initialize the node and try again.")
     }
     return nil
 }
@@ -109,7 +93,7 @@ func RequireRocketStorage(c *cli.Context) error {
 
 
 func RequireNodeRegistered(c *cli.Context) error {
-    if err := RequireNodeAccount(c); err != nil {
+    if err := RequireNodeWallet(c); err != nil {
         return err
     }
     if err := RequireRocketStorage(c); err != nil {
@@ -168,26 +152,6 @@ func WaitNodeWallet(c *cli.Context, verbose bool) error {
 }
 
 
-func WaitNodeAccount(c *cli.Context, verbose bool) error {
-    if err := WaitNodePassword(c, verbose); err != nil {
-        return err
-    }
-    for {
-        nodeAccountExists, err := getNodeAccountExists(c)
-        if err != nil {
-            return err
-        }
-        if nodeAccountExists {
-            return nil
-        }
-        if verbose {
-            fmt.Printf("The node account has not been created, retrying in %s...\n", checkNodeAccountInterval.String())
-        }
-        time.Sleep(checkNodeAccountInterval)
-    }
-}
-
-
 func WaitEthClientSynced(c *cli.Context, verbose bool) error {
     _, err := waitEthClientSynced(c, verbose, 0)
     return err
@@ -221,7 +185,7 @@ func WaitRocketStorage(c *cli.Context, verbose bool) error {
 
 
 func WaitNodeRegistered(c *cli.Context, verbose bool) error {
-    if err := WaitNodeAccount(c, verbose); err != nil {
+    if err := WaitNodeWallet(c, verbose); err != nil {
         return err
     }
     if err := WaitRocketStorage(c, verbose); err != nil {
@@ -268,16 +232,6 @@ func getNodeWalletInitialized(c *cli.Context) (bool, error) {
 }
 
 
-// Check if the node account exists
-func getNodeAccountExists(c *cli.Context) (bool, error) {
-    am, err := GetAccountManager(c)
-    if err != nil {
-        return false, err
-    }
-    return am.NodeAccountExists(), nil
-}
-
-
 // Check if the RocketStorage contract is loaded
 func getRocketStorageLoaded(c *cli.Context) (bool, error) {
     cfg, err := GetConfig(c)
@@ -298,7 +252,7 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
 
 // Check if the node is registered
 func getNodeRegistered(c *cli.Context) (bool, error) {
-    am, err := GetAccountManager(c)
+    w, err := GetWallet(c)
     if err != nil {
         return false, err
     }
@@ -306,7 +260,7 @@ func getNodeRegistered(c *cli.Context) (bool, error) {
     if err != nil {
         return false, err
     }
-    nodeAccount, err := am.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return false, err
     }

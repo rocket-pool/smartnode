@@ -31,10 +31,6 @@ func Configure(app *cli.App) {
             Usage: "Rocket Pool wallet file absolute `path`",
         },
         cli.StringFlag{
-            Name:  "nodeKeychain",
-            Usage: "Rocket Pool node account keychain absolute `path`",
-        },
-        cli.StringFlag{
             Name:  "validatorKeychain",
             Usage: "Rocket Pool validator keychain absolute `path`",
         },

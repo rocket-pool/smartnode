@@ -15,7 +15,7 @@ func canCloseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanC
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -30,7 +30,7 @@ func canCloseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanC
     }
 
     // Validate minipool owner
-    nodeAccount, _ := am.GetNodeAccount()
+    nodeAccount, _ := w.GetNodeAccount()
     if err := validateMinipoolOwner(mp, nodeAccount.Address); err != nil {
         return nil, err
     }
@@ -53,7 +53,7 @@ func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CloseMi
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -68,7 +68,7 @@ func closeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CloseMi
     }
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
     }

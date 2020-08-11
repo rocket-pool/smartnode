@@ -23,8 +23,8 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
+    "github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
 
@@ -52,7 +52,7 @@ func startSubmitNetworkBalances(c *cli.Context) error {
 
     // Get services
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
@@ -62,7 +62,7 @@ func startSubmitNetworkBalances(c *cli.Context) error {
     // Submit network balances at interval
     go (func() {
         for {
-            if err := submitNetworkBalances(c, am, rp, bc); err != nil {
+            if err := submitNetworkBalances(c, w, rp, bc); err != nil {
                 log.Println(err)
             }
             time.Sleep(submitNetworkBalancesInterval)
@@ -76,7 +76,7 @@ func startSubmitNetworkBalances(c *cli.Context) error {
 
 
 // Submit network balances
-func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool, bc beacon.Client) error {
+func submitNetworkBalances(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool, bc beacon.Client) error {
 
     // Wait for eth clients to sync
     if err := services.WaitEthClientSynced(c, true); err != nil {
@@ -87,7 +87,7 @@ func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rock
     }
 
     // Get node account
-    nodeAccount, err := am.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return err
     }
@@ -151,7 +151,7 @@ func submitNetworkBalances(c *cli.Context, am *accounts.AccountManager, rp *rock
     log.Printf("rETH token supply: %.2f rETH\n", eth.WeiToEth(balances.RETHSupply))
 
     // Submit balances
-    if err := submitBalances(am, rp, balances); err != nil {
+    if err := submitBalances(w, rp, balances); err != nil {
         return fmt.Errorf("Could not submit network balances: %w", err)
     }
 
@@ -501,7 +501,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, mini
 
 
 // Submit network balances
-func submitBalances(am *accounts.AccountManager, rp *rocketpool.RocketPool, balances networkBalances) error {
+func submitBalances(w *wallet.Wallet, rp *rocketpool.RocketPool, balances networkBalances) error {
 
     // Log
     log.Printf("Submitting network balances for block %d...\n", balances.Block)
@@ -513,7 +513,7 @@ func submitBalances(am *accounts.AccountManager, rp *rocketpool.RocketPool, bala
     totalEth.Add(totalEth, balances.RETHContract)
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return err
     }

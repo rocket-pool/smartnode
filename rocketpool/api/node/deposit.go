@@ -28,7 +28,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
     if err != nil { return nil, err }
@@ -39,7 +39,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
     response := api.CanNodeDepositResponse{}
 
     // Get node account
-    nodeAccount, _ := am.GetNodeAccount()
+    nodeAccount, _ := w.GetNodeAccount()
 
     // Sync
     var wg errgroup.Group
@@ -90,7 +90,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
     if err != nil { return nil, err }
@@ -101,7 +101,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     response := api.NodeDepositResponse{}
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
     }

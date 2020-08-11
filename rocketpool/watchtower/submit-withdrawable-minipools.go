@@ -18,8 +18,8 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
+    "github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
 
@@ -41,7 +41,7 @@ func startSubmitWithdrawableMinipools(c *cli.Context) error {
 
     // Get services
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
@@ -51,7 +51,7 @@ func startSubmitWithdrawableMinipools(c *cli.Context) error {
     // Submit withdrawable minipools at interval
     go (func() {
         for {
-            if err := submitWithdrawableMinipools(c, am, rp, bc); err != nil {
+            if err := submitWithdrawableMinipools(c, w, rp, bc); err != nil {
                 log.Println(err)
             }
             time.Sleep(submitWithdrawableMinipoolsInterval)
@@ -65,7 +65,7 @@ func startSubmitWithdrawableMinipools(c *cli.Context) error {
 
 
 // Submit withdrawable minipools
-func submitWithdrawableMinipools(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool, bc beacon.Client) error {
+func submitWithdrawableMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool, bc beacon.Client) error {
 
     // Wait for eth clients to sync
     if err := services.WaitEthClientSynced(c, true); err != nil {
@@ -76,7 +76,7 @@ func submitWithdrawableMinipools(c *cli.Context, am *accounts.AccountManager, rp
     }
 
     // Get node account
-    nodeAccount, err := am.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return err
     }
@@ -122,7 +122,7 @@ func submitWithdrawableMinipools(c *cli.Context, am *accounts.AccountManager, rp
 
     // Submit minipools withdrawable status
     for _, details := range minipools {
-        if err := submitWithdrawableMinipool(am, rp, details); err != nil {
+        if err := submitWithdrawableMinipool(w, rp, details); err != nil {
             log.Println(fmt.Errorf("Could not submit minipool %s withdrawable status: %w", details.Address.Hex(), err))
         }
     }
@@ -296,13 +296,13 @@ func getMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.Client,
 
 
 // Submit minipool withdrawable status
-func submitWithdrawableMinipool(am *accounts.AccountManager, rp *rocketpool.RocketPool, details minipoolWithdrawableDetails) error {
+func submitWithdrawableMinipool(w *wallet.Wallet, rp *rocketpool.RocketPool, details minipoolWithdrawableDetails) error {
 
     // Log
     log.Printf("Submitting minipool %s withdrawable status...\n", details.Address.Hex())
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return err
     }

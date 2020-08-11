@@ -8,7 +8,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/accounts"
+    "github.com/rocket-pool/smartnode/shared/services/wallet"
 )
 
 
@@ -21,7 +21,7 @@ func startProcessWithdrawals(c *cli.Context) error {
 
     // Get services
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
@@ -29,7 +29,7 @@ func startProcessWithdrawals(c *cli.Context) error {
     // Process withdrawals at interval
     go (func() {
         for {
-            if err := processWithdrawals(c, am, rp); err != nil {
+            if err := processWithdrawals(c, w, rp); err != nil {
                 log.Println(err)
             }
             time.Sleep(processWithdrawalsInterval)
@@ -43,7 +43,7 @@ func startProcessWithdrawals(c *cli.Context) error {
 
 
 // Process withdrawals
-func processWithdrawals(c *cli.Context, am *accounts.AccountManager, rp *rocketpool.RocketPool) error {
+func processWithdrawals(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool) error {
 
     // Process withdrawals
     // TODO: implement

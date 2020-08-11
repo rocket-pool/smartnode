@@ -12,7 +12,7 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -21,7 +21,7 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
     response := api.MinipoolStatusResponse{}
 
     // Get minipool details
-    nodeAccount, _ := am.GetNodeAccount()
+    nodeAccount, _ := w.GetNodeAccount()
     details, err := getNodeMinipoolDetails(rp, nodeAccount.Address)
     if err != nil {
         return nil, err

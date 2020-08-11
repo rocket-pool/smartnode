@@ -17,9 +17,9 @@ import (
 func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNodeSendResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
     if err != nil { return nil, err }
@@ -30,7 +30,7 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
     response := api.CanNodeSendResponse{}
 
     // Get node account
-    nodeAccount, _ := am.GetNodeAccount()
+    nodeAccount, _ := w.GetNodeAccount()
 
     // Handle token type
     switch token {
@@ -64,9 +64,9 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) (*api.NodeSendResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
     if err != nil { return nil, err }
@@ -77,7 +77,7 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
     response := api.NodeSendResponse{}
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
     }

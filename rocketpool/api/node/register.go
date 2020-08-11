@@ -14,9 +14,9 @@ import (
 func canRegisterNode(c *cli.Context) (*api.CanRegisterNodeResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -29,7 +29,7 @@ func canRegisterNode(c *cli.Context) (*api.CanRegisterNodeResponse, error) {
 
     // Check node is not already registered
     wg.Go(func() error {
-        nodeAccount, _ := am.GetNodeAccount()
+        nodeAccount, _ := w.GetNodeAccount()
         exists, err := node.GetNodeExists(rp, nodeAccount.Address, nil)
         if err == nil {
             response.AlreadyRegistered = exists
@@ -61,9 +61,9 @@ func canRegisterNode(c *cli.Context) (*api.CanRegisterNodeResponse, error) {
 func registerNode(c *cli.Context, timezoneLocation string) (*api.RegisterNodeResponse, error) {
 
     // Get services
-    if err := services.RequireNodeAccount(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    am, err := services.GetAccountManager(c)
+    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -72,7 +72,7 @@ func registerNode(c *cli.Context, timezoneLocation string) (*api.RegisterNodeRes
     response := api.RegisterNodeResponse{}
 
     // Get transactor
-    opts, err := am.GetNodeAccountTransactor()
+    opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
     }
