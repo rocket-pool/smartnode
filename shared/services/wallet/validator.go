@@ -39,8 +39,8 @@ func (w *Wallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error)
     }
 
     // Check for cached validator key
-    if privateKey, ok := w.validatorKeys[index]; ok {
-        return privateKey, nil
+    if validatorKey, ok := w.validatorKeys[index]; ok {
+        return validatorKey, nil
     }
 
     // Initialize BLS support
@@ -49,7 +49,7 @@ func (w *Wallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error)
     // Get private key
     privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, fmt.Sprintf(ValidatorKeyPath, index))
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("Could not get validator %d private key: %w", index, err)
     }
 
     // Cache validator key
