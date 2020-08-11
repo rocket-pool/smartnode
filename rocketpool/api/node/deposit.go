@@ -39,7 +39,10 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
     response := api.CanNodeDepositResponse{}
 
     // Get node account
-    nodeAccount, _ := w.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
 
     // Sync
     var wg errgroup.Group

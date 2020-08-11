@@ -29,12 +29,16 @@ func canRegisterNode(c *cli.Context) (*api.CanRegisterNodeResponse, error) {
 
     // Check node is not already registered
     wg.Go(func() error {
-        nodeAccount, _ := w.GetNodeAccount()
-        exists, err := node.GetNodeExists(rp, nodeAccount.Address, nil)
-        if err == nil {
-            response.AlreadyRegistered = exists
+        nodeAccount, err := w.GetNodeAccount()
+        if err != nil {
+            return err
         }
-        return err
+        exists, err := node.GetNodeExists(rp, nodeAccount.Address, nil)
+        if err != nil {
+            return err
+        }
+        response.AlreadyRegistered = exists
+        return nil
     })
 
     // Check node registrations are enabled

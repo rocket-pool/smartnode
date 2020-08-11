@@ -21,7 +21,10 @@ func exportWallet(c *cli.Context) (*api.ExportWalletResponse, error) {
     response := api.ExportWalletResponse{}
 
     // Get password
-    password, _ := pm.GetPassword()
+    password, err := pm.GetPassword()
+    if err != nil {
+        return nil, err
+    }
     response.Password = password
 
     // Serialize wallet

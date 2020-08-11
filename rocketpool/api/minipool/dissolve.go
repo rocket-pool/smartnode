@@ -30,7 +30,10 @@ func canDissolveMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     }
 
     // Validate minipool owner
-    nodeAccount, _ := w.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
     if err := validateMinipoolOwner(mp, nodeAccount.Address); err != nil {
         return nil, err
     }

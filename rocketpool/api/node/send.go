@@ -30,7 +30,10 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
     response := api.CanNodeSendResponse{}
 
     // Get node account
-    nodeAccount, _ := w.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
 
     // Handle token type
     switch token {

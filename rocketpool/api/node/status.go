@@ -26,7 +26,10 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     response := api.NodeStatusResponse{}
 
     // Get node account
-    nodeAccount, _ := w.GetNodeAccount()
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
     response.AccountAddress = nodeAccount.Address
 
     // Sync
