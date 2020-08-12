@@ -1,6 +1,7 @@
 package wallet
 
 import (
+    "github.com/rocket-pool/rocketpool-go/types"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
@@ -34,7 +35,19 @@ func getStatus(c *cli.Context) (*api.WalletStatusResponse, error) {
         response.AccountAddress = nodeAccount.Address
 
         // Get validator accounts
-        // TODO: implement
+        validatorKeys := []types.ValidatorPubkey{}
+        validatorCount, err := w.GetValidatorKeyCount()
+        if err != nil {
+            return nil, err
+        }
+        for vi := uint(0); vi < validatorCount; vi++ {
+            validatorKey, err := w.GetValidatorKeyAt(vi)
+            if err != nil {
+                return nil, err
+            }
+            validatorKeys = append(validatorKeys, types.BytesToValidatorPubkey(validatorKey.PublicKey().Marshal()))
+        }
+        response.ValidatorKeys = validatorKeys
 
     }
 
