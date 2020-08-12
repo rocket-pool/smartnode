@@ -165,6 +165,47 @@ func GetNodeMinipoolAddresses(rp *rocketpool.RocketPool, nodeAddress common.Addr
 }
 
 
+// Get a node's validating minipool pubkeys
+func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) ([]rptypes.ValidatorPubkey, error) {
+
+    // Get minipool count
+    minipoolCount, err := GetNodeValidatingMinipoolCount(rp, nodeAddress, opts)
+    if err != nil {
+        return []rptypes.ValidatorPubkey{}, err
+    }
+
+    // Data
+    var wg errgroup.Group
+    pubkeys := make([]rptypes.ValidatorPubkey, minipoolCount)
+
+    // Load pubkeys
+    for mi := uint64(0); mi < minipoolCount; mi++ {
+        mi := mi
+        wg.Go(func() error {
+            minipoolAddress, err := GetNodeValidatingMinipoolAt(rp, nodeAddress, mi, opts)
+            if err != nil {
+                return err
+            }
+            pubkey, err := GetMinipoolPubkey(rp, minipoolAddress, opts)
+            if err != nil {
+                return err
+            }
+            pubkeys[mi] = pubkey
+            return nil
+        })
+    }
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return []rptypes.ValidatorPubkey{}, err
+    }
+
+    // Return
+    return pubkeys, nil
+
+}
+
+
 // Get a minipool's details
 func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (MinipoolDetails, error) {
 
@@ -279,6 +320,34 @@ func GetNodeMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.Address, in
     minipoolAddress := new(common.Address)
     if err := rocketMinipoolManager.Call(opts, minipoolAddress, "getNodeMinipoolAt", nodeAddress, big.NewInt(int64(index))); err != nil {
         return common.Address{}, fmt.Errorf("Could not get node %s minipool %d address: %w", nodeAddress.Hex(), index, err)
+    }
+    return *minipoolAddress, nil
+}
+
+
+// Get a node's validating minipool count
+func GetNodeValidatingMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return 0, err
+    }
+    minipoolCount := new(*big.Int)
+    if err := rocketMinipoolManager.Call(opts, minipoolCount, "getNodeValidatingMinipoolCount", nodeAddress); err != nil {
+        return 0, fmt.Errorf("Could not get node %s validating minipool count: %w", nodeAddress.Hex(), err)
+    }
+    return (*minipoolCount).Uint64(), nil
+}
+
+
+// Get a node's validating minipool address by index
+func GetNodeValidatingMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.Address, index uint64, opts *bind.CallOpts) (common.Address, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return common.Address{}, err
+    }
+    minipoolAddress := new(common.Address)
+    if err := rocketMinipoolManager.Call(opts, minipoolAddress, "getNodeValidatingMinipoolAt", nodeAddress, big.NewInt(int64(index))); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get node %s validating minipool %d address: %w", nodeAddress.Hex(), index, err)
     }
     return *minipoolAddress, nil
 }
