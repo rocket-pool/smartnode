@@ -3,9 +3,6 @@ package validator
 import (
     "github.com/prysmaticlabs/go-ssz"
     eth2types "github.com/wealdtech/go-eth2-types/v2"
-
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
-    bytesutil "github.com/rocket-pool/smartnode/shared/utils/bytes"
 )
 
 
@@ -30,7 +27,7 @@ type signingRoot struct {
 
 
 // Get deposit data & root for a given validator key and withdrawal credentials
-func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials []byte, eth2Config beacon.Eth2Config) (DepositData, [32]byte, error) {
+func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials []byte) (DepositData, [32]byte, error) {
 
     // Build deposit data
     depositData := DepositData{
@@ -39,19 +36,16 @@ func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials
         Amount: DepositAmount,
     }
 
-    // Get deposit data signing root
+    // Get signing root
     sr, err := ssz.SigningRoot(depositData)
     if err != nil {
         return DepositData{}, [32]byte{}, err
     }
 
-    // Compute domain
-    domain := eth2types.Domain(bytesutil.ToBytes4(eth2Config.DomainDeposit), eth2types.ZeroForkVersion, eth2types.ZeroGenesisValidatorsRoot)
-
-    // Get deposit data signing root with domain
+    // Get signing root with domain
     srWithDomain, err := ssz.HashTreeRoot(signingRoot{
         ObjectRoot: sr[:],
-        Domain: domain,
+        Domain: eth2types.Domain(eth2types.DomainDeposit, eth2types.ZeroForkVersion, eth2types.ZeroGenesisValidatorsRoot),
     })
     if err != nil {
         return DepositData{}, [32]byte{}, err

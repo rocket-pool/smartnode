@@ -13,6 +13,7 @@ type ValidatorStatusOptions struct {
 
 
 // API response types
+// TODO: clean up unused fields
 type SyncStatus struct {
     Syncing bool
 }
