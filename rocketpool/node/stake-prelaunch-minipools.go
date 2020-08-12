@@ -180,6 +180,11 @@ func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredential
         return err
     }
 
+    // Save wallet
+    if err := w.Save(); err != nil {
+        return err
+    }
+
     // Log
     log.Printf("Successfully staked minipool %s.\n", mp.Address.Hex())
 

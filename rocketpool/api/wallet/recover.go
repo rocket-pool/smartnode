@@ -3,6 +3,7 @@ package wallet
 import (
     "errors"
 
+    "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
@@ -14,7 +15,10 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 
     // Get services
     if err := services.RequireNodePassword(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
     // Response
@@ -30,8 +34,27 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
         return nil, err
     }
 
-    // Recover validator accounts
-    // TODO: implement
+    // Get node's validating pubkeys
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+    pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAccount.Address, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    // Recover validator keys
+    for _, pubkey := range pubkeys {
+        if err := w.RecoverValidatorKey(pubkey); err != nil {
+            return nil, err
+        }
+    }
+
+    // Save wallet
+    if err := w.Save(); err != nil {
+        return nil, err
+    }
 
     // Return response
     return &response, nil

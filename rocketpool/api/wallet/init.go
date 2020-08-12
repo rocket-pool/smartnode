@@ -32,6 +32,11 @@ func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
     }
     response.Mnemonic = mnemonic
 
+    // Save wallet
+    if err := w.Save(); err != nil {
+        return nil, err
+    }
+
     // Return response
     return &response, nil
 

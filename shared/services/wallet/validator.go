@@ -2,18 +2,21 @@ package wallet
 
 import (
     "bytes"
-    "encoding/hex"
     "errors"
     "fmt"
     "sync"
 
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
     eth2types "github.com/wealdtech/go-eth2-types/v2"
     eth2util "github.com/wealdtech/go-eth2-util"
 )
 
 
 // Config
-const ValidatorKeyPath = "m/12381/3600/%d/0/0"
+const (
+    ValidatorKeyPath = "m/12381/3600/%d/0/0"
+    MaxValidatorKeyRecoverAttempts = 100
+)
 
 
 // Get the number of validator keys recorded in the wallet
@@ -62,16 +65,15 @@ func (w *Wallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error)
 
 
 // Get a validator key by public key
-func (w *Wallet) GetValidatorKeyByPubkey(pubkey *eth2types.BLSPublicKey) (*eth2types.BLSPrivateKey, error) {
+func (w *Wallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 
     // Check wallet is initialized
     if !w.IsInitialized() {
         return nil, errors.New("Wallet is not initialized")
     }
 
-    // Encode pubkey
-    pubkeyBytes := pubkey.Marshal()
-    pubkeyHex := hex.EncodeToString(pubkeyBytes)
+    // Get pubkey hex
+    pubkeyHex := pubkey.Hex()
 
     // Check for cached validator key index
     if index, ok := w.validatorKeyIndices[pubkeyHex]; ok {
@@ -86,7 +88,7 @@ func (w *Wallet) GetValidatorKeyByPubkey(pubkey *eth2types.BLSPublicKey) (*eth2t
         if err != nil {
             return nil, err
         }
-        if bytes.Equal(pubkeyBytes, key.PublicKey().Marshal()) {
+        if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
             validatorKey = key
             break
         }
@@ -118,13 +120,47 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
     index := w.ws.NextAccount
     w.ws.NextAccount++
 
-    // Save wallet store
-    if err := w.saveStore(); err != nil {
-        return nil, err
-    }
-
     // Return validator key
     return w.GetValidatorKeyAt(index)
+
+}
+
+
+// Recover a validator key by public key
+func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
+
+    // Check wallet is initialized
+    if !w.IsInitialized() {
+        return errors.New("Wallet is not initialized")
+    }
+
+    // Find matching validator key
+    var index uint
+    var found bool
+    for index = 0; index < w.ws.NextAccount + MaxValidatorKeyRecoverAttempts; index++ {
+        key, err := w.GetValidatorKeyAt(index)
+        if err != nil {
+            return err
+        }
+        if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
+            found = true
+            break
+        }
+    }
+
+    // Check if found
+    if !found {
+        return fmt.Errorf("Validator %s key not found", pubkey.Hex())
+    }
+
+    // Update account index
+    nextIndex := index + 1
+    if nextIndex > w.ws.NextAccount {
+        w.ws.NextAccount = nextIndex
+    }
+
+    // Return
+    return nil
 
 }
 

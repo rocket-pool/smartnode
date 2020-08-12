@@ -130,11 +130,8 @@ func (w *Wallet) Initialize() (string, error) {
         return "", fmt.Errorf("Could not generate wallet mnemonic: %w", err)
     }
 
-    // Initialize & save wallet store
+    // Initialize wallet store
     if err := w.initializeStore(mnemonic); err != nil {
-        return "", err
-    }
-    if err := w.saveStore(); err != nil {
         return "", err
     }
 
@@ -157,12 +154,29 @@ func (w *Wallet) Recover(mnemonic string) error {
         return fmt.Errorf("Invalid mnemonic '%s'", mnemonic)
     }
 
-    // Initialize & save wallet store
+    // Initialize wallet store
     if err := w.initializeStore(mnemonic); err != nil {
         return err
     }
-    if err := w.saveStore(); err != nil {
-        return err
+
+    // Return
+    return nil
+
+}
+
+
+// Save the wallet store to disk
+func (w *Wallet) Save() error {
+
+    // Encode wallet store
+    wsBytes, err := json.Marshal(w.ws)
+    if err != nil {
+        return fmt.Errorf("Could not encode wallet: %w", err)
+    }
+
+    // Write wallet store to disk
+    if err := ioutil.WriteFile(w.walletPath, wsBytes, FileMode); err != nil {
+        return fmt.Errorf("Could not write wallet to disk: %w", err)
     }
 
     // Return
@@ -242,26 +256,6 @@ func (w *Wallet) initializeStore(mnemonic string) error {
         Version: w.encryptor.Version(),
         UUID: uuid.New(),
         NextAccount: 0,
-    }
-
-    // Return
-    return nil
-
-}
-
-
-// Save the wallet store to disk
-func (w *Wallet) saveStore() error {
-
-    // Encode wallet store
-    wsBytes, err := json.Marshal(w.ws)
-    if err != nil {
-        return fmt.Errorf("Could not encode wallet: %w", err)
-    }
-
-    // Write wallet store to disk
-    if err := ioutil.WriteFile(w.walletPath, wsBytes, FileMode); err != nil {
-        return fmt.Errorf("Could not write wallet to disk: %w", err)
     }
 
     // Return
