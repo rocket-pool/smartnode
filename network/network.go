@@ -92,7 +92,7 @@ func ProcessWithdrawal(rp *rocketpool.RocketPool, validatorPubkey rptypes.Valida
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNetworkWithdrawal, opts, "processWithdrawal", validatorPubkey)
+    txReceipt, err := contract.Transact(rp.Client, rocketNetworkWithdrawal, opts, "processWithdrawal", validatorPubkey[:])
     if err != nil {
         return nil, fmt.Errorf("Could not process validator %s withdrawal: %w", validatorPubkey.Hex(), err)
     }
