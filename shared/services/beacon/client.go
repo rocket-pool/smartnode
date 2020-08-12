@@ -13,14 +13,11 @@ type ValidatorStatusOptions struct {
 
 
 // API response types
-// TODO: clean up unused fields
 type SyncStatus struct {
     Syncing bool
 }
 type Eth2Config struct {
     GenesisForkVersion []byte
-    DomainDeposit []byte
-    DomainVoluntaryExit []byte
     GenesisEpoch uint64
     GenesisTime uint64
     SecondsPerEpoch uint64

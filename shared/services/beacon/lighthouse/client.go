@@ -14,7 +14,6 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services/beacon"
-    bytesutil "github.com/rocket-pool/smartnode/shared/utils/bytes"
     hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -120,8 +119,6 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     // Return response
     return beacon.Eth2Config{
         GenesisForkVersion: config.GenesisForkVersion,
-        DomainDeposit: bytesutil.Bytes4(config.DomainDeposit),
-        DomainVoluntaryExit: bytesutil.Bytes4(config.DomainVoluntaryExit),
         GenesisEpoch: config.GenesisSlot / slotsPerEpoch,
         GenesisTime: genesisTime,
         SecondsPerEpoch: config.MillisecondsPerSlot * slotsPerEpoch / 1000,
