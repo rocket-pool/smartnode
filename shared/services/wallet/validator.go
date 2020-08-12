@@ -120,6 +120,8 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
     index := w.ws.NextAccount
     w.ws.NextAccount++
 
+    // TODO: write key to disk for lighthouse
+
     // Return validator key
     return w.GetValidatorKeyAt(index)
 
@@ -158,6 +160,8 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
     if nextIndex > w.ws.NextAccount {
         w.ws.NextAccount = nextIndex
     }
+
+    // TODO: write key to disk for lighthouse
 
     // Return
     return nil
