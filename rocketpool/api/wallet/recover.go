@@ -30,6 +30,9 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
         return nil, err
     }
 
+    // Recover validator accounts
+    // TODO: implement
+
     // Return response
     return &response, nil
 
