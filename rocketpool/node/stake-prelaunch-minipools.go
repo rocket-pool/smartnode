@@ -7,6 +7,7 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/minipool"
+    "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/types"
     "github.com/urfave/cli"
@@ -14,6 +15,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
+    "github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 
@@ -70,12 +72,18 @@ func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Ro
         return nil
     }
 
+    // Get Rocket pool withdrawal credentials
+    withdrawalCredentials, err := network.GetWithdrawalCredentials(rp, nil)
+    if err != nil {
+        return err
+    }
+
     // Log
     log.Printf("%d minipools are ready for staking...\n", len(minipools))
 
     // Stake minipools
     for _, mp := range minipools {
-        if err := stakeMinipool(w, mp); err != nil {
+        if err := stakeMinipool(w, mp, withdrawalCredentials); err != nil {
             log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
         }
     }
@@ -139,13 +147,38 @@ func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address
 
 
 // Stake a minipool
-func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool) error {
+func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredentials common.Hash) error {
 
     // Log
     log.Printf("Staking minipool %s...\n", mp.Address.Hex())
 
-    // TODO: implement
-    log.Println("Staking minipools not implemented...")
+    // Create new validator key
+    validatorKey, err := w.CreateValidatorKey()
+    if err != nil {
+        return err
+    }
+
+    // Get validator deposit data
+    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials[:])
+    if err != nil {
+        return err
+    }
+
+    // Get transactor
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
+        return err
+    }
+
+    // Stake minipool
+    if _, err := mp.Stake(
+        types.BytesToValidatorPubkey(depositData.PublicKey),
+        types.BytesToValidatorSignature(depositData.Signature),
+        depositDataRoot,
+        opts,
+    ); err != nil {
+        return err
+    }
 
     // Log
     log.Printf("Successfully staked minipool %s.\n", mp.Address.Hex())
