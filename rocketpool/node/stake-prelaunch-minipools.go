@@ -159,7 +159,7 @@ func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredential
     }
 
     // Get validator deposit data
-    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials[:])
+    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials)
     if err != nil {
         return err
     }

@@ -1,6 +1,7 @@
 package validator
 
 import (
+    "github.com/ethereum/go-ethereum/common"
     "github.com/prysmaticlabs/go-ssz"
     eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
@@ -27,19 +28,19 @@ type signingRoot struct {
 
 
 // Get deposit data & root for a given validator key and withdrawal credentials
-func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials []byte) (DepositData, [32]byte, error) {
+func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials common.Hash) (DepositData, common.Hash, error) {
 
     // Build deposit data
     depositData := DepositData{
         PublicKey: validatorKey.PublicKey().Marshal(),
-        WithdrawalCredentials: withdrawalCredentials,
+        WithdrawalCredentials: withdrawalCredentials[:],
         Amount: DepositAmount,
     }
 
     // Get signing root
     sr, err := ssz.SigningRoot(depositData)
     if err != nil {
-        return DepositData{}, [32]byte{}, err
+        return DepositData{}, common.Hash{}, err
     }
 
     // Get signing root with domain
@@ -48,7 +49,7 @@ func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials
         Domain: eth2types.Domain(eth2types.DomainDeposit, eth2types.ZeroForkVersion, eth2types.ZeroGenesisValidatorsRoot),
     })
     if err != nil {
-        return DepositData{}, [32]byte{}, err
+        return DepositData{}, common.Hash{}, err
     }
 
     // Sign deposit data
@@ -57,7 +58,7 @@ func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials
     // Get deposit data root
     depositDataRoot, err := ssz.HashTreeRoot(depositData)
     if err != nil {
-        return DepositData{}, [32]byte{}, err
+        return DepositData{}, common.Hash{}, err
     }
 
     // Return
