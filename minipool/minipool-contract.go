@@ -108,11 +108,11 @@ func (mp *Minipool) GetStatusDetails(opts *bind.CallOpts) (StatusDetails, error)
 
 }
 func (mp *Minipool) GetStatus(opts *bind.CallOpts) (rptypes.MinipoolStatus, error) {
-    status := new(rptypes.MinipoolStatus)
+    status := new(uint8)
     if err := mp.Contract.Call(opts, status, "getStatus"); err != nil {
         return 0, fmt.Errorf("Could not get minipool %s status: %w", mp.Address.Hex(), err)
     }
-    return *status, nil
+    return rptypes.MinipoolStatus(*status), nil
 }
 func (mp *Minipool) GetStatusBlock(opts *bind.CallOpts) (uint64, error) {
     statusBlock := new(*big.Int)
@@ -132,11 +132,11 @@ func (mp *Minipool) GetStatusTime(opts *bind.CallOpts) (time.Time, error) {
 
 // Get deposit type
 func (mp *Minipool) GetDepositType(opts *bind.CallOpts) (rptypes.MinipoolDeposit, error) {
-    depositType := new(rptypes.MinipoolDeposit)
+    depositType := new(uint8)
     if err := mp.Contract.Call(opts, depositType, "getDepositType"); err != nil {
         return 0, fmt.Errorf("Could not get minipool %s deposit type: %w", mp.Address.Hex(), err)
     }
-    return *depositType, nil
+    return rptypes.MinipoolDeposit(*depositType), nil
 }
 
 
