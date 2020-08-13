@@ -2,6 +2,7 @@ package types
 
 import (
     "encoding/hex"
+    "encoding/json"
 )
 
 
@@ -39,10 +40,12 @@ func HexToValidatorPubkey(value string) (ValidatorPubkey, error) {
 
 // JSON encoding
 func (v ValidatorPubkey) MarshalJSON() ([]byte, error) {
-    return []byte(v.Hex()), nil
+    return json.Marshal(v.Hex())
 }
 func (v *ValidatorPubkey) UnmarshalJSON(data []byte) error {
-    pubkey, err := HexToValidatorPubkey(string(data))
+    var dataStr string
+    if err := json.Unmarshal(data, &dataStr); err != nil { return err }
+    pubkey, err := HexToValidatorPubkey(dataStr)
     if err == nil { *v = pubkey }
     return err
 }
@@ -82,10 +85,12 @@ func HexToValidatorSignature(value string) (ValidatorSignature, error) {
 
 // JSON encoding
 func (v ValidatorSignature) MarshalJSON() ([]byte, error) {
-    return []byte(v.Hex()), nil
+    return json.Marshal(v.Hex())
 }
 func (v *ValidatorSignature) UnmarshalJSON(data []byte) error {
-    signature, err := HexToValidatorSignature(string(data))
+    var dataStr string
+    if err := json.Unmarshal(data, &dataStr); err != nil { return err }
+    signature, err := HexToValidatorSignature(dataStr)
     if err == nil { *v = signature }
     return err
 }

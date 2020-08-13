@@ -1,6 +1,7 @@
 package types
 
 import (
+    "encoding/json"
     "fmt"
 )
 
@@ -33,11 +34,15 @@ func StringToMinipoolStatus(value string) (MinipoolStatus, error) {
 // JSON encoding
 func (s MinipoolStatus) MarshalJSON() ([]byte, error) {
     str := s.String()
-    if str == "" { return []byte{}, fmt.Errorf("Invalid minipool status '%d'", s) }
-    return []byte(str), nil
+    if str == "" {
+        return []byte{}, fmt.Errorf("Invalid minipool status '%d'", s)
+    }
+    return json.Marshal(str)
 }
 func (s *MinipoolStatus) UnmarshalJSON(data []byte) error {
-    status, err := StringToMinipoolStatus(string(data))
+    var dataStr string
+    if err := json.Unmarshal(data, &dataStr); err != nil { return err }
+    status, err := StringToMinipoolStatus(dataStr)
     if err == nil { *s = status }
     return err
 }
@@ -70,11 +75,15 @@ func StringToMinipoolDeposit(value string) (MinipoolDeposit, error) {
 // JSON encoding
 func (d MinipoolDeposit) MarshalJSON() ([]byte, error) {
     str := d.String()
-    if str == "" { return []byte{}, fmt.Errorf("Invalid minipool deposit type '%d'", d) }
-    return []byte(str), nil
+    if str == "" {
+        return []byte{}, fmt.Errorf("Invalid minipool deposit type '%d'", d)
+    }
+    return json.Marshal(str)
 }
 func (d *MinipoolDeposit) UnmarshalJSON(data []byte) error {
-    depositType, err := StringToMinipoolDeposit(string(data))
+    var dataStr string
+    if err := json.Unmarshal(data, &dataStr); err != nil { return err }
+    depositType, err := StringToMinipoolDeposit(dataStr)
     if err == nil { *d = depositType }
     return err
 }
