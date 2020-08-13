@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "fmt"
     "io/ioutil"
+    "os"
     "path/filepath"
 
     "github.com/google/uuid"
@@ -20,6 +21,7 @@ import (
 const (
     KeystoreDir = "lighthouse"
     KeyFileName = "voting-keystore.json"
+    DirMode = 0700
     FileMode = 0600
 )
 
@@ -85,9 +87,16 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
         return fmt.Errorf("Could not encode validator key: %w", err)
     }
 
+    // Get key file path
+    keyFilePath := filepath.Join(ks.keystorePath, KeystoreDir, hexutil.AddPrefix(pubkey.Hex()), KeyFileName)
+
+    // Create key dir
+    if err := os.MkdirAll(filepath.Dir(keyFilePath), DirMode); err != nil {
+        return fmt.Errorf("Could not create validator key folder: %w", err)
+    }
+
     // Write key store to disk
-    keyPath := filepath.Join(ks.keystorePath, KeystoreDir, hexutil.AddPrefix(pubkey.Hex()), KeyFileName)
-    if err := ioutil.WriteFile(keyPath, keyStoreBytes, FileMode); err != nil {
+    if err := ioutil.WriteFile(keyFilePath, keyStoreBytes, FileMode); err != nil {
         return fmt.Errorf("Could not write validator key to disk: %w", err)
     }
 
