@@ -15,6 +15,7 @@ import (
     eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
     "github.com/rocket-pool/smartnode/shared/services/passwords"
+    "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
 
@@ -48,6 +49,9 @@ type Wallet struct {
     validatorKeys map[uint]*eth2types.BLSPrivateKey
     validatorKeyIndices map[string]uint
 
+    // Validator keystores
+    validatorKeystores map[string]keystore.Keystore
+
 }
 
 
@@ -71,6 +75,7 @@ func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*
         encryptor: eth2ks.New(),
         validatorKeys: map[uint]*eth2types.BLSPrivateKey{},
         validatorKeyIndices: map[string]uint{},
+        validatorKeystores: map[string]keystore.Keystore{},
     }
 
     // Load & decrypt wallet store
@@ -81,6 +86,12 @@ func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*
     // Return
     return w, nil
 
+}
+
+
+// Add a validator keystore to the wallet
+func (w *Wallet) AddKeystore(name string, ks keystore.Keystore) {
+    w.validatorKeystores[name] = ks
 }
 
 

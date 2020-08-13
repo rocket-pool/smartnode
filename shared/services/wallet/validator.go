@@ -41,25 +41,9 @@ func (w *Wallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error)
         return nil, errors.New("Wallet is not initialized")
     }
 
-    // Check for cached validator key
-    if validatorKey, ok := w.validatorKeys[index]; ok {
-        return validatorKey, nil
-    }
-
-    // Initialize BLS support
-    initializeBLS()
-
-    // Get private key
-    privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, fmt.Sprintf(ValidatorKeyPath, index))
-    if err != nil {
-        return nil, fmt.Errorf("Could not get validator %d private key: %w", index, err)
-    }
-
-    // Cache validator key
-    w.validatorKeys[index] = privateKey
-
-    // Return
-    return privateKey, nil
+    // Return validator key
+    key, _, err := w.getValidatorPrivateKey(index)
+    return key, err
 
 }
 
@@ -72,19 +56,20 @@ func (w *Wallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2t
         return nil, errors.New("Wallet is not initialized")
     }
 
-    // Get pubkey hex
+    // Get pubkey hex string
     pubkeyHex := pubkey.Hex()
 
     // Check for cached validator key index
     if index, ok := w.validatorKeyIndices[pubkeyHex]; ok {
-        return w.GetValidatorKeyAt(index)
+        key, _, err := w.getValidatorPrivateKey(index)
+        return key, err
     }
 
     // Find matching validator key
     var index uint
     var validatorKey *eth2types.BLSPrivateKey
     for index = 0; index < w.ws.NextAccount; index++ {
-        key, err := w.GetValidatorKeyAt(index)
+        key, _, err := w.getValidatorPrivateKey(index)
         if err != nil {
             return nil, err
         }
@@ -120,10 +105,21 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
     index := w.ws.NextAccount
     w.ws.NextAccount++
 
-    // TODO: write key to disk for lighthouse
+    // Get validator key
+    key, path, err := w.getValidatorPrivateKey(index)
+    if err != nil {
+        return nil, err
+    }
+
+    // Store validator key
+    for name, ks := range w.validatorKeystores {
+        if err := ks.StoreValidatorKey(key, path); err != nil {
+            return nil, fmt.Errorf("Could not store %s validator key: %w", name, err)
+        }
+    }
 
     // Return validator key
-    return w.GetValidatorKeyAt(index)
+    return key, nil
 
 }
 
@@ -138,20 +134,22 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 
     // Find matching validator key
     var index uint
-    var found bool
+    var validatorKey *eth2types.BLSPrivateKey
+    var derivationPath string
     for index = 0; index < w.ws.NextAccount + MaxValidatorKeyRecoverAttempts; index++ {
-        key, err := w.GetValidatorKeyAt(index)
+        key, path, err := w.getValidatorPrivateKey(index)
         if err != nil {
             return err
         }
         if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
-            found = true
+            validatorKey = key
+            derivationPath = path
             break
         }
     }
 
-    // Check if found
-    if !found {
+    // Check validator key
+    if validatorKey == nil {
         return fmt.Errorf("Validator %s key not found", pubkey.Hex())
     }
 
@@ -161,10 +159,44 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
         w.ws.NextAccount = nextIndex
     }
 
-    // TODO: write key to disk for lighthouse
+    // Store validator key
+    for name, ks := range w.validatorKeystores {
+        if err := ks.StoreValidatorKey(validatorKey, derivationPath); err != nil {
+            return fmt.Errorf("Could not store %s validator key: %w", name, err)
+        }
+    }
 
     // Return
     return nil
+
+}
+
+
+// Get a validator private key by index
+func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, string, error) {
+
+    // Get derivation path
+    derivationPath := fmt.Sprintf(ValidatorKeyPath, index)
+
+    // Check for cached validator key
+    if validatorKey, ok := w.validatorKeys[index]; ok {
+        return validatorKey, derivationPath, nil
+    }
+
+    // Initialize BLS support
+    initializeBLS()
+
+    // Get private key
+    privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, derivationPath)
+    if err != nil {
+        return nil, "", fmt.Errorf("Could not get validator %d private key: %w", index, err)
+    }
+
+    // Cache validator key
+    w.validatorKeys[index] = privateKey
+
+    // Return
+    return privateKey, derivationPath, nil
 
 }
 
