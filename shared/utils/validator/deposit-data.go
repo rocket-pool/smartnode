@@ -4,6 +4,8 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/prysmaticlabs/go-ssz"
     eth2types "github.com/wealdtech/go-eth2-types/v2"
+
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
 
@@ -28,7 +30,7 @@ type signingRoot struct {
 
 
 // Get deposit data & root for a given validator key and withdrawal credentials
-func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials common.Hash) (DepositData, common.Hash, error) {
+func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials common.Hash, eth2Config beacon.Eth2Config) (DepositData, common.Hash, error) {
 
     // Build deposit data
     depositData := DepositData{
@@ -46,7 +48,7 @@ func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials
     // Get signing root with domain
     srWithDomain, err := ssz.HashTreeRoot(signingRoot{
         ObjectRoot: sr[:],
-        Domain: eth2types.Domain(eth2types.DomainDeposit, eth2types.ZeroForkVersion, eth2types.ZeroGenesisValidatorsRoot),
+        Domain: eth2types.Domain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot),
     })
     if err != nil {
         return DepositData{}, common.Hash{}, err
