@@ -49,7 +49,7 @@ func NewKeystore(keystorePath string, passwordManager *passwords.PasswordManager
     return &Keystore{
         keystorePath: keystorePath,
         pm: passwordManager,
-        encryptor: eth2ks.New(),
+        encryptor: eth2ks.New(eth2ks.WithCipher("scrypt")),
     }
 }
 
