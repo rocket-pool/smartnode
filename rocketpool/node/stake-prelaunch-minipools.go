@@ -14,6 +14,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     "github.com/rocket-pool/smartnode/shared/utils/validator"
 )
@@ -32,11 +33,13 @@ func startStakePrelaunchMinipools(c *cli.Context) error {
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
+    bc, err := services.GetBeaconClient(c)
+    if err != nil { return err }
 
     // Stake prelaunch minipools at interval
     go (func() {
         for {
-            if err := stakePrelaunchMinipools(c, w, rp); err != nil {
+            if err := stakePrelaunchMinipools(c, w, rp, bc); err != nil {
                 log.Println(err)
             }
             time.Sleep(stakePrelaunchMinipoolsInterval)
@@ -50,7 +53,7 @@ func startStakePrelaunchMinipools(c *cli.Context) error {
 
 
 // Stake prelaunch minipools
-func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool) error {
+func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool, bc beacon.Client) error {
 
     // Wait for eth client to sync
     if err := services.WaitEthClientSynced(c, true); err != nil {
@@ -72,9 +75,27 @@ func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Ro
         return nil
     }
 
+    // Data
+    var wg errgroup.Group
+    var withdrawalCredentials common.Hash
+    var eth2Config beacon.Eth2Config
+
     // Get Rocket pool withdrawal credentials
-    withdrawalCredentials, err := network.GetWithdrawalCredentials(rp, nil)
-    if err != nil {
+    wg.Go(func() error {
+        var err error
+        withdrawalCredentials, err = network.GetWithdrawalCredentials(rp, nil)
+        return err
+    })
+
+    // Get eth2 config
+    wg.Go(func() error {
+        var err error
+        eth2Config, err = bc.GetEth2Config()
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
         return err
     }
 
@@ -83,7 +104,7 @@ func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Ro
 
     // Stake minipools
     for _, mp := range minipools {
-        if err := stakeMinipool(w, mp, withdrawalCredentials); err != nil {
+        if err := stakeMinipool(w, mp, withdrawalCredentials, eth2Config); err != nil {
             log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
         }
     }
@@ -147,7 +168,7 @@ func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address
 
 
 // Stake a minipool
-func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredentials common.Hash) error {
+func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredentials common.Hash, eth2Config beacon.Eth2Config) error {
 
     // Log
     log.Printf("Staking minipool %s...\n", mp.Address.Hex())
@@ -159,7 +180,7 @@ func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredential
     }
 
     // Get validator deposit data
-    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials)
+    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
     if err != nil {
         return err
     }
