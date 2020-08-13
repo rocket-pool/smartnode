@@ -15,6 +15,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
+    lhks "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 )
 
 
@@ -122,6 +123,10 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
     var err error
     initNodeWallet.Do(func() {
         nodeWallet, err = wallet.NewWallet(cfg.Smartnode.WalletPath, pm)
+        if err == nil {
+            lighthouseKeystore := lhks.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
+            nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
+        }
     })
     return nodeWallet, err
 }
