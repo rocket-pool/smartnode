@@ -30,52 +30,71 @@ var stakePrelaunchMinipoolsInterval, _ = time.ParseDuration("1m")
 var validatorRestartTimeout, _ = time.ParseDuration("5s")
 
 
-// Start stake prelaunch minipools task
-func startStakePrelaunchMinipools(c *cli.Context) error {
+// Stake prelaunch minipools task
+type stakePrelaunchMinipools struct {
+    c *cli.Context
+    w *wallet.Wallet
+    rp *rocketpool.RocketPool
+    bc beacon.Client
+    d *client.Client
+}
+
+
+// Create stake prelaunch minipools task
+func NewStakePrelaunchMinipools(c *cli.Context) (*stakePrelaunchMinipools, error) {
 
     // Get services
-    if err := services.WaitNodeRegistered(c, true); err != nil { return err }
+    if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }
     w, err := services.GetWallet(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     bc, err := services.GetBeaconClient(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     d, err := services.GetDocker(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
-    // Stake prelaunch minipools at interval
+    // Return task
+    return &stakePrelaunchMinipools{
+        c: c,
+        w: w,
+        rp: rp,
+        bc: bc,
+        d: d,
+    }, nil
+
+}
+
+
+// Start stake prelaunch minipools task
+func (t *stakePrelaunchMinipools) Start() {
     go (func() {
         for {
-            if err := stakePrelaunchMinipools(c, w, rp, bc, d); err != nil {
+            if err := t.run(); err != nil {
                 log.Println(err)
             }
             time.Sleep(stakePrelaunchMinipoolsInterval)
         }
     })()
-
-    // Return
-    return nil
-
 }
 
 
 // Stake prelaunch minipools
-func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool, bc beacon.Client, d *client.Client) error {
+func (t *stakePrelaunchMinipools) run() error {
 
     // Wait for eth client to sync
-    if err := services.WaitEthClientSynced(c, true); err != nil {
+    if err := services.WaitEthClientSynced(t.c, true); err != nil {
         return err
     }
 
     // Get node account
-    nodeAccount, err := w.GetNodeAccount()
+    nodeAccount, err := t.w.GetNodeAccount()
     if err != nil {
         return err
     }
 
     // Get prelaunch minipools
-    minipools, err := getPrelaunchMinipools(rp, nodeAccount.Address)
+    minipools, err := t.getPrelaunchMinipools(nodeAccount.Address)
     if err != nil {
         return err
     }
@@ -91,14 +110,14 @@ func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Ro
     // Get Rocket pool withdrawal credentials
     wg.Go(func() error {
         var err error
-        withdrawalCredentials, err = network.GetWithdrawalCredentials(rp, nil)
+        withdrawalCredentials, err = network.GetWithdrawalCredentials(t.rp, nil)
         return err
     })
 
     // Get eth2 config
     wg.Go(func() error {
         var err error
-        eth2Config, err = bc.GetEth2Config()
+        eth2Config, err = t.bc.GetEth2Config()
         return err
     })
 
@@ -112,13 +131,13 @@ func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Ro
 
     // Stake minipools
     for _, mp := range minipools {
-        if err := stakeMinipool(w, mp, withdrawalCredentials, eth2Config); err != nil {
+        if err := t.stakeMinipool(mp, withdrawalCredentials, eth2Config); err != nil {
             log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
         }
     }
 
     // Restart validator container
-    if err := restartValidator(d); err != nil {
+    if err := t.restartValidator(); err != nil {
         return err
     }
 
@@ -129,10 +148,10 @@ func stakePrelaunchMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Ro
 
 
 // Get prelaunch minipools
-func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]*minipool.Minipool, error) {
+func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Address) ([]*minipool.Minipool, error) {
 
     // Get node minipool addresses
-    addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, nil)
+    addresses, err := minipool.GetNodeMinipoolAddresses(t.rp, nodeAddress, nil)
     if err != nil {
         return []*minipool.Minipool{}, err
     }
@@ -140,7 +159,7 @@ func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address
     // Create minipool contracts
     minipools := make([]*minipool.Minipool, len(addresses))
     for mi, address := range addresses {
-        mp, err := minipool.NewMinipool(rp, address)
+        mp, err := minipool.NewMinipool(t.rp, address)
         if err != nil {
             return []*minipool.Minipool{}, err
         }
@@ -181,13 +200,13 @@ func getPrelaunchMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address
 
 
 // Stake a minipool
-func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredentials common.Hash, eth2Config beacon.Eth2Config) error {
+func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawalCredentials common.Hash, eth2Config beacon.Eth2Config) error {
 
     // Log
     log.Printf("Staking minipool %s...\n", mp.Address.Hex())
 
     // Create new validator key
-    validatorKey, err := w.CreateValidatorKey()
+    validatorKey, err := t.w.CreateValidatorKey()
     if err != nil {
         return err
     }
@@ -199,7 +218,7 @@ func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredential
     }
 
     // Get transactor
-    opts, err := w.GetNodeAccountTransactor()
+    opts, err := t.w.GetNodeAccountTransactor()
     if err != nil {
         return err
     }
@@ -215,7 +234,7 @@ func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredential
     }
 
     // Save wallet
-    if err := w.Save(); err != nil {
+    if err := t.w.Save(); err != nil {
         return err
     }
 
@@ -229,13 +248,13 @@ func stakeMinipool(w *wallet.Wallet, mp *minipool.Minipool, withdrawalCredential
 
 
 // Restart validator container
-func restartValidator(d *client.Client) error {
+func (t *stakePrelaunchMinipools) restartValidator() error {
 
     // Log
     log.Println("Restarting validator container...")
 
     // Get all containers
-    containers, err := d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+    containers, err := t.d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
     if err != nil {
         return fmt.Errorf("Could not get docker containers: %w", err)
     }
@@ -253,7 +272,7 @@ func restartValidator(d *client.Client) error {
     }
 
     // Restart validator container
-    if err := d.ContainerRestart(context.Background(), validatorContainerId, &validatorRestartTimeout); err != nil {
+    if err := t.d.ContainerRestart(context.Background(), validatorContainerId, &validatorRestartTimeout); err != nil {
         return fmt.Errorf("Could not restart validator container: %w", err)
     }
 
