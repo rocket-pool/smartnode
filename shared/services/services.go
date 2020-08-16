@@ -4,6 +4,7 @@ import (
     "fmt"
     "sync"
 
+    "github.com/docker/docker/client"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -19,6 +20,10 @@ import (
 )
 
 
+// Config
+const DockerAPIVersion = "1.40"
+
+
 // Service instances & initializers
 var (
     cfg config.RocketPoolConfig
@@ -27,6 +32,7 @@ var (
     ethClient *ethclient.Client
     rocketPool *rocketpool.RocketPool
     beaconClient beacon.Client
+    docker *client.Client
 
     initCfg sync.Once
     initPasswordManager sync.Once
@@ -34,6 +40,7 @@ var (
     initEthClient sync.Once
     initRocketPool sync.Once
     initBeaconClient sync.Once
+    initDocker sync.Once
 )
 
 
@@ -94,6 +101,11 @@ func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
         return nil, err
     }
     return getBeaconClient(cfg)
+}
+
+
+func GetDocker(c *cli.Context) (*client.Client, error) {
+    return getDocker()
 }
 
 
@@ -163,5 +175,14 @@ func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
         }
     })
     return beaconClient, err
+}
+
+
+func getDocker() (*client.Client, error) {
+    var err error
+    initDocker.Do(func() {
+        docker, err = client.NewClientWithOpts(client.WithVersion(DockerAPIVersion))
+    })
+    return docker, err
 }
 
