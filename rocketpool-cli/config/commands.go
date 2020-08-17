@@ -12,7 +12,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Aliases:   aliases,
         Usage:     "Configure Rocket Pool service",
         Action: func(c *cli.Context) error {
-            return configureService()
+            return configureService(c)
         },
     })
 }

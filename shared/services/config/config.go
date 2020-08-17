@@ -92,6 +92,21 @@ func Load(c *cli.Context) (RocketPoolConfig, RocketPoolConfig, error) {
 }
 
 
+// Parse Rocket Pool config from a byte slice
+func Parse(bytes []byte) (RocketPoolConfig, error) {
+
+    // Parse config
+    var config RocketPoolConfig
+    if err := yaml.Unmarshal(bytes, &config); err != nil {
+        return RocketPoolConfig{}, fmt.Errorf("Could not parse config: %w", err)
+    }
+
+    // Return
+    return config, nil
+
+}
+
+
 // Load Rocket Pool config from a file
 func loadFile(path string, required bool) (RocketPoolConfig, error) {
 

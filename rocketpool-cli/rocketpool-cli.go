@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "log"
     "os"
 
@@ -42,6 +43,22 @@ ______           _        _    ______           _
         },
     }
     app.Copyright = "(c) 2020 Rocket Pool Pty Ltd"
+
+    // Set application flags
+    app.Flags = []cli.Flag{
+        cli.StringFlag{
+            Name:  "host",
+            Usage: "Smart node SSH host address",
+        },
+        cli.StringFlag{
+            Name:  "user",
+            Usage: "Smart node SSH user account",
+        },
+        cli.StringFlag{
+            Name:  "key",
+            Usage: "Smart node SSH key file",
+        },
+    }
 
     // Register commands
     config.RegisterCommands(app, "config", []string{"c"})

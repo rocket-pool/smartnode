@@ -6,10 +6,10 @@ import (
     "io/ioutil"
     "os"
     "os/exec"
-    "strings"
 
     "golang.org/x/crypto/ssh"
 
+    "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/utils/net"
 )
 
@@ -67,12 +67,27 @@ func (c *Client) Close() {
 }
 
 
+// Load the global config
+func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
+
+    // Read config
+    configBytes, err := c.readOutput("cat ~/.rocketpool/config.yml")
+    if err != nil {
+        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config: %w", err)
+    }
+
+    // Parse and return
+    return config.Parse(configBytes)
+
+}
+
+
 // Run a command and print its output
-func (c *Client) printOutput(command string, args, env []string) error {
+func (c *Client) printOutput(command string) error {
     if c.client == nil {
 
         // Initialize command
-        cmd := exec.Command(command, args...)
+        cmd := exec.Command("sh", "-c", command)
 
         // Copy command output to stdout & stderr
         cmdOut, err := cmd.StdoutPipe()
@@ -90,22 +105,22 @@ func (c *Client) printOutput(command string, args, env []string) error {
     } else {
 
         // Initialize session
-        sess, err := c.client.NewSession()
+        session, err := c.client.NewSession()
         if err != nil {
             return err
         }
-        defer sess.Close()
+        defer session.Close()
 
         // Copy session output to stdout & stderr
-        cmdOut, err := sess.StdoutPipe()
+        cmdOut, err := session.StdoutPipe()
         if err != nil { return err }
-        cmdErr, err := sess.StderrPipe()
+        cmdErr, err := session.StderrPipe()
         if err != nil { return err }
         go io.Copy(os.Stdout, cmdOut)
         go io.Copy(os.Stderr, cmdErr)
 
         // Run command
-        if err := sess.Run(fmt.Sprintf("%s %s", command, strings.Join(args, " "))); err != nil {
+        if err := session.Run(command); err != nil {
             return err
         }
 
@@ -115,11 +130,11 @@ func (c *Client) printOutput(command string, args, env []string) error {
 
 
 // Run a command and return its output
-func (c *Client) readOutput(command string, args, env []string) ([]byte, error) {
+func (c *Client) readOutput(command string) ([]byte, error) {
     if c.client == nil {
 
         // Initialize command
-        cmd := exec.Command(command, args...)
+        cmd := exec.Command("sh", "-c", command)
 
         // Run command and return output
         return cmd.Output()
@@ -127,14 +142,14 @@ func (c *Client) readOutput(command string, args, env []string) ([]byte, error) 
     } else {
 
         // Initialize session
-        sess, err := c.client.NewSession()
+        session, err := c.client.NewSession()
         if err != nil {
             return []byte{}, err
         }
-        defer sess.Close()
+        defer session.Close()
 
         // Run command and return output
-        return sess.Output(fmt.Sprintf("%s %s", command, strings.Join(args, " ")))
+        return session.Output(command)
 
     }
 }
