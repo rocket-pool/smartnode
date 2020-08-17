@@ -96,7 +96,7 @@ func (c *Client) printOutput(command string, args, env []string) error {
         }
         defer sess.Close()
 
-        // Copy command output to stdout & stderr
+        // Copy session output to stdout & stderr
         cmdOut, err := sess.StdoutPipe()
         if err != nil { return err }
         cmdErr, err := sess.StderrPipe()
