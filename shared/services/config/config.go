@@ -73,11 +73,11 @@ func (chain *chain) GetSelectedClient() *clientOption {
 func Load(c *cli.Context) (RocketPoolConfig, RocketPoolConfig, error) {
 
     // Load configs
-    globalConfig, err := loadFile(c.GlobalString("config"))
+    globalConfig, err := loadFile(c.GlobalString("config"), true)
     if err != nil {
         return RocketPoolConfig{}, RocketPoolConfig{}, err
     }
-    userConfig, err := loadFile(c.GlobalString("settings"))
+    userConfig, err := loadFile(c.GlobalString("settings"), false)
     if err != nil {
         return RocketPoolConfig{}, RocketPoolConfig{}, err
     }
@@ -93,13 +93,16 @@ func Load(c *cli.Context) (RocketPoolConfig, RocketPoolConfig, error) {
 
 
 // Load Rocket Pool config from a file
-func loadFile(path string) (RocketPoolConfig, error) {
+func loadFile(path string, required bool) (RocketPoolConfig, error) {
 
-    // Read file
-    // Squelch not found errors; config files are optional
+    // Read file; squelch not found errors if file is optional
     bytes, err := ioutil.ReadFile(path)
     if err != nil {
-        return RocketPoolConfig{}, nil
+        if required {
+            return RocketPoolConfig{}, fmt.Errorf("Could not find config file at %s: %w", path, err)
+        } else {
+            return RocketPoolConfig{}, nil
+        }
     }
 
     // Parse config
