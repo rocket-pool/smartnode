@@ -16,34 +16,49 @@ import (
 var processWithdrawalsInterval, _ = time.ParseDuration("1m")
 
 
-// Start process withdrawals task
-func startProcessWithdrawals(c *cli.Context) error {
+// Process withdrawals task
+type processWithdrawals struct {
+    c *cli.Context
+    w *wallet.Wallet
+    rp *rocketpool.RocketPool
+}
+
+
+// Create process withdrawals task
+func newProcessWithdrawals(c *cli.Context) (*processWithdrawals, error) {
 
     // Get services
-    if err := services.WaitNodeRegistered(c, true); err != nil { return err }
+    if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }
     w, err := services.GetWallet(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
-    // Process withdrawals at interval
+    // Return task
+    return &processWithdrawals{
+        c: c,
+        w: w,
+        rp: rp,
+    }, nil
+
+}
+
+
+// Start process withdrawals task
+func (t *processWithdrawals) Start() {
     go (func() {
         for {
-            if err := processWithdrawals(c, w, rp); err != nil {
+            if err := t.run(); err != nil {
                 log.Println(err)
             }
             time.Sleep(processWithdrawalsInterval)
         }
     })()
-
-    // Return
-    return nil
-
 }
 
 
 // Process withdrawals
-func processWithdrawals(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool) error {
+func (t *processWithdrawals) run() error {
 
     // Process withdrawals
     // TODO: implement

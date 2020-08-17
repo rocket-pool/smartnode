@@ -41,7 +41,7 @@ type stakePrelaunchMinipools struct {
 
 
 // Create stake prelaunch minipools task
-func NewStakePrelaunchMinipools(c *cli.Context) (*stakePrelaunchMinipools, error) {
+func newStakePrelaunchMinipools(c *cli.Context) (*stakePrelaunchMinipools, error) {
 
     // Get services
     if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }

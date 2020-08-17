@@ -21,19 +21,21 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 // Run daemon
 func run(c *cli.Context) error {
 
+    // Initialize tasks
+    dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c)
+    if err != nil { return err }
+    processWithdrawals, err := newProcessWithdrawals(c)
+    if err != nil { return err }
+    submitNetworkBalances, err := newSubmitNetworkBalances(c)
+    if err != nil { return err }
+    submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c)
+    if err != nil { return err }
+
     // Start tasks
-    if err := startDissolveTimedOutMinipools(c); err != nil {
-        return err
-    }
-    if err := startSubmitWithdrawableMinipools(c); err != nil {
-        return err
-    }
-    if err := startSubmitNetworkBalances(c); err != nil {
-        return err
-    }
-    if err := startProcessWithdrawals(c); err != nil {
-        return err
-    }
+    dissolveTimedOutMinipools.Start()
+    processWithdrawals.Start()
+    submitNetworkBalances.Start()
+    submitWithdrawableMinipools.Start()
 
     // Block thread
     select {}

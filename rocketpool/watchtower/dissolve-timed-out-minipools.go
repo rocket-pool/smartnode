@@ -7,6 +7,7 @@ import (
     "time"
 
     "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/ethclient"
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -24,48 +25,67 @@ import (
 var dissolveTimedOutMinipoolsInterval, _ = time.ParseDuration("1m")
 
 
-// Start dissolve timed out minipools task
-func startDissolveTimedOutMinipools(c *cli.Context) error {
+// Dissolve timed out minipools task
+type dissolveTimedOutMinipools struct {
+    c *cli.Context
+    w *wallet.Wallet
+    ec *ethclient.Client
+    rp *rocketpool.RocketPool
+}
+
+
+// Create dissolve timed out minipools task
+func newDissolveTimedOutMinipools(c *cli.Context) (*dissolveTimedOutMinipools, error) {
 
     // Get services
-    if err := services.WaitNodeRegistered(c, true); err != nil { return err }
+    if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }
     w, err := services.GetWallet(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
-    // Dissolve timed out minipools at interval
+    // Return task
+    return &dissolveTimedOutMinipools{
+        c: c,
+        w: w,
+        ec: ec,
+        rp: rp,
+    }, nil
+
+}
+
+
+// Start dissolve timed out minipools task
+func (t *dissolveTimedOutMinipools) Start() {
     go (func() {
         for {
-            if err := dissolveTimedOutMinipools(c, w, rp); err != nil {
+            if err := t.run(); err != nil {
                 log.Println(err)
             }
             time.Sleep(dissolveTimedOutMinipoolsInterval)
         }
     })()
-
-    // Return
-    return nil
-
 }
 
 
 // Dissolve timed out minipools
-func dissolveTimedOutMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool) error {
+func (t *dissolveTimedOutMinipools) run() error {
 
     // Wait for eth client to sync
-    if err := services.WaitEthClientSynced(c, true); err != nil {
+    if err := services.WaitEthClientSynced(t.c, true); err != nil {
         return err
     }
 
     // Get node account
-    nodeAccount, err := w.GetNodeAccount()
+    nodeAccount, err := t.w.GetNodeAccount()
     if err != nil {
         return err
     }
 
     // Check node trusted status
-    nodeTrusted, err := node.GetNodeTrusted(rp, nodeAccount.Address, nil)
+    nodeTrusted, err := node.GetNodeTrusted(t.rp, nodeAccount.Address, nil)
     if err != nil {
         return err
     }
@@ -74,7 +94,7 @@ func dissolveTimedOutMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.
     }
 
     // Get timed out minipools
-    minipools, err := getTimedOutMinipools(rp)
+    minipools, err := t.getTimedOutMinipools()
     if err != nil {
         return err
     }
@@ -87,7 +107,7 @@ func dissolveTimedOutMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.
 
     // Dissolve minipools
     for _, mp := range minipools {
-        if err := dissolveMinipool(w, mp); err != nil {
+        if err := t.dissolveMinipool(mp); err != nil {
             log.Println(fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err))
         }
     }
@@ -99,7 +119,7 @@ func dissolveTimedOutMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.
 
 
 // Get timed out minipools
-func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, error) {
+func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool, error) {
 
     // Data
     var wg1 errgroup.Group
@@ -110,13 +130,13 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
     // Get minipool addresses
     wg1.Go(func() error {
         var err error
-        addresses, err = minipool.GetMinipoolAddresses(rp, nil)
+        addresses, err = minipool.GetMinipoolAddresses(t.rp, nil)
         return err
     })
 
     // Get current block
     wg1.Go(func() error {
-        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
+        header, err := t.ec.HeaderByNumber(context.Background(), nil)
         if err == nil {
             currentBlock = header.Number.Uint64()
         }
@@ -126,7 +146,7 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
     // Get launch timeout
     wg1.Go(func() error {
         var err error
-        launchTimeout, err = settings.GetMinipoolLaunchTimeout(rp, nil)
+        launchTimeout, err = settings.GetMinipoolLaunchTimeout(t.rp, nil)
         return err
     })
 
@@ -138,7 +158,7 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
     // Create minipool contracts
     minipools := make([]*minipool.Minipool, len(addresses))
     for mi, address := range addresses {
-        mp, err := minipool.NewMinipool(rp, address)
+        mp, err := minipool.NewMinipool(t.rp, address)
         if err != nil {
             return []*minipool.Minipool{}, err
         }
@@ -179,13 +199,13 @@ func getTimedOutMinipools(rp *rocketpool.RocketPool) ([]*minipool.Minipool, erro
 
 
 // Dissolve a minipool
-func dissolveMinipool(w *wallet.Wallet, mp *minipool.Minipool) error {
+func (t *dissolveTimedOutMinipools) dissolveMinipool(mp *minipool.Minipool) error {
 
     // Log
     log.Printf("Dissolving minipool %s...\n", mp.Address.Hex())
 
     // Get transactor
-    opts, err := w.GetNodeAccountTransactor()
+    opts, err := t.w.GetNodeAccountTransactor()
     if err != nil {
         return err
     }

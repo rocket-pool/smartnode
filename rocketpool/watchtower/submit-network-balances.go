@@ -10,6 +10,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/crypto"
+    "github.com/ethereum/go-ethereum/ethclient"
     "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/network"
@@ -32,6 +33,16 @@ import (
 var submitNetworkBalancesInterval, _ = time.ParseDuration("1m")
 
 
+// Submit network balances task
+type submitNetworkBalances struct {
+    c *cli.Context
+    w *wallet.Wallet
+    ec *ethclient.Client
+    rp *rocketpool.RocketPool
+    bc beacon.Client
+}
+
+
 // Network balance info
 type networkBalances struct {
     Block uint64
@@ -47,47 +58,58 @@ type minipoolBalanceDetails struct {
 }
 
 
-// Start submit network balances task
-func startSubmitNetworkBalances(c *cli.Context) error {
+// Create submit network balances task
+func newSubmitNetworkBalances(c *cli.Context) (*submitNetworkBalances, error) {
 
     // Get services
-    if err := services.WaitNodeRegistered(c, true); err != nil { return err }
+    if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }
     w, err := services.GetWallet(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     bc, err := services.GetBeaconClient(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
-    // Submit network balances at interval
+    // Return task
+    return &submitNetworkBalances{
+        c: c,
+        w: w,
+        ec: ec,
+        rp: rp,
+        bc: bc,
+    }, nil
+
+}
+
+
+// Start submit network balances task
+func (t *submitNetworkBalances) Start() {
     go (func() {
         for {
-            if err := submitNetworkBalances(c, w, rp, bc); err != nil {
+            if err := t.run(); err != nil {
                 log.Println(err)
             }
             time.Sleep(submitNetworkBalancesInterval)
         }
     })()
-
-    // Return
-    return nil
-
 }
 
 
 // Submit network balances
-func submitNetworkBalances(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool, bc beacon.Client) error {
+func (t *submitNetworkBalances) run() error {
 
     // Wait for eth clients to sync
-    if err := services.WaitEthClientSynced(c, true); err != nil {
+    if err := services.WaitEthClientSynced(t.c, true); err != nil {
         return err
     }
-    if err := services.WaitBeaconClientSynced(c, true); err != nil {
+    if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
         return err
     }
 
     // Get node account
-    nodeAccount, err := w.GetNodeAccount()
+    nodeAccount, err := t.w.GetNodeAccount()
     if err != nil {
         return err
     }
@@ -100,12 +122,12 @@ func submitNetworkBalances(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Rock
     // Get data
     wg.Go(func() error {
         var err error
-        nodeTrusted, err = node.GetNodeTrusted(rp, nodeAccount.Address, nil)
+        nodeTrusted, err = node.GetNodeTrusted(t.rp, nodeAccount.Address, nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        submitBalancesEnabled, err = settings.GetSubmitBalancesEnabled(rp, nil)
+        submitBalancesEnabled, err = settings.GetSubmitBalancesEnabled(t.rp, nil)
         return err
     })
 
@@ -120,13 +142,13 @@ func submitNetworkBalances(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Rock
     }
 
     // Get block to submit balances for
-    blockNumber, err := getLatestReportableBlock(rp)
+    blockNumber, err := t.getLatestReportableBlock()
     if err != nil {
         return err
     }
 
     // Check if balances for block can be submitted by node
-    canSubmit, err := canSubmitBlockBalances(rp, nodeAccount.Address, blockNumber)
+    canSubmit, err := t.canSubmitBlockBalances(nodeAccount.Address, blockNumber)
     if err != nil {
         return err
     }
@@ -138,7 +160,7 @@ func submitNetworkBalances(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Rock
     log.Printf("Calculating network balances for block %d...\n", blockNumber)
 
     // Get network balances at block
-    balances, err := getNetworkBalances(rp, bc, blockNumber)
+    balances, err := t.getNetworkBalances(blockNumber)
     if err != nil {
         return err
     }
@@ -151,7 +173,7 @@ func submitNetworkBalances(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Rock
     log.Printf("rETH token supply: %.2f rETH\n", eth.WeiToEth(balances.RETHSupply))
 
     // Submit balances
-    if err := submitBalances(w, rp, balances); err != nil {
+    if err := t.submitBalances(balances); err != nil {
         return fmt.Errorf("Could not submit network balances: %w", err)
     }
 
@@ -162,7 +184,7 @@ func submitNetworkBalances(c *cli.Context, w *wallet.Wallet, rp *rocketpool.Rock
 
 
 // Get the latest block number to report balances for
-func getLatestReportableBlock(rp *rocketpool.RocketPool) (uint64, error) {
+func (t *submitNetworkBalances) getLatestReportableBlock() (uint64, error) {
 
     // Data
     var wg errgroup.Group
@@ -171,7 +193,7 @@ func getLatestReportableBlock(rp *rocketpool.RocketPool) (uint64, error) {
 
     // Get current block
     wg.Go(func() error {
-        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
+        header, err := t.ec.HeaderByNumber(context.Background(), nil)
         if err == nil {
             currentBlock = header.Number.Uint64()
         }
@@ -181,7 +203,7 @@ func getLatestReportableBlock(rp *rocketpool.RocketPool) (uint64, error) {
     // Get balance submission frequency
     wg.Go(func() error {
         var err error
-        submitBalancesFrequency, err = settings.GetSubmitBalancesFrequency(rp, nil)
+        submitBalancesFrequency, err = settings.GetSubmitBalancesFrequency(t.rp, nil)
         return err
     })
 
@@ -197,7 +219,7 @@ func getLatestReportableBlock(rp *rocketpool.RocketPool) (uint64, error) {
 
 
 // Check whether balances for a block can be submitted by the node
-func canSubmitBlockBalances(rp *rocketpool.RocketPool, nodeAddress common.Address, blockNumber uint64) (bool, error) {
+func (t *submitNetworkBalances) canSubmitBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
 
     // Data
     var wg errgroup.Group
@@ -207,12 +229,12 @@ func canSubmitBlockBalances(rp *rocketpool.RocketPool, nodeAddress common.Addres
     // Get data
     wg.Go(func() error {
         var err error
-        currentBalancesBlock, err = network.GetBalancesBlock(rp, nil)
+        currentBalancesBlock, err = network.GetBalancesBlock(t.rp, nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        nodeSubmittedBlock, err = rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), big.NewInt(int64(blockNumber)).Bytes()))
+        nodeSubmittedBlock, err = t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), big.NewInt(int64(blockNumber)).Bytes()))
         return err
     })
 
@@ -228,7 +250,7 @@ func canSubmitBlockBalances(rp *rocketpool.RocketPool, nodeAddress common.Addres
 
 
 // Get the network balances at a specific block
-func getNetworkBalances(rp *rocketpool.RocketPool, bc beacon.Client, blockNumber uint64) (networkBalances, error) {
+func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkBalances, error) {
 
     // Initialize call options
     opts := &bind.CallOpts{
@@ -245,31 +267,31 @@ func getNetworkBalances(rp *rocketpool.RocketPool, bc beacon.Client, blockNumber
     // Get deposit pool balance
     wg.Go(func() error {
         var err error
-        depositPoolBalance, err = deposit.GetBalance(rp, opts)
+        depositPoolBalance, err = deposit.GetBalance(t.rp, opts)
         return err
     })
 
     // Get minipool balance details
     wg.Go(func() error {
         var err error
-        minipoolBalanceDetails, err = getNetworkMinipoolBalanceDetails(rp, bc, opts)
+        minipoolBalanceDetails, err = t.getNetworkMinipoolBalanceDetails(opts)
         return err
     })
 
     // Get rETH contract balance
     wg.Go(func() error {
-        rethContractAddress, err := rp.GetAddress("rocketETHToken")
+        rethContractAddress, err := t.rp.GetAddress("rocketETHToken")
         if err != nil {
             return err
         }
-        rethContractBalance, err = rp.Client.BalanceAt(context.Background(), *rethContractAddress, opts.BlockNumber)
+        rethContractBalance, err = t.ec.BalanceAt(context.Background(), *rethContractAddress, opts.BlockNumber)
         return err
     })
 
     // Get rETH token supply
     wg.Go(func() error {
         var err error
-        rethTotalSupply, err = tokens.GetRETHTotalSupply(rp, opts)
+        rethTotalSupply, err = tokens.GetRETHTotalSupply(t.rp, opts)
         return err
     })
 
@@ -303,7 +325,7 @@ func getNetworkBalances(rp *rocketpool.RocketPool, bc beacon.Client, blockNumber
 
 
 // Get all minipool balance details
-func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
 
     // Data
     var wg1 errgroup.Group
@@ -315,27 +337,27 @@ func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Clien
     // Get minipool addresses
     wg1.Go(func() error {
         var err error
-        addresses, err = minipool.GetMinipoolAddresses(rp, opts)
+        addresses, err = minipool.GetMinipoolAddresses(t.rp, opts)
         return err
     })
 
     // Get eth2 config
     wg1.Go(func() error {
         var err error
-        eth2Config, err = bc.GetEth2Config()
+        eth2Config, err = t.bc.GetEth2Config()
         return err
     })
 
     // Get beacon head
     wg1.Go(func() error {
         var err error
-        beaconHead, err = bc.GetBeaconHead()
+        beaconHead, err = t.bc.GetBeaconHead()
         return err
     })
 
     // Get block time
     wg1.Go(func() error {
-        header, err := rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
+        header, err := t.ec.HeaderByNumber(context.Background(), opts.BlockNumber)
         if err == nil {
             blockTime = header.Time
         }
@@ -361,7 +383,7 @@ func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Clien
     for mi, address := range addresses {
         mi, address := mi, address
         wg2.Go(func() error {
-            mpDetails, err := getMinipoolBalanceDetails(rp, bc, address, opts, eth2Config, blockEpoch)
+            mpDetails, err := t.getMinipoolBalanceDetails(address, opts, eth2Config, blockEpoch)
             if err == nil { details[mi] = mpDetails }
             return err
         })
@@ -379,10 +401,10 @@ func getNetworkMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Clien
 
 
 // Get minipool balance details
-func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, minipoolAddress common.Address, opts *bind.CallOpts, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
+func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common.Address, opts *bind.CallOpts, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
 
     // Create minipool
-    mp, err := minipool.NewMinipool(rp, minipoolAddress)
+    mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
@@ -421,12 +443,12 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, mini
     })
     wg.Go(func() error {
         var err error
-        pubkey, err = minipool.GetMinipoolPubkey(rp, minipoolAddress, opts)
+        pubkey, err = minipool.GetMinipoolPubkey(t.rp, minipoolAddress, opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        withdrawalProcessed, err = minipool.GetMinipoolWithdrawalProcessed(rp, minipoolAddress, opts)
+        withdrawalProcessed, err = minipool.GetMinipoolWithdrawalProcessed(t.rp, minipoolAddress, opts)
         return err
     })
 
@@ -450,7 +472,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, mini
     }
 
     // Get validator status at block
-    validator, err := bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: blockEpoch})
+    validator, err := t.bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: blockEpoch})
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
@@ -471,7 +493,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, mini
     }
 
     // Get validator status at start epoch
-    validatorStart, err := bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: startEpoch})
+    validatorStart, err := t.bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: startEpoch})
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
@@ -484,7 +506,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, mini
     blockBalance := eth.GweiToWei(float64(validator.Balance))
 
     // Get node & user balance at block
-    nodeBalance, err := minipool.GetMinipoolNodeRewardAmount(rp, nodeFee, userDepositBalance, startBalance, blockBalance, opts)
+    nodeBalance, err := minipool.GetMinipoolNodeRewardAmount(t.rp, nodeFee, userDepositBalance, startBalance, blockBalance, opts)
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
@@ -501,7 +523,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, bc beacon.Client, mini
 
 
 // Submit network balances
-func submitBalances(w *wallet.Wallet, rp *rocketpool.RocketPool, balances networkBalances) error {
+func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
     // Log
     log.Printf("Submitting network balances for block %d...\n", balances.Block)
@@ -513,13 +535,13 @@ func submitBalances(w *wallet.Wallet, rp *rocketpool.RocketPool, balances networ
     totalEth.Add(totalEth, balances.RETHContract)
 
     // Get transactor
-    opts, err := w.GetNodeAccountTransactor()
+    opts, err := t.w.GetNodeAccountTransactor()
     if err != nil {
         return err
     }
 
     // Submit balances
-    if _, err := network.SubmitBalances(rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts); err != nil {
+    if _, err := network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts); err != nil {
         return err
     }
 

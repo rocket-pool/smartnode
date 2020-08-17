@@ -22,7 +22,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 func run(c *cli.Context) error {
 
     // Initialize tasks
-    stakePrelaunchMinipools, err := NewStakePrelaunchMinipools(c)
+    stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c)
     if err != nil { return err }
 
     // Start tasks

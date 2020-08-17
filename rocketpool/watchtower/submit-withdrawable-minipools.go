@@ -27,6 +27,15 @@ import (
 var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("1m")
 
 
+// Submit withdrawable minipools task
+type submitWithdrawableMinipools struct {
+    c *cli.Context
+    w *wallet.Wallet
+    rp *rocketpool.RocketPool
+    bc beacon.Client
+}
+
+
 // Withdrawable minipool info
 type minipoolWithdrawableDetails struct {
     Address common.Address
@@ -36,47 +45,55 @@ type minipoolWithdrawableDetails struct {
 }
 
 
-// Start submit withdrawable minipools task
-func startSubmitWithdrawableMinipools(c *cli.Context) error {
+// Create submit withdrawable minipools task
+func newSubmitWithdrawableMinipools(c *cli.Context) (*submitWithdrawableMinipools, error) {
 
     // Get services
-    if err := services.WaitNodeRegistered(c, true); err != nil { return err }
+    if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }
     w, err := services.GetWallet(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
     bc, err := services.GetBeaconClient(c)
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
-    // Submit withdrawable minipools at interval
+    // Return task
+    return &submitWithdrawableMinipools{
+        c: c,
+        w: w,
+        rp: rp,
+        bc: bc,
+    }, nil
+
+}
+
+
+// Start submit withdrawable minipools task
+func (t *submitWithdrawableMinipools) Start() {
     go (func() {
         for {
-            if err := submitWithdrawableMinipools(c, w, rp, bc); err != nil {
+            if err := t.run(); err != nil {
                 log.Println(err)
             }
             time.Sleep(submitWithdrawableMinipoolsInterval)
         }
     })()
-
-    // Return
-    return nil
-
 }
 
 
 // Submit withdrawable minipools
-func submitWithdrawableMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool, bc beacon.Client) error {
+func (t *submitWithdrawableMinipools) run() error {
 
     // Wait for eth clients to sync
-    if err := services.WaitEthClientSynced(c, true); err != nil {
+    if err := services.WaitEthClientSynced(t.c, true); err != nil {
         return err
     }
-    if err := services.WaitBeaconClientSynced(c, true); err != nil {
+    if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
         return err
     }
 
     // Get node account
-    nodeAccount, err := w.GetNodeAccount()
+    nodeAccount, err := t.w.GetNodeAccount()
     if err != nil {
         return err
     }
@@ -89,12 +106,12 @@ func submitWithdrawableMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpoo
     // Get data
     wg.Go(func() error {
         var err error
-        nodeTrusted, err = node.GetNodeTrusted(rp, nodeAccount.Address, nil)
+        nodeTrusted, err = node.GetNodeTrusted(t.rp, nodeAccount.Address, nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        submitWithdrawableEnabled, err = settings.GetMinipoolSubmitWithdrawableEnabled(rp, nil)
+        submitWithdrawableEnabled, err = settings.GetMinipoolSubmitWithdrawableEnabled(t.rp, nil)
         return err
     })
 
@@ -109,7 +126,7 @@ func submitWithdrawableMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpoo
     }
 
     // Get minipool withdrawable details
-    minipools, err := getNetworkMinipoolWithdrawableDetails(rp, bc, nodeAccount.Address)
+    minipools, err := t.getNetworkMinipoolWithdrawableDetails(nodeAccount.Address)
     if err != nil {
         return err
     }
@@ -122,7 +139,7 @@ func submitWithdrawableMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpoo
 
     // Submit minipools withdrawable status
     for _, details := range minipools {
-        if err := submitWithdrawableMinipool(w, rp, details); err != nil {
+        if err := t.submitWithdrawableMinipool(details); err != nil {
             log.Println(fmt.Errorf("Could not submit minipool %s withdrawable status: %w", details.Address.Hex(), err))
         }
     }
@@ -134,7 +151,7 @@ func submitWithdrawableMinipools(c *cli.Context, w *wallet.Wallet, rp *rocketpoo
 
 
 // Get all minipool withdrawable details
-func getNetworkMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address) ([]minipoolWithdrawableDetails, error) {
+func (t *submitWithdrawableMinipools) getNetworkMinipoolWithdrawableDetails(nodeAddress common.Address) ([]minipoolWithdrawableDetails, error) {
 
     // Data
     var wg1 errgroup.Group
@@ -145,21 +162,21 @@ func getNetworkMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.
     // Get minipool addresses
     wg1.Go(func() error {
         var err error
-        addresses, err = minipool.GetMinipoolAddresses(rp, nil)
+        addresses, err = minipool.GetMinipoolAddresses(t.rp, nil)
         return err
     })
 
     // Get eth2 config
     wg1.Go(func() error {
         var err error
-        eth2Config, err = bc.GetEth2Config()
+        eth2Config, err = t.bc.GetEth2Config()
         return err
     })
 
     // Get beacon head
     wg1.Go(func() error {
         var err error
-        beaconHead, err = bc.GetBeaconHead()
+        beaconHead, err = t.bc.GetBeaconHead()
         return err
     })
 
@@ -176,7 +193,7 @@ func getNetworkMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.
     for mi, address := range addresses {
         mi, address := mi, address
         wg2.Go(func() error {
-            mpDetails, err := getMinipoolWithdrawableDetails(rp, bc, nodeAddress, address, eth2Config, beaconHead)
+            mpDetails, err := t.getMinipoolWithdrawableDetails(nodeAddress, address, eth2Config, beaconHead)
             if err == nil { minipools[mi] = mpDetails }
             return err
         })
@@ -202,10 +219,10 @@ func getNetworkMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.
 
 
 // Get minipool withdrawable details
-func getMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, minipoolAddress common.Address, eth2Config beacon.Eth2Config, beaconHead beacon.BeaconHead) (minipoolWithdrawableDetails, error) {
+func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress common.Address, minipoolAddress common.Address, eth2Config beacon.Eth2Config, beaconHead beacon.BeaconHead) (minipoolWithdrawableDetails, error) {
 
     // Create minipool
-    mp, err := minipool.NewMinipool(rp, minipoolAddress)
+    mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
     if err != nil {
         return minipoolWithdrawableDetails{}, err
     }
@@ -231,7 +248,7 @@ func getMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.Client,
     })
     wg.Go(func() error {
         var err error
-        pubkey, err = minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
+        pubkey, err = minipool.GetMinipoolPubkey(t.rp, minipoolAddress, nil)
         return err
     })
 
@@ -246,7 +263,7 @@ func getMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.Client,
     }
 
     // Get & check validator status
-    validator, err := bc.GetValidatorStatus(pubkey, nil)
+    validator, err := t.bc.GetValidatorStatus(pubkey, nil)
     if err != nil {
         return minipoolWithdrawableDetails{}, err
     }
@@ -263,7 +280,7 @@ func getMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.Client,
     }
 
     // Get validator status at start epoch
-    validatorStart, err := bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: startEpoch})
+    validatorStart, err := t.bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: startEpoch})
     if err != nil {
         return minipoolWithdrawableDetails{}, err
     }
@@ -276,7 +293,7 @@ func getMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.Client,
     endBalance := eth.GweiToWei(float64(validator.Balance))
 
     // Check for existing node submission
-    nodeSubmittedMinipool, err := rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("minipool.withdrawable.submitted.node"), nodeAddress.Bytes(), minipoolAddress.Bytes(), startBalance.Bytes(), endBalance.Bytes()))
+    nodeSubmittedMinipool, err := t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("minipool.withdrawable.submitted.node"), nodeAddress.Bytes(), minipoolAddress.Bytes(), startBalance.Bytes(), endBalance.Bytes()))
     if err != nil {
         return minipoolWithdrawableDetails{}, err
     }
@@ -296,19 +313,19 @@ func getMinipoolWithdrawableDetails(rp *rocketpool.RocketPool, bc beacon.Client,
 
 
 // Submit minipool withdrawable status
-func submitWithdrawableMinipool(w *wallet.Wallet, rp *rocketpool.RocketPool, details minipoolWithdrawableDetails) error {
+func (t *submitWithdrawableMinipools) submitWithdrawableMinipool(details minipoolWithdrawableDetails) error {
 
     // Log
     log.Printf("Submitting minipool %s withdrawable status...\n", details.Address.Hex())
 
     // Get transactor
-    opts, err := w.GetNodeAccountTransactor()
+    opts, err := t.w.GetNodeAccountTransactor()
     if err != nil {
         return err
     }
 
     // Dissolve
-    if _, err := minipool.SubmitMinipoolWithdrawable(rp, details.Address, details.StartBalance, details.EndBalance, opts); err != nil {
+    if _, err := minipool.SubmitMinipoolWithdrawable(t.rp, details.Address, details.StartBalance, details.EndBalance, opts); err != nil {
         return err
     }
 
