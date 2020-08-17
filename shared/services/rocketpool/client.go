@@ -98,9 +98,7 @@ func (c *Client) printOutput(command string) error {
         go io.Copy(os.Stderr, cmdErr)
 
         // Run command
-        if err := cmd.Run(); err != nil {
-            return err
-        }
+        return cmd.Run()
 
     } else {
 
@@ -120,12 +118,9 @@ func (c *Client) printOutput(command string) error {
         go io.Copy(os.Stderr, cmdErr)
 
         // Run command
-        if err := session.Run(command); err != nil {
-            return err
-        }
+        return session.Run(command)
 
     }
-    return nil
 }
 
 
