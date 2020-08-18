@@ -23,7 +23,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
     }
 
     // Register subcommands
-     
     minipool.RegisterSubcommands(&command, "minipool", []string{"m"})
      network.RegisterSubcommands(&command, "network",  []string{"e"})
         node.RegisterSubcommands(&command, "node",     []string{"n"})
