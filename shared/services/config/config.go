@@ -21,44 +21,44 @@ type RocketPoolConfig struct {
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
-        Eth1 chain                      `yaml:"eth1,omitempty"`
-        Eth2 chain                      `yaml:"eth2,omitempty"`
+        Eth1 Chain                      `yaml:"eth1,omitempty"`
+        Eth2 Chain                      `yaml:"eth2,omitempty"`
     }                                   `yaml:"chains,omitempty"`
 }
-type chain struct {
+type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
     Client struct {
-        Options []clientOption          `yaml:"options,omitempty"`
+        Options []ClientOption          `yaml:"options,omitempty"`
         Selected string                 `yaml:"selected,omitempty"`
-        Params []userParam              `yaml:"params,omitempty"`
+        Params []UserParam              `yaml:"params,omitempty"`
     }                                   `yaml:"client,omitempty"`
 }
-type clientOption struct {
+type ClientOption struct {
     ID string                           `yaml:"id,omitempty"`
     Name string                         `yaml:"name,omitempty"`
     Image string                        `yaml:"image,omitempty"`
-    Params []clientParam                `yaml:"params,omitempty"`
+    Params []ClientParam                `yaml:"params,omitempty"`
 }
-type clientParam struct {
+type ClientParam struct {
     Name string                         `yaml:"name,omitempty"`
     Env string                          `yaml:"env,omitempty"`
     Required bool                       `yaml:"required,omitempty"`
     Regex string                        `yaml:"regex,omitempty"`
 }
-type userParam struct {
+type UserParam struct {
     Env string                          `yaml:"env,omitempty"`
     Value string                        `yaml:"value"`
 }
 
 
 // Get the selected clients from a config
-func (config *RocketPoolConfig) GetSelectedEth1Client() *clientOption {
+func (config *RocketPoolConfig) GetSelectedEth1Client() *ClientOption {
     return config.Chains.Eth1.GetSelectedClient()
 }
-func (config *RocketPoolConfig) GetSelectedEth2Client() *clientOption {
+func (config *RocketPoolConfig) GetSelectedEth2Client() *ClientOption {
     return config.Chains.Eth2.GetSelectedClient()
 }
-func (chain *chain) GetSelectedClient() *clientOption {
+func (chain *Chain) GetSelectedClient() *ClientOption {
     for _, option := range chain.Client.Options {
         if option.ID == chain.Client.Selected {
             return &option

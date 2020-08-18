@@ -92,7 +92,7 @@ func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
     }
 
     // Write config
-    if _, err := c.readOutput(fmt.Sprintf("cat > ~/.rocketpool/settings.yml <<EOF\n%s\nEOF", string(configBytes))); err != nil {
+    if _, err := c.readOutput(fmt.Sprintf("cat > ~/.rocketpool/settings.yml <<EOF\n%sEOF", string(configBytes))); err != nil {
         return fmt.Errorf("Could not write Rocket Pool settings: %w", err)
     }
 
