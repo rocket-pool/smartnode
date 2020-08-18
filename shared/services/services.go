@@ -125,7 +125,7 @@ func GetRocketPoolClient(c *cli.Context) (*rpclient.Client, error) {
 func getConfig(c *cli.Context) (config.RocketPoolConfig, error) {
     var err error
     initCfg.Do(func() {
-        _, cfg, err = config.Load(c)
+        cfg, err = config.Load(c)
     })
     return cfg, err
 }

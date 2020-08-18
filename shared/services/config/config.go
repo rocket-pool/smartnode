@@ -70,35 +70,25 @@ func (chain *Chain) GetSelectedClient() *ClientOption {
 
 // Serialize a config to yaml bytes
 func (config *RocketPoolConfig) Serialize() ([]byte, error) {
-
-    // Serialize config
     bytes, err := yaml.Marshal(config)
     if err != nil {
         return []byte{}, fmt.Errorf("Could not serialize config: %w", err)
     }
-
-    // Return
     return bytes, nil
-
 }
 
 
-// Parse Rocket Pool config from yaml bytes
+// Parse a config from yaml bytes
 func Parse(bytes []byte) (RocketPoolConfig, error) {
-
-    // Parse config
     var config RocketPoolConfig
     if err := yaml.Unmarshal(bytes, &config); err != nil {
         return RocketPoolConfig{}, fmt.Errorf("Could not parse config: %w", err)
     }
-
-    // Return
     return config, nil
-
 }
 
 
-// Merge Rocket Pool configs
+// Merge configs
 func Merge(configs ...*RocketPoolConfig) RocketPoolConfig {
     var merged RocketPoolConfig
     for i := len(configs) - 1; i >= 0; i-- {
@@ -108,31 +98,27 @@ func Merge(configs ...*RocketPoolConfig) RocketPoolConfig {
 }
 
 
-// Load Rocket Pool config from files
-// Returns global config and merged config
-func Load(c *cli.Context) (RocketPoolConfig, RocketPoolConfig, error) {
+// Load merged config from files
+func Load(c *cli.Context) (RocketPoolConfig, error) {
 
     // Load configs
     globalConfig, err := loadFile(c.GlobalString("config"), true)
     if err != nil {
-        return RocketPoolConfig{}, RocketPoolConfig{}, err
+        return RocketPoolConfig{}, err
     }
     userConfig, err := loadFile(c.GlobalString("settings"), false)
     if err != nil {
-        return RocketPoolConfig{}, RocketPoolConfig{}, err
+        return RocketPoolConfig{}, err
     }
     cliConfig := getCliConfig(c)
 
-    // Merge
-    mergedConfig := Merge(&globalConfig, &userConfig, &cliConfig)
-
-    // Return
-    return globalConfig, mergedConfig, nil
+    // Merge and return
+    return Merge(&globalConfig, &userConfig, &cliConfig), nil
 
 }
 
 
-// Load Rocket Pool config from a file
+// Load config from a file
 func loadFile(path string, required bool) (RocketPoolConfig, error) {
 
     // Read file; squelch not found errors if file is optional
@@ -157,7 +143,7 @@ func loadFile(path string, required bool) (RocketPoolConfig, error) {
 }
 
 
-// Create Rocket Pool config from CLI arguments
+// Create config from CLI arguments
 func getCliConfig(c *cli.Context) RocketPoolConfig {
     var config RocketPoolConfig
     config.Rocketpool.StorageAddress = c.GlobalString("storageAddress")
