@@ -68,6 +68,36 @@ func (chain *chain) GetSelectedClient() *clientOption {
 }
 
 
+// Serialize a config to yaml
+func (config *RocketPoolConfig) Serialize() ([]byte, error) {
+
+    // Serialize config
+    bytes, err := yaml.Marshal(config)
+    if err != nil {
+        return []byte{}, fmt.Errorf("Could not serialize config: %w", err)
+    }
+
+    // Return
+    return bytes, nil
+
+}
+
+
+// Parse Rocket Pool config from a byte slice
+func Parse(bytes []byte) (RocketPoolConfig, error) {
+
+    // Parse config
+    var config RocketPoolConfig
+    if err := yaml.Unmarshal(bytes, &config); err != nil {
+        return RocketPoolConfig{}, fmt.Errorf("Could not parse config: %w", err)
+    }
+
+    // Return
+    return config, nil
+
+}
+
+
 // Load Rocket Pool config from files
 // Returns global config and merged config
 func Load(c *cli.Context) (RocketPoolConfig, RocketPoolConfig, error) {
@@ -88,21 +118,6 @@ func Load(c *cli.Context) (RocketPoolConfig, RocketPoolConfig, error) {
 
     // Return
     return globalConfig, mergedConfig, nil
-
-}
-
-
-// Parse Rocket Pool config from a byte slice
-func Parse(bytes []byte) (RocketPoolConfig, error) {
-
-    // Parse config
-    var config RocketPoolConfig
-    if err := yaml.Unmarshal(bytes, &config); err != nil {
-        return RocketPoolConfig{}, fmt.Errorf("Could not parse config: %w", err)
-    }
-
-    // Return
-    return config, nil
 
 }
 

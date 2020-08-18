@@ -82,6 +82,26 @@ func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
 }
 
 
+// Save the user config
+func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
+
+    // Serialize config
+    configBytes, err := cfg.Serialize()
+    if err != nil {
+        return err
+    }
+
+    // Write config
+    if _, err := c.readOutput(fmt.Sprintf("cat > ~/.rocketpool/settings.yml <<EOF\n%s\nEOF", string(configBytes))); err != nil {
+        return fmt.Errorf("Could not write Rocket Pool settings: %w", err)
+    }
+
+    // Return
+    return nil
+
+}
+
+
 // Run a command and print its output
 func (c *Client) printOutput(command string) error {
     if c.client == nil {
