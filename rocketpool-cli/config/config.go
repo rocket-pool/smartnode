@@ -5,8 +5,8 @@ import (
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/config"
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -14,11 +14,9 @@ import (
 // Configure the Rocket Pool service
 func configureService(c *cli.Context) error {
 
-    // Initialize RP client
-    rp, err := rocketpool.NewClient(c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"))
-    if err != nil {
-        return err
-    }
+    // Get services
+    rp, err := services.GetRocketPoolClient(c)
+    if err != nil { return err }
     defer rp.Close()
 
     // Load global config
