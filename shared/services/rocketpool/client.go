@@ -116,7 +116,7 @@ func (c *Client) StopService() error {
 
 
 // Call the Rocket Pool API
-func (c *Client) CallAPI(args string) ([]byte, error) {
+func (c *Client) callAPI(args string) ([]byte, error) {
     cmd, err := c.compose(fmt.Sprintf("exec -T api /go/bin/rocketpool api %s", args))
     if err != nil { return []byte{}, err }
     return c.readOutput(cmd)
