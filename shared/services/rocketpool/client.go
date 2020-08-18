@@ -91,6 +91,38 @@ func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
 }
 
 
+// Start the Rocket Pool service
+func (c *Client) StartService() error {
+    cmd, err := c.compose("up -d")
+    if err != nil { return err }
+    return c.printOutput(cmd)
+}
+
+
+// Pause the Rocket Pool service
+func (c *Client) PauseService() error {
+    cmd, err := c.compose("stop")
+    if err != nil { return err }
+    return c.printOutput(cmd)
+}
+
+
+// Stop the Rocket Pool service
+func (c *Client) StopService() error {
+    cmd, err := c.compose("down -v")
+    if err != nil { return err }
+    return c.printOutput(cmd)
+}
+
+
+// Call the Rocket Pool API
+func (c *Client) CallAPI(args string) ([]byte, error) {
+    cmd, err := c.compose(fmt.Sprintf("exec -T api /go/bin/rocketpool api %s", args))
+    if err != nil { return []byte{}, err }
+    return c.readOutput(cmd)
+}
+
+
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
 
