@@ -1,12 +1,14 @@
 package rocketpool
 
 import (
+    "errors"
     "fmt"
     "io"
     "io/ioutil"
     "os"
     "os/exec"
     "path/filepath"
+    "strings"
 
     "golang.org/x/crypto/ssh"
 
@@ -20,6 +22,7 @@ const (
     RocketPoolPath = "~/.rocketpool"
     GlobalConfigFile = "config.yml"
     UserConfigFile = "settings.yml"
+    ComposeFile = "docker-compose.yml"
 )
 
 
@@ -119,6 +122,51 @@ func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
 
     // Return
     return nil
+
+}
+
+
+// Build a docker-compose command
+func (c *Client) compose(args string) (string, error) {
+
+    // Load config
+    globalConfig, err := c.loadConfig(filepath.Join(RocketPoolPath, GlobalConfigFile))
+    if err != nil {
+        return "", err
+    }
+    userConfig, err := c.loadConfig(filepath.Join(RocketPoolPath, UserConfigFile))
+    if err != nil {
+        return "", err
+    }
+    rpConfig := config.Merge(&globalConfig, &userConfig)
+
+    // Check config
+    if rpConfig.GetSelectedEth1Client() == nil {
+        return "", errors.New("No Eth 1.0 client selected. Please run 'rocketpool config' and try again.")
+    }
+    if rpConfig.GetSelectedEth2Client() == nil {
+        return "", errors.New("No Eth 2.0 client selected. Please run 'rocketpool config' and try again.")
+    }
+
+    // Set environment variables from config
+    env := []string{
+        "COMPOSE_PROJECT_NAME=rocketpool",
+        fmt.Sprintf("ETH1_CLIENT=%s",      rpConfig.GetSelectedEth1Client().ID),
+        fmt.Sprintf("ETH1_IMAGE=%s",       rpConfig.GetSelectedEth1Client().Image),
+        fmt.Sprintf("ETH2_CLIENT=%s",      rpConfig.GetSelectedEth2Client().ID),
+        fmt.Sprintf("ETH2_IMAGE=%s",       rpConfig.GetSelectedEth2Client().Image),
+        fmt.Sprintf("VALIDATOR_CLIENT=%s", rpConfig.GetSelectedEth2Client().ID),
+        fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().Image),
+    }
+    for _, param := range rpConfig.Chains.Eth1.Client.Params {
+        env = append(env, fmt.Sprintf("%s=%s", param.Env, param.Value))
+    }
+    for _, param := range rpConfig.Chains.Eth2.Client.Params {
+        env = append(env, fmt.Sprintf("%s=%s", param.Env, param.Value))
+    }
+
+    // Return command
+    return fmt.Sprintf("%s docker-compose --project-directory %s -f %s %s", strings.Join(env, " "), RocketPoolPath, filepath.Join(RocketPoolPath, ComposeFile), args), nil
 
 }
 
