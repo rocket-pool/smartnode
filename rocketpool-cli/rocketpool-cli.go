@@ -8,6 +8,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool-cli/config"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/service"
 )
 
 
@@ -61,7 +62,8 @@ ______           _        _    ______           _
     }
 
     // Register commands
-    config.RegisterCommands(app, "config", []string{"c"})
+     config.RegisterCommands(app, "config",  []string{"c"})
+    service.RegisterCommands(app, "service", []string{"s"})
 
     // Run application
     if err := app.Run(os.Args); err != nil {
