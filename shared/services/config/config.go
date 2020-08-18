@@ -68,7 +68,7 @@ func (chain *Chain) GetSelectedClient() *ClientOption {
 }
 
 
-// Serialize a config to yaml
+// Serialize a config to yaml bytes
 func (config *RocketPoolConfig) Serialize() ([]byte, error) {
 
     // Serialize config
@@ -83,7 +83,7 @@ func (config *RocketPoolConfig) Serialize() ([]byte, error) {
 }
 
 
-// Parse Rocket Pool config from a byte slice
+// Parse Rocket Pool config from yaml bytes
 func Parse(bytes []byte) (RocketPoolConfig, error) {
 
     // Parse config
@@ -95,6 +95,16 @@ func Parse(bytes []byte) (RocketPoolConfig, error) {
     // Return
     return config, nil
 
+}
+
+
+// Merge Rocket Pool configs
+func Merge(configs ...*RocketPoolConfig) RocketPoolConfig {
+    var merged RocketPoolConfig
+    for i := len(configs) - 1; i >= 0; i-- {
+        mergo.Merge(&merged, configs[i])
+    }
+    return merged
 }
 
 
@@ -114,7 +124,7 @@ func Load(c *cli.Context) (RocketPoolConfig, RocketPoolConfig, error) {
     cliConfig := getCliConfig(c)
 
     // Merge
-    mergedConfig := mergeConfigs(&globalConfig, &userConfig, &cliConfig)
+    mergedConfig := Merge(&globalConfig, &userConfig, &cliConfig)
 
     // Return
     return globalConfig, mergedConfig, nil
@@ -157,15 +167,5 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     config.Chains.Eth1.Provider = c.GlobalString("eth1Provider")
     config.Chains.Eth2.Provider = c.GlobalString("eth2Provider")
     return config
-}
-
-
-// Merge Rocket Pool configs
-func mergeConfigs(configs ...*RocketPoolConfig) RocketPoolConfig {
-    var merged RocketPoolConfig
-    for i := len(configs) - 1; i >= 0; i-- {
-        mergo.Merge(&merged, configs[i])
-    }
-    return merged
 }
 

@@ -6,11 +6,20 @@ import (
     "io/ioutil"
     "os"
     "os/exec"
+    "path/filepath"
 
     "golang.org/x/crypto/ssh"
 
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/utils/net"
+)
+
+
+// Config
+const (
+    RocketPoolPath = "~/.rocketpool"
+    GlobalConfigFile = "config.yml"
+    UserConfigFile = "settings.yml"
 )
 
 
@@ -69,11 +78,23 @@ func (c *Client) Close() {
 
 // Load the global config
 func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
+    return c.loadConfig(filepath.Join(RocketPoolPath, GlobalConfigFile))
+}
+
+
+// Save the user config
+func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
+    return c.saveConfig(cfg, filepath.Join(RocketPoolPath, UserConfigFile))
+}
+
+
+// Load a config file
+func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
 
     // Read config
-    configBytes, err := c.readOutput("cat ~/.rocketpool/config.yml")
+    configBytes, err := c.readOutput(fmt.Sprintf("cat %s", path))
     if err != nil {
-        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config: %w", err)
+        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %s: %w", path, err)
     }
 
     // Parse and return
@@ -82,8 +103,8 @@ func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
 }
 
 
-// Save the user config
-func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
+// Save a config file
+func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
 
     // Serialize config
     configBytes, err := cfg.Serialize()
@@ -92,8 +113,8 @@ func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
     }
 
     // Write config
-    if _, err := c.readOutput(fmt.Sprintf("cat > ~/.rocketpool/settings.yml <<EOF\n%sEOF", string(configBytes))); err != nil {
-        return fmt.Errorf("Could not write Rocket Pool settings: %w", err)
+    if _, err := c.readOutput(fmt.Sprintf("cat > %s <<EOF\n%sEOF", path, string(configBytes))); err != nil {
+        return fmt.Errorf("Could not write Rocket Pool config to %s: %w", path, err)
     }
 
     // Return
