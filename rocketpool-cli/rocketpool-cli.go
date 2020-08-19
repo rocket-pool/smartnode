@@ -9,6 +9,7 @@ import (
 
     "github.com/rocket-pool/smartnode/rocketpool-cli/config"
     "github.com/rocket-pool/smartnode/rocketpool-cli/service"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 )
 
 
@@ -64,6 +65,7 @@ ______           _        _    ______           _
     // Register commands
      config.RegisterCommands(app, "config",  []string{"c"})
     service.RegisterCommands(app, "service", []string{"s"})
+     wallet.RegisterCommands(app, "wallet",  []string{"w"})
 
     // Run application
     if err := app.Run(os.Args); err != nil {
