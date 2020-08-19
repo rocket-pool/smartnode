@@ -23,6 +23,8 @@ const (
     GlobalConfigFile = "config.yml"
     UserConfigFile = "settings.yml"
     ComposeFile = "docker-compose.yml"
+    APIContainerName = "rocketpool_api"
+    APIBinPath = "/go/bin/rocketpool"
 )
 
 
@@ -185,7 +187,7 @@ func (c *Client) compose(args string) (string, error) {
 
 // Call the Rocket Pool API
 func (c *Client) callAPI(args string) ([]byte, error) {
-    return c.readOutput(fmt.Sprintf("docker exec rocketpool_api /go/bin/rocketpool api %s", args))
+    return c.readOutput(fmt.Sprintf("docker exec %s %s api %s", APIContainerName, APIBinPath, args))
 }
 
 
