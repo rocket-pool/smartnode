@@ -1,6 +1,7 @@
 package wallet
 
 import (
+    "errors"
     "fmt"
 
     "github.com/urfave/cli"
@@ -15,6 +16,15 @@ func exportWallet(c *cli.Context) error {
     rp, err := services.GetRocketPoolClient(c)
     if err != nil { return err }
     defer rp.Close()
+
+    // Get & check wallet status
+    status, err := rp.WalletStatus()
+    if err != nil {
+        return err
+    }
+    if !status.WalletInitialized {
+        return errors.New("The node wallet is not initialized.")
+    }
 
     // Export wallet
     export, err := rp.ExportWallet()
