@@ -1,7 +1,7 @@
 package main
 
 import (
-    "log"
+    "fmt"
     "os"
 
     "github.com/urfave/cli"
@@ -90,7 +90,8 @@ func main() {
         if commandName == "api" {
             apiutils.PrintErrorResponse(err)
         } else {
-            log.Fatal(err)
+            fmt.Fprintln(os.Stderr, err)
+            os.Exit(1)
         }
     }
 

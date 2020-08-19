@@ -1,6 +1,7 @@
 package wallet
 
 import (
+    "errors"
     "fmt"
 
     "github.com/urfave/cli"
@@ -22,8 +23,7 @@ func initWallet(c *cli.Context) error {
         return err
     }
     if status.WalletInitialized {
-        fmt.Println("The node wallet is already initialized.")
-        return nil
+        return errors.New("The node wallet is already initialized.")
     }
 
     // Set password if not set
@@ -40,7 +40,7 @@ func initWallet(c *cli.Context) error {
     }
 
     // Print mnemonic
-    fmt.Println("Your mnemonic phrase to recover this wallet is printed below. It can be used to recover your node account and validator keys if they are lost.")
+    fmt.Println("Your mnemonic phrase to recover your wallet is printed below. It can be used to recover your node account and validator keys if they are lost.")
     fmt.Println("Record this phrase somewhere secure and private. Do not share it with anyone as it will give them control of your node account and validators.")
     fmt.Println("")
     fmt.Println(response.Mnemonic)

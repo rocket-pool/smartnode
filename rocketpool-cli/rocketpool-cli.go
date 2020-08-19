@@ -2,7 +2,6 @@ package main
 
 import (
     "fmt"
-    "log"
     "os"
 
     "github.com/urfave/cli"
@@ -68,9 +67,11 @@ ______           _        _    ______           _
      wallet.RegisterCommands(app, "wallet",  []string{"w"})
 
     // Run application
+    fmt.Println("")
     if err := app.Run(os.Args); err != nil {
-        log.Fatal(err)
+        fmt.Println(err)
     }
+    fmt.Println("")
 
 }
 

@@ -1,6 +1,7 @@
 package wallet
 
 import (
+    "errors"
     "fmt"
 
     "github.com/urfave/cli"
@@ -22,8 +23,7 @@ func recoverWallet(c *cli.Context) error {
         return err
     }
     if status.WalletInitialized {
-        fmt.Println("The node wallet is already initialized.")
-        return nil
+        return errors.New("The node wallet is already initialized.")
     }
 
     // Set password if not set

@@ -19,6 +19,7 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
     // Get valid user input, increment offset
     scanner := bufio.NewScanner(os.Stdin)
     for scanner.Scan(); !regexp.MustCompile(expectedFormat).MatchString(scanner.Text()); scanner.Scan() {
+        fmt.Println("")
         fmt.Println(incorrectFormatPrompt)
     }
 

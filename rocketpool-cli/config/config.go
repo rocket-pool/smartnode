@@ -28,9 +28,6 @@ func configureService(c *cli.Context) error {
     // Initialize user config
     userConfig := config.RocketPoolConfig{}
 
-    // Log
-    fmt.Println("")
-
     // Configure chains
     if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0"); err != nil {
         return err
@@ -44,11 +41,8 @@ func configureService(c *cli.Context) error {
         return err
     }
 
-    // Log
+    // Log & return
     fmt.Println("Done! Run 'rocketpool service start' to apply new configuration settings.")
-    fmt.Println("")
-
-    // Return
     return nil
 
 }
@@ -68,6 +62,7 @@ func configureChain(globalChain, userChain *config.Chain, chainName string) erro
         clientOptions = append(clientOptions, option.Name)
     }
     clientName := cliutils.Select(fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
+    fmt.Println("")
 
     // Set selected client
     for _, option := range globalChain.Client.Options {
