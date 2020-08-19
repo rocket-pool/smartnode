@@ -7,6 +7,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool-cli/config"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/network"
     "github.com/rocket-pool/smartnode/rocketpool-cli/service"
     "github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 )
@@ -63,6 +64,7 @@ ______           _        _    ______           _
 
     // Register commands
      config.RegisterCommands(app, "config",  []string{"c"})
+    network.RegisterCommands(app, "network", []string{"n"})
     service.RegisterCommands(app, "service", []string{"s"})
      wallet.RegisterCommands(app, "wallet",  []string{"w"})
 
