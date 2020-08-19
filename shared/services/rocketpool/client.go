@@ -115,46 +115,26 @@ func (c *Client) StopService() error {
 }
 
 
-// Call the Rocket Pool API
-func (c *Client) callAPI(args string) ([]byte, error) {
-    cmd, err := c.compose(fmt.Sprintf("exec -T api /go/bin/rocketpool api %s", args))
-    if err != nil { return []byte{}, err }
-    return c.readOutput(cmd)
-}
-
-
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
-
-    // Read config
     configBytes, err := c.readOutput(fmt.Sprintf("cat %s", path))
     if err != nil {
         return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %s: %w", path, err)
     }
-
-    // Parse and return
     return config.Parse(configBytes)
-
 }
 
 
 // Save a config file
 func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
-
-    // Serialize config
     configBytes, err := cfg.Serialize()
     if err != nil {
         return err
     }
-
-    // Write config
     if _, err := c.readOutput(fmt.Sprintf("cat > %s <<EOF\n%sEOF", path, string(configBytes))); err != nil {
         return fmt.Errorf("Could not write Rocket Pool config to %s: %w", path, err)
     }
-
-    // Return
     return nil
-
 }
 
 
@@ -200,6 +180,12 @@ func (c *Client) compose(args string) (string, error) {
     // Return command
     return fmt.Sprintf("%s docker-compose --project-directory %s -f %s %s", strings.Join(env, " "), RocketPoolPath, filepath.Join(RocketPoolPath, ComposeFile), args), nil
 
+}
+
+
+// Call the Rocket Pool API
+func (c *Client) callAPI(args string) ([]byte, error) {
+    return c.readOutput(fmt.Sprintf("docker exec rocketpool_api /go/bin/rocketpool api %s", args))
 }
 
 
