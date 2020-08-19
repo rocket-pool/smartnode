@@ -20,6 +20,8 @@ import (
 // Config
 const (
     KeystoreDir = "lighthouse"
+    SecretsDir = "secrets"
+    ValidatorsDir = "validators"
     KeyFileName = "voting-keystore.json"
     DirMode = 0700
     FileMode = 0600
@@ -87,8 +89,21 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
         return fmt.Errorf("Could not encode validator key: %w", err)
     }
 
+    // Get secret file path
+    secretFilePath := filepath.Join(ks.keystorePath, KeystoreDir, SecretsDir, hexutil.AddPrefix(pubkey.Hex()))
+
+    // Create secrets dir
+    if err := os.MkdirAll(filepath.Dir(secretFilePath), DirMode); err != nil {
+        return fmt.Errorf("Could not create validator secrets folder: %w", err)
+    }
+
+    // Write secret to disk
+    if err := ioutil.WriteFile(secretFilePath, []byte(password), FileMode); err != nil {
+        return fmt.Errorf("Could not write validator secret to disk: %w", err)
+    }
+
     // Get key file path
-    keyFilePath := filepath.Join(ks.keystorePath, KeystoreDir, hexutil.AddPrefix(pubkey.Hex()), KeyFileName)
+    keyFilePath := filepath.Join(ks.keystorePath, KeystoreDir, ValidatorsDir, hexutil.AddPrefix(pubkey.Hex()), KeyFileName)
 
     // Create key dir
     if err := os.MkdirAll(filepath.Dir(keyFilePath), DirMode); err != nil {
