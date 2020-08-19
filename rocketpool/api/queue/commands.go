@@ -36,7 +36,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "can-process",
                 Usage:     "Check whether the deposit pool can be processed",
-                UsageText: "rocketpool api queue process",
+                UsageText: "rocketpool api queue can-process",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
