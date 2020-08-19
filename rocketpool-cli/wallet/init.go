@@ -6,8 +6,6 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -30,32 +28,9 @@ func initWallet(c *cli.Context) error {
 
     // Set password if not set
     if !status.PasswordSet {
-
-        // Prompt for password and confirm
-        var password string
-        for confirmed := false; !confirmed; {
-            password = cliutils.Prompt(
-                "Please enter a password to secure your wallet with:",
-                fmt.Sprintf("^.{%d,}$", passwords.MinPasswordLength),
-                fmt.Sprintf("Your password must be at least %d characters long", passwords.MinPasswordLength),
-            )
-            confirmation := cliutils.Prompt(
-                "Please confirm your password:",
-                fmt.Sprintf("^.{%d,}$", passwords.MinPasswordLength),
-                fmt.Sprintf("Your password must be at least %d characters long", passwords.MinPasswordLength),
-            )
-            if password == confirmation {
-                confirmed = true
-            } else {
-                fmt.Println("Password confirmation does not match.")
-            }
-        }
-
-        // Set password
-        if _, err := rp.SetPassword(password); err != nil {
+        if _, err := rp.SetPassword(promptPassword()); err != nil {
             return err
         }
-
     }
 
     // Initialize wallet
@@ -72,7 +47,7 @@ func initWallet(c *cli.Context) error {
     fmt.Println("")
 
     // Confirm mnemonic
-    _ = cliutils.Prompt("Please enter 'y' to indicate that you have recorded your mnemonic phrase.", "(?i)^(y|yes)$", "Please enter 'y'")
+    confirmMnemonic(response.Mnemonic)
 
     // Log & return
     fmt.Println("The node wallet was successfully initialized.")

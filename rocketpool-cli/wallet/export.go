@@ -28,9 +28,11 @@ func exportWallet(c *cli.Context) error {
     fmt.Println(export.Password)
     fmt.Println("")
     fmt.Println("Wallet file:")
+    fmt.Println("============")
     fmt.Println("")
     fmt.Println(export.Wallet)
     fmt.Println("")
+    fmt.Println("============")
     return nil
 
 }
