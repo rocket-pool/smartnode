@@ -25,7 +25,7 @@ import (
 
 
 // Settings
-const ValidatorContainerName = "rocketpool_validator_1"
+const ValidatorContainerName = "rocketpool_validator"
 var stakePrelaunchMinipoolsInterval, _ = time.ParseDuration("1m")
 var validatorRestartTimeout, _ = time.ParseDuration("5s")
 
@@ -277,7 +277,7 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
     }
 
     // Log
-    log.Println("Successfully restarted validator container...")
+    log.Println("Successfully restarted validator container.")
 
     // Return
     return nil
