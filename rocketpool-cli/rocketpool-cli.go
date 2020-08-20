@@ -7,6 +7,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/rocketpool-cli/config"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
     "github.com/rocket-pool/smartnode/rocketpool-cli/network"
     "github.com/rocket-pool/smartnode/rocketpool-cli/node"
     "github.com/rocket-pool/smartnode/rocketpool-cli/queue"
@@ -65,12 +66,13 @@ ______           _        _    ______           _
     }
 
     // Register commands
-     config.RegisterCommands(app, "config",  []string{"c"})
-    network.RegisterCommands(app, "network", []string{"e"})
-       node.RegisterCommands(app, "node",    []string{"n"})
-      queue.RegisterCommands(app, "queue",   []string{"q"})
-    service.RegisterCommands(app, "service", []string{"s"})
-     wallet.RegisterCommands(app, "wallet",  []string{"w"})
+      config.RegisterCommands(app, "config",   []string{"c"})
+    minipool.RegisterCommands(app, "minipool", []string{"m"})
+     network.RegisterCommands(app, "network",  []string{"e"})
+        node.RegisterCommands(app, "node",     []string{"n"})
+       queue.RegisterCommands(app, "queue",    []string{"q"})
+     service.RegisterCommands(app, "service",  []string{"s"})
+      wallet.RegisterCommands(app, "wallet",   []string{"w"})
 
     // Run application
     fmt.Println("")
