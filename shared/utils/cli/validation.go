@@ -48,6 +48,16 @@ func ValidateWeiAmount(name, value string) (*big.Int, error) {
 }
 
 
+// Validate an ether amount
+func ValidateEthAmount(name, value string) (float64, error) {
+    val, err := strconv.ParseFloat(value, 64)
+    if err != nil {
+        return 0, fmt.Errorf("Invalid %s '%s'", name, value)
+    }
+    return val, nil
+}
+
+
 // Validate a fraction
 func ValidateFraction(name, value string) (float64, error) {
     val, err := strconv.ParseFloat(value, 64)
@@ -79,20 +89,49 @@ func ValidatePositiveWeiAmount(name, value string) (*big.Int, error) {
     if err != nil {
         return nil, err
     }
-    if val.Cmp(big.NewInt(0)) == 0 {
+    if val.Cmp(big.NewInt(0)) < 1 {
         return nil, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
     }
     return val, nil
 }
 
 
-// Validate a deposit amount
+// Validate a deposit amount in wei
 func ValidateDepositWeiAmount(name, value string) (*big.Int, error) {
-    ether := strings.Repeat("0", 18)
-    if !(value == "0" || value == "16" + ether || value == "32" + ether) {
+    val, err := ValidateWeiAmount(name, value)
+    if err != nil {
+        return nil, err
+    }
+    if ether := strings.Repeat("0", 18); !(val.String() == "0" || val.String() == "16"+ether || val.String() == "32"+ether) {
         return nil, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32 ether", name, value)
     }
-    return ValidateWeiAmount(name, value)
+    return val, nil
+}
+
+
+// Validate a positive ether amount
+func ValidatePositiveEthAmount(name, value string) (float64, error) {
+    val, err := ValidateEthAmount(name, value)
+    if err != nil {
+        return 0, err
+    }
+    if val <= 0 {
+        return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
+    }
+    return val, nil
+}
+
+
+// Validate a deposit amount in ether
+func ValidateDepositEthAmount(name, value string) (float64, error) {
+    val, err := ValidateEthAmount(name, value)
+    if err != nil {
+        return 0, err
+    }
+    if !(val == 0 || val == 16 || val == 32) {
+        return 0, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32 ether", name, value)
+    }
+    return val, nil
 }
 
 

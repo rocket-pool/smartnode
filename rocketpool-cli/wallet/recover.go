@@ -28,13 +28,17 @@ func recoverWallet(c *cli.Context) error {
 
     // Set password if not set
     if !status.PasswordSet {
-        if _, err := rp.SetPassword(promptPassword()); err != nil {
+        password := promptPassword()
+        if _, err := rp.SetPassword(password); err != nil {
             return err
         }
     }
 
+    // Prompt for mnemonic
+    mnemonic := promptMnemonic()
+
     // Recover wallet
-    if _, err := rp.RecoverWallet(promptMnemonic()); err != nil {
+    if _, err := rp.RecoverWallet(mnemonic); err != nil {
         return err
     }
 

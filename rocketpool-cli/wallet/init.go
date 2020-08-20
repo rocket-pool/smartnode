@@ -28,7 +28,8 @@ func initWallet(c *cli.Context) error {
 
     // Set password if not set
     if !status.PasswordSet {
-        if _, err := rp.SetPassword(promptPassword()); err != nil {
+        password := promptPassword()
+        if _, err := rp.SetPassword(password); err != nil {
             return err
         }
     }
