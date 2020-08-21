@@ -67,18 +67,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "deposit",
                 Aliases:   []string{"d"},
                 Usage:     "Make a deposit and create a minipool",
-                UsageText: "rocketpool node deposit amount min-fee",
+                UsageText: "rocketpool node deposit amount",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
                     amount, err := cliutils.ValidateDepositEthAmount("deposit amount", c.Args().Get(0))
-                    if err != nil { return err }
-                    minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
                     if err != nil { return err }
 
                     // Run
-                    return nodeDeposit(c, amount, minNodeFee)
+                    return nodeDeposit(c, amount)
 
                 },
             },

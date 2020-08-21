@@ -10,7 +10,7 @@ import (
 )
 
 
-func nodeDeposit(c *cli.Context, amount, minNodeFee float64) error {
+func nodeDeposit(c *cli.Context, amount float64) error {
 
     // Get services
     rp, err := services.GetRocketPoolClient(c)
@@ -38,6 +38,10 @@ func nodeDeposit(c *cli.Context, amount, minNodeFee float64) error {
         }
         return nil
     }
+
+    // Check current network node fee and prompt for minimum
+    // TODO: implement
+    minNodeFee := 0.0
 
     // Make deposit
     response, err := rp.NodeDeposit(amountWei, minNodeFee)
