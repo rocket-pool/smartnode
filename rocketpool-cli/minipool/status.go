@@ -12,10 +12,6 @@ import (
 )
 
 
-// Config
-const TimeFormat = "2006-01-02, 15:04 -0700 MST"
-
-
 func getStatus(c *cli.Context) error {
 
     // Get services

@@ -45,7 +45,7 @@ func refundMinipools(c *cli.Context) error {
     for mi, minipool := range refundableMinipools {
         options[mi + 1] = fmt.Sprintf("%s (%.2f ETH to claim)", minipool.Address.Hex(), eth.WeiToEth(minipool.Node.RefundBalance))
     }
-    selected, _ := cliutils.Select("Please select a minipool to refund from:", options)
+    selected, _ := cliutils.Select("Please select a minipool to refund ETH from:", options)
 
     // Get selected minipools
     var selectedMinipools []api.MinipoolDetails
@@ -58,9 +58,9 @@ func refundMinipools(c *cli.Context) error {
     // Refund minipools
     for _, minipool := range selectedMinipools {
         if _, err := rp.RefundMinipool(minipool.Address); err != nil {
-            fmt.Printf("Could not refund from minipool %s: %s.\n", minipool.Address.Hex(), err)
+            fmt.Printf("Could not refund ETH from minipool %s: %s.\n", minipool.Address.Hex(), err)
         } else {
-            fmt.Printf("Successfully refunded from minipool %s.\n", minipool.Address.Hex())
+            fmt.Printf("Successfully refunded ETH from minipool %s.\n", minipool.Address.Hex())
         }
     }
 
