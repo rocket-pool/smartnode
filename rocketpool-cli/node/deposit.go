@@ -12,7 +12,7 @@ import (
 
 
 // Config
-const SuggestedNodeFeeDiff float64 = 0.01 // 1%
+const SuggestedNodeFeeDelta float64 = -0.01 // 1% below current
 
 
 func nodeDeposit(c *cli.Context) error {
@@ -64,7 +64,7 @@ func nodeDeposit(c *cli.Context) error {
     }
 
     // Get suggested minimum node fee
-    suggestedMinNodeFee := nodeFees.NodeFee - SuggestedNodeFeeDiff
+    suggestedMinNodeFee := nodeFees.NodeFee + SuggestedNodeFeeDelta
     if suggestedMinNodeFee < nodeFees.MinNodeFee {
         suggestedMinNodeFee = nodeFees.MinNodeFee
     }
