@@ -30,6 +30,13 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
 }
 
 
+// Prompt for confirmation
+func Confirm(initialPrompt string) bool {
+    response := Prompt(fmt.Sprintf("%s [y/n]", initialPrompt), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+    return (strings.ToLower(response[:1]) == "y")
+}
+
+
 // Prompt for user selection
 func Select(initialPrompt string, options []string) (int, string) {
 

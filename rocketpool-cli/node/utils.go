@@ -29,8 +29,7 @@ func promptTimezone() string {
     var timezone string
 
     // Prompt for auto-detect
-    response := cliutils.Prompt("Would you like to detect your timezone automatically? [y/n]", "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-    if strings.ToLower(response[:1]) == "y" {
+    if cliutils.Confirm("Would you like to detect your timezone automatically?") {
 
         // Detect using FreeGeoIP
         if resp, err := http.Get(FreeGeoIPURL); err == nil {
@@ -54,8 +53,7 @@ func promptTimezone() string {
 
     // Confirm detected time zone
     if timezone != "" {
-        response := cliutils.Prompt(fmt.Sprintf("The detected timezone is '%s', would you like to register using this timezone? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-        if strings.ToLower(response[:1]) == "n" {
+        if !cliutils.Confirm(fmt.Sprintf("The detected timezone is '%s', would you like to register using this timezone?", timezone)) {
             timezone = ""
         }
     }
@@ -63,8 +61,7 @@ func promptTimezone() string {
     // Prompt for time zone
     for timezone == "" {
         timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Country/City':", "^\\w{2,}\\/\\w{2,}$", "Please enter a timezone in the format 'Country/City'")
-        response := cliutils.Prompt(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct? [y/n]", timezone), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-        if strings.ToLower(response[:1]) == "n" {
+        if !cliutils.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct?", timezone)) {
             timezone = ""
         }
     }
