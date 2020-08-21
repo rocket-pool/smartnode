@@ -7,15 +7,33 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
-func nodeDeposit(c *cli.Context, amount float64) error {
+// Config
+const SuggestedNodeFeeDiff float64 = 0.01 // 1%
+
+
+func nodeDeposit(c *cli.Context) error {
 
     // Get services
     rp, err := services.GetRocketPoolClient(c)
     if err != nil { return err }
     defer rp.Close()
+
+    // Prompt for eth amount
+    var amount float64
+    selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", []string{
+        "0 ETH  (minipool begins staking after ETH is assigned; trusted nodes only)",
+        "16 ETH (minipool begins staking after ETH is assigned)",
+        "32 ETH (minipool begins staking immediately)",
+    })
+    switch selected {
+        case 0: amount = 0
+        case 1: amount = 16
+        case 2: amount = 32
+    }
 
     // Get amount in wei
     amountWei := eth.EthToWei(amount)
@@ -39,9 +57,20 @@ func nodeDeposit(c *cli.Context, amount float64) error {
         return nil
     }
 
-    // Check current network node fee and prompt for minimum
-    // TODO: implement
-    minNodeFee := 0.0
+    // Get network node fees
+    nodeFees, err := rp.NodeFee()
+    if err != nil {
+        return err
+    }
+
+    // Get suggested minimum node fee
+    suggestedMinNodeFee := nodeFees.NodeFee - SuggestedNodeFeeDiff
+    if suggestedMinNodeFee < nodeFees.MinNodeFee {
+        suggestedMinNodeFee = nodeFees.MinNodeFee
+    }
+
+    // Prompt for minimum node fee
+    minNodeFee := promptMinNodeFee(nodeFees.NodeFee, suggestedMinNodeFee)
 
     // Make deposit
     response, err := rp.NodeDeposit(amountWei, minNodeFee)

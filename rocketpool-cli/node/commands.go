@@ -71,12 +71,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    amount, err := cliutils.ValidateDepositEthAmount("deposit amount", c.Args().Get(0))
-                    if err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    return nodeDeposit(c, amount)
+                    return nodeDeposit(c)
 
                 },
             },

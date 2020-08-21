@@ -6,6 +6,7 @@ import (
     "io/ioutil"
     "net/http"
     "os/exec"
+    "strconv"
     "strings"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -68,6 +69,34 @@ func promptTimezone() string {
 
     // Return
     return timezone
+
+}
+
+
+// Prompt user for a minimum node fee
+func promptMinNodeFee(currentNodeFee, suggestedMinNodeFee float64) float64 {
+
+    // Prompt for suggested min node fee
+    fmt.Printf("The current network node commission rate is %f%%.\n", currentNodeFee * 100)
+    fmt.Printf("The suggested minimum node commission rate for your deposit is %f%%.\n", suggestedMinNodeFee * 100)
+    if cliutils.Confirm("Do you want to use the suggested minimum?") {
+        return suggestedMinNodeFee
+    }
+
+    // Prompt for custom min node fee
+    for {
+        minNodeFeePercentStr := cliutils.Prompt("Please enter a minimum node commission rate %% for your deposit:", "^\\d+(\\.\\d+)?$", "Invalid commission rate")
+        minNodeFeePercent, _ := strconv.ParseFloat(minNodeFeePercentStr, 64)
+        minNodeFee := minNodeFeePercent / 100
+        if minNodeFee < 0 || minNodeFee > 1 {
+            fmt.Println("Invalid commission rate")
+            fmt.Println("")
+            continue
+        }
+        if cliutils.Confirm(fmt.Sprintf("You have chosen a minimum node commission rate of %f%%, is this correct?", minNodeFee * 100)) {
+            return minNodeFee
+        }
+    }
 
 }
 
