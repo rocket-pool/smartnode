@@ -12,7 +12,7 @@ import (
 
 
 // Config
-const SuggestedNodeFeeDelta float64 = -0.01 // 1% below current
+const SuggestedNodeFeeDelta = -0.01 // 1% below current
 
 
 func nodeDeposit(c *cli.Context) error {
