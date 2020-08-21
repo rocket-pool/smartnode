@@ -125,6 +125,22 @@ func (c *Client) PrintServiceLogs(serviceNames ...string) error {
 }
 
 
+// Print the Rocket Pool service stats
+func (c *Client) PrintServiceStats() error {
+
+    // Get service container IDs
+    cmd, err := c.compose("ps -q")
+    if err != nil { return err }
+    containers, err := c.readOutput(cmd)
+    if err != nil { return err }
+    containerIds := strings.Split(strings.TrimSpace(string(containers)), "\n")
+
+    // Print stats
+    return c.printOutput(fmt.Sprintf("docker stats %s", strings.Join(containerIds, " ")))
+
+}
+
+
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
     configBytes, err := c.readOutput(fmt.Sprintf("cat %s", path))

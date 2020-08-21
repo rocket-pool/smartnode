@@ -77,3 +77,17 @@ func serviceLogs(c *cli.Context, serviceNames ...string) error {
 
 }
 
+
+// View the Rocket Pool service stats
+func serviceStats(c *cli.Context) error {
+
+    // Get services
+    rp, err := services.GetRocketPoolClient(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Print service stats
+    return rp.PrintServiceStats()
+
+}
+

@@ -76,6 +76,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "stats",
+                Aliases:   []string{"t"},
+                Usage:     "View the Rocket Pool service stats",
+                UsageText: "rocketpool service stats",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return serviceStats(c)
+
+                },
+            },
+
         },
     })
 }
