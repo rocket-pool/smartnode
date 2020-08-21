@@ -2,7 +2,9 @@ package network
 
 import (
     "github.com/rocket-pool/rocketpool-go/network"
+    "github.com/rocket-pool/rocketpool-go/settings"
     "github.com/urfave/cli"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/types/api"
@@ -19,12 +21,43 @@ func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
     // Response
     response := api.NodeFeeResponse{}
 
-    // Get node fee
-    nodeFee, err := network.GetNodeFee(rp, nil)
-    if err != nil {
+    // Sync
+    var wg errgroup.Group
+
+    // Get data
+    wg.Go(func() error {
+        nodeFee, err := network.GetNodeFee(rp, nil)
+        if err == nil {
+            response.NodeFee = nodeFee
+        }
+        return err
+    })
+    wg.Go(func() error {
+        minNodeFee, err := settings.GetMinimumNodeFee(rp, nil)
+        if err == nil {
+            response.MinNodeFee = minNodeFee
+        }
+        return err
+    })
+    wg.Go(func() error {
+        targetNodeFee, err := settings.GetTargetNodeFee(rp, nil)
+        if err == nil {
+            response.TargetNodeFee = targetNodeFee
+        }
+        return err
+    })
+    wg.Go(func() error {
+        maxNodeFee, err := settings.GetMaximumNodeFee(rp, nil)
+        if err == nil {
+            response.MaxNodeFee = maxNodeFee
+        }
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
         return nil, err
     }
-    response.NodeFee = nodeFee
 
     // Return response
     return &response, nil

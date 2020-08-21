@@ -23,7 +23,10 @@ func getNodeFee(c *cli.Context) error {
     }
 
     // Print & return
-    fmt.Printf("The current network node fee is %f%%\n", response.NodeFee * 100)
+    fmt.Printf("The current network node commission rate is %f%%.\n", response.NodeFee * 100)
+    fmt.Printf("Minimum node commission rate: %f%%\n", response.MinNodeFee * 100)
+    fmt.Printf("Target node commission rate:  %f%%\n", response.TargetNodeFee * 100)
+    fmt.Printf("Maximum node commission rate: %f%%\n", response.MaxNodeFee * 100)
     return nil
 
 }
