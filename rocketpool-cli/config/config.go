@@ -57,20 +57,15 @@ func configureChain(globalChain, userChain *config.Chain, chainName string) erro
     }
 
     // Prompt for client
-    clientOptions := []string{}
-    for _, option := range globalChain.Client.Options {
-        clientOptions = append(clientOptions, option.Name)
+    clientOptions := make([]string, len(globalChain.Client.Options))
+    for oi, option := range globalChain.Client.Options {
+        clientOptions[oi] = option.Name
     }
-    _, clientName := cliutils.Select(fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
+    selected, clientName := cliutils.Select(fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
 
     // Set selected client
-    for _, option := range globalChain.Client.Options {
-        if option.Name == clientName {
-            globalChain.Client.Selected = option.ID
-            userChain.Client.Selected = option.ID
-            break
-        }
-    }
+    globalChain.Client.Selected = globalChain.Client.Options[selected].ID
+    userChain.Client.Selected = globalChain.Client.Options[selected].ID
 
     // Log
     fmt.Printf("%s %s client selected.\n", clientName, chainName)
