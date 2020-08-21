@@ -63,6 +63,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "logs",
+                Aliases:   []string{"l"},
+                Usage:     "View the Rocket Pool service logs",
+                UsageText: "rocketpool service logs [services...]",
+                Action: func(c *cli.Context) error {
+
+                    // Run command
+                    return serviceLogs(c, c.Args()...)
+
+                },
+            },
+
         },
     })
 }

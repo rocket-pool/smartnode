@@ -117,6 +117,14 @@ func (c *Client) StopService() error {
 }
 
 
+// Print the Rocket Pool service logs
+func (c *Client) PrintServiceLogs(serviceNames ...string) error {
+    cmd, err := c.compose(fmt.Sprintf("logs -f %s", strings.Join(serviceNames, " ")))
+    if err != nil { return err }
+    return c.printOutput(cmd)
+}
+
+
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
     configBytes, err := c.readOutput(fmt.Sprintf("cat %s", path))

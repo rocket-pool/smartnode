@@ -63,3 +63,17 @@ func stopService(c *cli.Context) error {
 
 }
 
+
+// View the Rocket Pool service logs
+func serviceLogs(c *cli.Context, serviceNames ...string) error {
+
+    // Get services
+    rp, err := services.GetRocketPoolClient(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Print service logs
+    return rp.PrintServiceLogs(serviceNames...)
+
+}
+
