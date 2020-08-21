@@ -18,9 +18,7 @@ func promptPassword() string {
             fmt.Sprintf("^.{%d,}$", passwords.MinPasswordLength),
             fmt.Sprintf("Your password must be at least %d characters long", passwords.MinPasswordLength),
         )
-        fmt.Println("")
         confirmation := cliutils.Prompt("Please confirm your password:", "^.*$", "")
-        fmt.Println("")
         if password == confirmation {
             return password
         } else {
@@ -35,7 +33,6 @@ func promptPassword() string {
 func promptMnemonic() string {
     for {
         mnemonic := cliutils.Prompt("Please enter your recovery mnemonic phrase:", "^.*$", "")
-        fmt.Println("")
         if bip39.IsMnemonicValid(mnemonic) {
             return mnemonic
         } else {
@@ -50,7 +47,6 @@ func promptMnemonic() string {
 func confirmMnemonic(mnemonic string) {
     for {
         confirmation := cliutils.Prompt("Please enter your recorded mnemonic phrase to confirm it is correct:", "^.*$", "")
-        fmt.Println("")
         if mnemonic == confirmation {
             return
         } else {

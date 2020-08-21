@@ -22,6 +22,7 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
         fmt.Println("")
         fmt.Println(incorrectFormatPrompt)
     }
+    fmt.Println("")
 
     // Return user input
     return scanner.Text()
@@ -30,7 +31,7 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
 
 
 // Prompt for user selection
-func Select(initialPrompt string, options []string) string {
+func Select(initialPrompt string, options []string) (int, string) {
 
     // Get prompt
     prompt := initialPrompt
@@ -50,10 +51,11 @@ func Select(initialPrompt string, options []string) string {
 
     // Get selected option
     index, _ := strconv.Atoi(response)
-    selected := options[index - 1]
+    selectedIndex := index - 1
+    selectedOption := options[selectedIndex]
 
     // Return
-    return selected
+    return selectedIndex, selectedOption
 
 }
 

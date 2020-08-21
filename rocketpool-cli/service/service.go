@@ -30,8 +30,10 @@ func pauseService(c *cli.Context) error {
 
     // Prompt for confirmation
     response := cliutils.Prompt("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized! [y/n]", "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-    if strings.ToLower(response[:1]) == "n" { return nil }
-    fmt.Println("")
+    if strings.ToLower(response[:1]) == "n" {
+        fmt.Println("Cancelled.")
+        return nil
+    }
 
     // Get services
     rp, err := services.GetRocketPoolClient(c)
@@ -49,8 +51,10 @@ func stopService(c *cli.Context) error {
 
     // Prompt for confirmation
     response := cliutils.Prompt("Are you sure you want to stop the Rocket Pool service? Any staking minipools will be penalized, and ethereum nodes will lose sync progress! [y/n]", "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
-    if strings.ToLower(response[:1]) == "n" { return nil }
-    fmt.Println("")
+    if strings.ToLower(response[:1]) == "n" {
+        fmt.Println("Cancelled.")
+        return nil
+    }
 
     // Get services
     rp, err := services.GetRocketPoolClient(c)

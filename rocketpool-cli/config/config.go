@@ -61,8 +61,7 @@ func configureChain(globalChain, userChain *config.Chain, chainName string) erro
     for _, option := range globalChain.Client.Options {
         clientOptions = append(clientOptions, option.Name)
     }
-    clientName := cliutils.Select(fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
-    fmt.Println("")
+    _, clientName := cliutils.Select(fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
 
     // Set selected client
     for _, option := range globalChain.Client.Options {
@@ -99,7 +98,6 @@ func configureChain(globalChain, userChain *config.Chain, chainName string) erro
 
         // Prompt for value
         value := cliutils.Prompt(fmt.Sprintf("Please enter the %s%s", param.Name, optionalLabel), expectedFormat, fmt.Sprintf("Invalid %s", param.Name))
-        fmt.Println("")
 
         // Add param
         params = append(params, config.UserParam{
