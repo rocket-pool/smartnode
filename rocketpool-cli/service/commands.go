@@ -16,6 +16,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Subcommands: []cli.Command{
 
             cli.Command{
+                Name:      "status",
+                Aliases:   []string{"u"},
+                Usage:     "View the Rocket Pool service status",
+                UsageText: "rocketpool service status",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return serviceStatus(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "start",
                 Aliases:   []string{"s"},
                 Usage:     "Start the Rocket Pool service",

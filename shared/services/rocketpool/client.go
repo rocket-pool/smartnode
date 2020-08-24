@@ -23,6 +23,7 @@ const (
     GlobalConfigFile = "config.yml"
     UserConfigFile = "settings.yml"
     ComposeFile = "docker-compose.yml"
+
     APIContainerName = "rocketpool_api"
     APIBinPath = "/go/bin/rocketpool"
 )
@@ -112,6 +113,14 @@ func (c *Client) PauseService() error {
 // Stop the Rocket Pool service
 func (c *Client) StopService() error {
     cmd, err := c.compose("down -v")
+    if err != nil { return err }
+    return c.printOutput(cmd)
+}
+
+
+// Print the Rocket Pool service status
+func (c *Client) PrintServiceStatus() error {
+    cmd, err := c.compose("ps")
     if err != nil { return err }
     return c.printOutput(cmd)
 }

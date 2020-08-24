@@ -10,6 +10,20 @@ import (
 )
 
 
+// View the Rocket Pool service status
+func serviceStatus(c *cli.Context) error {
+
+    // Get services
+    rp, err := services.GetRocketPoolClient(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Print service status
+    return rp.PrintServiceStatus()
+
+}
+
+
 // Start the Rocket Pool service
 func startService(c *cli.Context) error {
 
