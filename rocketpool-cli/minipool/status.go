@@ -56,7 +56,7 @@ func getStatus(c *cli.Context) error {
     for _, statusName := range types.MinipoolStatuses {
         minipools, ok := statusMinipools[statusName]
         if !ok { continue }
-        fmt.Printf("%d %s minipools:\n", len(minipools), statusName)
+        fmt.Printf("%d %s minipool(s):\n", len(minipools), statusName)
         fmt.Println("")
         for _, minipool := range minipools {
             fmt.Printf("---------------\n")
