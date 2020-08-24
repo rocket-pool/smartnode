@@ -22,20 +22,29 @@ func nodeDeposit(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Prompt for eth amount
-    var amount float64
-    selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", []string{
-        "0 ETH  (minipool begins staking after ETH is assigned; trusted nodes only)",
-        "16 ETH (minipool begins staking after ETH is assigned)",
-        "32 ETH (minipool begins staking immediately)",
-    })
-    switch selected {
-        case 0: amount = 0
-        case 1: amount = 16
-        case 2: amount = 32
+    // Get node status
+    status, err := rp.NodeStatus()
+    if err != nil {
+        return err
     }
 
-    // Get amount in wei
+    // Get deposit amount options
+    amountOptions := []string{
+        "32 ETH (minipool begins staking immediately)",
+        "16 ETH (minipool begins staking after ETH is assigned)",
+    }
+    if status.Trusted {
+        amountOptions = append(amountOptions, "0 ETH  (minipool begins staking after ETH is assigned)")
+    }
+
+    // Prompt for eth amount
+    var amount float64
+    selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+    switch selected {
+        case 0: amount = 32
+        case 1: amount = 16
+        case 2: amount = 0
+    }
     amountWei := eth.EthToWei(amount)
 
     // Check deposit can be made

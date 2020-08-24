@@ -85,7 +85,7 @@ func promptMinNodeFee(currentNodeFee, suggestedMinNodeFee float64) float64 {
 
     // Prompt for custom min node fee
     for {
-        minNodeFeePercentStr := cliutils.Prompt("Please enter a minimum node commission rate %% for your deposit:", "^\\d+(\\.\\d+)?$", "Invalid commission rate")
+        minNodeFeePercentStr := cliutils.Prompt("Please enter a minimum node commission rate % for your deposit:", "^\\d+(\\.\\d+)?$", "Invalid commission rate")
         minNodeFeePercent, _ := strconv.ParseFloat(minNodeFeePercentStr, 64)
         minNodeFee := minNodeFeePercent / 100
         if minNodeFee < 0 || minNodeFee > 1 {
