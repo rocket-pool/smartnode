@@ -78,7 +78,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
             cli.Command{
                 Name:      "stats",
-                Aliases:   []string{"t"},
+                Aliases:   []string{"a"},
                 Usage:     "View the Rocket Pool service stats",
                 UsageText: "rocketpool service stats",
                 Action: func(c *cli.Context) error {
