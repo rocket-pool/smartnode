@@ -8,6 +8,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -31,6 +32,12 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
         if canSend.InsufficientBalance {
             fmt.Printf("The node's %s balance is insufficient.\n", token)
         }
+        return nil
+    }
+
+    // Prompt for confirmation
+    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.2f %s to %s? This action cannot be undone!", eth.WeiToEth(amountWei), token, toAddress.Hex())) {
+        fmt.Println("Cancelled.")
         return nil
     }
 
