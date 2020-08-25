@@ -37,6 +37,8 @@ type ClientOption struct {
     ID string                           `yaml:"id,omitempty"`
     Name string                         `yaml:"name,omitempty"`
     Image string                        `yaml:"image,omitempty"`
+    BeaconImage string                  `yaml:"beaconImage,omitempty"`
+    ValidatorImage string               `yaml:"validatorImage,omitempty"`
     Params []ClientParam                `yaml:"params,omitempty"`
 }
 type ClientParam struct {
@@ -65,6 +67,23 @@ func (chain *Chain) GetSelectedClient() *ClientOption {
         }
     }
     return nil
+}
+
+
+// Get the beacon & validator images for a client
+func (client *ClientOption) GetBeaconImage() string {
+    if client.BeaconImage != "" {
+        return client.BeaconImage
+    } else {
+        return client.Image
+    }
+}
+func (client *ClientOption) GetValidatorImage() string {
+    if client.ValidatorImage != "" {
+        return client.ValidatorImage
+    } else {
+        return client.Image
+    }
 }
 
 

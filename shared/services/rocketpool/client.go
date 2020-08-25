@@ -201,9 +201,9 @@ func (c *Client) compose(args string) (string, error) {
         fmt.Sprintf("ETH1_CLIENT=%s",      rpConfig.GetSelectedEth1Client().ID),
         fmt.Sprintf("ETH1_IMAGE=%s",       rpConfig.GetSelectedEth1Client().Image),
         fmt.Sprintf("ETH2_CLIENT=%s",      rpConfig.GetSelectedEth2Client().ID),
-        fmt.Sprintf("ETH2_IMAGE=%s",       rpConfig.GetSelectedEth2Client().Image),
+        fmt.Sprintf("ETH2_IMAGE=%s",       rpConfig.GetSelectedEth2Client().GetBeaconImage()),
         fmt.Sprintf("VALIDATOR_CLIENT=%s", rpConfig.GetSelectedEth2Client().ID),
-        fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().Image),
+        fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().GetValidatorImage()),
     }
     for _, param := range rpConfig.Chains.Eth1.Client.Params {
         env = append(env, fmt.Sprintf("%s=%s", param.Env, param.Value))
