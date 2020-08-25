@@ -111,8 +111,8 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
         return nil, err
     }
 
-    // Store validator key
-    for name, ks := range w.validatorKeystores {
+    // Update keystores
+    for name, ks := range w.keystores {
         if err := ks.StoreValidatorKey(key, path); err != nil {
             return nil, fmt.Errorf("Could not store %s validator key: %w", name, err)
         }
@@ -159,8 +159,8 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
         w.ws.NextAccount = nextIndex
     }
 
-    // Store validator key
-    for name, ks := range w.validatorKeystores {
+    // Update keystores
+    for name, ks := range w.keystores {
         if err := ks.StoreValidatorKey(validatorKey, derivationPath); err != nil {
             return fmt.Errorf("Could not store %s validator key: %w", name, err)
         }

@@ -49,8 +49,8 @@ type Wallet struct {
     validatorKeys map[uint]*eth2types.BLSPrivateKey
     validatorKeyIndices map[string]uint
 
-    // Validator keystores
-    validatorKeystores map[string]keystore.Keystore
+    // Keystores
+    keystores map[string]keystore.Keystore
 
 }
 
@@ -75,7 +75,7 @@ func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*
         encryptor: eth2ks.New(),
         validatorKeys: map[uint]*eth2types.BLSPrivateKey{},
         validatorKeyIndices: map[string]uint{},
-        validatorKeystores: map[string]keystore.Keystore{},
+        keystores: map[string]keystore.Keystore{},
     }
 
     // Load & decrypt wallet store
@@ -89,9 +89,9 @@ func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*
 }
 
 
-// Add a validator keystore to the wallet
+// Add a keystore to the wallet
 func (w *Wallet) AddKeystore(name string, ks keystore.Keystore) {
-    w.validatorKeystores[name] = ks
+    w.keystores[name] = ks
 }
 
 
@@ -188,6 +188,13 @@ func (w *Wallet) Save() error {
     // Write wallet store to disk
     if err := ioutil.WriteFile(w.walletPath, wsBytes, FileMode); err != nil {
         return fmt.Errorf("Could not write wallet to disk: %w", err)
+    }
+
+    // Update keystores
+    for name, ks := range w.keystores {
+        if err := ks.StoreWallet(wsBytes); err != nil {
+            return fmt.Errorf("Could not store %s wallet: %w", name, err)
+        }
     }
 
     // Return

@@ -18,6 +18,7 @@ import (
     rpclient "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
+    prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 )
 
 
@@ -145,7 +146,9 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
         nodeWallet, err = wallet.NewWallet(cfg.Smartnode.WalletPath, pm)
         if err == nil {
             lighthouseKeystore := lhkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
+            prysmKeystore := prkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath)
             nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
+            nodeWallet.AddKeystore("prysm", prysmKeystore)
         }
     })
     return nodeWallet, err

@@ -56,6 +56,12 @@ func NewKeystore(keystorePath string, passwordManager *passwords.PasswordManager
 }
 
 
+// Store a wallet
+func (ks *Keystore) StoreWallet(walletData []byte) error {
+    return nil
+}
+
+
 // Store a validator key
 func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPath string) error {
 
