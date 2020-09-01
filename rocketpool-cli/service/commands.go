@@ -16,6 +16,46 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Subcommands: []cli.Command{
 
             cli.Command{
+                Name:      "install",
+                Aliases:   []string{"i"},
+                Usage:     "Install the Rocket Pool service",
+                UsageText: "rocketpool service install [options]",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "verbose, r",
+                        Usage: "Print installation script command output",
+                    },
+                    cli.BoolFlag{
+                        Name: "use-wget, w",
+                        Usage: "Attempt to download the installation script using wget instead of cURL",
+                    },
+                    cli.BoolFlag{
+                        Name:  "ignore-deps, i",
+                        Usage: "Do not install Operating System dependencies",
+                    },
+                    cli.StringFlag{
+                        Name: "network, n",
+                        Usage: "The Eth 2.0 network to run Rocket Pool on",
+                        Value: "medalla",
+                    },
+                    cli.StringFlag{
+                        Name: "version, v",
+                        Usage: "The smart node package version to install",
+                        Value: "latest",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return installService(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "status",
                 Aliases:   []string{"u"},
                 Usage:     "View the Rocket Pool service status",

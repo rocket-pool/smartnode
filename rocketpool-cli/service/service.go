@@ -10,6 +10,37 @@ import (
 )
 
 
+// Install the Rocket Pool service
+func installService(c *cli.Context) error {
+
+    // Get service details
+    var location string
+    if c.GlobalString("host") == "" {
+        location = "locally"
+    } else {
+        location = fmt.Sprintf("at %s", c.GlobalString("host"))
+    }
+
+    // Prompt for confirmation
+    if !cliutils.Confirm(fmt.Sprintf(
+        "The Rocket Pool service will be installed %s --\nNetwork: %s\nVersion: %s\n\nAny existing configuration will be overwritten.\nAre you sure you want to continue?",
+        location, c.String("network"), c.String("version"),
+    )) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
+    // Get services
+    rp, err := services.GetRocketPoolClient(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Install service
+    return rp.InstallService(c.Bool("verbose"), c.Bool("use-wget"), c.Bool("ignore-deps"), c.String("network"), c.String("version"))
+
+}
+
+
 // View the Rocket Pool service status
 func serviceStatus(c *cli.Context) error {
 

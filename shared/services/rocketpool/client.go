@@ -19,6 +19,10 @@ import (
 
 // Config
 const (
+    InstallerURL = "https://github.com/rocket-pool/smartnode-install/releases/latest/download/install.sh"
+    CurlDownload = "curl -sL"
+    WgetDownload = "wget -qO-"
+
     RocketPoolPath = "~/.rocketpool"
     GlobalConfigFile = "config.yml"
     UserConfigFile = "settings.yml"
@@ -99,6 +103,32 @@ func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
 // Save the user config
 func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
     return c.saveConfig(cfg, filepath.Join(RocketPoolPath, UserConfigFile))
+}
+
+
+// Install the Rocket Pool service
+func (c *Client) InstallService(verbose, useWget, ignoreDeps bool, network, version string) error {
+
+    // Get installation script downloader type
+    var downloader string
+    if useWget {
+        downloader = WgetDownload
+    } else {
+        downloader = CurlDownload
+    }
+
+    // Get installation script flags
+    flags := []string{
+        "-n", network,
+        "-v", version,
+    }
+    if ignoreDeps {
+        flags = append(flags, "-i")
+    }
+
+    // Run installation script
+    return c.printOutput(fmt.Sprintf("%s %s | sh -s -- %s", downloader, InstallerURL, strings.Join(flags, " ")))
+
 }
 
 
