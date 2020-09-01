@@ -6,7 +6,6 @@ import (
     "io"
     "io/ioutil"
     "os"
-    "os/exec"
     "path/filepath"
     "strings"
 
@@ -263,69 +262,39 @@ func (c *Client) callAPI(args string) ([]byte, error) {
 
 
 // Run a command and print its output
-func (c *Client) printOutput(command string) error {
-    if c.client == nil {
+func (c *Client) printOutput(cmdText string) error {
 
-        // Initialize command
-        cmd := exec.Command("sh", "-c", command)
+    // Initialize command
+    cmd, err := c.newCommand(cmdText)
+    if err != nil { return err }
+    defer cmd.Close()
 
-        // Copy command output to stdout & stderr
-        cmdOut, err := cmd.StdoutPipe()
-        if err != nil { return err }
-        cmdErr, err := cmd.StderrPipe()
-        if err != nil { return err }
-        go io.Copy(os.Stdout, cmdOut)
-        go io.Copy(os.Stderr, cmdErr)
+    // Copy command output to stdout & stderr
+    cmdOut, err := cmd.StdoutPipe()
+    if err != nil { return err }
+    cmdErr, err := cmd.StderrPipe()
+    if err != nil { return err }
+    go io.Copy(os.Stdout, cmdOut)
+    go io.Copy(os.Stderr, cmdErr)
 
-        // Run command
-        return cmd.Run()
+    // Run command
+    return cmd.Run()
 
-    } else {
-
-        // Initialize session
-        session, err := c.client.NewSession()
-        if err != nil {
-            return err
-        }
-        defer session.Close()
-
-        // Copy session output to stdout & stderr
-        cmdOut, err := session.StdoutPipe()
-        if err != nil { return err }
-        cmdErr, err := session.StderrPipe()
-        if err != nil { return err }
-        go io.Copy(os.Stdout, cmdOut)
-        go io.Copy(os.Stderr, cmdErr)
-
-        // Run command
-        return session.Run(command)
-
-    }
 }
 
 
 // Run a command and return its output
-func (c *Client) readOutput(command string) ([]byte, error) {
-    if c.client == nil {
+func (c *Client) readOutput(cmdText string) ([]byte, error) {
 
-        // Initialize command
-        cmd := exec.Command("sh", "-c", command)
-
-        // Run command and return output
-        return cmd.Output()
-
-    } else {
-
-        // Initialize session
-        session, err := c.client.NewSession()
-        if err != nil {
-            return []byte{}, err
-        }
-        defer session.Close()
-
-        // Run command and return output
-        return session.Output(command)
-
+    // Initialize command
+    cmd, err := c.newCommand(cmdText)
+    if err != nil {
+        return []byte{}, err
     }
+    defer cmd.Close()
+
+    // Run command and return output
+    return cmd.Output()
+
 }
 
