@@ -52,16 +52,16 @@ ______           _        _    ______           _
     // Set application flags
     app.Flags = []cli.Flag{
         cli.StringFlag{
-            Name:  "host",
-            Usage: "Smart node SSH host address",
+            Name:  "host, o",
+            Usage: "Smart node SSH host `address`",
         },
         cli.StringFlag{
-            Name:  "user",
-            Usage: "Smart node SSH user account",
+            Name:  "user, u",
+            Usage: "Smart node SSH user `name`",
         },
         cli.StringFlag{
-            Name:  "key",
-            Usage: "Smart node SSH key file",
+            Name:  "key, k",
+            Usage: "Smart node SSH key `file`",
         },
     }
 

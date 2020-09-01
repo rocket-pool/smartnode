@@ -38,37 +38,37 @@ func main() {
     // Set application flags
     app.Flags = []cli.Flag{
         cli.StringFlag{
-            Name:  "config",
+            Name:  "config, c",
             Usage: "Rocket Pool service global config absolute `path`",
             Value: "/.rocketpool/config.yml",
         },
         cli.StringFlag{
-            Name:  "settings",
+            Name:  "settings, s",
             Usage: "Rocket Pool service user config absolute `path`",
             Value: "/.rocketpool/settings.yml",
         },
         cli.StringFlag{
-            Name:  "storageAddress",
+            Name:  "storageAddress, a",
             Usage: "Rocket Pool storage contract `address`",
         },
         cli.StringFlag{
-            Name:  "password",
+            Name:  "password, p",
             Usage: "Rocket Pool wallet password file absolute `path`",
         },
         cli.StringFlag{
-            Name:  "wallet",
+            Name:  "wallet, w",
             Usage: "Rocket Pool wallet file absolute `path`",
         },
         cli.StringFlag{
-            Name:  "validatorKeychain",
+            Name:  "validatorKeychain, v",
             Usage: "Rocket Pool validator keychain absolute `path`",
         },
         cli.StringFlag{
-            Name:  "eth1Provider",
+            Name:  "eth1Provider, e",
             Usage: "Eth 1.0 provider `address`",
         },
         cli.StringFlag{
-            Name:  "eth2Provider",
+            Name:  "eth2Provider, b",
             Usage: "Eth 2.0 provider `address`",
         },
     }
