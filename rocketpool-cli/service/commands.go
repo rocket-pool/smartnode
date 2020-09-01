@@ -26,7 +26,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Usage: "Print installation script command output",
                     },
                     cli.BoolFlag{
-                        Name: "use-wget, w",
+                        Name:  "use-wget, w",
                         Usage: "Attempt to download the installation script using wget instead of cURL",
                     },
                     cli.BoolFlag{
@@ -34,12 +34,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Usage: "Do not install Operating System dependencies",
                     },
                     cli.StringFlag{
-                        Name: "network, n",
+                        Name:  "network, n",
                         Usage: "The Eth 2.0 network to run Rocket Pool on",
                         Value: "medalla",
                     },
                     cli.StringFlag{
-                        Name: "version, v",
+                        Name:  "version, v",
                         Usage: "The smart node package version to install",
                         Value: "latest",
                     },
