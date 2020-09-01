@@ -40,7 +40,15 @@ func NewClient(hostAddress, user, keyPath string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
-    if (hostAddress != "" && user != "" && keyPath != "") {
+    if (hostAddress != "") {
+
+        // Check parameters
+        if user == "" {
+            return nil, errors.New("The SSH user (--user) must be specified.")
+        }
+        if keyPath == "" {
+            return nil, errors.New("The SSH private key path (--key) must be specified.")
+        }
 
         // Read private key
         keyBytes, err := ioutil.ReadFile(keyPath)
