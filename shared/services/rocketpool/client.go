@@ -1,12 +1,14 @@
 package rocketpool
 
 import (
+    "bufio"
     "errors"
     "fmt"
     "io"
     "io/ioutil"
     "os"
     "path/filepath"
+    "regexp"
     "strings"
 
     "golang.org/x/crypto/ssh"
@@ -125,8 +127,56 @@ func (c *Client) InstallService(verbose, useWget, ignoreDeps bool, network, vers
         flags = append(flags, "-i")
     }
 
-    // Run installation script
-    return c.printOutput(fmt.Sprintf("%s %s | sh -s -- %s", downloader, InstallerURL, strings.Join(flags, " ")))
+    // Initialize installation command
+    cmd, err := c.newCommand(fmt.Sprintf("%s %s | sh -s -- %s", downloader, InstallerURL, strings.Join(flags, " ")))
+    if err != nil { return err }
+    defer cmd.Close()
+
+    // Get command output pipes
+    cmdOut, err := cmd.StdoutPipe()
+    if err != nil { return err }
+    cmdErr, err := cmd.StderrPipe()
+    if err != nil { return err }
+
+    // Stderr output details
+    var errMessage string
+    var padErrOutput bool
+
+    // Read progress from stdout and render
+    go (func() {
+        scanner := bufio.NewScanner(cmdOut)
+        for scanner.Scan() {
+            matches := regexp.MustCompile("^(\\S+)/(\\S+)\\s+(.+)$").FindStringSubmatch(scanner.Text())
+            if matches == nil { continue }
+            if padErrOutput {
+                padErrOutput = false
+                fmt.Println("")
+            }
+            fmt.Printf("Step %s of %s: %s\n", matches[1], matches[2], matches[3])
+            if verbose {
+                fmt.Println("")
+            }
+        }
+    })()
+
+    // Read command & error output from stderr; render in verbose mode
+    go (func() {
+        scanner := bufio.NewScanner(cmdErr)
+        for scanner.Scan() {
+            errMessage = scanner.Text()
+            if verbose {
+                fmt.Println(scanner.Text())
+                padErrOutput = true
+            }
+        }
+    })()
+
+    // Run command and return error output
+    err = cmd.Run()
+    if err != nil {
+        return fmt.Errorf("Could not install Rocket Pool service: %s", errMessage)
+    }
+    return nil
 
 }
 

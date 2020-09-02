@@ -13,7 +13,7 @@ import (
 // Install the Rocket Pool service
 func installService(c *cli.Context) error {
 
-    // Get service details
+    // Get install location
     var location string
     if c.GlobalString("host") == "" {
         location = "locally"
@@ -36,7 +36,14 @@ func installService(c *cli.Context) error {
     defer rp.Close()
 
     // Install service
-    return rp.InstallService(c.Bool("verbose"), c.Bool("use-wget"), c.Bool("ignore-deps"), c.String("network"), c.String("version"))
+    err = rp.InstallService(c.Bool("verbose"), c.Bool("use-wget"), c.Bool("ignore-deps"), c.String("network"), c.String("version"))
+    if err != nil { return err }
+
+    // Print success message & return
+    fmt.Println("")
+    fmt.Printf("The Rocket Pool service was successfully installed %s!\n", location)
+    fmt.Println("Run 'rocketpool config' to configure the service before starting it.")
+    return nil
 
 }
 
