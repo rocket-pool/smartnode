@@ -8,7 +8,6 @@ import (
     "io/ioutil"
     "os"
     "path/filepath"
-    "regexp"
     "strings"
 
     "golang.org/x/crypto/ssh"
@@ -138,35 +137,22 @@ func (c *Client) InstallService(verbose, useWget, ignoreDeps bool, network, vers
     cmdErr, err := cmd.StderrPipe()
     if err != nil { return err }
 
-    // Stderr output details
-    var errMessage string
-    var padErrOutput bool
-
-    // Read progress from stdout and render
+    // Print progress from stdout
     go (func() {
         scanner := bufio.NewScanner(cmdOut)
         for scanner.Scan() {
-            matches := regexp.MustCompile("^(\\S+)/(\\S+)\\s+(.+)$").FindStringSubmatch(scanner.Text())
-            if matches == nil { continue }
-            if padErrOutput {
-                padErrOutput = false
-                fmt.Println("")
-            }
-            fmt.Printf("Step %s of %s: %s\n", matches[1], matches[2], matches[3])
-            if verbose {
-                fmt.Println("")
-            }
+            fmt.Printf("* %s\n", scanner.Text())
         }
     })()
 
     // Read command & error output from stderr; render in verbose mode
+    var errMessage string
     go (func() {
         scanner := bufio.NewScanner(cmdErr)
         for scanner.Scan() {
             errMessage = scanner.Text()
             if verbose {
-                fmt.Println(scanner.Text())
-                padErrOutput = true
+                fmt.Printf("~ %s\n", scanner.Text())
             }
         }
     })()

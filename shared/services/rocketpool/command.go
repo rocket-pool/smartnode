@@ -45,16 +45,6 @@ func (c *command) Close() error {
 }
 
 
-// Run the command and return its output
-func (c *command) Output() ([]byte, error) {
-    if c.cmd != nil {
-        return c.cmd.Output()
-    } else {
-        return c.session.Output(c.cmdText)
-    }
-}
-
-
 // Run the command
 func (c *command) Run() error {
     if c.cmd != nil {
@@ -65,12 +55,12 @@ func (c *command) Run() error {
 }
 
 
-// Get a pipe to the command's stderr
-func (c *command) StderrPipe() (io.Reader, error) {
+// Run the command and return its output
+func (c *command) Output() ([]byte, error) {
     if c.cmd != nil {
-        return c.cmd.StderrPipe()
+        return c.cmd.Output()
     } else {
-        return c.session.StderrPipe()
+        return c.session.Output(c.cmdText)
     }
 }
 
@@ -81,6 +71,16 @@ func (c *command) StdoutPipe() (io.Reader, error) {
         return c.cmd.StdoutPipe()
     } else {
         return c.session.StdoutPipe()
+    }
+}
+
+
+// Get a pipe to the command's stderr
+func (c *command) StderrPipe() (io.Reader, error) {
+    if c.cmd != nil {
+        return c.cmd.StderrPipe()
+    } else {
+        return c.session.StderrPipe()
     }
 }
 
