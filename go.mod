@@ -10,6 +10,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/ethereum/go-ethereum v1.9.16
+	github.com/fatih/color v1.3.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/google/uuid v1.1.1
 	github.com/imdario/mergo v0.3.9

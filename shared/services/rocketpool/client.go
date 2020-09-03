@@ -10,6 +10,7 @@ import (
     "path/filepath"
     "strings"
 
+    "github.com/fatih/color"
     "golang.org/x/crypto/ssh"
 
     "github.com/rocket-pool/smartnode/shared/services/config"
@@ -30,6 +31,8 @@ const (
 
     APIContainerName = "rocketpool_api"
     APIBinPath = "/go/bin/rocketpool"
+
+    DebugColor = color.FgYellow
 )
 
 
@@ -141,18 +144,19 @@ func (c *Client) InstallService(verbose, useWget, ignoreDeps bool, network, vers
     go (func() {
         scanner := bufio.NewScanner(cmdOut)
         for scanner.Scan() {
-            fmt.Printf("* %s\n", scanner.Text())
+            fmt.Println(scanner.Text())
         }
     })()
 
     // Read command & error output from stderr; render in verbose mode
     var errMessage string
     go (func() {
+        c := color.New(DebugColor)
         scanner := bufio.NewScanner(cmdErr)
         for scanner.Scan() {
             errMessage = scanner.Text()
             if verbose {
-                fmt.Printf("~ %s\n", scanner.Text())
+                c.Println(scanner.Text())
             }
         }
     })()
