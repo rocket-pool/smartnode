@@ -300,19 +300,13 @@ func (c *Client) getDownloader() (string, error) {
 
     // Check for cURL
     hasCurl, err := c.readOutput("command -v curl")
-    if err != nil {
-        return "", err
-    }
-    if len(hasCurl) > 0 {
+    if err == nil && len(hasCurl) > 0 {
         return "curl -sL", nil
     }
 
     // Check for wget
     hasWget, err := c.readOutput("command -v wget")
-    if err != nil {
-        return "", err
-    }
-    if len(hasWget) > 0 {
+    if err == nil && len(hasWget) > 0 {
         return "wget -qO-", nil
     }
 
