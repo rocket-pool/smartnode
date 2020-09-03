@@ -26,11 +26,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Usage: "Print installation script command output",
                     },
                     cli.BoolFlag{
-                        Name:  "use-wget, w",
-                        Usage: "Attempt to download the installation script using wget instead of cURL",
-                    },
-                    cli.BoolFlag{
-                        Name:  "ignore-deps, i",
+                        Name:  "no-deps, d",
                         Usage: "Do not install Operating System dependencies",
                     },
                     cli.StringFlag{

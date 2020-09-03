@@ -21,8 +21,6 @@ import (
 // Config
 const (
     InstallerURL = "https://github.com/rocket-pool/smartnode-install/releases/latest/download/install.sh"
-    CurlDownload = "curl -sL"
-    WgetDownload = "wget -qO-"
 
     RocketPoolPath = "~/.rocketpool"
     GlobalConfigFile = "config.yml"
@@ -110,23 +108,19 @@ func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
 
 
 // Install the Rocket Pool service
-func (c *Client) InstallService(verbose, useWget, ignoreDeps bool, network, version string) error {
+func (c *Client) InstallService(verbose, noDeps bool, network, version string) error {
 
     // Get installation script downloader type
-    var downloader string
-    if useWget {
-        downloader = WgetDownload
-    } else {
-        downloader = CurlDownload
-    }
+    downloader, err := c.getDownloader()
+    if err != nil { return err }
 
     // Get installation script flags
     flags := []string{
         "-n", network,
         "-v", version,
     }
-    if ignoreDeps {
-        flags = append(flags, "-i")
+    if noDeps {
+        flags = append(flags, "-d")
     }
 
     // Initialize installation command
@@ -298,6 +292,33 @@ func (c *Client) compose(args string) (string, error) {
 // Call the Rocket Pool API
 func (c *Client) callAPI(args string) ([]byte, error) {
     return c.readOutput(fmt.Sprintf("docker exec %s %s api %s", APIContainerName, APIBinPath, args))
+}
+
+
+// Get the first downloader available to the system
+func (c *Client) getDownloader() (string, error) {
+
+    // Check for cURL
+    hasCurl, err := c.readOutput("command -v curl")
+    if err != nil {
+        return "", err
+    }
+    if len(hasCurl) > 0 {
+        return "curl -sL", nil
+    }
+
+    // Check for wget
+    hasWget, err := c.readOutput("command -v wget")
+    if err != nil {
+        return "", err
+    }
+    if len(hasWget) > 0 {
+        return "wget -qO-", nil
+    }
+
+    // Return error
+    return "", errors.New("Either cURL or wget is required to begin installation.")
+
 }
 
 
