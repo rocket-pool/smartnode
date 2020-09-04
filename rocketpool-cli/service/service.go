@@ -5,7 +5,7 @@ import (
 
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -30,8 +30,8 @@ func installService(c *cli.Context) error {
         return nil
     }
 
-    // Get services
-    rp, err := services.GetRocketPoolClient(c)
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
@@ -51,8 +51,8 @@ func installService(c *cli.Context) error {
 // View the Rocket Pool service status
 func serviceStatus(c *cli.Context) error {
 
-    // Get services
-    rp, err := services.GetRocketPoolClient(c)
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
@@ -65,8 +65,8 @@ func serviceStatus(c *cli.Context) error {
 // Start the Rocket Pool service
 func startService(c *cli.Context) error {
 
-    // Get services
-    rp, err := services.GetRocketPoolClient(c)
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
@@ -85,8 +85,8 @@ func pauseService(c *cli.Context) error {
         return nil
     }
 
-    // Get services
-    rp, err := services.GetRocketPoolClient(c)
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
@@ -105,8 +105,8 @@ func stopService(c *cli.Context) error {
         return nil
     }
 
-    // Get services
-    rp, err := services.GetRocketPoolClient(c)
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
@@ -119,8 +119,8 @@ func stopService(c *cli.Context) error {
 // View the Rocket Pool service logs
 func serviceLogs(c *cli.Context, serviceNames ...string) error {
 
-    // Get services
-    rp, err := services.GetRocketPoolClient(c)
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
@@ -133,8 +133,8 @@ func serviceLogs(c *cli.Context, serviceNames ...string) error {
 // View the Rocket Pool service stats
 func serviceStats(c *cli.Context) error {
 
-    // Get services
-    rp, err := services.GetRocketPoolClient(c)
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 

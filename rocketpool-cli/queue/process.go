@@ -5,14 +5,14 @@ import (
 
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
 
 func processQueue(c *cli.Context) error {
 
-    // Get services
-    rp, err := services.GetRocketPoolClient(c)
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 

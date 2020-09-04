@@ -11,6 +11,7 @@ import (
     "strings"
 
     "github.com/fatih/color"
+    "github.com/urfave/cli"
     "golang.org/x/crypto/ssh"
 
     "github.com/rocket-pool/smartnode/shared/services/config"
@@ -37,6 +38,12 @@ const (
 // Rocket Pool client
 type Client struct {
     client *ssh.Client
+}
+
+
+// Create new Rocket Pool client from CLI context
+func NewClientFromCtx(c *cli.Context) (*Client, error) {
+    return NewClient(c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"))
 }
 
 

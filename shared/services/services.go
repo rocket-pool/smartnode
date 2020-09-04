@@ -15,7 +15,6 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/beacon/prysm"
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
-    rpclient "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
     prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
@@ -35,7 +34,6 @@ var (
     rocketPool *rocketpool.RocketPool
     beaconClient beacon.Client
     docker *client.Client
-    rpClient *rpclient.Client
 
     initCfg sync.Once
     initPasswordManager sync.Once
@@ -44,7 +42,6 @@ var (
     initRocketPool sync.Once
     initBeaconClient sync.Once
     initDocker sync.Once
-    initRpClient sync.Once
 )
 
 
@@ -110,11 +107,6 @@ func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
 
 func GetDocker(c *cli.Context) (*client.Client, error) {
     return getDocker()
-}
-
-
-func GetRocketPoolClient(c *cli.Context) (*rpclient.Client, error) {
-    return getRocketPoolClient(c)
 }
 
 
@@ -195,14 +187,5 @@ func getDocker() (*client.Client, error) {
         docker, err = client.NewClientWithOpts(client.WithVersion(DockerAPIVersion))
     })
     return docker, err
-}
-
-
-func getRocketPoolClient(c *cli.Context) (*rpclient.Client, error) {
-    var err error
-    initRpClient.Do(func() {
-        rpClient, err = rpclient.NewClient(c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"))
-    })
-    return rpClient, err
 }
 
