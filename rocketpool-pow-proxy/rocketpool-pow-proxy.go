@@ -35,22 +35,22 @@ func main() {
     // Configure application
     app.Flags = []cli.Flag{
         cli.StringFlag{
-            Name:  "port",
+            Name:  "port, p",
             Usage: "Port to listen on",
             Value: "8545",
         },
         cli.StringFlag{
-            Name:  "providerUrl",
+            Name:  "providerUrl, u",
             Usage: "External Eth 1.0 provider `URL` (defaults to Infura)",
             Value: "",
         },
         cli.StringFlag{
-            Name:  "network",
+            Name:  "network, n",
             Usage: "`Network` to connect to via Infura",
             Value: "goerli",
         },
         cli.StringFlag{
-            Name:  "projectId",
+            Name:  "projectId, i",
             Usage: "Infura `project ID` to use for connection",
             Value: "",
         },

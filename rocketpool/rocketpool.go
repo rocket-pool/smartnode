@@ -60,7 +60,7 @@ func main() {
             Usage: "Rocket Pool wallet file absolute `path`",
         },
         cli.StringFlag{
-            Name:  "validatorKeychain, v",
+            Name:  "validatorKeychain, k",
             Usage: "Rocket Pool validator keychain absolute `path`",
         },
         cli.StringFlag{
