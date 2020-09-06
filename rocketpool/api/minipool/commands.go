@@ -105,6 +105,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
+            /*
             cli.Command{
                 Name:      "can-exit",
                 Usage:     "Check whether the minipool can be exited from the beacon chain",
@@ -140,6 +141,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                 },
             },
+            */
 
             cli.Command{
                 Name:      "can-withdraw",

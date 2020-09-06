@@ -63,6 +63,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            /*
             cli.Command{
                 Name:      "exit",
                 Aliases:   []string{"e"},
@@ -78,6 +79,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                 },
             },
+            */
 
             cli.Command{
                 Name:      "withdraw",
