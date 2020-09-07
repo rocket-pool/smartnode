@@ -343,7 +343,8 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 
         // Check sync status
         if syncStatus.Syncing {
-            if verbose && !statusPrinted {
+            if verbose {
+                if statusPrinted { fmt.Print("\r") }
                 fmt.Print("Eth 2.0 node syncing...   ")
                 statusPrinted = true
             }
