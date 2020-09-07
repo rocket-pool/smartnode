@@ -19,6 +19,8 @@ var checkNodePasswordInterval, _ = time.ParseDuration("15s")
 var checkNodeWalletInterval, _ = time.ParseDuration("15s")
 var checkRocketStorageInterval, _ = time.ParseDuration("15s")
 var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
+var ethClientSyncPollInterval, _ = time.ParseDuration("2s")
+var beaconClientSyncPollInterval, _ = time.ParseDuration("2s")
 
 
 //
@@ -308,6 +310,9 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
             return true, nil
         }
 
+        // Pause before next poll
+        time.Sleep(ethClientSyncPollInterval)
+
     }
 
 }
@@ -352,6 +357,9 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
             if statusPrinted { fmt.Print("\n") }
             return true, nil
         }
+
+        // Pause before next poll
+        time.Sleep(beaconClientSyncPollInterval)
 
     }
 
