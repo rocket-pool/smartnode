@@ -6,7 +6,7 @@
 
 ---
 
-**Rocket Pool 2.5** is a next generation Ethereum proof of stake (PoS) infrastructure service designed to be highly decentralised, distributed and compatible with Ethereum 2.0, the new consensus protocol that Ethereum will transition to in 2020.
+`Rocket Pool 2.5` is a next generation Ethereum proof of stake (PoS) infrastructure service designed to be highly decentralised, distributed and compatible with Ethereum 2.0, the new consensus protocol that Ethereum will transition to in 2020.
 
 Running a Rocket Pool smart node allows you to stake on Ethereum 2.0 with only 16 ETH, and earn a higher return than you would outside the network.
 
