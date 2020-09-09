@@ -28,7 +28,6 @@ type processWithdrawals struct {
 func newProcessWithdrawals(c *cli.Context) (*processWithdrawals, error) {
 
     // Get services
-    if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)

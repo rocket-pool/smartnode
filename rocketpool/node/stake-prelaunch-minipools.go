@@ -44,7 +44,6 @@ type stakePrelaunchMinipools struct {
 func newStakePrelaunchMinipools(c *cli.Context) (*stakePrelaunchMinipools, error) {
 
     // Get services
-    if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)

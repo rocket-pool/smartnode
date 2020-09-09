@@ -2,6 +2,8 @@ package watchtower
 
 import (
     "github.com/urfave/cli"
+
+    "github.com/rocket-pool/smartnode/shared/services"
 )
 
 
@@ -20,6 +22,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 // Run daemon
 func run(c *cli.Context) error {
+
+    // Wait until node is registered
+    if err := services.WaitNodeRegistered(c, true); err != nil { return err }
 
     // Initialize tasks
     dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c)

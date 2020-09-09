@@ -62,7 +62,6 @@ type minipoolBalanceDetails struct {
 func newSubmitNetworkBalances(c *cli.Context) (*submitNetworkBalances, error) {
 
     // Get services
-    if err := services.WaitNodeRegistered(c, true); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
