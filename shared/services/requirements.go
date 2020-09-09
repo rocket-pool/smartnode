@@ -4,6 +4,7 @@ import (
     "context"
     "errors"
     "fmt"
+    "sync"
     "time"
 
     "github.com/ethereum/go-ethereum/common"
@@ -272,7 +273,12 @@ func getNodeRegistered(c *cli.Context) (bool, error) {
 
 // Wait for the eth client to sync
 // timeout of 0 indicates no timeout
+var ethClientSyncLock sync.Mutex
 func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
+
+    // Prevent multiple waiting goroutines from requesting sync progress
+    ethClientSyncLock.Lock()
+    defer ethClientSyncLock.Unlock()
 
     // Get eth client
     ec, err := GetEthClient(c)
@@ -320,7 +326,12 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 
 // Wait for the beacon client to sync
 // timeout of 0 indicates no timeout
+var beaconClientSyncLock sync.Mutex
 func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
+
+    // Prevent multiple waiting goroutines from requesting sync progress
+    beaconClientSyncLock.Lock()
+    defer beaconClientSyncLock.Unlock()
 
     // Get beacon client
     bc, err := GetBeaconClient(c)
