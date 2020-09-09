@@ -22,7 +22,7 @@ import (
 
 
 // Settings
-var dissolveTimedOutMinipoolsInterval, _ = time.ParseDuration("1m")
+var dissolveTimedOutMinipoolsInterval, _ = time.ParseDuration("5m")
 
 
 // Dissolve timed out minipools task

@@ -26,7 +26,7 @@ import (
 
 // Settings
 const ValidatorContainerName = "rocketpool_validator"
-var stakePrelaunchMinipoolsInterval, _ = time.ParseDuration("1m")
+var stakePrelaunchMinipoolsInterval, _ = time.ParseDuration("5m")
 var validatorRestartTimeout, _ = time.ParseDuration("5s")
 
 

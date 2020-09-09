@@ -30,7 +30,7 @@ import (
 
 
 // Settings
-var submitNetworkBalancesInterval, _ = time.ParseDuration("1m")
+var submitNetworkBalancesInterval, _ = time.ParseDuration("5m")
 
 
 // Submit network balances task

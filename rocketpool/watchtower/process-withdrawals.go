@@ -13,7 +13,7 @@ import (
 
 
 // Settings
-var processWithdrawalsInterval, _ = time.ParseDuration("1m")
+var processWithdrawalsInterval, _ = time.ParseDuration("5m")
 
 
 // Process withdrawals task

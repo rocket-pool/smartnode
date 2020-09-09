@@ -24,7 +24,7 @@ import (
 
 
 // Settings
-var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("1m")
+var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("5m")
 
 
 // Submit withdrawable minipools task
