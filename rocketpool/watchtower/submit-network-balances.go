@@ -3,7 +3,6 @@ package watchtower
 import (
     "context"
     "fmt"
-    "log"
     "math/big"
     "time"
 
@@ -26,6 +25,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
+    "github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 
@@ -36,6 +36,7 @@ var submitNetworkBalancesInterval, _ = time.ParseDuration("5m")
 // Submit network balances task
 type submitNetworkBalances struct {
     c *cli.Context
+    log log.ColorLogger
     w *wallet.Wallet
     ec *ethclient.Client
     rp *rocketpool.RocketPool
@@ -59,7 +60,7 @@ type minipoolBalanceDetails struct {
 
 
 // Create submit network balances task
-func newSubmitNetworkBalances(c *cli.Context) (*submitNetworkBalances, error) {
+func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNetworkBalances, error) {
 
     // Get services
     w, err := services.GetWallet(c)
@@ -74,6 +75,7 @@ func newSubmitNetworkBalances(c *cli.Context) (*submitNetworkBalances, error) {
     // Return task
     return &submitNetworkBalances{
         c: c,
+        log: logger,
         w: w,
         ec: ec,
         rp: rp,
@@ -88,7 +90,7 @@ func (t *submitNetworkBalances) Start() {
     go (func() {
         for {
             if err := t.run(); err != nil {
-                log.Println(err)
+                t.log.Println(err)
             }
             time.Sleep(submitNetworkBalancesInterval)
         }
@@ -156,7 +158,7 @@ func (t *submitNetworkBalances) run() error {
     }
 
     // Log
-    log.Printf("Calculating network balances for block %d...\n", blockNumber)
+    t.log.Printlnf("Calculating network balances for block %d...", blockNumber)
 
     // Get network balances at block
     balances, err := t.getNetworkBalances(blockNumber)
@@ -165,11 +167,11 @@ func (t *submitNetworkBalances) run() error {
     }
 
     // Log
-    log.Printf("Deposit pool balance: %.2f ETH\n", eth.WeiToEth(balances.DepositPool))
-    log.Printf("Total minipool user balance: %.2f ETH\n", eth.WeiToEth(balances.MinipoolsTotal))
-    log.Printf("Staking minipool user balance: %.2f ETH\n", eth.WeiToEth(balances.MinipoolsStaking))
-    log.Printf("rETH contract balance: %.2f ETH\n", eth.WeiToEth(balances.RETHContract))
-    log.Printf("rETH token supply: %.2f rETH\n", eth.WeiToEth(balances.RETHSupply))
+    t.log.Printlnf("Deposit pool balance: %.2f ETH", eth.WeiToEth(balances.DepositPool))
+    t.log.Printlnf("Total minipool user balance: %.2f ETH", eth.WeiToEth(balances.MinipoolsTotal))
+    t.log.Printlnf("Staking minipool user balance: %.2f ETH", eth.WeiToEth(balances.MinipoolsStaking))
+    t.log.Printlnf("rETH contract balance: %.2f ETH", eth.WeiToEth(balances.RETHContract))
+    t.log.Printlnf("rETH token supply: %.2f rETH", eth.WeiToEth(balances.RETHSupply))
 
     // Submit balances
     if err := t.submitBalances(balances); err != nil {
@@ -525,7 +527,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 
     // Log
-    log.Printf("Submitting network balances for block %d...\n", balances.Block)
+    t.log.Printlnf("Submitting network balances for block %d...", balances.Block)
 
     // Calculate total ETH balance
     totalEth := big.NewInt(0)
@@ -545,7 +547,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
     }
 
     // Log
-    log.Printf("Successfully submitted network balances for block %d.\n", balances.Block)
+    t.log.Printlnf("Successfully submitted network balances for block %d.", balances.Block)
 
     // Return
     return nil

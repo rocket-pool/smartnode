@@ -3,7 +3,6 @@ package watchtower
 import (
     "context"
     "fmt"
-    "log"
     "time"
 
     "github.com/ethereum/go-ethereum/common"
@@ -18,6 +17,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
+    "github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 
@@ -28,6 +28,7 @@ var dissolveTimedOutMinipoolsInterval, _ = time.ParseDuration("5m")
 // Dissolve timed out minipools task
 type dissolveTimedOutMinipools struct {
     c *cli.Context
+    log log.ColorLogger
     w *wallet.Wallet
     ec *ethclient.Client
     rp *rocketpool.RocketPool
@@ -35,7 +36,7 @@ type dissolveTimedOutMinipools struct {
 
 
 // Create dissolve timed out minipools task
-func newDissolveTimedOutMinipools(c *cli.Context) (*dissolveTimedOutMinipools, error) {
+func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*dissolveTimedOutMinipools, error) {
 
     // Get services
     w, err := services.GetWallet(c)
@@ -48,6 +49,7 @@ func newDissolveTimedOutMinipools(c *cli.Context) (*dissolveTimedOutMinipools, e
     // Return task
     return &dissolveTimedOutMinipools{
         c: c,
+        log: logger,
         w: w,
         ec: ec,
         rp: rp,
@@ -61,7 +63,7 @@ func (t *dissolveTimedOutMinipools) Start() {
     go (func() {
         for {
             if err := t.run(); err != nil {
-                log.Println(err)
+                t.log.Println(err)
             }
             time.Sleep(dissolveTimedOutMinipoolsInterval)
         }
@@ -102,12 +104,12 @@ func (t *dissolveTimedOutMinipools) run() error {
     }
 
     // Log
-    log.Printf("%d minipools have timed out and will be dissolved...\n", len(minipools))
+    t.log.Printlnf("%d minipools have timed out and will be dissolved...", len(minipools))
 
     // Dissolve minipools
     for _, mp := range minipools {
         if err := t.dissolveMinipool(mp); err != nil {
-            log.Println(fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err))
+            t.log.Println(fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err))
         }
     }
 
@@ -201,7 +203,7 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
 func (t *dissolveTimedOutMinipools) dissolveMinipool(mp *minipool.Minipool) error {
 
     // Log
-    log.Printf("Dissolving minipool %s...\n", mp.Address.Hex())
+    t.log.Printlnf("Dissolving minipool %s...", mp.Address.Hex())
 
     // Get transactor
     opts, err := t.w.GetNodeAccountTransactor()
@@ -215,7 +217,7 @@ func (t *dissolveTimedOutMinipools) dissolveMinipool(mp *minipool.Minipool) erro
     }
 
     // Log
-    log.Printf("Successfully dissolved minipool %s.\n", mp.Address.Hex())
+    t.log.Printlnf("Successfully dissolved minipool %s.", mp.Address.Hex())
 
     // Return
     return nil

@@ -1,9 +1,20 @@
 package watchtower
 
 import (
+    "github.com/fatih/color"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/utils/log"
+)
+
+
+// Config
+const (
+    DissolveTimedOutMinipoolsColor = color.FgMagenta
+    ProcessWithdrawalsColor = color.FgCyan
+    SubmitNetworkBalancesColor = color.FgYellow
+    SubmitWithdrawableMinipoolsColor = color.FgBlue
 )
 
 
@@ -27,13 +38,13 @@ func run(c *cli.Context) error {
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
 
     // Initialize tasks
-    dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c)
+    dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
     if err != nil { return err }
-    processWithdrawals, err := newProcessWithdrawals(c)
+    processWithdrawals, err := newProcessWithdrawals(c, log.NewColorLogger(ProcessWithdrawalsColor))
     if err != nil { return err }
-    submitNetworkBalances, err := newSubmitNetworkBalances(c)
+    submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor))
     if err != nil { return err }
-    submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c)
+    submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c, log.NewColorLogger(SubmitWithdrawableMinipoolsColor))
     if err != nil { return err }
 
     // Start tasks

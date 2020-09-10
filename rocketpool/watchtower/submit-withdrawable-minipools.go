@@ -2,7 +2,6 @@ package watchtower
 
 import (
     "fmt"
-    "log"
     "math/big"
     "time"
 
@@ -20,6 +19,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
+    "github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 
@@ -30,6 +30,7 @@ var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("5m")
 // Submit withdrawable minipools task
 type submitWithdrawableMinipools struct {
     c *cli.Context
+    log log.ColorLogger
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     bc beacon.Client
@@ -46,7 +47,7 @@ type minipoolWithdrawableDetails struct {
 
 
 // Create submit withdrawable minipools task
-func newSubmitWithdrawableMinipools(c *cli.Context) (*submitWithdrawableMinipools, error) {
+func newSubmitWithdrawableMinipools(c *cli.Context, logger log.ColorLogger) (*submitWithdrawableMinipools, error) {
 
     // Get services
     w, err := services.GetWallet(c)
@@ -59,6 +60,7 @@ func newSubmitWithdrawableMinipools(c *cli.Context) (*submitWithdrawableMinipool
     // Return task
     return &submitWithdrawableMinipools{
         c: c,
+        log: logger,
         w: w,
         rp: rp,
         bc: bc,
@@ -72,7 +74,7 @@ func (t *submitWithdrawableMinipools) Start() {
     go (func() {
         for {
             if err := t.run(); err != nil {
-                log.Println(err)
+                t.log.Println(err)
             }
             time.Sleep(submitWithdrawableMinipoolsInterval)
         }
@@ -134,12 +136,12 @@ func (t *submitWithdrawableMinipools) run() error {
     }
 
     // Log
-    log.Printf("%d minipools are withdrawable...\n", len(minipools))
+    t.log.Printlnf("%d minipools are withdrawable...", len(minipools))
 
     // Submit minipools withdrawable status
     for _, details := range minipools {
         if err := t.submitWithdrawableMinipool(details); err != nil {
-            log.Println(fmt.Errorf("Could not submit minipool %s withdrawable status: %w", details.Address.Hex(), err))
+            t.log.Println(fmt.Errorf("Could not submit minipool %s withdrawable status: %w", details.Address.Hex(), err))
         }
     }
 
@@ -315,7 +317,7 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
 func (t *submitWithdrawableMinipools) submitWithdrawableMinipool(details minipoolWithdrawableDetails) error {
 
     // Log
-    log.Printf("Submitting minipool %s withdrawable status...\n", details.Address.Hex())
+    t.log.Printlnf("Submitting minipool %s withdrawable status...", details.Address.Hex())
 
     // Get transactor
     opts, err := t.w.GetNodeAccountTransactor()
@@ -329,7 +331,7 @@ func (t *submitWithdrawableMinipools) submitWithdrawableMinipool(details minipoo
     }
 
     // Log
-    log.Printf("Successfully submitted minipool %s withdrawable status.\n", details.Address.Hex())
+    t.log.Printlnf("Successfully submitted minipool %s withdrawable status.", details.Address.Hex())
 
     // Return
     return nil
