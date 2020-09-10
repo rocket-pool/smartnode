@@ -4,7 +4,6 @@ import (
     "context"
     "errors"
     "fmt"
-    "log"
     "time"
 
     "github.com/docker/docker/api/types"
@@ -20,6 +19,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
+    "github.com/rocket-pool/smartnode/shared/utils/log"
     "github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -33,6 +33,7 @@ var validatorRestartTimeout, _ = time.ParseDuration("5s")
 // Stake prelaunch minipools task
 type stakePrelaunchMinipools struct {
     c *cli.Context
+    log log.ColorLogger
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     bc beacon.Client
@@ -41,7 +42,7 @@ type stakePrelaunchMinipools struct {
 
 
 // Create stake prelaunch minipools task
-func newStakePrelaunchMinipools(c *cli.Context) (*stakePrelaunchMinipools, error) {
+func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakePrelaunchMinipools, error) {
 
     // Get services
     w, err := services.GetWallet(c)
@@ -56,6 +57,7 @@ func newStakePrelaunchMinipools(c *cli.Context) (*stakePrelaunchMinipools, error
     // Return task
     return &stakePrelaunchMinipools{
         c: c,
+        log: logger,
         w: w,
         rp: rp,
         bc: bc,
@@ -70,7 +72,7 @@ func (t *stakePrelaunchMinipools) Start() {
     go (func() {
         for {
             if err := t.run(); err != nil {
-                log.Println(err)
+                t.log.Println(err)
             }
             time.Sleep(stakePrelaunchMinipoolsInterval)
         }
@@ -126,12 +128,12 @@ func (t *stakePrelaunchMinipools) run() error {
     }
 
     // Log
-    log.Printf("%d minipools are ready for staking...\n", len(minipools))
+    t.log.Printlnf("%d minipools are ready for staking...", len(minipools))
 
     // Stake minipools
     for _, mp := range minipools {
         if err := t.stakeMinipool(mp, withdrawalCredentials, eth2Config); err != nil {
-            log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
+            t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
         }
     }
 
@@ -202,7 +204,7 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawalCredentials common.Hash, eth2Config beacon.Eth2Config) error {
 
     // Log
-    log.Printf("Staking minipool %s...\n", mp.Address.Hex())
+    t.log.Printlnf("Staking minipool %s...", mp.Address.Hex())
 
     // Create new validator key
     validatorKey, err := t.w.CreateValidatorKey()
@@ -238,7 +240,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawa
     }
 
     // Log
-    log.Printf("Successfully staked minipool %s.\n", mp.Address.Hex())
+    t.log.Printlnf("Successfully staked minipool %s.", mp.Address.Hex())
 
     // Return
     return nil
@@ -250,7 +252,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawa
 func (t *stakePrelaunchMinipools) restartValidator() error {
 
     // Log
-    log.Println("Restarting validator container...")
+    t.log.Println("Restarting validator container...")
 
     // Get all containers
     containers, err := t.d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
@@ -276,7 +278,7 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
     }
 
     // Log
-    log.Println("Successfully restarted validator container.")
+    t.log.Println("Successfully restarted validator container.")
 
     // Return
     return nil

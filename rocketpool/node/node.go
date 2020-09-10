@@ -1,9 +1,17 @@
 package node
 
 import (
+    "github.com/fatih/color"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/utils/log"
+)
+
+
+// Config
+const (
+    StakePrelaunchMinipoolsColor = color.FgBlue
 )
 
 
@@ -27,7 +35,7 @@ func run(c *cli.Context) error {
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
 
     // Initialize tasks
-    stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c)
+    stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
     if err != nil { return err }
 
     // Start tasks
