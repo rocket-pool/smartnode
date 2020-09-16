@@ -30,14 +30,13 @@ See the [Smart Node Installer](https://github.com/rocket-pool/smartnode-install)
 The following commands are available via the smart node client:
 
 - `rocketpool service install` - Install the Rocket Pool service either locally or to a remote server
+- `rocketpool service config` - Configure the Rocket Pool service for use
 - `rocketpool service status` - Display the current status of the Rocket Pool service
 - `rocketpool service start` - Start the Rocket Pool service to begin running a smart node
 - `rocketpool service pause` - Pause the Rocket Pool service temporarily
 - `rocketpool service stop` - Stop the Rocket Pool service and remove all associated docker containers
 - `rocketpool service logs [services...]` - View the logs for one or more services running as part of the docker stack
 - `rocketpool service stats` - Display resource usage statistics for the Rocket Pool service
-
-- `rocketpool config` - Configure the Rocket Pool service for use
 
 - `rocketpool wallet status` - Display the current status of the node's wallet
 - `rocketpool wallet init` - Initialize the node's password and wallet
