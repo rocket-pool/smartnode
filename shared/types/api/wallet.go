@@ -26,12 +26,15 @@ type InitWalletResponse struct {
     Status string                           `json:"status"`
     Error string                            `json:"error"`
     Mnemonic string                         `json:"mnemonic"`
+    AccountAddress common.Address           `json:"accountAddress"`
 }
 
 
 type RecoverWalletResponse struct {
     Status string                           `json:"status"`
     Error string                            `json:"error"`
+    AccountAddress common.Address           `json:"accountAddress"`
+    ValidatorKeys []types.ValidatorPubkey   `json:"validatorKeys"`
 }
 
 

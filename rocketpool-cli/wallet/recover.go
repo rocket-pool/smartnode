@@ -38,12 +38,20 @@ func recoverWallet(c *cli.Context) error {
     mnemonic := promptMnemonic()
 
     // Recover wallet
-    if _, err := rp.RecoverWallet(mnemonic); err != nil {
+    response, err := rp.RecoverWallet(mnemonic)
+    if err != nil {
         return err
     }
 
     // Log & return
     fmt.Println("The node wallet was successfully recovered.")
+    fmt.Printf("Node account: %s\n", response.AccountAddress.Hex())
+    if len(response.ValidatorKeys) > 0 {
+        fmt.Println("Validator keys:")
+        for _, key := range response.ValidatorKeys {
+            fmt.Println(key.Hex())
+        }
+    }
     return nil
 
 }

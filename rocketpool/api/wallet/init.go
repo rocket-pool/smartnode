@@ -37,6 +37,13 @@ func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
         return nil, err
     }
 
+    // Get node account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+    response.AccountAddress = nodeAccount.Address
+
     // Return response
     return &response, nil
 

@@ -52,6 +52,7 @@ func initWallet(c *cli.Context) error {
 
     // Log & return
     fmt.Println("The node wallet was successfully initialized.")
+    fmt.Printf("Node account: %s\n", response.AccountAddress.Hex())
     return nil
 
 }
