@@ -268,10 +268,10 @@ func (c *Client) compose(args string) (string, error) {
 
     // Check config
     if rpConfig.GetSelectedEth1Client() == nil {
-        return "", errors.New("No Eth 1.0 client selected. Please run 'rocketpool config' and try again.")
+        return "", errors.New("No Eth 1.0 client selected. Please run 'rocketpool service config' and try again.")
     }
     if rpConfig.GetSelectedEth2Client() == nil {
-        return "", errors.New("No Eth 2.0 client selected. Please run 'rocketpool config' and try again.")
+        return "", errors.New("No Eth 2.0 client selected. Please run 'rocketpool service config' and try again.")
     }
 
     // Set environment variables from config
