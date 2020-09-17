@@ -212,9 +212,9 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mi
 
     // use deposit balances if validator not active
     if !details.Active {
-        details.Balance = new(*big.Int)
+        details.Balance = new(big.Int)
         details.Balance.Add(minipoolDetails.Node.DepositBalance, minipoolDetails.User.DepositBalance)
-        details.NodeBalance = new(*big.Int)
+        details.NodeBalance = new(big.Int)
         details.NodeBalance.Set(minipoolDetails.Node.DepositBalance)
         return details, nil
     }
