@@ -27,7 +27,7 @@ func (c *Client) WalletStatus() (api.WalletStatusResponse, error) {
 
 // Set wallet password
 func (c *Client) SetPassword(password string) (api.SetPasswordResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-password %s", password))
+    responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-password \"%s\"", password))
     if err != nil {
         return api.SetPasswordResponse{}, fmt.Errorf("Could not set wallet password: %w", err)
     }

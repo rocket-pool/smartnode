@@ -47,7 +47,7 @@ func (c *Client) CanRegisterNode() (api.CanRegisterNodeResponse, error) {
 
 // Register the node
 func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node register %s", timezoneLocation))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node register \"%s\"", timezoneLocation))
     if err != nil {
         return api.RegisterNodeResponse{}, fmt.Errorf("Could not register node: %w", err)
     }
@@ -64,7 +64,7 @@ func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse
 
 // Set the node's timezone location
 func (c *Client) SetNodeTimezone(timezoneLocation string) (api.SetNodeTimezoneResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node set-timezone %s", timezoneLocation))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node set-timezone \"%s\"", timezoneLocation))
     if err != nil {
         return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not set node timezone: %w", err)
     }
