@@ -200,19 +200,24 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mi
         return api.ValidatorDetails{}, err
     }
 
-    // Use deposit balances if validator not observed
-    if !validator.Exists {
+    // Set validator details
+    if validator.Exists {
+        details.Exists = true
+        if validator.ActivationEpoch <= currentEpoch {
+            details.Active = true
+        } else {
+            details.ActivationDelay = time.Duration((validator.ActivationEpoch - currentEpoch) * eth2Config.SecondsPerEpoch) * time.Second
+        }
+    }
+
+    // use deposit balances if validator not active
+    if !details.Active {
         details.Balance.Add(minipoolDetails.Node.DepositBalance, minipoolDetails.User.DepositBalance)
         details.NodeBalance.Set(minipoolDetails.Node.DepositBalance)
         return details, nil
     }
 
-    // Set validator details
-    details.Exists = true
-    details.Active = (validator.ActivationEpoch <= currentEpoch)
-    if !details.Active {
-        details.ActivationDelay = time.Duration((validator.ActivationEpoch - currentEpoch) * eth2Config.SecondsPerEpoch) * time.Second
-    }
+    // Set validator balance
     details.Balance = eth.GweiToWei(float64(validator.Balance))
 
     // Get start epoch for expected node balance calculation
