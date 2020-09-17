@@ -231,7 +231,7 @@ func getNodeWalletInitialized(c *cli.Context) (bool, error) {
     if err != nil {
         return false, err
     }
-    return w.IsInitialized(), nil
+    return w.GetInitialized()
 }
 
 

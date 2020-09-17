@@ -79,7 +79,7 @@ func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*
     }
 
     // Load & decrypt wallet store
-    if err := w.loadStore(); err != nil {
+    if _, err := w.loadStore(); err != nil {
         return nil, err
     }
 
@@ -98,6 +98,15 @@ func (w *Wallet) AddKeystore(name string, ks keystore.Keystore) {
 // Check if the wallet has been initialized
 func (w *Wallet) IsInitialized() bool {
     return (w.ws != nil && w.seed != nil && w.mk != nil)
+}
+
+
+// Attempt to initialize the wallet if not initialized and return status
+func (w *Wallet) GetInitialized() (bool, error) {
+    if w.IsInitialized() {
+        return true, nil
+    }
+    return w.loadStore()
 }
 
 
@@ -179,6 +188,11 @@ func (w *Wallet) Recover(mnemonic string) error {
 // Save the wallet store to disk
 func (w *Wallet) Save() error {
 
+    // Check wallet is initialized
+    if !w.IsInitialized() {
+        return errors.New("Wallet is not initialized")
+    }
+
     // Encode wallet store
     wsBytes, err := json.Marshal(w.ws)
     if err != nil {
@@ -204,40 +218,40 @@ func (w *Wallet) Save() error {
 
 
 // Load the wallet store from disk and decrypt it
-func (w *Wallet) loadStore() error {
+func (w *Wallet) loadStore() (bool, error) {
 
     // Read wallet store from disk; cancel if not found
     wsBytes, err := ioutil.ReadFile(w.walletPath)
     if err != nil {
-        return nil
+        return false, nil
     }
 
     // Decode wallet store
     w.ws = new(walletStore)
     if err = json.Unmarshal(wsBytes, w.ws); err != nil {
-        return fmt.Errorf("Could not decode wallet: %w", err)
+        return false, fmt.Errorf("Could not decode wallet: %w", err)
     }
 
     // Get wallet password
     password, err := w.pm.GetPassword()
     if err != nil {
-        return fmt.Errorf("Could not get wallet password: %w", err)
+        return false, fmt.Errorf("Could not get wallet password: %w", err)
     }
 
     // Decrypt seed
     w.seed, err = w.encryptor.Decrypt(w.ws.Crypto, password)
     if err != nil {
-        return fmt.Errorf("Could not decrypt wallet seed: %w", err)
+        return false, fmt.Errorf("Could not decrypt wallet seed: %w", err)
     }
 
     // Create master key
     w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
     if err != nil {
-        return fmt.Errorf("Could not create wallet master key: %w", err)
+        return false, fmt.Errorf("Could not create wallet master key: %w", err)
     }
 
     // Return
-    return nil
+    return true, nil
 
 }
 
