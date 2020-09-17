@@ -75,6 +75,18 @@ func getStatus(c *cli.Context) error {
             }
             if minipool.Status.Status == types.Staking {
             fmt.Printf("Validator pubkey:  %s\n", minipool.ValidatorPubkey.Hex())
+            if minipool.Validator.Exists {
+            if minipool.Validator.Active {
+            fmt.Printf("Validator active:  yes\n")
+            } else {
+            fmt.Printf("Validator active:  no\n")
+            fmt.Printf("Activation in:     %s\n", minipool.Validator.ActivationDelay.String())
+            }
+            fmt.Printf("Validator balance: %.2f ETH\n", eth.WeiToEth(minipool.Validator.Balance))
+            fmt.Printf("Expected rewards:  %.2f ETH\n", eth.WeiToEth(minipool.Validator.NodeBalance))
+            } else {
+            fmt.Printf("Validator seen:    no\n")
+            }
             }
             if minipool.Status.Status == types.Withdrawable {
             fmt.Printf("Final balance:     %.2f ETH\n", eth.WeiToEth(minipool.Staking.EndBalance))

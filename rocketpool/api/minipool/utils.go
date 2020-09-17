@@ -5,6 +5,7 @@ import (
     "context"
     "fmt"
     "math/big"
+    "time"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/minipool"
@@ -210,7 +211,7 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mi
     details.Exists = true
     details.Active = (validator.ActivationEpoch <= currentEpoch)
     if !details.Active {
-        details.ActivationDelay = validator.ActivationEpoch - currentEpoch
+        details.ActivationDelay = time.Duration((validator.ActivationEpoch - currentEpoch) * eth2Config.SecondsPerEpoch) * time.Second
     }
     details.Balance = eth.GweiToWei(float64(validator.Balance))
 
