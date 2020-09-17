@@ -80,7 +80,6 @@ func getStatus(c *cli.Context) error {
             fmt.Printf("Validator active:  yes\n")
             } else {
             fmt.Printf("Validator active:  no\n")
-            fmt.Printf("Activation in:     %s\n", minipool.Validator.ActivationDelay.String())
             }
             fmt.Printf("Validator balance: %.2f ETH\n", eth.WeiToEth(minipool.Validator.Balance))
             fmt.Printf("Expected rewards:  %.2f ETH\n", eth.WeiToEth(minipool.Validator.NodeBalance))

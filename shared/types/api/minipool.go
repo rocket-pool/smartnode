@@ -2,7 +2,6 @@ package api
 
 import (
     "math/big"
-    "time"
 
     "github.com/ethereum/go-ethereum/common"
 
@@ -34,7 +33,6 @@ type MinipoolDetails struct {
 type ValidatorDetails struct {
     Exists bool                     `json:"exists"`
     Active bool                     `json:"active"`
-    ActivationDelay time.Duration   `json:"activationDelay"`
     Balance *big.Int                `json:"balance"`
     NodeBalance *big.Int            `json:"nodeBalance"`
 }
