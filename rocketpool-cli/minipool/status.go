@@ -59,7 +59,7 @@ func getStatus(c *cli.Context) error {
         fmt.Printf("%d %s minipool(s):\n", len(minipools), statusName)
         fmt.Println("")
         for _, minipool := range minipools {
-            fmt.Printf("---------------\n")
+            fmt.Printf("-----------------\n")
             fmt.Printf("\n")
             fmt.Printf("Address:           %s\n", minipool.Address.Hex())
             fmt.Printf("Status updated:    %s\n", minipool.Status.StatusTime.Format(TimeFormat))
