@@ -1,6 +1,8 @@
 package api
 
 import (
+    "math/big"
+
     "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/rocketpool-go/minipool"
@@ -23,9 +25,17 @@ type MinipoolDetails struct {
     User minipool.UserDetails               `json:"user"`
     Staking minipool.StakingDetails         `json:"staking"`
     Balances tokens.Balances                `json:"balances"`
+    Validator ValidatorDetails              `json:"validator"`
     RefundAvailable bool                    `json:"refundAvailable"`
     WithdrawalAvailable bool                `json:"withdrawalAvailable"`
     CloseAvailable bool                     `json:"closeAvailable"`
+}
+type ValidatorDetails struct {
+    Exists bool                     `json:"exists"`
+    Active bool                     `json:"active"`
+    ActivationDelay uint64          `json:"activationDelay"`
+    Balance *big.Int                `json:"balance"`
+    NodeBalance *big.Int            `json:"nodeBalance"`
 }
 
 

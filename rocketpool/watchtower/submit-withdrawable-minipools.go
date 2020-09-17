@@ -19,6 +19,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
+    "github.com/rocket-pool/smartnode/shared/utils/eth2"
     "github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -273,7 +274,7 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
     }
 
     // Get start epoch
-    startEpoch := epochAt(eth2Config, userDepositTime)
+    startEpoch := eth2.EpochAt(eth2Config, userDepositTime)
     if startEpoch < validator.ActivationEpoch {
         startEpoch = validator.ActivationEpoch
     } else if startEpoch > beaconHead.Epoch {
