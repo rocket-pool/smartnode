@@ -295,7 +295,11 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
     endBalance := eth.GweiToWei(float64(validator.Balance))
 
     // Check for existing node submission
-    nodeSubmittedMinipool, err := t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("minipool.withdrawable.submitted.node"), nodeAddress.Bytes(), minipoolAddress.Bytes(), startBalance.Bytes(), endBalance.Bytes()))
+    startBalanceBuf := make([]byte, 32)
+    startBalance.FillBytes(startBalanceBuf)
+    endBalanceBuf := make([]byte, 32)
+    endBalance.FillBytes(endBalanceBuf)
+    nodeSubmittedMinipool, err := t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("minipool.withdrawable.submitted.node"), nodeAddress.Bytes(), minipoolAddress.Bytes(), startBalanceBuf, endBalanceBuf))
     if err != nil {
         return minipoolWithdrawableDetails{}, err
     }

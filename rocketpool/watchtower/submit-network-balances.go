@@ -236,7 +236,9 @@ func (t *submitNetworkBalances) canSubmitBlockBalances(nodeAddress common.Addres
     })
     wg.Go(func() error {
         var err error
-        nodeSubmittedBlock, err = t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), big.NewInt(int64(blockNumber)).Bytes()))
+        blockNumberBuf := make([]byte, 32)
+        big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+        nodeSubmittedBlock, err = t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
         return err
     })
 
