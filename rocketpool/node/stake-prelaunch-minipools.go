@@ -88,6 +88,9 @@ func (t *stakePrelaunchMinipools) run() error {
         return err
     }
 
+    // Log
+    t.log.Println("Checking for minipools to launch...")
+
     // Get node account
     nodeAccount, err := t.w.GetNodeAccount()
     if err != nil {

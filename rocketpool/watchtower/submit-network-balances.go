@@ -143,6 +143,9 @@ func (t *submitNetworkBalances) run() error {
         return nil
     }
 
+    // Log
+    t.log.Println("Checking for network balance checkpoint...")
+
     // Get block to submit balances for
     blockNumber, err := t.getLatestReportableBlock()
     if err != nil {

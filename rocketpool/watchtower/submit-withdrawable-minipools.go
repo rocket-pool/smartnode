@@ -127,6 +127,9 @@ func (t *submitWithdrawableMinipools) run() error {
         return nil
     }
 
+    // Log
+    t.log.Println("Checking for withdrawable minipools...")
+
     // Get minipool withdrawable details
     minipools, err := t.getNetworkMinipoolWithdrawableDetails(nodeAccount.Address)
     if err != nil {

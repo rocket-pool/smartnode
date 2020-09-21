@@ -94,6 +94,9 @@ func (t *dissolveTimedOutMinipools) run() error {
         return nil
     }
 
+    // Log
+    t.log.Println("Checking for timed out minipools to dissolve...")
+
     // Get timed out minipools
     minipools, err := t.getTimedOutMinipools()
     if err != nil {

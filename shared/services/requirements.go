@@ -3,7 +3,7 @@ package services
 import (
     "context"
     "errors"
-    "fmt"
+    "log"
     "sync"
     "time"
 
@@ -14,14 +14,14 @@ import (
 
 
 // Settings
-const EthClientSyncTimeout = 15 // 15 seconds
-const BeaconClientSyncTimeout = 15 // 15 seconds
+const EthClientSyncTimeout = 16 // 16 seconds
+const BeaconClientSyncTimeout = 16 // 16 seconds
 var checkNodePasswordInterval, _ = time.ParseDuration("15s")
 var checkNodeWalletInterval, _ = time.ParseDuration("15s")
 var checkRocketStorageInterval, _ = time.ParseDuration("15s")
 var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
-var ethClientSyncPollInterval, _ = time.ParseDuration("2s")
-var beaconClientSyncPollInterval, _ = time.ParseDuration("2s")
+var ethClientSyncPollInterval, _ = time.ParseDuration("5s")
+var beaconClientSyncPollInterval, _ = time.ParseDuration("5s")
 
 
 //
@@ -128,7 +128,7 @@ func WaitNodePassword(c *cli.Context, verbose bool) error {
             return nil
         }
         if verbose {
-            fmt.Printf("The node password has not been set, retrying in %s...\n", checkNodePasswordInterval.String())
+            log.Printf("The node password has not been set, retrying in %s...\n", checkNodePasswordInterval.String())
         }
         time.Sleep(checkNodePasswordInterval)
     }
@@ -148,7 +148,7 @@ func WaitNodeWallet(c *cli.Context, verbose bool) error {
             return nil
         }
         if verbose {
-            fmt.Printf("The node wallet has not been initialized, retrying in %s...\n", checkNodeWalletInterval.String())
+            log.Printf("The node wallet has not been initialized, retrying in %s...\n", checkNodeWalletInterval.String())
         }
         time.Sleep(checkNodeWalletInterval)
     }
@@ -180,7 +180,7 @@ func WaitRocketStorage(c *cli.Context, verbose bool) error {
             return nil
         }
         if verbose {
-            fmt.Printf("The Rocket Pool storage contract was not found, retrying in %s...\n", checkRocketStorageInterval.String())
+            log.Printf("The Rocket Pool storage contract was not found, retrying in %s...\n", checkRocketStorageInterval.String())
         }
         time.Sleep(checkRocketStorageInterval)
     }
@@ -203,7 +203,7 @@ func WaitNodeRegistered(c *cli.Context, verbose bool) error {
             return nil
         }
         if verbose {
-            fmt.Printf("The node is not registered with Rocket Pool, retrying in %s...\n", checkNodeRegisteredInterval.String())
+            log.Printf("The node is not registered with Rocket Pool, retrying in %s...\n", checkNodeRegisteredInterval.String())
         }
         time.Sleep(checkNodeRegisteredInterval)
     }
@@ -286,9 +286,8 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
         return false, err
     }
 
-    // Get start settings
+    // Get wait start time
     startTime := time.Now().Unix()
-    statusPrinted := false
 
     // Wait for sync
     for {
@@ -307,12 +306,9 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
         // Check sync progress
         if progress != nil {
             if verbose {
-                if statusPrinted { fmt.Print("\r") }
-                fmt.Printf("Eth 1.0 node syncing: %.2f%%   ", (float64(progress.CurrentBlock - progress.StartingBlock) / float64(progress.HighestBlock - progress.StartingBlock)) * 100)
-                statusPrinted = true
+                log.Printf("Eth 1.0 node syncing: %.2f%%\n", (float64(progress.CurrentBlock - progress.StartingBlock) / float64(progress.HighestBlock - progress.StartingBlock)) * 100)
             }
         } else {
-            if statusPrinted { fmt.Print("\n") }
             return true, nil
         }
 
@@ -339,9 +335,8 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
         return false, err
     }
 
-    // Get start settings
+    // Get wait start time
     startTime := time.Now().Unix()
-    statusPrinted := false
 
     // Wait for sync
     for {
@@ -360,12 +355,9 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
         // Check sync status
         if syncStatus.Syncing {
             if verbose {
-                if statusPrinted { fmt.Print("\r") }
-                fmt.Print("Eth 2.0 node syncing...   ")
-                statusPrinted = true
+                log.Println("Eth 2.0 node syncing...")
             }
         } else {
-            if statusPrinted { fmt.Print("\n") }
             return true, nil
         }
 
