@@ -31,7 +31,6 @@ func getStatus(c *cli.Context) error {
             fmt.Println("The node is trusted - it can create empty minipools and will perform watchtower duties.")
         }
         if status.MinipoolCounts.Total > 0 {
-            fmt.Println("")
             fmt.Printf("The node has a total of %d minipool(s):\n", status.MinipoolCounts.Total)
         } else {
             fmt.Println("The node does not have any minipools yet.")

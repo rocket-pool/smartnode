@@ -53,6 +53,9 @@ func getStatus(c *cli.Context) error {
     }
 
     // Print & return
+    if len(status.Minipools) == 0 {
+        fmt.Println("The node does not have any minipools yet.")
+    }
     for _, statusName := range types.MinipoolStatuses {
         minipools, ok := statusMinipools[statusName]
         if !ok { continue }
