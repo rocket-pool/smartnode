@@ -43,6 +43,8 @@ The following commands are available via the smart node client:
 - `rocketpool wallet recover` -  Recover a node wallet from a mnemonic phrase
 - `rocketpool wallet export` - Export the node's wallet information
 
+- `rocketpool faucet withdraw [token]` - Withdraw ETH or tokens from the RP faucet (beta only)
+
 - `rocketpool node status` - Display the current status of the node
 - `rocketpool node register` - Register the node with the Rocket Pool network
 - `rocketpool node set-timezone` - Update the node's timezone location
