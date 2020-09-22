@@ -33,6 +33,10 @@ func exportWallet(c *cli.Context) error {
     }
 
     // Print wallet & return
+    fmt.Println("Node account private key:")
+    fmt.Println("")
+    fmt.Println(export.AccountPrivateKey)
+    fmt.Println("")
     fmt.Println("Wallet password:")
     fmt.Println("")
     fmt.Println(export.Password)

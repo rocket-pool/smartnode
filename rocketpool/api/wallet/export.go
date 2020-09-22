@@ -1,6 +1,8 @@
 package wallet
 
 import (
+    "encoding/hex"
+
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
@@ -33,6 +35,13 @@ func exportWallet(c *cli.Context) (*api.ExportWalletResponse, error) {
         return nil, err
     }
     response.Wallet = wallet
+
+    // Get account private key
+    privateKey, err := w.GetNodePrivateKeyBytes()
+    if err != nil {
+        return nil, err
+    }
+    response.AccountPrivateKey = hex.EncodeToString(privateKey)
 
     // Return response
     return &response, nil

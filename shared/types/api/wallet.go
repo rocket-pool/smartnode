@@ -43,5 +43,6 @@ type ExportWalletResponse struct {
     Error string                            `json:"error"`
     Password string                         `json:"password"`
     Wallet string                           `json:"wallet"`
+    AccountPrivateKey string                `json:"accountPrivateKey"`
 }
 
