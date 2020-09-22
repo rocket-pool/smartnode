@@ -23,7 +23,7 @@ func faucetWithdraw(c *cli.Context, token string) error {
     }
 
     // Log & return
-    fmt.Printf("Successfully withdrew %s from the faucet. Run 'rocketpool node status' to check your balance.", strings.ToUpper(token))
+    fmt.Printf("Successfully withdrew %s from the faucet. Run 'rocketpool node status' to check your balance.\n", strings.ToUpper(token))
     return nil
 
 }
