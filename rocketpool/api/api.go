@@ -3,6 +3,7 @@ package api
 import (
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/rocketpool/api/faucet"
     "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
     "github.com/rocket-pool/smartnode/rocketpool/api/network"
     "github.com/rocket-pool/smartnode/rocketpool/api/node"
@@ -23,6 +24,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
     }
 
     // Register subcommands
+      faucet.RegisterSubcommands(&command, "faucet",   []string{"f"})
     minipool.RegisterSubcommands(&command, "minipool", []string{"m"})
      network.RegisterSubcommands(&command, "network",  []string{"e"})
         node.RegisterSubcommands(&command, "node",     []string{"n"})
