@@ -136,6 +136,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"l"},
                 Usage:     "View the Rocket Pool service logs",
                 UsageText: "rocketpool service logs [services...]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "tail, t",
+                        Usage: "The number of lines to show from the end of the logs (number or \"all\")",
+                        Value: "100",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Run command

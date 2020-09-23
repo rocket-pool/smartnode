@@ -128,7 +128,7 @@ func serviceLogs(c *cli.Context, serviceNames ...string) error {
     defer rp.Close()
 
     // Print service logs
-    return rp.PrintServiceLogs(serviceNames...)
+    return rp.PrintServiceLogs(c.String("tail"), serviceNames...)
 
 }
 

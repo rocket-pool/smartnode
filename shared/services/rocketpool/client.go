@@ -31,7 +31,6 @@ const (
     APIContainerName = "rocketpool_api"
     APIBinPath = "/go/bin/rocketpool"
 
-    ContainerLogLines = 100
     DebugColor = color.FgYellow
 )
 
@@ -206,8 +205,8 @@ func (c *Client) PrintServiceStatus() error {
 
 
 // Print the Rocket Pool service logs
-func (c *Client) PrintServiceLogs(serviceNames ...string) error {
-    cmd, err := c.compose(fmt.Sprintf("logs -f --tail %d %s", ContainerLogLines, strings.Join(serviceNames, " ")))
+func (c *Client) PrintServiceLogs(tail string, serviceNames ...string) error {
+    cmd, err := c.compose(fmt.Sprintf("logs -f --tail %d %s", tail, strings.Join(serviceNames, " ")))
     if err != nil { return err }
     return c.printOutput(cmd)
 }
