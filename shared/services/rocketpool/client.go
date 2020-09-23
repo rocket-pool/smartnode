@@ -206,7 +206,7 @@ func (c *Client) PrintServiceStatus() error {
 
 // Print the Rocket Pool service logs
 func (c *Client) PrintServiceLogs(tail string, serviceNames ...string) error {
-    cmd, err := c.compose(fmt.Sprintf("logs -f --tail %d %s", tail, strings.Join(serviceNames, " ")))
+    cmd, err := c.compose(fmt.Sprintf("logs -f --tail %s %s", tail, strings.Join(serviceNames, " ")))
     if err != nil { return err }
     return c.printOutput(cmd)
 }
