@@ -70,7 +70,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
 
     // Check node deposits are enabled
     wg.Go(func() error {
-        depositEnabled, err := settings.GetNodeRegistrationEnabled(rp, nil)
+        depositEnabled, err := settings.GetNodeDepositEnabled(rp, nil)
         if err == nil {
             response.DepositDisabled = !depositEnabled
         }
