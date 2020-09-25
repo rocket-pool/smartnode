@@ -9,6 +9,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/types/api"
+    "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 
@@ -77,7 +78,7 @@ func getStatus(c *cli.Context) error {
             }
             }
             if minipool.Status.Status == types.Staking {
-            fmt.Printf("Validator pubkey:  %s\n", minipool.ValidatorPubkey.Hex())
+            fmt.Printf("Validator pubkey:  %s\n", hex.AddPrefix(minipool.ValidatorPubkey.Hex()))
             if minipool.Validator.Exists {
             if minipool.Validator.Active {
             fmt.Printf("Validator active:  yes\n")
