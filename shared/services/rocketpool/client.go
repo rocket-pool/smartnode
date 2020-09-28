@@ -282,6 +282,8 @@ func (c *Client) compose(args string) (string, error) {
         fmt.Sprintf("ETH2_IMAGE=%s",       rpConfig.GetSelectedEth2Client().GetBeaconImage()),
         fmt.Sprintf("VALIDATOR_CLIENT=%s", rpConfig.GetSelectedEth2Client().ID),
         fmt.Sprintf("VALIDATOR_IMAGE=%s",  rpConfig.GetSelectedEth2Client().GetValidatorImage()),
+        fmt.Sprintf("ETH1_PROVIDER=%s",    rpConfig.Chains.Eth1.Provider),
+        fmt.Sprintf("ETH2_PROVIDER=%s",    rpConfig.Chains.Eth2.Provider),
     }
     for _, param := range rpConfig.Chains.Eth1.Client.Params {
         env = append(env, fmt.Sprintf("%s=%s", param.Env, param.Value))
