@@ -26,7 +26,7 @@ RUN go install ./rocketpool-cli
 FROM ubuntu:20.04
 
 # Install OS dependencies
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates curl
 
 # Copy binary
 COPY --from=builder /go/bin/rocketpool-cli /go/bin/rocketpool-cli
