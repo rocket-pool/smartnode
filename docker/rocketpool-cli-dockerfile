@@ -1,0 +1,35 @@
+###
+# Builder
+###
+
+
+# Start from golang image
+FROM golang:latest AS builder
+
+# Copy source files
+ADD ./rocketpool-cli /src/rocketpool-cli
+ADD ./shared /src/shared
+ADD ./go.mod /src/go.mod
+ADD ./go.sum /src/go.sum
+
+# Compile & install
+WORKDIR /src
+RUN go install ./rocketpool-cli
+
+
+###
+# Process
+###
+
+
+# Start from ubuntu image
+FROM ubuntu:20.04
+
+# Install OS dependencies
+RUN apt-get update && apt-get install -y ca-certificates
+
+# Copy binary
+COPY --from=builder /go/bin/rocketpool-cli /go/bin/rocketpool-cli
+
+# Container entry point
+ENTRYPOINT ["/go/bin/rocketpool-cli"]
