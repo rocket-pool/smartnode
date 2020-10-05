@@ -7,7 +7,6 @@ import (
     "io"
     "io/ioutil"
     "os"
-    "path/filepath"
     "strings"
 
     "github.com/fatih/color"
@@ -104,13 +103,13 @@ func (c *Client) Close() {
 
 // Load the global config
 func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
-    return c.loadConfig(filepath.Join(RocketPoolPath, GlobalConfigFile))
+    return c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, GlobalConfigFile))
 }
 
 
 // Save the user config
 func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
-    return c.saveConfig(cfg, filepath.Join(RocketPoolPath, UserConfigFile))
+    return c.saveConfig(cfg, fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile))
 }
 
 
@@ -255,11 +254,11 @@ func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
 func (c *Client) compose(args string) (string, error) {
 
     // Load config
-    globalConfig, err := c.loadConfig(filepath.Join(RocketPoolPath, GlobalConfigFile))
+    globalConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, GlobalConfigFile))
     if err != nil {
         return "", err
     }
-    userConfig, err := c.loadConfig(filepath.Join(RocketPoolPath, UserConfigFile))
+    userConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile))
     if err != nil {
         return "", err
     }
@@ -293,7 +292,7 @@ func (c *Client) compose(args string) (string, error) {
     }
 
     // Return command
-    return fmt.Sprintf("%s docker-compose --project-directory %s -f %s %s", strings.Join(env, " "), RocketPoolPath, filepath.Join(RocketPoolPath, ComposeFile), args), nil
+    return fmt.Sprintf("%s docker-compose --project-directory %s -f %s %s", strings.Join(env, " "), RocketPoolPath, fmt.Sprintf("%s/%s", RocketPoolPath, ComposeFile), args), nil
 
 }
 
