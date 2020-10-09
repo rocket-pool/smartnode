@@ -485,7 +485,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     }
 
     // Use user deposit balance if validator not yet active on beacon chain at block
-    if !validator.Exists || validator.ActivationEpoch > blockEpoch {
+    if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
         return minipoolBalanceDetails{
             UserBalance: userDepositBalance,
         }, nil

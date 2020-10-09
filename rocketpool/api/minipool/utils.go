@@ -202,7 +202,7 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mi
     // Set validator status details
     if validator.Exists {
         details.Exists = true
-        details.Active = (validator.ActivationEpoch <= currentEpoch)
+        details.Active = (validator.ActivationEpoch < currentEpoch)
     }
 
     // use deposit balances if validator not active
