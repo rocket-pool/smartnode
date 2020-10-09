@@ -216,7 +216,7 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 
 
 // Get multiple validators' statuses
-func (c *Client) GetValidatorsStatus(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) ([]beacon.ValidatorStatus, error) {
+func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
     // Build validator request
     request := ValidatorsRequest{
@@ -229,17 +229,24 @@ func (c *Client) GetValidatorsStatus(pubkeys []types.ValidatorPubkey, opts *beac
     // Get validator statuses
     validators, err := c.getValidatorStatuses(request, opts)
     if err != nil {
-        return []beacon.ValidatorStatus{}, err
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, err
     }
 
-    // Return response
-    statuses := make([]beacon.ValidatorStatus, len(validators))
-    for vi, validator := range validators {
+    // Build status map
+    statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
+    for _, validator := range validators {
+
+        // Skip nonexistent validators
         if bytes.Equal(validator.Validator.Pubkey, []byte{}) {
             continue
         }
-        statuses[vi] = beacon.ValidatorStatus{
-            Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+
+        // Get validator pubkey
+        pubkey := types.BytesToValidatorPubkey(validator.Validator.Pubkey)
+
+        // Add status
+        statuses[pubkey] = beacon.ValidatorStatus{
+            Pubkey: pubkey,
             WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
             Balance: validator.Balance,
             EffectiveBalance: validator.Validator.EffectiveBalance,
@@ -250,7 +257,10 @@ func (c *Client) GetValidatorsStatus(pubkeys []types.ValidatorPubkey, opts *beac
             WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
             Exists: true,
         }
+
     }
+
+    // Return
     return statuses, nil
 
 }

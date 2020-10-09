@@ -52,7 +52,7 @@ type Client interface {
     GetEth2Config() (Eth2Config, error)
     GetBeaconHead() (BeaconHead, error)
     GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
-    GetValidatorsStatus(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) ([]ValidatorStatus, error)
+    GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
     Close()
 }
 

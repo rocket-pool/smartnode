@@ -182,7 +182,7 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 
 
 // Get multiple validators' statuses
-func (c *Client) GetValidatorsStatus(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) ([]beacon.ValidatorStatus, error) {
+func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
     // Build validator requests
     validatorsRequest := &pb.ListValidatorsRequest{
@@ -203,23 +203,28 @@ func (c *Client) GetValidatorsStatus(pubkeys []types.ValidatorPubkey, opts *beac
     // Get validator data
     validators, err := c.bc.ListValidators(context.Background(), validatorsRequest)
     if err != nil {
-        return []beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
     }
     balances, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
     if err != nil {
-        return []beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator balances: %w", err)
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator balances: %w", err)
     }
     if len(validators.ValidatorList) != len(balances.Balances) {
-        return []beacon.ValidatorStatus{}, fmt.Errorf("Validator status and balance result counts do not match")
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Validator status and balance result counts do not match")
     }
 
-    // Return response
-    statuses := make([]beacon.ValidatorStatus, len(validators.ValidatorList))
+    // Build status map
+    statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
     for vi := 0; vi < len(validators.ValidatorList); vi++ {
+
+        // Get validator status, balance & pubkey
         validator := validators.ValidatorList[vi].Validator
         validatorBalance := balances.Balances[vi].Balance
-        statuses[vi] = beacon.ValidatorStatus{
-            Pubkey: types.BytesToValidatorPubkey(validator.PublicKey),
+        pubkey := types.BytesToValidatorPubkey(validator.PublicKey)
+
+        // Add status
+        statuses[pubkey] = beacon.ValidatorStatus{
+            Pubkey: pubkey,
             WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
             Balance: validatorBalance,
             EffectiveBalance: validator.EffectiveBalance,
@@ -230,7 +235,10 @@ func (c *Client) GetValidatorsStatus(pubkeys []types.ValidatorPubkey, opts *beac
             WithdrawableEpoch: validator.WithdrawableEpoch,
             Exists: true,
         }
+
     }
+
+    // Return
     return statuses, nil
 
 }
