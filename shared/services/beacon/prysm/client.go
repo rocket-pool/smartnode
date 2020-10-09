@@ -184,31 +184,41 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 // Get multiple validators' statuses
 func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
-    // Build validator requests
+    // Build validator statuses request
     validatorsRequest := &pb.ListValidatorsRequest{
-        PublicKeys: make([][]byte, len(pubkeys)),
-    }
-    balancesRequest := &pb.ListValidatorBalancesRequest{
         PublicKeys: make([][]byte, len(pubkeys)),
     }
     for ki, pubkey := range pubkeys {
         validatorsRequest.PublicKeys[ki] = pubkey.Bytes()
-        balancesRequest.PublicKeys[ki] = pubkey.Bytes()
     }
     if opts != nil {
         validatorsRequest.QueryFilter = &pb.ListValidatorsRequest_Epoch{Epoch: opts.Epoch}
-        balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
     }
 
-    // Get validator data
+    // Get validator statuses
     validators, err := c.bc.ListValidators(context.Background(), validatorsRequest)
     if err != nil {
         return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
     }
+
+    // Build validator balances request
+    balancesRequest := &pb.ListValidatorBalancesRequest{
+        PublicKeys: make([][]byte, len(validators.ValidatorList)),
+    }
+    for vi, validator := range validators.ValidatorList {
+        balancesRequest.PublicKeys[vi] = validator.Validator.PublicKey
+    }
+    if opts != nil {
+        balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
+    }
+
+    // Get validator balances
     balances, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
     if err != nil {
         return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator balances: %w", err)
     }
+
+    // Check validator balances count
     if len(validators.ValidatorList) != len(balances.Balances) {
         return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Validator status and balance result counts do not match")
     }
