@@ -32,6 +32,7 @@ import (
 
 // Settings
 var submitNetworkBalancesInterval, _ = time.ParseDuration("5m")
+const MinipoolBalanceDetailsBatchSize = 50
 
 
 // Submit network balances task
@@ -388,23 +389,34 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
         return []minipoolBalanceDetails{}, err
     }
 
-    // Data
-    var wg2 errgroup.Group
+    // Load details in batches
     details := make([]minipoolBalanceDetails, len(addresses))
+    for bsi := 0; bsi < len(addresses); bsi += MinipoolBalanceDetailsBatchSize {
 
-    // Load details
-    for mi, address := range addresses {
-        mi, address := mi, address
-        wg2.Go(func() error {
-            mpDetails, err := t.getMinipoolBalanceDetails(address, opts, validators[address], eth2Config, blockEpoch)
-            if err == nil { details[mi] = mpDetails }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolBalanceDetailsBatchSize
+        if mei > len(addresses) { mei = len(addresses) }
 
-    // Wait for data
-    if err := wg2.Wait(); err != nil {
-        return []minipoolBalanceDetails{}, err
+        // Log
+        t.log.Printlnf("Calculating balances for minipools %d - %d of %d...", msi + 1, mei, len(addresses))
+
+        // Load details
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                address := addresses[mi]
+                validator := validators[address]
+                mpDetails, err := t.getMinipoolBalanceDetails(address, opts, validator, eth2Config, blockEpoch)
+                if err == nil { details[mi] = mpDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []minipoolBalanceDetails{}, err
+        }
+
     }
 
     // Return
