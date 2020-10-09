@@ -382,6 +382,12 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
         return []minipoolBalanceDetails{}, fmt.Errorf("Epoch %d at block %s is higher than current epoch %d", blockEpoch, opts.BlockNumber.String(), beaconHead.Epoch)
     }
 
+    // Get minipool validator statuses
+    validators, err := getMinipoolValidators(t.rp, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: blockEpoch})
+    if err != nil {
+        return []minipoolBalanceDetails{}, err
+    }
+
     // Data
     var wg2 errgroup.Group
     details := make([]minipoolBalanceDetails, len(addresses))
@@ -390,7 +396,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
     for mi, address := range addresses {
         mi, address := mi, address
         wg2.Go(func() error {
-            mpDetails, err := t.getMinipoolBalanceDetails(address, opts, eth2Config, blockEpoch)
+            mpDetails, err := t.getMinipoolBalanceDetails(address, opts, validators[address], eth2Config, blockEpoch)
             if err == nil { details[mi] = mpDetails }
             return err
         })
@@ -408,7 +414,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 
 
 // Get minipool balance details
-func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common.Address, opts *bind.CallOpts, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
+func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
 
     // Create minipool
     mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
@@ -420,9 +426,9 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     var wg errgroup.Group
     var status types.MinipoolStatus
     var nodeFee float64
+    var nodeDepositBalance *big.Int
     var userDepositBalance *big.Int
     var userDepositTime uint64
-    var pubkey types.ValidatorPubkey
     var withdrawalProcessed bool
 
     // Load data
@@ -438,6 +444,11 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     })
     wg.Go(func() error {
         var err error
+        nodeDepositBalance, err = mp.GetNodeDepositBalance(opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
         userDepositBalance, err = mp.GetUserDepositBalance(opts)
         return err
     })
@@ -446,11 +457,6 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         if err == nil {
             userDepositTime = uint64(userDepositAssignedTime.Unix())
         }
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        pubkey, err = minipool.GetMinipoolPubkey(t.rp, minipoolAddress, opts)
         return err
     })
     wg.Go(func() error {
@@ -478,12 +484,6 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         }, nil
     }
 
-    // Get validator status at block
-    validator, err := t.bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: blockEpoch})
-    if err != nil {
-        return minipoolBalanceDetails{}, err
-    }
-
     // Use user deposit balance if validator not yet active on beacon chain at block
     if !validator.Exists || validator.ActivationEpoch > blockEpoch {
         return minipoolBalanceDetails{
@@ -491,7 +491,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         }, nil
     }
 
-    // Get start epoch
+    // Get start epoch for node balance calculation
     startEpoch := eth2.EpochAt(eth2Config, userDepositTime)
     if startEpoch < validator.ActivationEpoch {
         startEpoch = validator.ActivationEpoch
@@ -499,17 +499,13 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         startEpoch = blockEpoch
     }
 
-    // Get validator status at start epoch
-    validatorStart, err := t.bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: startEpoch})
-    if err != nil {
-        return minipoolBalanceDetails{}, err
-    }
-    if !validatorStart.Exists {
-        return minipoolBalanceDetails{}, fmt.Errorf("Could not get validator %s balance at epoch %d", pubkey.Hex(), startEpoch)
-    }
+    // Get validator activation balance
+    activationBalanceWei := new(big.Int)
+    activationBalanceWei.Add(nodeDepositBalance, userDepositBalance)
+    activationBalance := eth.WeiToGwei(activationBalanceWei)
 
-    // Get validator balances at start epoch and at block
-    startBalance := eth.GweiToWei(float64(validatorStart.Balance))
+    // Calculate approximate validator balance at start epoch & validator balance at block
+    startBalance := eth.GweiToWei(activationBalance + (float64(validator.Balance) - activationBalance) * float64(startEpoch - validator.ActivationEpoch) / float64(blockEpoch - validator.ActivationEpoch))
     blockBalance := eth.GweiToWei(float64(validator.Balance))
 
     // Get node & user balance at block
