@@ -181,34 +181,14 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
     request := ValidatorsRequest{
         Pubkeys: []string{hexutil.AddPrefix(pubkey.Hex())},
     }
-    if opts != nil {
-
-        // Get slot number
-        slotsPerEpoch, err := c.getSlotsPerEpoch()
-        if err != nil {
-            return beacon.ValidatorStatus{}, err
-        }
-        slot := opts.Epoch * slotsPerEpoch
-
-        // Get slot state root
-        stateRoot, err := c.getStateRoot(slot)
-        if err != nil {
-            return beacon.ValidatorStatus{}, err
-        }
-        request.StateRoot = stateRoot
-
-    }
-
-    // Request
-    responseBody, err := c.postRequest(RequestValidatorsPath, request)
+    
+    // Get validator status
+    validators, err := c.getValidatorStatuses(request, opts)
     if err != nil {
-        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator status: %w", err)
+        return beacon.ValidatorStatus{}, err
     }
-
-    // Unmarshal response
-    var validators []ValidatorResponse
-    if err := json.Unmarshal(responseBody, &validators); err != nil {
-        return beacon.ValidatorStatus{}, fmt.Errorf("Could not decode validator status: %w", err)
+    if len(validators) == 0 {
+        return beacon.ValidatorStatus{}, nil
     }
     validator := validators[0]
 
@@ -229,8 +209,89 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
         ActivationEpoch: validator.Validator.ActivationEpoch,
         ExitEpoch: validator.Validator.ExitEpoch,
         WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
-        Exists: true, 
+        Exists: true,
     }, nil
+
+}
+
+
+// Get multiple validators' statuses
+func (c *Client) GetValidatorsStatus(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) ([]beacon.ValidatorStatus, error) {
+
+    // Build validator request
+    request := ValidatorsRequest{
+        Pubkeys: make([]string, len(pubkeys)),
+    }
+    for ki, pubkey := range pubkeys {
+        request.Pubkeys[ki] = hexutil.AddPrefix(pubkey.Hex())
+    }
+
+    // Get validator statuses
+    validators, err := c.getValidatorStatuses(request, opts)
+    if err != nil {
+        return []beacon.ValidatorStatus{}, err
+    }
+
+    // Return response
+    statuses := make([]beacon.ValidatorStatus, len(validators))
+    for vi, validator := range validators {
+        if bytes.Equal(validator.Validator.Pubkey, []byte{}) {
+            continue
+        }
+        statuses[vi] = beacon.ValidatorStatus{
+            Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+            WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
+            Balance: validator.Balance,
+            EffectiveBalance: validator.Validator.EffectiveBalance,
+            Slashed: validator.Validator.Slashed,
+            ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,
+            ActivationEpoch: validator.Validator.ActivationEpoch,
+            ExitEpoch: validator.Validator.ExitEpoch,
+            WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
+            Exists: true,
+        }
+    }
+    return statuses, nil
+
+}
+
+
+// Get validator statuses
+func (c *Client) getValidatorStatuses(request ValidatorsRequest, opts *beacon.ValidatorStatusOptions) ([]ValidatorResponse, error) {
+
+    // Update validator request
+    if opts != nil {
+
+        // Get slot number
+        slotsPerEpoch, err := c.getSlotsPerEpoch()
+        if err != nil {
+            return []ValidatorResponse{}, err
+        }
+        slot := opts.Epoch * slotsPerEpoch
+
+        // Get slot state root
+        stateRoot, err := c.getStateRoot(slot)
+        if err != nil {
+            return []ValidatorResponse{}, err
+        }
+        request.StateRoot = stateRoot
+
+    }
+
+    // Request
+    responseBody, err := c.postRequest(RequestValidatorsPath, request)
+    if err != nil {
+        return []ValidatorResponse{}, fmt.Errorf("Could not get validator statuses: %w", err)
+    }
+
+    // Unmarshal response
+    var validators []ValidatorResponse
+    if err := json.Unmarshal(responseBody, &validators); err != nil {
+        return []ValidatorResponse{}, fmt.Errorf("Could not decode validator statuses: %w", err)
+    }
+
+    // Return
+    return validators, nil
 
 }
 
