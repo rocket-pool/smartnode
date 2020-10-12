@@ -63,6 +63,10 @@ ______           _        _    ______           _
             Name:  "key, k",
             Usage: "Smart node SSH key `file`",
         },
+        cli.StringFlag{
+            Name:  "passphrase, p",
+            Usage: "Smart node SSH key `passphrase`",
+        },
     }
 
     // Register commands
