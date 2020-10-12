@@ -121,6 +121,32 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         })
 
     }
+
+    // Set unselected client params to blank strings to prevent docker-compose warnings
+    for _, option := range globalChain.Client.Options {
+        if option.ID == globalChain.Client.Selected { continue }
+        for _, param := range option.Params {
+
+            // Cancel if param already set in selected client
+            paramSet := false
+            for _, userParam := range params {
+                if param.Env == userParam.Env {
+                    paramSet = true
+                    break
+                }
+            }
+            if paramSet { continue }
+
+            // Add param
+            params = append(params, config.UserParam{
+                Env: param.Env,
+                Value: "",
+            })
+
+        }
+    }
+
+    // Set config params
     userChain.Client.Params = params
 
     // Return
