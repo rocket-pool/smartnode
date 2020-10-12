@@ -22,6 +22,10 @@ import (
 )
 
 
+// Settings
+const MinipoolDetailsBatchSize = 10
+
+
 // Validate that a minipool belongs to a node
 func validateMinipoolOwner(mp *minipool.Minipool, nodeAddress common.Address) error {
     owner, err := mp.GetNodeAddress(nil)
@@ -96,23 +100,31 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
         return []api.MinipoolDetails{}, err
     }
 
-    // Data
-    var wg2 errgroup.Group
+    // Load details in batches
     details := make([]api.MinipoolDetails, len(addresses))
+    for bsi := 0; bsi < len(addresses); bsi += MinipoolDetailsBatchSize {
 
-    // Load details
-    for mi, address := range addresses {
-        mi, address := mi, address
-        wg2.Go(func() error {
-            mpDetails, err := getMinipoolDetails(rp, address, validators[address], eth2Config, currentEpoch, currentBlock, withdrawalDelay)
-            if err == nil { details[mi] = mpDetails }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolDetailsBatchSize
+        if mei > len(addresses) { mei = len(addresses) }
 
-    // Wait for data
-    if err := wg2.Wait(); err != nil {
-        return []api.MinipoolDetails{}, err
+        // Load details
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                address := addresses[mi]
+                validator := validators[address]
+                mpDetails, err := getMinipoolDetails(rp, address, validator, eth2Config, currentEpoch, currentBlock, withdrawalDelay)
+                if err == nil { details[mi] = mpDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []api.MinipoolDetails{}, err
+        }
+
     }
 
     // Return
