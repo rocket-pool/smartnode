@@ -1,4 +1,4 @@
-package watchtower
+package rp
 
 import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,7 +13,7 @@ import (
 
 
 // Get minipool validator statuses
-func getMinipoolValidators(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, callOpts *bind.CallOpts, validatorStatusOpts *beacon.ValidatorStatusOptions) (map[common.Address]beacon.ValidatorStatus, error) {
+func GetMinipoolValidators(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, callOpts *bind.CallOpts, validatorStatusOpts *beacon.ValidatorStatusOptions) (map[common.Address]beacon.ValidatorStatus, error) {
 
     // Data
     var wg errgroup.Group

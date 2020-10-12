@@ -27,6 +27,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     "github.com/rocket-pool/smartnode/shared/utils/eth2"
     "github.com/rocket-pool/smartnode/shared/utils/log"
+    "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 
@@ -384,7 +385,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
     }
 
     // Get minipool validator statuses
-    validators, err := getMinipoolValidators(t.rp, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: blockEpoch})
+    validators, err := rp.GetMinipoolValidators(t.rp, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: blockEpoch})
     if err != nil {
         return []minipoolBalanceDetails{}, err
     }

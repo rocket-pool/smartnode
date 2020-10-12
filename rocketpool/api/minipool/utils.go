@@ -18,6 +18,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/types/api"
     "github.com/rocket-pool/smartnode/shared/utils/eth2"
+    rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 
@@ -89,6 +90,12 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
         return []api.MinipoolDetails{}, err
     }
 
+    // Get minipool validator statuses
+    validators, err := rputils.GetMinipoolValidators(rp, bc, addresses, nil, nil)
+    if err != nil {
+        return []api.MinipoolDetails{}, err
+    }
+
     // Data
     var wg2 errgroup.Group
     details := make([]api.MinipoolDetails, len(addresses))
@@ -97,7 +104,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
     for mi, address := range addresses {
         mi, address := mi, address
         wg2.Go(func() error {
-            mpDetails, err := getMinipoolDetails(rp, bc, address, eth2Config, currentEpoch, currentBlock, withdrawalDelay)
+            mpDetails, err := getMinipoolDetails(rp, address, validators[address], eth2Config, currentEpoch, currentBlock, withdrawalDelay)
             if err == nil { details[mi] = mpDetails }
             return err
         })
@@ -115,7 +122,7 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 
 
 // Get a minipool's details
-func getMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, minipoolAddress common.Address, eth2Config beacon.Eth2Config, currentEpoch, currentBlock, withdrawalDelay uint64) (api.MinipoolDetails, error) {
+func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch, currentBlock, withdrawalDelay uint64) (api.MinipoolDetails, error) {
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
@@ -171,11 +178,11 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, minipoolAdd
 
     // Get validator details if staking
     if details.Status.Status == types.Staking {
-        validator, err := getMinipoolValidatorDetails(rp, bc, details, eth2Config, currentEpoch)
+        validatorDetails, err := getMinipoolValidatorDetails(rp, details, validator, eth2Config, currentEpoch)
         if err != nil {
             return api.MinipoolDetails{}, err
         }
-        details.Validator = validator
+        details.Validator = validatorDetails
     }
 
     // Update & return
@@ -188,16 +195,10 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, minipoolAdd
 
 
 // Get a minipool's validator details
-func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, minipoolDetails api.MinipoolDetails, eth2Config beacon.Eth2Config, currentEpoch uint64) (api.ValidatorDetails, error) {
+func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.MinipoolDetails, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch uint64) (api.ValidatorDetails, error) {
 
     // Validator details
     details := api.ValidatorDetails{}
-
-    // Get validator status
-    validator, err := bc.GetValidatorStatus(minipoolDetails.ValidatorPubkey, nil)
-    if err != nil {
-        return api.ValidatorDetails{}, err
-    }
 
     // Set validator status details
     if validator.Exists {
