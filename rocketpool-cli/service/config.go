@@ -30,6 +30,12 @@ func configureService(c *cli.Context) error {
     // Initialize user config
     userConfig := config.RocketPoolConfig{}
 
+    // Log
+    fmt.Println("Configuring the Rocket Pool service...")
+    fmt.Println("* Using the Infura Eth 1.0 client with a free account may be unstable and is not recommended in production.")
+    fmt.Println("* The optional Ethstats configuration is for use with ethstats.net, and may be skipped.")
+    fmt.Println("")
+
     // Configure chains
     if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false); err != nil {
         return err
