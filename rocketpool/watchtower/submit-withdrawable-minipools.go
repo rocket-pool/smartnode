@@ -27,6 +27,7 @@ import (
 
 // Settings
 var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("5m")
+const MinipoolWithdrawableDetailsBatchSize = 50
 
 
 // Submit withdrawable minipools task
@@ -197,23 +198,34 @@ func (t *submitWithdrawableMinipools) getNetworkMinipoolWithdrawableDetails(node
         return []minipoolWithdrawableDetails{}, err
     }
 
-    // Data
-    var wg2 errgroup.Group
+    // Load details in batches
     minipools := make([]minipoolWithdrawableDetails, len(addresses))
+    for bsi := 0; bsi < len(addresses); bsi += MinipoolWithdrawableDetailsBatchSize {
 
-    // Load details
-    for mi, address := range addresses {
-        mi, address := mi, address
-        wg2.Go(func() error {
-            mpDetails, err := t.getMinipoolWithdrawableDetails(nodeAddress, address, validators[address], eth2Config, beaconHead)
-            if err == nil { minipools[mi] = mpDetails }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolWithdrawableDetailsBatchSize
+        if mei > len(addresses) { mei = len(addresses) }
 
-    // Wait for data
-    if err := wg2.Wait(); err != nil {
-        return []minipoolWithdrawableDetails{}, err
+        // Log
+        t.log.Printlnf("Checking minipools %d - %d of %d for withdrawable status...", msi + 1, mei, len(addresses))
+
+        // Load details
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                address := addresses[mi]
+                validator := validators[address]
+                mpDetails, err := t.getMinipoolWithdrawableDetails(nodeAddress, address, validator, eth2Config, beaconHead)
+                if err == nil { minipools[mi] = mpDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []minipoolWithdrawableDetails{}, err
+        }
+
     }
 
     // Filter by withdrawable status

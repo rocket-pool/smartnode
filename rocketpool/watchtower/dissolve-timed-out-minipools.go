@@ -23,6 +23,7 @@ import (
 
 // Settings
 var dissolveTimedOutMinipoolsInterval, _ = time.ParseDuration("5m")
+const MinipoolStatusBatchSize = 50
 
 
 // Dissolve timed out minipools task
@@ -169,23 +170,33 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
         minipools[mi] = mp
     }
 
-    // Data
-    var wg2 errgroup.Group
+    // Load minipool statuses in batches
     statuses := make([]minipool.StatusDetails, len(minipools))
+    for bsi := 0; bsi < len(addresses); bsi += MinipoolStatusBatchSize {
 
-    // Load minipool statuses
-    for mi, mp := range minipools {
-        mi, mp := mi, mp
-        wg2.Go(func() error {
-            status, err := mp.GetStatusDetails(nil)
-            if err == nil { statuses[mi] = status }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolStatusBatchSize
+        if mei > len(addresses) { mei = len(addresses) }
 
-    // Wait for data
-    if err := wg2.Wait(); err != nil {
-        return []*minipool.Minipool{}, err
+        // Log
+        t.log.Printlnf("Checking minipools %d - %d of %d for timed out status...", msi + 1, mei, len(addresses))
+
+        // Load statuses
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                mp := minipools[mi]
+                status, err := mp.GetStatusDetails(nil)
+                if err == nil { statuses[mi] = status }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []*minipool.Minipool{}, err
+        }
+
     }
 
     // Filter minipools by status
