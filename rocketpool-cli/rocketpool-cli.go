@@ -74,6 +74,15 @@ ______           _        _    ______           _
      service.RegisterCommands(app, "service",  []string{"s"})
       wallet.RegisterCommands(app, "wallet",   []string{"w"})
 
+    // Check user ID
+    app.Before = func(c *cli.Context) error {
+        if os.Getuid() == 0 {
+            fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
+            os.Exit(1)
+        }
+        return nil
+    }
+
     // Run application
     fmt.Println("")
     if err := app.Run(os.Args); err != nil {
