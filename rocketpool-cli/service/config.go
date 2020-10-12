@@ -32,8 +32,9 @@ func configureService(c *cli.Context) error {
 
     // Log
     fmt.Println("Configuring the Rocket Pool service...")
-    fmt.Println("* Using the Infura Eth 1.0 client with a free account may be unstable and is not recommended in production.")
-    fmt.Println("* The optional Ethstats configuration is for use with ethstats.net, and may be skipped.")
+    fmt.Println("* Using the Infura Eth 1.0 client with a free account may be unstable, and is not recommended in production.")
+    fmt.Println("* The Eth 1.0 Ethstats configuration is for reporting node status to ethstats.net, and is optional.")
+    fmt.Println("* The Eth 2.0 Custom Graffiti configuration is for adding custom text to signed blocks, and is optional.")
     fmt.Println("")
 
     // Configure chains
