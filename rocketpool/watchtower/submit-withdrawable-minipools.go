@@ -190,6 +190,12 @@ func (t *submitWithdrawableMinipools) getNetworkMinipoolWithdrawableDetails(node
         return []minipoolWithdrawableDetails{}, err
     }
 
+    // Get minipool validator statuses
+    validators, err := getMinipoolValidators(t.rp, t.bc, addresses, nil, nil)
+    if err != nil {
+        return []minipoolWithdrawableDetails{}, err
+    }
+
     // Data
     var wg2 errgroup.Group
     minipools := make([]minipoolWithdrawableDetails, len(addresses))
@@ -198,7 +204,7 @@ func (t *submitWithdrawableMinipools) getNetworkMinipoolWithdrawableDetails(node
     for mi, address := range addresses {
         mi, address := mi, address
         wg2.Go(func() error {
-            mpDetails, err := t.getMinipoolWithdrawableDetails(nodeAddress, address, eth2Config, beaconHead)
+            mpDetails, err := t.getMinipoolWithdrawableDetails(nodeAddress, address, validators[address], eth2Config, beaconHead)
             if err == nil { minipools[mi] = mpDetails }
             return err
         })
@@ -224,7 +230,7 @@ func (t *submitWithdrawableMinipools) getNetworkMinipoolWithdrawableDetails(node
 
 
 // Get minipool withdrawable details
-func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress common.Address, minipoolAddress common.Address, eth2Config beacon.Eth2Config, beaconHead beacon.BeaconHead) (minipoolWithdrawableDetails, error) {
+func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress common.Address, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, beaconHead beacon.BeaconHead) (minipoolWithdrawableDetails, error) {
 
     // Create minipool
     mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
@@ -235,8 +241,9 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
     // Data
     var wg errgroup.Group
     var status types.MinipoolStatus
+    var nodeDepositBalance *big.Int
+    var userDepositBalance *big.Int
     var userDepositTime uint64
-    var pubkey types.ValidatorPubkey
 
     // Load data
     wg.Go(func() error {
@@ -245,15 +252,20 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
         return err
     })
     wg.Go(func() error {
-        userDepositAssignedTime, err := mp.GetUserDepositAssignedTime(nil)
-        if err == nil {
-            userDepositTime = uint64(userDepositAssignedTime.Unix())
-        }
+        var err error
+        nodeDepositBalance, err = mp.GetNodeDepositBalance(nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        pubkey, err = minipool.GetMinipoolPubkey(t.rp, minipoolAddress, nil)
+        userDepositBalance, err = mp.GetUserDepositBalance(nil)
+        return err
+    })
+    wg.Go(func() error {
+        userDepositAssignedTime, err := mp.GetUserDepositAssignedTime(nil)
+        if err == nil {
+            userDepositTime = uint64(userDepositAssignedTime.Unix())
+        }
         return err
     })
 
@@ -267,16 +279,12 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
         return minipoolWithdrawableDetails{}, nil
     }
 
-    // Get & check validator status
-    validator, err := t.bc.GetValidatorStatus(pubkey, nil)
-    if err != nil {
-        return minipoolWithdrawableDetails{}, err
-    }
-    if !validator.Exists || validator.WithdrawableEpoch > beaconHead.Epoch {
+    // Check validator status
+    if !validator.Exists || validator.WithdrawableEpoch >= beaconHead.Epoch {
         return minipoolWithdrawableDetails{}, nil
     }
 
-    // Get start epoch
+    // Get start epoch for node balance calculation
     startEpoch := eth2.EpochAt(eth2Config, userDepositTime)
     if startEpoch < validator.ActivationEpoch {
         startEpoch = validator.ActivationEpoch
@@ -284,17 +292,13 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
         startEpoch = beaconHead.Epoch
     }
 
-    // Get validator status at start epoch
-    validatorStart, err := t.bc.GetValidatorStatus(pubkey, &beacon.ValidatorStatusOptions{Epoch: startEpoch})
-    if err != nil {
-        return minipoolWithdrawableDetails{}, err
-    }
-    if !validatorStart.Exists {
-        return minipoolWithdrawableDetails{}, fmt.Errorf("Could not get validator %s balance at epoch %d", pubkey.Hex(), startEpoch)
-    }
+    // Get validator activation balance
+    activationBalanceWei := new(big.Int)
+    activationBalanceWei.Add(nodeDepositBalance, userDepositBalance)
+    activationBalance := eth.WeiToGwei(activationBalanceWei)
 
-    // Get validator balances at start epoch and current epoch
-    startBalance := eth.GweiToWei(float64(validatorStart.Balance))
+    // Calculate approximate validator balance at start epoch & validator balance at current epoch
+    startBalance := eth.GweiToWei(activationBalance + (float64(validator.Balance) - activationBalance) * float64(startEpoch - validator.ActivationEpoch) / float64(beaconHead.Epoch - validator.ActivationEpoch))
     endBalance := eth.GweiToWei(float64(validator.Balance))
 
     // Check for existing node submission
