@@ -27,7 +27,7 @@ import (
 
 // Settings
 var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("5m")
-const MinipoolWithdrawableDetailsBatchSize = 50
+const MinipoolWithdrawableDetailsBatchSize = 10
 
 
 // Submit withdrawable minipools task

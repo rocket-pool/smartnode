@@ -23,7 +23,7 @@ import (
 
 // Settings
 var dissolveTimedOutMinipoolsInterval, _ = time.ParseDuration("5m")
-const MinipoolStatusBatchSize = 50
+const MinipoolStatusBatchSize = 10
 
 
 // Dissolve timed out minipools task

@@ -33,7 +33,7 @@ import (
 
 // Settings
 var submitNetworkBalancesInterval, _ = time.ParseDuration("5m")
-const MinipoolBalanceDetailsBatchSize = 50
+const MinipoolBalanceDetailsBatchSize = 10
 
 
 // Submit network balances task
