@@ -14,6 +14,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/google/uuid v1.1.1
 	github.com/imdario/mergo v0.3.9
+	github.com/minio/highwayhash v1.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
@@ -22,8 +23,8 @@ require (
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	github.com/urfave/cli v1.22.4
 	github.com/wealdtech/go-eth2-types/v2 v2.5.0
-	github.com/wealdtech/go-eth2-util v1.5.0
-	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.0
+	github.com/wealdtech/go-eth2-util v1.6.0
+	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.1
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/grpc v1.29.1
