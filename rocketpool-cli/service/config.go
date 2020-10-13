@@ -30,13 +30,6 @@ func configureService(c *cli.Context) error {
     // Initialize user config
     userConfig := config.RocketPoolConfig{}
 
-    // Log
-    fmt.Println("Configuring the Rocket Pool service...")
-    fmt.Println("* Using the Infura Eth 1.0 client with a free account may be unstable, and is not recommended in production.")
-    fmt.Println("* The Eth 1.0 Ethstats configuration is for reporting node status to ethstats.net, and is optional.")
-    fmt.Println("* The Eth 2.0 Custom Graffiti configuration is for adding custom text to signed blocks, and is optional.")
-    fmt.Println("")
-
     // Configure chains
     if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false); err != nil {
         return err
@@ -79,7 +72,11 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
     } else {
         clientOptions := make([]string, len(globalChain.Client.Options))
         for oi, option := range globalChain.Client.Options {
-            clientOptions[oi] = option.Name
+            optionText := option.Name
+            if option.Desc != "" {
+                optionText += fmt.Sprintf(" - %s", option.Desc)
+            }
+            clientOptions[oi] = optionText
         }
         selected, _ = cliutils.Select(fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
     }
@@ -106,14 +103,17 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
             expectedFormat = "^.*$"
         }
 
-        // Optional field text
-        optionalLabel := ""
+        // Get param label
+        paramText := param.Name
         if !param.Required {
-            optionalLabel = " (leave blank for none)"
+            paramText += " (leave blank for none)"
+        }
+        if param.Desc != "" {
+            paramText += fmt.Sprintf("\n(%s)", param.Desc)
         }
 
         // Prompt for value
-        value := cliutils.Prompt(fmt.Sprintf("Please enter the %s%s", param.Name, optionalLabel), expectedFormat, fmt.Sprintf("Invalid %s", param.Name))
+        value := cliutils.Prompt(fmt.Sprintf("Please enter the %s", paramText), expectedFormat, fmt.Sprintf("Invalid %s", param.Name))
 
         // Add param
         params = append(params, config.UserParam{

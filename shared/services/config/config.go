@@ -36,6 +36,7 @@ type Chain struct {
 type ClientOption struct {
     ID string                           `yaml:"id,omitempty"`
     Name string                         `yaml:"name,omitempty"`
+    Desc string                         `yaml:"desc,omitempty"`
     Image string                        `yaml:"image,omitempty"`
     BeaconImage string                  `yaml:"beaconImage,omitempty"`
     ValidatorImage string               `yaml:"validatorImage,omitempty"`
@@ -43,6 +44,7 @@ type ClientOption struct {
 }
 type ClientParam struct {
     Name string                         `yaml:"name,omitempty"`
+    Desc string                         `yaml:"desc,omitempty"`
     Env string                          `yaml:"env,omitempty"`
     Required bool                       `yaml:"required,omitempty"`
     Regex string                        `yaml:"regex,omitempty"`
