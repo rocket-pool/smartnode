@@ -144,10 +144,10 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
         balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
     }
 
-    // Get validator
+    // Get validator status
     validators, err := c.bc.ListValidators(context.Background(), validatorsRequest)
     if err != nil {
-        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator %s: %w", pubkey.Hex(), err)
+        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator %s status: %w", pubkey.Hex(), err)
     }
     if len(validators.ValidatorList) == 0 {
         return beacon.ValidatorStatus{}, nil
@@ -177,6 +177,79 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
         WithdrawableEpoch: validator.WithdrawableEpoch,
         Exists: true,
     }, nil
+
+}
+
+
+// Get multiple validators' statuses
+func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
+
+    // Build validator statuses request
+    validatorsRequest := &pb.ListValidatorsRequest{
+        PublicKeys: make([][]byte, len(pubkeys)),
+    }
+    for ki, pubkey := range pubkeys {
+        validatorsRequest.PublicKeys[ki] = pubkey.Bytes()
+    }
+    if opts != nil {
+        validatorsRequest.QueryFilter = &pb.ListValidatorsRequest_Epoch{Epoch: opts.Epoch}
+    }
+
+    // Get validator statuses
+    validators, err := c.bc.ListValidators(context.Background(), validatorsRequest)
+    if err != nil {
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
+    }
+
+    // Build validator balances request
+    balancesRequest := &pb.ListValidatorBalancesRequest{
+        PublicKeys: make([][]byte, len(validators.ValidatorList)),
+    }
+    for vi, validator := range validators.ValidatorList {
+        balancesRequest.PublicKeys[vi] = validator.Validator.PublicKey
+    }
+    if opts != nil {
+        balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
+    }
+
+    // Get validator balances
+    balances, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
+    if err != nil {
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator balances: %w", err)
+    }
+
+    // Check validator balances count
+    if len(validators.ValidatorList) != len(balances.Balances) {
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Validator status and balance result counts do not match")
+    }
+
+    // Build status map
+    statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
+    for vi := 0; vi < len(validators.ValidatorList); vi++ {
+
+        // Get validator status, balance & pubkey
+        validator := validators.ValidatorList[vi].Validator
+        validatorBalance := balances.Balances[vi].Balance
+        pubkey := types.BytesToValidatorPubkey(validator.PublicKey)
+
+        // Add status
+        statuses[pubkey] = beacon.ValidatorStatus{
+            Pubkey: pubkey,
+            WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
+            Balance: validatorBalance,
+            EffectiveBalance: validator.EffectiveBalance,
+            Slashed: validator.Slashed,
+            ActivationEligibilityEpoch: validator.ActivationEligibilityEpoch,
+            ActivationEpoch: validator.ActivationEpoch,
+            ExitEpoch: validator.ExitEpoch,
+            WithdrawableEpoch: validator.WithdrawableEpoch,
+            Exists: true,
+        }
+
+    }
+
+    // Return
+    return statuses, nil
 
 }
 

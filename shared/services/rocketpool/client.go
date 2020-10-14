@@ -42,12 +42,12 @@ type Client struct {
 
 // Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
-    return NewClient(c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"))
+    return NewClient(c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"), c.GlobalString("passphrase"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(hostAddress, user, keyPath string) (*Client, error) {
+func NewClient(hostAddress, user, keyPath, keyPassphrase string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -68,7 +68,12 @@ func NewClient(hostAddress, user, keyPath string) (*Client, error) {
         }
 
         // Parse private key
-        key, err := ssh.ParsePrivateKey(keyBytes)
+        var key ssh.Signer
+        if keyPassphrase == "" {
+            key, err = ssh.ParsePrivateKey(keyBytes)
+        } else {
+            key, err = ssh.ParsePrivateKeyWithPassphrase(keyBytes, []byte(keyPassphrase))
+        }
         if err != nil {
             return nil, fmt.Errorf("Could not parse SSH private key at %s: %w", keyPath, err)
         }

@@ -36,7 +36,7 @@ ______           _        _    ______           _
     // Set application info
     app.Name = "rocketpool"
     app.Usage = "Rocket Pool CLI"
-    app.Version = "0.0.1"
+    app.Version = "0.0.4"
     app.Authors = []cli.Author{
         cli.Author{
             Name:  "David Rugendyke",
@@ -63,6 +63,10 @@ ______           _        _    ______           _
             Name:  "key, k",
             Usage: "Smart node SSH key `file`",
         },
+        cli.StringFlag{
+            Name:  "passphrase, p",
+            Usage: "Smart node SSH key `passphrase`",
+        },
     }
 
     // Register commands
@@ -73,6 +77,15 @@ ______           _        _    ______           _
        queue.RegisterCommands(app, "queue",    []string{"q"})
      service.RegisterCommands(app, "service",  []string{"s"})
       wallet.RegisterCommands(app, "wallet",   []string{"w"})
+
+    // Check user ID
+    app.Before = func(c *cli.Context) error {
+        if os.Getuid() == 0 {
+            fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
+            os.Exit(1)
+        }
+        return nil
+    }
 
     // Run application
     fmt.Println("")

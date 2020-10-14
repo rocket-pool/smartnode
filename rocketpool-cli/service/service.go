@@ -103,7 +103,7 @@ func pauseService(c *cli.Context) error {
 func stopService(c *cli.Context) error {
 
     // Prompt for confirmation
-    if !cliutils.Confirm("Are you sure you want to stop the Rocket Pool service? Any staking minipools will be penalized, and ethereum nodes will lose sync progress!") {
+    if !cliutils.Confirm("Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, chain databases will be deleted, and ethereum nodes will lose ALL sync progress!") {
         fmt.Println("Cancelled.")
         return nil
     }

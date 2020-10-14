@@ -13,6 +13,10 @@ import (
 )
 
 
+// Settings
+const MinipoolCountDetailsBatchSize = 10
+
+
 // Minipool count details
 type minipoolCountDetails struct {
     Status types.MinipoolStatus
@@ -59,23 +63,30 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
         return []minipoolCountDetails{}, err
     }
 
-    // Data
-    var wg2 errgroup.Group
+    // Load details in batches
     details := make([]minipoolCountDetails, len(addresses))
+    for bsi := 0; bsi < len(addresses); bsi += MinipoolCountDetailsBatchSize {
 
-    // Load details
-    for mi, address := range addresses {
-        mi, address := mi, address
-        wg2.Go(func() error {
-            mpDetails, err := getMinipoolCountDetails(rp, address, currentBlock, withdrawalDelay)
-            if err == nil { details[mi] = mpDetails }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolCountDetailsBatchSize
+        if mei > len(addresses) { mei = len(addresses) }
 
-    // Wait for data
-    if err := wg2.Wait(); err != nil {
-        return []minipoolCountDetails{}, err
+        // Load details
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                address := addresses[mi]
+                mpDetails, err := getMinipoolCountDetails(rp, address, currentBlock, withdrawalDelay)
+                if err == nil { details[mi] = mpDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []minipoolCountDetails{}, err
+        }
+
     }
 
     // Return

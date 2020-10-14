@@ -114,12 +114,27 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                 },
             },
-
             cli.Command{
                 Name:      "stop",
                 Aliases:   []string{"o"},
-                Usage:     "Stop the Rocket Pool service",
+                Usage:     "Pause the Rocket Pool service (alias of 'rocketpool service pause')",
                 UsageText: "rocketpool service stop",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return pauseService(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "terminate",
+                Aliases:   []string{"t"},
+                Usage:     "Stop the Rocket Pool service and tear down the service stack",
+                UsageText: "rocketpool service terminate",
                 Action: func(c *cli.Context) error {
 
                     // Validate args

@@ -72,7 +72,11 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
     } else {
         clientOptions := make([]string, len(globalChain.Client.Options))
         for oi, option := range globalChain.Client.Options {
-            clientOptions[oi] = option.Name
+            optionText := option.Name
+            if option.Desc != "" {
+                optionText += fmt.Sprintf(" - %s", option.Desc)
+            }
+            clientOptions[oi] = optionText
         }
         selected, _ = cliutils.Select(fmt.Sprintf("Which %s client would you like to run?", chainName), clientOptions)
     }
@@ -99,14 +103,17 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
             expectedFormat = "^.*$"
         }
 
-        // Optional field text
-        optionalLabel := ""
+        // Get param label
+        paramText := param.Name
         if !param.Required {
-            optionalLabel = " (leave blank for none)"
+            paramText += " (leave blank for none)"
+        }
+        if param.Desc != "" {
+            paramText += fmt.Sprintf("\n(%s)", param.Desc)
         }
 
         // Prompt for value
-        value := cliutils.Prompt(fmt.Sprintf("Please enter the %s%s", param.Name, optionalLabel), expectedFormat, fmt.Sprintf("Invalid %s", param.Name))
+        value := cliutils.Prompt(fmt.Sprintf("Please enter the %s", paramText), expectedFormat, fmt.Sprintf("Invalid %s", param.Name))
 
         // Add param
         params = append(params, config.UserParam{
@@ -115,6 +122,32 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         })
 
     }
+
+    // Set unselected client params to blank strings to prevent docker-compose warnings
+    for _, option := range globalChain.Client.Options {
+        if option.ID == globalChain.Client.Selected { continue }
+        for _, param := range option.Params {
+
+            // Cancel if param already set in selected client
+            paramSet := false
+            for _, userParam := range params {
+                if param.Env == userParam.Env {
+                    paramSet = true
+                    break
+                }
+            }
+            if paramSet { continue }
+
+            // Add param
+            params = append(params, config.UserParam{
+                Env: param.Env,
+                Value: "",
+            })
+
+        }
+    }
+
+    // Set config params
     userChain.Client.Params = params
 
     // Return
