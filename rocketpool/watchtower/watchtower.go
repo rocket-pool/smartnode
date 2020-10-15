@@ -13,7 +13,7 @@ import (
 
 // Config
 var tasksInterval, _ = time.ParseDuration("5m")
-var taskCooldown, _ = time.ParseDuration("15s")
+var taskCooldown, _ = time.ParseDuration("1m")
 const (
     SubmitNetworkBalancesColor = color.FgYellow
     SubmitWithdrawableMinipoolsColor = color.FgBlue
