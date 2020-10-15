@@ -3,7 +3,6 @@ package watchtower
 import (
     "fmt"
     "math/big"
-    "time"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/crypto"
@@ -26,8 +25,7 @@ import (
 
 
 // Settings
-var submitWithdrawableMinipoolsInterval, _ = time.ParseDuration("5m")
-const MinipoolWithdrawableDetailsBatchSize = 10
+const MinipoolWithdrawableDetailsBatchSize = 30
 
 
 // Submit withdrawable minipools task
@@ -69,19 +67,6 @@ func newSubmitWithdrawableMinipools(c *cli.Context, logger log.ColorLogger) (*su
         bc: bc,
     }, nil
 
-}
-
-
-// Start submit withdrawable minipools task
-func (t *submitWithdrawableMinipools) Start() {
-    go (func() {
-        for {
-            if err := t.run(); err != nil {
-                t.log.Println(err)
-            }
-            time.Sleep(submitWithdrawableMinipoolsInterval)
-        }
-    })()
 }
 
 

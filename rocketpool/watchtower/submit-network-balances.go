@@ -4,7 +4,6 @@ import (
     "context"
     "fmt"
     "math/big"
-    "time"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
@@ -32,8 +31,7 @@ import (
 
 
 // Settings
-var submitNetworkBalancesInterval, _ = time.ParseDuration("5m")
-const MinipoolBalanceDetailsBatchSize = 10
+const MinipoolBalanceDetailsBatchSize = 30
 
 
 // Submit network balances task
@@ -85,19 +83,6 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNe
         bc: bc,
     }, nil
 
-}
-
-
-// Start submit network balances task
-func (t *submitNetworkBalances) Start() {
-    go (func() {
-        for {
-            if err := t.run(); err != nil {
-                t.log.Println(err)
-            }
-            time.Sleep(submitNetworkBalancesInterval)
-        }
-    })()
 }
 
 

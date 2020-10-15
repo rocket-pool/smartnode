@@ -3,7 +3,6 @@ package watchtower
 import (
     "context"
     "fmt"
-    "time"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
@@ -22,8 +21,7 @@ import (
 
 
 // Settings
-var dissolveTimedOutMinipoolsInterval, _ = time.ParseDuration("5m")
-const MinipoolStatusBatchSize = 10
+const MinipoolStatusBatchSize = 30
 
 
 // Dissolve timed out minipools task
@@ -56,19 +54,6 @@ func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*diss
         rp: rp,
     }, nil
 
-}
-
-
-// Start dissolve timed out minipools task
-func (t *dissolveTimedOutMinipools) Start() {
-    go (func() {
-        for {
-            if err := t.run(); err != nil {
-                t.log.Println(err)
-            }
-            time.Sleep(dissolveTimedOutMinipoolsInterval)
-        }
-    })()
 }
 
 

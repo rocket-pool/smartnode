@@ -1,6 +1,8 @@
 package watchtower
 
 import (
+    "time"
+
     "github.com/fatih/color"
     "github.com/urfave/cli"
 
@@ -10,11 +12,14 @@ import (
 
 
 // Config
+var tasksInterval, _ = time.ParseDuration("5m")
+var taskCooldown, _ = time.ParseDuration("15s")
 const (
-    DissolveTimedOutMinipoolsColor = color.FgMagenta
-    ProcessWithdrawalsColor = color.FgCyan
     SubmitNetworkBalancesColor = color.FgYellow
     SubmitWithdrawableMinipoolsColor = color.FgBlue
+    DissolveTimedOutMinipoolsColor = color.FgMagenta
+    ProcessWithdrawalsColor = color.FgCyan
+    ErrorColor = color.FgRed
 )
 
 
@@ -38,23 +43,37 @@ func run(c *cli.Context) error {
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
 
     // Initialize tasks
-    dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
-    if err != nil { return err }
-    processWithdrawals, err := newProcessWithdrawals(c, log.NewColorLogger(ProcessWithdrawalsColor))
-    if err != nil { return err }
     submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor))
     if err != nil { return err }
     submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c, log.NewColorLogger(SubmitWithdrawableMinipoolsColor))
     if err != nil { return err }
+    dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
+    if err != nil { return err }
+    processWithdrawals, err := newProcessWithdrawals(c, log.NewColorLogger(ProcessWithdrawalsColor))
+    if err != nil { return err }
 
-    // Start tasks
-    dissolveTimedOutMinipools.Start()
-    processWithdrawals.Start()
-    submitNetworkBalances.Start()
-    submitWithdrawableMinipools.Start()
+    // Initialize error logger
+    errorLog := log.NewColorLogger(ErrorColor)
 
-    // Block thread
-    select {}
+    // Run task loop
+    for {
+        if err := submitNetworkBalances.run(); err != nil {
+            errorLog.Println(err)
+        }
+        time.Sleep(taskCooldown)
+        if err := submitWithdrawableMinipools.run(); err != nil {
+            errorLog.Println(err)
+        }
+        time.Sleep(taskCooldown)
+        if err := dissolveTimedOutMinipools.run(); err != nil {
+            errorLog.Println(err)
+        }
+        time.Sleep(taskCooldown)
+        if err := processWithdrawals.run(); err != nil {
+            errorLog.Println(err)
+        }
+        time.Sleep(tasksInterval)
+    }
 
 }
 

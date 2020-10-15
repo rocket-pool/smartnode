@@ -1,8 +1,6 @@
 package watchtower
 
 import (
-    "time"
-
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/urfave/cli"
 
@@ -10,10 +8,6 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     "github.com/rocket-pool/smartnode/shared/utils/log"
 )
-
-
-// Settings
-var processWithdrawalsInterval, _ = time.ParseDuration("5m")
 
 
 // Process withdrawals task
@@ -42,19 +36,6 @@ func newProcessWithdrawals(c *cli.Context, logger log.ColorLogger) (*processWith
         rp: rp,
     }, nil
 
-}
-
-
-// Start process withdrawals task
-func (t *processWithdrawals) Start() {
-    go (func() {
-        for {
-            if err := t.run(); err != nil {
-                t.log.Println(err)
-            }
-            time.Sleep(processWithdrawalsInterval)
-        }
-    })()
 }
 
 
