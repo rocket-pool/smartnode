@@ -206,13 +206,6 @@ func (w *Wallet) Save() error {
         return fmt.Errorf("Could not write wallet to disk: %w", err)
     }
 
-    // Update keystores
-    for name, ks := range w.keystores {
-        if err := ks.StoreWallet(wsBytes); err != nil {
-            return fmt.Errorf("Could not store %s wallet: %w", name, err)
-        }
-    }
-
     // Return
     return nil
 

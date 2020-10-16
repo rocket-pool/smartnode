@@ -7,7 +7,6 @@ import (
 
 // Validator keystore interface
 type Keystore interface {
-    StoreWallet(walletData []byte) error
     StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPath string) error
 }
 

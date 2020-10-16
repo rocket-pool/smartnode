@@ -138,7 +138,7 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
         nodeWallet, err = wallet.NewWallet(cfg.Smartnode.WalletPath, pm)
         if err == nil {
             lighthouseKeystore := lhkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
-            prysmKeystore := prkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath)
+            prysmKeystore := prkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
             nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
             nodeWallet.AddKeystore("prysm", prysmKeystore)
         }
