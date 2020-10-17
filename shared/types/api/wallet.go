@@ -37,6 +37,13 @@ type RecoverWalletResponse struct {
 }
 
 
+type RebuildWalletResponse struct {
+    Status string                           `json:"status"`
+    Error string                            `json:"error"`
+    ValidatorKeys []types.ValidatorPubkey   `json:"validatorKeys"`
+}
+
+
 type ExportWalletResponse struct {
     Status string                           `json:"status"`
     Error string                            `json:"error"`
