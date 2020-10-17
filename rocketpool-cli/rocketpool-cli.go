@@ -51,6 +51,10 @@ ______           _        _    ______           _
 
     // Set application flags
     app.Flags = []cli.Flag{
+        cli.BoolFlag{
+            Name:  "allow-root, r",
+            Usage: "Allow rocketpool to be run as the root user",
+        },
         cli.StringFlag{
             Name:  "host, o",
             Usage: "Smart node SSH host `address`",
@@ -80,8 +84,9 @@ ______           _        _    ______           _
 
     // Check user ID
     app.Before = func(c *cli.Context) error {
-        if os.Getuid() == 0 {
+        if os.Getuid() == 0 && !c.GlobalBool("allow-root") {
             fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
+            fmt.Fprintln(os.Stderr, "If you want to run rocketpool as root anyway, use the '--allow-root' option to override this warning.")
             os.Exit(1)
         }
         return nil
