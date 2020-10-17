@@ -37,6 +37,9 @@ func recoverWallet(c *cli.Context) error {
     // Prompt for mnemonic
     mnemonic := promptMnemonic()
 
+    // Log
+    fmt.Println("Recovering node wallet...")
+
     // Recover wallet
     response, err := rp.RecoverWallet(mnemonic)
     if err != nil {
@@ -51,6 +54,8 @@ func recoverWallet(c *cli.Context) error {
         for _, key := range response.ValidatorKeys {
             fmt.Println(key.Hex())
         }
+    } else {
+        fmt.Println("No validator keys were found.")
     }
     return nil
 
