@@ -12,7 +12,6 @@ type WalletStatusResponse struct {
     PasswordSet bool                        `json:"passwordSet"`
     WalletInitialized bool                  `json:"walletInitialized"`
     AccountAddress common.Address           `json:"accountAddress"`
-    ValidatorKeys []types.ValidatorPubkey   `json:"validatorKeys"`
 }
 
 

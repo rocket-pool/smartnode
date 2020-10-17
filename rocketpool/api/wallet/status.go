@@ -33,13 +33,6 @@ func getStatus(c *cli.Context) (*api.WalletStatusResponse, error) {
         }
         response.AccountAddress = nodeAccount.Address
 
-        // Get validator keys
-        validatorKeys, err := getValidatorPubkeys(w)
-        if err != nil {
-            return nil, err
-        }
-        response.ValidatorKeys = validatorKeys
-
     }
 
     // Return response
