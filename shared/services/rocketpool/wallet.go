@@ -76,6 +76,23 @@ func (c *Client) RecoverWallet(mnemonic string) (api.RecoverWalletResponse, erro
 }
 
 
+// Rebuild wallet
+func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
+    responseBytes, err := c.callAPI("wallet rebuild")
+    if err != nil {
+        return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %w", err)
+    }
+    var response api.RebuildWalletResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.RebuildWalletResponse{}, fmt.Errorf("Could not decode rebuild wallet response: %w", err)
+    }
+    if response.Error != "" {
+        return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Export wallet
 func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
     responseBytes, err := c.callAPI("wallet export")

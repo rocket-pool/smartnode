@@ -64,6 +64,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "rebuild",
+                Aliases:   []string{"b"},
+                Usage:     "Rebuild validator keystores from derived keys",
+                UsageText: "rocketpool wallet rebuild",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return rebuildWallet(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "export",
                 Aliases:   []string{"e"},
                 Usage:     "Export the node wallet in JSON format",
