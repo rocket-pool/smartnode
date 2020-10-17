@@ -182,6 +182,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "version",
+                Aliases:   []string{"v"},
+                Usage:     "View the Rocket Pool service version information",
+                UsageText: "rocketpool service version",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return serviceVersion(c)
+
+                },
+            },
+
         },
     })
 }

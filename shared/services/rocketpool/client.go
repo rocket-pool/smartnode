@@ -7,6 +7,7 @@ import (
     "io"
     "io/ioutil"
     "os"
+    "regexp"
     "strings"
 
     "github.com/fatih/color"
@@ -228,6 +229,27 @@ func (c *Client) PrintServiceStats() error {
 
     // Print stats
     return c.printOutput(fmt.Sprintf("docker stats %s", strings.Join(containerIds, " ")))
+
+}
+
+
+// Get the Rocket Pool service version
+func (c *Client) GetServiceVersion() (string, error) {
+
+    // Get service container version output
+    versionBytes, err := c.readOutput(fmt.Sprintf("docker exec %s %s --version", APIContainerName, APIBinPath))
+    if err != nil {
+        return "", fmt.Errorf("Could not get Rocket Pool service version: %w", err)
+    }
+
+    // Parse version number
+    versionNumberBytes := regexp.MustCompile("v?(\\d+\\.)*\\d+").Find(versionBytes)
+    if versionNumberBytes == nil {
+        return "", errors.New("Could not parse Rocket Pool service version number.")
+    }
+
+    // Return
+    return string(versionNumberBytes), nil
 
 }
 
