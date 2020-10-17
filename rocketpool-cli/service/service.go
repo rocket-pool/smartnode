@@ -43,7 +43,10 @@ func installService(c *cli.Context) error {
     fmt.Println("")
     fmt.Printf("The Rocket Pool service was successfully installed %s!\n", location)
     if c.GlobalString("host") == "" {
-        fmt.Println("Please restart your shell session to apply updated user permissions.")
+        fmt.Println("")
+        fmt.Println("Please start a new shell session to apply updated user permissions.")
+        fmt.Println("(To start a new shell session, log out and back in.)")
+        fmt.Println("")
     }
     fmt.Println("Run 'rocketpool service config' to configure the service before starting it.")
     return nil
