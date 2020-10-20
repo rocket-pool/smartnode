@@ -116,10 +116,6 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 
     // Return response
     return beacon.BeaconHead{
-        Slot: head.HeadSlot,
-        FinalizedSlot: head.FinalizedSlot,
-        JustifiedSlot: head.JustifiedSlot,
-        PreviousJustifiedSlot: head.PreviousJustifiedSlot,
         Epoch: head.HeadEpoch,
         FinalizedEpoch: head.FinalizedEpoch,
         JustifiedEpoch: head.JustifiedEpoch,

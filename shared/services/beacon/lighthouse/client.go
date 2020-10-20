@@ -8,12 +8,14 @@ import (
     "net/http"
     "net/url"
     "strconv"
+    "time"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/types"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services/beacon"
+    "github.com/rocket-pool/smartnode/shared/utils/eth2"
     hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -24,14 +26,11 @@ const (
     RequestProtocol = "http"
     RequestContentType = "application/json"
 
-    RequestSyncStatusPath = "/node/syncing"
-    RequestEth2ConfigPath = "/spec"
-    RequestBeaconHeadPath = "/beacon/head"
-    RequestValidatorsPath = "/beacon/validators"
-
-    RequestSlotsPerEpochPath = "/spec/slots_per_epoch"
-    RequestGenesisTimePath = "/beacon/genesis_time"
-    RequestBeaconStateRootPath = "/beacon/state_root"
+    RequestSyncStatusPath = "/eth/v1/node/syncing"
+    RequestEth2ConfigPath = "/eth/v1/config/spec"
+    RequestGenesisPath = "/eth/v1/beacon/genesis"
+    RequestFinalityCheckpointsPath = "/eth/v1/beacon/states/%s/finality_checkpoints"
+    RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators?%s"
 )
 
 
@@ -56,21 +55,15 @@ func (c *Client) Close() {}
 // Get the node's sync status
 func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
 
-    // Request
-    responseBody, err := c.getRequest(RequestSyncStatusPath)
+    // Get sync status
+    syncStatus, err := c.getSyncStatus()
     if err != nil {
-        return beacon.SyncStatus{}, fmt.Errorf("Could not get node sync status: %w", err)
-    }
-
-    // Unmarshal response
-    var syncStatus SyncStatusResponse
-    if err := json.Unmarshal(responseBody, &syncStatus); err != nil {
-        return beacon.SyncStatus{}, fmt.Errorf("Could not decode node sync status: %w", err)
-    }
+        return beacon.SyncStatus{}, err
+    }    
 
     // Return response
     return beacon.SyncStatus{
-        Syncing: syncStatus.IsSyncing,
+        Syncing: syncStatus.Data.IsSyncing,
     }, nil
 
 }
@@ -81,36 +74,23 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Data
     var wg errgroup.Group
-    var config Eth2ConfigResponse
-    var slotsPerEpoch uint64
-    var genesisTime uint64
+    var eth2Config Eth2ConfigResponse
+    var genesis GenesisResponse
 
-    // Request eth2 config
-    wg.Go(func() error {
-        responseBody, err := c.getRequest(RequestEth2ConfigPath)
-        if err != nil {
-            return fmt.Errorf("Could not get eth2 config: %w", err)
-        }
-        if err := json.Unmarshal(responseBody, &config); err != nil {
-            return fmt.Errorf("Could not decode eth2 config: %w", err)
-        }
-        return nil
-    })
-
-    // Request slots per epoch
+    // Get eth2 config
     wg.Go(func() error {
         var err error
-        slotsPerEpoch, err = c.getSlotsPerEpoch()
+        eth2Config, err = c.getEth2Config()
         return err
     })
 
-    // Request genesis time
+    // Get genesis
     wg.Go(func() error {
         var err error
-        genesisTime, err = c.getGenesisTime()
+        genesis, err = c.getGenesis()
         return err
     })
-
+    
     // Wait for data
     if err := wg.Wait(); err != nil {
         return beacon.Eth2Config{}, err
@@ -118,10 +98,10 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Return response
     return beacon.Eth2Config{
-        GenesisForkVersion: config.GenesisForkVersion,
-        GenesisEpoch: config.GenesisSlot / slotsPerEpoch,
-        GenesisTime: genesisTime,
-        SecondsPerEpoch: config.MillisecondsPerSlot * slotsPerEpoch / 1000,
+        GenesisForkVersion: eth2Config.Data.GenesisForkVersion,
+        GenesisEpoch: 0,
+        GenesisTime: uint64(genesis.Data.GenesisTime),
+        SecondsPerEpoch: uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
     }, nil
 
 }
@@ -132,28 +112,23 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 
     // Data
     var wg errgroup.Group
-    var head BeaconHeadResponse
-    var slotsPerEpoch uint64
+    var eth2Config beacon.Eth2Config
+    var finalityCheckpoints FinalityCheckpointsResponse
 
-    // Request beacon head
-    wg.Go(func() error {
-        responseBody, err := c.getRequest(RequestBeaconHeadPath)
-        if err != nil {
-            return fmt.Errorf("Could not get beacon head: %w", err)
-        }
-        if err := json.Unmarshal(responseBody, &head); err != nil {
-            return fmt.Errorf("Could not decode beacon head: %w", err)
-        }
-        return nil
-    })
-
-    // Request slots per epoch
+    // Get eth2 config
     wg.Go(func() error {
         var err error
-        slotsPerEpoch, err = c.getSlotsPerEpoch()
+        eth2Config, err = c.GetEth2Config()
         return err
     })
 
+    // Get finality checkpoints
+    wg.Go(func() error {
+        var err error
+        finalityCheckpoints, err = c.getFinalityCheckpoints("head")
+        return err
+    })
+    
     // Wait for data
     if err := wg.Wait(); err != nil {
         return beacon.BeaconHead{}, err
@@ -161,14 +136,10 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 
     // Return response
     return beacon.BeaconHead{
-        Slot: head.Slot,
-        FinalizedSlot: head.FinalizedSlot,
-        JustifiedSlot: head.JustifiedSlot,
-        PreviousJustifiedSlot: head.PreviousJustifiedSlot,
-        Epoch: head.Slot / slotsPerEpoch,
-        FinalizedEpoch: head.FinalizedSlot / slotsPerEpoch,
-        JustifiedEpoch: head.JustifiedSlot / slotsPerEpoch,
-        PreviousJustifiedEpoch: head.PreviousJustifiedSlot / slotsPerEpoch,
+        Epoch: eth2.EpochAt(eth2Config, uint64(time.Now().Unix())),
+        FinalizedEpoch: uint64(finalityCheckpoints.Data.Finalized.Epoch),
+        JustifiedEpoch: uint64(finalityCheckpoints.Data.CurrentJustified.Epoch),
+        PreviousJustifiedEpoch: uint64(finalityCheckpoints.Data.PreviousJustified.Epoch),
     }, nil
 
 }
@@ -177,24 +148,24 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 // Get a validator's status
 func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
-    // Build validator request
-    request := ValidatorsRequest{
-        Pubkeys: []string{hexutil.AddPrefix(pubkey.Hex())},
-    }
-    
-    // Get validator status
-    validators, err := c.getValidatorStatuses(request, opts)
+    // Get validators
+    validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, opts)
     if err != nil {
         return beacon.ValidatorStatus{}, err
     }
-    if len(validators) == 0 {
-        return beacon.ValidatorStatus{}, nil
-    }
-    validator := validators[0]
 
-    // Check if validator exists
-    // Pubkey is empty if validator is null in response
-    if bytes.Equal(validator.Validator.Pubkey, []byte{}) {
+    // Find validator in set
+    // TODO: lighthouse does not currently filter validators by pubkeys; remove once this is fixed
+    var validator Validator
+    var found bool
+    for _, v := range validators.Data {
+        if bytes.Equal(v.Validator.Pubkey, pubkey.Bytes()) {
+            validator = v
+            found = true
+            break
+        }
+    }
+    if !found {
         return beacon.ValidatorStatus{}, nil
     }
 
@@ -202,13 +173,13 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
     return beacon.ValidatorStatus{
         Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
         WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
-        Balance: validator.Balance,
-        EffectiveBalance: validator.Validator.EffectiveBalance,
+        Balance: uint64(validator.Balance),
+        EffectiveBalance: uint64(validator.Validator.EffectiveBalance),
         Slashed: validator.Validator.Slashed,
-        ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,
-        ActivationEpoch: validator.Validator.ActivationEpoch,
-        ExitEpoch: validator.Validator.ExitEpoch,
-        WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
+        ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
+        ActivationEpoch: uint64(validator.Validator.ActivationEpoch),
+        ExitEpoch: uint64(validator.Validator.ExitEpoch),
+        WithdrawableEpoch: uint64(validator.Validator.WithdrawableEpoch),
         Exists: true,
     }, nil
 
@@ -218,26 +189,26 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 // Get multiple validators' statuses
 func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
-    // Build validator request
-    request := ValidatorsRequest{
-        Pubkeys: make([]string, len(pubkeys)),
-    }
-    for ki, pubkey := range pubkeys {
-        request.Pubkeys[ki] = hexutil.AddPrefix(pubkey.Hex())
-    }
-
-    // Get validator statuses
-    validators, err := c.getValidatorStatuses(request, opts)
+    // Get validators
+    validators, err := c.getValidatorsByOpts(pubkeys, opts)
     if err != nil {
         return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, err
     }
 
-    // Build status map
+    // Build validator status map
     statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
-    for _, validator := range validators {
+    for _, validator := range validators.Data {
 
-        // Skip nonexistent validators
-        if bytes.Equal(validator.Validator.Pubkey, []byte{}) {
+        // Check for validator in requested set
+        // TODO: lighthouse does not currently filter validators by pubkeys; remove once this is fixed
+        var found bool
+        for _, pk := range pubkeys {
+            if bytes.Equal(pk.Bytes(), validator.Validator.Pubkey) {
+                found = true
+                break
+            }
+        }
+        if !found {
             continue
         }
 
@@ -246,15 +217,15 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
-            Pubkey: pubkey,
+            Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
             WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
-            Balance: validator.Balance,
-            EffectiveBalance: validator.Validator.EffectiveBalance,
+            Balance: uint64(validator.Balance),
+            EffectiveBalance: uint64(validator.Validator.EffectiveBalance),
             Slashed: validator.Validator.Slashed,
-            ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,
-            ActivationEpoch: validator.Validator.ActivationEpoch,
-            ExitEpoch: validator.Validator.ExitEpoch,
-            WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
+            ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
+            ActivationEpoch: uint64(validator.Validator.ActivationEpoch),
+            ExitEpoch: uint64(validator.Validator.ExitEpoch),
+            WithdrawableEpoch: uint64(validator.Validator.WithdrawableEpoch),
             Exists: true,
         }
 
@@ -266,109 +237,109 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 }
 
 
-// Get validator statuses
-func (c *Client) getValidatorStatuses(request ValidatorsRequest, opts *beacon.ValidatorStatusOptions) ([]ValidatorResponse, error) {
-
-    // Update validator request
-    if opts != nil {
-
-        // Get slot number
-        slotsPerEpoch, err := c.getSlotsPerEpoch()
-        if err != nil {
-            return []ValidatorResponse{}, err
-        }
-        slot := opts.Epoch * slotsPerEpoch
-
-        // Get slot state root
-        stateRoot, err := c.getStateRoot(slot)
-        if err != nil {
-            return []ValidatorResponse{}, err
-        }
-        request.StateRoot = stateRoot
-
-    }
-
-    // Request
-    responseBody, err := c.postRequest(RequestValidatorsPath, request)
+// Get sync status
+func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
+    responseBody, err := c.getRequest(RequestSyncStatusPath)
     if err != nil {
-        return []ValidatorResponse{}, fmt.Errorf("Could not get validator statuses: %w", err)
+        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %w", err)
     }
-
-    // Unmarshal response
-    var validators []ValidatorResponse
-    if err := json.Unmarshal(responseBody, &validators); err != nil {
-        return []ValidatorResponse{}, fmt.Errorf("Could not decode validator statuses: %w", err)
+    var syncStatus SyncStatusResponse
+    if err := json.Unmarshal(responseBody, &syncStatus); err != nil {
+        return SyncStatusResponse{}, fmt.Errorf("Could not decode node sync status: %w", err)
     }
-
-    // Return
-    return validators, nil
-
+    return syncStatus, nil
 }
 
 
-// Get the number of slots per epoch
-func (c *Client) getSlotsPerEpoch() (uint64, error) {
-
-    // Request
-    responseBody, err := c.getRequest(RequestSlotsPerEpochPath)
+// Get the eth2 config
+func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
+    responseBody, err := c.getRequest(RequestEth2ConfigPath)
     if err != nil {
-        return 0, fmt.Errorf("Could not get slots per epoch: %w", err)
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %w", err)
     }
-
-    // Unmarshal response
-    var slotsPerEpoch uint64
-    if err := json.Unmarshal(responseBody, &slotsPerEpoch); err != nil {
-        return 0, fmt.Errorf("Could not decode slots per epoch: %w", err)
+    var eth2Config Eth2ConfigResponse
+    if err := json.Unmarshal(responseBody, &eth2Config); err != nil {
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not decode eth2 config: %w", err)
     }
-
-    // Return
-    return slotsPerEpoch, nil
-
+    return eth2Config, nil
 }
 
 
-// Get the genesis timestamp
-func (c *Client) getGenesisTime() (uint64, error) {
-
-    // Request
-    responseBody, err := c.getRequest(RequestGenesisTimePath)
+// Get genesis information
+func (c *Client) getGenesis() (GenesisResponse, error) {
+    responseBody, err := c.getRequest(RequestGenesisPath)
     if err != nil {
-        return 0, fmt.Errorf("Could not get genesis time: %w", err)
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis: %w", err)
     }
-
-    // Unmarshal response
-    var genesisTime uint64
-    if err := json.Unmarshal(responseBody, &genesisTime); err != nil {
-        return 0, fmt.Errorf("Could not decode genesis time: %w", err)
+    var genesis GenesisResponse
+    if err := json.Unmarshal(responseBody, &genesis); err != nil {
+        return GenesisResponse{}, fmt.Errorf("Could not decode genesis: %w", err)
     }
-
-    // Return
-    return genesisTime, nil
-
+    return genesis, nil
 }
 
 
-// Get the state root for a slot
-func (c *Client) getStateRoot(slot uint64) (string, error) {
+// Get finality checkpoints
+func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResponse, error) {
+    responseBody, err := c.getRequest(fmt.Sprintf(RequestFinalityCheckpointsPath, stateId))
+    if err != nil {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %w", err)
+    }
+    var finalityCheckpoints FinalityCheckpointsResponse
+    if err := json.Unmarshal(responseBody, &finalityCheckpoints); err != nil {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not decode finality checkpoints: %w", err)
+    }
+    return finalityCheckpoints, nil
+}
 
-    // Get query params
+
+// Get validators
+func (c *Client) getValidators(stateId string, pubkeys []string) (ValidatorsResponse, error) {
     params := url.Values{}
-    params.Set("slot", strconv.FormatInt(int64(slot), 10))
-
-    // Request
-    responseBody, err := c.getRequest(fmt.Sprintf("%s?%s", RequestBeaconStateRootPath, params.Encode()))
+    for _, pubkey := range pubkeys {
+        params.Add("id", pubkey)
+    }
+    responseBody, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId, params.Encode()))
     if err != nil {
-        return "", fmt.Errorf("Could not get state root for slot %d: %w", slot, err)
+        return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
+    }
+    var validators ValidatorsResponse
+    if err := json.Unmarshal(responseBody, &validators); err != nil {
+        return ValidatorsResponse{}, fmt.Errorf("Could not decode validators: %w", err)
+    }
+    return validators, nil
+}
+
+
+// Get validators by pubkeys and status options
+func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (ValidatorsResponse, error) {
+
+    // Get state ID
+    var stateId string
+    if opts == nil {
+        stateId = "head"
+    } else {
+
+        // Get eth2 config
+        eth2Config, err := c.getEth2Config()
+        if err != nil {
+            return ValidatorsResponse{}, err
+        }
+
+        // Get slot nuimber
+        slot := opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
+        stateId = strconv.FormatInt(int64(slot), 10)
+
     }
 
-    // Unmarshal response
-    var stateRoot string
-    if err := json.Unmarshal(responseBody, &stateRoot); err != nil {
-        return "", fmt.Errorf("Could not decode state root for slot %d: %w", slot, err)
+    // Get pubkeys
+    pubkeysHex := make([]string, len(pubkeys))
+    for ki, pubkey := range pubkeys {
+        pubkeysHex[ki] = hexutil.AddPrefix(pubkey.Hex())
     }
 
-    // Return
-    return stateRoot, nil
+    // Get validators & return
+    return c.getValidators(stateId, pubkeysHex)
 
 }
 

@@ -23,10 +23,6 @@ type Eth2Config struct {
     SecondsPerEpoch uint64
 }
 type BeaconHead struct {
-    Slot uint64
-    FinalizedSlot uint64
-    JustifiedSlot uint64
-    PreviousJustifiedSlot uint64
     Epoch uint64
     FinalizedEpoch uint64
     JustifiedEpoch uint64
