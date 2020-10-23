@@ -19,6 +19,7 @@ type Client struct {
     conn *grpc.ClientConn
     bc pb.BeaconChainClient
     nc pb.NodeClient
+    vc pb.BeaconNodeValidatorClient
 }
 
 
@@ -34,12 +35,14 @@ func NewClient(providerAddress string) (*Client, error) {
     // Initialize clients
     bc := pb.NewBeaconChainClient(conn)
     nc := pb.NewNodeClient(conn)
+    vc := pb.NewBeaconNodeValidatorClient(conn)
 
     // Return client
     return &Client{
         conn: conn,
         bc: bc,
         nc: nc,
+        vc: vc,
     }, nil
 
 }
@@ -87,6 +90,8 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     // Get config settings
     genesisForkVersion, err := getConfigBytes(cfg, "GenesisForkVersion")
     if err != nil { return beacon.Eth2Config{}, err }
+    genesisValidatorsRoot, err := getConfigBytes(cfg, "GenesisValidatorsRoot")
+    if err != nil { return beacon.Eth2Config{}, err }
     genesisEpoch, err := getConfigUint(cfg, "GenesisEpoch")
     if err != nil { return beacon.Eth2Config{}, err }
     secondsPerSlot, err := getConfigUint(cfg, "SecondsPerSlot")
@@ -97,6 +102,7 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     // Return response
     return beacon.Eth2Config{
         GenesisForkVersion: genesisForkVersion,
+        GenesisValidatorsRoot: genesisValidatorsRoot,
         GenesisEpoch: genesisEpoch,
         GenesisTime: uint64(genesis.GenesisTime.Seconds),
         SecondsPerEpoch: secondsPerSlot * slotsPerEpoch,
@@ -246,6 +252,50 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 
     // Return
     return statuses, nil
+
+}
+
+
+// Get a validator's index
+func (c *Client) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {
+    validatorIndex, err := c.vc.ValidatorIndex(context.Background(), &pb.ValidatorIndexRequest{PublicKey: pubkey.Bytes()})
+    if err != nil {
+        return 0, fmt.Errorf("Could not get validator %s index: %w", pubkey.Hex(), err)
+    }
+    return validatorIndex.Index, nil
+}
+
+
+// Get domain data for a domain type at a given epoch
+func (c *Client) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) {
+    domainData, err := c.vc.DomainData(context.Background(), &pb.DomainRequest{Domain: domainType, Epoch: epoch})
+    if err != nil {
+        return []byte{}, fmt.Errorf("Could not get domain data for epoch %d: %w", epoch, err)
+    }
+    return domainData.SignatureDomain, nil
+}
+
+
+// Perform a voluntary exit on a validator
+func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error {
+
+    // Build signed exit message
+    signedExitMessage := &pb.SignedVoluntaryExit{
+        Exit: &pb.VoluntaryExit{
+            Epoch: epoch,
+            ValidatorIndex: validatorIndex,
+        },
+        Signature: signature.Bytes(),
+    }
+
+    // Propose exit
+    _, err := c.vc.ProposeExit(context.Background(), signedExitMessage)
+    if err != nil {
+        return fmt.Errorf("Could not propose exit for validator at index %d: %w", validatorIndex, err)
+    }
+
+    // Return
+    return nil
 
 }
 

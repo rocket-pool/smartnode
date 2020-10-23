@@ -22,13 +22,6 @@ type DepositData struct {
 }
 
 
-// BLS signing root with domain
-type signingRoot struct {
-    ObjectRoot []byte               `ssz-size:"32"`
-    Domain []byte                   `ssz-size:"32"`
-}
-
-
 // Get deposit data & root for a given validator key and withdrawal credentials
 func GetDepositData(validatorKey *eth2types.BLSPrivateKey, withdrawalCredentials common.Hash, eth2Config beacon.Eth2Config) (DepositData, common.Hash, error) {
 

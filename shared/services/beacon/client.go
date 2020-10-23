@@ -18,6 +18,7 @@ type SyncStatus struct {
 }
 type Eth2Config struct {
     GenesisForkVersion []byte
+    GenesisValidatorsRoot []byte
     GenesisEpoch uint64
     GenesisTime uint64
     SecondsPerEpoch uint64
@@ -49,6 +50,9 @@ type Client interface {
     GetBeaconHead() (BeaconHead, error)
     GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
     GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
+    GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error)
+    GetDomainData(domainType []byte, epoch uint64) ([]byte, error)
+    ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
     Close()
 }
 

@@ -12,6 +12,7 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/types"
+    eth2types "github.com/wealdtech/go-eth2-types/v2"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -30,6 +31,7 @@ const (
     RequestEth2ConfigPath = "/eth/v1/config/spec"
     RequestGenesisPath = "/eth/v1/beacon/genesis"
     RequestFinalityCheckpointsPath = "/eth/v1/beacon/states/%s/finality_checkpoints"
+    RequestForkPath = "/eth/v1/beacon/states/%s/fork"
     RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators?%s"
 )
 
@@ -98,7 +100,8 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Return response
     return beacon.Eth2Config{
-        GenesisForkVersion: eth2Config.Data.GenesisForkVersion,
+        GenesisForkVersion: genesis.Data.GenesisForkVersion,
+        GenesisValidatorsRoot: genesis.Data.GenesisValidatorsRoot,
         GenesisEpoch: 0,
         GenesisTime: uint64(genesis.Data.GenesisTime),
         SecondsPerEpoch: uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
@@ -237,6 +240,85 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 }
 
 
+// Get a validator's index
+func (c *Client) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {
+
+    // Get validators
+    validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, nil)
+    if err != nil {
+        return 0, err
+    }
+
+    // Find validator in set
+    // TODO: lighthouse does not currently filter validators by pubkeys; remove once this is fixed
+    var validator Validator
+    var found bool
+    for _, v := range validators.Data {
+        if bytes.Equal(v.Validator.Pubkey, pubkey.Bytes()) {
+            validator = v
+            found = true
+            break
+        }
+    }
+    if !found {
+        return 0, fmt.Errorf("Validator %s index not found: %w", pubkey.Hex(), err)
+    }
+
+    // Return validator index
+    return uint64(validator.Index), nil
+
+}
+
+
+// Get domain data for a domain type at a given epoch
+func (c *Client) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) {
+
+    // Data
+    var wg errgroup.Group
+    var genesis GenesisResponse
+    var fork ForkResponse
+
+    // Get genesis
+    wg.Go(func() error {
+        var err error
+        genesis, err = c.getGenesis()
+        return err
+    })
+
+    // Get fork
+    wg.Go(func() error {
+        var err error
+        fork, err = c.getFork("head")
+        return err
+    })
+    
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return []byte{}, err
+    }
+
+    // Get fork version
+    var forkVersion []byte
+    if epoch < uint64(fork.Data.Epoch) {
+        forkVersion = fork.Data.PreviousVersion
+    } else {
+        forkVersion = fork.Data.CurrentVersion
+    }
+
+    // Compute & return domain
+    var dt [4]byte
+    copy(dt[:], domainType[:])
+    return eth2types.Domain(dt, forkVersion, genesis.Data.GenesisValidatorsRoot), nil
+
+}
+
+
+// Perform a voluntary exit on a validator
+func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error {
+    return nil
+}
+
+
 // Get sync status
 func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
     responseBody, err := c.getRequest(RequestSyncStatusPath)
@@ -290,6 +372,20 @@ func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResp
         return FinalityCheckpointsResponse{}, fmt.Errorf("Could not decode finality checkpoints: %w", err)
     }
     return finalityCheckpoints, nil
+}
+
+
+// Get fork
+func (c *Client) getFork(stateId string) (ForkResponse, error) {
+    responseBody, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
+    if err != nil {
+        return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
+    }
+    var fork ForkResponse
+    if err := json.Unmarshal(responseBody, &fork); err != nil {
+        return ForkResponse{}, fmt.Errorf("Could not decode fork data: %w", err)
+    }
+    return fork, nil
 }
 
 

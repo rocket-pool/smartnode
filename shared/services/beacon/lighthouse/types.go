@@ -19,7 +19,6 @@ type SyncStatusResponse struct {
 }
 type Eth2ConfigResponse struct {
     Data struct {
-        GenesisForkVersion byteArray        `json:"GENESIS_FORK_VERSION"`
         SecondsPerSlot uinteger             `json:"SECONDS_PER_SLOT"`
         SlotsPerEpoch uinteger              `json:"SLOTS_PER_EPOCH"`
     }                                   `json:"data"`
@@ -28,6 +27,7 @@ type GenesisResponse struct {
     Data struct {
         GenesisTime uinteger                `json:"genesis_time"`
         GenesisForkVersion byteArray        `json:"genesis_fork_version"`
+        GenesisValidatorsRoot byteArray     `json:"genesis_validators_root"`
     }                                   `json:"data"`
 }
 type FinalityCheckpointsResponse struct {
@@ -41,6 +41,13 @@ type FinalityCheckpointsResponse struct {
         Finalized struct {
             Epoch uinteger                      `json:"epoch"`
         }                                   `json:"finalized"`
+    }                                   `json:"data"`
+}
+type ForkResponse struct {
+    Data struct {
+        PreviousVersion byteArray           `json:"previous_version"`
+        CurrentVersion byteArray            `json:"current_version"`
+        Epoch uinteger                      `json:"epoch"`
     }                                   `json:"data"`
 }
 type ValidatorsResponse struct {
