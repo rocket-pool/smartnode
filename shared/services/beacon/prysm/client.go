@@ -90,8 +90,6 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     // Get config settings
     genesisForkVersion, err := getConfigBytes(cfg, "GenesisForkVersion")
     if err != nil { return beacon.Eth2Config{}, err }
-    genesisValidatorsRoot, err := getConfigBytes(cfg, "GenesisValidatorsRoot")
-    if err != nil { return beacon.Eth2Config{}, err }
     genesisEpoch, err := getConfigUint(cfg, "GenesisEpoch")
     if err != nil { return beacon.Eth2Config{}, err }
     secondsPerSlot, err := getConfigUint(cfg, "SecondsPerSlot")
@@ -102,7 +100,7 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     // Return response
     return beacon.Eth2Config{
         GenesisForkVersion: genesisForkVersion,
-        GenesisValidatorsRoot: genesisValidatorsRoot,
+        GenesisValidatorsRoot: genesis.GenesisValidatorsRoot,
         GenesisEpoch: genesisEpoch,
         GenesisTime: uint64(genesis.GenesisTime.Seconds),
         SecondsPerEpoch: secondsPerSlot * slotsPerEpoch,
