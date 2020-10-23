@@ -105,12 +105,10 @@ func exitMinipool(c *cli.Context, minipoolAddress common.Address) (*api.ExitMini
         return nil, err
     }
 
-    /*
     // Broadcast voluntary exit message
     if err := bc.ExitValidator(validatorIndex, head.Epoch, signature); err != nil {
         return nil, err
     }
-    */
 
     // Return response
     return &response, nil
