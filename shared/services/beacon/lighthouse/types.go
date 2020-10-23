@@ -9,6 +9,17 @@ import (
 )
 
 
+// Request types
+type VoluntaryExitRequest struct {
+    Message VoluntaryExitMessage        `json:"message"`
+    Signature byteArray                 `json:"signature"`
+}
+type VoluntaryExitMessage struct {
+    Epoch uinteger                      `json:"epoch"`
+    ValidatorIndex uinteger             `json:"validator_index"`
+}
+
+
 // Response types
 type SyncStatusResponse struct {
     Data struct {
@@ -72,6 +83,9 @@ type Validator struct {
 
 // Unsigned integer type
 type uinteger uint64
+func (i uinteger) MarshalJSON() ([]byte, error) {
+    return json.Marshal(strconv.Itoa(int(i)))
+}
 func (i *uinteger) UnmarshalJSON(data []byte) error {
 
     // Unmarshal string
@@ -95,6 +109,9 @@ func (i *uinteger) UnmarshalJSON(data []byte) error {
 
 // Byte array type
 type byteArray []byte
+func (b byteArray) MarshalJSON() ([]byte, error) {
+    return json.Marshal(hexutil.AddPrefix(hex.EncodeToString(b)))
+}
 func (b *byteArray) UnmarshalJSON(data []byte) error {
 
     // Unmarshal string

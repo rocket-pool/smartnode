@@ -33,6 +33,7 @@ const (
     RequestFinalityCheckpointsPath = "/eth/v1/beacon/states/%s/finality_checkpoints"
     RequestForkPath = "/eth/v1/beacon/states/%s/fork"
     RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators?%s"
+    RequestVoluntaryExitPath = "/eth/v1/beacon/pool/voluntary_exits"
 )
 
 
@@ -315,15 +316,23 @@ func (c *Client) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) 
 
 // Perform a voluntary exit on a validator
 func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error {
-    return nil
+    return c.postVoluntaryExit(VoluntaryExitRequest{
+        Message: VoluntaryExitMessage{
+            Epoch: uinteger(epoch),
+            ValidatorIndex: uinteger(validatorIndex),
+        },
+        Signature: signature.Bytes(),
+    })
 }
 
 
 // Get sync status
 func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
-    responseBody, err := c.getRequest(RequestSyncStatusPath)
+    responseBody, status, err := c.getRequest(RequestSyncStatusPath)
     if err != nil {
         return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %w", err)
+    } else if status != http.StatusOK {
+        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: HTTP status %d", status)
     }
     var syncStatus SyncStatusResponse
     if err := json.Unmarshal(responseBody, &syncStatus); err != nil {
@@ -335,9 +344,11 @@ func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
 
 // Get the eth2 config
 func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
-    responseBody, err := c.getRequest(RequestEth2ConfigPath)
+    responseBody, status, err := c.getRequest(RequestEth2ConfigPath)
     if err != nil {
         return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %w", err)
+    } else if status != http.StatusOK {
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: HTTP status %d", status)
     }
     var eth2Config Eth2ConfigResponse
     if err := json.Unmarshal(responseBody, &eth2Config); err != nil {
@@ -349,9 +360,11 @@ func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
 
 // Get genesis information
 func (c *Client) getGenesis() (GenesisResponse, error) {
-    responseBody, err := c.getRequest(RequestGenesisPath)
+    responseBody, status, err := c.getRequest(RequestGenesisPath)
     if err != nil {
-        return GenesisResponse{}, fmt.Errorf("Could not get genesis: %w", err)
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %w", err)
+    } else if status != http.StatusOK {
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: HTTP status %d", status)
     }
     var genesis GenesisResponse
     if err := json.Unmarshal(responseBody, &genesis); err != nil {
@@ -363,9 +376,11 @@ func (c *Client) getGenesis() (GenesisResponse, error) {
 
 // Get finality checkpoints
 func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResponse, error) {
-    responseBody, err := c.getRequest(fmt.Sprintf(RequestFinalityCheckpointsPath, stateId))
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestFinalityCheckpointsPath, stateId))
     if err != nil {
         return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %w", err)
+    } else if status != http.StatusOK {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: HTTP status %d", status)
     }
     var finalityCheckpoints FinalityCheckpointsResponse
     if err := json.Unmarshal(responseBody, &finalityCheckpoints); err != nil {
@@ -377,9 +392,11 @@ func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResp
 
 // Get fork
 func (c *Client) getFork(stateId string) (ForkResponse, error) {
-    responseBody, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
     if err != nil {
         return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
+    } else if status != http.StatusOK {
+        return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d", status)
     }
     var fork ForkResponse
     if err := json.Unmarshal(responseBody, &fork); err != nil {
@@ -395,9 +412,11 @@ func (c *Client) getValidators(stateId string, pubkeys []string) (ValidatorsResp
     for _, pubkey := range pubkeys {
         params.Add("id", pubkey)
     }
-    responseBody, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId, params.Encode()))
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId, params.Encode()))
     if err != nil {
         return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
+    } else if status != http.StatusOK {
+        return ValidatorsResponse{}, fmt.Errorf("Could not get validators: HTTP status %d", status)
     }
     var validators ValidatorsResponse
     if err := json.Unmarshal(responseBody, &validators); err != nil {
@@ -440,53 +459,65 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 }
 
 
+// Send voluntary exit request
+func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
+    _, status, err := c.postRequest(RequestVoluntaryExitPath, request)
+    if err != nil {
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
+    } else if status != http.StatusOK {
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d", request.Message.ValidatorIndex, status)
+    }
+    return nil
+}
+
+
 // Make a GET request to the beacon node
-func (c *Client) getRequest(requestPath string) ([]byte, error) {
+func (c *Client) getRequest(requestPath string) ([]byte, int, error) {
 
     // Send request
     response, err := http.Get(fmt.Sprintf(RequestUrlFormat, RequestProtocol, c.providerAddress, requestPath))
     if err != nil {
-        return []byte{}, err
+        return []byte{}, 0, err
     }
     defer response.Body.Close()
 
     // Get response
     body, err := ioutil.ReadAll(response.Body)
     if err != nil {
-        return []byte{}, err
+        return []byte{}, 0, err
     }
 
     // Return
-    return body, nil
+    return body, response.StatusCode, nil
 
 }
 
 
 // Make a POST request to the beacon node
-func (c *Client) postRequest(requestPath string, requestBody interface{}) ([]byte, error) {
+func (c *Client) postRequest(requestPath string, requestBody interface{}) ([]byte, int, error) {
 
     // Get request body
     requestBodyBytes, err := json.Marshal(requestBody)
     if err != nil {
-        return []byte{}, err
+        return []byte{}, 0, err
     }
     requestBodyReader := bytes.NewReader(requestBodyBytes)
 
     // Send request
     response, err := http.Post(fmt.Sprintf(RequestUrlFormat, RequestProtocol, c.providerAddress, requestPath), RequestContentType, requestBodyReader)
     if err != nil {
-        return []byte{}, err
+        return []byte{}, 0, err
     }
     defer response.Body.Close()
 
     // Get response
     body, err := ioutil.ReadAll(response.Body)
     if err != nil {
-        return []byte{}, err
+        return []byte{}, 0, err
     }
 
     // Return
-    return body, nil
+    return body, response.StatusCode, nil
 
 }
 
