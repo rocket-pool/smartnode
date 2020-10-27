@@ -213,13 +213,15 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
     details := api.ValidatorDetails{}
 
     // Set validator status details
+    validatorActivated := false
     if validator.Exists {
         details.Exists = true
-        details.Active = (validator.ActivationEpoch < currentEpoch)
+        details.Active = (validator.ActivationEpoch < currentEpoch && validator.ExitEpoch > currentEpoch)
+        validatorActivated = (validator.ActivationEpoch < currentEpoch)
     }
 
-    // use deposit balances if validator not active
-    if !details.Active {
+    // use deposit balances if validator not activated
+    if !validatorActivated {
         details.Balance = new(big.Int)
         details.Balance.Add(minipoolDetails.Node.DepositBalance, minipoolDetails.User.DepositBalance)
         details.NodeBalance = new(big.Int)

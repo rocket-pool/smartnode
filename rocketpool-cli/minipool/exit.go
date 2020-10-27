@@ -25,24 +25,24 @@ func exitMinipools(c *cli.Context) error {
         return err
     }
 
-    // Get staking minipools
-    stakingMinipools := []api.MinipoolDetails{}
+    // Get active minipools
+    activeMinipools := []api.MinipoolDetails{}
     for _, minipool := range status.Minipools {
-        if minipool.Status.Status == types.Staking {
-            stakingMinipools = append(stakingMinipools, minipool)
+        if minipool.Status.Status == types.Staking && minipool.Validator.Active {
+            activeMinipools = append(activeMinipools, minipool)
         }
     }
 
-    // Check for staking minipools
-    if len(stakingMinipools) == 0 {
+    // Check for active minipools
+    if len(activeMinipools) == 0 {
         fmt.Println("No minipools can be exited.")
         return nil
     }
 
     // Prompt for minipool selection
-    options := make([]string, len(stakingMinipools) + 1)
+    options := make([]string, len(activeMinipools) + 1)
     options[0] = "All available minipools"
-    for mi, minipool := range stakingMinipools {
+    for mi, minipool := range activeMinipools {
         options[mi + 1] = fmt.Sprintf("%s (staking since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(TimeFormat))
     }
     selected, _ := cliutils.Select("Please select a minipool to exit:", options)
@@ -50,9 +50,9 @@ func exitMinipools(c *cli.Context) error {
     // Get selected minipools
     var selectedMinipools []api.MinipoolDetails
     if selected == 0 {
-        selectedMinipools = stakingMinipools
+        selectedMinipools = activeMinipools
     } else {
-        selectedMinipools = []api.MinipoolDetails{stakingMinipools[selected - 1]}
+        selectedMinipools = []api.MinipoolDetails{activeMinipools[selected - 1]}
     }
 
     // Prompt for confirmation
@@ -67,6 +67,7 @@ func exitMinipools(c *cli.Context) error {
             fmt.Printf("Could not exit minipool %s: %s.\n", minipool.Address.Hex(), err)
         } else {
             fmt.Printf("Successfully exited minipool %s.\n", minipool.Address.Hex())
+            fmt.Println("It may take several hours for your minipool's status to be reflected.")
         }
     }
 
