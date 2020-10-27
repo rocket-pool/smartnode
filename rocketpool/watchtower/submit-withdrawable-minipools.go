@@ -278,7 +278,7 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
     }
 
     // Check validator status
-    if !validator.Exists || validator.WithdrawableEpoch >= beaconHead.Epoch {
+    if !validator.Exists || validator.WithdrawableEpoch >= beaconHead.FinalizedEpoch {
         return minipoolWithdrawableDetails{}, nil
     }
 
@@ -286,8 +286,8 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
     startEpoch := eth2.EpochAt(eth2Config, userDepositTime)
     if startEpoch < validator.ActivationEpoch {
         startEpoch = validator.ActivationEpoch
-    } else if startEpoch > beaconHead.Epoch {
-        startEpoch = beaconHead.Epoch
+    } else if startEpoch > beaconHead.FinalizedEpoch {
+        startEpoch = beaconHead.FinalizedEpoch
     }
 
     // Get validator activation balance
@@ -296,7 +296,7 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
     activationBalance := eth.WeiToGwei(activationBalanceWei)
 
     // Calculate approximate validator balance at start epoch & validator balance at current epoch
-    startBalance := eth.GweiToWei(activationBalance + (float64(validator.Balance) - activationBalance) * float64(startEpoch - validator.ActivationEpoch) / float64(beaconHead.Epoch - validator.ActivationEpoch))
+    startBalance := eth.GweiToWei(activationBalance + (float64(validator.Balance) - activationBalance) * float64(startEpoch - validator.ActivationEpoch) / float64(beaconHead.FinalizedEpoch - validator.ActivationEpoch))
     endBalance := eth.GweiToWei(float64(validator.Balance))
 
     // Check for existing node submission
