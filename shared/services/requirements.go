@@ -306,7 +306,12 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
         // Check sync progress
         if progress != nil {
             if verbose {
-                log.Printf("Eth 1.0 node syncing: %.2f%%\n", (float64(progress.CurrentBlock - progress.StartingBlock) / float64(progress.HighestBlock - progress.StartingBlock)) * 100)
+                p := float64(progress.CurrentBlock - progress.StartingBlock) / float64(progress.HighestBlock - progress.StartingBlock)
+                if p > 1 {
+                    log.Println("Eth 1.0 node syncing...")
+                } else {
+                    log.Printf("Eth 1.0 node syncing: %.2f%%\n", p * 100)
+                }
             }
         } else {
             return true, nil
