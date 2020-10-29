@@ -178,50 +178,50 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
 
 
 // Start the Rocket Pool service
-func (c *Client) StartService() error {
-    cmd, err := c.compose("up -d")
+func (c *Client) StartService(composeFiles []string) error {
+    cmd, err := c.compose(composeFiles, "up -d")
     if err != nil { return err }
     return c.printOutput(cmd)
 }
 
 
 // Pause the Rocket Pool service
-func (c *Client) PauseService() error {
-    cmd, err := c.compose("stop")
+func (c *Client) PauseService(composeFiles []string) error {
+    cmd, err := c.compose(composeFiles, "stop")
     if err != nil { return err }
     return c.printOutput(cmd)
 }
 
 
 // Stop the Rocket Pool service
-func (c *Client) StopService() error {
-    cmd, err := c.compose("down -v")
+func (c *Client) StopService(composeFiles []string) error {
+    cmd, err := c.compose(composeFiles, "down -v")
     if err != nil { return err }
     return c.printOutput(cmd)
 }
 
 
 // Print the Rocket Pool service status
-func (c *Client) PrintServiceStatus() error {
-    cmd, err := c.compose("ps")
+func (c *Client) PrintServiceStatus(composeFiles []string) error {
+    cmd, err := c.compose(composeFiles, "ps")
     if err != nil { return err }
     return c.printOutput(cmd)
 }
 
 
 // Print the Rocket Pool service logs
-func (c *Client) PrintServiceLogs(tail string, serviceNames ...string) error {
-    cmd, err := c.compose(fmt.Sprintf("logs -f --tail %s %s", tail, strings.Join(serviceNames, " ")))
+func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
+    cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", tail, strings.Join(serviceNames, " ")))
     if err != nil { return err }
     return c.printOutput(cmd)
 }
 
 
 // Print the Rocket Pool service stats
-func (c *Client) PrintServiceStats() error {
+func (c *Client) PrintServiceStats(composeFiles []string) error {
 
     // Get service container IDs
-    cmd, err := c.compose("ps -q")
+    cmd, err := c.compose(composeFiles, "ps -q")
     if err != nil { return err }
     containers, err := c.readOutput(cmd)
     if err != nil { return err }
@@ -278,7 +278,7 @@ func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
 
 
 // Build a docker-compose command
-func (c *Client) compose(args string) (string, error) {
+func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Load config
     globalConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, GlobalConfigFile))
@@ -318,8 +318,15 @@ func (c *Client) compose(args string) (string, error) {
         env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
     }
 
+    // Set compose file flags
+    composeFileFlags := make([]string, len(composeFiles) + 1)
+    composeFileFlags[0] = fmt.Sprintf("-f %s/%s", RocketPoolPath, ComposeFile)
+    for fi, composeFile := range composeFiles {
+        composeFileFlags[fi + 1] = fmt.Sprintf("-f %s", composeFile)
+    }
+
     // Return command
-    return fmt.Sprintf("%s docker-compose --project-directory %s -f %s %s", strings.Join(env, " "), RocketPoolPath, fmt.Sprintf("%s/%s", RocketPoolPath, ComposeFile), args), nil
+    return fmt.Sprintf("%s docker-compose --project-directory %s %s %s", strings.Join(env, " "), RocketPoolPath, strings.Join(composeFileFlags, " "), args), nil
 
 }
 

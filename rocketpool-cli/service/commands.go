@@ -13,6 +13,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Name:      name,
         Aliases:   aliases,
         Usage:     "Manage Rocket Pool service",
+        Flags: []cli.Flag{
+            cli.StringSliceFlag{
+                Name:  "compose-file, f",
+                Usage: "Optional compose files to override the standard Rocket Pool docker-compose.yml; this flag may be defined multiple times",
+            },
+        },
         Subcommands: []cli.Command{
 
             cli.Command{

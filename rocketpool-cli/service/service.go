@@ -63,7 +63,7 @@ func serviceStatus(c *cli.Context) error {
     defer rp.Close()
 
     // Print service status
-    return rp.PrintServiceStatus()
+    return rp.PrintServiceStatus(getComposeFiles(c))
 
 }
 
@@ -77,7 +77,7 @@ func startService(c *cli.Context) error {
     defer rp.Close()
 
     // Start service
-    return rp.StartService()
+    return rp.StartService(getComposeFiles(c))
 
 }
 
@@ -97,7 +97,7 @@ func pauseService(c *cli.Context) error {
     defer rp.Close()
 
     // Pause service
-    return rp.PauseService()
+    return rp.PauseService(getComposeFiles(c))
 
 }
 
@@ -117,7 +117,7 @@ func stopService(c *cli.Context) error {
     defer rp.Close()
 
     // Stop service
-    return rp.StopService()
+    return rp.StopService(getComposeFiles(c))
 
 }
 
@@ -131,7 +131,7 @@ func serviceLogs(c *cli.Context, serviceNames ...string) error {
     defer rp.Close()
 
     // Print service logs
-    return rp.PrintServiceLogs(c.String("tail"), serviceNames...)
+    return rp.PrintServiceLogs(getComposeFiles(c), c.String("tail"), serviceNames...)
 
 }
 
@@ -145,7 +145,7 @@ func serviceStats(c *cli.Context) error {
     defer rp.Close()
 
     // Print service stats
-    return rp.PrintServiceStats()
+    return rp.PrintServiceStats(getComposeFiles(c))
 
 }
 
@@ -167,5 +167,11 @@ func serviceVersion(c *cli.Context) error {
     fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
     return nil
 
+}
+
+
+// Get the compose file paths for a CLI context
+func getComposeFiles(c *cli.Context) []string {
+    return c.Parent().StringSlice("compose-file")
 }
 
