@@ -201,6 +201,11 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
     }
 
+    // Return if no validators found
+    if len(validators.ValidatorList) == 0 {
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, nil
+    }
+
     // Build validator balances request
     balancesRequest := &pb.ListValidatorBalancesRequest{
         PublicKeys: make([][]byte, len(validators.ValidatorList)),
