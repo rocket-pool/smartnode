@@ -35,7 +35,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "init",
                 Aliases:   []string{"i"},
                 Usage:     "Initialize the node wallet",
-                UsageText: "rocketpool wallet init",
+                UsageText: "rocketpool wallet init [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "password, p",
@@ -66,7 +66,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "recover",
                 Aliases:   []string{"r"},
                 Usage:     "Recover a node wallet from a mnemonic phrase",
-                UsageText: "rocketpool wallet recover",
+                UsageText: "rocketpool wallet recover [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "password, p",

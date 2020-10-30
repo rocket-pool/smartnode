@@ -113,7 +113,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "pause",
                 Aliases:   []string{"p"},
                 Usage:     "Pause the Rocket Pool service",
-                UsageText: "rocketpool service pause",
+                UsageText: "rocketpool service pause [options]",
                 Flags: []cli.Flag{
                     cli.BoolFlag{
                         Name:  "yes, y",
@@ -134,7 +134,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "stop",
                 Aliases:   []string{"o"},
                 Usage:     "Pause the Rocket Pool service (alias of 'rocketpool service pause')",
-                UsageText: "rocketpool service stop",
+                UsageText: "rocketpool service stop [options]",
                 Flags: []cli.Flag{
                     cli.BoolFlag{
                         Name:  "yes, y",
@@ -156,7 +156,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "terminate",
                 Aliases:   []string{"t"},
                 Usage:     "Stop the Rocket Pool service and tear down the service stack",
-                UsageText: "rocketpool service terminate",
+                UsageText: "rocketpool service terminate [options]",
                 Flags: []cli.Flag{
                     cli.BoolFlag{
                         Name:  "yes, y",
@@ -178,7 +178,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "logs",
                 Aliases:   []string{"l"},
                 Usage:     "View the Rocket Pool service logs",
-                UsageText: "rocketpool service logs [services...]",
+                UsageText: "rocketpool service logs [options] [services...]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "tail, t",
