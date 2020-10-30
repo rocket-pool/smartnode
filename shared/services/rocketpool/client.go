@@ -37,22 +37,23 @@ const (
 
 // Rocket Pool client
 type Client struct {
+    daemonPath string
     client *ssh.Client
 }
 
 
 // Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
-    return NewClient(c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"), c.GlobalString("passphrase"))
+    return NewClient(c.GlobalString("daemon-path"), c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"), c.GlobalString("passphrase"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(hostAddress, user, keyPath, keyPassphrase string) (*Client, error) {
+func NewClient(daemonPath, hostAddress, user, keyPath, keyPassphrase string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
-    if (hostAddress != "") {
+    if hostAddress != "" {
 
         // Check parameters
         if user == "" {
@@ -93,6 +94,7 @@ func NewClient(hostAddress, user, keyPath, keyPassphrase string) (*Client, error
 
     // Return client
     return &Client{
+        daemonPath: daemonPath,
         client: sshClient,
     }, nil
 
@@ -237,7 +239,13 @@ func (c *Client) PrintServiceStats(composeFiles []string) error {
 func (c *Client) GetServiceVersion() (string, error) {
 
     // Get service container version output
-    versionBytes, err := c.readOutput(fmt.Sprintf("docker exec %s %s --version", APIContainerName, APIBinPath))
+    var cmd string
+    if c.daemonPath == "" {
+        cmd = fmt.Sprintf("docker exec %s %s --version", APIContainerName, APIBinPath)
+    } else {
+        cmd = fmt.Sprintf("%s --version", c.daemonPath)
+    }
+    versionBytes, err := c.readOutput(cmd)
     if err != nil {
         return "", fmt.Errorf("Could not get Rocket Pool service version: %w", err)
     }
@@ -279,6 +287,11 @@ func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
 
 // Build a docker-compose command
 func (c *Client) compose(composeFiles []string, args string) (string, error) {
+
+    // Cancel if running in non-docker mode
+    if c.daemonPath != "" {
+        return "", errors.New("Command unavailable with '--daemon-path' option specified.")
+    }
 
     // Load config
     globalConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, GlobalConfigFile))
@@ -333,7 +346,13 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 // Call the Rocket Pool API
 func (c *Client) callAPI(args string) ([]byte, error) {
-    return c.readOutput(fmt.Sprintf("docker exec %s %s api %s", APIContainerName, APIBinPath, args))
+    var cmd string
+    if c.daemonPath == "" {
+        cmd = fmt.Sprintf("docker exec %s %s api %s", APIContainerName, APIBinPath, args)
+    } else {
+        cmd = fmt.Sprintf("%s --config %s --settings %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", RocketPoolPath, GlobalConfigFile), fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile), args)
+    }
+    return c.readOutput(cmd)
 }
 
 

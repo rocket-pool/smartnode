@@ -56,6 +56,10 @@ ______           _        _    ______           _
             Usage: "Allow rocketpool to be run as the root user",
         },
         cli.StringFlag{
+            Name:  "daemon-path, d",
+            Usage: "Interact with a Rocket Pool service daemon running outside of docker",
+        },
+        cli.StringFlag{
             Name:  "host, o",
             Usage: "Smart node SSH host `address`",
         },
