@@ -2,6 +2,8 @@
 vendor
 node_modules
 /scripts/config.js
+/rocketpool/rocketpoold-darwin-amd64
+/rocketpool/rocketpoold-linux-amd64
 /rocketpool-cli/rocketpool-cli-darwin-amd64
 /rocketpool-cli/rocketpool-cli-linux-amd64
 /rocketpool-cli/rocketpool-cli-windows-amd64.exe
