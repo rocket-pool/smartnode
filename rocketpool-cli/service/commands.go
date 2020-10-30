@@ -28,6 +28,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 UsageText: "rocketpool service install [options]",
                 Flags: []cli.Flag{
                     cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm service installation",
+                    },
+                    cli.BoolFlag{
                         Name:  "verbose, r",
                         Usage: "Print installation script command output",
                     },
@@ -110,6 +114,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"p"},
                 Usage:     "Pause the Rocket Pool service",
                 UsageText: "rocketpool service pause",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm service suspension",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -125,6 +135,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"o"},
                 Usage:     "Pause the Rocket Pool service (alias of 'rocketpool service pause')",
                 UsageText: "rocketpool service stop",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm service suspension",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -141,6 +157,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"t"},
                 Usage:     "Stop the Rocket Pool service and tear down the service stack",
                 UsageText: "rocketpool service terminate",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm service termination",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args

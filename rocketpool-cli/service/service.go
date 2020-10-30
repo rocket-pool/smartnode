@@ -22,10 +22,10 @@ func installService(c *cli.Context) error {
     }
 
     // Prompt for confirmation
-    if !cliutils.Confirm(fmt.Sprintf(
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
         "The Rocket Pool service will be installed %s --\nNetwork: %s\nVersion: %s\n\nAny existing configuration will be overwritten.\nAre you sure you want to continue?",
         location, c.String("network"), c.String("version"),
-    )) {
+    ))) {
         fmt.Println("Cancelled.")
         return nil
     }
@@ -86,7 +86,7 @@ func startService(c *cli.Context) error {
 func pauseService(c *cli.Context) error {
 
     // Prompt for confirmation
-    if !cliutils.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!") {
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
         fmt.Println("Cancelled.")
         return nil
     }
@@ -106,7 +106,7 @@ func pauseService(c *cli.Context) error {
 func stopService(c *cli.Context) error {
 
     // Prompt for confirmation
-    if !cliutils.Confirm("Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, chain databases will be deleted, and ethereum nodes will lose ALL sync progress!") {
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, chain databases will be deleted, and ethereum nodes will lose ALL sync progress!")) {
         fmt.Println("Cancelled.")
         return nil
     }
