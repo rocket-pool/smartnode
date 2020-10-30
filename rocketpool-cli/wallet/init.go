@@ -5,6 +5,7 @@ import (
 
     "github.com/urfave/cli"
 
+    "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
@@ -28,7 +29,15 @@ func initWallet(c *cli.Context) error {
 
     // Set password if not set
     if !status.PasswordSet {
-        password := promptPassword()
+        var password string
+        if c.String("password") == "" {
+            password = promptPassword()
+        } else {
+            password = c.String("password")
+            if len(password) < passwords.MinPasswordLength {
+                return fmt.Errorf("Password does not meet minimum length of %d characters.", passwords.MinPasswordLength)
+            }
+        }
         if _, err := rp.SetPassword(password); err != nil {
             return err
         }
@@ -48,7 +57,9 @@ func initWallet(c *cli.Context) error {
     fmt.Println("")
 
     // Confirm mnemonic
-    confirmMnemonic(response.Mnemonic)
+    if !c.Bool("confirm-mnemonic") {
+        confirmMnemonic(response.Mnemonic)
+    }
 
     // Log & return
     fmt.Println("The node wallet was successfully initialized.")
