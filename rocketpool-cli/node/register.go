@@ -33,7 +33,12 @@ func registerNode(c *cli.Context) error {
     }
 
     // Prompt for timezone location
-    timezoneLocation := promptTimezone()
+    var timezoneLocation string
+    if c.String("timezone") != "" {
+        timezoneLocation = c.String("timezone")
+    } else {
+        timezoneLocation = promptTimezone()
+    }
 
     // Register node
     if _, err := rp.RegisterNode(timezoneLocation); err != nil {

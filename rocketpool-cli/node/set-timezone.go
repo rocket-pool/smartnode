@@ -17,7 +17,12 @@ func setTimezoneLocation(c *cli.Context) error {
     defer rp.Close()
 
     // Prompt for timezone location
-    timezoneLocation := promptTimezone()
+    var timezoneLocation string
+    if c.String("timezone") != "" {
+        timezoneLocation = c.String("timezone")
+    } else {
+        timezoneLocation = promptTimezone()
+    }
 
     // Set node's timezone location
     if _, err := rp.SetNodeTimezone(timezoneLocation); err != nil {

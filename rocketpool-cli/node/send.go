@@ -36,7 +36,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
     }
 
     // Prompt for confirmation
-    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.2f %s to %s? This action cannot be undone!", eth.WeiToEth(amountWei), token, toAddress.Hex())) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.2f %s to %s? This action cannot be undone!", eth.WeiToEth(amountWei), token, toAddress.Hex()))) {
         fmt.Println("Cancelled.")
         return nil
     }

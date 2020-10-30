@@ -35,11 +35,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "register",
                 Aliases:   []string{"r"},
                 Usage:     "Register the node with Rocket Pool",
-                UsageText: "rocketpool node register",
+                UsageText: "rocketpool node register [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "timezone, t",
+                        Usage: "The timezone location to register the node with (in the format 'Country/City')",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("timezone") != "" {
+                        if _, err := cliutils.ValidateTimezoneLocation("timezone location", c.String("timezone")); err != nil { return err }
+                    }
 
                     // Run
                     return registerNode(c)
@@ -51,11 +62,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "set-timezone",
                 Aliases:   []string{"t"},
                 Usage:     "Set the node's timezone location",
-                UsageText: "rocketpool node set-timezone",
+                UsageText: "rocketpool node set-timezone [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "timezone, t",
+                        Usage: "The timezone location to set for the node (in the format 'Country/City')",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("timezone") != "" {
+                        if _, err := cliutils.ValidateTimezoneLocation("timezone location", c.String("timezone")); err != nil { return err }
+                    }
 
                     // Run
                     return setTimezoneLocation(c)
@@ -83,7 +105,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "send",
                 Aliases:   []string{"n"},
                 Usage:     "Send ETH or tokens from the node account to an address",
-                UsageText: "rocketpool node send amount token to",
+                UsageText: "rocketpool node send [options] amount token to",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm token send",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
