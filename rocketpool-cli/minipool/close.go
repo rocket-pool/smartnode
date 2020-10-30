@@ -1,8 +1,10 @@
 package minipool
 
 import (
+    "bytes"
     "fmt"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
 
@@ -39,20 +41,43 @@ func closeMinipools(c *cli.Context) error {
         return nil
     }
 
-    // Prompt for minipool selection
-    options := make([]string, len(closableMinipools) + 1)
-    options[0] = "All available minipools"
-    for mi, minipool := range closableMinipools {
-        options[mi + 1] = fmt.Sprintf("%s (%.2f ETH to claim)", minipool.Address.Hex(), eth.WeiToEth(minipool.Node.DepositBalance))
-    }
-    selected, _ := cliutils.Select("Please select a minipool to close:", options)
-
     // Get selected minipools
     var selectedMinipools []api.MinipoolDetails
-    if selected == 0 {
-        selectedMinipools = closableMinipools
+    if c.String("minipool") == "" {
+
+        // Prompt for minipool selection
+        options := make([]string, len(closableMinipools) + 1)
+        options[0] = "All available minipools"
+        for mi, minipool := range closableMinipools {
+            options[mi + 1] = fmt.Sprintf("%s (%.2f ETH to claim)", minipool.Address.Hex(), eth.WeiToEth(minipool.Node.DepositBalance))
+        }
+        selected, _ := cliutils.Select("Please select a minipool to close:", options)
+
+        // Get minipools
+        if selected == 0 {
+            selectedMinipools = closableMinipools
+        } else {
+            selectedMinipools = []api.MinipoolDetails{closableMinipools[selected - 1]}
+        }
+
     } else {
-        selectedMinipools = []api.MinipoolDetails{closableMinipools[selected - 1]}
+
+        // Get matching minipools
+        if c.String("minipool") == "all" {
+            selectedMinipools = closableMinipools
+        } else {
+            selectedAddress := common.HexToAddress(c.String("minipool"))
+            for _, minipool := range closableMinipools {
+                if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
+                    selectedMinipools = []api.MinipoolDetails{minipool}
+                    break
+                }
+            }
+            if selectedMinipools == nil {
+                return fmt.Errorf("The minipool %s is not available for closing.", selectedAddress.Hex())
+            }
+        }
+
     }
 
     // Close minipools

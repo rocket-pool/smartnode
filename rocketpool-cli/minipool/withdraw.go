@@ -1,8 +1,10 @@
 package minipool
 
 import (
+    "bytes"
     "fmt"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
 
@@ -39,20 +41,43 @@ func withdrawMinipools(c *cli.Context) error {
         return nil
     }
 
-    // Prompt for minipool selection
-    options := make([]string, len(withdrawableMinipools) + 1)
-    options[0] = "All available minipools"
-    for mi, minipool := range withdrawableMinipools {
-        options[mi + 1] = fmt.Sprintf("%s (%.2f nETH to claim)", minipool.Address.Hex(), eth.WeiToEth(minipool.Balances.NETH))
-    }
-    selected, _ := cliutils.Select("Please select a minipool to withdraw from:", options)
-
     // Get selected minipools
     var selectedMinipools []api.MinipoolDetails
-    if selected == 0 {
-        selectedMinipools = withdrawableMinipools
+    if c.String("minipool") == "" {
+
+        // Prompt for minipool selection
+        options := make([]string, len(withdrawableMinipools) + 1)
+        options[0] = "All available minipools"
+        for mi, minipool := range withdrawableMinipools {
+            options[mi + 1] = fmt.Sprintf("%s (%.2f nETH to claim)", minipool.Address.Hex(), eth.WeiToEth(minipool.Balances.NETH))
+        }
+        selected, _ := cliutils.Select("Please select a minipool to withdraw from:", options)
+
+        // Get minipools
+        if selected == 0 {
+            selectedMinipools = withdrawableMinipools
+        } else {
+            selectedMinipools = []api.MinipoolDetails{withdrawableMinipools[selected - 1]}
+        }
+
     } else {
-        selectedMinipools = []api.MinipoolDetails{withdrawableMinipools[selected - 1]}
+
+        // Get matching minipools
+        if c.String("minipool") == "all" {
+            selectedMinipools = withdrawableMinipools
+        } else {
+            selectedAddress := common.HexToAddress(c.String("minipool"))
+            for _, minipool := range withdrawableMinipools {
+                if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
+                    selectedMinipools = []api.MinipoolDetails{minipool}
+                    break
+                }
+            }
+            if selectedMinipools == nil {
+                return fmt.Errorf("The minipool %s is not available for withdrawal.", selectedAddress.Hex())
+            }
+        }
+
     }
 
     // Withdraw minipools

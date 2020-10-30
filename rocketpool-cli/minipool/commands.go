@@ -35,11 +35,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "refund",
                 Aliases:   []string{"r"},
                 Usage:     "Refund ETH belonging to the node from minipools",
-                UsageText: "rocketpool minipool refund",
+                UsageText: "rocketpool minipool refund [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "minipool, m",
+                        Usage: "The minipool/s to refund from (address or 'all')",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("minipool") != "" && c.String("minipool") != "all" {
+                        if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
+                    }
 
                     // Run
                     return refundMinipools(c)
@@ -51,11 +62,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "dissolve",
                 Aliases:   []string{"d"},
                 Usage:     "Dissolve initialized or prelaunch minipools",
-                UsageText: "rocketpool minipool dissolve",
+                UsageText: "rocketpool minipool dissolve [options]",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm dissolving minipool/s",
+                    },
+                    cli.StringFlag{
+                        Name:  "minipool, m",
+                        Usage: "The minipool/s to dissolve (address or 'all')",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("minipool") != "" && c.String("minipool") != "all" {
+                        if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
+                    }
 
                     // Run
                     return dissolveMinipools(c)
@@ -67,11 +93,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "exit",
                 Aliases:   []string{"e"},
                 Usage:     "Exit staking minipools from the beacon chain",
-                UsageText: "rocketpool minipool exit",
+                UsageText: "rocketpool minipool exit [options]",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm exiting minipool/s",
+                    },
+                    cli.StringFlag{
+                        Name:  "minipool, m",
+                        Usage: "The minipool/s to exit (address or 'all')",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("minipool") != "" && c.String("minipool") != "all" {
+                        if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
+                    }
 
                     // Run
                     return exitMinipools(c)
@@ -83,11 +124,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "withdraw",
                 Aliases:   []string{"w"},
                 Usage:     "Withdraw final balances and rewards from withdrawable minipools and close them",
-                UsageText: "rocketpool minipool withdraw",
+                UsageText: "rocketpool minipool withdraw [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "minipool, m",
+                        Usage: "The minipool/s to withdraw from (address or 'all')",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("minipool") != "" && c.String("minipool") != "all" {
+                        if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
+                    }
 
                     // Run
                     return withdrawMinipools(c)
@@ -99,11 +151,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "close",
                 Aliases:   []string{"c"},
                 Usage:     "Withdraw balances from dissolved minipools and close them",
-                UsageText: "rocketpool minipool close",
+                UsageText: "rocketpool minipool close [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "minipool, m",
+                        Usage: "The minipool/s to close (address or 'all')",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("minipool") != "" && c.String("minipool") != "all" {
+                        if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
+                    }
 
                     // Run
                     return closeMinipools(c)

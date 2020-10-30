@@ -1,8 +1,10 @@
 package minipool
 
 import (
+    "bytes"
     "fmt"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
 
@@ -39,20 +41,43 @@ func refundMinipools(c *cli.Context) error {
         return nil
     }
 
-    // Prompt for minipool selection
-    options := make([]string, len(refundableMinipools) + 1)
-    options[0] = "All available minipools"
-    for mi, minipool := range refundableMinipools {
-        options[mi + 1] = fmt.Sprintf("%s (%.2f ETH to claim)", minipool.Address.Hex(), eth.WeiToEth(minipool.Node.RefundBalance))
-    }
-    selected, _ := cliutils.Select("Please select a minipool to refund ETH from:", options)
-
     // Get selected minipools
     var selectedMinipools []api.MinipoolDetails
-    if selected == 0 {
-        selectedMinipools = refundableMinipools
+    if c.String("minipool") == "" {
+
+        // Prompt for minipool selection
+        options := make([]string, len(refundableMinipools) + 1)
+        options[0] = "All available minipools"
+        for mi, minipool := range refundableMinipools {
+            options[mi + 1] = fmt.Sprintf("%s (%.2f ETH to claim)", minipool.Address.Hex(), eth.WeiToEth(minipool.Node.RefundBalance))
+        }
+        selected, _ := cliutils.Select("Please select a minipool to refund ETH from:", options)
+
+        // Get minipools
+        if selected == 0 {
+            selectedMinipools = refundableMinipools
+        } else {
+            selectedMinipools = []api.MinipoolDetails{refundableMinipools[selected - 1]}
+        }
+
     } else {
-        selectedMinipools = []api.MinipoolDetails{refundableMinipools[selected - 1]}
+
+        // Get matching minipools
+        if c.String("minipool") == "all" {
+            selectedMinipools = refundableMinipools
+        } else {
+            selectedAddress := common.HexToAddress(c.String("minipool"))
+            for _, minipool := range refundableMinipools {
+                if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
+                    selectedMinipools = []api.MinipoolDetails{minipool}
+                    break
+                }
+            }
+            if selectedMinipools == nil {
+                return fmt.Errorf("The minipool %s is not available for refund.", selectedAddress.Hex())
+            }
+        }
+
     }
 
     // Refund minipools

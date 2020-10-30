@@ -1,8 +1,10 @@
 package minipool
 
 import (
+    "bytes"
     "fmt"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
@@ -40,24 +42,47 @@ func dissolveMinipools(c *cli.Context) error {
         return nil
     }
 
-    // Prompt for minipool selection
-    options := make([]string, len(initializedMinipools) + 1)
-    options[0] = "All available minipools"
-    for mi, minipool := range initializedMinipools {
-        options[mi + 1] = fmt.Sprintf("%s (%.2f ETH deposited)", minipool.Address.Hex(), eth.WeiToEth(minipool.Node.DepositBalance))
-    }
-    selected, _ := cliutils.Select("Please select a minipool to dissolve:", options)
-
     // Get selected minipools
     var selectedMinipools []api.MinipoolDetails
-    if selected == 0 {
-        selectedMinipools = initializedMinipools
+    if c.String("minipool") == "" {
+
+        // Prompt for minipool selection
+        options := make([]string, len(initializedMinipools) + 1)
+        options[0] = "All available minipools"
+        for mi, minipool := range initializedMinipools {
+            options[mi + 1] = fmt.Sprintf("%s (%.2f ETH deposited)", minipool.Address.Hex(), eth.WeiToEth(minipool.Node.DepositBalance))
+        }
+        selected, _ := cliutils.Select("Please select a minipool to dissolve:", options)
+
+        // Get minipools
+        if selected == 0 {
+            selectedMinipools = initializedMinipools
+        } else {
+            selectedMinipools = []api.MinipoolDetails{initializedMinipools[selected - 1]}
+        }
+
     } else {
-        selectedMinipools = []api.MinipoolDetails{initializedMinipools[selected - 1]}
+
+        // Get matching minipools
+        if c.String("minipool") == "all" {
+            selectedMinipools = initializedMinipools
+        } else {
+            selectedAddress := common.HexToAddress(c.String("minipool"))
+            for _, minipool := range initializedMinipools {
+                if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
+                    selectedMinipools = []api.MinipoolDetails{minipool}
+                    break
+                }
+            }
+            if selectedMinipools == nil {
+                return fmt.Errorf("The minipool %s is not available for dissolving.", selectedAddress.Hex())
+            }
+        }
+
     }
 
     // Prompt for confirmation
-    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to dissolve %d minipool(s)? This action cannot be undone!", len(selectedMinipools))) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to dissolve %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
         fmt.Println("Cancelled.")
         return nil
     }
