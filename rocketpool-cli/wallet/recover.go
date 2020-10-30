@@ -1,13 +1,10 @@
 package wallet
 
 import (
-    "errors"
     "fmt"
 
-    "github.com/tyler-smith/go-bip39"
     "github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
@@ -32,13 +29,10 @@ func recoverWallet(c *cli.Context) error {
     // Set password if not set
     if !status.PasswordSet {
         var password string
-        if c.String("password") == "" {
-            password = promptPassword()
-        } else {
+        if c.String("password") != "" {
             password = c.String("password")
-            if len(password) < passwords.MinPasswordLength {
-                return fmt.Errorf("Password does not meet minimum length of %d characters.", passwords.MinPasswordLength)
-            }
+        } else {
+            password = promptPassword()
         }
         if _, err := rp.SetPassword(password); err != nil {
             return err
@@ -47,13 +41,10 @@ func recoverWallet(c *cli.Context) error {
 
     // Prompt for mnemonic
     var mnemonic string
-    if c.String("mnemonic") == "" {
-        mnemonic = promptMnemonic()
-    } else {
+    if c.String("mnemonic") != "" {
         mnemonic = c.String("mnemonic")
-        if !bip39.IsMnemonicValid(mnemonic) {
-            return errors.New("Invalid mnemonic phrase.")
-        }
+    } else {
+        mnemonic = promptMnemonic()
     }
 
     // Log

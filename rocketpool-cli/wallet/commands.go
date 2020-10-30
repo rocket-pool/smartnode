@@ -51,6 +51,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
+                    // Validate flags
+                    if c.String("password") != "" {
+                        if _, err := cliutils.ValidateNodePassword("password", c.String("password")); err != nil { return err }
+                    }
+
                     // Run
                     return initWallet(c)
 
@@ -76,6 +81,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("password") != "" {
+                        if _, err := cliutils.ValidateNodePassword("password", c.String("password")); err != nil { return err }
+                    }
+                    if c.String("mnemonic") != "" {
+                        if _, err := cliutils.ValidateWalletMnemonic("mnemonic", c.String("mnemonic")); err != nil { return err }
+                    }
 
                     // Run
                     return recoverWallet(c)
