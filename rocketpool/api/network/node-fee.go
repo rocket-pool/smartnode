@@ -10,8 +10,10 @@ import (
     "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
+
 // Config
-const SuggestedNodeFeeDelta = -0.01 // 1% below current
+const SuggestedMinNodeFeeDelta = -0.01 // 1% below current
+
 
 func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
 
@@ -62,13 +64,14 @@ func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
     }
 
     // Suggest minimum node fee
-    suggestedMinNodeFee := response.NodeFee + SuggestedNodeFeeDelta
+    suggestedMinNodeFee := response.NodeFee + SuggestedMinNodeFeeDelta
     if suggestedMinNodeFee < response.MinNodeFee {
         suggestedMinNodeFee = response.MinNodeFee
     }
-    response.SuggestedNodeFee = suggestedMinNodeFee
+    response.SuggestedMinNodeFee = suggestedMinNodeFee
 
     // Return response
     return &response, nil
 
 }
+
