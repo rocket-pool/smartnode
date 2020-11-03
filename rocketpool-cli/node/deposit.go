@@ -2,6 +2,7 @@ package node
 
 import (
     "fmt"
+    "strconv"
 
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
@@ -18,14 +19,25 @@ func nodeDeposit(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Get node status
-    status, err := rp.NodeStatus()
-    if err != nil {
-        return err
-    }
-
+    // Get deposit amount
     var amount float64
-    if !c.IsSet("amount") {
+    if c.String("amount") != "" {
+
+        // Parse amount
+        depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+        if err != nil {
+            return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
+        }
+        amount = depositAmount
+
+    } else {
+
+        // Get node status
+        status, err := rp.NodeStatus()
+        if err != nil {
+            return err
+        }
+
         // Get deposit amount options
         amountOptions := []string{
             "32 ETH (minipool begins staking immediately)",
@@ -34,15 +46,15 @@ func nodeDeposit(c *cli.Context) error {
         if status.Trusted {
             amountOptions = append(amountOptions, "0 ETH  (minipool begins staking after ETH is assigned)")
         }
-        // Prompt for eth amount
+
+        // Prompt for amount
         selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
         switch selected {
             case 0: amount = 32
             case 1: amount = 16
             case 2: amount = 0
         }
-    } else {
-        amount = c.Float64("amount")
+
     }
     amountWei := eth.EthToWei(amount)
 
@@ -65,31 +77,36 @@ func nodeDeposit(c *cli.Context) error {
         return nil
     }
 
+    // Get minimum node fee
     var minNodeFee float64
-    if !c.IsSet("fee") && !c.IsSet("autofee") {
-        // Get network node fees
-        nodeFees, err := rp.NodeFee()
-        if err != nil {
-            return err
-        }
+    if c.String("min-fee") == "auto" {
 
-        // Prompt for minimum node fee
-        minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.SuggestedNodeFee)
-    } else if c.IsSet("autofee") {
-        // Get network node fees
+        // Use suggested fee
         nodeFees, err := rp.NodeFee()
         if err != nil {
             return err
         }
-        minNodeFee = nodeFees.SuggestedNodeFee
-    } else {
-        // fee is set
-        minNodeFee = c.Float64("fee") / 100
-        if minNodeFee < 0 || minNodeFee > 1 {
-            return fmt.Errorf("Invalid commission rate: %.5f", minNodeFee)
+        minNodeFee = nodeFees.SuggestedMinNodeFee
+
+    } else if c.String("min-fee") != "" {
+
+        // Parse fee
+        minNodeFeePerc, err := strconv.ParseFloat(c.String("min-fee"), 64)
+        if err != nil {
+            return fmt.Errorf("Invalid minimum node fee '%s': %w", c.String("min-fee"), err)
         }
+        minNodeFee = minNodeFeePerc / 100
+
+    } else {
+
+        // Prompt for fee
+        nodeFees, err := rp.NodeFee()
+        if err != nil {
+            return err
+        }
+        minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.SuggestedMinNodeFee)
+
     }
-    //fmt.Printf("Amount: %.10f ETH, Fee: %.5f %%\n", eth.WeiToEth(amountWei), minNodeFee * 100)
 
     // Make deposit
     response, err := rp.NodeDeposit(amountWei, minNodeFee)
@@ -101,4 +118,6 @@ func nodeDeposit(c *cli.Context) error {
     fmt.Printf("The node deposit of %.2f ETH was made successfully.\n", eth.WeiToEth(amountWei))
     fmt.Printf("A new minipool was created at %s.\n", response.MinipoolAddress.Hex())
     return nil
+
 }
+

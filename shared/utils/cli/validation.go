@@ -68,6 +68,16 @@ func ValidateFraction(name, value string) (float64, error) {
 }
 
 
+// Validate a percentage
+func ValidatePercentage(name, value string) (float64, error) {
+    val, err := strconv.ParseFloat(value, 64)
+    if err != nil || val < 0 || val > 100 {
+        return 0, fmt.Errorf("Invalid %s '%s' - must be a number between 0 and 100", name, value)
+    }
+    return val, nil
+}
+
+
 // Validate a token type
 func ValidateTokenType(name, value string) (string, error) {
     val := strings.ToLower(value)

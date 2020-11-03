@@ -91,23 +91,27 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Usage:     "Make a deposit and create a minipool",
                 UsageText: "rocketpool node deposit [options]",
                 Flags: []cli.Flag{
-                    cli.Float64Flag{
-                        Name:  "amount, n",
-                        Usage: "Amount of ETH to deposit (0|16|32)",
+                    cli.StringFlag{
+                        Name:  "amount, a",
+                        Usage: "The amount of ETH to deposit (0, 16 or 32)",
                     },
-                    cli.BoolFlag{
-                        Name:  "autofee, a",
-                        Usage: "Use the suggested fee rate",
-                    },
-                    cli.Float64Flag{
-                        Name:  "fee, f",
-                        Usage: "Minimum node commission rate in % [0-20]",
+                    cli.StringFlag{
+                        Name:  "min-fee, f",
+                        Usage: "The minimum node commission rate for the deposit (or 'auto')",
                     },
                 },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("amount") != "" {
+                        if _, err := cliutils.ValidateDepositEthAmount("deposit amount", c.String("amount")); err != nil { return err }
+                    }
+                    if c.String("min-fee") != "" && c.String("min-fee") != "auto" {
+                        if _, err := cliutils.ValidatePercentage("minimum node fee", c.String("min-fee")); err != nil { return err }
+                    }
 
                     // Run
                     return nodeDeposit(c)
