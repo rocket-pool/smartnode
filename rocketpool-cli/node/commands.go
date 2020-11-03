@@ -67,7 +67,21 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "deposit",
                 Aliases:   []string{"d"},
                 Usage:     "Make a deposit and create a minipool",
-                UsageText: "rocketpool node deposit amount",
+                UsageText: "rocketpool node deposit [options]",
+                Flags: []cli.Flag{
+                    cli.Float64Flag{
+                        Name:  "amount, n",
+                        Usage: "Amount of ETH to deposit (0|16|32)",
+                    },
+                    cli.BoolFlag{
+                        Name:  "autofee, a",
+                        Usage: "Use the suggested fee rate",
+                    },
+                    cli.Float64Flag{
+                        Name:  "fee, f",
+                        Usage: "Minimum node commission rate in % [0-20]",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -126,4 +140,3 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         },
     })
 }
-
