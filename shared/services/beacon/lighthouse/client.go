@@ -8,6 +8,7 @@ import (
     "net/http"
     "net/url"
     "strconv"
+    "strings"
     "time"
 
     "github.com/ethereum/go-ethereum/common"
@@ -152,26 +153,15 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 // Get a validator's status
 func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
-    // Get validators
+    // Get validator
     validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, opts)
     if err != nil {
         return beacon.ValidatorStatus{}, err
     }
-
-    // Find validator in set
-    // TODO: lighthouse does not currently filter validators by pubkeys; remove once this is fixed
-    var validator Validator
-    var found bool
-    for _, v := range validators.Data {
-        if bytes.Equal(v.Validator.Pubkey, pubkey.Bytes()) {
-            validator = v
-            found = true
-            break
-        }
-    }
-    if !found {
+    if len(validators.Data) == 0 {
         return beacon.ValidatorStatus{}, nil
     }
+    validator := validators.Data[0]
 
     // Return response
     return beacon.ValidatorStatus{
@@ -203,19 +193,6 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
     statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
     for _, validator := range validators.Data {
 
-        // Check for validator in requested set
-        // TODO: lighthouse does not currently filter validators by pubkeys; remove once this is fixed
-        var found bool
-        for _, pk := range pubkeys {
-            if bytes.Equal(pk.Bytes(), validator.Validator.Pubkey) {
-                found = true
-                break
-            }
-        }
-        if !found {
-            continue
-        }
-
         // Get validator pubkey
         pubkey := types.BytesToValidatorPubkey(validator.Validator.Pubkey)
 
@@ -244,26 +221,15 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 // Get a validator's index
 func (c *Client) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {
 
-    // Get validators
+    // Get validator
     validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, nil)
     if err != nil {
         return 0, err
     }
-
-    // Find validator in set
-    // TODO: lighthouse does not currently filter validators by pubkeys; remove once this is fixed
-    var validator Validator
-    var found bool
-    for _, v := range validators.Data {
-        if bytes.Equal(v.Validator.Pubkey, pubkey.Bytes()) {
-            validator = v
-            found = true
-            break
-        }
+    if len(validators.Data) == 0 {
+        return 0, fmt.Errorf("Validator %s index not found.", pubkey.Hex())
     }
-    if !found {
-        return 0, fmt.Errorf("Validator %s index not found: %w", pubkey.Hex(), err)
-    }
+    validator := validators.Data[0]
 
     // Return validator index
     return uint64(validator.Index), nil
@@ -409,9 +375,7 @@ func (c *Client) getFork(stateId string) (ForkResponse, error) {
 // Get validators
 func (c *Client) getValidators(stateId string, pubkeys []string) (ValidatorsResponse, error) {
     params := url.Values{}
-    for _, pubkey := range pubkeys {
-        params.Add("id", pubkey)
-    }
+    params.Set("id", strings.Join(pubkeys, ","))
     responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId, params.Encode()))
     if err != nil {
         return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
