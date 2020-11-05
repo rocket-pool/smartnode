@@ -17,6 +17,10 @@ import (
 )
 
 
+// Settings
+const MinipoolBatchSize = 50
+
+
 // Minipool details
 type MinipoolDetails struct {
     Address common.Address              `json:"address"`
@@ -38,23 +42,30 @@ func GetMinipools(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]MinipoolDet
         return []MinipoolDetails{}, err
     }
 
-    // Data
-    var wg errgroup.Group
+    // Load minipool details in batches
     details := make([]MinipoolDetails, len(minipoolAddresses))
+    for bsi := 0; bsi < len(minipoolAddresses); bsi += MinipoolBatchSize {
 
-    // Load details
-    for mi, minipoolAddress := range minipoolAddresses {
-        mi, minipoolAddress := mi, minipoolAddress
-        wg.Go(func() error {
-            minipoolDetails, err := GetMinipoolDetails(rp, minipoolAddress, opts)
-            if err == nil { details[mi] = minipoolDetails }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolBatchSize
+        if mei > len(minipoolAddresses) { mei = len(minipoolAddresses) }
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return []MinipoolDetails{}, err
+        // Load details
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                minipoolAddress := minipoolAddresses[mi]
+                minipoolDetails, err := GetMinipoolDetails(rp, minipoolAddress, opts)
+                if err == nil { details[mi] = minipoolDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []MinipoolDetails{}, err
+        }
+
     }
 
     // Return
@@ -72,23 +83,29 @@ func GetMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]com
         return []common.Address{}, err
     }
 
-    // Data
-    var wg errgroup.Group
+    // Load minipool addresses in batches
     addresses := make([]common.Address, minipoolCount)
+    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolBatchSize {
 
-    // Load addresses
-    for mi := uint64(0); mi < minipoolCount; mi++ {
-        mi := mi
-        wg.Go(func() error {
-            address, err := GetMinipoolAt(rp, mi, opts)
-            if err == nil { addresses[mi] = address }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolBatchSize
+        if mei > minipoolCount { mei = minipoolCount }
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return []common.Address{}, err
+        // Load addresses
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                address, err := GetMinipoolAt(rp, mi, opts)
+                if err == nil { addresses[mi] = address }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []common.Address{}, err
+        }
+
     }
 
     // Return
@@ -106,23 +123,30 @@ func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
         return []MinipoolDetails{}, err
     }
 
-    // Data
-    var wg errgroup.Group
+    // Load minipool details in batches
     details := make([]MinipoolDetails, len(minipoolAddresses))
+    for bsi := 0; bsi < len(minipoolAddresses); bsi += MinipoolBatchSize {
 
-    // Load details
-    for mi, minipoolAddress := range minipoolAddresses {
-        mi, minipoolAddress := mi, minipoolAddress
-        wg.Go(func() error {
-            minipoolDetails, err := GetMinipoolDetails(rp, minipoolAddress, opts)
-            if err == nil { details[mi] = minipoolDetails }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolBatchSize
+        if mei > len(minipoolAddresses) { mei = len(minipoolAddresses) }
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return []MinipoolDetails{}, err
+        // Load details
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                minipoolAddress := minipoolAddresses[mi]
+                minipoolDetails, err := GetMinipoolDetails(rp, minipoolAddress, opts)
+                if err == nil { details[mi] = minipoolDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []MinipoolDetails{}, err
+        }
+
     }
 
     // Return
@@ -140,23 +164,29 @@ func GetNodeMinipoolAddresses(rp *rocketpool.RocketPool, nodeAddress common.Addr
         return []common.Address{}, err
     }
 
-    // Data
-    var wg errgroup.Group
+    // Load minipool addresses in batches
     addresses := make([]common.Address, minipoolCount)
+    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolBatchSize {
 
-    // Load addresses
-    for mi := uint64(0); mi < minipoolCount; mi++ {
-        mi := mi
-        wg.Go(func() error {
-            address, err := GetNodeMinipoolAt(rp, nodeAddress, mi, opts)
-            if err == nil { addresses[mi] = address }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolBatchSize
+        if mei > minipoolCount { mei = minipoolCount }
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return []common.Address{}, err
+        // Load addresses
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                address, err := GetNodeMinipoolAt(rp, nodeAddress, mi, opts)
+                if err == nil { addresses[mi] = address }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []common.Address{}, err
+        }
+
     }
 
     // Return
@@ -174,30 +204,36 @@ func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress com
         return []rptypes.ValidatorPubkey{}, err
     }
 
-    // Data
-    var wg errgroup.Group
+    // Load pubkeys in batches
     pubkeys := make([]rptypes.ValidatorPubkey, minipoolCount)
+    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolBatchSize {
 
-    // Load pubkeys
-    for mi := uint64(0); mi < minipoolCount; mi++ {
-        mi := mi
-        wg.Go(func() error {
-            minipoolAddress, err := GetNodeValidatingMinipoolAt(rp, nodeAddress, mi, opts)
-            if err != nil {
-                return err
-            }
-            pubkey, err := GetMinipoolPubkey(rp, minipoolAddress, opts)
-            if err != nil {
-                return err
-            }
-            pubkeys[mi] = pubkey
-            return nil
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolBatchSize
+        if mei > minipoolCount { mei = minipoolCount }
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return []rptypes.ValidatorPubkey{}, err
+        // Load pubkeys
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                minipoolAddress, err := GetNodeValidatingMinipoolAt(rp, nodeAddress, mi, opts)
+                if err != nil {
+                    return err
+                }
+                pubkey, err := GetMinipoolPubkey(rp, minipoolAddress, opts)
+                if err != nil {
+                    return err
+                }
+                pubkeys[mi] = pubkey
+                return nil
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []rptypes.ValidatorPubkey{}, err
+        }
+
     }
 
     // Return
