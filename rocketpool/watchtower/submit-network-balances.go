@@ -31,7 +31,7 @@ import (
 
 
 // Settings
-const MinipoolBalanceDetailsBatchSize = 50
+const MinipoolBalanceDetailsBatchSize = 20
 
 
 // Submit network balances task

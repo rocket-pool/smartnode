@@ -21,7 +21,7 @@ import (
 
 
 // Settings
-const MinipoolStatusBatchSize = 50
+const MinipoolStatusBatchSize = 20
 
 
 // Dissolve timed out minipools task

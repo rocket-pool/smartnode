@@ -25,7 +25,7 @@ import (
 
 
 // Settings
-const MinipoolWithdrawableDetailsBatchSize = 50
+const MinipoolWithdrawableDetailsBatchSize = 20
 
 
 // Submit withdrawable minipools task
