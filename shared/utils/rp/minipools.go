@@ -12,26 +12,37 @@ import (
 )
 
 
+// Settings
+const MinipoolPubkeyBatchSize = 50
+
+
 // Get minipool validator statuses
 func GetMinipoolValidators(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, callOpts *bind.CallOpts, validatorStatusOpts *beacon.ValidatorStatusOptions) (map[common.Address]beacon.ValidatorStatus, error) {
 
-    // Data
-    var wg errgroup.Group
+    // Load minipool validator pubkeys in batches
     pubkeys := make([]types.ValidatorPubkey, len(addresses))
+    for bsi := 0; bsi < len(addresses); bsi += MinipoolPubkeyBatchSize {
 
-    // Get minipool validator pubkeys
-    for mi, address := range addresses {
-        mi, address := mi, address
-        wg.Go(func() error {
-            pubkey, err := minipool.GetMinipoolPubkey(rp, address, callOpts)
-            if err == nil { pubkeys[mi] = pubkey }
-            return err
-        })
-    }
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MinipoolPubkeyBatchSize
+        if mei > len(addresses) { mei = len(addresses) }
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return map[common.Address]beacon.ValidatorStatus{}, err
+        // Load details
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                address := addresses[mi]
+                pubkey, err := minipool.GetMinipoolPubkey(rp, address, callOpts)
+                if err == nil { pubkeys[mi] = pubkey }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return map[common.Address]beacon.ValidatorStatus{}, err
+        }
+
     }
 
     // Get validator statuses
