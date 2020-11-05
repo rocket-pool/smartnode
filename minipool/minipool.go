@@ -18,7 +18,10 @@ import (
 
 
 // Settings
-const MinipoolBatchSize = 50
+const (
+    MinipoolAddressBatchSize = 50
+    MinipoolDetailsBatchSize = 20
+)
 
 
 // Minipool details
@@ -44,11 +47,11 @@ func GetMinipools(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]MinipoolDet
 
     // Load minipool details in batches
     details := make([]MinipoolDetails, len(minipoolAddresses))
-    for bsi := 0; bsi < len(minipoolAddresses); bsi += MinipoolBatchSize {
+    for bsi := 0; bsi < len(minipoolAddresses); bsi += MinipoolDetailsBatchSize {
 
         // Get batch start & end index
         msi := bsi
-        mei := bsi + MinipoolBatchSize
+        mei := bsi + MinipoolDetailsBatchSize
         if mei > len(minipoolAddresses) { mei = len(minipoolAddresses) }
 
         // Load details
@@ -85,11 +88,11 @@ func GetMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]com
 
     // Load minipool addresses in batches
     addresses := make([]common.Address, minipoolCount)
-    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolBatchSize {
+    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolAddressBatchSize {
 
         // Get batch start & end index
         msi := bsi
-        mei := bsi + MinipoolBatchSize
+        mei := bsi + MinipoolAddressBatchSize
         if mei > minipoolCount { mei = minipoolCount }
 
         // Load addresses
@@ -125,11 +128,11 @@ func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 
     // Load minipool details in batches
     details := make([]MinipoolDetails, len(minipoolAddresses))
-    for bsi := 0; bsi < len(minipoolAddresses); bsi += MinipoolBatchSize {
+    for bsi := 0; bsi < len(minipoolAddresses); bsi += MinipoolDetailsBatchSize {
 
         // Get batch start & end index
         msi := bsi
-        mei := bsi + MinipoolBatchSize
+        mei := bsi + MinipoolDetailsBatchSize
         if mei > len(minipoolAddresses) { mei = len(minipoolAddresses) }
 
         // Load details
@@ -166,11 +169,11 @@ func GetNodeMinipoolAddresses(rp *rocketpool.RocketPool, nodeAddress common.Addr
 
     // Load minipool addresses in batches
     addresses := make([]common.Address, minipoolCount)
-    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolBatchSize {
+    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolAddressBatchSize {
 
         // Get batch start & end index
         msi := bsi
-        mei := bsi + MinipoolBatchSize
+        mei := bsi + MinipoolAddressBatchSize
         if mei > minipoolCount { mei = minipoolCount }
 
         // Load addresses
@@ -206,11 +209,11 @@ func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress com
 
     // Load pubkeys in batches
     pubkeys := make([]rptypes.ValidatorPubkey, minipoolCount)
-    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolBatchSize {
+    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolAddressBatchSize {
 
         // Get batch start & end index
         msi := bsi
-        mei := bsi + MinipoolBatchSize
+        mei := bsi + MinipoolAddressBatchSize
         if mei > minipoolCount { mei = minipoolCount }
 
         // Load pubkeys
