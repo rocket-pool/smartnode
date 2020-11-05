@@ -6,7 +6,6 @@ import (
     "fmt"
     "io/ioutil"
     "net/http"
-    "net/url"
     "strconv"
     "strings"
     "time"
@@ -33,8 +32,10 @@ const (
     RequestGenesisPath = "/eth/v1/beacon/genesis"
     RequestFinalityCheckpointsPath = "/eth/v1/beacon/states/%s/finality_checkpoints"
     RequestForkPath = "/eth/v1/beacon/states/%s/fork"
-    RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators?%s"
+    RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators"
     RequestVoluntaryExitPath = "/eth/v1/beacon/pool/voluntary_exits"
+
+    MaxRequestValidatorsCount = 1000
 )
 
 
@@ -374,9 +375,11 @@ func (c *Client) getFork(stateId string) (ForkResponse, error) {
 
 // Get validators
 func (c *Client) getValidators(stateId string, pubkeys []string) (ValidatorsResponse, error) {
-    params := url.Values{}
-    params.Set("id", strings.Join(pubkeys, ","))
-    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId, params.Encode()))
+    var query string
+    if len(pubkeys) > 0 {
+        query = fmt.Sprintf("?id=%s", strings.Join(pubkeys, ","))
+    }
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId) + query)
     if err != nil {
         return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
     } else if status != http.StatusOK {
@@ -411,14 +414,44 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 
     }
 
-    // Get pubkeys
-    pubkeysHex := make([]string, len(pubkeys))
-    for ki, pubkey := range pubkeys {
-        pubkeysHex[ki] = hexutil.AddPrefix(pubkey.Hex())
-    }
+    // Get validators
+    if len(pubkeys) <= MaxRequestValidatorsCount {
 
-    // Get validators & return
-    return c.getValidators(stateId, pubkeysHex)
+        // Get validator pubkeys
+        pubkeysHex := make([]string, len(pubkeys))
+        for ki, pubkey := range pubkeys {
+            pubkeysHex[ki] = hexutil.AddPrefix(pubkey.Hex())
+        }
+
+        // Get & return validators
+        return c.getValidators(stateId, pubkeysHex)
+
+    } else {
+
+        // Get all validators
+        validators, err := c.getValidators(stateId, []string{})
+        if err != nil {
+            return ValidatorsResponse{}, err
+        }
+
+        // Filter validator set by pubkeys and return
+        response := ValidatorsResponse{}
+        for _, validator := range validators.Data {
+            var found bool
+            for _, pubkey := range pubkeys {
+                if bytes.Equal(validator.Validator.Pubkey, pubkey.Bytes()) {
+                    found = true
+                    break
+                }
+            }
+            if !found {
+                continue
+            }
+            response.Data = append(response.Data, validator)
+        }
+        return response, nil
+
+    }
 
 }
 
