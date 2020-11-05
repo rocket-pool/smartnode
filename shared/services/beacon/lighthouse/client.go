@@ -298,7 +298,7 @@ func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
     if err != nil {
         return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %w", err)
     } else if status != http.StatusOK {
-        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: HTTP status %d", status)
+        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: HTTP status %d; response body: '%s'", status, string(responseBody))
     }
     var syncStatus SyncStatusResponse
     if err := json.Unmarshal(responseBody, &syncStatus); err != nil {
@@ -314,7 +314,7 @@ func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
     if err != nil {
         return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %w", err)
     } else if status != http.StatusOK {
-        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: HTTP status %d", status)
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: HTTP status %d; response body: '%s'", status, string(responseBody))
     }
     var eth2Config Eth2ConfigResponse
     if err := json.Unmarshal(responseBody, &eth2Config); err != nil {
@@ -330,7 +330,7 @@ func (c *Client) getGenesis() (GenesisResponse, error) {
     if err != nil {
         return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %w", err)
     } else if status != http.StatusOK {
-        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: HTTP status %d", status)
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: HTTP status %d; response body: '%s'", status, string(responseBody))
     }
     var genesis GenesisResponse
     if err := json.Unmarshal(responseBody, &genesis); err != nil {
@@ -346,7 +346,7 @@ func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResp
     if err != nil {
         return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %w", err)
     } else if status != http.StatusOK {
-        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: HTTP status %d", status)
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: HTTP status %d; response body: '%s'", status, string(responseBody))
     }
     var finalityCheckpoints FinalityCheckpointsResponse
     if err := json.Unmarshal(responseBody, &finalityCheckpoints); err != nil {
@@ -362,7 +362,7 @@ func (c *Client) getFork(stateId string) (ForkResponse, error) {
     if err != nil {
         return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
     } else if status != http.StatusOK {
-        return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d", status)
+        return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d; response body: '%s'", status, string(responseBody))
     }
     var fork ForkResponse
     if err := json.Unmarshal(responseBody, &fork); err != nil {
@@ -380,7 +380,7 @@ func (c *Client) getValidators(stateId string, pubkeys []string) (ValidatorsResp
     if err != nil {
         return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
     } else if status != http.StatusOK {
-        return ValidatorsResponse{}, fmt.Errorf("Could not get validators: HTTP status %d", status)
+        return ValidatorsResponse{}, fmt.Errorf("Could not get validators: HTTP status %d; response body: '%s'", status, string(responseBody))
     }
     var validators ValidatorsResponse
     if err := json.Unmarshal(responseBody, &validators); err != nil {
@@ -425,11 +425,11 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 
 // Send voluntary exit request
 func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
-    _, status, err := c.postRequest(RequestVoluntaryExitPath, request)
+    responseBody, status, err := c.postRequest(RequestVoluntaryExitPath, request)
     if err != nil {
         return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
     } else if status != http.StatusOK {
-        return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d", request.Message.ValidatorIndex, status)
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
     }
     return nil
 }
