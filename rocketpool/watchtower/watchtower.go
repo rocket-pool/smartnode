@@ -1,6 +1,7 @@
 package watchtower
 
 import (
+    "net/http"
     "time"
 
     "github.com/fatih/color"
@@ -15,6 +16,8 @@ import (
 var tasksInterval, _ = time.ParseDuration("5m")
 var taskCooldown, _ = time.ParseDuration("1m")
 const (
+    MaxConcurrentEth1Requests = 200
+
     SubmitNetworkBalancesColor = color.FgYellow
     SubmitWithdrawableMinipoolsColor = color.FgBlue
     DissolveTimedOutMinipoolsColor = color.FgMagenta
@@ -38,6 +41,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 // Run daemon
 func run(c *cli.Context) error {
+
+    // Configure
+    configureHTTP()
 
     // Wait until node is registered
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
@@ -74,6 +80,17 @@ func run(c *cli.Context) error {
         }
         time.Sleep(tasksInterval)
     }
+
+}
+
+
+// Configure HTTP transport settings
+func configureHTTP() {
+
+    // The watchtower daemon makes a high number of concurrent RPC requests to the Eth1 client
+    // This can deplete the the port allowance granted by the OS
+    // To work around this, set the max idle connections per host to the maximum expected number of concurrent Eth1 requests
+    http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
 
 }
 
