@@ -21,7 +21,7 @@ import (
 
 
 // Settings
-const MinipoolStatusBatchSize = 30
+const MinipoolStatusBatchSize = 50
 
 
 // Dissolve timed out minipools task
@@ -157,15 +157,15 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
 
     // Load minipool statuses in batches
     statuses := make([]minipool.StatusDetails, len(minipools))
-    for bsi := 0; bsi < len(addresses); bsi += MinipoolStatusBatchSize {
+    for bsi := 0; bsi < len(minipools); bsi += MinipoolStatusBatchSize {
 
         // Get batch start & end index
         msi := bsi
         mei := bsi + MinipoolStatusBatchSize
-        if mei > len(addresses) { mei = len(addresses) }
+        if mei > len(minipools) { mei = len(minipools) }
 
         // Log
-        t.log.Printlnf("Checking minipools %d - %d of %d for timed out status...", msi + 1, mei, len(addresses))
+        t.log.Printlnf("Checking minipools %d - %d of %d for timed out status...", msi + 1, mei, len(minipools))
 
         // Load statuses
         var wg errgroup.Group
