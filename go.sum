@@ -227,8 +227,8 @@ github.com/rjeczalik/notify v0.9.1 h1:CLCKso/QK1snAlnhNR/CNvNiFU2saUtjV0bx3EwNeC
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
 github.com/rocket-pool/go-eth2-util-hkdf3 v1.5.0 h1:RIuFF/H7ySUarK+Huy55FZcwSWEDSeHLJ6z3wN08LoI=
 github.com/rocket-pool/go-eth2-util-hkdf3 v1.5.0/go.mod h1:/xiYLX4wQdG3ykfHe9QGg+BygfVuvm/BEpLqk9iJYXI=
-github.com/rocket-pool/rocketpool-go v0.0.0-20200813050037-c430afba9ad3 h1:StUQGpjxMd17/SpM102jrp7adxGaszRnt67tBc/ZsTg=
-github.com/rocket-pool/rocketpool-go v0.0.0-20200813050037-c430afba9ad3/go.mod h1:1Prh+giH948mU3t917HTA4r4TX/o4h7KsbVhQjU72fY=
+github.com/rocket-pool/rocketpool-go v0.0.0-20201105011740-6e76e0462995 h1:2JJLv+VbRnascMAHgD7Bk1Wu2Z/ieSkDjBNj2+1+Q5o=
+github.com/rocket-pool/rocketpool-go v0.0.0-20201105011740-6e76e0462995/go.mod h1:1Prh+giH948mU3t917HTA4r4TX/o4h7KsbVhQjU72fY=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00/go.mod h1:gFx+x8UowdsKA9AchylcLynDq+nNFfI8FkUZdN/jGCU=
 github.com/rs/xhandler v0.0.0-20160618193221-ed27b6fd6521/go.mod h1:RvLn4FgxWubrpZHtQLnOf6EwhN2hEMusxZOhcW9H3UQ=
