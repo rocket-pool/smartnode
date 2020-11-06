@@ -385,7 +385,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
         if mei > len(addresses) { mei = len(addresses) }
 
         // Log
-        t.log.Printlnf("Calculating balances for minipools %d - %d of %d...", msi + 1, mei, len(addresses))
+        //t.log.Printlnf("Calculating balances for minipools %d - %d of %d...", msi + 1, mei, len(addresses))
 
         // Load details
         var wg errgroup.Group

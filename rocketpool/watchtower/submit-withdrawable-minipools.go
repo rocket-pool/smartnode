@@ -193,7 +193,7 @@ func (t *submitWithdrawableMinipools) getNetworkMinipoolWithdrawableDetails(node
         if mei > len(addresses) { mei = len(addresses) }
 
         // Log
-        t.log.Printlnf("Checking minipools %d - %d of %d for withdrawable status...", msi + 1, mei, len(addresses))
+        //t.log.Printlnf("Checking minipools %d - %d of %d for withdrawable status...", msi + 1, mei, len(addresses))
 
         // Load details
         var wg errgroup.Group

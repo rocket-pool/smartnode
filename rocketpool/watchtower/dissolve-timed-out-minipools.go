@@ -165,7 +165,7 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
         if mei > len(minipools) { mei = len(minipools) }
 
         // Log
-        t.log.Printlnf("Checking minipools %d - %d of %d for timed out status...", msi + 1, mei, len(minipools))
+        //t.log.Printlnf("Checking minipools %d - %d of %d for timed out status...", msi + 1, mei, len(minipools))
 
         // Load statuses
         var wg errgroup.Group
