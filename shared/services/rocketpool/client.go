@@ -115,7 +115,10 @@ func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
 }
 
 
-// Save the user config
+// Load/save the user config
+func (c *Client) LoadUserConfig() (config.RocketPoolConfig, error) {
+    return c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile))
+}
 func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
     return c.saveConfig(cfg, fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile))
 }

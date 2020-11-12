@@ -21,14 +21,15 @@ func configureService(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Load global config
+    // Load configs
     globalConfig, err := rp.LoadGlobalConfig()
     if err != nil {
         return err
     }
-
-    // Initialize user config
-    userConfig := config.RocketPoolConfig{}
+    userConfig, err := rp.LoadUserConfig()
+    if err != nil {
+        return err
+    }
 
     // Configure chains
     if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false); err != nil {
