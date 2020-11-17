@@ -55,8 +55,13 @@ ______           _        _    ______           _
             Usage: "Allow rocketpool to be run as the root user",
         },
         cli.StringFlag{
+            Name:  "config-path, c",
+            Usage: "Rocket Pool config asset `path`",
+            Value: "~/.rocketpool",
+        },
+        cli.StringFlag{
             Name:  "daemon-path, d",
-            Usage: "Interact with a Rocket Pool service daemon running outside of docker",
+            Usage: "Interact with a Rocket Pool service daemon at a `path` on the host OS, running outside of docker",
         },
         cli.StringFlag{
             Name:  "host, o",

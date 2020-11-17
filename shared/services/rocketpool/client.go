@@ -23,7 +23,6 @@ import (
 const (
     InstallerURL = "https://github.com/rocket-pool/smartnode-install/releases/latest/download/install.sh"
 
-    RocketPoolPath = "~/.rocketpool"
     GlobalConfigFile = "config.yml"
     UserConfigFile = "settings.yml"
     ComposeFile = "docker-compose.yml"
@@ -37,6 +36,7 @@ const (
 
 // Rocket Pool client
 type Client struct {
+    configPath string
     daemonPath string
     client *ssh.Client
 }
@@ -44,12 +44,12 @@ type Client struct {
 
 // Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
-    return NewClient(c.GlobalString("daemon-path"), c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"), c.GlobalString("passphrase"))
+    return NewClient(c.GlobalString("config-path"), c.GlobalString("daemon-path"), c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"), c.GlobalString("passphrase"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(daemonPath, hostAddress, user, keyPath, keyPassphrase string) (*Client, error) {
+func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -94,6 +94,7 @@ func NewClient(daemonPath, hostAddress, user, keyPath, keyPassphrase string) (*C
 
     // Return client
     return &Client{
+        configPath: configPath,
         daemonPath: daemonPath,
         client: sshClient,
     }, nil
@@ -111,16 +112,16 @@ func (c *Client) Close() {
 
 // Load the global config
 func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
-    return c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, GlobalConfigFile))
+    return c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile))
 }
 
 
 // Load/save the user config
 func (c *Client) LoadUserConfig() (config.RocketPoolConfig, error) {
-    return c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile))
+    return c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, UserConfigFile))
 }
 func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
-    return c.saveConfig(cfg, fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile))
+    return c.saveConfig(cfg, fmt.Sprintf("%s/%s", c.configPath, UserConfigFile))
 }
 
 
@@ -297,11 +298,11 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     }
 
     // Load config
-    globalConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, GlobalConfigFile))
+    globalConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile))
     if err != nil {
         return "", err
     }
-    userConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile))
+    userConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, UserConfigFile))
     if err != nil {
         return "", err
     }
@@ -336,13 +337,13 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Set compose file flags
     composeFileFlags := make([]string, len(composeFiles) + 1)
-    composeFileFlags[0] = fmt.Sprintf("-f %s/%s", RocketPoolPath, ComposeFile)
+    composeFileFlags[0] = fmt.Sprintf("-f %s/%s", c.configPath, ComposeFile)
     for fi, composeFile := range composeFiles {
         composeFileFlags[fi + 1] = fmt.Sprintf("-f %s", composeFile)
     }
 
     // Return command
-    return fmt.Sprintf("%s docker-compose --project-directory %s %s %s", strings.Join(env, " "), RocketPoolPath, strings.Join(composeFileFlags, " "), args), nil
+    return fmt.Sprintf("%s docker-compose --project-directory %s %s %s", strings.Join(env, " "), c.configPath, strings.Join(composeFileFlags, " "), args), nil
 
 }
 
@@ -353,7 +354,7 @@ func (c *Client) callAPI(args string) ([]byte, error) {
     if c.daemonPath == "" {
         cmd = fmt.Sprintf("docker exec %s %s api %s", APIContainerName, APIBinPath, args)
     } else {
-        cmd = fmt.Sprintf("%s --config %s --settings %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", RocketPoolPath, GlobalConfigFile), fmt.Sprintf("%s/%s", RocketPoolPath, UserConfigFile), args)
+        cmd = fmt.Sprintf("%s --config %s --settings %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), args)
     }
     return c.readOutput(cmd)
 }
