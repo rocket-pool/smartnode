@@ -66,7 +66,6 @@ func (w *Wallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2t
         } else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
             return key, nil
         }
-        return nil, fmt.Errorf("Validator %s key not found", pubkey.Hex())
     }
 
     // Find matching validator key
