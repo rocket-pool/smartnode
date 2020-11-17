@@ -46,8 +46,7 @@ type Wallet struct {
     nodeKeyPath string
 
     // Validator key caches
-    validatorKeys1 map[uint]*eth2types.BLSPrivateKey
-    validatorKeys2 map[uint]*eth2types.BLSPrivateKey
+    validatorKeys map[uint]*eth2types.BLSPrivateKey
     validatorKeyIndices map[string]uint
 
     // Keystores
@@ -74,8 +73,7 @@ func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*
         walletPath: walletPath,
         pm: passwordManager,
         encryptor: eth2ks.New(),
-        validatorKeys1: map[uint]*eth2types.BLSPrivateKey{},
-        validatorKeys2: map[uint]*eth2types.BLSPrivateKey{},
+        validatorKeys: map[uint]*eth2types.BLSPrivateKey{},
         validatorKeyIndices: map[string]uint{},
         keystores: map[string]keystore.Keystore{},
     }

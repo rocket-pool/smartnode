@@ -19,7 +19,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20200612203617-6d5c9aa213ae
-	github.com/rocket-pool/go-eth2-util-hkdf3 v1.5.0
 	github.com/rocket-pool/rocketpool-go v0.0.0-20201105022215-e79c6a7154c0
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	github.com/urfave/cli v1.22.4

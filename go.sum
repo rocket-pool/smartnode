@@ -225,8 +225,6 @@ github.com/prysmaticlabs/go-ssz v0.0.0-20200612203617-6d5c9aa213ae h1:7qd0Af1ozW
 github.com/prysmaticlabs/go-ssz v0.0.0-20200612203617-6d5c9aa213ae/go.mod h1:VecIJZrewdAuhVckySLFt2wAAHRME934bSDurP8ftkc=
 github.com/rjeczalik/notify v0.9.1 h1:CLCKso/QK1snAlnhNR/CNvNiFU2saUtjV0bx3EwNeCE=
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
-github.com/rocket-pool/go-eth2-util-hkdf3 v1.5.0 h1:RIuFF/H7ySUarK+Huy55FZcwSWEDSeHLJ6z3wN08LoI=
-github.com/rocket-pool/go-eth2-util-hkdf3 v1.5.0/go.mod h1:/xiYLX4wQdG3ykfHe9QGg+BygfVuvm/BEpLqk9iJYXI=
 github.com/rocket-pool/rocketpool-go v0.0.0-20201105022215-e79c6a7154c0 h1:gUIqhuqpuovtgGJnQGjQvf3+SWsa672X6/VdNMtLwzI=
 github.com/rocket-pool/rocketpool-go v0.0.0-20201105022215-e79c6a7154c0/go.mod h1:1Prh+giH948mU3t917HTA4r4TX/o4h7KsbVhQjU72fY=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=

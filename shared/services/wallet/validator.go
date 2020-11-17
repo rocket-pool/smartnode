@@ -8,8 +8,7 @@ import (
 
     rptypes "github.com/rocket-pool/rocketpool-go/types"
     eth2types "github.com/wealdtech/go-eth2-types/v2"
-    eth2utilv1_5 "github.com/rocket-pool/go-eth2-util-hkdf3"
-    eth2utilv1_6 "github.com/wealdtech/go-eth2-util"
+    eth2util "github.com/wealdtech/go-eth2-util"
 )
 
 
@@ -43,7 +42,7 @@ func (w *Wallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error)
     }
 
     // Return validator key
-    key, _, err := w.getValidatorPrivateKey(index, false)
+    key, _, err := w.getValidatorPrivateKey(index)
     return key, err
 
 }
@@ -62,47 +61,24 @@ func (w *Wallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2t
 
     // Check for cached validator key index
     if index, ok := w.validatorKeyIndices[pubkeyHex]; ok {
-
-        // Try hkdfv4
-        if key, _, err := w.getValidatorPrivateKey(index, false); err != nil {
+        if key, _, err := w.getValidatorPrivateKey(index); err != nil {
             return nil, err
         } else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
             return key, nil
         }
-
-        // Try hkdfv3
-        if key, _, err := w.getValidatorPrivateKey(index, true); err != nil {
-            return nil, err
-        } else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
-            return key, nil
-        }
-
-        // No match
         return nil, fmt.Errorf("Validator %s key not found", pubkey.Hex())
-
     }
 
     // Find matching validator key
     var index uint
     var validatorKey *eth2types.BLSPrivateKey
     for index = 0; index < w.ws.NextAccount; index++ {
-
-        // Try hkdfv4
-        if key, _, err := w.getValidatorPrivateKey(index, false); err != nil {
+        if key, _, err := w.getValidatorPrivateKey(index); err != nil {
             return nil, err
         } else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
             validatorKey = key
             break
         }
-
-        // Try hkdfv3
-        if key, _, err := w.getValidatorPrivateKey(index, true); err != nil {
-            return nil, err
-        } else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
-            validatorKey = key
-            break
-        }
-
     }
 
     // Check validator key
@@ -132,7 +108,7 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
     w.ws.NextAccount++
 
     // Get validator key
-    key, path, err := w.getValidatorPrivateKey(index, false)
+    key, path, err := w.getValidatorPrivateKey(index)
     if err != nil {
         return nil, err
     }
@@ -163,25 +139,13 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
     var validatorKey *eth2types.BLSPrivateKey
     var derivationPath string
     for index = 0; index < w.ws.NextAccount + MaxValidatorKeyRecoverAttempts; index++ {
-
-        // Try hkdfv4
-        if key, path, err := w.getValidatorPrivateKey(index, false); err != nil {
+        if key, path, err := w.getValidatorPrivateKey(index); err != nil {
             return err
         } else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
             validatorKey = key
             derivationPath = path
             break
         }
-
-        // Try hkdfv3
-        if key, path, err := w.getValidatorPrivateKey(index, true); err != nil {
-            return err
-        } else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
-            validatorKey = key
-            derivationPath = path
-            break
-        }
-
     }
 
     // Check validator key
@@ -209,43 +173,27 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 
 
 // Get a validator private key by index
-func (w *Wallet) getValidatorPrivateKey(index uint, hkdfv3 bool) (*eth2types.BLSPrivateKey, string, error) {
+func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, string, error) {
 
     // Get derivation path
     derivationPath := fmt.Sprintf(ValidatorKeyPath, index)
 
     // Check for cached validator key
-    if hkdfv3 {
-        if validatorKey, ok := w.validatorKeys1[index]; ok {
-            return validatorKey, derivationPath, nil
-        }
-    } else {
-        if validatorKey, ok := w.validatorKeys2[index]; ok {
-            return validatorKey, derivationPath, nil
-        }
+    if validatorKey, ok := w.validatorKeys[index]; ok {
+        return validatorKey, derivationPath, nil
     }
 
     // Initialize BLS support
     initializeBLS()
 
     // Get private key
-    var privateKey *eth2types.BLSPrivateKey
-    var err error
-    if hkdfv3 {
-        privateKey, err = eth2utilv1_5.PrivateKeyFromSeedAndPath(w.seed, derivationPath)
-    } else {
-        privateKey, err = eth2utilv1_6.PrivateKeyFromSeedAndPath(w.seed, derivationPath)
-    }
+    privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, derivationPath)
     if err != nil {
         return nil, "", fmt.Errorf("Could not get validator %d private key: %w", index, err)
     }
 
     // Cache validator key
-    if hkdfv3 {
-        w.validatorKeys1[index] = privateKey
-    } else {
-        w.validatorKeys2[index] = privateKey
-    }
+    w.validatorKeys[index] = privateKey
 
     // Return
     return privateKey, derivationPath, nil
