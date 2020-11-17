@@ -155,16 +155,6 @@ func ValidateBurnableTokenType(name, value string) (string, error) {
 }
 
 
-// Validate a withdrawable (from faucet) token type
-func ValidateWithdrawableTokenType(name, value string) (string, error) {
-    val := strings.ToLower(value)
-    if !(val == "eth") {
-        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH'", name, value)
-    }
-    return val, nil
-}
-
-
 // Validate a node password
 func ValidateNodePassword(name, value string) (string, error) {
     if len(value) < passwords.MinPasswordLength {
