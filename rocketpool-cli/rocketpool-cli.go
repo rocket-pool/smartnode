@@ -36,7 +36,7 @@ ______           _        _    ______           _
     // Set application info
     app.Name = "rocketpool"
     app.Usage = "Rocket Pool CLI"
-    app.Version = "0.0.7"
+    app.Version = "0.0.8"
     app.Authors = []cli.Author{
         cli.Author{
             Name:  "David Rugendyke",
