@@ -23,7 +23,7 @@ RUN go install ./rocketpool
 
 
 # Start from ubuntu image
-FROM ubuntu:20.04
+FROM ubuntu:20.10
 
 # Install OS dependencies
 RUN apt-get update && apt-get install -y ca-certificates
