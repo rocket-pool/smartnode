@@ -25,7 +25,7 @@ import (
 
 
 // Settings
-const ValidatorContainerName = "rocketpool_validator"
+const ValidatorSuffix = "_validator"
 var stakePrelaunchMinipoolsInterval, _ = time.ParseDuration("5m")
 var validatorRestartTimeout, _ = time.ParseDuration("5s")
 
@@ -253,9 +253,15 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawa
 
 // Restart validator container
 func (t *stakePrelaunchMinipools) restartValidator() error {
+    // Get project name
+    projectName, err := getProjectName(t.c)
+    if err != nil {
+        return err
+    }
+    var containerName string = fmt.Sprintf("%s%s", projectName, ValidatorSuffix)
 
     // Log
-    t.log.Println("Restarting validator container...")
+    t.log.Printlnf("Restarting validator container: %s ...", containerName)
 
     // Get all containers
     containers, err := t.d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
@@ -266,7 +272,7 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
     // Get validator container ID
     var validatorContainerId string
     for _, container := range containers {
-        if container.Names[0] == "/" + ValidatorContainerName {
+        if container.Names[0] == "/" + containerName {
             validatorContainerId = container.ID
             break
         }
@@ -286,5 +292,17 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
     // Return
     return nil
 
+}
+
+
+func getProjectName(c *cli.Context) (string, error) {
+    cfg, err := services.GetConfig(c)
+    if err != nil {
+        return "", err
+    }
+    if cfg.Smartnode.ProjectName == "" {
+      return "", fmt.Errorf("Configuration parameter 'smartNode.ProjectName' is empty")
+    }
+    return cfg.Smartnode.ProjectName, nil
 }
 
