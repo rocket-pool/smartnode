@@ -7,6 +7,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -24,7 +25,7 @@ func getStatus(c *cli.Context) error {
     }
 
     // Print & return
-    fmt.Printf("The node %s has a balance of %.2f ETH and %.2f nETH.\n", status.AccountAddress.Hex(), eth.WeiToEth(status.Balances.ETH), eth.WeiToEth(status.Balances.NETH))
+    fmt.Printf("The node %s has a balance of %.6f ETH and %.6f nETH.\n", status.AccountAddress.Hex(), math.RoundDown(eth.WeiToEth(status.Balances.ETH), 6), math.RoundDown(eth.WeiToEth(status.Balances.NETH), 6))
     if status.Registered {
         fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
         if status.Trusted {

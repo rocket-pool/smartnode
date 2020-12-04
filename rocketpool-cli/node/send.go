@@ -9,6 +9,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -36,7 +37,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
     }
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.2f %s to %s? This action cannot be undone!", eth.WeiToEth(amountWei), token, toAddress.Hex()))) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddress.Hex()))) {
         fmt.Println("Cancelled.")
         return nil
     }
@@ -47,7 +48,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
     }
 
     // Log & return
-    fmt.Printf("Successfully sent %.2f %s to %s.\n", eth.WeiToEth(amountWei), token, toAddress.Hex())
+    fmt.Printf("Successfully sent %.6f %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddress.Hex())
     return nil
 
 }

@@ -9,6 +9,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -115,7 +116,7 @@ func nodeDeposit(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Printf("The node deposit of %.2f ETH was made successfully.\n", eth.WeiToEth(amountWei))
+    fmt.Printf("The node deposit of %.6f ETH was made successfully.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
     fmt.Printf("A new minipool was created at %s.\n", response.MinipoolAddress.Hex())
     return nil
 

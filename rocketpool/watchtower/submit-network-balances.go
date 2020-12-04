@@ -26,6 +26,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     "github.com/rocket-pool/smartnode/shared/utils/eth2"
     "github.com/rocket-pool/smartnode/shared/utils/log"
+    "github.com/rocket-pool/smartnode/shared/utils/math"
     "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -158,11 +159,11 @@ func (t *submitNetworkBalances) run() error {
     }
 
     // Log
-    t.log.Printlnf("Deposit pool balance: %.2f ETH", eth.WeiToEth(balances.DepositPool))
-    t.log.Printlnf("Total minipool user balance: %.2f ETH", eth.WeiToEth(balances.MinipoolsTotal))
-    t.log.Printlnf("Staking minipool user balance: %.2f ETH", eth.WeiToEth(balances.MinipoolsStaking))
-    t.log.Printlnf("rETH contract balance: %.2f ETH", eth.WeiToEth(balances.RETHContract))
-    t.log.Printlnf("rETH token supply: %.2f rETH", eth.WeiToEth(balances.RETHSupply))
+    t.log.Printlnf("Deposit pool balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.DepositPool), 6))
+    t.log.Printlnf("Total minipool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.MinipoolsTotal), 6))
+    t.log.Printlnf("Staking minipool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.MinipoolsStaking), 6))
+    t.log.Printlnf("rETH contract balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.RETHContract), 6))
+    t.log.Printlnf("rETH token supply: %.6f rETH", math.RoundDown(eth.WeiToEth(balances.RETHSupply), 6))
 
     // Submit balances
     if err := t.submitBalances(balances); err != nil {

@@ -12,6 +12,7 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/types/api"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -50,7 +51,7 @@ func dissolveMinipools(c *cli.Context) error {
         options := make([]string, len(initializedMinipools) + 1)
         options[0] = "All available minipools"
         for mi, minipool := range initializedMinipools {
-            options[mi + 1] = fmt.Sprintf("%s (%.2f ETH deposited)", minipool.Address.Hex(), eth.WeiToEth(minipool.Node.DepositBalance))
+            options[mi + 1] = fmt.Sprintf("%s (%.6f ETH deposited)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
         }
         selected, _ := cliutils.Select("Please select a minipool to dissolve:", options)
 

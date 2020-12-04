@@ -7,6 +7,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -42,7 +43,7 @@ func nodeBurn(c *cli.Context, amount float64, token string) error {
     }
 
     // Log & return
-    fmt.Printf("Successfully burned %.2f %s for ETH.\n", eth.WeiToEth(amountWei), token)
+    fmt.Printf("Successfully burned %.6f %s for ETH.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), token)
     return nil
 
 }
