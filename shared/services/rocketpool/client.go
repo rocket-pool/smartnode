@@ -27,7 +27,7 @@ const (
     UserConfigFile = "settings.yml"
     ComposeFile = "docker-compose.yml"
 
-    APIContainerName = "rocketpool_api"
+    APIContainerSuffix = "_api"
     APIBinPath = "/go/bin/rocketpool"
 
     DebugColor = color.FgYellow
@@ -245,7 +245,12 @@ func (c *Client) GetServiceVersion() (string, error) {
     // Get service container version output
     var cmd string
     if c.daemonPath == "" {
-        cmd = fmt.Sprintf("docker exec %s %s --version", APIContainerName, APIBinPath)
+        projectName, err := c.getProjectName()
+        if err != nil {
+            return "", err
+        }
+        var containerName string = fmt.Sprintf("%s%s", projectName, APIContainerSuffix)
+        cmd = fmt.Sprintf("docker exec %s %s --version", containerName, APIBinPath)
     } else {
         cmd = fmt.Sprintf("%s --version", c.daemonPath)
     }
@@ -298,15 +303,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     }
 
     // Load config
-    globalConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile))
+    rpConfig, err := c.loadMergedConfig()
     if err != nil {
         return "", err
     }
-    userConfig, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, UserConfigFile))
-    if err != nil {
-        return "", err
-    }
-    rpConfig := config.Merge(&globalConfig, &userConfig)
 
     // Check config
     if rpConfig.GetSelectedEth1Client() == nil {
@@ -318,15 +318,19 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Set environment variables from config
     env := []string{
-        "COMPOSE_PROJECT_NAME=rocketpool",
-        fmt.Sprintf("ETH1_CLIENT='%s'",      rpConfig.GetSelectedEth1Client().ID),
-        fmt.Sprintf("ETH1_IMAGE='%s'",       rpConfig.GetSelectedEth1Client().Image),
-        fmt.Sprintf("ETH2_CLIENT='%s'",      rpConfig.GetSelectedEth2Client().ID),
-        fmt.Sprintf("ETH2_IMAGE='%s'",       rpConfig.GetSelectedEth2Client().GetBeaconImage()),
-        fmt.Sprintf("VALIDATOR_CLIENT='%s'", rpConfig.GetSelectedEth2Client().ID),
-        fmt.Sprintf("VALIDATOR_IMAGE='%s'",  rpConfig.GetSelectedEth2Client().GetValidatorImage()),
-        fmt.Sprintf("ETH1_PROVIDER='%s'",    rpConfig.Chains.Eth1.Provider),
-        fmt.Sprintf("ETH2_PROVIDER='%s'",    rpConfig.Chains.Eth2.Provider),
+        fmt.Sprintf("COMPOSE_PROJECT_NAME=%s", rpConfig.Smartnode.ProjectName),
+        fmt.Sprintf("NETWORK_NAME=%s",         rpConfig.Smartnode.NetworkName),
+        fmt.Sprintf("SMARTNODE_IMAGE=%s",      rpConfig.Smartnode.Image),
+        fmt.Sprintf("ETH1_CLIENT='%s'",        rpConfig.GetSelectedEth1Client().ID),
+        fmt.Sprintf("ETH1_IMAGE='%s'",         rpConfig.GetSelectedEth1Client().Image),
+        fmt.Sprintf("ETH2_CLIENT='%s'",        rpConfig.GetSelectedEth2Client().ID),
+        fmt.Sprintf("ETH2_IMAGE='%s'",         rpConfig.GetSelectedEth2Client().GetBeaconImage()),
+        fmt.Sprintf("VALIDATOR_CLIENT='%s'",   rpConfig.GetSelectedEth2Client().ID),
+        fmt.Sprintf("VALIDATOR_IMAGE='%s'",    rpConfig.GetSelectedEth2Client().GetValidatorImage()),
+        fmt.Sprintf("ETH1_PROVIDER='%s'",      rpConfig.Chains.Eth1.Provider),
+        fmt.Sprintf("ETH1_VOLUME_NAME=%s",     rpConfig.Chains.Eth1.VolumeName),
+        fmt.Sprintf("ETH2_PROVIDER='%s'",      rpConfig.Chains.Eth2.Provider),
+        fmt.Sprintf("ETH2_VOLUME_NAME=%s",     rpConfig.Chains.Eth2.VolumeName),
     }
     for _, param := range rpConfig.Chains.Eth1.Client.Params {
         env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
@@ -352,11 +356,43 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 func (c *Client) callAPI(args string) ([]byte, error) {
     var cmd string
     if c.daemonPath == "" {
-        cmd = fmt.Sprintf("docker exec %s %s api %s", APIContainerName, APIBinPath, args)
+        projectName, err := c.getProjectName()
+        if err != nil {
+            return nil, err
+        }
+        var containerName string = fmt.Sprintf("%s%s", projectName, APIContainerSuffix)
+        cmd = fmt.Sprintf("docker exec %s %s api %s", containerName, APIBinPath, args)
     } else {
         cmd = fmt.Sprintf("%s --config %s --settings %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), args)
     }
     return c.readOutput(cmd)
+}
+
+
+func (c *Client) getProjectName() (string, error) {
+    rpConfig, err := c.loadMergedConfig()
+    if err != nil {
+        return "", err
+    }
+    if rpConfig.Smartnode.ProjectName == "" {
+      return "", fmt.Errorf("Configuration parameter 'smartNode.ProjectName' is empty")
+    }
+    return rpConfig.Smartnode.ProjectName, nil
+}
+
+
+func (c *Client) loadMergedConfig() (config.RocketPoolConfig, error) {
+    // Load config
+    globalConfig, err := c.LoadGlobalConfig()
+    if err != nil {
+        return globalConfig, err
+    }
+    userConfig, err := c.LoadUserConfig()
+    if err != nil {
+        return userConfig, err
+    }
+    rpConfig := config.Merge(&globalConfig, &userConfig)
+    return rpConfig, nil
 }
 
 
