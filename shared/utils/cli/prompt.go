@@ -97,6 +97,7 @@ func PromptPassword(initialPrompt string, expectedFormat string, incorrectFormat
         }
 
     }
+    fmt.Println("")
 
     // Return user input
     return input
