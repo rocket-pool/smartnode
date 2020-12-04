@@ -7,6 +7,9 @@ import (
     "regexp"
     "strconv"
     "strings"
+    "syscall"
+
+    "golang.org/x/term"
 )
 
 
@@ -16,7 +19,7 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
     // Print initial prompt
     fmt.Println(initialPrompt)
 
-    // Get valid user input, increment offset
+    // Get valid user input
     scanner := bufio.NewScanner(os.Stdin)
     for scanner.Scan(); !regexp.MustCompile(expectedFormat).MatchString(scanner.Text()); scanner.Scan() {
         fmt.Println("")
@@ -63,6 +66,40 @@ func Select(initialPrompt string, options []string) (int, string) {
 
     // Return
     return selectedIndex, selectedOption
+
+}
+
+
+// Prompt for password input
+func PromptPassword(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
+
+    // Print initial prompt
+    fmt.Println(initialPrompt)
+
+    // Get valid user input
+    var input string
+    var init bool
+    for !init || !regexp.MustCompile(expectedFormat).MatchString(input) {
+
+        // Incorrect format
+        if init {
+            fmt.Println("")
+            fmt.Println(incorrectFormatPrompt)
+        } else {
+            init = true
+        }
+
+        // Read password
+        if bytes, err := term.ReadPassword(syscall.Stdin); err != nil {
+            fmt.Println(fmt.Errorf("Could not read password: %w", err))
+        } else {
+            input = string(bytes)
+        }
+
+    }
+
+    // Return user input
+    return input
 
 }
 

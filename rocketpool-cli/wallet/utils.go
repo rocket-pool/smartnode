@@ -13,12 +13,12 @@ import (
 // Prompt for a wallet password
 func promptPassword() string {
     for {
-        password := cliutils.Prompt(
+        password := cliutils.PromptPassword(
             "Please enter a password to secure your wallet with:",
             fmt.Sprintf("^.{%d,}$", passwords.MinPasswordLength),
             fmt.Sprintf("Your password must be at least %d characters long", passwords.MinPasswordLength),
         )
-        confirmation := cliutils.Prompt("Please confirm your password:", "^.*$", "")
+        confirmation := cliutils.PromptPassword("Please confirm your password:", "^.*$", "")
         if password == confirmation {
             return password
         } else {
