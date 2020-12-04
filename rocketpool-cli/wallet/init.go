@@ -6,6 +6,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/smartnode/shared/utils/term"
 )
 
 
@@ -48,14 +49,20 @@ func initWallet(c *cli.Context) error {
     // Print mnemonic
     fmt.Println("Your mnemonic phrase to recover your wallet is printed below. It can be used to recover your node account and validator keys if they are lost.")
     fmt.Println("Record this phrase somewhere secure and private. Do not share it with anyone as it will give them control of your node account and validators.")
+    fmt.Println("==============================================================================================================================================")
     fmt.Println("")
     fmt.Println(response.Mnemonic)
+    fmt.Println("")
+    fmt.Println("==============================================================================================================================================")
     fmt.Println("")
 
     // Confirm mnemonic
     if !c.Bool("confirm-mnemonic") {
         confirmMnemonic(response.Mnemonic)
     }
+
+    // Clear terminal output
+    term.Clear()
 
     // Log & return
     fmt.Println("The node wallet was successfully initialized.")
