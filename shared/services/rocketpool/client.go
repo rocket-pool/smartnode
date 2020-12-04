@@ -125,6 +125,20 @@ func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
 }
 
 
+// Load the merged global & user config
+func (c *Client) LoadMergedConfig() (config.RocketPoolConfig, error) {
+    globalConfig, err := c.LoadGlobalConfig()
+    if err != nil {
+        return config.RocketPoolConfig{}, err
+    }
+    userConfig, err := c.LoadUserConfig()
+    if err != nil {
+        return config.RocketPoolConfig{}, err
+    }
+    return config.Merge(&globalConfig, &userConfig), nil
+}
+
+
 // Install the Rocket Pool service
 func (c *Client) InstallService(verbose, noDeps bool, network, version string) error {
 
@@ -245,11 +259,10 @@ func (c *Client) GetServiceVersion() (string, error) {
     // Get service container version output
     var cmd string
     if c.daemonPath == "" {
-        projectName, err := c.getProjectName()
+        containerName, err := c.getAPIContainerName()
         if err != nil {
             return "", err
         }
-        var containerName string = fmt.Sprintf("%s%s", projectName, APIContainerSuffix)
         cmd = fmt.Sprintf("docker exec %s %s --version", containerName, APIBinPath)
     } else {
         cmd = fmt.Sprintf("%s --version", c.daemonPath)
@@ -303,39 +316,36 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     }
 
     // Load config
-    rpConfig, err := c.loadMergedConfig()
+    cfg, err := c.LoadMergedConfig()
     if err != nil {
         return "", err
     }
 
     // Check config
-    if rpConfig.GetSelectedEth1Client() == nil {
+    if cfg.GetSelectedEth1Client() == nil {
         return "", errors.New("No Eth 1.0 client selected. Please run 'rocketpool service config' and try again.")
     }
-    if rpConfig.GetSelectedEth2Client() == nil {
+    if cfg.GetSelectedEth2Client() == nil {
         return "", errors.New("No Eth 2.0 client selected. Please run 'rocketpool service config' and try again.")
     }
 
     // Set environment variables from config
     env := []string{
-        fmt.Sprintf("COMPOSE_PROJECT_NAME=%s", rpConfig.Smartnode.ProjectName),
-        fmt.Sprintf("NETWORK_NAME=%s",         rpConfig.Smartnode.NetworkName),
-        fmt.Sprintf("SMARTNODE_IMAGE=%s",      rpConfig.Smartnode.Image),
-        fmt.Sprintf("ETH1_CLIENT='%s'",        rpConfig.GetSelectedEth1Client().ID),
-        fmt.Sprintf("ETH1_IMAGE='%s'",         rpConfig.GetSelectedEth1Client().Image),
-        fmt.Sprintf("ETH2_CLIENT='%s'",        rpConfig.GetSelectedEth2Client().ID),
-        fmt.Sprintf("ETH2_IMAGE='%s'",         rpConfig.GetSelectedEth2Client().GetBeaconImage()),
-        fmt.Sprintf("VALIDATOR_CLIENT='%s'",   rpConfig.GetSelectedEth2Client().ID),
-        fmt.Sprintf("VALIDATOR_IMAGE='%s'",    rpConfig.GetSelectedEth2Client().GetValidatorImage()),
-        fmt.Sprintf("ETH1_PROVIDER='%s'",      rpConfig.Chains.Eth1.Provider),
-        fmt.Sprintf("ETH1_VOLUME_NAME=%s",     rpConfig.Chains.Eth1.VolumeName),
-        fmt.Sprintf("ETH2_PROVIDER='%s'",      rpConfig.Chains.Eth2.Provider),
-        fmt.Sprintf("ETH2_VOLUME_NAME=%s",     rpConfig.Chains.Eth2.VolumeName),
+        fmt.Sprintf("COMPOSE_PROJECT_NAME='%s'",    cfg.Smartnode.ProjectName),
+        fmt.Sprintf("SMARTNODE_IMAGE='%s'",         cfg.Smartnode.Image),
+        fmt.Sprintf("ETH1_CLIENT='%s'",             cfg.GetSelectedEth1Client().ID),
+        fmt.Sprintf("ETH1_IMAGE='%s'",              cfg.GetSelectedEth1Client().Image),
+        fmt.Sprintf("ETH2_CLIENT='%s'",             cfg.GetSelectedEth2Client().ID),
+        fmt.Sprintf("ETH2_IMAGE='%s'",              cfg.GetSelectedEth2Client().GetBeaconImage()),
+        fmt.Sprintf("VALIDATOR_CLIENT='%s'",        cfg.GetSelectedEth2Client().ID),
+        fmt.Sprintf("VALIDATOR_IMAGE='%s'",         cfg.GetSelectedEth2Client().GetValidatorImage()),
+        fmt.Sprintf("ETH1_PROVIDER='%s'",           cfg.Chains.Eth1.Provider),
+        fmt.Sprintf("ETH2_PROVIDER='%s'",           cfg.Chains.Eth2.Provider),
     }
-    for _, param := range rpConfig.Chains.Eth1.Client.Params {
+    for _, param := range cfg.Chains.Eth1.Client.Params {
         env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
     }
-    for _, param := range rpConfig.Chains.Eth2.Client.Params {
+    for _, param := range cfg.Chains.Eth2.Client.Params {
         env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
     }
 
@@ -356,11 +366,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 func (c *Client) callAPI(args string) ([]byte, error) {
     var cmd string
     if c.daemonPath == "" {
-        projectName, err := c.getProjectName()
+        containerName, err := c.getAPIContainerName()
         if err != nil {
-            return nil, err
+            return []byte{}, err
         }
-        var containerName string = fmt.Sprintf("%s%s", projectName, APIContainerSuffix)
         cmd = fmt.Sprintf("docker exec %s %s api %s", containerName, APIBinPath, args)
     } else {
         cmd = fmt.Sprintf("%s --config %s --settings %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), args)
@@ -369,30 +378,16 @@ func (c *Client) callAPI(args string) ([]byte, error) {
 }
 
 
-func (c *Client) getProjectName() (string, error) {
-    rpConfig, err := c.loadMergedConfig()
+// Get the API container name
+func (c *Client) getAPIContainerName() (string, error) {
+    cfg, err := c.LoadMergedConfig()
     if err != nil {
         return "", err
     }
-    if rpConfig.Smartnode.ProjectName == "" {
-      return "", fmt.Errorf("Configuration parameter 'smartNode.ProjectName' is empty")
+    if cfg.Smartnode.ProjectName == "" {
+      return "", errors.New("Rocket Pool docker project name not set")
     }
-    return rpConfig.Smartnode.ProjectName, nil
-}
-
-
-func (c *Client) loadMergedConfig() (config.RocketPoolConfig, error) {
-    // Load config
-    globalConfig, err := c.LoadGlobalConfig()
-    if err != nil {
-        return globalConfig, err
-    }
-    userConfig, err := c.LoadUserConfig()
-    if err != nil {
-        return userConfig, err
-    }
-    rpConfig := config.Merge(&globalConfig, &userConfig)
-    return rpConfig, nil
+    return cfg.Smartnode.ProjectName + APIContainerSuffix, nil
 }
 
 

@@ -17,7 +17,6 @@ type RocketPoolConfig struct {
     }                                   `yaml:"rocketpool,omitempty"`
     Smartnode struct {
         ProjectName string              `yaml:"projectName,omitempty"`
-        NetworkName string              `yaml:"networkName,omitempty"`
         Image string                    `yaml:"image,omitempty"`
         PasswordPath string             `yaml:"passwordPath,omitempty"`
         WalletPath string               `yaml:"walletPath,omitempty"`
@@ -30,7 +29,6 @@ type RocketPoolConfig struct {
 }
 type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
-    VolumeName string                   `yaml:"volumeName,omitempty"`
     Client struct {
         Options []ClientOption          `yaml:"options,omitempty"`
         Selected string                 `yaml:"selected,omitempty"`

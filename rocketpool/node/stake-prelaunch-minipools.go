@@ -18,6 +18,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/beacon"
+    "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     "github.com/rocket-pool/smartnode/shared/utils/log"
     "github.com/rocket-pool/smartnode/shared/utils/validator"
@@ -25,7 +26,7 @@ import (
 
 
 // Settings
-const ValidatorSuffix = "_validator"
+const ValidatorContainerSuffix = "_validator"
 var stakePrelaunchMinipoolsInterval, _ = time.ParseDuration("5m")
 var validatorRestartTimeout, _ = time.ParseDuration("5s")
 
@@ -34,6 +35,7 @@ var validatorRestartTimeout, _ = time.ParseDuration("5s")
 type stakePrelaunchMinipools struct {
     c *cli.Context
     log log.ColorLogger
+    cfg config.RocketPoolConfig
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     bc beacon.Client
@@ -45,6 +47,8 @@ type stakePrelaunchMinipools struct {
 func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakePrelaunchMinipools, error) {
 
     // Get services
+    cfg, err := services.GetConfig(c)
+    if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
@@ -58,6 +62,7 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
     return &stakePrelaunchMinipools{
         c: c,
         log: logger,
+        cfg: cfg,
         w: w,
         rp: rp,
         bc: bc,
@@ -253,15 +258,15 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawa
 
 // Restart validator container
 func (t *stakePrelaunchMinipools) restartValidator() error {
-    // Get project name
-    projectName, err := getProjectName(t.c)
-    if err != nil {
-        return err
+
+    // Get validator container name
+    if t.cfg.Smartnode.ProjectName == "" {
+        return errors.New("Rocket Pool docker project name not set")
     }
-    var containerName string = fmt.Sprintf("%s%s", projectName, ValidatorSuffix)
+    containerName := t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
 
     // Log
-    t.log.Printlnf("Restarting validator container: %s ...", containerName)
+    t.log.Printlnf("Restarting validator container (%s)...", containerName)
 
     // Get all containers
     containers, err := t.d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
@@ -292,17 +297,5 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
     // Return
     return nil
 
-}
-
-
-func getProjectName(c *cli.Context) (string, error) {
-    cfg, err := services.GetConfig(c)
-    if err != nil {
-        return "", err
-    }
-    if cfg.Smartnode.ProjectName == "" {
-      return "", fmt.Errorf("Configuration parameter 'smartNode.ProjectName' is empty")
-    }
-    return cfg.Smartnode.ProjectName, nil
 }
 
