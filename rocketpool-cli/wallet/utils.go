@@ -32,7 +32,7 @@ func promptPassword() string {
 // Prompt for a recovery mnemonic phrase
 func promptMnemonic() string {
     for {
-        mnemonic := cliutils.Prompt("Please enter your recovery mnemonic phrase:", "^.*$", "")
+        mnemonic := cliutils.PromptPassword("Please enter your recovery mnemonic phrase:", "^.*$", "")
         if bip39.IsMnemonicValid(mnemonic) {
             return mnemonic
         } else {
