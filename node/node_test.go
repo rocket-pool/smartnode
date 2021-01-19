@@ -50,25 +50,31 @@ func TestRegisterNode(t *testing.T) {
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
-    // Get initial node status
-    exists1, err := GetNodeExists(rp, nodeAccount.Address, nil)
-    if err != nil {
-        t.Fatal(err)
-    } else if exists1 {
+    // Get initial node exists status
+    if exists, err := GetNodeExists(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if exists {
         t.Error("Node already existed before registration")
     }
 
     // Register node
-    if _, err := RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil {
+    nodeTimezoneLocation := "Australia/Brisbane"
+    if _, err := RegisterNode(rp, nodeTimezoneLocation, nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
-    // Get updated node status
-    exists2, err := GetNodeExists(rp, nodeAccount.Address, nil)
-    if err != nil {
-        t.Fatal(err)
-    } else if !exists2 {
+    // Get updated node exists status
+    if exists, err := GetNodeExists(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if !exists {
         t.Error("Node did not exist after registration")
+    }
+
+    // Get node timezone location
+    if timezoneLocation, err := GetNodeTimezoneLocation(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if timezoneLocation != nodeTimezoneLocation {
+        t.Errorf("Incorrect node timezone location '%s'", timezoneLocation)
     }
 
 }
