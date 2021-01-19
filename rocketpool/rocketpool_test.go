@@ -137,3 +137,66 @@ func TestGetABIs(t *testing.T) {
 
 }
 
+
+func TestGetContract(t *testing.T) {
+
+    // Setup
+    client, err := ethclient.Dial(test.Eth1ProviderAddress)
+    if err != nil { t.Fatal(err) }
+    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
+    if err != nil { t.Fatal(err) }
+
+    // Get contract
+    if _, err := rp.GetContract("rocketDepositPool"); err != nil {
+        t.Errorf("Could not get contract: %s", err)
+    }
+
+    // Get cached contract
+    if _, err := rp.GetContract("rocketDepositPool"); err != nil {
+        t.Errorf("Could not get cached contract: %s", err)
+    }
+
+}
+
+
+func TestGetContracts(t *testing.T) {
+
+    // Setup
+    client, err := ethclient.Dial(test.Eth1ProviderAddress)
+    if err != nil { t.Fatal(err) }
+    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
+    if err != nil { t.Fatal(err) }
+
+    // Get contracts
+    if _, err := rp.GetContracts("rocketNodeManager", "rocketNodeDeposit"); err != nil {
+        t.Errorf("Could not get contracts: %s", err)
+    }
+
+    // Get cached contracts
+    if _, err := rp.GetContracts("rocketNodeManager", "rocketNodeDeposit"); err != nil {
+        t.Errorf("Could not get cached contracts: %s", err)
+    }
+
+}
+
+
+func TestMakeContract(t *testing.T) {
+
+    // Setup
+    client, err := ethclient.Dial(test.Eth1ProviderAddress)
+    if err != nil { t.Fatal(err) }
+    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
+    if err != nil { t.Fatal(err) }
+
+    // Make contract
+    if _, err := rp.MakeContract("rocketMinipool", common.HexToAddress("0x1111111111111111111111111111111111111111")); err != nil {
+        t.Errorf("Could not make contract: %s", err)
+    }
+
+    // Make contract with cached ABI
+    if _, err := rp.MakeContract("rocketMinipool", common.HexToAddress("0x2222222222222222222222222222222222222222")); err != nil {
+        t.Errorf("Could not make contract with cached ABI: %s", err)
+    }
+
+}
+
