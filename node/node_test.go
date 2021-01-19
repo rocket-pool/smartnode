@@ -139,6 +139,9 @@ func TestDeposit(t *testing.T) {
         t.Fatal(err)
     }
 
+    // Get initial node minipool count
+    // TODO: implement
+
     // Deposit
     opts := nodeAccount.GetTransactor()
     opts.Value = eth.EthToWei(16)
@@ -146,7 +149,7 @@ func TestDeposit(t *testing.T) {
         t.Fatal(err)
     }
 
-    // Check deposit
+    // Check updated node minipool count
     // TODO: implement
 
 }
