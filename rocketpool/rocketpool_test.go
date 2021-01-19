@@ -3,6 +3,8 @@ package rocketpool
 import (
     "bytes"
     "encoding/json"
+    "log"
+    "os"
     "testing"
 
     "github.com/ethereum/go-ethereum/common"
@@ -12,13 +14,30 @@ import (
 )
 
 
-func TestGetAddress(t *testing.T) {
+var (
+    client *ethclient.Client
+    rp *RocketPool
+)
 
-    // Setup
-    client, err := ethclient.Dial(test.Eth1ProviderAddress)
-    if err != nil { t.Fatal(err) }
-    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
-    if err != nil { t.Fatal(err) }
+
+func TestMain(m *testing.M) {
+    var err error
+
+    // Initialize eth client
+    client, err = ethclient.Dial(test.Eth1ProviderAddress)
+    if err != nil { log.Fatal(err) }
+
+    // Initialize contract manager
+    rp, err = NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
+    if err != nil { log.Fatal(err) }
+
+    // Run tests
+    os.Exit(m.Run())
+
+}
+
+
+func TestGetAddress(t *testing.T) {
 
     // Get contract address
     address1, err := rp.GetAddress("rocketDepositPool")
@@ -40,12 +59,6 @@ func TestGetAddress(t *testing.T) {
 
 
 func TestGetAddresses(t *testing.T) {
-
-    // Setup
-    client, err := ethclient.Dial(test.Eth1ProviderAddress)
-    if err != nil { t.Fatal(err) }
-    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
-    if err != nil { t.Fatal(err) }
 
     // Get contract addresses
     addresses1, err := rp.GetAddresses("rocketNodeManager", "rocketNodeDeposit")
@@ -76,12 +89,6 @@ func TestGetAddresses(t *testing.T) {
 
 func TestGetABI(t *testing.T) {
 
-    // Setup
-    client, err := ethclient.Dial(test.Eth1ProviderAddress)
-    if err != nil { t.Fatal(err) }
-    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
-    if err != nil { t.Fatal(err) }
-
     // Get ABI
     abi1, err := rp.GetABI("rocketDepositPool")
     if err != nil {
@@ -106,12 +113,6 @@ func TestGetABI(t *testing.T) {
 
 
 func TestGetABIs(t *testing.T) {
-
-    // Setup
-    client, err := ethclient.Dial(test.Eth1ProviderAddress)
-    if err != nil { t.Fatal(err) }
-    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
-    if err != nil { t.Fatal(err) }
 
     // Get ABIs
     abis1, err := rp.GetABIs("rocketNodeManager", "rocketNodeDeposit")
@@ -140,12 +141,6 @@ func TestGetABIs(t *testing.T) {
 
 func TestGetContract(t *testing.T) {
 
-    // Setup
-    client, err := ethclient.Dial(test.Eth1ProviderAddress)
-    if err != nil { t.Fatal(err) }
-    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
-    if err != nil { t.Fatal(err) }
-
     // Get contract
     if _, err := rp.GetContract("rocketDepositPool"); err != nil {
         t.Errorf("Could not get contract: %s", err)
@@ -161,12 +156,6 @@ func TestGetContract(t *testing.T) {
 
 func TestGetContracts(t *testing.T) {
 
-    // Setup
-    client, err := ethclient.Dial(test.Eth1ProviderAddress)
-    if err != nil { t.Fatal(err) }
-    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
-    if err != nil { t.Fatal(err) }
-
     // Get contracts
     if _, err := rp.GetContracts("rocketNodeManager", "rocketNodeDeposit"); err != nil {
         t.Errorf("Could not get contracts: %s", err)
@@ -181,12 +170,6 @@ func TestGetContracts(t *testing.T) {
 
 
 func TestMakeContract(t *testing.T) {
-
-    // Setup
-    client, err := ethclient.Dial(test.Eth1ProviderAddress)
-    if err != nil { t.Fatal(err) }
-    rp, err := NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
-    if err != nil { t.Fatal(err) }
 
     // Make contract
     if _, err := rp.MakeContract("rocketMinipool", common.HexToAddress("0x1111111111111111111111111111111111111111")); err != nil {
