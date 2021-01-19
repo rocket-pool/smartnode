@@ -28,7 +28,7 @@ func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Addr
     // Get ABI event
     abiEvent, ok := contractAbi.Events[eventName]
     if !ok {
-        return nil, fmt.Errorf("Event '%s' does not exist on contract")
+        return nil, fmt.Errorf("Event '%s' does not exist on contract", eventName)
     }
 
     // Create contract instance
