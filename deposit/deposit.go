@@ -27,6 +27,34 @@ func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error
 }
 
 
+// Get the excess deposit pool balance
+func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketDepositPool, err := getRocketDepositPool(rp)
+    if err != nil {
+        return nil, err
+    }
+    excessBalance := new(*big.Int)
+    if err := rocketDepositPool.Call(opts, excessBalance, "getExcessBalance"); err != nil {
+        return nil, fmt.Errorf("Could not get deposit pool excess balance: %w", err)
+    }
+    return *excessBalance, nil
+}
+
+
+// Make a deposit
+func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDepositPool, err := getRocketDepositPool(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := contract.Transact(rp.Client, rocketDepositPool, opts, "deposit")
+    if err != nil {
+        return nil, fmt.Errorf("Could not deposit: %w", err)
+    }
+    return txReceipt, nil
+}
+
+
 // Assign deposits
 func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDepositPool, err := getRocketDepositPool(rp)
