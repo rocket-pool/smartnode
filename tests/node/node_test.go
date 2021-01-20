@@ -1,6 +1,7 @@
 package node
 
 import (
+    "bytes"
     "log"
     "os"
     "testing"
@@ -8,6 +9,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
 
+    "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tests"
@@ -46,11 +48,25 @@ func TestMain(m *testing.M) {
 }
 
 
-func TestGetNodeDetails(t *testing.T) {
+func TestRegisterNode(t *testing.T) {
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Get & check initial node exists status
+    if exists, err := node.GetNodeExists(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if exists {
+        t.Error("Node already existed before registration")
+    }
+
+    // Get & check initial node details
+    if details, err := node.GetNodes(rp, nil); err != nil {
+        t.Error(err)
+    } else if len(details) > 0 {
+        t.Error("Incorrect initial node count")
+    }
 
     // Register node
     timezoneLocation := "Australia/Brisbane"
@@ -58,44 +74,25 @@ func TestGetNodeDetails(t *testing.T) {
         t.Fatal(err)
     }
 
-    // Get node details
-    if details, err := node.GetNodeDetails(rp, nodeAccount.Address, nil); err != nil {
+    // Get & check updated node details
+    if details, err := node.GetNodes(rp, nil); err != nil {
         t.Error(err)
+    } else if len(details) == 0 {
+        t.Error("Incorrect updated node count")
     } else {
-        if !details.Exists {
+        nodeDetails := details[0]
+        if !bytes.Equal(nodeDetails.Address.Bytes(), nodeAccount.Address.Bytes()) {
+            t.Errorf("Incorrect node address %s", nodeDetails.Address.Hex())
+        }
+        if !nodeDetails.Exists {
             t.Error("Incorrect node exists status")
         }
-        if details.TimezoneLocation != timezoneLocation {
-            t.Errorf("Incorrect node timezone location '%s'", details.TimezoneLocation)
+        if nodeDetails.Trusted {
+            t.Error("Incorrect node trusted status")
         }
-    }
-
-}
-
-
-func TestRegisterNode(t *testing.T) {
-
-    // State snapshotting
-    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
-    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
-
-    // Check initial node exists status
-    if exists, err := node.GetNodeExists(rp, nodeAccount.Address, nil); err != nil {
-        t.Error(err)
-    } else if exists {
-        t.Error("Node already existed before registration")
-    }
-
-    // Register node
-    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil {
-        t.Fatal(err)
-    }
-
-    // Check updated node exists status
-    if exists, err := node.GetNodeExists(rp, nodeAccount.Address, nil); err != nil {
-        t.Error(err)
-    } else if !exists {
-        t.Error("Node did not exist after registration")
+        if nodeDetails.TimezoneLocation != timezoneLocation {
+            t.Errorf("Incorrect node timezone location '%s'", nodeDetails.TimezoneLocation)
+        }
     }
 
 }
@@ -108,18 +105,17 @@ func TestSetTimezoneLocation(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Register node
-    timezoneLocation := "Australia/Brisbane"
-    if _, err := node.RegisterNode(rp, timezoneLocation, nodeAccount.GetTransactor()); err != nil {
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Set timezone
-    timezoneLocation = "Australia/Sydney"
+    timezoneLocation := "Australia/Sydney"
     if _, err := node.SetTimezoneLocation(rp, timezoneLocation, nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
-    // Check node timezone location
+    // Get & check node timezone location
     if nodeTimezoneLocation, err := node.GetNodeTimezoneLocation(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
     } else if nodeTimezoneLocation != timezoneLocation {
@@ -141,7 +137,10 @@ func TestDeposit(t *testing.T) {
     }
 
     // Get initial node minipool count
-    // TODO: implement
+    minipoolCount1, err := minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
 
     // Deposit
     opts := nodeAccount.GetTransactor()
@@ -150,8 +149,13 @@ func TestDeposit(t *testing.T) {
         t.Fatal(err)
     }
 
-    // Check updated node minipool count
-    // TODO: implement
+    // Get & check updated node minipool count
+    minipoolCount2, err := minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    } else if minipoolCount2 != minipoolCount1 + 1 {
+        t.Error("Incorrect node minipool count")
+    }
 
 }
 
