@@ -8,7 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/crypto"
 
-    "github.com/rocket-pool/rocketpool-go/utils/test"
+    "github.com/rocket-pool/rocketpool-go/tests"
 )
 
 
@@ -23,7 +23,7 @@ type Account struct {
 func GetAccount(index uint8) (*Account, error) {
 
     // Get private key data
-    privateKeyBytes, err := hex.DecodeString(test.AccountPrivateKeys[index])
+    privateKeyBytes, err := hex.DecodeString(tests.AccountPrivateKeys[index])
     if err != nil { return nil, err }
 
     // Get private key

@@ -8,10 +8,11 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
 
+    "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/test"
-    "github.com/rocket-pool/rocketpool-go/utils/test/accounts"
-    "github.com/rocket-pool/rocketpool-go/utils/test/evm"
+    "github.com/rocket-pool/rocketpool-go/tests"
+    "github.com/rocket-pool/rocketpool-go/tests/utils/accounts"
+    "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
 )
 
 
@@ -27,11 +28,11 @@ func TestMain(m *testing.M) {
     var err error
 
     // Initialize eth client
-    client, err = ethclient.Dial(test.Eth1ProviderAddress)
+    client, err = ethclient.Dial(tests.Eth1ProviderAddress)
     if err != nil { log.Fatal(err) }
 
     // Initialize contract manager
-    rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(test.RocketStorageAddress))
+    rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))
     if err != nil { log.Fatal(err) }
 
     // Initialize accounts
@@ -50,7 +51,7 @@ func TestGetBalance(t *testing.T) {
     // TODO: implement
 
     // Get deposit pool balance
-    balance, err := GetBalance(rp, nil)
+    balance, err := deposit.GetBalance(rp, nil)
     if err != nil {
         t.Fatal(err)
     }
@@ -72,18 +73,18 @@ func TestAssignDeposits(t *testing.T) {
     // TODO: implement
 
     // Get initial deposit pool balance
-    balance1, err := GetBalance(rp, nil)
+    balance1, err := deposit.GetBalance(rp, nil)
     if err != nil {
         t.Fatal(err)
     }
 
     // Assign deposits
-    if _, err := AssignDeposits(rp, userAccount.GetTransactor()); err != nil {
+    if _, err := deposit.AssignDeposits(rp, userAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Check updated deposit pool balance
-    balance2, err := GetBalance(rp, nil)
+    balance2, err := deposit.GetBalance(rp, nil)
     if err != nil {
         t.Fatal(err)
     } else if balance2.Cmp(balance1) != -1 {

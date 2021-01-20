@@ -3,7 +3,7 @@ package evm
 import (
     "github.com/ethereum/go-ethereum/rpc"
 
-    "github.com/rocket-pool/rocketpool-go/utils/test"
+    "github.com/rocket-pool/rocketpool-go/tests"
 )
 
 
@@ -15,7 +15,7 @@ var snapshotId string
 func TakeSnapshot() error {
 
     // Initialize RPC client
-    client, err := rpc.Dial(test.Eth1ProviderAddress)
+    client, err := rpc.Dial(tests.Eth1ProviderAddress)
     if err != nil { return err }
 
     // Make RPC call
@@ -33,7 +33,7 @@ func TakeSnapshot() error {
 func RevertSnapshot() error {
 
     // Initialize RPC client
-    client, err := rpc.Dial(test.Eth1ProviderAddress)
+    client, err := rpc.Dial(tests.Eth1ProviderAddress)
     if err != nil { return err }
 
     // Make RPC call
