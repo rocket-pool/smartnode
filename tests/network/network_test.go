@@ -230,3 +230,8 @@ func TestTransferWithdrawal(t *testing.T) {
 
 }
 
+
+func TestProcessWithdrawal(t *testing.T) {
+    // TODO: implement
+}
+
