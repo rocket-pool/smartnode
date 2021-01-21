@@ -88,6 +88,17 @@ func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
     }
     return eth.WeiToEth(*maximumNodeFee), nil
 }
+func GetNodeFeeDemandRange(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    nodeFeeDemandRange := new(*big.Int)
+    if err := rocketNetworkSettings.Call(opts, nodeFeeDemandRange, "getNodeFeeDemandRange"); err != nil {
+        return nil, fmt.Errorf("Could not get node fee demand range: %w", err)
+    }
+    return *nodeFeeDemandRange, nil
+}
 
 
 // Get contracts
