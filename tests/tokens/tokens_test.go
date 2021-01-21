@@ -81,6 +81,71 @@ func TestRETHBalances(t *testing.T) {
 }
 
 
+func TestTransferRETH(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Mint rETH
+    rethAmount := eth.EthToWei(100)
+    if err := mintRETH(userAccount, rethAmount); err != nil { t.Fatal(err) }
+
+    // Transfer rETH
+    toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    sendAmount := eth.EthToWei(50)
+    if _, err := tokens.TransferRETH(rp, toAddress, sendAmount, userAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check rETH account balance
+    if rethBalance, err := tokens.GetRETHBalance(rp, toAddress, nil); err != nil {
+        t.Error(err)
+    } else if rethBalance.Cmp(sendAmount) != 0 {
+        t.Errorf("Incorrect rETH account balance %s", rethBalance.String())
+    }
+
+}
+
+
+func TestBurnRETH(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Mint rETH
+    rethAmount := eth.EthToWei(100)
+    if err := mintRETH(userAccount, rethAmount); err != nil { t.Fatal(err) }
+
+    // Get initial balances
+    balances1, err := tokens.GetBalances(rp, userAccount.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    // Burn rETH
+    burnAmount := eth.EthToWei(50)
+    if _, err := tokens.BurnRETH(rp, burnAmount, userAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated balances
+    balances2, err := tokens.GetBalances(rp, userAccount.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    } else {
+        if balances2.RETH.Cmp(balances1.RETH) != -1 {
+            t.Error("rETH balance did not decrease after burning rETH")
+        }
+        if balances2.ETH.Cmp(balances1.ETH) != 1 {
+            t.Error("ETH balance did not increase after burning rETH")
+        }
+    }
+
+}
+
+
 // Mint an amount of rETH to an account
 func mintRETH(account *accounts.Account, amount *big.Int) error {
     opts := account.GetTransactor()
