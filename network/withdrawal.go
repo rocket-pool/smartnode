@@ -50,7 +50,7 @@ func SetWithdrawalCredentials(rp *rocketpool.RocketPool, withdrawalCredentials c
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNetworkWithdrawal, opts, "setWithdrawalCredentials", withdrawalCredentials)
+    txReceipt, err := contract.Transact(rp.Client, rocketNetworkWithdrawal, opts, "setWithdrawalCredentials", withdrawalCredentials.Bytes())
     if err != nil {
         return nil, fmt.Errorf("Could not set network withdrawal credentials: %w", err)
     }

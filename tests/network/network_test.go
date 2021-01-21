@@ -1,6 +1,7 @@
 package network
 
 import (
+    "bytes"
     "log"
     "math/big"
     "os"
@@ -179,6 +180,52 @@ func TestNodeFee(t *testing.T) {
         t.Error(err)
     } else if nodeFee != maxNodeFee {
         t.Errorf("Incorrect node fee for positive demand %f", nodeFee)
+    }
+
+}
+
+
+func TestSetWithdrawalCredentials(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Set withdrawal credentials
+    withdrawalCredentials := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+    if _, err := network.SetWithdrawalCredentials(rp, withdrawalCredentials, ownerAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check withdrawal credentials
+    if networkWithdrawalCredentials, err := network.GetWithdrawalCredentials(rp, nil); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(networkWithdrawalCredentials.Bytes(), withdrawalCredentials.Bytes()) {
+        t.Errorf("Incorrect network withdrawal credentials %s", networkWithdrawalCredentials.Hex())
+    }
+
+}
+
+
+func TestTransferWithdrawal(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Transfer validator balance
+    opts := userAccount.GetTransactor()
+    opts.Value = eth.EthToWei(50)
+    opts.GasLimit = 100000
+    if _, err := network.TransferWithdrawal(rp, opts); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check withdrawal contract balance
+    if withdrawalBalance, err := network.GetWithdrawalBalance(rp, nil); err != nil {
+        t.Error(err)
+    } else if withdrawalBalance.Cmp(opts.Value) != 0 {
+        t.Errorf("Incorrect withdrawal contract balance %s", withdrawalBalance.String())
     }
 
 }
