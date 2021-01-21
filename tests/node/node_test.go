@@ -87,9 +87,6 @@ func TestRegisterNode(t *testing.T) {
         if !nodeDetails.Exists {
             t.Error("Incorrect node exists status")
         }
-        if nodeDetails.Trusted {
-            t.Error("Incorrect node trusted status")
-        }
         if nodeDetails.TimezoneLocation != timezoneLocation {
             t.Errorf("Incorrect node timezone location '%s'", nodeDetails.TimezoneLocation)
         }
