@@ -2,18 +2,17 @@ package tokens
 
 import (
     "log"
-    "math/big"
     "os"
     "testing"
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
 
-    "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tests"
     "github.com/rocket-pool/rocketpool-go/tests/utils/accounts"
     "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
+    tokenutils "github.com/rocket-pool/rocketpool-go/tests/utils/tokens"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -54,6 +53,33 @@ func TestMain(m *testing.M) {
 }
 
 
+func TestNETHBalances(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Mint nETH
+    nethAmount := eth.EthToWei(100)
+    if err := tokenutils.MintNETH(rp, ownerAccount, nodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+
+    // Get & check nETH total supply
+    if nethTotalSupply, err := tokens.GetNETHTotalSupply(rp, nil); err != nil {
+        t.Error(err)
+    } else if nethTotalSupply.Cmp(nethAmount) != 0 {
+        t.Errorf("Incorrect nETH total supply %s", nethTotalSupply.String())
+    }
+
+    // Get & check nETH account balance
+    if nethBalance, err := tokens.GetNETHBalance(rp, userAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if nethBalance.Cmp(nethAmount) != 0 {
+        t.Errorf("Incorrect nETH account balance %s", nethBalance.String())
+    }
+
+}
+
+
 func TestRETHBalances(t *testing.T) {
 
     // State snapshotting
@@ -62,7 +88,7 @@ func TestRETHBalances(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := mintRETH(userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := tokenutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
 
     // Get & check rETH total supply
     if rethTotalSupply, err := tokens.GetRETHTotalSupply(rp, nil); err != nil {
@@ -89,7 +115,7 @@ func TestTransferRETH(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := mintRETH(userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := tokenutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
 
     // Transfer rETH
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
@@ -116,7 +142,7 @@ func TestBurnRETH(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := mintRETH(userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := tokenutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
 
     // Get initial balances
     balances1, err := tokens.GetBalances(rp, userAccount.Address, nil)
@@ -143,14 +169,5 @@ func TestBurnRETH(t *testing.T) {
         }
     }
 
-}
-
-
-// Mint an amount of rETH to an account
-func mintRETH(account *accounts.Account, amount *big.Int) error {
-    opts := account.GetTransactor()
-    opts.Value = amount
-    _, err := deposit.Deposit(rp, opts)
-    return err
 }
 
