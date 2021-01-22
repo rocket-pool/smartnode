@@ -6,8 +6,10 @@ import (
     "sync"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -86,6 +88,17 @@ func GetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
         return 0, fmt.Errorf("Could not get minipool withdrawal delay: %w", err)
     }
     return (*withdrawalDelay).Uint64(), nil
+}
+func SetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, withdrawalDelay uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolSettings, opts, "setWithdrawalDelay", big.NewInt(int64(withdrawalDelay)))
+    if err != nil {
+        return nil, fmt.Errorf("Could not set minipool withdrawal delay: %w", err)
+    }
+    return txReceipt, nil
 }
 
 

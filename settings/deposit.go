@@ -25,6 +25,17 @@ func GetAssignDepositsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (b
     }
     return *assignDepositsEnabled, nil
 }
+func SetAssignDepositsEnabled(rp *rocketpool.RocketPool, assignDepositsEnabled bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDepositSettings, err := getRocketDepositSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := contract.Transact(rp.Client, rocketDepositSettings, opts, "setAssignDepositsEnabled", assignDepositsEnabled)
+    if err != nil {
+        return nil, fmt.Errorf("Could not set deposit assignments enabled status: %w", err)
+    }
+    return txReceipt, nil
+}
 
 
 // Maximum deposit assignments per transaction
@@ -38,20 +49,6 @@ func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts
         return 0, fmt.Errorf("Could not get maximum deposit assignments: %w", err)
     }
     return (*maximumDepositAssignments).Uint64(), nil
-}
-
-
-// Set deposit assignments currently enabled
-func SetAssignDepositsEnabled(rp *rocketpool.RocketPool, opts *bind.TransactOpts, value bool) (*types.Receipt, error) {
-    rocketDepositSettings, err := getRocketDepositSettings(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := contract.Transact(rp.Client, rocketDepositSettings, opts, "setAssignDepositsEnabled", value)
-    if err != nil {
-        return nil, fmt.Errorf("Could not set deposit assignments enabled status: %w", err)
-    }
-    return txReceipt, nil
 }
 
 
