@@ -106,6 +106,9 @@ func TestAssignDeposits(t *testing.T) {
     nodeDepositOpts.Value = eth.EthToWei(16)
     if _, err := node.Deposit(rp, 0, nodeDepositOpts); err != nil { t.Fatal(err) }
 
+    // Re-enable deposit assignments
+    if _, err := settings.SetAssignDepositsEnabled(rp, true, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Get initial deposit pool balance
     balance1, err := deposit.GetBalance(rp, nil)
     if err != nil {
