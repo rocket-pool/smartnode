@@ -11,6 +11,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/contract"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -31,6 +32,48 @@ func GetRETHBalance(rp *rocketpool.RocketPool, address common.Address, opts *bin
         return nil, err
     }
     return balanceOf(rocketETHToken, "rETH", address, opts)
+}
+
+
+// Get the ETH value of an amount of rETH
+func GetETHValueOfRETH(rp *rocketpool.RocketPool, rethAmount *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+    rocketETHToken, err := getRocketETHToken(rp)
+    if err != nil {
+        return nil, err
+    }
+    ethValue := new(*big.Int)
+    if err := rocketETHToken.Call(opts, ethValue, "getEthValue", rethAmount); err != nil {
+        return nil, fmt.Errorf("Could not get ETH value of rETH amount: %w", err)
+    }
+    return *ethValue, nil
+}
+
+
+// Get the rETH value of an amount of ETH
+func GetRETHValueOfETH(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+    rocketETHToken, err := getRocketETHToken(rp)
+    if err != nil {
+        return nil, err
+    }
+    rethValue := new(*big.Int)
+    if err := rocketETHToken.Call(opts, rethValue, "getRethValue", ethAmount); err != nil {
+        return nil, fmt.Errorf("Could not get rETH value of ETH amount: %w", err)
+    }
+    return *rethValue, nil
+}
+
+
+// Get the current ETH : rETH exchange rate
+func GetRETHExchangeRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    rocketETHToken, err := getRocketETHToken(rp)
+    if err != nil {
+        return 0, err
+    }
+    exchangeRate := new(*big.Int)
+    if err := rocketETHToken.Call(opts, exchangeRate, "getExchangeRate"); err != nil {
+        return 0, fmt.Errorf("Could not get rETH exchange rate: %w", err)
+    }
+    return eth.WeiToEth(*exchangeRate), nil
 }
 
 
