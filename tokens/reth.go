@@ -77,6 +77,34 @@ func GetRETHExchangeRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float6
 }
 
 
+// Get the total amount of ETH collateral available for rETH trades
+func GetRETHTotalCollateral(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketETHToken, err := getRocketETHToken(rp)
+    if err != nil {
+        return nil, err
+    }
+    totalCollateral := new(*big.Int)
+    if err := rocketETHToken.Call(opts, totalCollateral, "getTotalCollateral"); err != nil {
+        return nil, fmt.Errorf("Could not get rETH total collateral: %w", err)
+    }
+    return *totalCollateral, nil
+}
+
+
+// Get the rETH collateralization rate
+func GetRETHCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    rocketETHToken, err := getRocketETHToken(rp)
+    if err != nil {
+        return 0, err
+    }
+    collateralRate := new(*big.Int)
+    if err := rocketETHToken.Call(opts, collateralRate, "getCollateralRate"); err != nil {
+        return 0, fmt.Errorf("Could not get rETH collateral rate: %w", err)
+    }
+    return eth.WeiToEth(*collateralRate), nil
+}
+
+
 // Transfer rETH
 func TransferRETH(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketETHToken, err := getRocketETHToken(rp)
