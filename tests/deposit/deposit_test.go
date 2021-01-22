@@ -60,12 +60,9 @@ func TestDeposit(t *testing.T) {
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
-    // Deposit amount
-    depositAmount := eth.EthToWei(10)
-
     // Make deposit
     opts := userAccount.GetTransactor()
-    opts.Value = depositAmount
+    opts.Value = eth.EthToWei(10)
     if _, err := deposit.Deposit(rp, opts); err != nil {
         t.Fatal(err)
     }
@@ -73,14 +70,14 @@ func TestDeposit(t *testing.T) {
     // Get & check deposit pool balance
     if balance, err := deposit.GetBalance(rp, nil); err != nil {
         t.Error(err)
-    } else if balance.Cmp(depositAmount) != 0 {
+    } else if balance.Cmp(opts.Value) != 0 {
         t.Error("Incorrect deposit pool balance")
     }
 
     // Get & check deposit pool excess balance
     if excessBalance, err := deposit.GetExcessBalance(rp, nil); err != nil {
         t.Error(err)
-    } else if excessBalance.Cmp(depositAmount) != 0 {
+    } else if excessBalance.Cmp(opts.Value) != 0 {
         t.Error("Incorrect deposit pool excess balance")
     }
 
@@ -108,9 +105,6 @@ func TestAssignDeposits(t *testing.T) {
     nodeDepositOpts := nodeAccount.GetTransactor()
     nodeDepositOpts.Value = eth.EthToWei(16)
     if _, err := node.Deposit(rp, 0, nodeDepositOpts); err != nil { t.Fatal(err) }
-
-    // Re-enable deposit assignments
-    if _, err := settings.SetAssignDepositsEnabled(rp, true, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get initial deposit pool balance
     balance1, err := deposit.GetBalance(rp, nil)

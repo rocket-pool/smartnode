@@ -97,7 +97,7 @@ func TestSubmitBalances(t *testing.T) {
         t.Errorf("Incorrect network staking ETH balance %s", networkStakingEth.String())
     }
 
-    // Get & check network
+    // Get & check network rETH supply
     if networkRethSupply, err := network.GetTotalRETHSupply(rp, nil); err != nil {
         t.Error(err)
     } else if networkRethSupply.Cmp(rethSupply) != 0 {
