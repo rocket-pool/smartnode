@@ -28,7 +28,7 @@ type minipoolCreated struct {
 // Mint an amount of nETH to an account
 func MintNETH(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, nodeAccount *accounts.Account, toAccount *accounts.Account, amount *big.Int) error {
 
-    // Register trusted node
+    // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", toAccount.GetTransactor()); err != nil { return err }
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { return err }
     if _, err := node.SetNodeTrusted(rp, nodeAccount.Address, true, ownerAccount.GetTransactor()); err != nil { return err }
