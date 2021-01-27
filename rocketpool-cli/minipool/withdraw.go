@@ -83,7 +83,7 @@ func withdrawMinipools(c *cli.Context) error {
 
     // Withdraw minipools
     for _, minipool := range selectedMinipools {
-        if _, err := rp.CloseMinipool(minipool.Address); err != nil {
+        if _, err := rp.WithdrawMinipool(minipool.Address); err != nil {
             fmt.Printf("Could not withdraw from minipool %s: %s.\n", minipool.Address.Hex(), err)
         } else {
             fmt.Printf("Successfully withdrew from minipool %s.\n", minipool.Address.Hex())
@@ -94,4 +94,3 @@ func withdrawMinipools(c *cli.Context) error {
     return nil
 
 }
-
