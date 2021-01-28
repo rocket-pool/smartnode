@@ -80,6 +80,33 @@ func TestNETHBalances(t *testing.T) {
 }
 
 
+func TestTransferNETH(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Mint nETH
+    nethAmount := eth.EthToWei(100)
+    if err := tokenutils.MintNETH(rp, ownerAccount, nodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+
+    // Transfer nETH
+    toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    sendAmount := eth.EthToWei(50)
+    if _, err := tokens.TransferNETH(rp, toAddress, sendAmount, userAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check nETH account balance
+    if nethBalance, err := tokens.GetNETHBalance(rp, toAddress, nil); err != nil {
+        t.Error(err)
+    } else if nethBalance.Cmp(sendAmount) != 0 {
+        t.Errorf("Incorrect nETH account balance %s", nethBalance.String())
+    }
+
+}
+
+
 func TestRETHBalances(t *testing.T) {
 
     // State snapshotting
