@@ -52,7 +52,7 @@ func CreateMinipool(rp *rocketpool.RocketPool, nodeAccount *accounts.Account, de
 // Stake a minipool
 func StakeMinipool(rp *rocketpool.RocketPool, mp *minipool.Minipool, nodeAccount *accounts.Account) error {
 
-    // Get validator data
+    // Get validator & deposit data
     validatorPubkey, err := validator.GetValidatorPubkey()
     if err != nil { return err }
     validatorSignature, err := validator.GetValidatorSignature()
