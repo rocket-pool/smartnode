@@ -29,7 +29,7 @@ func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.Trans
 
 // Get contracts
 var rocketNodeDepositLock sync.Mutex
-func getRocketNodeDeposit(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketNodeDeposit(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketNodeDepositLock.Lock()
     defer rocketNodeDepositLock.Unlock()
     return rp.GetContract("rocketNodeDeposit")

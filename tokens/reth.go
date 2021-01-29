@@ -131,7 +131,7 @@ func BurnRETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpt
 
 // Get contracts
 var rocketETHTokenLock sync.Mutex
-func getRocketETHToken(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketETHToken(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketETHTokenLock.Lock()
     defer rocketETHTokenLock.Unlock()
     return rp.GetContract("rocketETHToken")

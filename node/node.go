@@ -377,7 +377,7 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
 
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
-func getRocketNodeManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketNodeManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketNodeManagerLock.Lock()
     defer rocketNodeManagerLock.Unlock()
     return rp.GetContract("rocketNodeManager")

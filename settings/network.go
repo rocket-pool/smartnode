@@ -103,7 +103,7 @@ func GetNodeFeeDemandRange(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 
 // Get contracts
 var rocketNetworkSettingsLock sync.Mutex
-func getRocketNetworkSettings(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketNetworkSettings(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketNetworkSettingsLock.Lock()
     defer rocketNetworkSettingsLock.Unlock()
     return rp.GetContract("rocketNetworkSettings")

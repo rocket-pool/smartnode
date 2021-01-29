@@ -54,7 +54,7 @@ func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts
 
 // Get contracts
 var rocketDepositSettingsLock sync.Mutex
-func getRocketDepositSettings(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketDepositSettings(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketDepositSettingsLock.Lock()
     defer rocketDepositSettingsLock.Unlock()
     return rp.GetContract("rocketDepositSettings")

@@ -60,11 +60,11 @@ func SetWithdrawalCredentials(rp *rocketpool.RocketPool, withdrawalCredentials c
 
 // Transfer a validator balance to the withdrawal contract
 func TransferWithdrawal(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkWithdrawalAddress, err := getRocketNetworkWithdrawalAddress(rp)
+    rocketNetworkWithdrawal, err := getRocketNetworkWithdrawal(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := eth.SendTransaction(rp.Client, *rocketNetworkWithdrawalAddress, opts)
+    txReceipt, err := eth.SendTransaction(rp.Client, *(rocketNetworkWithdrawal.Address), opts)
     if err != nil {
         return nil, fmt.Errorf("Could not transfer validator balance: %w", err)
     }
@@ -88,15 +88,9 @@ func ProcessWithdrawal(rp *rocketpool.RocketPool, validatorPubkey rptypes.Valida
 
 // Get contracts
 var rocketNetworkWithdrawalLock sync.Mutex
-func getRocketNetworkWithdrawal(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketNetworkWithdrawal(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketNetworkWithdrawalLock.Lock()
     defer rocketNetworkWithdrawalLock.Unlock()
     return rp.GetContract("rocketNetworkWithdrawal")
-}
-var rocketNetworkWithdrawalAddressLock sync.Mutex
-func getRocketNetworkWithdrawalAddress(rp *rocketpool.RocketPool) (*common.Address, error) {
-    rocketNetworkWithdrawalAddressLock.Lock()
-    defer rocketNetworkWithdrawalAddressLock.Unlock()
-    return rp.GetAddress("rocketNetworkWithdrawal")
 }
 

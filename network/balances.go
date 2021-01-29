@@ -100,7 +100,7 @@ func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEt
 
 // Get contracts
 var rocketNetworkBalancesLock sync.Mutex
-func getRocketNetworkBalances(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketNetworkBalances(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketNetworkBalancesLock.Lock()
     defer rocketNetworkBalancesLock.Unlock()
     return rp.GetContract("rocketNetworkBalances")

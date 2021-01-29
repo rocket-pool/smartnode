@@ -104,7 +104,7 @@ func SetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, withdrawalDelay uint6
 
 // Get contracts
 var rocketMinipoolSettingsLock sync.Mutex
-func getRocketMinipoolSettings(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketMinipoolSettings(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketMinipoolSettingsLock.Lock()
     defer rocketMinipoolSettingsLock.Unlock()
     return rp.GetContract("rocketMinipoolSettings")

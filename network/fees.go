@@ -56,7 +56,7 @@ func GetNodeFeeByDemand(rp *rocketpool.RocketPool, nodeDemand *big.Int, opts *bi
 
 // Get contracts
 var rocketNetworkFeesLock sync.Mutex
-func getRocketNetworkFees(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketNetworkFees(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketNetworkFeesLock.Lock()
     defer rocketNetworkFeesLock.Unlock()
     return rp.GetContract("rocketNetworkFees")

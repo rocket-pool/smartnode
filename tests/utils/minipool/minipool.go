@@ -32,12 +32,12 @@ func CreateMinipool(rp *rocketpool.RocketPool, nodeAccount *accounts.Account, de
     txReceipt, err := node.Deposit(rp, 0, opts)
     if err != nil { return nil, err }
 
-    // Get minipool manager contract details
-    minipoolManagerAddress, minipoolManagerABI, err := contract.GetDetails(rp, "rocketMinipoolManager")
+    // Get minipool manager contract
+    rocketMinipoolManager, err := rp.GetContract("rocketMinipoolManager")
     if err != nil { return nil, err }
 
     // Get created minipool address
-    minipoolCreatedEvents, err := contract.GetTransactionEvents(rp.Client, minipoolManagerAddress, minipoolManagerABI, txReceipt, "MinipoolCreated", minipoolCreated{})
+    minipoolCreatedEvents, err := contract.GetTransactionEvents(rp.Client, rocketMinipoolManager, txReceipt, "MinipoolCreated", minipoolCreated{})
     if err != nil || len(minipoolCreatedEvents) == 0 {
         return nil, errors.New("Could not get minipool created event")
     }

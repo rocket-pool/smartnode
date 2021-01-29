@@ -40,7 +40,7 @@ func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool
 
 // Get contracts
 var rocketNodeSettingsLock sync.Mutex
-func getRocketNodeSettings(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketNodeSettings(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketNodeSettingsLock.Lock()
     defer rocketNodeSettingsLock.Unlock()
     return rp.GetContract("rocketNodeSettings")

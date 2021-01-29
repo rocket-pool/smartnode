@@ -33,7 +33,7 @@ type cachedABI struct {
     time int64
 }
 type cachedContract struct {
-    contract *bind.BoundContract
+    contract *Contract
     time int64
 }
 
@@ -189,7 +189,7 @@ func (rp *RocketPool) GetABIs(contractNames ...string) ([]*abi.ABI, error) {
 
 
 // Load Rocket Pool contracts
-func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, error) {
+func (rp *RocketPool) GetContract(contractName string) (*Contract, error) {
 
     // Check for cached contract
     if cached, ok := rp.getCachedContract(contractName); ok {
@@ -223,7 +223,11 @@ func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, err
     }
 
     // Create contract
-    contract := bind.NewBoundContract(*address, *abi, rp.Client, rp.Client, rp.Client)
+    contract := &Contract{
+        Contract: bind.NewBoundContract(*address, *abi, rp.Client, rp.Client, rp.Client),
+        Address: address,
+        ABI: abi,
+    }
 
     // Cache contract
     rp.setCachedContract(contractName, cachedContract{
@@ -235,11 +239,11 @@ func (rp *RocketPool) GetContract(contractName string) (*bind.BoundContract, err
     return contract, nil
 
 }
-func (rp *RocketPool) GetContracts(contractNames ...string) ([]*bind.BoundContract, error) {
+func (rp *RocketPool) GetContracts(contractNames ...string) ([]*Contract, error) {
 
     // Data
     var wg errgroup.Group
-    contracts := make([]*bind.BoundContract, len(contractNames))
+    contracts := make([]*Contract, len(contractNames))
 
     // Load contracts
     for ci, contractName := range contractNames {
@@ -263,7 +267,7 @@ func (rp *RocketPool) GetContracts(contractNames ...string) ([]*bind.BoundContra
 
 
 // Create a Rocket Pool contract instance
-func (rp *RocketPool) MakeContract(contractName string, address common.Address) (*bind.BoundContract, error) {
+func (rp *RocketPool) MakeContract(contractName string, address common.Address) (*Contract, error) {
 
     // Load ABI
     abi, err := rp.GetABI(contractName)
@@ -272,7 +276,11 @@ func (rp *RocketPool) MakeContract(contractName string, address common.Address) 
     }
 
     // Create and return
-    return bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client), nil
+    return &Contract{
+        Contract: bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client),
+        Address: &address,
+        ABI: abi,
+    }, nil
 
 }
 

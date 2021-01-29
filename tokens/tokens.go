@@ -70,7 +70,7 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 
 
 // Get a token's total supply
-func totalSupply(tokenContract *bind.BoundContract, tokenName string, opts *bind.CallOpts) (*big.Int, error) {
+func totalSupply(tokenContract *rocketpool.Contract, tokenName string, opts *bind.CallOpts) (*big.Int, error) {
     totalSupply := new(*big.Int)
     if err := tokenContract.Call(opts, totalSupply, "totalSupply"); err != nil {
         return nil, fmt.Errorf("Could not get %s total supply: %w", tokenName, err)
@@ -80,7 +80,7 @@ func totalSupply(tokenContract *bind.BoundContract, tokenName string, opts *bind
 
 
 // Get a token balance
-func balanceOf(tokenContract *bind.BoundContract, tokenName string, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
+func balanceOf(tokenContract *rocketpool.Contract, tokenName string, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
     balance := new(*big.Int)
     if err := tokenContract.Call(opts, balance, "balanceOf", address); err != nil {
         return nil, fmt.Errorf("Could not get %s balance of %s: %w", tokenName, address.Hex(), err)
@@ -90,7 +90,7 @@ func balanceOf(tokenContract *bind.BoundContract, tokenName string, address comm
 
 
 // Transfer tokens to an address
-func transfer(client *ethclient.Client, tokenContract *bind.BoundContract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func transfer(client *ethclient.Client, tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := contract.Transact(client, tokenContract, opts, "transfer", to, amount)
     if err != nil {
         return nil, fmt.Errorf("Could not transfer %s to %s: %w", tokenName, to.Hex(), err)

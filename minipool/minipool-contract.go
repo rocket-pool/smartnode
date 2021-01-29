@@ -45,7 +45,7 @@ type StakingDetails struct {
 // Minipool contract
 type Minipool struct {
     Address common.Address
-    Contract *bind.BoundContract
+    Contract *rocketpool.Contract
     RocketPool *rocketpool.RocketPool
 }
 
@@ -392,7 +392,7 @@ func (mp *Minipool) Close(opts *bind.TransactOpts) (*types.Receipt, error) {
 
 // Get a minipool contract
 var rocketMinipoolLock sync.Mutex
-func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Address) (*bind.BoundContract, error) {
+func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Address) (*rocketpool.Contract, error) {
     rocketMinipoolLock.Lock()
     defer rocketMinipoolLock.Unlock()
     return rp.MakeContract("rocketMinipool", minipoolAddress)

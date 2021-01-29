@@ -6,18 +6,17 @@ import (
     "fmt"
     "reflect"
 
-    "github.com/ethereum/go-ethereum/accounts/abi"
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/ethclient"
+
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 
 // Get contract events from a transaction
 // eventPrototype must be an event struct type
 // Returns a slice of untyped values; assert returned events to event struct type
-func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Address, contractAbi *abi.ABI, txReceipt *types.Receipt, eventName string, eventPrototype interface{}) ([]interface{}, error) {
+func GetTransactionEvents(client *ethclient.Client, contract *rocketpool.Contract, txReceipt *types.Receipt, eventName string, eventPrototype interface{}) ([]interface{}, error) {
 
     // Get event type
     eventType := reflect.TypeOf(eventPrototype)
@@ -26,20 +25,17 @@ func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Addr
     }
 
     // Get ABI event
-    abiEvent, ok := contractAbi.Events[eventName]
+    abiEvent, ok := contract.ABI.Events[eventName]
     if !ok {
         return nil, fmt.Errorf("Event '%s' does not exist on contract", eventName)
     }
-
-    // Create contract instance
-    contract := bind.NewBoundContract(*contractAddress, *contractAbi, client, client, client)
 
     // Process transaction receipt logs
     events := make([]interface{}, 0)
     for _, log := range txReceipt.Logs {
 
         // Check log address matches contract address
-        if !bytes.Equal(log.Address.Bytes(), contractAddress.Bytes()) {
+        if !bytes.Equal(log.Address.Bytes(), contract.Address.Bytes()) {
             continue
         }
 
@@ -50,7 +46,7 @@ func GetTransactionEvents(client *ethclient.Client, contractAddress *common.Addr
 
         // Unpack event
         event := reflect.New(eventType)
-        if err := contract.UnpackLog(event.Interface(), eventName, *log); err != nil {
+        if err := contract.Contract.UnpackLog(event.Interface(), eventName, *log); err != nil {
             return nil, fmt.Errorf("Could not unpack event data: %w", err)
         }
         events = append(events, reflect.Indirect(event).Interface())

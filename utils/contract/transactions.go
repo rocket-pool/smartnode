@@ -7,14 +7,16 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/ethclient"
+
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 
 // Transact on a contract method and wait for a receipt
-func Transact(client *ethclient.Client, contract *bind.BoundContract, opts *bind.TransactOpts, method string, params ...interface{}) (*types.Receipt, error) {
+func Transact(client *ethclient.Client, contract *rocketpool.Contract, opts *bind.TransactOpts, method string, params ...interface{}) (*types.Receipt, error) {
 
     // Send transaction
-    tx, err := contract.Transact(opts, method, params...)
+    tx, err := contract.Contract.Transact(opts, method, params...)
     if err != nil {
         return nil, err
     }

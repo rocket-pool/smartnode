@@ -71,7 +71,7 @@ func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.
 
 // Get contracts
 var rocketDepositPoolLock sync.Mutex
-func getRocketDepositPool(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketDepositPool(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketDepositPoolLock.Lock()
     defer rocketDepositPoolLock.Unlock()
     return rp.GetContract("rocketDepositPool")

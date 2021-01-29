@@ -562,19 +562,19 @@ func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress commo
 
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
-func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketMinipoolManagerLock.Lock()
     defer rocketMinipoolManagerLock.Unlock()
     return rp.GetContract("rocketMinipoolManager")
 }
 var rocketMinipoolQueueLock sync.Mutex
-func getRocketMinipoolQueue(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketMinipoolQueue(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketMinipoolQueueLock.Lock()
     defer rocketMinipoolQueueLock.Unlock()
     return rp.GetContract("rocketMinipoolQueue")
 }
 var rocketMinipoolStatusLock sync.Mutex
-func getRocketMinipoolStatus(rp *rocketpool.RocketPool) (*bind.BoundContract, error) {
+func getRocketMinipoolStatus(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
     rocketMinipoolStatusLock.Lock()
     defer rocketMinipoolStatusLock.Unlock()
     return rp.GetContract("rocketMinipoolStatus")
