@@ -269,9 +269,13 @@ func TestProcessWithdrawal(t *testing.T) {
 
     // Get initial token contract ETH balances
     nethContractBalance1, err := tokens.GetNETHContractETHBalance(rp, nil)
-    if err != nil { t.Fatal(err) }
+    if err != nil {
+        t.Fatal(err)
+    }
     rethContractBalance1, err := tokens.GetRETHContractETHBalance(rp, nil)
-    if err != nil { t.Fatal(err) }
+    if err != nil {
+        t.Fatal(err)
+    }
 
     // Process withdrawal
     validatorPubkey, err := validator.GetValidatorPubkey()
@@ -282,12 +286,12 @@ func TestProcessWithdrawal(t *testing.T) {
 
     // Get & check updated token contract ETH balances
     if nethContractBalance2, err := tokens.GetNETHContractETHBalance(rp, nil); err != nil {
-        t.Error(err)
+        t.Fatal(err)
     } else if nethContractBalance2.Cmp(nethContractBalance1) != 1 {
         t.Error("nETH contract ETH balance did not increase after processing withdrawal")
     }
     if rethContractBalance2, err := tokens.GetRETHContractETHBalance(rp, nil); err != nil {
-        t.Error(err)
+        t.Fatal(err)
     } else if rethContractBalance2.Cmp(rethContractBalance1) != 1 {
         t.Error("rETH contract ETH balance did not increase after processing withdrawal")
     }

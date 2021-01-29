@@ -8,12 +8,14 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
 
+    "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tests"
     "github.com/rocket-pool/rocketpool-go/tests/utils/accounts"
     "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/utils/node"
     tokenutils "github.com/rocket-pool/rocketpool-go/tests/utils/tokens"
+    "github.com/rocket-pool/rocketpool-go/tests/utils/validator"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -105,6 +107,55 @@ func TestTransferNETH(t *testing.T) {
         t.Error(err)
     } else if nethBalance.Cmp(sendAmount) != 0 {
         t.Errorf("Incorrect nETH account balance %s", nethBalance.String())
+    }
+
+}
+
+
+func TestBurnNETH(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Mint nETH
+    nethAmount := eth.EthToWei(100)
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+    if err := tokenutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+
+    // Transfer validator balance
+    opts := userAccount.GetTransactor()
+    opts.Value = nethAmount
+    if _, err := network.TransferWithdrawal(rp, opts); err != nil { t.Fatal(err) }
+
+    // Process validator withdrawal
+    validatorPubkey, err := validator.GetValidatorPubkey()
+    if err != nil { t.Fatal(err) }
+    if _, err := network.ProcessWithdrawal(rp, validatorPubkey, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Get initial balances
+    balances1, err := tokens.GetBalances(rp, userAccount.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    // Burn nETH
+    burnAmount := eth.EthToWei(50)
+    if _, err := tokens.BurnNETH(rp, burnAmount, userAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated balances
+    balances2, err := tokens.GetBalances(rp, userAccount.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    } else {
+        if balances2.NETH.Cmp(balances1.NETH) != -1 {
+            t.Error("nETH balance did not decrease after burning nETH")
+        }
+        if balances2.ETH.Cmp(balances1.ETH) != 1 {
+            t.Error("ETH balance did not increase after burning nETH")
+        }
     }
 
 }
