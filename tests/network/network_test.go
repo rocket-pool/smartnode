@@ -18,6 +18,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/tests"
     "github.com/rocket-pool/rocketpool-go/tests/utils/accounts"
     "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/utils/node"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
@@ -27,7 +28,7 @@ var (
     rp *rocketpool.RocketPool
 
     ownerAccount *accounts.Account
-    nodeAccount *accounts.Account
+    trustedNodeAccount *accounts.Account
     userAccount *accounts.Account
 )
 
@@ -46,7 +47,7 @@ func TestMain(m *testing.M) {
     // Initialize accounts
     ownerAccount, err = accounts.GetAccount(0)
     if err != nil { log.Fatal(err) }
-    nodeAccount, err = accounts.GetAccount(1)
+    trustedNodeAccount, err = accounts.GetAccount(1)
     if err != nil { log.Fatal(err) }
     userAccount, err = accounts.GetAccount(9)
     if err != nil { log.Fatal(err) }
@@ -64,15 +65,14 @@ func TestSubmitBalances(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Register trusted node
-    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := node.SetNodeTrusted(rp, nodeAccount.Address, true, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Submit balances
     var balancesBlock uint64 = 100
     totalEth := eth.EthToWei(100)
     stakingEth := eth.EthToWei(80)
     rethSupply := eth.EthToWei(70)
-    if _, err := network.SubmitBalances(rp, balancesBlock, totalEth, stakingEth, rethSupply, nodeAccount.GetTransactor()); err != nil {
+    if _, err := network.SubmitBalances(rp, balancesBlock, totalEth, stakingEth, rethSupply, trustedNodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
