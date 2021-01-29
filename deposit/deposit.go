@@ -9,7 +9,6 @@ import (
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -47,7 +46,7 @@ func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketDepositPool, opts, "deposit")
+    txReceipt, err := rocketDepositPool.Transact(opts, "deposit")
     if err != nil {
         return nil, fmt.Errorf("Could not deposit: %w", err)
     }
@@ -61,7 +60,7 @@ func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketDepositPool, opts, "assignDeposits")
+    txReceipt, err := rocketDepositPool.Transact(opts, "assignDeposits")
     if err != nil {
         return nil, fmt.Errorf("Could not assign deposits: %w", err)
     }

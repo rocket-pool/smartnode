@@ -9,7 +9,6 @@ import (
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -30,7 +29,7 @@ func SetAssignDepositsEnabled(rp *rocketpool.RocketPool, assignDepositsEnabled b
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketDepositSettings, opts, "setAssignDepositsEnabled", assignDepositsEnabled)
+    txReceipt, err := rocketDepositSettings.Transact(opts, "setAssignDepositsEnabled", assignDepositsEnabled)
     if err != nil {
         return nil, fmt.Errorf("Could not set deposit assignments enabled status: %w", err)
     }

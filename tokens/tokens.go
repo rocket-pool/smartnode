@@ -12,7 +12,6 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -91,7 +90,7 @@ func balanceOf(tokenContract *rocketpool.Contract, tokenName string, address com
 
 // Transfer tokens to an address
 func transfer(client *ethclient.Client, tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := contract.Transact(client, tokenContract, opts, "transfer", to, amount)
+    txReceipt, err := tokenContract.Transact(opts, "transfer", to, amount)
     if err != nil {
         return nil, fmt.Errorf("Could not transfer %s to %s: %w", tokenName, to.Hex(), err)
     }

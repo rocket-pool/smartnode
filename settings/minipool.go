@@ -9,7 +9,6 @@ import (
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -94,7 +93,7 @@ func SetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, withdrawalDelay uint6
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolSettings, opts, "setWithdrawalDelay", big.NewInt(int64(withdrawalDelay)))
+    txReceipt, err := rocketMinipoolSettings.Transact(opts, "setWithdrawalDelay", big.NewInt(int64(withdrawalDelay)))
     if err != nil {
         return nil, fmt.Errorf("Could not set minipool withdrawal delay: %w", err)
     }

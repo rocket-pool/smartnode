@@ -227,6 +227,7 @@ func (rp *RocketPool) GetContract(contractName string) (*Contract, error) {
         Contract: bind.NewBoundContract(*address, *abi, rp.Client, rp.Client, rp.Client),
         Address: address,
         ABI: abi,
+        Client: rp.Client,
     }
 
     // Cache contract
@@ -280,6 +281,7 @@ func (rp *RocketPool) MakeContract(contractName string, address common.Address) 
         Contract: bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client),
         Address: &address,
         ABI: abi,
+        Client: rp.Client,
     }, nil
 
 }

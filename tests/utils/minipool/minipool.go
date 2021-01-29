@@ -11,7 +11,6 @@ import (
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tests/utils/accounts"
     "github.com/rocket-pool/rocketpool-go/tests/utils/validator"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -37,7 +36,7 @@ func CreateMinipool(rp *rocketpool.RocketPool, nodeAccount *accounts.Account, de
     if err != nil { return nil, err }
 
     // Get created minipool address
-    minipoolCreatedEvents, err := contract.GetTransactionEvents(rp.Client, rocketMinipoolManager, txReceipt, "MinipoolCreated", minipoolCreated{})
+    minipoolCreatedEvents, err := rocketMinipoolManager.GetTransactionEvents(txReceipt, "MinipoolCreated", minipoolCreated{})
     if err != nil || len(minipoolCreatedEvents) == 0 {
         return nil, errors.New("Could not get minipool created event")
     }

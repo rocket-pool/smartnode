@@ -216,7 +216,6 @@ func TestTransferWithdrawal(t *testing.T) {
     // Transfer validator balance
     opts := userAccount.GetTransactor()
     opts.Value = eth.EthToWei(50)
-    opts.GasLimit = 100000
     if _, err := network.TransferWithdrawal(rp, opts); err != nil {
         t.Fatal(err)
     }

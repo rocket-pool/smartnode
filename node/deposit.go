@@ -8,7 +8,6 @@ import (
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
@@ -19,7 +18,7 @@ func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.Trans
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNodeDeposit, opts, "deposit", eth.EthToWei(minimumNodeFee))
+    txReceipt, err := rocketNodeDeposit.Transact(opts, "deposit", eth.EthToWei(minimumNodeFee))
     if err != nil {
         return nil, fmt.Errorf("Could not make node deposit: %w", err)
     }

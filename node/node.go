@@ -11,7 +11,6 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -339,7 +338,7 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNodeManager, opts, "registerNode", timezoneLocation)
+    txReceipt, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
     if err != nil {
         return nil, fmt.Errorf("Could not register node: %w", err)
     }
@@ -353,7 +352,7 @@ func SetNodeTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address, trust
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNodeManager, opts, "setNodeTrusted", nodeAddress, trusted)
+    txReceipt, err := rocketNodeManager.Transact(opts, "setNodeTrusted", nodeAddress, trusted)
     if err != nil {
         return nil, fmt.Errorf("Could not set node trusted status: %w", err)
     }
@@ -367,7 +366,7 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNodeManager, opts, "setTimezoneLocation", timezoneLocation)
+    txReceipt, err := rocketNodeManager.Transact(opts, "setTimezoneLocation", timezoneLocation)
     if err != nil {
         return nil, fmt.Errorf("Could not set node timezone location: %w", err)
     }

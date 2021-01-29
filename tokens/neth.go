@@ -10,7 +10,6 @@ import (
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
 )
 
 
@@ -50,7 +49,7 @@ func BurnNETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpt
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNodeETHToken, opts, "burn", amount)
+    txReceipt, err := rocketNodeETHToken.Transact(opts, "burn", amount)
     if err != nil {
         return nil, fmt.Errorf("Could not burn nETH: %w", err)
     }

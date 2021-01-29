@@ -11,8 +11,6 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -50,7 +48,7 @@ func SetWithdrawalCredentials(rp *rocketpool.RocketPool, withdrawalCredentials c
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNetworkWithdrawal, opts, "setWithdrawalCredentials", withdrawalCredentials.Bytes())
+    txReceipt, err := rocketNetworkWithdrawal.Transact(opts, "setWithdrawalCredentials", withdrawalCredentials.Bytes())
     if err != nil {
         return nil, fmt.Errorf("Could not set network withdrawal credentials: %w", err)
     }
@@ -64,7 +62,7 @@ func TransferWithdrawal(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*ty
     if err != nil {
         return nil, err
     }
-    txReceipt, err := eth.SendTransaction(rp.Client, *(rocketNetworkWithdrawal.Address), opts)
+    txReceipt, err := rocketNetworkWithdrawal.Transfer(opts)
     if err != nil {
         return nil, fmt.Errorf("Could not transfer validator balance: %w", err)
     }
@@ -78,7 +76,7 @@ func ProcessWithdrawal(rp *rocketpool.RocketPool, validatorPubkey rptypes.Valida
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketNetworkWithdrawal, opts, "processWithdrawal", validatorPubkey[:])
+    txReceipt, err := rocketNetworkWithdrawal.Transact(opts, "processWithdrawal", validatorPubkey[:])
     if err != nil {
         return nil, fmt.Errorf("Could not process validator %s withdrawal: %w", validatorPubkey.Hex(), err)
     }

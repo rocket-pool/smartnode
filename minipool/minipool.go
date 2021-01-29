@@ -12,7 +12,6 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
@@ -552,7 +551,7 @@ func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress commo
     if err != nil {
         return nil, err
     }
-    txReceipt, err := contract.Transact(rp.Client, rocketMinipoolStatus, opts, "submitMinipoolWithdrawable", minipoolAddress, stakingStartBalance, stakingEndBalance)
+    txReceipt, err := rocketMinipoolStatus.Transact(opts, "submitMinipoolWithdrawable", minipoolAddress, stakingStartBalance, stakingEndBalance)
     if err != nil {
         return nil, fmt.Errorf("Could not submit minipool withdrawable event: %w", err)
     }
