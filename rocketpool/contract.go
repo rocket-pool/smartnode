@@ -39,24 +39,13 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
         return nil, err
     }
 
-    // Wait for transaction to be mined
-    txReceipt, err := bind.WaitMined(context.Background(), c.Client, tx)
-    if err != nil {
-        return nil, err
-    }
-
-    // Check transaction status
-    if txReceipt.Status == 0 {
-        return txReceipt, errors.New("Transaction failed with status 0")
-    }
-
-    // Return
-    return txReceipt, nil
+    // Get & return transaction receipt
+    return c.getTransactionReceipt(tx)
 
 }
 
 
-// Transfer ETH to a contract
+// Transfer ETH to a contract and wait for a receipt
 func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
 
     // Send transaction
@@ -64,6 +53,15 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
     if err != nil {
         return nil, err
     }
+
+    // Get & return transaction receipt
+    return c.getTransactionReceipt(tx)
+
+}
+
+
+// Wait for a transaction to be mined and get a tx receipt
+func (c *Contract) getTransactionReceipt(tx *types.Transaction) (*types.Receipt, error) {
 
     // Wait for transaction to be mined
     txReceipt, err := bind.WaitMined(context.Background(), c.Client, tx)
