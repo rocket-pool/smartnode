@@ -48,7 +48,7 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
     if gasLimit == 0 {
         gasLimit, err = client.EstimateGas(context.Background(), ethereum.CallMsg{
             From: opts.From,
-            To: toAddress,
+            To: &toAddress,
             GasPrice: gasPrice,
             Value: value,
         })
