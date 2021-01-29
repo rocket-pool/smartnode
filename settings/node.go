@@ -5,6 +5,7 @@ import (
     "sync"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
@@ -16,11 +17,22 @@ func GetNodeRegistrationEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     if err != nil {
         return false, err
     }
-    registrationEnabled := new(bool)
-    if err := rocketNodeSettings.Call(opts, registrationEnabled, "getRegistrationEnabled"); err != nil {
+    value := new(bool)
+    if err := rocketNodeSettings.Call(opts, value, "getRegistrationEnabled"); err != nil {
         return false, fmt.Errorf("Could not get node registrations enabled status: %w", err)
     }
-    return *registrationEnabled, nil
+    return *value, nil
+}
+func SetNodeRegistrationEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketNodeSettings, err := getRocketNodeSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketNodeSettings.Transact(opts, "setRegistrationEnabled", value)
+    if err != nil {
+        return nil, fmt.Errorf("Could not set node registrations enabled status: %w", err)
+    }
+    return txReceipt, nil
 }
 
 
@@ -30,11 +42,22 @@ func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool
     if err != nil {
         return false, err
     }
-    depositEnabled := new(bool)
-    if err := rocketNodeSettings.Call(opts, depositEnabled, "getDepositEnabled"); err != nil {
+    value := new(bool)
+    if err := rocketNodeSettings.Call(opts, value, "getDepositEnabled"); err != nil {
         return false, fmt.Errorf("Could not get node deposits enabled status: %w", err)
     }
-    return *depositEnabled, nil
+    return *value, nil
+}
+func SetNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketNodeSettings, err := getRocketNodeSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketNodeSettings.Transact(opts, "setDepositEnabled", value)
+    if err != nil {
+        return nil, fmt.Errorf("Could not set node deposits enabled status: %w", err)
+    }
+    return txReceipt, nil
 }
 
 
