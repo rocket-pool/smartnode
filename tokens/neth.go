@@ -13,6 +13,16 @@ import (
 )
 
 
+// Get the nETH contract ETH balance
+func GetNETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketNodeETHToken, err := getRocketNodeETHToken(rp)
+    if err != nil {
+        return nil, err
+    }
+    return contractETHBalance(rp, rocketNodeETHToken, opts)
+}
+
+
 // Get nETH total supply
 func GetNETHTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketNodeETHToken, err := getRocketNodeETHToken(rp)

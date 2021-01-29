@@ -68,6 +68,14 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
 }
 
 
+// Get a token contract's ETH balance
+func contractETHBalance(rp *rocketpool.RocketPool, tokenContract *rocketpool.Contract, opts *bind.CallOpts) (*big.Int, error) {
+    var blockNumber *big.Int
+    if opts != nil { blockNumber = opts.BlockNumber }
+    return rp.Client.BalanceAt(context.Background(), *(tokenContract.Address), blockNumber)
+}
+
+
 // Get a token's total supply
 func totalSupply(tokenContract *rocketpool.Contract, tokenName string, opts *bind.CallOpts) (*big.Int, error) {
     totalSupply := new(*big.Int)

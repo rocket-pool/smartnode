@@ -14,6 +14,16 @@ import (
 )
 
 
+// Get the rETH contract ETH balance
+func GetRETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketETHToken, err := getRocketETHToken(rp)
+    if err != nil {
+        return nil, err
+    }
+    return contractETHBalance(rp, rocketETHToken, opts)
+}
+
+
 // Get rETH total supply
 func GetRETHTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketETHToken, err := getRocketETHToken(rp)
