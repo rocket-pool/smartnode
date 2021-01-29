@@ -5,15 +5,12 @@ import (
     "errors"
     "math/big"
 
+    "github.com/ethereum/go-ethereum"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/ethclient"
 )
-
-
-// Transaction settings
-const DefaultGasLimit = 21000
 
 
 // Send a transaction to an address
@@ -37,16 +34,24 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
         value = big.NewInt(0)
     }
 
-    // Set default gas limit
-    gasLimit := opts.GasLimit
-    if gasLimit == 0 {
-        gasLimit = DefaultGasLimit
-    }
-
     // Get suggested gas price
     gasPrice := opts.GasPrice
     if gasPrice == nil {
         gasPrice, err = client.SuggestGasPrice(context.Background())
+        if err != nil {
+            return nil, err
+        }
+    }
+
+    // Estimate gas limit
+    gasLimit := opts.GasLimit
+    if gasLimit == 0 {
+        gasLimit, err = client.EstimateGas(context.Background(), ethereum.CallMsg{
+            From: opts.From,
+            To: toAddress,
+            GasPrice: gasPrice,
+            Value: value,
+        })
         if err != nil {
             return nil, err
         }
