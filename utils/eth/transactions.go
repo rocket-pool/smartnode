@@ -18,32 +18,42 @@ const DefaultGasLimit = 21000
 
 // Send a transaction to an address
 func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    var err error
 
     // Get from address nonce
+    var nonce uint64
     if opts.Nonce == nil {
-        nonce, err := client.PendingNonceAt(context.Background(), opts.From)
+        nonce, err = client.PendingNonceAt(context.Background(), opts.From)
         if err != nil {
             return nil, err
         }
-        opts.Nonce = big.NewInt(int64(nonce))
+    } else {
+        nonce = opts.Nonce.Uint64()
+    }
+
+    // Set default value
+    value := opts.Value
+    if value == nil {
+        value = big.NewInt(0)
     }
 
     // Set default gas limit
-    if opts.GasLimit == 0 {
-        opts.GasLimit = DefaultGasLimit
+    gasLimit := opts.GasLimit
+    if gasLimit == 0 {
+        gasLimit = DefaultGasLimit
     }
 
     // Get suggested gas price
-    if opts.GasPrice == nil {
-        gasPrice, err := client.SuggestGasPrice(context.Background())
+    gasPrice := opts.GasPrice
+    if gasPrice == nil {
+        gasPrice, err = client.SuggestGasPrice(context.Background())
         if err != nil {
             return nil, err
         }
-        opts.GasPrice = gasPrice
     }
 
     // Initialize transaction
-    tx := types.NewTransaction(opts.Nonce.Uint64(), toAddress, opts.Value, opts.GasLimit, opts.GasPrice, []byte{})
+    tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, []byte{})
 
     // Sign transaction
     signedTx, err := opts.Signer(types.HomesteadSigner{}, opts.From, tx)
