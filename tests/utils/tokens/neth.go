@@ -14,12 +14,14 @@ import (
 
 
 // Mint an amount of nETH to an account
-func MintNETH(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, nodeAccount *accounts.Account, toAccount *accounts.Account, amount *big.Int) error {
+func MintNETH(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trustedNodeAccount *accounts.Account, toAccount *accounts.Account, amount *big.Int) error {
 
-    // Register nodes
-    if _, err := node.RegisterNode(rp, "Australia/Brisbane", toAccount.GetTransactor()); err != nil { return err }
-    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { return err }
-    if _, err := node.SetNodeTrusted(rp, nodeAccount.Address, true, ownerAccount.GetTransactor()); err != nil { return err }
+    // Register node if not registered
+    if nodeExists, err := node.GetNodeExists(rp, toAccount.Address, nil); err != nil {
+        return err
+    } else if !nodeExists {
+        if _, err := node.RegisterNode(rp, "Australia/Brisbane", toAccount.GetTransactor()); err != nil { return err }
+    }
 
     // Create & stake minipool
     mp, err := minipoolutils.CreateMinipool(rp, toAccount, eth.EthToWei(32))
@@ -32,7 +34,7 @@ func MintNETH(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, nodeAcc
     if _, err := settings.SetMinipoolWithdrawalDelay(rp, 0, ownerAccount.GetTransactor()); err != nil { return err }
 
     // Mark minipool as withdrawable and withdraw
-    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), amount, nodeAccount.GetTransactor()); err != nil { return err }
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), amount, trustedNodeAccount.GetTransactor()); err != nil { return err }
     if _, err := mp.Withdraw(toAccount.GetTransactor()); err != nil { return err }
 
     // Re-enable minipool withdrawal delay

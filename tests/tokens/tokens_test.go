@@ -12,6 +12,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/tests"
     "github.com/rocket-pool/rocketpool-go/tests/utils/accounts"
     "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/utils/node"
     tokenutils "github.com/rocket-pool/rocketpool-go/tests/utils/tokens"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -23,7 +24,7 @@ var (
     rp *rocketpool.RocketPool
 
     ownerAccount *accounts.Account
-    nodeAccount *accounts.Account
+    trustedNodeAccount *accounts.Account
     userAccount *accounts.Account
 )
 
@@ -42,7 +43,7 @@ func TestMain(m *testing.M) {
     // Initialize accounts
     ownerAccount, err = accounts.GetAccount(0)
     if err != nil { log.Fatal(err) }
-    nodeAccount, err = accounts.GetAccount(1)
+    trustedNodeAccount, err = accounts.GetAccount(1)
     if err != nil { log.Fatal(err) }
     userAccount, err = accounts.GetAccount(9)
     if err != nil { log.Fatal(err) }
@@ -61,7 +62,8 @@ func TestNETHBalances(t *testing.T) {
 
     // Mint nETH
     nethAmount := eth.EthToWei(100)
-    if err := tokenutils.MintNETH(rp, ownerAccount, nodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+    if err := tokenutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
 
     // Get & check nETH total supply
     if nethTotalSupply, err := tokens.GetNETHTotalSupply(rp, nil); err != nil {
@@ -88,7 +90,8 @@ func TestTransferNETH(t *testing.T) {
 
     // Mint nETH
     nethAmount := eth.EthToWei(100)
-    if err := tokenutils.MintNETH(rp, ownerAccount, nodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+    if err := tokenutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
 
     // Transfer nETH
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
