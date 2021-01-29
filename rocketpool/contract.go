@@ -7,11 +7,19 @@ import (
     "fmt"
     "reflect"
 
+    "github.com/ethereum/go-ethereum"
     "github.com/ethereum/go-ethereum/accounts/abi"
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/ethclient"
+)
+
+
+// Transaction settings
+const (
+    GasLimitPadding = 100000
+    MaxGasLimit = 12000000
 )
 
 
@@ -33,6 +41,19 @@ func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, 
 // Transact on a contract method and wait for a receipt
 func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Receipt, error) {
 
+    // Estimate gas limit
+    if opts.GasLimit == 0 {
+        input, err := c.ABI.Pack(method, params...)
+        if err != nil {
+            return nil, fmt.Errorf("Could not encode input data: %w", err)
+        }
+        gasLimit, err := c.estimateGasLimit(opts, input)
+        if err != nil {
+            return nil, err
+        }
+        opts.GasLimit = gasLimit
+    }
+
     // Send transaction
     tx, err := c.Contract.Transact(opts, method, params...)
     if err != nil {
@@ -48,6 +69,15 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
 // Transfer ETH to a contract and wait for a receipt
 func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
 
+    // Estimate gas limit
+    if opts.GasLimit == 0 {
+        gasLimit, err := c.estimateGasLimit(opts, []byte{})
+        if err != nil {
+            return nil, err
+        }
+        opts.GasLimit = gasLimit
+    }
+
     // Send transaction
     tx, err := c.Contract.Transfer(opts)
     if err != nil {
@@ -56,6 +86,29 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
 
     // Get & return transaction receipt
     return c.getTransactionReceipt(tx)
+
+}
+
+
+// Estimate the gas limit for a contract transaction
+func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint64, error) {
+
+    // Estimate gas limit
+    gasLimit, err := c.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+        From: opts.From,
+        To: c.Address,
+        GasPrice: opts.GasPrice,
+        Value: opts.Value,
+        Data: input,
+    })
+    if err != nil {
+        return 0, fmt.Errorf("Could not estimate gas needed: %w", err)
+    }
+
+    // Pad and return gas limit
+    gasLimit += GasLimitPadding
+    if gasLimit > MaxGasLimit { gasLimit = MaxGasLimit }
+    return gasLimit, nil
 
 }
 
