@@ -62,7 +62,7 @@ func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
 	}
 
 	// Return response
-	isSyncing := (syncStatus.Data.SyncDistance == 0)
+	isSyncing := (syncStatus.Data.SyncDistance != 0)
 	return beacon.SyncStatus{
 		Syncing: isSyncing,
 	}, nil
