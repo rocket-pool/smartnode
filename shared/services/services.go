@@ -23,35 +23,40 @@ import (
     tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
 )
 
+
 // Config
 const DockerAPIVersion = "1.40"
 
+
 // Service instances & initializers
 var (
-    cfg             config.RocketPoolConfig
+    cfg config.RocketPoolConfig
     passwordManager *passwords.PasswordManager
-    nodeWallet      *wallet.Wallet
-    ethClient       *ethclient.Client
-    rocketPool      *rocketpool.RocketPool
-    beaconClient    beacon.Client
-    docker          *client.Client
+    nodeWallet *wallet.Wallet
+    ethClient *ethclient.Client
+    rocketPool *rocketpool.RocketPool
+    beaconClient beacon.Client
+    docker *client.Client
 
-    initCfg             sync.Once
+    initCfg sync.Once
     initPasswordManager sync.Once
-    initNodeWallet      sync.Once
-    initEthClient       sync.Once
-    initRocketPool      sync.Once
-    initBeaconClient    sync.Once
-    initDocker          sync.Once
+    initNodeWallet sync.Once
+    initEthClient sync.Once
+    initRocketPool sync.Once
+    initBeaconClient sync.Once
+    initDocker sync.Once
 )
+
 
 //
 // Service providers
 //
 
+
 func GetConfig(c *cli.Context) (config.RocketPoolConfig, error) {
     return getConfig(c)
 }
+
 
 func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
     cfg, err := getConfig(c)
@@ -60,6 +65,7 @@ func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
     }
     return getPasswordManager(cfg), nil
 }
+
 
 func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
     cfg, err := getConfig(c)
@@ -70,6 +76,7 @@ func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
     return getWallet(cfg, pm)
 }
 
+
 func GetEthClient(c *cli.Context) (*ethclient.Client, error) {
     cfg, err := getConfig(c)
     if err != nil {
@@ -77,6 +84,7 @@ func GetEthClient(c *cli.Context) (*ethclient.Client, error) {
     }
     return getEthClient(cfg)
 }
+
 
 func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     cfg, err := getConfig(c)
@@ -90,6 +98,7 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     return getRocketPool(cfg, ec)
 }
 
+
 func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
     cfg, err := getConfig(c)
     if err != nil {
@@ -98,13 +107,16 @@ func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
     return getBeaconClient(cfg)
 }
 
+
 func GetDocker(c *cli.Context) (*client.Client, error) {
     return getDocker()
 }
 
+
 //
 // Service instance getters
 //
+
 
 func getConfig(c *cli.Context) (config.RocketPoolConfig, error) {
     var err error
@@ -114,12 +126,14 @@ func getConfig(c *cli.Context) (config.RocketPoolConfig, error) {
     return cfg, err
 }
 
+
 func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager {
     initPasswordManager.Do(func() {
         passwordManager = passwords.NewPasswordManager(os.ExpandEnv(cfg.Smartnode.PasswordPath))
     })
     return passwordManager
 }
+
 
 func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
     var err error
@@ -137,6 +151,7 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
     return nodeWallet, err
 }
 
+
 func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
     var err error
     initEthClient.Do(func() {
@@ -144,6 +159,7 @@ func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
     })
     return ethClient, err
 }
+
 
 func getRocketPool(cfg config.RocketPoolConfig, client *ethclient.Client) (*rocketpool.RocketPool, error) {
     var err error
@@ -153,22 +169,24 @@ func getRocketPool(cfg config.RocketPoolConfig, client *ethclient.Client) (*rock
     return rocketPool, err
 }
 
+
 func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
     var err error
     initBeaconClient.Do(func() {
         switch cfg.Chains.Eth2.Client.Selected {
-        case "lighthouse":
-            beaconClient = lighthouse.NewClient(cfg.Chains.Eth2.Provider)
-        case "prysm":
-            beaconClient, err = prysm.NewClient(cfg.Chains.Eth2.Provider)
-        case "teku":
-            beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
-        default:
-            err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
+            case "lighthouse":
+                beaconClient = lighthouse.NewClient(cfg.Chains.Eth2.Provider)
+            case "prysm":
+                beaconClient, err = prysm.NewClient(cfg.Chains.Eth2.Provider)
+            case "teku":
+                beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
+            default:
+                err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
         }
     })
     return beaconClient, err
 }
+
 
 func getDocker() (*client.Client, error) {
     var err error
