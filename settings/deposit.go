@@ -129,7 +129,7 @@ func SetMaximumDepositAssignments(rp *rocketpool.RocketPool, value uint64, opts 
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketDepositSettings.Transact(opts, "setMaximumDepositAssignments", big.NewInt(value))
+    txReceipt, err := rocketDepositSettings.Transact(opts, "setMaximumDepositAssignments", big.NewInt(int64(value)))
     if err != nil {
         return nil, fmt.Errorf("Could not set maximum deposit assignments: %w", err)
     }

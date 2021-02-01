@@ -80,7 +80,7 @@ func SetSubmitBalancesFrequency(rp *rocketpool.RocketPool, value uint64, opts *b
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setSubmitBalancesFrequency", big.NewInt(value))
+    txReceipt, err := rocketNetworkSettings.Transact(opts, "setSubmitBalancesFrequency", big.NewInt(int64(value)))
     if err != nil {
         return nil, fmt.Errorf("Could not set network balance submission frequency: %w", err)
     }
