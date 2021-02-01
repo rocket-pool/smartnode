@@ -12,39 +12,89 @@ import (
 )
 
 
+// Get the minipool launch balance
+func GetMinipoolLaunchBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getLaunchBalance"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool launch balance: %w", err)
+    }
+    return *value, nil
+}
+
+
 // Required node deposit amounts
 func GetMinipoolFullDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
     if err != nil {
         return nil, err
     }
-    fullDepositNodeAmount := new(*big.Int)
-    if err := rocketMinipoolSettings.Call(opts, fullDepositNodeAmount, "getFullDepositNodeAmount"); err != nil {
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getFullDepositNodeAmount"); err != nil {
         return nil, fmt.Errorf("Could not get full minipool deposit node amount: %w", err)
     }
-    return *fullDepositNodeAmount, nil
+    return *value, nil
 }
 func GetMinipoolHalfDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
     if err != nil {
         return nil, err
     }
-    halfDepositNodeAmount := new(*big.Int)
-    if err := rocketMinipoolSettings.Call(opts, halfDepositNodeAmount, "getHalfDepositNodeAmount"); err != nil {
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getHalfDepositNodeAmount"); err != nil {
         return nil, fmt.Errorf("Could not get half minipool deposit node amount: %w", err)
     }
-    return *halfDepositNodeAmount, nil
+    return *value, nil
 }
 func GetMinipoolEmptyDepositNodeAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
     if err != nil {
         return nil, err
     }
-    emptyDepositNodeAmount := new(*big.Int)
-    if err := rocketMinipoolSettings.Call(opts, emptyDepositNodeAmount, "getEmptyDepositNodeAmount"); err != nil {
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getEmptyDepositNodeAmount"); err != nil {
         return nil, fmt.Errorf("Could not get empty minipool deposit node amount: %w", err)
     }
-    return *emptyDepositNodeAmount, nil
+    return *value, nil
+}
+
+
+// Required user deposit amounts
+func GetMinipoolFullDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getFullDepositUserAmount"); err != nil {
+        return nil, fmt.Errorf("Could not get full minipool deposit user amount: %w", err)
+    }
+    return *value, nil
+}
+func GetMinipoolHalfDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getHalfDepositUserAmount"); err != nil {
+        return nil, fmt.Errorf("Could not get half minipool deposit user amount: %w", err)
+    }
+    return *value, nil
+}
+func GetMinipoolEmptyDepositUserAmount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getEmptyDepositUserAmount"); err != nil {
+        return nil, fmt.Errorf("Could not get empty minipool deposit user amount: %w", err)
+    }
+    return *value, nil
 }
 
 
@@ -54,11 +104,22 @@ func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, opts *bind.
     if err != nil {
         return false, err
     }
-    submitWithdrawableEnabled := new(bool)
-    if err := rocketMinipoolSettings.Call(opts, submitWithdrawableEnabled, "getSubmitWithdrawableEnabled"); err != nil {
+    value := new(bool)
+    if err := rocketMinipoolSettings.Call(opts, value, "getSubmitWithdrawableEnabled"); err != nil {
         return false, fmt.Errorf("Could not get minipool withdrawable submissions enabled status: %w", err)
     }
-    return *submitWithdrawableEnabled, nil
+    return *value, nil
+}
+func SetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketMinipoolSettings.Transact(opts, "setSubmitWithdrawableEnabled", value)
+    if err != nil {
+        return nil, fmt.Errorf("Could not set minipool withdrawable submissions enabled status: %w", err)
+    }
+    return txReceipt, nil
 }
 
 
@@ -68,11 +129,22 @@ func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
     if err != nil {
         return 0, err
     }
-    launchTimeout := new(*big.Int)
-    if err := rocketMinipoolSettings.Call(opts, launchTimeout, "getLaunchTimeout"); err != nil {
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getLaunchTimeout"); err != nil {
         return 0, fmt.Errorf("Could not get minipool launch timeout: %w", err)
     }
-    return (*launchTimeout).Uint64(), nil
+    return (*value).Uint64(), nil
+}
+func SetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketMinipoolSettings.Transact(opts, "setLaunchTimeout", big.NewInt(int64(value)))
+    if err != nil {
+        return nil, fmt.Errorf("Could not set minipool launch timeout: %w", err)
+    }
+    return txReceipt, nil
 }
 
 
@@ -82,18 +154,18 @@ func GetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     if err != nil {
         return 0, err
     }
-    withdrawalDelay := new(*big.Int)
-    if err := rocketMinipoolSettings.Call(opts, withdrawalDelay, "getWithdrawalDelay"); err != nil {
+    value := new(*big.Int)
+    if err := rocketMinipoolSettings.Call(opts, value, "getWithdrawalDelay"); err != nil {
         return 0, fmt.Errorf("Could not get minipool withdrawal delay: %w", err)
     }
-    return (*withdrawalDelay).Uint64(), nil
+    return (*value).Uint64(), nil
 }
-func SetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, withdrawalDelay uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func SetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketMinipoolSettings, err := getRocketMinipoolSettings(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketMinipoolSettings.Transact(opts, "setWithdrawalDelay", big.NewInt(int64(withdrawalDelay)))
+    txReceipt, err := rocketMinipoolSettings.Transact(opts, "setWithdrawalDelay", big.NewInt(int64(value)))
     if err != nil {
         return nil, fmt.Errorf("Could not set minipool withdrawal delay: %w", err)
     }
