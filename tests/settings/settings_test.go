@@ -105,6 +105,45 @@ func TestDepositSettings(t *testing.T) {
 }
 
 
+func TestMinipoolSettings(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Set & get submit withdrawable enabled
+    submitWithdrawableEnabled := false
+    if _, err := settings.SetMinipoolSubmitWithdrawableEnabled(rp, submitWithdrawableEnabled, ownerAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if value, err := settings.GetMinipoolSubmitWithdrawableEnabled(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != submitWithdrawableEnabled {
+        t.Error("Incorrect minipool withdrawable submissions enabled value")
+    }
+
+    // Set & get minipool launch timeout
+    var minipoolLaunchTimeout uint64 = 5
+    if _, err := settings.SetMinipoolLaunchTimeout(rp, minipoolLaunchTimeout, ownerAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if value, err := settings.GetMinipoolLaunchTimeout(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != minipoolLaunchTimeout {
+        t.Error("Incorrect minipool launch timeout value")
+    }
+
+    // Set & get minipool launch timeout
+    var minipoolWithdrawalDelay uint64 = 5
+    if _, err := settings.SetMinipoolWithdrawalDelay(rp, minipoolWithdrawalDelay, ownerAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if value, err := settings.GetMinipoolWithdrawalDelay(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != minipoolWithdrawalDelay {
+        t.Error("Incorrect minipool withdrawal delay value")
+    }
+
+}
+
+
 func TestNodeSettings(t *testing.T) {
 
     // State snapshotting
@@ -118,7 +157,7 @@ func TestNodeSettings(t *testing.T) {
     } else if value, err := settings.GetNodeRegistrationEnabled(rp, nil); err != nil {
         t.Error(err)
     } else if value != nodeRegistrationsEnabled {
-        t.Error("Incorrect node registrations enabled enabled value")
+        t.Error("Incorrect node registrations enabled value")
     }
 
     // Set & get node deposits enabled
@@ -128,7 +167,7 @@ func TestNodeSettings(t *testing.T) {
     } else if value, err := settings.GetNodeDepositEnabled(rp, nil); err != nil {
         t.Error(err)
     } else if value != nodeDepositsEnabled {
-        t.Error("Incorrect node deposits enabled enabled value")
+        t.Error("Incorrect node deposits enabled value")
     }
 
 }
