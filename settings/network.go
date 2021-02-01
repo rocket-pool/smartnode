@@ -12,17 +12,31 @@ import (
 )
 
 
+// The threshold of trusted nodes that must reach consensus on oracle data to commit it
+func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    if err != nil {
+        return 0, err
+    }
+    value := new(*big.Int)
+    if err := rocketNetworkSettings.Call(opts, value, "getNodeConsensusThreshold"); err != nil {
+        return 0, fmt.Errorf("Could not get trusted node consensus threshold: %w", err)
+    }
+    return eth.WeiToEth(*value), nil
+}
+
+
 // Network balance submissions currently enabled
 func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
     rocketNetworkSettings, err := getRocketNetworkSettings(rp)
     if err != nil {
         return false, err
     }
-    submitBalancesEnabled := new(bool)
-    if err := rocketNetworkSettings.Call(opts, submitBalancesEnabled, "getSubmitBalancesEnabled"); err != nil {
+    value := new(bool)
+    if err := rocketNetworkSettings.Call(opts, value, "getSubmitBalancesEnabled"); err != nil {
         return false, fmt.Errorf("Could not get network balance submissions enabled status: %w", err)
     }
-    return *submitBalancesEnabled, nil
+    return *value, nil
 }
 
 
@@ -32,11 +46,11 @@ func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     if err != nil {
         return 0, err
     }
-    submitBalancesFrequency := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, submitBalancesFrequency, "getSubmitBalancesFrequency"); err != nil {
+    value := new(*big.Int)
+    if err := rocketNetworkSettings.Call(opts, value, "getSubmitBalancesFrequency"); err != nil {
         return 0, fmt.Errorf("Could not get network balance submission frequency: %w", err)
     }
-    return (*submitBalancesFrequency).Uint64(), nil
+    return (*value).Uint64(), nil
 }
 
 
@@ -46,11 +60,11 @@ func GetProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts
     if err != nil {
         return false, err
     }
-    processWithdrawalsEnabled := new(bool)
-    if err := rocketNetworkSettings.Call(opts, processWithdrawalsEnabled, "getProcessWithdrawalsEnabled"); err != nil {
+    value := new(bool)
+    if err := rocketNetworkSettings.Call(opts, value, "getProcessWithdrawalsEnabled"); err != nil {
         return false, fmt.Errorf("Could not get processing withdrawals enabled status: %w", err)
     }
-    return *processWithdrawalsEnabled, nil
+    return *value, nil
 }
 
 
@@ -60,44 +74,58 @@ func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
     if err != nil {
         return 0, err
     }
-    minimumNodeFee := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, minimumNodeFee, "getMinimumNodeFee"); err != nil {
+    value := new(*big.Int)
+    if err := rocketNetworkSettings.Call(opts, value, "getMinimumNodeFee"); err != nil {
         return 0, fmt.Errorf("Could not get minimum node fee: %w", err)
     }
-    return eth.WeiToEth(*minimumNodeFee), nil
+    return eth.WeiToEth(*value), nil
 }
 func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
     rocketNetworkSettings, err := getRocketNetworkSettings(rp)
     if err != nil {
         return 0, err
     }
-    targetNodeFee := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, targetNodeFee, "getTargetNodeFee"); err != nil {
+    value := new(*big.Int)
+    if err := rocketNetworkSettings.Call(opts, value, "getTargetNodeFee"); err != nil {
         return 0, fmt.Errorf("Could not get target node fee: %w", err)
     }
-    return eth.WeiToEth(*targetNodeFee), nil
+    return eth.WeiToEth(*value), nil
 }
 func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
     rocketNetworkSettings, err := getRocketNetworkSettings(rp)
     if err != nil {
         return 0, err
     }
-    maximumNodeFee := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, maximumNodeFee, "getMaximumNodeFee"); err != nil {
+    value := new(*big.Int)
+    if err := rocketNetworkSettings.Call(opts, value, "getMaximumNodeFee"); err != nil {
         return 0, fmt.Errorf("Could not get maximum node fee: %w", err)
     }
-    return eth.WeiToEth(*maximumNodeFee), nil
+    return eth.WeiToEth(*value), nil
 }
 func GetNodeFeeDemandRange(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketNetworkSettings, err := getRocketNetworkSettings(rp)
     if err != nil {
         return nil, err
     }
-    nodeFeeDemandRange := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, nodeFeeDemandRange, "getNodeFeeDemandRange"); err != nil {
+    value := new(*big.Int)
+    if err := rocketNetworkSettings.Call(opts, value, "getNodeFeeDemandRange"); err != nil {
         return nil, fmt.Errorf("Could not get node fee demand range: %w", err)
     }
-    return *nodeFeeDemandRange, nil
+    return *value, nil
+}
+
+
+// The target collateralization rate for the rETH contract as a fraction
+func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    if err != nil {
+        return 0, err
+    }
+    value := new(*big.Int)
+    if err := rocketNetworkSettings.Call(opts, value, "getTargetRethCollateralRate"); err != nil {
+        return 0, fmt.Errorf("Could not get target rETH contract collateralization rate: %w", err)
+    }
+    return eth.WeiToEth(*value), nil
 }
 
 
