@@ -101,5 +101,12 @@ func TestMinipoolDetails(t *testing.T) {
         t.Errorf("Incorrect node minipool pubkey %s", nodeMinipoolPubkeys[0].Hex())
     }
 
+    // Get & check minipool address by pubkey
+    if minipoolAddress, err := minipool.GetMinipoolByPubkey(rp, validatorPubkey, nil); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(minipoolAddress.Bytes(), mp.Address.Bytes()) {
+        t.Errorf("Incorrect minipool address %s for pubkey %s", minipoolAddress.Hex(), validatorPubkey.Hex())
+    }
+
 }
 
