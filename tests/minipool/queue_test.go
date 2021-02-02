@@ -40,7 +40,7 @@ func TestQueueLengths(t *testing.T) {
         }
     }
 
-    // Create minipool
+    // Create full deposit minipool
     if _, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32)); err != nil { t.Fatal(err) }
 
     // Get & check queue lengths
@@ -61,7 +61,7 @@ func TestQueueLengths(t *testing.T) {
         }
     }
 
-    // Create minipool
+    // Create half deposit minipool
     if _, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }
 
     // Get & check queue lengths
@@ -82,7 +82,7 @@ func TestQueueLengths(t *testing.T) {
         }
     }
 
-    // Create minipool
+    // Create empty deposit minipool
     if _, err := minipoolutils.CreateMinipool(rp, trustedNodeAccount, eth.EthToWei(0)); err != nil { t.Fatal(err) }
 
     // Get & check queue lengths
@@ -100,6 +100,88 @@ func TestQueueLengths(t *testing.T) {
         }
         if queueLengths.EmptyDeposit != 1 {
             t.Errorf("Incorrect empty deposit queue length 4 %d", queueLengths.EmptyDeposit)
+        }
+    }
+
+}
+
+
+func TestQueueCapacity(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register nodes
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+
+    // Get & check queue capacity
+    if queueCapacity, err := minipool.GetQueueCapacity(rp, nil); err != nil {
+        t.Error(err)
+    } else {
+        if queueCapacity.Total.Cmp(eth.EthToWei(0)) != 0 {
+            t.Errorf("Incorrect queue total capacity 1 %s", queueCapacity.Total.String())
+        }
+        if queueCapacity.Effective.Cmp(eth.EthToWei(0)) != 0 {
+            t.Errorf("Incorrect queue effective capacity 1 %s", queueCapacity.Effective.String())
+        }
+        if queueCapacity.NextMinipool.Cmp(eth.EthToWei(0)) != 0 {
+            t.Errorf("Incorrect queue next minipool capacity 1 %s", queueCapacity.NextMinipool.String())
+        }
+    }
+
+    // Create empty deposit minipool
+    if _, err := minipoolutils.CreateMinipool(rp, trustedNodeAccount, eth.EthToWei(0)); err != nil { t.Fatal(err) }
+
+    // Get & check queue capacity
+    if queueCapacity, err := minipool.GetQueueCapacity(rp, nil); err != nil {
+        t.Error(err)
+    } else {
+        if queueCapacity.Total.Cmp(eth.EthToWei(32)) != 0 {
+            t.Errorf("Incorrect queue total capacity 2 %s", queueCapacity.Total.String())
+        }
+        if queueCapacity.Effective.Cmp(eth.EthToWei(0)) != 0 {
+            t.Errorf("Incorrect queue effective capacity 2 %s", queueCapacity.Effective.String())
+        }
+        if queueCapacity.NextMinipool.Cmp(eth.EthToWei(32)) != 0 {
+            t.Errorf("Incorrect queue next minipool capacity 2 %s", queueCapacity.NextMinipool.String())
+        }
+    }
+
+    // Create half deposit minipool
+    if _, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }
+
+    // Get & check queue capacity
+    if queueCapacity, err := minipool.GetQueueCapacity(rp, nil); err != nil {
+        t.Error(err)
+    } else {
+        if queueCapacity.Total.Cmp(eth.EthToWei(48)) != 0 {
+            t.Errorf("Incorrect queue total capacity 3 %s", queueCapacity.Total.String())
+        }
+        if queueCapacity.Effective.Cmp(eth.EthToWei(16)) != 0 {
+            t.Errorf("Incorrect queue effective capacity 3 %s", queueCapacity.Effective.String())
+        }
+        if queueCapacity.NextMinipool.Cmp(eth.EthToWei(16)) != 0 {
+            t.Errorf("Incorrect queue next minipool capacity 3 %s", queueCapacity.NextMinipool.String())
+        }
+    }
+
+    // Create full deposit minipool
+    if _, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32)); err != nil { t.Fatal(err) }
+
+    // Get & check queue capacity
+    if queueCapacity, err := minipool.GetQueueCapacity(rp, nil); err != nil {
+        t.Error(err)
+    } else {
+        if queueCapacity.Total.Cmp(eth.EthToWei(64)) != 0 {
+            t.Errorf("Incorrect queue total capacity 4 %s", queueCapacity.Total.String())
+        }
+        if queueCapacity.Effective.Cmp(eth.EthToWei(32)) != 0 {
+            t.Errorf("Incorrect queue effective capacity 4 %s", queueCapacity.Effective.String())
+        }
+        if queueCapacity.NextMinipool.Cmp(eth.EthToWei(16)) != 0 {
+            t.Errorf("Incorrect queue next minipool capacity 4 %s", queueCapacity.NextMinipool.String())
         }
     }
 

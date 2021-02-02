@@ -22,6 +22,14 @@ type QueueLengths struct {
 }
 
 
+// Minipool queue capacity
+type QueueCapacity struct {
+    Total *big.Int
+    Effective *big.Int
+    NextMinipool *big.Int
+}
+
+
 // Get minipool queue lengths
 func GetQueueLengths(rp *rocketpool.RocketPool, opts *bind.CallOpts) (QueueLengths, error) {
 
@@ -65,6 +73,47 @@ func GetQueueLengths(rp *rocketpool.RocketPool, opts *bind.CallOpts) (QueueLengt
         FullDeposit: fullDeposit,
         HalfDeposit: halfDeposit,
         EmptyDeposit: emptyDeposit,
+    }, nil
+
+}
+
+
+// Get minipool queue capacity
+func GetQueueCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (QueueCapacity, error) {
+
+    // Data
+    var wg errgroup.Group
+    var total *big.Int
+    var effective *big.Int
+    var nextMinipool *big.Int
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        total, err = GetQueueTotalCapacity(rp, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        effective, err = GetQueueEffectiveCapacity(rp, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        nextMinipool, err = GetQueueNextCapacity(rp, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return QueueCapacity{}, err
+    }
+
+    // Return
+    return QueueCapacity{
+        Total: total,
+        Effective: effective,
+        NextMinipool: nextMinipool,
     }, nil
 
 }
