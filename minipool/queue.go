@@ -6,10 +6,68 @@ import (
     "sync"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
+
+
+// Minipool queue lengths
+type QueueLengths struct {
+    Total uint64
+    FullDeposit uint64
+    HalfDeposit uint64
+    EmptyDeposit uint64
+}
+
+
+// Get minipool queue lengths
+func GetQueueLengths(rp *rocketpool.RocketPool, opts *bind.CallOpts) (QueueLengths, error) {
+
+    // Data
+    var wg errgroup.Group
+    var total uint64
+    var fullDeposit uint64
+    var halfDeposit uint64
+    var emptyDeposit uint64
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        total, err = GetQueueTotalLength(rp, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        fullDeposit, err = GetQueueLength(rp, rptypes.Full, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        halfDeposit, err = GetQueueLength(rp, rptypes.Half, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        emptyDeposit, err = GetQueueLength(rp, rptypes.Empty, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return QueueLengths{}, err
+    }
+
+    // Return
+    return QueueLengths{
+        Total: total,
+        FullDeposit: fullDeposit,
+        HalfDeposit: halfDeposit,
+        EmptyDeposit: emptyDeposit,
+    }, nil
+
+}
 
 
 // Get the total length of the minipool queue
