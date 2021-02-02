@@ -8,6 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
 
 
@@ -25,6 +26,20 @@ func GetQueueTotalLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 }
 
 
+// Get the length of a single minipool queue
+func GetQueueLength(rp *rocketpool.RocketPool, depositType rptypes.MinipoolDeposit, opts *bind.CallOpts) (uint64, error) {
+    rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+    if err != nil {
+        return 0, err
+    }
+    length := new(*big.Int)
+    if err := rocketMinipoolQueue.Call(opts, length, "getLength", depositType); err != nil {
+        return 0, fmt.Errorf("Could not get minipool queue length for deposit type %d: %w", depositType, err)
+    }
+    return (*length).Uint64(), nil
+}
+
+
 // Get the total capacity of the minipool queue
 func GetQueueTotalCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
@@ -34,6 +49,20 @@ func GetQueueTotalCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
     capacity := new(*big.Int)
     if err := rocketMinipoolQueue.Call(opts, capacity, "getTotalCapacity"); err != nil {
         return nil, fmt.Errorf("Could not get minipool queue total capacity: %w", err)
+    }
+    return *capacity, nil
+}
+
+
+// Get the total effective capacity of the minipool queue (used in node demand calculation)
+func GetQueueEffectiveCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+    if err != nil {
+        return nil, err
+    }
+    capacity := new(*big.Int)
+    if err := rocketMinipoolQueue.Call(opts, capacity, "getEffectiveCapacity"); err != nil {
+        return nil, fmt.Errorf("Could not get minipool queue effective capacity: %w", err)
     }
     return *capacity, nil
 }
