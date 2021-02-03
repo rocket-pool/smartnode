@@ -14,8 +14,8 @@ type VoluntaryExitRequest struct {
     Signature byteArray            `json:"signature"`
 }
 type VoluntaryExitMessage struct {
-    Epoch          uinteger `json:"epoch"`
-    ValidatorIndex uinteger `json:"validator_index"`
+    Epoch          uint64 `json:"epoch"`
+    ValidatorIndex uint64 `json:"validator_index"`
 }
 
 // Response types
