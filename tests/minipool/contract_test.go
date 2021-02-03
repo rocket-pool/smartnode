@@ -9,12 +9,13 @@ import (
     "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/settings"
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
+
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 

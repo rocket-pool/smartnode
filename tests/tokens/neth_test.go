@@ -6,12 +6,13 @@ import (
     "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/rocketpool-go/network"
+    "github.com/rocket-pool/rocketpool-go/tokens"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
+
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
     tokenutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 

@@ -5,6 +5,7 @@ import (
     "testing"
 
     "github.com/rocket-pool/rocketpool-go/node"
+
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )
 

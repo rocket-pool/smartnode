@@ -7,9 +7,10 @@ import (
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
+
     "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
     minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 

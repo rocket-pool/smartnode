@@ -9,6 +9,7 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+
     "github.com/rocket-pool/rocketpool-go/tests"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 )

@@ -5,8 +5,9 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
     "github.com/rocket-pool/rocketpool-go/tokens"
+
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 )
 
 

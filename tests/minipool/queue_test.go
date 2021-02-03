@@ -5,10 +5,11 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/node"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
+
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 

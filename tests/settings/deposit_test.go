@@ -4,8 +4,9 @@ import (
     "testing"
 
     "github.com/rocket-pool/rocketpool-go/settings"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
+
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )
 
 
