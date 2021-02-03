@@ -2,6 +2,7 @@ package eth
 
 import (
     "math/big"
+    "strconv"
 )
 
 
@@ -25,9 +26,11 @@ func WeiToEth(wei *big.Int) float64 {
 
 // Convert eth to wei
 func EthToWei(eth float64) *big.Int {
+    var ethFloat big.Float
     var weiFloat big.Float
     var wei big.Int
-    weiFloat.Mul(big.NewFloat(eth), big.NewFloat(WeiPerEth))
+    ethFloat.SetString(strconv.FormatFloat(eth, 'f', -1, 64))
+    weiFloat.Mul(&ethFloat, big.NewFloat(WeiPerEth))
     weiFloat.Int(&wei)
     return &wei
 }
@@ -46,9 +49,11 @@ func WeiToGwei(wei *big.Int) float64 {
 
 // Convert gigawei to wei
 func GweiToWei(gwei float64) *big.Int {
+    var gweiFloat big.Float
     var weiFloat big.Float
     var wei big.Int
-    weiFloat.Mul(big.NewFloat(gwei), big.NewFloat(WeiPerGwei))
+    gweiFloat.SetString(strconv.FormatFloat(gwei, 'f', -1, 64))
+    weiFloat.Mul(&gweiFloat, big.NewFloat(WeiPerGwei))
     weiFloat.Int(&wei)
     return &wei
 }
