@@ -21,6 +21,7 @@ var (
     ownerAccount *accounts.Account
     trustedNodeAccount *accounts.Account
     nodeAccount *accounts.Account
+    userAccount *accounts.Account
 )
 
 
@@ -41,6 +42,8 @@ func TestMain(m *testing.M) {
     trustedNodeAccount, err = accounts.GetAccount(1)
     if err != nil { log.Fatal(err) }
     nodeAccount, err = accounts.GetAccount(2)
+    if err != nil { log.Fatal(err) }
+    userAccount, err = accounts.GetAccount(9)
     if err != nil { log.Fatal(err) }
 
     // Run tests
