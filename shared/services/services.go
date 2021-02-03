@@ -144,8 +144,8 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
             lighthouseKeystore := lhkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
             prysmKeystore := prkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
             tekuKeystore := tkkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
-			nimbusKeystore := nmkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
-			nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
+            nimbusKeystore := nmkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
+            nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
             nodeWallet.AddKeystore("prysm", prysmKeystore)
             nodeWallet.AddKeystore("teku", tekuKeystore)
             nodeWallet.AddKeystore("nimbus", nimbusKeystore)
@@ -182,8 +182,8 @@ func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
             case "prysm":
                 beaconClient, err = prysm.NewClient(cfg.Chains.Eth2.Provider)
             case "teku":
-				beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
-			case "nimbus":
+                beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
+            case "nimbus":
                 beaconClient, err = nimbus.NewClient(cfg.Chains.Eth2.Provider)
             default:
                 err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
