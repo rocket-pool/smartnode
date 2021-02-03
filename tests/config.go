@@ -1,6 +1,10 @@
 package tests
 
 
+// Contract addresses and account private keys are based on the following ganache-cli startup command:
+// ganache-cli -l 12450000 -e 1000000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" -i 1337
+
+
 const (
     Eth1ProviderAddress = "http://127.0.0.1:8545"
     RocketStorageAddress = "0x70a5F2eB9e4C003B105399b471DAeDbC8d00B1c5"
