@@ -14,12 +14,14 @@ import (
     "github.com/rocket-pool/smartnode/shared/services/beacon/lighthouse"
     "github.com/rocket-pool/smartnode/shared/services/beacon/prysm"
     "github.com/rocket-pool/smartnode/shared/services/beacon/teku"
+    "github.com/rocket-pool/smartnode/shared/services/beacon/nimbus"
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
     prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
     tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
+    nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 )
 
 
@@ -142,9 +144,11 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
             lighthouseKeystore := lhkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
             prysmKeystore := prkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
             tekuKeystore := tkkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
-            nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
+			nimbusKeystore := nmkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
+			nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
             nodeWallet.AddKeystore("prysm", prysmKeystore)
             nodeWallet.AddKeystore("teku", tekuKeystore)
+            nodeWallet.AddKeystore("nimbus", nimbusKeystore)
         }
     })
     return nodeWallet, err
@@ -178,7 +182,9 @@ func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
             case "prysm":
                 beaconClient, err = prysm.NewClient(cfg.Chains.Eth2.Provider)
             case "teku":
-                beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
+				beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
+			case "nimbus":
+                beaconClient, err = nimbus.NewClient(cfg.Chains.Eth2.Provider)
             default:
                 err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
         }
