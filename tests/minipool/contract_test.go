@@ -11,6 +11,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
     minipoolutils "github.com/rocket-pool/rocketpool-go/tests/utils/minipool"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/utils/node"
+    "github.com/rocket-pool/rocketpool-go/tests/utils/validator"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -134,6 +135,49 @@ func TestRefund(t *testing.T) {
         t.Fatal(err)
     } else if nodeRefundBalance2.Cmp(nodeRefundBalance1) != -1 {
         t.Error("Node refund balance did not decrease after refunding from minipool")
+    }
+
+}
+
+
+func TestStake(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register node
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32))
+    if err != nil { t.Fatal(err) }
+
+    // Get validator & deposit data
+    validatorPubkey, err := validator.GetValidatorPubkey()
+    if err != nil { t.Fatal(err) }
+    validatorSignature, err := validator.GetValidatorSignature()
+    if err != nil { t.Fatal(err) }
+    depositDataRoot, err := validator.GetDepositDataRoot(validatorPubkey, validator.GetWithdrawalCredentials(), validatorSignature)
+    if err != nil { t.Fatal(err) }
+
+    // Get & check initial minipool status
+    if status, err := mp.GetStatus(nil); err != nil {
+        t.Error(err)
+    } else if status != rptypes.Prelaunch {
+        t.Errorf("Incorrect initial minipool status %s", status.String())
+    }
+
+    // Stake minipool
+    if _, err = mp.Stake(validatorPubkey, validatorSignature, depositDataRoot, nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated minipool status
+    if status, err := mp.GetStatus(nil); err != nil {
+        t.Error(err)
+    } else if status != rptypes.Staking {
+        t.Errorf("Incorrect updated minipool status %s", status.String())
     }
 
 }
