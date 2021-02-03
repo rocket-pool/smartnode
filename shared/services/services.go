@@ -183,8 +183,8 @@ func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
             case "prysm":
                 beaconClient, err = prysm.NewClient(cfg.Chains.Eth2.Provider)
             case "teku":
-				beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
-			case "nimbus":
+                beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
+            case "nimbus":
                 beaconClient, err = nimbus.NewClient(cfg.Chains.Eth2.Provider)
             default:
                 err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
