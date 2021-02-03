@@ -98,3 +98,43 @@ func TestDetails(t *testing.T) {
 
 }
 
+
+func TestRefund(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register node
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32))
+    if err != nil { t.Fatal(err) }
+
+    // Make user deposit
+    depositOpts := userAccount.GetTransactor();
+    depositOpts.Value = eth.EthToWei(16)
+    if _, err := deposit.Deposit(rp, depositOpts); err != nil { t.Fatal(err) }
+
+    // Get initial node refund balance
+    nodeRefundBalance1, err := mp.GetNodeRefundBalance(nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    // Refund
+    if _, err := mp.Refund(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated node refund balance
+    nodeRefundBalance2, err := mp.GetNodeRefundBalance(nil)
+    if err != nil {
+        t.Fatal(err)
+    } else if nodeRefundBalance2.Cmp(nodeRefundBalance1) != -1 {
+        t.Error("Node refund balance did not decrease after refunding from minipool")
+    }
+
+}
+
