@@ -10,7 +10,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tests"
-    "github.com/rocket-pool/rocketpool-go/tests/utils/accounts"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 )
 
 

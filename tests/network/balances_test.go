@@ -4,8 +4,8 @@ import (
     "testing"
 
     "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/utils/node"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 

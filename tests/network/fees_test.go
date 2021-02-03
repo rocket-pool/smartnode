@@ -7,7 +7,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/settings"
-    "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )
 
 

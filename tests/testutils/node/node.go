@@ -3,7 +3,7 @@ package node
 import (
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/tests/utils/accounts"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 )
 
 
