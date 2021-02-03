@@ -12,6 +12,22 @@ import (
 )
 
 
+func TestMinipoolNodeRewardAmount(t *testing.T) {
+
+    // Get & check node reward amount
+    // Node reward amount = (node only share) + (combined share * node balance / start balance) + (combined share * user balance / start balance * node fee)
+    //                    = (40 - 16) +         (48 - 40) * 24 / 40 +                             (48 - 40) * 16 / 40 * 0.5
+    //                    = 24 +                4.8 +                                             1.6
+    //                    = 30.4
+    if rewardAmount, err := minipool.GetMinipoolNodeRewardAmount(rp, 0.5, eth.EthToWei(16), eth.EthToWei(40), eth.EthToWei(48), nil); err != nil {
+        t.Error(err)
+    } else if rewardAmount.Cmp(eth.EthToWei(30.4)) != 0 {
+        t.Errorf("Incorrect minipool node reward amount %s", rewardAmount.String())
+    }
+
+}
+
+
 func TestSubmitMinipoolWithdrawable(t *testing.T) {
 
     // State snapshotting
