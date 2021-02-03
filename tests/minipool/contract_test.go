@@ -8,6 +8,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/node"
+    "github.com/rocket-pool/rocketpool-go/settings"
     "github.com/rocket-pool/rocketpool-go/tests/utils/evm"
     minipoolutils "github.com/rocket-pool/rocketpool-go/tests/utils/minipool"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/utils/node"
@@ -169,7 +170,7 @@ func TestStake(t *testing.T) {
     }
 
     // Stake minipool
-    if _, err = mp.Stake(validatorPubkey, validatorSignature, depositDataRoot, nodeAccount.GetTransactor()); err != nil {
+    if _, err := mp.Stake(validatorPubkey, validatorSignature, depositDataRoot, nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
@@ -178,6 +179,56 @@ func TestStake(t *testing.T) {
         t.Error(err)
     } else if status != rptypes.Staking {
         t.Errorf("Incorrect updated minipool status %s", status.String())
+    }
+
+}
+
+
+func TestWithdraw(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register nodes
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32))
+    if err != nil { t.Fatal(err) }
+
+    // Stake minipool
+    if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
+
+    // Set minipool withdrawable status
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), eth.EthToWei(32), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Get & check initial minipool exists status
+    if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+        t.Error(err)
+    } else if !exists {
+        t.Error("Incorrect initial minipool exists status")
+    }
+
+    // Disable minipool withdrawal delay
+    withdrawalDelay, err := settings.GetMinipoolWithdrawalDelay(rp, nil)
+    if err != nil { t.Fatal(err) }
+    if _, err := settings.SetMinipoolWithdrawalDelay(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Withdraw minipool
+    if _, err := mp.Withdraw(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Re-enable minipool withdrawal delay
+    if _, err := settings.SetMinipoolWithdrawalDelay(rp, withdrawalDelay, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Get & check updated minipool exists status
+    if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+        t.Error(err)
+    } else if exists {
+        t.Error("Incorrect updated minipool exists status")
     }
 
 }
