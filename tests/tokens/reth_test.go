@@ -14,6 +14,9 @@ import (
 )
 
 
+// GetRETHContractETHBalance test under network.TestProcessWithdrawal
+
+
 func TestRETHBalances(t *testing.T) {
 
     // State snapshotting
@@ -142,4 +145,9 @@ func TestRETHExchangeRate(t *testing.T) {
     }
 
 }
+
+
+// GetRETHTotalCollateral test under network.TestProcessWithdrawal
+
+// GetRETHCollateralRate test under network.TestProcessWithdrawal
 

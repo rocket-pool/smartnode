@@ -79,8 +79,9 @@ func TestProcessWithdrawal(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Make user deposit
+    userDepositAmount := eth.EthToWei(16)
     userDepositOpts := userAccount.GetTransactor()
-    userDepositOpts.Value = eth.EthToWei(16)
+    userDepositOpts.Value = userDepositAmount
     if _, err := deposit.Deposit(rp, userDepositOpts); err != nil { t.Fatal(err) }
 
     // Stake minipool
@@ -121,6 +122,18 @@ func TestProcessWithdrawal(t *testing.T) {
         t.Fatal(err)
     } else if rethContractBalance2.Cmp(rethContractBalance1) != 1 {
         t.Error("rETH contract ETH balance did not increase after processing withdrawal")
+    }
+
+    // Get & check rETH collateral amount & rate
+    if rethTotalCollateral, err := tokens.GetRETHTotalCollateral(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if rethTotalCollateral.Cmp(userDepositAmount) != 0 {
+        t.Errorf("Incorrect rETH total collateral amount %s", rethTotalCollateral.String())
+    }
+    if rethCollateralRate, err := tokens.GetRETHCollateralRate(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if rethCollateralRate != 1 {
+        t.Errorf("Incorrect rETH collateral rate %f", rethCollateralRate)
     }
 
 }

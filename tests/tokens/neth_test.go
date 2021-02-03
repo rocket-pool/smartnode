@@ -15,6 +15,9 @@ import (
 )
 
 
+// GetNETHContractETHBalance test under network.TestProcessWithdrawal
+
+
 func TestNETHBalances(t *testing.T) {
 
     // State snapshotting
