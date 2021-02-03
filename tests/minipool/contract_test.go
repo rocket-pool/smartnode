@@ -233,3 +233,76 @@ func TestWithdraw(t *testing.T) {
 
 }
 
+
+func TestDissolve(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register node
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16))
+    if err != nil { t.Fatal(err) }
+
+    // Get & check initial minipool status
+    if status, err := mp.GetStatus(nil); err != nil {
+        t.Error(err)
+    } else if status != rptypes.Initialized {
+        t.Errorf("Incorrect initial minipool status %s", status.String())
+    }
+
+    // Dissolve minipool
+    if _, err := mp.Dissolve(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated minipool status
+    if status, err := mp.GetStatus(nil); err != nil {
+        t.Error(err)
+    } else if status != rptypes.Dissolved {
+        t.Errorf("Incorrect updated minipool status %s", status.String())
+    }
+
+}
+
+
+func TestClose(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register node
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16))
+    if err != nil { t.Fatal(err) }
+
+    // Dissolve minipool
+    if _, err := mp.Dissolve(nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Get & check initial minipool exists status
+    if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+        t.Error(err)
+    } else if !exists {
+        t.Error("Incorrect initial minipool exists status")
+    }
+
+    // Close minipool
+    if _, err := mp.Close(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated minipool exists status
+    if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+        t.Error(err)
+    } else if exists {
+        t.Error("Incorrect updated minipool exists status")
+    }
+
+}
+
