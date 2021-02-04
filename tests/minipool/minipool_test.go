@@ -31,6 +31,11 @@ func TestMinipoolDetails(t *testing.T) {
     } else if len(minipools) != 0 {
         t.Error("Incorrect initial minipool count")
     }
+    if unprocessedMinipools, err := minipool.GetUnprocessedMinipools(rp, nil); err != nil {
+        t.Error(err)
+    } else if len(unprocessedMinipools) != 0 {
+        t.Error("Incorrect initial unprocessed minipool count")
+    }
     if nodeMinipools, err := minipool.GetNodeMinipools(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
     } else if len(nodeMinipools) != 0 {
@@ -86,6 +91,13 @@ func TestMinipoolDetails(t *testing.T) {
         if mpDetails.WithdrawalProcessed {
             t.Error("Incorrect minipool withdrawal processed status")
         }
+    }
+    if unprocessedMinipools, err := minipool.GetUnprocessedMinipools(rp, nil); err != nil {
+        t.Error(err)
+    } else if len(unprocessedMinipools) != 1 {
+        t.Error("Incorrect updated unprocessed minipool count")
+    } else if !bytes.Equal(unprocessedMinipools[0].Address.Bytes(), mp.Address.Bytes()) {
+        t.Errorf("Incorrect unprocessed minipool address %s", unprocessedMinipools[0].Address.Hex())
     }
     if nodeMinipools, err := minipool.GetNodeMinipools(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
