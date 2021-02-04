@@ -25,7 +25,6 @@ const (
 type NodeDetails struct {
     Address common.Address      `json:"address"`
     Exists bool                 `json:"exists"`
-    Trusted bool                `json:"trusted"`
     TimezoneLocation string     `json:"timezoneLocation"`
 }
 
@@ -111,105 +110,18 @@ func GetNodeAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.
 }
 
 
-// Get all trusted node details
-func GetTrustedNodes(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NodeDetails, error) {
-
-    // Get trusted node addresses
-    trustedNodeAddresses, err := GetTrustedNodeAddresses(rp, opts)
-    if err != nil {
-        return []NodeDetails{}, err
-    }
-
-    // Load node details in batches
-    details := make([]NodeDetails, len(trustedNodeAddresses))
-    for bsi := 0; bsi < len(trustedNodeAddresses); bsi += NodeDetailsBatchSize {
-
-        // Get batch start & end index
-        nsi := bsi
-        nei := bsi + NodeDetailsBatchSize
-        if nei > len(trustedNodeAddresses) { nei = len(trustedNodeAddresses) }
-
-        // Load details
-        var wg errgroup.Group
-        for ni := nsi; ni < nei; ni++ {
-            ni := ni
-            wg.Go(func() error {
-                nodeAddress := trustedNodeAddresses[ni]
-                nodeDetails, err := GetNodeDetails(rp, nodeAddress, opts)
-                if err == nil { details[ni] = nodeDetails }
-                return err
-            })
-        }
-        if err := wg.Wait(); err != nil {
-            return []NodeDetails{}, err
-        }
-
-    }
-
-    // Return
-    return details, nil
-
-}
-
-
-// Get all trusted node addresses
-func GetTrustedNodeAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.Address, error) {
-
-    // Get trusted node count
-    trustedNodeCount, err := GetTrustedNodeCount(rp, opts)
-    if err != nil {
-        return []common.Address{}, err
-    }
-
-    // Load node addresses in batches
-    addresses := make([]common.Address, trustedNodeCount)
-    for bsi := uint64(0); bsi < trustedNodeCount; bsi += NodeAddressBatchSize {
-
-        // Get batch start & end index
-        nsi := bsi
-        nei := bsi + NodeAddressBatchSize
-        if nei > trustedNodeCount { nei = trustedNodeCount }
-
-        // Load addresses
-        var wg errgroup.Group
-        for ni := nsi; ni < nei; ni++ {
-            ni := ni
-            wg.Go(func() error {
-                address, err := GetTrustedNodeAt(rp, ni, opts)
-                if err == nil { addresses[ni] = address }
-                return err
-            })
-        }
-        if err := wg.Wait(); err != nil {
-            return []common.Address{}, err
-        }
-
-    }
-
-    // Return
-    return addresses, nil
-
-}
-
-
 // Get a node's details
 func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (NodeDetails, error) {
 
     // Data
     var wg errgroup.Group
     var exists bool
-    var trusted bool
     var timezoneLocation string
 
     // Load data
     wg.Go(func() error {
         var err error
         exists, err = GetNodeExists(rp, nodeAddress, opts)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        trusted, err = GetNodeTrusted(rp, nodeAddress, opts)
         return err
     })
     wg.Go(func() error {
@@ -227,7 +139,6 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
     return NodeDetails{
         Address: nodeAddress,
         Exists: exists,
-        Trusted: trusted,
         TimezoneLocation: timezoneLocation,
     }, nil
 
@@ -262,34 +173,6 @@ func GetNodeAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (co
 }
 
 
-// Get the number of trusted nodes in the network
-func GetTrustedNodeCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return 0, err
-    }
-    trustedNodeCount := new(*big.Int)
-    if err := rocketNodeManager.Call(opts, trustedNodeCount, "getTrustedNodeCount"); err != nil {
-        return 0, fmt.Errorf("Could not get trusted node count: %w", err)
-    }
-    return (*trustedNodeCount).Uint64(), nil
-}
-
-
-// Get a trusted node address by index
-func GetTrustedNodeAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return common.Address{}, err
-    }
-    trustedNodeAddress := new(common.Address)
-    if err := rocketNodeManager.Call(opts, trustedNodeAddress, "getTrustedNodeAt", big.NewInt(int64(index))); err != nil {
-        return common.Address{}, fmt.Errorf("Could not get trusted node %d address: %w", index, err)
-    }
-    return *trustedNodeAddress, nil
-}
-
-
 // Check whether a node exists
 func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
@@ -301,20 +184,6 @@ func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *
         return false, fmt.Errorf("Could not get node %s exists status: %w", nodeAddress.Hex(), err)
     }
     return *exists, nil
-}
-
-
-// Get a node's trusted status
-func GetNodeTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return false, err
-    }
-    trusted := new(bool)
-    if err := rocketNodeManager.Call(opts, trusted, "getNodeTrusted", nodeAddress); err != nil {
-        return false, fmt.Errorf("Could not get node %s trusted status: %w", nodeAddress.Hex(), err)
-    }
-    return *trusted, nil
 }
 
 
@@ -341,20 +210,6 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
     txReceipt, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
     if err != nil {
         return nil, fmt.Errorf("Could not register node: %w", err)
-    }
-    return txReceipt, nil
-}
-
-
-// Set a node's trusted status
-func SetNodeTrusted(rp *rocketpool.RocketPool, nodeAddress common.Address, trusted bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketNodeManager.Transact(opts, "setNodeTrusted", nodeAddress, trusted)
-    if err != nil {
-        return nil, fmt.Errorf("Could not set node trusted status: %w", err)
     }
     return txReceipt, nil
 }
