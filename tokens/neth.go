@@ -43,13 +43,43 @@ func GetNETHBalance(rp *rocketpool.RocketPool, address common.Address, opts *bin
 }
 
 
+// Get nETH allowance
+func GetNETHAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, opts *bind.CallOpts) (*big.Int, error) {
+    rocketTokenNETH, err := getRocketTokenNETH(rp)
+    if err != nil {
+        return nil, err
+    }
+    return allowance(rocketTokenNETH, "nETH", owner, spender, opts)
+}
+
+
 // Transfer nETH
 func TransferNETH(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketTokenNETH, err := getRocketTokenNETH(rp)
     if err != nil {
         return nil, err
     }
-    return transfer(rp.Client, rocketTokenNETH, "nETH", to, amount, opts)
+    return transfer(rocketTokenNETH, "nETH", to, amount, opts)
+}
+
+
+// Approve a nETH spender
+func ApproveNETH(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketTokenNETH, err := getRocketTokenNETH(rp)
+    if err != nil {
+        return nil, err
+    }
+    return approve(rocketTokenNETH, "nETH", spender, amount, opts)
+}
+
+
+// Transfer nETH from a sender
+func TransferFromNETH(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketTokenNETH, err := getRocketTokenNETH(rp)
+    if err != nil {
+        return nil, err
+    }
+    return transferFrom(rocketTokenNETH, "nETH", from, to, amount, opts)
 }
 
 

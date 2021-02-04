@@ -8,7 +8,6 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
-    "github.com/ethereum/go-ethereum/ethclient"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -20,6 +19,7 @@ type Balances struct {
     ETH *big.Int    `json:"eth"`
     NETH *big.Int   `json:"neth"`
     RETH *big.Int   `json:"reth"`
+    RPL *big.Int    `json:"rpl"`
 }
 
 
@@ -35,6 +35,7 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
     var ethBalance *big.Int
     var nethBalance *big.Int
     var rethBalance *big.Int
+    var rplBalance *big.Int
 
     // Load data
     wg.Go(func() error {
@@ -52,6 +53,11 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
         rethBalance, err = GetRETHBalance(rp, address, opts)
         return err
     })
+    wg.Go(func() error {
+        var err error
+        rplBalance, err = GetRPLBalance(rp, address, opts)
+        return err
+    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
@@ -63,6 +69,7 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
         ETH: ethBalance,
         NETH: nethBalance,
         RETH: rethBalance,
+        RPL: rplBalance,
     }, nil
 
 }
@@ -96,11 +103,41 @@ func balanceOf(tokenContract *rocketpool.Contract, tokenName string, address com
 }
 
 
+// Get a spender's allowance for an address
+func allowance(tokenContract *rocketpool.Contract, tokenName string, owner, spender common.Address, opts *bind.CallOpts) (*big.Int, error) {
+    allowance := new(*big.Int)
+    if err := tokenContract.Call(opts, allowance, "allowance", owner, spender); err != nil {
+        return nil, fmt.Errorf("Could not get %s allowance of %s for %s: %w", tokenName, spender.Hex(), owner.Hex(), err)
+    }
+    return *allowance, nil
+}
+
+
 // Transfer tokens to an address
-func transfer(client *ethclient.Client, tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func transfer(tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := tokenContract.Transact(opts, "transfer", to, amount)
     if err != nil {
         return nil, fmt.Errorf("Could not transfer %s to %s: %w", tokenName, to.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
+// Approve a token allowance for a spender
+func approve(tokenContract *rocketpool.Contract, tokenName string, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    txReceipt, err := tokenContract.Transact(opts, "approve", spender, amount)
+    if err != nil {
+        return nil, fmt.Errorf("Could not approve %s allowance for %s: %w", tokenName, spender.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
+// Transfer tokens from a sender to an address
+func transferFrom(tokenContract *rocketpool.Contract, tokenName string, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    txReceipt, err := tokenContract.Transact(opts, "transferFrom", from, to, amount)
+    if err != nil {
+        return nil, fmt.Errorf("Could not transfer %s from %s to %s: %w", tokenName, from.Hex(), to.Hex(), err)
     }
     return txReceipt, nil
 }
