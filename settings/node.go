@@ -8,6 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -46,6 +47,40 @@ func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool
 }
 func BootstrapNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
     return bootstrapBool(rp, NodeSettingsContractName, "node.deposit.enabled", value, opts)
+}
+
+
+// The minimum RPL stake per minipool as a fraction of assigned user ETH
+func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    nodeSettingsContract, err := getNodeSettingsContract(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
+        return nil, fmt.Errorf("Could not get minimum RPL stake per minipool: %w", err)
+    }
+    return eth.WeiToEth(*value), nil
+}
+func BootstrapMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.minimum", eth.EthToWei(value), opts)
+}
+
+
+// The maximum RPL stake per minipool as a fraction of assigned user ETH
+func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    nodeSettingsContract, err := getNodeSettingsContract(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
+        return nil, fmt.Errorf("Could not get maximum RPL stake per minipool: %w", err)
+    }
+    return eth.WeiToEth(*value), nil
+}
+func BootstrapMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.maximum", eth.EthToWei(value), opts)
 }
 
 
