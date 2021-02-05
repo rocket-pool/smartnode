@@ -147,6 +147,11 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 // Get a validator's status
 func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
+    // Return zero status for null pubkey
+    if bytes.Equal(pubkey.Bytes(), types.ValidatorPubkey{}.Bytes()) {
+        return beacon.ValidatorStatus{}, nil
+    }
+
     // Get validator
     validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, opts)
     if err != nil {
@@ -176,8 +181,22 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 // Get multiple validators' statuses
 func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
+    // The null validator pubkey
+    nullPubkey := types.ValidatorPubkey{}
+
+    // Filter out null pubkeys
+    nullPubkeyExists := false
+    realPubkeys := []types.ValidatorPubkey{}
+    for _, pubkey := range pubkeys {
+        if bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
+            nullPubkeyExists = true
+        } else {
+            realPubkeys = append(realPubkeys, pubkey)
+        }
+    }
+
     // Get validators
-    validators, err := c.getValidatorsByOpts(pubkeys, opts)
+    validators, err := c.getValidatorsByOpts(realPubkeys, opts)
     if err != nil {
         return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, err
     }
@@ -191,18 +210,23 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
-            Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
-            WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
-            Balance:                    uint64(validator.Balance),
-            EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
-            Slashed:                    validator.Validator.Slashed,
+            Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+            WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
+            Balance: uint64(validator.Balance),
+            EffectiveBalance: uint64(validator.Validator.EffectiveBalance),
+            Slashed: validator.Validator.Slashed,
             ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
-            ActivationEpoch:            uint64(validator.Validator.ActivationEpoch),
-            ExitEpoch:                  uint64(validator.Validator.ExitEpoch),
-            WithdrawableEpoch:          uint64(validator.Validator.WithdrawableEpoch),
-            Exists:                     true,
+            ActivationEpoch: uint64(validator.Validator.ActivationEpoch),
+            ExitEpoch: uint64(validator.Validator.ExitEpoch),
+            WithdrawableEpoch: uint64(validator.Validator.WithdrawableEpoch),
+            Exists: true,
         }
 
+    }
+
+    // Add zero status for null pubkey if requested
+    if nullPubkeyExists {
+        statuses[nullPubkey] = beacon.ValidatorStatus{}
     }
 
     // Return
