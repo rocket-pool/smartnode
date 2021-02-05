@@ -12,6 +12,11 @@ import (
 )
 
 
+//
+// Core ERC-20 functions
+//
+
+
 // Get fixed-supply RPL total supply
 func GetFixedSupplyRPLTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp)
@@ -70,6 +75,11 @@ func TransferFromFixedSupplyRPL(rp *rocketpool.RocketPool, from, to common.Addre
     }
     return transferFrom(rocketTokenFixedSupplyRPL, "fixed-supply RPL", from, to, amount, opts)
 }
+
+
+//
+// Contracts
+//
 
 
 // Get contracts

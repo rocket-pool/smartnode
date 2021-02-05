@@ -13,14 +13,9 @@ import (
 )
 
 
-// Get the nETH contract ETH balance
-func GetNETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-    rocketTokenNETH, err := getRocketTokenNETH(rp)
-    if err != nil {
-        return nil, err
-    }
-    return contractETHBalance(rp, rocketTokenNETH, opts)
-}
+//
+// Core ERC-20 functions
+//
 
 
 // Get nETH total supply
@@ -83,6 +78,21 @@ func TransferFromNETH(rp *rocketpool.RocketPool, from, to common.Address, amount
 }
 
 
+//
+// nETH functions
+//
+
+
+// Get the nETH contract ETH balance
+func GetNETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketTokenNETH, err := getRocketTokenNETH(rp)
+    if err != nil {
+        return nil, err
+    }
+    return contractETHBalance(rp, rocketTokenNETH, opts)
+}
+
+
 // Burn nETH for ETH
 func BurnNETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketTokenNETH, err := getRocketTokenNETH(rp)
@@ -95,6 +105,11 @@ func BurnNETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpt
     }
     return txReceipt, nil
 }
+
+
+//
+// Contracts
+//
 
 
 // Get contracts

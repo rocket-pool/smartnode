@@ -14,14 +14,9 @@ import (
 )
 
 
-// Get the rETH contract ETH balance
-func GetRETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-    rocketTokenRETH, err := getRocketTokenRETH(rp)
-    if err != nil {
-        return nil, err
-    }
-    return contractETHBalance(rp, rocketTokenRETH, opts)
-}
+//
+// Core ERC-20 functions
+//
 
 
 // Get rETH total supply
@@ -51,6 +46,51 @@ func GetRETHAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, 
         return nil, err
     }
     return allowance(rocketTokenRETH, "rETH", owner, spender, opts)
+}
+
+
+// Transfer rETH
+func TransferRETH(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketTokenRETH, err := getRocketTokenRETH(rp)
+    if err != nil {
+        return nil, err
+    }
+    return transfer(rocketTokenRETH, "rETH", to, amount, opts)
+}
+
+
+// Approve a rETH spender
+func ApproveRETH(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketTokenRETH, err := getRocketTokenRETH(rp)
+    if err != nil {
+        return nil, err
+    }
+    return approve(rocketTokenRETH, "rETH", spender, amount, opts)
+}
+
+
+// Transfer rETH from a sender
+func TransferFromRETH(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketTokenRETH, err := getRocketTokenRETH(rp)
+    if err != nil {
+        return nil, err
+    }
+    return transferFrom(rocketTokenRETH, "rETH", from, to, amount, opts)
+}
+
+
+//
+// rETH functions
+//
+
+
+// Get the rETH contract ETH balance
+func GetRETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketTokenRETH, err := getRocketTokenRETH(rp)
+    if err != nil {
+        return nil, err
+    }
+    return contractETHBalance(rp, rocketTokenRETH, opts)
 }
 
 
@@ -124,36 +164,6 @@ func GetRETHCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 }
 
 
-// Transfer rETH
-func TransferRETH(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketTokenRETH, err := getRocketTokenRETH(rp)
-    if err != nil {
-        return nil, err
-    }
-    return transfer(rocketTokenRETH, "rETH", to, amount, opts)
-}
-
-
-// Approve a rETH spender
-func ApproveRETH(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketTokenRETH, err := getRocketTokenRETH(rp)
-    if err != nil {
-        return nil, err
-    }
-    return approve(rocketTokenRETH, "rETH", spender, amount, opts)
-}
-
-
-// Transfer rETH from a sender
-func TransferFromRETH(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketTokenRETH, err := getRocketTokenRETH(rp)
-    if err != nil {
-        return nil, err
-    }
-    return transferFrom(rocketTokenRETH, "rETH", from, to, amount, opts)
-}
-
-
 // Burn rETH for ETH
 func BurnRETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketTokenRETH, err := getRocketTokenRETH(rp)
@@ -166,6 +176,11 @@ func BurnRETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpt
     }
     return txReceipt, nil
 }
+
+
+//
+// Contracts
+//
 
 
 // Get contracts
