@@ -36,6 +36,46 @@ type LotDetails struct {
 }
 
 
+// Get all lot details
+func GetLots(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]LotDetails, error) {
+
+    // Get lot count
+    lotCount, err := GetLotCount(rp, opts)
+    if err != nil {
+        return []LotDetails{}, err
+    }
+
+    // Load lot details in batches
+    details := make([]LotDetails, lotCount)
+    for bsi := 0; bsi < lotCount; bsi += LotDetailsBatchSize {
+
+        // Get batch start & end index
+        lsi := bsi
+        lei := bsi + LotDetailsBatchSize
+        if lei > lotCount { lei = lotCount }
+
+        // Load details
+        var wg errgroup.Group
+        for li := lsi; li < lei; li++ {
+            li := li
+            wg.Go(func() error {
+                lotDetails, err := GetLotDetails(rp, li, opts)
+                if err == nil { details[li] = lotDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []LotDetails{}, err
+        }
+
+    }
+
+    // Return
+    return details, nil
+
+}
+
+
 // Get a lot's details
 func GetLotDetails(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOpts) (LotDetails, error) {
 
