@@ -9,6 +9,7 @@ import (
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -35,6 +36,20 @@ func bootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
     txReceipt, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
     if err != nil {
         return nil, fmt.Errorf("Could not bootstrap setting %s.%s: %w", contractName, settingPath, err)
+    }
+    return txReceipt, nil
+}
+
+
+// Bootstrap a rewards claimer
+func bootstrapClaimer(rp *rocketpool.RocketPool, contractName string, amount float64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingClaimer", contractName, eth.EthToWei(amount))
+    if err != nil {
+        return nil, fmt.Errorf("Could not bootstrap claimer %s: %w", contractName, err)
     }
     return txReceipt, nil
 }
