@@ -82,7 +82,32 @@ func TransferFromRPL(rp *rocketpool.RocketPool, from, to common.Address, amount 
 //
 
 
+// Mint new RPL tokens from inflation
+func MintInflationRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketTokenRPL, err := getRocketTokenRPL(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketTokenRPL.Transact(opts, "inflationMintTokens")
+    if err != nil {
+        return nil, fmt.Errorf("Could not mint RPL tokens from inflation: %w", err)
+    }
+    return txReceipt, nil
+}
 
+
+// Swap fixed-supply RPL for new RPL tokens
+func SwapFixedSupplyRPLForRPL(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketTokenRPL, err := getRocketTokenRPL(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketTokenRPL.Transact(opts, "swapTokens", amount)
+    if err != nil {
+        return nil, fmt.Errorf("Could not swap fixed-supply RPL for new RPL: %w", err)
+    }
+    return txReceipt, nil
+}
 
 
 //
