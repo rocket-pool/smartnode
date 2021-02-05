@@ -68,6 +68,40 @@ func BootstrapSubmitBalancesFrequency(rp *rocketpool.RocketPool, value uint64, o
 }
 
 
+// Network price submissions currently enabled
+func GetSubmitPricesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+    networkSettingsContract, err := getNetworkSettingsContract(rp)
+    if err != nil {
+        return false, err
+    }
+    value := new(bool)
+    if err := networkSettingsContract.Call(opts, value, "getSubmitPricesEnabled"); err != nil {
+        return false, fmt.Errorf("Could not get network price submissions enabled status: %w", err)
+    }
+    return *value, nil
+}
+func BootstrapSubmitPricesEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapBool(rp, NetworkSettingsContractName, "network.submit.prices.enabled", value, opts)
+}
+
+
+// The frequency in blocks at which network prices should be submitted by trusted nodes
+func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+    networkSettingsContract, err := getNetworkSettingsContract(rp)
+    if err != nil {
+        return 0, err
+    }
+    value := new(*big.Int)
+    if err := networkSettingsContract.Call(opts, value, "getSubmitPricesFrequency"); err != nil {
+        return 0, fmt.Errorf("Could not get network price submission frequency: %w", err)
+    }
+    return (*value).Uint64(), nil
+}
+func BootstrapSubmitPricesFrequency(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapUint(rp, NetworkSettingsContractName, "network.submit.prices.frequency", big.NewInt(int64(value)), opts)
+}
+
+
 // Processing validator withdrawals currently enabled
 func GetProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
     networkSettingsContract, err := getNetworkSettingsContract(rp)
