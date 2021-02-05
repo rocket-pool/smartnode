@@ -15,22 +15,22 @@ import (
 
 // The threshold of trusted nodes that must reach consensus on oracle data to commit it
 func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, value, "getNodeConsensusThreshold"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getNodeConsensusThreshold"); err != nil {
         return 0, fmt.Errorf("Could not get trusted node consensus threshold: %w", err)
     }
     return eth.WeiToEth(*value), nil
 }
 func SetNodeConsensusThreshold(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setNodeConsensusThreshold", eth.EthToWei(value))
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setNodeConsensusThreshold", eth.EthToWei(value))
     if err != nil {
         return nil, fmt.Errorf("Could not set trusted node consensus threshold: %w", err)
     }
@@ -40,22 +40,22 @@ func SetNodeConsensusThreshold(rp *rocketpool.RocketPool, value float64, opts *b
 
 // Network balance submissions currently enabled
 func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return false, err
     }
     value := new(bool)
-    if err := rocketNetworkSettings.Call(opts, value, "getSubmitBalancesEnabled"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getSubmitBalancesEnabled"); err != nil {
         return false, fmt.Errorf("Could not get network balance submissions enabled status: %w", err)
     }
     return *value, nil
 }
 func SetSubmitBalancesEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setSubmitBalancesEnabled", value)
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setSubmitBalancesEnabled", value)
     if err != nil {
         return nil, fmt.Errorf("Could not set network balance submissions enabled status: %w", err)
     }
@@ -65,22 +65,22 @@ func SetSubmitBalancesEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.
 
 // The frequency in blocks at which network balances should be submitted by trusted nodes
 func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, value, "getSubmitBalancesFrequency"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getSubmitBalancesFrequency"); err != nil {
         return 0, fmt.Errorf("Could not get network balance submission frequency: %w", err)
     }
     return (*value).Uint64(), nil
 }
 func SetSubmitBalancesFrequency(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setSubmitBalancesFrequency", big.NewInt(int64(value)))
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setSubmitBalancesFrequency", big.NewInt(int64(value)))
     if err != nil {
         return nil, fmt.Errorf("Could not set network balance submission frequency: %w", err)
     }
@@ -90,22 +90,22 @@ func SetSubmitBalancesFrequency(rp *rocketpool.RocketPool, value uint64, opts *b
 
 // Processing validator withdrawals currently enabled
 func GetProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return false, err
     }
     value := new(bool)
-    if err := rocketNetworkSettings.Call(opts, value, "getProcessWithdrawalsEnabled"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getProcessWithdrawalsEnabled"); err != nil {
         return false, fmt.Errorf("Could not get processing withdrawals enabled status: %w", err)
     }
     return *value, nil
 }
 func SetProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setProcessWithdrawalsEnabled", value)
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setProcessWithdrawalsEnabled", value)
     if err != nil {
         return nil, fmt.Errorf("Could not set processing withdrawals enabled status: %w", err)
     }
@@ -115,22 +115,22 @@ func SetProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, value bool, opts *b
 
 // Minimum node commission rate
 func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, value, "getMinimumNodeFee"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getMinimumNodeFee"); err != nil {
         return 0, fmt.Errorf("Could not get minimum node fee: %w", err)
     }
     return eth.WeiToEth(*value), nil
 }
 func SetMinimumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setMinimumNodeFee", eth.EthToWei(value))
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setMinimumNodeFee", eth.EthToWei(value))
     if err != nil {
         return nil, fmt.Errorf("Could not set minimum node fee: %w", err)
     }
@@ -140,22 +140,22 @@ func SetMinimumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.Tran
 
 // Target node commission rate
 func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, value, "getTargetNodeFee"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getTargetNodeFee"); err != nil {
         return 0, fmt.Errorf("Could not get target node fee: %w", err)
     }
     return eth.WeiToEth(*value), nil
 }
 func SetTargetNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setTargetNodeFee", eth.EthToWei(value))
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setTargetNodeFee", eth.EthToWei(value))
     if err != nil {
         return nil, fmt.Errorf("Could not set target node fee: %w", err)
     }
@@ -165,22 +165,22 @@ func SetTargetNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.Trans
 
 // Maximum node commission rate
 func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, value, "getMaximumNodeFee"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getMaximumNodeFee"); err != nil {
         return 0, fmt.Errorf("Could not get maximum node fee: %w", err)
     }
     return eth.WeiToEth(*value), nil
 }
 func SetMaximumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setMaximumNodeFee", eth.EthToWei(value))
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setMaximumNodeFee", eth.EthToWei(value))
     if err != nil {
         return nil, fmt.Errorf("Could not set maximum node fee: %w", err)
     }
@@ -190,22 +190,22 @@ func SetMaximumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.Tran
 
 // The range of node demand values to base fee calculations on
 func GetNodeFeeDemandRange(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
     value := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, value, "getNodeFeeDemandRange"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getNodeFeeDemandRange"); err != nil {
         return nil, fmt.Errorf("Could not get node fee demand range: %w", err)
     }
     return *value, nil
 }
 func SetNodeFeeDemandRange(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setNodeFeeDemandRange", value)
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setNodeFeeDemandRange", value)
     if err != nil {
         return nil, fmt.Errorf("Could not set node fee demand range: %w", err)
     }
@@ -215,22 +215,22 @@ func SetNodeFeeDemandRange(rp *rocketpool.RocketPool, value *big.Int, opts *bind
 
 // The target collateralization rate for the rETH contract as a fraction
 func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rocketNetworkSettings.Call(opts, value, "getTargetRethCollateralRate"); err != nil {
+    if err := rocketDAOProtocolSettingsNetwork.Call(opts, value, "getTargetRethCollateralRate"); err != nil {
         return 0, fmt.Errorf("Could not get target rETH contract collateralization rate: %w", err)
     }
     return eth.WeiToEth(*value), nil
 }
 func SetTargetRethCollateralRate(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketNetworkSettings, err := getRocketNetworkSettings(rp)
+    rocketDAOProtocolSettingsNetwork, err := getRocketDAOProtocolSettingsNetwork(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNetworkSettings.Transact(opts, "setTargetRethCollateralRate", eth.EthToWei(value))
+    txReceipt, err := rocketDAOProtocolSettingsNetwork.Transact(opts, "setTargetRethCollateralRate", eth.EthToWei(value))
     if err != nil {
         return nil, fmt.Errorf("Could not set target rETH contract collateralization rate: %w", err)
     }
@@ -239,10 +239,10 @@ func SetTargetRethCollateralRate(rp *rocketpool.RocketPool, value float64, opts 
 
 
 // Get contracts
-var rocketNetworkSettingsLock sync.Mutex
-func getRocketNetworkSettings(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
-    rocketNetworkSettingsLock.Lock()
-    defer rocketNetworkSettingsLock.Unlock()
-    return rp.GetContract("rocketNetworkSettings")
+var rocketDAOProtocolSettingsNetworkLock sync.Mutex
+func getRocketDAOProtocolSettingsNetwork(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+    rocketDAOProtocolSettingsNetworkLock.Lock()
+    defer rocketDAOProtocolSettingsNetworkLock.Unlock()
+    return rp.GetContract("rocketDAOProtocolSettingsNetwork")
 }
 
