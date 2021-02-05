@@ -349,20 +349,6 @@ func GetLotIsCleared(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.Call
 }
 
 
-// Get the ETH amount bid on a lot by an address
-func GetLotAddressBidAmount(rp *rocketpool.RocketPool, lotIndex uint64, bidder common.Address, opts *bind.CallOpts) (*big.Int, error) {
-    rocketAuctionManager, err := getRocketAuctionManager(rp)
-    if err != nil {
-        return nil, err
-    }
-    lot := new(*big.Int)
-    if err := rocketAuctionManager.Call(opts, lot, "getLotAddressBidAmount", big.NewInt(int64(lotIndex)), bidder); err != nil {
-        return nil, fmt.Errorf("Could not get lot %d address ETH bid amount: %w", lotIndex, err)
-    }
-    return *lot, nil
-}
-
-
 // Get the price of a lot at a specific block
 func GetLotPriceAtBlock(rp *rocketpool.RocketPool, lotIndex, blockNumber uint64, opts *bind.CallOpts) (*big.Int, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
@@ -374,6 +360,20 @@ func GetLotPriceAtBlock(rp *rocketpool.RocketPool, lotIndex, blockNumber uint64,
         return nil, fmt.Errorf("Could not get lot %d price at block: %w", lotIndex, err)
     }
     return *lotPriceAtBlock, nil
+}
+
+
+// Get the ETH amount bid on a lot by an address
+func GetLotAddressBidAmount(rp *rocketpool.RocketPool, lotIndex uint64, bidder common.Address, opts *bind.CallOpts) (*big.Int, error) {
+    rocketAuctionManager, err := getRocketAuctionManager(rp)
+    if err != nil {
+        return nil, err
+    }
+    lot := new(*big.Int)
+    if err := rocketAuctionManager.Call(opts, lot, "getLotAddressBidAmount", big.NewInt(int64(lotIndex)), bidder); err != nil {
+        return nil, fmt.Errorf("Could not get lot %d address ETH bid amount: %w", lotIndex, err)
+    }
+    return *lot, nil
 }
 
 
