@@ -8,9 +8,143 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
+
+
+// Settings
+const LotDetailsBatchSize = 10
+
+
+// Lot details
+type LotDetails struct {
+    Exists bool                 `json:"exists"`
+    StartBlock uint64           `json:"startBlock"`
+    EndBlock uint64             `json:"endBlock"`
+    StartPrice *big.Int         `json:"startPrice"`
+    ReservePrice *big.Int       `json:"reservePrice"`
+    PriceByTotalBids *big.Int   `json:"priceByTotalBids"`
+    CurrentPrice *big.Int       `json:"currentPrice"`
+    TotalRPLAmount *big.Int     `json:"totalRplAmount"`
+    ClaimedRPLAmount *big.Int   `json:"claimedRplAmount"`
+    RemainingRPLAmount *big.Int `json:"remainingRplAmount"`
+    TotalBidAmount *big.Int     `json:"totalBidAmount"`
+    Cleared bool                `json:"cleared"`
+    RPLRecovered bool           `json:"rplRecovered"`
+}
+
+
+// Get a lot's details
+func GetLotDetails(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOpts) (LotDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var exists bool
+    var startBlock uint64
+    var endBlock uint64
+    var startPrice *big.Int 
+    var reservePrice *big.Int 
+    var priceByTotalBids *big.Int 
+    var currentPrice *big.Int 
+    var totalRplAmount *big.Int 
+    var claimedRplAmount *big.Int 
+    var remainingRplAmount *big.Int 
+    var totalBidAmount *big.Int 
+    var cleared bool
+    var rplRecovered bool
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        exists, err = GetLotExists(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        startBlock, err = GetLotStartBlock(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        endBlock, err = GetLotEndBlock(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        startPrice, err = GetLotStartPrice(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        reservePrice, err = GetLotReservePrice(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        priceByTotalBids, err = GetLotPriceByTotalBids(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        currentPrice, err = GetLotCurrentPrice(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        totalRplAmount, err = GetLotTotalRPLAmount(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        claimedRplAmount, err = GetLotClaimedRPLAmount(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        remainingRplAmount, err = GetLotRemainingRPLAmount(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        totalBidAmount, err = GetLotTotalBidAmount(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        cleared, err = GetLotIsCleared(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        rplRecovered, err = GetLotRPLRecovered(rp, lotIndex, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return LotDetails{}, err
+    }
+
+    // Return
+    return LotDetails{
+        Exists: exists,
+        StartBlock: startBlock,
+        EndBlock: endBlock,
+        StartPrice: startPrice,
+        ReservePrice: reservePrice,
+        PriceByTotalBids: priceByTotalBids,
+        CurrentPrice: currentPrice,
+        TotalRPLAmount: totalRplAmount,
+        ClaimedRPLAmount: claimedRplAmount,
+        RemainingRPLAmount: remainingRplAmount,
+        TotalBidAmount: totalBidAmount,
+        Cleared: cleared,
+        RPLRecovered: rplRecovered,
+    }, nil
+
+}
 
 
 // Get the total RPL balance of the auction contract
