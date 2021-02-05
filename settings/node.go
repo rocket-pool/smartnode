@@ -11,61 +11,49 @@ import (
 )
 
 
+// Config
+const NodeSettingsContractName = "rocketDAOProtocolSettingsNode"
+
+
 // Node registrations currently enabled
 func GetNodeRegistrationEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-    rocketDAOProtocolSettingsNode, err := getRocketDAOProtocolSettingsNode(rp)
+    nodeSettingsContract, err := getNodeSettingsContract(rp)
     if err != nil {
         return false, err
     }
     value := new(bool)
-    if err := rocketDAOProtocolSettingsNode.Call(opts, value, "getRegistrationEnabled"); err != nil {
+    if err := nodeSettingsContract.Call(opts, value, "getRegistrationEnabled"); err != nil {
         return false, fmt.Errorf("Could not get node registrations enabled status: %w", err)
     }
     return *value, nil
 }
-func SetNodeRegistrationEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketDAOProtocolSettingsNode, err := getRocketDAOProtocolSettingsNode(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketDAOProtocolSettingsNode.Transact(opts, "setRegistrationEnabled", value)
-    if err != nil {
-        return nil, fmt.Errorf("Could not set node registrations enabled status: %w", err)
-    }
-    return txReceipt, nil
+func BootstrapNodeRegistrationEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapBool(rp, NodeSettingsContractName, "node.registration.enabled", value, opts)
 }
 
 
 // Node deposits currently enabled
 func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-    rocketDAOProtocolSettingsNode, err := getRocketDAOProtocolSettingsNode(rp)
+    nodeSettingsContract, err := getNodeSettingsContract(rp)
     if err != nil {
         return false, err
     }
     value := new(bool)
-    if err := rocketDAOProtocolSettingsNode.Call(opts, value, "getDepositEnabled"); err != nil {
+    if err := nodeSettingsContract.Call(opts, value, "getDepositEnabled"); err != nil {
         return false, fmt.Errorf("Could not get node deposits enabled status: %w", err)
     }
     return *value, nil
 }
-func SetNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketDAOProtocolSettingsNode, err := getRocketDAOProtocolSettingsNode(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketDAOProtocolSettingsNode.Transact(opts, "setDepositEnabled", value)
-    if err != nil {
-        return nil, fmt.Errorf("Could not set node deposits enabled status: %w", err)
-    }
-    return txReceipt, nil
+func BootstrapNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapBool(rp, NodeSettingsContractName, "node.deposit.enabled", value, opts)
 }
 
 
 // Get contracts
-var rocketDAOProtocolSettingsNodeLock sync.Mutex
-func getRocketDAOProtocolSettingsNode(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
-    rocketDAOProtocolSettingsNodeLock.Lock()
-    defer rocketDAOProtocolSettingsNodeLock.Unlock()
-    return rp.GetContract("rocketDAOProtocolSettingsNode")
+var nodeSettingsContractLock sync.Mutex
+func getNodeSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+    nodeSettingsContractLock.Lock()
+    defer nodeSettingsContractLock.Unlock()
+    return rp.GetContract(NodeSettingsContractName)
 }
 

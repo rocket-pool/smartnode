@@ -12,136 +12,100 @@ import (
 )
 
 
+// Config
+const DepositSettingsContractName = "rocketDAOProtocolSettingsDeposit"
+
+
 // Deposits currently enabled
 func GetDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
+    depositSettingsContract, err := getDepositSettingsContract(rp)
     if err != nil {
         return false, err
     }
     value := new(bool)
-    if err := rocketDAOProtocolSettingsDeposit.Call(opts, value, "getDepositEnabled"); err != nil {
+    if err := depositSettingsContract.Call(opts, value, "getDepositEnabled"); err != nil {
         return false, fmt.Errorf("Could not get deposits enabled status: %w", err)
     }
     return *value, nil
 }
-func SetDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketDAOProtocolSettingsDeposit.Transact(opts, "setDepositEnabled", value)
-    if err != nil {
-        return nil, fmt.Errorf("Could not set deposits enabled status: %w", err)
-    }
-    return txReceipt, nil
+func BootstrapDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapBool(rp, DepositSettingsContractName, "deposit.enabled", value, opts)
 }
 
 
 // Deposit assignments currently enabled
 func GetAssignDepositsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
+    depositSettingsContract, err := getDepositSettingsContract(rp)
     if err != nil {
         return false, err
     }
     value := new(bool)
-    if err := rocketDAOProtocolSettingsDeposit.Call(opts, value, "getAssignDepositsEnabled"); err != nil {
+    if err := depositSettingsContract.Call(opts, value, "getAssignDepositsEnabled"); err != nil {
         return false, fmt.Errorf("Could not get deposit assignments enabled status: %w", err)
     }
     return *value, nil
 }
-func SetAssignDepositsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketDAOProtocolSettingsDeposit.Transact(opts, "setAssignDepositsEnabled", value)
-    if err != nil {
-        return nil, fmt.Errorf("Could not set deposit assignments enabled status: %w", err)
-    }
-    return txReceipt, nil
+func BootstrapAssignDepositsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapBool(rp, DepositSettingsContractName, "deposit.assign.enabled", value, opts)
 }
 
 
 // Minimum deposit amount
 func GetMinimumDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
+    depositSettingsContract, err := getDepositSettingsContract(rp)
     if err != nil {
         return nil, err
     }
     value := new(*big.Int)
-    if err := rocketDAOProtocolSettingsDeposit.Call(opts, value, "getMinimumDeposit"); err != nil {
+    if err := depositSettingsContract.Call(opts, value, "getMinimumDeposit"); err != nil {
         return nil, fmt.Errorf("Could not get minimum deposit amount: %w", err)
     }
     return *value, nil
 }
-func SetMinimumDeposit(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketDAOProtocolSettingsDeposit.Transact(opts, "setMinimumDeposit", value)
-    if err != nil {
-        return nil, fmt.Errorf("Could not set minimum deposit amount: %w", err)
-    }
-    return txReceipt, nil
+func BootstrapMinimumDeposit(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapUint(rp, DepositSettingsContractName, "deposit.minimum", value, opts)
 }
 
 
 // Maximum deposit pool size
 func GetMaximumDepositPoolSize(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
+    depositSettingsContract, err := getDepositSettingsContract(rp)
     if err != nil {
         return nil, err
     }
     value := new(*big.Int)
-    if err := rocketDAOProtocolSettingsDeposit.Call(opts, value, "getMaximumDepositPoolSize"); err != nil {
+    if err := depositSettingsContract.Call(opts, value, "getMaximumDepositPoolSize"); err != nil {
         return nil, fmt.Errorf("Could not get maximum deposit pool size: %w", err)
     }
     return *value, nil
 }
-func SetMaximumDepositPoolSize(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketDAOProtocolSettingsDeposit.Transact(opts, "setMaximumDepositPoolSize", value)
-    if err != nil {
-        return nil, fmt.Errorf("Could not set maximum deposit pool size: %w", err)
-    }
-    return txReceipt, nil
+func BootstrapMaximumDepositPoolSize(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapUint(rp, DepositSettingsContractName, "deposit.pool.maximum", value, opts)
 }
 
 
 // Maximum deposit assignments per transaction
 func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
+    depositSettingsContract, err := getDepositSettingsContract(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rocketDAOProtocolSettingsDeposit.Call(opts, value, "getMaximumDepositAssignments"); err != nil {
+    if err := depositSettingsContract.Call(opts, value, "getMaximumDepositAssignments"); err != nil {
         return 0, fmt.Errorf("Could not get maximum deposit assignments: %w", err)
     }
     return (*value).Uint64(), nil
 }
-func SetMaximumDepositAssignments(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketDAOProtocolSettingsDeposit, err := getRocketDAOProtocolSettingsDeposit(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketDAOProtocolSettingsDeposit.Transact(opts, "setMaximumDepositAssignments", big.NewInt(int64(value)))
-    if err != nil {
-        return nil, fmt.Errorf("Could not set maximum deposit assignments: %w", err)
-    }
-    return txReceipt, nil
+func BootstrapMaximumDepositAssignments(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return bootstrapUint(rp, DepositSettingsContractName, "deposit.assign.maximum", big.NewInt(int64(value)), opts)
 }
 
 
 // Get contracts
-var rocketDAOProtocolSettingsDepositLock sync.Mutex
-func getRocketDAOProtocolSettingsDeposit(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
-    rocketDAOProtocolSettingsDepositLock.Lock()
-    defer rocketDAOProtocolSettingsDepositLock.Unlock()
-    return rp.GetContract("rocketDAOProtocolSettingsDeposit")
+var depositSettingsContractLock sync.Mutex
+func getDepositSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+    depositSettingsContractLock.Lock()
+    defer depositSettingsContractLock.Unlock()
+    return rp.GetContract(DepositSettingsContractName)
 }
 
