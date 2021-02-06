@@ -54,8 +54,8 @@ func (c *Client) Close() {
 }
 
 // Get the beacon client type
-func (c *Client) GetClientType() beacon.BeaconClientType {
-	return beacon.SplitProcess
+func (c *Client) GetClientType() (beacon.BeaconClientType) {
+    return beacon.SingleProcess
 }
 
 // Get the node's sync status
