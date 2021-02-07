@@ -335,7 +335,6 @@ func (c *Client) getFork(stateId string) (ForkResponse, error) {
 // Get validators
 func (c *Client) getValidators(stateId string, pubkeys []string) ([]Validator, error) {
     var validators []Validator
-    // params := []interface{}{stateId, pubkeys}
     if err := c.client.Call(&validators, RequestValidatorsMethod, stateId, pubkeys); err != nil {
         return []Validator{}, fmt.Errorf("Could not get validators: %w", err)
     }
