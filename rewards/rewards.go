@@ -17,7 +17,7 @@ import (
 func getEnabled(claimsContract *rocketpool.Contract, claimsName string, opts *bind.CallOpts) (bool, error) {
     enabled := new(bool)
     if err := claimsContract.Call(opts, enabled, "getEnabled"); err != nil {
-        return nil, fmt.Errorf("Could not get %s claims contract enabled status: %w", claimsName, err)
+        return false, fmt.Errorf("Could not get %s claims contract enabled status: %w", claimsName, err)
     }
     return *enabled, nil
 }
@@ -27,7 +27,7 @@ func getEnabled(claimsContract *rocketpool.Contract, claimsName string, opts *bi
 func getClaimPossible(claimsContract *rocketpool.Contract, claimsName string, claimerAddress common.Address, opts *bind.CallOpts) (bool, error) {
     claimPossible := new(bool)
     if err := claimsContract.Call(opts, claimPossible, "getClaimPossible", claimerAddress); err != nil {
-        return nil, fmt.Errorf("Could not get %s claim possible status for %s: %w", claimsName, claimerAddress.Hex(), err)
+        return false, fmt.Errorf("Could not get %s claim possible status for %s: %w", claimsName, claimerAddress.Hex(), err)
     }
     return *claimPossible, nil
 }
@@ -37,7 +37,7 @@ func getClaimPossible(claimsContract *rocketpool.Contract, claimsName string, cl
 func getClaimRewardsPerc(claimsContract *rocketpool.Contract, claimsName string, claimerAddress common.Address, opts *bind.CallOpts) (float64, error) {
     claimRewardsPerc := new(*big.Int)
     if err := claimsContract.Call(opts, claimRewardsPerc, "getClaimRewardsPerc", claimerAddress); err != nil {
-        return nil, fmt.Errorf("Could not get %s claim rewards percent for %s: %w", claimsName, claimerAddress.Hex(), err)
+        return 0, fmt.Errorf("Could not get %s claim rewards percent for %s: %w", claimsName, claimerAddress.Hex(), err)
     }
     return eth.WeiToEth(*claimRewardsPerc), nil
 }
