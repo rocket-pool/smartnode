@@ -260,19 +260,19 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawa
 // Restart validator container
 func (t *stakePrelaunchMinipools) restartValidator() error {
 
-	// Get validator container name
-	var containerName string
+    // Get validator container name
+    var containerName string
     if t.cfg.Smartnode.ProjectName == "" {
         return errors.New("Rocket Pool docker project name not set")
-	}
-	
-	switch clientType := t.bc.GetClientType(); clientType {
-	case beacon.SplitProcess:
-		containerName = t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
-	case beacon.SingleProcess:
-		containerName = t.cfg.Smartnode.ProjectName + BeaconContainerSuffix
-		t.log.Printlnf("NOTE: using a single-process type client, so the validator container is the beacon container.")
-	}
+    }
+    
+    switch clientType := t.bc.GetClientType(); clientType {
+    case beacon.SplitProcess:
+        containerName = t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
+    case beacon.SingleProcess:
+        containerName = t.cfg.Smartnode.ProjectName + BeaconContainerSuffix
+        t.log.Printlnf("NOTE: using a single-process type client, so the validator container is the beacon container.")
+    }
 
     // Log
     t.log.Printlnf("Restarting validator container (%s)...", containerName)
