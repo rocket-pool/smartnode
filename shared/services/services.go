@@ -200,3 +200,4 @@ func getDocker() (*client.Client, error) {
     })
     return docker, err
 }
+
