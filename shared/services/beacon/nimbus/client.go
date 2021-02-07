@@ -24,7 +24,7 @@ const (
     RequestGenesisMethod             = "get_v1_beacon_genesis"
     RequestFinalityCheckpointsMethod = "get_v1_beacon_states_finality_checkpoints"
     RequestForkMethod                = "get_v1_beacon_states_fork"
-    RequestValidatorsMethod          = "get_v1_beacon_states_stateId_validators_validatorId"
+    RequestValidatorsMethod          = "get_v1_beacon_states_stateId_validators"
     RequestVoluntaryExitMethod       = "get_v1_beacon_pool_voluntary_exits"
 
     MaxRequestValidatorsCount = 600
@@ -335,8 +335,8 @@ func (c *Client) getFork(stateId string) (ForkResponse, error) {
 // Get validators
 func (c *Client) getValidators(stateId string, pubkeys []string) ([]Validator, error) {
     var validators []Validator
-    params := append([]string{stateId}, pubkeys...)
-    if err := c.client.Call(&validators, RequestValidatorsMethod, params); err != nil {
+    // params := []interface{}{stateId, pubkeys}
+    if err := c.client.Call(&validators, RequestValidatorsMethod, stateId, pubkeys); err != nil {
         return []Validator{}, fmt.Errorf("Could not get validators: %w", err)
     }
     return validators, nil
