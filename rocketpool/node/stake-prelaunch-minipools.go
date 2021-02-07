@@ -272,6 +272,8 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
     case beacon.SingleProcess:
         containerName = t.cfg.Smartnode.ProjectName + BeaconContainerSuffix
         t.log.Printlnf("NOTE: using a single-process type client, so the validator container is the beacon container.")
+    default:
+        return fmt.Errorf("Can't restart the validator, unknown client type [%w]", clientType)
     }
 
     // Log
