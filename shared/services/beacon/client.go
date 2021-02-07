@@ -51,7 +51,7 @@ const(
 	SplitProcess BeaconClientType = iota
 
 	// This client is a "single process" where the beacon client and
-	// validator run in the same process (or run as separate processes)
+	// validator run in the same process (or run as separate processes
 	// within the same docker container)
 	SingleProcess
 )
@@ -59,7 +59,7 @@ const(
 
 // Beacon client interface
 type Client interface {
-	GetClientType() (BeaconClientType)
+    GetClientType() (BeaconClientType)
     GetSyncStatus() (SyncStatus, error)
     GetEth2Config() (Eth2Config, error)
     GetBeaconHead() (BeaconHead, error)

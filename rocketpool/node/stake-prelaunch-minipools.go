@@ -272,7 +272,7 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
         if t.cfg.Smartnode.ProjectName == "" {
             return errors.New("Rocket Pool docker project name not set")
         }
-        
+
         switch clientType := t.bc.GetClientType(); clientType {
         case beacon.SplitProcess:
             containerName = t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
