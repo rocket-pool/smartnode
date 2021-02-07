@@ -29,6 +29,7 @@ type RocketPoolConfig struct {
 }
 type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
+    WsProvider string                   `yaml:"ws_provider,omitempty"` // Websocket API for ETH1
     Client struct {
         Options []ClientOption          `yaml:"options,omitempty"`
         Selected string                 `yaml:"selected,omitempty"`
