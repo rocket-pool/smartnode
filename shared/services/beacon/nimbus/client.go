@@ -25,7 +25,7 @@ const (
     RequestFinalityCheckpointsMethod = "get_v1_beacon_states_finality_checkpoints"
     RequestForkMethod                = "get_v1_beacon_states_fork"
     RequestValidatorsMethod          = "get_v1_beacon_states_stateId_validators"
-    RequestVoluntaryExitMethod       = "get_v1_beacon_pool_voluntary_exits"
+    RequestVoluntaryExitMethod       = "post_v1_beacon_pool_voluntary_exits"
 
     MaxRequestValidatorsCount = 600
 )
