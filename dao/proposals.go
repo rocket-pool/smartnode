@@ -173,6 +173,34 @@ func GetProposalState(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.C
 }
 
 
+// Get whether a member has voted on a proposal
+func GetProposalMemberVoted(rp *rocketpool.RocketPool, proposalId uint64, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
+    rocketDAOProposal, err := getRocketDAOProposal(rp)
+    if err != nil {
+        return false, err
+    }
+    voted := new(bool)
+    if err := rocketDAOProposal.Call(opts, voted, "getReceiptHasVoted", big.NewInt(int64(proposalId)), memberAddress); err != nil {
+        return false, fmt.Errorf("Could not get proposal %d member %s voted status: %w", proposalId, memberAddress.Hex(), err)
+    }
+    return *voted, nil
+}
+
+
+// Get whether a member has voted in support of a proposal
+func GetProposalMemberSupported(rp *rocketpool.RocketPool, proposalId uint64, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
+    rocketDAOProposal, err := getRocketDAOProposal(rp)
+    if err != nil {
+        return false, err
+    }
+    supported := new(bool)
+    if err := rocketDAOProposal.Call(opts, supported, "getReceiptSupported", big.NewInt(int64(proposalId)), memberAddress); err != nil {
+        return false, fmt.Errorf("Could not get proposal %d member %s supported status: %w", proposalId, memberAddress.Hex(), err)
+    }
+    return *supported, nil
+}
+
+
 // Get contracts
 var rocketDAOProposalLock sync.Mutex
 func getRocketDAOProposal(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
