@@ -7,10 +7,265 @@ import (
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
+
+
+// Settings
+const ProposalDetailsBatchSize = 10
+
+
+// Proposal details
+type ProposalDetails struct {
+    DAO string                      `json:"dao"`
+    ProposerAddress common.Address  `json:"proposerAddress"`
+    CreatedBlock uint64             `json:"createdBlock"`
+    StartBlock uint64               `json:"startBlock"`
+    EndBlock uint64                 `json:"endBlock"`
+    ExpiryBlock uint64              `json:"expiryBlock"`
+    VotesRequired uint64            `json:"votesRequired"`
+    VotesFor uint64                 `json:"votesFor"`
+    VotesAgainst uint64             `json:"votesAgainst"`
+    MemberVoted bool                `json:"memberVoted"`
+    MemberSupported bool            `json:"memberSupported"`
+    IsCancelled bool                `json:"isCancelled"`
+    IsExecuted bool                 `json:"isExecuted"`
+    Payload []byte                  `json:"payload"`
+    State rptypes.ProposalState     `json:"state"`
+}
+
+
+// Get all proposal details with member data
+func GetProposalsWithMember(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) ([]ProposalDetails, error) {
+
+    // Get proposal count
+    proposalCount, err := GetProposalCount(rp, opts)
+    if err != nil {
+        return []ProposalDetails{}, err
+    }
+
+    // Load proposal details in batches
+    details := make([]ProposalDetails, proposalCount)
+    for bsi := 0; bsi < proposalCount; bsi += ProposalDetailsBatchSize {
+
+        // Get batch start & end index
+        psi := bsi
+        pei := bsi + ProposalDetailsBatchSize
+        if pei > proposalCount { pei = proposalCount }
+
+        // Load details
+        var wg errgroup.Group
+        for pi := psi; pi < pei; pi++ {
+            pi := pi
+            wg.Go(func() error {
+                proposalDetails, err := GetProposalDetailsWithMember(rp, pi + 1, memberAddress, opts) // Proposals are 1-indexed
+                if err == nil { details[pi] = proposalDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []ProposalDetails{}, err
+        }
+
+    }
+
+    // Return
+    return details, nil
+
+}
+
+
+// Get all proposal details
+func GetProposals(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]ProposalDetails, error) {
+
+    // Get proposal count
+    proposalCount, err := GetProposalCount(rp, opts)
+    if err != nil {
+        return []ProposalDetails{}, err
+    }
+
+    // Load proposal details in batches
+    details := make([]ProposalDetails, proposalCount)
+    for bsi := 0; bsi < proposalCount; bsi += ProposalDetailsBatchSize {
+
+        // Get batch start & end index
+        psi := bsi
+        pei := bsi + ProposalDetailsBatchSize
+        if pei > proposalCount { pei = proposalCount }
+
+        // Load details
+        var wg errgroup.Group
+        for pi := psi; pi < pei; pi++ {
+            pi := pi
+            wg.Go(func() error {
+                proposalDetails, err := GetProposalDetails(rp, pi + 1, opts) // Proposals are 1-indexed
+                if err == nil { details[pi] = proposalDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []ProposalDetails{}, err
+        }
+
+    }
+
+    // Return
+    return details, nil
+
+}
+
+
+// Get a proposal's details with member data
+func GetProposalDetailsWithMember(rp *rocketpool.RocketPool, proposalId uint64, memberAddress common.Address, opts *bind.CallOpts) (ProposalDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var details ProposalDetails
+    var memberVoted bool
+    var memberSupported bool
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        details, err = GetProposalDetails(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        memberVoted, err = GetProposalMemberVoted(rp, proposalId, memberAddress, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        memberSupported, err = GetProposalMemberSupported(rp, proposalId, memberAddress, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return ProposalDetails{}, err
+    }
+
+    // Return
+    details.MemberVoted = memberVoted
+    details.MemberSupported = memberSupported
+    return details, nil
+
+}
+
+
+// Get a proposal's details
+func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (ProposalDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var dao string
+    var proposerAddress common.Address
+    var createdBlock uint64
+    var startBlock uint64
+    var endBlock uint64
+    var expiryBlock uint64
+    var votesRequired uint64
+    var votesFor uint64
+    var votesAgainst uint64
+    var isCancelled bool
+    var isExecuted bool
+    var payload []byte
+    var state rptypes.ProposalState
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        dao, err = GetProposalDAO(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        proposerAddress, err = GetProposalProposerAddress(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        createdBlock, err = GetProposalCreatedBlock(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        startBlock, err = GetProposalStartBlock(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        endBlock, err = GetProposalEndBlock(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        expiryBlock, err = GetProposalExpiryBlock(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        votesRequired, err = GetProposalVotesRequired(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        votesFor, err = GetProposalVotesFor(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        votesAgainst, err = GetProposalVotesAgainst(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        isCancelled, err = GetProposalIsCancelled(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        isExecuted, err = GetProposalIsExecuted(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        payload, err = GetProposalPayload(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        state, err = GetProposalState(rp, proposalId, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return ProposalDetails{}, err
+    }
+
+    // Return
+    return ProposalDetails{
+        DAO: dao,
+        ProposerAddress: proposerAddress,
+        CreatedBlock: createdBlock,
+        StartBlock: startBlock,
+        EndBlock: endBlock,
+        ExpiryBlock: expiryBlock,
+        VotesRequired: votesRequired,
+        VotesFor: votesFor,
+        VotesAgainst: votesAgainst,
+        IsCancelled: isCancelled,
+        IsExecuted: isExecuted,
+        Payload: payload,
+        State: state,
+    }, nil
+
+}
 
 
 // Get the proposal count
