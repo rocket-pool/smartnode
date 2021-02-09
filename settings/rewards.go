@@ -60,12 +60,6 @@ func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 }
 
 
-// Bootstrap a rewards claimer amount
-func BootstrapRewardsClaimer(rp *rocketpool.RocketPool, contractName string, amount float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapClaimer(rp, contractName, amount, opts);
-}
-
-
 // Rewards claim interval in blocks
 func GetRewardsClaimIntervalBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rewardsSettingsContract, err := getRewardsSettingsContract(rp)
