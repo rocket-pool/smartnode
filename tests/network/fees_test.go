@@ -6,7 +6,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )
@@ -19,13 +19,13 @@ func TestNodeFee(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Get settings
-    targetNodeFee, err := settings.GetTargetNodeFee(rp, nil)
+    targetNodeFee, err := protocol.GetTargetNodeFee(rp, nil)
     if err != nil { t.Fatal(err) }
-    minNodeFee, err := settings.GetMinimumNodeFee(rp, nil)
+    minNodeFee, err := protocol.GetMinimumNodeFee(rp, nil)
     if err != nil { t.Fatal(err) }
-    maxNodeFee, err := settings.GetMaximumNodeFee(rp, nil)
+    maxNodeFee, err := protocol.GetMaximumNodeFee(rp, nil)
     if err != nil { t.Fatal(err) }
-    demandRange, err := settings.GetNodeFeeDemandRange(rp, nil)
+    demandRange, err := protocol.GetNodeFeeDemandRange(rp, nil)
     if err != nil { t.Fatal(err) }
 
     // Get & check initial node demand
