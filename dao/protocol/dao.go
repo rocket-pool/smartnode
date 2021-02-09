@@ -21,7 +21,7 @@ func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, 
     }
     txReceipt, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingBool", contractName, settingPath, value)
     if err != nil {
-        return nil, fmt.Errorf("Could not bootstrap setting %s.%s: %w", contractName, settingPath, err)
+        return nil, fmt.Errorf("Could not bootstrap protocol setting %s.%s: %w", contractName, settingPath, err)
     }
     return txReceipt, nil
 }
@@ -35,7 +35,7 @@ func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
     }
     txReceipt, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
     if err != nil {
-        return nil, fmt.Errorf("Could not bootstrap setting %s.%s: %w", contractName, settingPath, err)
+        return nil, fmt.Errorf("Could not bootstrap protocol setting %s.%s: %w", contractName, settingPath, err)
     }
     return txReceipt, nil
 }
@@ -49,7 +49,7 @@ func BootstrapClaimer(rp *rocketpool.RocketPool, contractName string, amount flo
     }
     txReceipt, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingClaimer", contractName, eth.EthToWei(amount))
     if err != nil {
-        return nil, fmt.Errorf("Could not bootstrap claimer %s: %w", contractName, err)
+        return nil, fmt.Errorf("Could not bootstrap protocol rewards claimer %s: %w", contractName, err)
     }
     return txReceipt, nil
 }
