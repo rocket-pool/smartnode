@@ -53,7 +53,7 @@ func BootstrapRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.Tran
 
 
 // The maximum number of unbonded minipools a member can run
-func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     membersSettingsContract, err := getMembersSettingsContract(rp)
     if err != nil {
         return nil, err
@@ -62,10 +62,10 @@ func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*bi
     if err := membersSettingsContract.Call(opts, value, "getMinipoolUnbondedMax"); err != nil {
         return nil, fmt.Errorf("Could not get member unbonded minipool limit: %w", err)
     }
-    return *value, nil
+    return (*value).Uint64(), nil
 }
-func BootstrapMinipoolUnbondedMax(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, MembersSettingsContractName, "members.minipool.unbonded.max", value, opts)
+func BootstrapMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednode.BootstrapUint(rp, MembersSettingsContractName, "members.minipool.unbonded.max", big.NewInt(int64(value)), opts)
 }
 
 
