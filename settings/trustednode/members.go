@@ -1,0 +1,79 @@
+package trustednode
+
+import (
+    "fmt"
+    "math/big"
+    "sync"
+
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/core/types"
+
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
+)
+
+
+// Config
+const MembersSettingsContractName = "rocketDAONodeTrustedSettingsMembers"
+
+
+// Member proposal quorum threshold
+func GetQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    membersSettingsContract, err := getMembersSettingsContract(rp)
+    if err != nil {
+        return 0, err
+    }
+    value := new(*big.Int)
+    if err := membersSettingsContract.Call(opts, value, "getQuorum"); err != nil {
+        return 0, fmt.Errorf("Could not get member quorum threshold: %w", err)
+    }
+    return eth.WeiToEth(*value), nil
+}
+func BootstrapQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednode.BootstrapUint(rp, MembersSettingsContractName, "members.quorum", eth.EthToWei(value), opts)
+}
+
+
+// RPL bond required for a member
+func GetRPLBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    membersSettingsContract, err := getMembersSettingsContract(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := membersSettingsContract.Call(opts, value, "getRPLBond"); err != nil {
+        return nil, fmt.Errorf("Could not get member RPL bond amount: %w", err)
+    }
+    return *value, nil
+}
+func BootstrapRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednode.BootstrapUint(rp, MembersSettingsContractName, "members.rplbond", value, opts)
+}
+
+
+// The maximum number of unbonded minipools a member can run
+func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    membersSettingsContract, err := getMembersSettingsContract(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := membersSettingsContract.Call(opts, value, "getMinipoolUnbondedMax"); err != nil {
+        return nil, fmt.Errorf("Could not get member unbonded minipool limit: %w", err)
+    }
+    return *value, nil
+}
+func BootstrapMinipoolUnbondedMax(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednode.BootstrapUint(rp, MembersSettingsContractName, "members.minipool.unbonded.max", value, opts)
+}
+
+
+// Get contracts
+var membersSettingsContractLock sync.Mutex
+func getMembersSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+    membersSettingsContractLock.Lock()
+    defer membersSettingsContractLock.Unlock()
+    return rp.GetContract(MembersSettingsContractName)
+}
+
