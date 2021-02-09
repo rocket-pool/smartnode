@@ -23,9 +23,10 @@ const (
 
 // Node details
 type NodeDetails struct {
-    Address common.Address      `json:"address"`
-    Exists bool                 `json:"exists"`
-    TimezoneLocation string     `json:"timezoneLocation"`
+    Address common.Address              `json:"address"`
+    Exists bool                         `json:"exists"`
+    WithdrawalAddress common.Address    `json:"withdrawalAddress"`
+    TimezoneLocation string             `json:"timezoneLocation"`
 }
 
 
@@ -116,12 +117,18 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
     // Data
     var wg errgroup.Group
     var exists bool
+    var withdrawalAddress common.Address
     var timezoneLocation string
 
     // Load data
     wg.Go(func() error {
         var err error
         exists, err = GetNodeExists(rp, nodeAddress, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        withdrawalAddress, err = GetNodeWithdrawalAddress(rp, nodeAddress, opts)
         return err
     })
     wg.Go(func() error {
@@ -139,6 +146,7 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
     return NodeDetails{
         Address: nodeAddress,
         Exists: exists,
+        WithdrawalAddress: withdrawalAddress,
         TimezoneLocation: timezoneLocation,
     }, nil
 
@@ -187,6 +195,20 @@ func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *
 }
 
 
+// Get a node's withdrawal address
+func GetNodeWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
+    if err != nil {
+        return "", err
+    }
+    withdrawalAddress := new(common.Address)
+    if err := rocketNodeManager.Call(opts, withdrawalAddress, "getNodeWithdrawalAddress", nodeAddress); err != nil {
+        return "", fmt.Errorf("Could not get node %s withdrawal address: %w", nodeAddress.Hex(), err)
+    }
+    return *withdrawalAddress, nil
+}
+
+
 // Get a node's timezone location
 func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (string, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
@@ -210,6 +232,20 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
     txReceipt, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
     if err != nil {
         return nil, fmt.Errorf("Could not register node: %w", err)
+    }
+    return txReceipt, nil
+}
+
+
+// Set a node's withdrawal address
+func SetWithdrawalAddress(rp *rocketpool.RocketPool, withdrawalAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketNodeManager.Transact(opts, "setWithdrawalAddress", withdrawalAddress)
+    if err != nil {
+        return nil, fmt.Errorf("Could not set node withdrawal address: %w", err)
     }
     return txReceipt, nil
 }
