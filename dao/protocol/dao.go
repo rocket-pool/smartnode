@@ -1,4 +1,4 @@
-package settings
+package protocol
 
 import (
     "fmt"
@@ -14,7 +14,7 @@ import (
 
 
 // Bootstrap a bool setting
-func bootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAOProtocol, err := getRocketDAOProtocol(rp)
     if err != nil {
         return nil, err
@@ -28,7 +28,7 @@ func bootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, 
 
 
 // Bootstrap a uint256 setting
-func bootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAOProtocol, err := getRocketDAOProtocol(rp)
     if err != nil {
         return nil, err
@@ -42,7 +42,7 @@ func bootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
 
 
 // Bootstrap a rewards claimer
-func bootstrapClaimer(rp *rocketpool.RocketPool, contractName string, amount float64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapClaimer(rp *rocketpool.RocketPool, contractName string, amount float64, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAOProtocol, err := getRocketDAOProtocol(rp)
     if err != nil {
         return nil, err

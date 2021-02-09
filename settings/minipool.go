@@ -8,6 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
 
+    "github.com/rocket-pool/rocketpool-go/dao/protocol"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
@@ -115,7 +116,7 @@ func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, opts *bind.
     return *value, nil
 }
 func BootstrapMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapBool(rp, MinipoolSettingsContractName, "minipool.submit.withdrawable.enabled", value, opts)
+    return protocol.BootstrapBool(rp, MinipoolSettingsContractName, "minipool.submit.withdrawable.enabled", value, opts)
 }
 
 
@@ -132,7 +133,7 @@ func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
     return (*value).Uint64(), nil
 }
 func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, MinipoolSettingsContractName, "minipool.launch.timeout", big.NewInt(int64(value)), opts)
+    return protocol.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.launch.timeout", big.NewInt(int64(value)), opts)
 }
 
 
@@ -149,7 +150,7 @@ func GetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     return (*value).Uint64(), nil
 }
 func BootstrapMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, MinipoolSettingsContractName, "minipool.withdrawal.delay", big.NewInt(int64(value)), opts)
+    return protocol.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.withdrawal.delay", big.NewInt(int64(value)), opts)
 }
 
 

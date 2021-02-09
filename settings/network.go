@@ -8,6 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
 
+    "github.com/rocket-pool/rocketpool-go/dao/protocol"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -30,7 +31,7 @@ func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
     return eth.WeiToEth(*value), nil
 }
 func BootstrapNodeConsensusThreshold(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, NetworkSettingsContractName, "network.consensus.threshold", eth.EthToWei(value), opts)
+    return protocol.BootstrapUint(rp, NetworkSettingsContractName, "network.consensus.threshold", eth.EthToWei(value), opts)
 }
 
 
@@ -47,7 +48,7 @@ func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (b
     return *value, nil
 }
 func BootstrapSubmitBalancesEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapBool(rp, NetworkSettingsContractName, "network.submit.balances.enabled", value, opts)
+    return protocol.BootstrapBool(rp, NetworkSettingsContractName, "network.submit.balances.enabled", value, opts)
 }
 
 
@@ -64,7 +65,7 @@ func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     return (*value).Uint64(), nil
 }
 func BootstrapSubmitBalancesFrequency(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, NetworkSettingsContractName, "network.submit.balances.frequency", big.NewInt(int64(value)), opts)
+    return protocol.BootstrapUint(rp, NetworkSettingsContractName, "network.submit.balances.frequency", big.NewInt(int64(value)), opts)
 }
 
 
@@ -81,7 +82,7 @@ func GetSubmitPricesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (boo
     return *value, nil
 }
 func BootstrapSubmitPricesEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapBool(rp, NetworkSettingsContractName, "network.submit.prices.enabled", value, opts)
+    return protocol.BootstrapBool(rp, NetworkSettingsContractName, "network.submit.prices.enabled", value, opts)
 }
 
 
@@ -98,7 +99,7 @@ func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
     return (*value).Uint64(), nil
 }
 func BootstrapSubmitPricesFrequency(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, NetworkSettingsContractName, "network.submit.prices.frequency", big.NewInt(int64(value)), opts)
+    return protocol.BootstrapUint(rp, NetworkSettingsContractName, "network.submit.prices.frequency", big.NewInt(int64(value)), opts)
 }
 
 
@@ -115,7 +116,7 @@ func GetProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts
     return *value, nil
 }
 func BootstrapProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapBool(rp, NetworkSettingsContractName, "network.process.withdrawals.enabled", value, opts)
+    return protocol.BootstrapBool(rp, NetworkSettingsContractName, "network.process.withdrawals.enabled", value, opts)
 }
 
 
@@ -132,7 +133,7 @@ func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
     return eth.WeiToEth(*value), nil
 }
 func BootstrapMinimumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.minimum", eth.EthToWei(value), opts)
+    return protocol.BootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.minimum", eth.EthToWei(value), opts)
 }
 
 
@@ -149,7 +150,7 @@ func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, 
     return eth.WeiToEth(*value), nil
 }
 func BootstrapTargetNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.target", eth.EthToWei(value), opts)
+    return protocol.BootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.target", eth.EthToWei(value), opts)
 }
 
 
@@ -166,7 +167,7 @@ func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64,
     return eth.WeiToEth(*value), nil
 }
 func BootstrapMaximumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.maximum", eth.EthToWei(value), opts)
+    return protocol.BootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.maximum", eth.EthToWei(value), opts)
 }
 
 
@@ -183,7 +184,7 @@ func GetNodeFeeDemandRange(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
     return *value, nil
 }
 func BootstrapNodeFeeDemandRange(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.demand.range", value, opts)
+    return protocol.BootstrapUint(rp, NetworkSettingsContractName, "network.node.fee.demand.range", value, opts)
 }
 
 
@@ -200,7 +201,7 @@ func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
     return eth.WeiToEth(*value), nil
 }
 func BootstrapTargetRethCollateralRate(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, NetworkSettingsContractName, "network.reth.collateral.target", eth.EthToWei(value), opts)
+    return protocol.BootstrapUint(rp, NetworkSettingsContractName, "network.reth.collateral.target", eth.EthToWei(value), opts)
 }
 
 

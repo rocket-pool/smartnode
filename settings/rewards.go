@@ -8,6 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
 
+    "github.com/rocket-pool/rocketpool-go/dao/protocol"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -61,7 +62,7 @@ func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 
 // Bootstrap a rewards claimer amount
 func BootstrapRewardsClaimer(rp *rocketpool.RocketPool, contractName string, amount float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapClaimer(rp, contractName, amount, opts);
+    return protocol.BootstrapClaimer(rp, contractName, amount, opts);
 }
 
 
@@ -78,7 +79,7 @@ func GetRewardsClaimIntervalBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpt
     return (*value).Uint64(), nil
 }
 func BootstrapRewardsClaimIntervalBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return bootstrapUint(rp, RewardsSettingsContractName, "rpl.rewards.claim.period.blocks", big.NewInt(int64(value)), opts)
+    return protocol.BootstrapUint(rp, RewardsSettingsContractName, "rpl.rewards.claim.period.blocks", big.NewInt(int64(value)), opts)
 }
 
 
