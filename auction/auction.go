@@ -31,8 +31,49 @@ type LotDetails struct {
     ClaimedRPLAmount *big.Int   `json:"claimedRplAmount"`
     RemainingRPLAmount *big.Int `json:"remainingRplAmount"`
     TotalBidAmount *big.Int     `json:"totalBidAmount"`
+    AddressBidAmount *big.Int   `json:"addressBidAmount"`
     Cleared bool                `json:"cleared"`
     RPLRecovered bool           `json:"rplRecovered"`
+}
+
+
+// Get all lot details with bids
+func GetLotsWithBids(rp *rocketpool.RocketPool, bidder common.Address, opts *bind.CallOpts) ([]LotDetails, error) {
+
+    // Get lot count
+    lotCount, err := GetLotCount(rp, opts)
+    if err != nil {
+        return []LotDetails{}, err
+    }
+
+    // Load lot details in batches
+    details := make([]LotDetails, lotCount)
+    for bsi := 0; bsi < lotCount; bsi += LotDetailsBatchSize {
+
+        // Get batch start & end index
+        lsi := bsi
+        lei := bsi + LotDetailsBatchSize
+        if lei > lotCount { lei = lotCount }
+
+        // Load details
+        var wg errgroup.Group
+        for li := lsi; li < lei; li++ {
+            li := li
+            wg.Go(func() error {
+                lotDetails, err := GetLotDetailsWithBids(rp, li, bidder, opts)
+                if err == nil { details[li] = lotDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []LotDetails{}, err
+        }
+
+    }
+
+    // Return
+    return details, nil
+
 }
 
 
@@ -71,6 +112,38 @@ func GetLots(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]LotDetails, erro
     }
 
     // Return
+    return details, nil
+
+}
+
+
+// Get a lot's details with address bid amounts
+func GetLotDetailsWithBids(rp *rocketpool.RocketPool, lotIndex uint64, bidder common.Address, opts *bind.CallOpts) (LotDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var details LotDetails
+    var addressBidAmount *big.Int 
+
+    // Load data
+    wg.Go(func() error {
+        var err error
+        details, err = GetLotDetails(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        addressBidAmount, err = GetLotAddressBidAmount(rp, lotIndex, bidder, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return LotDetails{}, err
+    }
+
+    // Return
+    details.AddressBidAmount = addressBidAmount
     return details, nil
 
 }
