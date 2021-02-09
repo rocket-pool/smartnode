@@ -20,6 +20,7 @@ const LotDetailsBatchSize = 10
 
 // Lot details
 type LotDetails struct {
+    Index uint64                `json:"index"`
     Exists bool                 `json:"exists"`
     StartBlock uint64           `json:"startBlock"`
     EndBlock uint64             `json:"endBlock"`
@@ -242,6 +243,7 @@ func GetLotDetails(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOp
 
     // Return
     return LotDetails{
+        Index: lotIndex,
         Exists: exists,
         StartBlock: startBlock,
         EndBlock: endBlock,
