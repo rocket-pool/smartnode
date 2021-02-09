@@ -24,6 +24,7 @@ func getEnabled(claimsContract *rocketpool.Contract, claimsName string, opts *bi
 
 
 // Get whether a claimer can make a claim
+// Use to check whether a claimer is able to make claims at all
 func getClaimPossible(claimsContract *rocketpool.Contract, claimsName string, claimerAddress common.Address, opts *bind.CallOpts) (bool, error) {
     claimPossible := new(bool)
     if err := claimsContract.Call(opts, claimPossible, "getClaimPossible", claimerAddress); err != nil {
@@ -33,7 +34,7 @@ func getClaimPossible(claimsContract *rocketpool.Contract, claimsName string, cl
 }
 
 
-// Get the percentage of rewards available for a claimer
+// Get the percentage of rewards available to a claimer
 func getClaimRewardsPerc(claimsContract *rocketpool.Contract, claimsName string, claimerAddress common.Address, opts *bind.CallOpts) (float64, error) {
     claimRewardsPerc := new(*big.Int)
     if err := claimsContract.Call(opts, claimRewardsPerc, "getClaimRewardsPerc", claimerAddress); err != nil {
@@ -43,7 +44,8 @@ func getClaimRewardsPerc(claimsContract *rocketpool.Contract, claimsName string,
 }
 
 
-// Get the total amount of rewards available for a claimer
+// Get the total amount of rewards available to a claimer
+// Use to check whether a claimer is able to make a claim for the current interval (returns zero if unable)
 func getClaimRewardsAmount(claimsContract *rocketpool.Contract, claimsName string, claimerAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
     claimRewardsAmount := new(*big.Int)
     if err := claimsContract.Call(opts, claimRewardsAmount, "getClaimRewardsAmount", claimerAddress); err != nil {
