@@ -15,37 +15,85 @@ import (
 
 // Submit a proposal to invite a new member to the trusted node DAO
 func ProposeInviteMember(rp *rocketpool.RocketPool, message string, newMemberAddress common.Address, newMemberId, newMemberEmail string, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return SubmitProposal(rp, message, , opts)
+    rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+    if err != nil {
+        return nil, err
+    }
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalInvite", newMemberId, newMemberEmail, newMemberAddress)
+    if err != nil {
+        return nil, fmt.Errorf("Could not encode invite member proposal payload: %w", err)
+    }
+    return SubmitProposal(rp, message, payload, opts)
 }
 
 
 // Submit a proposal for a member to leave the trusted node DAO
 func ProposeMemberLeave(rp *rocketpool.RocketPool, message string, memberAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return SubmitProposal(rp, message, , opts)
+    rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+    if err != nil {
+        return nil, err
+    }
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalLeave", memberAddress)
+    if err != nil {
+        return nil, fmt.Errorf("Could not encode member leave proposal payload: %w", err)
+    }
+    return SubmitProposal(rp, message, payload, opts)
 }
 
 
 // Submit a proposal to replace a member in the trusted node DAO
 func ProposeReplaceMember(rp *rocketpool.RocketPool, message string, memberAddress, newMemberAddress common.Address, newMemberId, newMemberEmail string, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return SubmitProposal(rp, message, , opts)
+    rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+    if err != nil {
+        return nil, err
+    }
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalReplace", memberAddress, newMemberId, newMemberEmail, newMemberAddress)
+    if err != nil {
+        return nil, fmt.Errorf("Could not encode replace member proposal payload: %w", err)
+    }
+    return SubmitProposal(rp, message, payload, opts)
 }
 
 
 // Submit a proposal to kick a member from the trusted node DAO
 func ProposeKickMember(rp *rocketpool.RocketPool, message string, memberAddress common.Address, rplFineAmount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return SubmitProposal(rp, message, , opts)
-}
-
-
-// Submit a proposal to update a uint256 trusted node DAO setting
-func ProposeSetUintSetting(rp *rocketpool.RocketPool, message string, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return SubmitProposal(rp, message, , opts)
+    rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+    if err != nil {
+        return nil, err
+    }
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalKick", memberAddress, rplFineAmount)
+    if err != nil {
+        return nil, fmt.Errorf("Could not encode kick member proposal payload: %w", err)
+    }
+    return SubmitProposal(rp, message, payload, opts)
 }
 
 
 // Submit a proposal to update a bool trusted node DAO setting
-func ProposeSetBoolSetting(rp *rocketpool.RocketPool, message string, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return SubmitProposal(rp, message, , opts)
+func ProposeSetBoolSetting(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+    if err != nil {
+        return nil, err
+    }
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingBool", contractName, settingPath, value)
+    if err != nil {
+        return nil, fmt.Errorf("Could not encode set bool setting proposal payload: %w", err)
+    }
+    return SubmitProposal(rp, message, payload, opts)
+}
+
+
+// Submit a proposal to update a uint trusted node DAO setting
+func ProposeSetUintSetting(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+    if err != nil {
+        return nil, err
+    }
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalSettingUint", contractName, settingPath, value)
+    if err != nil {
+        return nil, fmt.Errorf("Could not encode set uint setting proposal payload: %w", err)
+    }
+    return SubmitProposal(rp, message, payload, opts)
 }
 
 
