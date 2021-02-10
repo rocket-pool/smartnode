@@ -364,7 +364,7 @@ func GetUnprocessedMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts)
     }
     minipoolCount := new(*big.Int)
     if err := rocketMinipoolManager.Call(opts, minipoolCount, "getUnprocessedMinipoolCount"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool count: %w", err)
+        return 0, fmt.Errorf("Could not get unprocessed minipool count: %w", err)
     }
     return (*minipoolCount).Uint64(), nil
 }
@@ -378,7 +378,7 @@ func GetUnprocessedMinipoolAt(rp *rocketpool.RocketPool, index uint64, opts *bin
     }
     minipoolAddress := new(common.Address)
     if err := rocketMinipoolManager.Call(opts, minipoolAddress, "getUnprocessedMinipoolAt", big.NewInt(int64(index))); err != nil {
-        return common.Address{}, fmt.Errorf("Could not get minipool %d address: %w", index, err)
+        return common.Address{}, fmt.Errorf("Could not get unprocessed minipool %d address: %w", index, err)
     }
     return *minipoolAddress, nil
 }
