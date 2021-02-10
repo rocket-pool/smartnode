@@ -15,7 +15,12 @@ import (
 
 
 // Config
-const MembersSettingsContractName = "rocketDAONodeTrustedSettingsMembers"
+const (
+    MembersSettingsContractName = "rocketDAONodeTrustedSettingsMembers"
+    QuorumSettingPath = "members.quorum"
+    RPLBondSettingPath = "members.rplbond"
+    MinipoolUnbondedMaxSettingPath = "members.minipool.unbonded.max"
+)
 
 
 // Member proposal quorum threshold
@@ -31,7 +36,10 @@ func GetQuorum(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) 
     return eth.WeiToEth(*value), nil
 }
 func BootstrapQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, MembersSettingsContractName, "members.quorum", eth.EthToWei(value), opts)
+    return trustednode.BootstrapUint(rp, MembersSettingsContractName, QuorumSettingPath, eth.EthToWei(value), opts)
+}
+func ProposeQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, eth.EthToWei(value), opts)
 }
 
 
@@ -48,7 +56,10 @@ func GetRPLBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error
     return *value, nil
 }
 func BootstrapRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, MembersSettingsContractName, "members.rplbond", value, opts)
+    return trustednode.BootstrapUint(rp, MembersSettingsContractName, RPLBondSettingPath, value, opts)
+}
+func ProposeRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", RPLBondSettingPath), MembersSettingsContractName, RPLBondSettingPath, value, opts)
 }
 
 
@@ -65,7 +76,10 @@ func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
     return (*value).Uint64(), nil
 }
 func BootstrapMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, MembersSettingsContractName, "members.minipool.unbonded.max", big.NewInt(int64(value)), opts)
+    return trustednode.BootstrapUint(rp, MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
+}
+func ProposeMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUnbondedMaxSettingPath), MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
 }
 
 

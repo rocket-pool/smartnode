@@ -70,7 +70,7 @@ func ProposeKickMember(rp *rocketpool.RocketPool, message string, memberAddress 
 
 
 // Submit a proposal to update a bool trusted node DAO setting
-func ProposeSetBoolSetting(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
     if err != nil {
         return nil, err
@@ -84,7 +84,7 @@ func ProposeSetBoolSetting(rp *rocketpool.RocketPool, message, contractName, set
 
 
 // Submit a proposal to update a uint trusted node DAO setting
-func ProposeSetUintSetting(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
     if err != nil {
         return nil, err
