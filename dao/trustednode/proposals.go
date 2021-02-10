@@ -14,13 +14,13 @@ import (
 
 
 // Submit a proposal to invite a new member to the trusted node DAO
-func ProposeInviteMember(rp *rocketpool.RocketPool, message, newMemberAddress common.Address, newMemberId, newMemberEmail string, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeInviteMember(rp *rocketpool.RocketPool, message string, newMemberAddress common.Address, newMemberId, newMemberEmail string, opts *bind.TransactOpts) (*types.Receipt, error) {
     return SubmitProposal(rp, message, , opts)
 }
 
 
 // Submit a proposal for a member to leave the trusted node DAO
-func ProposeLeaveMember(rp *rocketpool.RocketPool, message string, memberAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeMemberLeave(rp *rocketpool.RocketPool, message string, memberAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
     return SubmitProposal(rp, message, , opts)
 }
 
