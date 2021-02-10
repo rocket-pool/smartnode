@@ -21,7 +21,7 @@ func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, e
     }
     txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionJoin")
     if err != nil {
-        return nil, fmt.Errorf("Could not join the trusted node DAO: %w")
+        return nil, fmt.Errorf("Could not join the trusted node DAO: %w", err)
     }
     return txReceipt, nil
 }
@@ -29,14 +29,14 @@ func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, e
 
 // Leave the trusted node DAO
 // Requires an executed leave proposal
-func Leave(rp *rocketpool.RocketPool, bondRefundAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", bondRefundAddress)
+    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", rplBondRefundAddress)
     if err != nil {
-        return nil, fmt.Errorf("Could not leave the trusted node DAO: %w")
+        return nil, fmt.Errorf("Could not leave the trusted node DAO: %w", err)
     }
     return txReceipt, nil
 }
@@ -51,7 +51,7 @@ func Replace(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt
     }
     txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave")
     if err != nil {
-        return nil, fmt.Errorf("Could not replace node's position in the trusted node DAO: %w")
+        return nil, fmt.Errorf("Could not replace node's position in the trusted node DAO: %w", err)
     }
     return txReceipt, nil
 }
