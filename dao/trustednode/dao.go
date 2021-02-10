@@ -13,6 +13,177 @@ import (
 )
 
 
+// Settings
+const (
+    MemberAddressBatchSize = 50
+    MemberDetailsBatchSize = 20
+)
+
+
+// Proposal details
+type MemberDetails struct {
+    Address common.Address          `json:"address"`
+    Exists bool                     `json:"exists"`
+    ID string                       `json:"id"`
+    Email string                    `json:"email"`
+    JoinedBlock uint64              `json:"joinedBlock"`
+    LastProposalBlock uint64        `json:"lastProposalBlock"`
+    RPLBondAmount *big.Int          `json:"rplBondAmount"`
+    UnbondedValidatorCount uint64   `json:"unbondedValidatorCount"`
+}
+
+
+// Get all member details
+func GetMembers(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]MemberDetails, error) {
+
+    // Get member addresses
+    memberAddresses, err := GetMemberAddresses(rp, opts)
+    if err != nil {
+        return []MemberDetails{}, err
+    }
+
+    // Load member details in batches
+    details := make([]MemberDetails, len(memberAddresses))
+    for bsi := 0; bsi < len(memberAddresses); bsi += MemberDetailsBatchSize {
+
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MemberDetailsBatchSize
+        if mei > len(memberAddresses) { mei = len(memberAddresses) }
+
+        // Load details
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                memberAddress := memberAddresses[mi]
+                memberDetails, err := GetMemberDetails(rp, memberAddress, opts)
+                if err == nil { details[mi] = memberDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []MemberDetails{}, err
+        }
+
+    }
+
+    // Return
+    return details, nil
+
+}
+
+
+// Get all member addresses
+func GetMemberAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.Address, error) {
+
+    // Get member count
+    memberCount, err := GetMemberCount(rp, opts)
+    if err != nil {
+        return []common.Address{}, err
+    }
+
+    // Load member addresses in batches
+    addresses := make([]common.Address, memberCount)
+    for bsi := uint64(0); bsi < memberCount; bsi += MemberAddressBatchSize {
+
+        // Get batch start & end index
+        msi := bsi
+        mei := bsi + MemberAddressBatchSize
+        if mei > memberCount { mei = memberCount }
+
+        // Load addresses
+        var wg errgroup.Group
+        for mi := msi; mi < mei; mi++ {
+            mi := mi
+            wg.Go(func() error {
+                address, err := GetMemberAt(rp, mi, opts)
+                if err == nil { addresses[mi] = address }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []common.Address{}, err
+        }
+
+    }
+
+    // Return
+    return addresses, nil
+
+}
+
+
+// Get a member's details
+func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (MemberDetails, error) {
+
+    // Data
+    var wg errgroup.Group
+    var exists bool
+    var id string
+    var email string
+    var joinedBlock uint64
+    var lastProposalBlock uint64
+    var rplBondAmount *big.Int
+    var unbondedValidatorCount uint64
+    
+    // Load data
+    wg.Go(func() error {
+        var err error
+        exists, err = GetMemberExists(rp, memberAddress, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        id, err = GetMemberID(rp, memberAddress, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        email, err = GetMemberEmail(rp, memberAddress, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        joinedBlock, err = GetMemberJoinedBlock(rp, memberAddress, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        lastProposalBlock, err = GetMemberLastProposalBlock(rp, memberAddress, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        rplBondAmount, err = GetMemberRPLBondAmount(rp, memberAddress, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        unbondedValidatorCount, err = GetMemberUnbondedValidatorCount(rp, memberAddress, opts)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return MemberDetails{}, err
+    }
+
+    // Return
+    return MemberDetails{
+        Address: memberAddress,
+        Exists: exists,
+        ID: id,
+        Email: email,
+        JoinedBlock: joinedBlock,
+        LastProposalBlock: lastProposalBlock,
+        RPLBondAmount: rplBondAmount,
+        UnbondedValidatorCount: unbondedValidatorCount,
+    }, nil
+
+}
+
+
 // Get the member count
 func GetMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
