@@ -38,6 +38,7 @@ type ProposalDetails struct {
     IsCancelled bool                `json:"isCancelled"`
     IsExecuted bool                 `json:"isExecuted"`
     Payload []byte                  `json:"payload"`
+    PayloadStr string               `json:"payloadStr"`
     State rptypes.ProposalState     `json:"state"`
 }
 
@@ -339,6 +340,12 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
         return ProposalDetails{}, err
     }
 
+    // Get proposal payload string
+    payloadStr, err := GetProposalPayloadString(rp, dao, payload)
+    if err != nil {
+        payloadStr = "(unknown)"
+    }
+
     // Return
     return ProposalDetails{
         ID: proposalId,
@@ -354,6 +361,7 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
         IsCancelled: isCancelled,
         IsExecuted: isExecuted,
         Payload: payload,
+        PayloadStr: payloadStr,
         State: state,
     }, nil
 
