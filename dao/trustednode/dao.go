@@ -292,6 +292,43 @@ func GetMemberUnbondedValidatorCount(rp *rocketpool.RocketPool, memberAddress co
 }
 
 
+// Get the block that a proposal for a member was executed at
+func GetMemberInviteProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+    return GetMemberProposalExecutedBlock(rp, "invited", memberAddress, opts)
+}
+func GetMemberLeaveProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+    return GetMemberProposalExecutedBlock(rp, "leave", memberAddress, opts)
+}
+func GetMemberReplaceProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+    return GetMemberProposalExecutedBlock(rp, "replace", memberAddress, opts)
+}
+func GetMemberProposalExecutedBlock(rp *rocketpool.RocketPool, proposalType string, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+    rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+    if err != nil {
+        return 0, err
+    }
+    proposalExecutedBlock := new(*big.Int)
+    if err := rocketDAONodeTrusted.Call(opts, proposalExecutedBlock, "getMemberProposalExecutedBlock", proposalType, memberAddress); err != nil {
+        return 0, fmt.Errorf("Could not get trusted node DAO %s proposal executed block for member %s: %w", proposalType, memberAddress.Hex(), err)
+    }
+    return (*proposalExecutedBlock).Uint64(), nil
+}
+
+
+// Get a member's replacement address if being replaced
+func GetMemberReplacementAddress(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (common.Address, err) {
+    rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+    if err != nil {
+        return common.Address{}, err
+    }
+    replacementAddress := new(common.Address)
+    if err := rocketDAONodeTrusted.Call(opts, replacementAddress, "getMemberReplacedAddress", "new", memberAddress); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get trusted node DAO member %s replacement address: %w", memberAddress.Hex(), err)
+    }
+    return *replacementAddress, nil
+}
+
+
 // Bootstrap a bool setting
 func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
