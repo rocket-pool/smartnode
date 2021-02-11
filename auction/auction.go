@@ -20,21 +20,22 @@ const LotDetailsBatchSize = 10
 
 // Lot details
 type LotDetails struct {
-    Index uint64                `json:"index"`
-    Exists bool                 `json:"exists"`
-    StartBlock uint64           `json:"startBlock"`
-    EndBlock uint64             `json:"endBlock"`
-    StartPrice *big.Int         `json:"startPrice"`
-    ReservePrice *big.Int       `json:"reservePrice"`
-    PriceByTotalBids *big.Int   `json:"priceByTotalBids"`
-    CurrentPrice *big.Int       `json:"currentPrice"`
-    TotalRPLAmount *big.Int     `json:"totalRplAmount"`
-    ClaimedRPLAmount *big.Int   `json:"claimedRplAmount"`
-    RemainingRPLAmount *big.Int `json:"remainingRplAmount"`
-    TotalBidAmount *big.Int     `json:"totalBidAmount"`
-    AddressBidAmount *big.Int   `json:"addressBidAmount"`
-    Cleared bool                `json:"cleared"`
-    RPLRecovered bool           `json:"rplRecovered"`
+    Index uint64                    `json:"index"`
+    Exists bool                     `json:"exists"`
+    StartBlock uint64               `json:"startBlock"`
+    EndBlock uint64                 `json:"endBlock"`
+    StartPrice *big.Int             `json:"startPrice"`
+    ReservePrice *big.Int           `json:"reservePrice"`
+    PriceAtCurrentBlock *big.Int    `json:"priceAtCurrentBlock"`
+    PriceByTotalBids *big.Int       `json:"priceByTotalBids"`
+    CurrentPrice *big.Int           `json:"currentPrice"`
+    TotalRPLAmount *big.Int         `json:"totalRplAmount"`
+    ClaimedRPLAmount *big.Int       `json:"claimedRplAmount"`
+    RemainingRPLAmount *big.Int     `json:"remainingRplAmount"`
+    TotalBidAmount *big.Int         `json:"totalBidAmount"`
+    AddressBidAmount *big.Int       `json:"addressBidAmount"`
+    Cleared bool                    `json:"cleared"`
+    RPLRecovered bool               `json:"rplRecovered"`
 }
 
 
@@ -406,6 +407,17 @@ func GetLotRPLRecovered(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.C
         return false, fmt.Errorf("Could not get lot %d RPL recovered status: %w", lotIndex, err)
     }
     return *lotRplRecovered, nil
+}
+func GetLotPriceAtCurrentBlock(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOpts) (*big.Int, error) {
+    rocketAuctionManager, err := getRocketAuctionManager(rp)
+    if err != nil {
+        return nil, err
+    }
+    lotPriceAtCurrentBlock := new(*big.Int)
+    if err := rocketAuctionManager.Call(opts, lotPriceAtCurrentBlock, "getLotPriceAtCurrentBlock", big.NewInt(int64(lotIndex))); err != nil {
+        return nil, fmt.Errorf("Could not get lot %d price by current block: %w", lotIndex, err)
+    }
+    return *lotPriceAtCurrentBlock, nil
 }
 func GetLotPriceByTotalBids(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOpts) (*big.Int, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
