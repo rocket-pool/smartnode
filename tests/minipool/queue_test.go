@@ -42,7 +42,7 @@ func TestQueueLengths(t *testing.T) {
     }
 
     // Create full deposit minipool
-    if _, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32)); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32)); err != nil { t.Fatal(err) }
 
     // Get & check queue lengths
     if queueLengths, err := minipool.GetQueueLengths(rp, nil); err != nil {
@@ -63,7 +63,7 @@ func TestQueueLengths(t *testing.T) {
     }
 
     // Create half deposit minipool
-    if _, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }
 
     // Get & check queue lengths
     if queueLengths, err := minipool.GetQueueLengths(rp, nil); err != nil {
@@ -84,7 +84,7 @@ func TestQueueLengths(t *testing.T) {
     }
 
     // Create empty deposit minipool
-    if _, err := minipoolutils.CreateMinipool(rp, trustedNodeAccount, eth.EthToWei(0)); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount, eth.EthToWei(0)); err != nil { t.Fatal(err) }
 
     // Get & check queue lengths
     if queueLengths, err := minipool.GetQueueLengths(rp, nil); err != nil {
@@ -133,7 +133,7 @@ func TestQueueCapacity(t *testing.T) {
     }
 
     // Create empty deposit minipool
-    if _, err := minipoolutils.CreateMinipool(rp, trustedNodeAccount, eth.EthToWei(0)); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount, eth.EthToWei(0)); err != nil { t.Fatal(err) }
 
     // Get & check queue capacity
     if queueCapacity, err := minipool.GetQueueCapacity(rp, nil); err != nil {
@@ -151,7 +151,7 @@ func TestQueueCapacity(t *testing.T) {
     }
 
     // Create half deposit minipool
-    if _, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }
 
     // Get & check queue capacity
     if queueCapacity, err := minipool.GetQueueCapacity(rp, nil); err != nil {
@@ -169,7 +169,7 @@ func TestQueueCapacity(t *testing.T) {
     }
 
     // Create full deposit minipool
-    if _, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32)); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32)); err != nil { t.Fatal(err) }
 
     // Get & check queue capacity
     if queueCapacity, err := minipool.GetQueueCapacity(rp, nil); err != nil {

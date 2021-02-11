@@ -34,7 +34,7 @@ func TestDetails(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32))
     if err != nil { t.Fatal(err) }
 
     // Make user deposit
@@ -112,7 +112,7 @@ func TestRefund(t *testing.T) {
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32))
     if err != nil { t.Fatal(err) }
 
     // Make user deposit
@@ -152,7 +152,7 @@ func TestStake(t *testing.T) {
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32))
     if err != nil { t.Fatal(err) }
 
     // Get validator & deposit data
@@ -196,7 +196,7 @@ func TestWithdraw(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32))
     if err != nil { t.Fatal(err) }
 
     // Stake minipool
@@ -245,7 +245,7 @@ func TestDissolve(t *testing.T) {
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
     if err != nil { t.Fatal(err) }
 
     // Get & check initial minipool status
@@ -280,7 +280,7 @@ func TestClose(t *testing.T) {
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
     if err != nil { t.Fatal(err) }
 
     // Dissolve minipool

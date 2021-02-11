@@ -14,6 +14,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
 )
 
@@ -27,7 +28,12 @@ type minipoolCreated struct {
 
 
 // Create a minipool
-func CreateMinipool(rp *rocketpool.RocketPool, nodeAccount *accounts.Account, depositAmount *big.Int) (*minipool.Minipool, error) {
+func CreateMinipool(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accounts.Account, depositAmount *big.Int) (*minipool.Minipool, error) {
+
+    // Mint & stake RPL required for mininpool
+    rplRequired, err := GetMinipoolRPLRequired(rp)
+    if err != nil { return nil, err }
+    if err := nodeutils.StakeRPL(rp, ownerAccount, nodeAccount, rplRequired); err != nil { return nil, err }
 
     // Make node deposit
     opts := nodeAccount.GetTransactor()

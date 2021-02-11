@@ -25,7 +25,7 @@ func MintNETH(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trusted
     }
 
     // Create & stake minipool
-    mp, err := minipoolutils.CreateMinipool(rp, toAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, toAccount, eth.EthToWei(32))
     if err != nil { return err }
     if err := minipoolutils.StakeMinipool(rp, mp, toAccount); err != nil { return err }
 

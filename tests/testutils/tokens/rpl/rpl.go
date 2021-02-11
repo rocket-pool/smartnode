@@ -1,4 +1,4 @@
-package tokens
+package rpl
 
 import (
     "fmt"
@@ -13,9 +13,19 @@ import (
 
 // Mint an amount of RPL to an account
 func MintRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, toAccount *accounts.Account, amount *big.Int) error {
+
+    // Get RPL token contract address
+    rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+    if err != nil { return err }
+
+    // Mint, approve & swap fixed-supply RPL
     if err := MintFixedSupplyRPL(rp, ownerAccount, toAccount, amount); err != nil { return err }
+    if _, err := tokens.ApproveFixedSupplyRPL(rp, *rocketTokenRPLAddress, amount, toAccount.GetTransactor()); err != nil { return err }
     if _, err := tokens.SwapFixedSupplyRPLForRPL(rp, amount, toAccount.GetTransactor()); err != nil { return err }
+
+    // Return
     return nil
+
 }
 
 

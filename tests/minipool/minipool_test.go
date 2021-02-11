@@ -52,7 +52,7 @@ func TestMinipoolDetails(t *testing.T) {
     minipoolWithdrawalAmount := eth.EthToWei(34)
 
     // Create & stake minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, minipoolDepositAmount)
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, minipoolDepositAmount)
     if err != nil { t.Fatal(err) }
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
 

@@ -76,7 +76,7 @@ func TestProcessWithdrawal(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
     if err != nil { t.Fatal(err) }
 
     // Make user deposit

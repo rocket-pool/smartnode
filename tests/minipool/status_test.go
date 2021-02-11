@@ -39,7 +39,7 @@ func TestSubmitMinipoolWithdrawable(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Create & stake minipool
-    mp, err := minipoolutils.CreateMinipool(rp, nodeAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32))
     if err != nil { t.Fatal(err) }
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
 
