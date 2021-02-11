@@ -4,6 +4,7 @@ import (
     "bytes"
     "compress/zlib"
     "encoding/base64"
+    "fmt"
 
     "github.com/ethereum/go-ethereum/accounts/abi"
 )
@@ -51,7 +52,7 @@ func EncodeAbiStr(abiStr string) (string, error) {
     zlibWriter.Flush()
 
     // base64 encode & return
-    return base64.StdEncoding.EncodeToString(abiCompressed.Bytes())
+    return base64.StdEncoding.EncodeToString(abiCompressed.Bytes()), nil
 
 }
 
