@@ -123,7 +123,7 @@ func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, o
     }
     txReceipt, err := rocketDAONodeTrustedProposals.Transact(opts, "propose", message, payload)
     if err != nil {
-        return nil, fmt.Errorf("Could not submit trusted node DAO proposal: %w")
+        return nil, fmt.Errorf("Could not submit trusted node DAO proposal: %w", err)
     }
     return txReceipt, nil
 }

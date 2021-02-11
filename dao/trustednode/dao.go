@@ -8,6 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
@@ -185,7 +186,7 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 
 
 // Get the member count
-func GetMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err) {
+func GetMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return 0, err
@@ -199,7 +200,7 @@ func GetMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 
 
 // Get a member address by index
-func GetMemberAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, err) {
+func GetMemberAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return common.Address{}, err
@@ -213,7 +214,7 @@ func GetMemberAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (
 
 
 // Member details
-func GetMemberExists(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (bool, err) {
+func GetMemberExists(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return false, err
@@ -224,7 +225,7 @@ func GetMemberExists(rp *rocketpool.RocketPool, memberAddress common.Address, op
     }
     return *exists, nil
 }
-func GetMemberID(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, err) {
+func GetMemberID(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return "", err
@@ -235,7 +236,7 @@ func GetMemberID(rp *rocketpool.RocketPool, memberAddress common.Address, opts *
     }
     return *id, nil
 }
-func GetMemberEmail(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, err) {
+func GetMemberEmail(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return "", err
@@ -246,7 +247,7 @@ func GetMemberEmail(rp *rocketpool.RocketPool, memberAddress common.Address, opt
     }
     return *email, nil
 }
-func GetMemberJoinedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+func GetMemberJoinedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return 0, err
@@ -257,7 +258,7 @@ func GetMemberJoinedBlock(rp *rocketpool.RocketPool, memberAddress common.Addres
     }
     return (*joinedBlock).Uint64(), nil
 }
-func GetMemberLastProposalBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+func GetMemberLastProposalBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return 0, err
@@ -268,7 +269,7 @@ func GetMemberLastProposalBlock(rp *rocketpool.RocketPool, memberAddress common.
     }
     return (*lastProposalBlock).Uint64(), nil
 }
-func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (*big.Int, err) {
+func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return nil, err
@@ -279,7 +280,7 @@ func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Addr
     }
     return *rplBondAmount, nil
 }
-func GetMemberUnbondedValidatorCount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+func GetMemberUnbondedValidatorCount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return 0, err
@@ -293,16 +294,16 @@ func GetMemberUnbondedValidatorCount(rp *rocketpool.RocketPool, memberAddress co
 
 
 // Get the block that a proposal for a member was executed at
-func GetMemberInviteProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+func GetMemberInviteProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     return GetMemberProposalExecutedBlock(rp, "invited", memberAddress, opts)
 }
-func GetMemberLeaveProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+func GetMemberLeaveProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     return GetMemberProposalExecutedBlock(rp, "leave", memberAddress, opts)
 }
-func GetMemberReplaceProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+func GetMemberReplaceProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     return GetMemberProposalExecutedBlock(rp, "replace", memberAddress, opts)
 }
-func GetMemberProposalExecutedBlock(rp *rocketpool.RocketPool, proposalType string, memberAddress common.Address, opts *bind.CallOpts) (uint64, err) {
+func GetMemberProposalExecutedBlock(rp *rocketpool.RocketPool, proposalType string, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return 0, err
@@ -316,7 +317,7 @@ func GetMemberProposalExecutedBlock(rp *rocketpool.RocketPool, proposalType stri
 
 
 // Get a member's replacement address if being replaced
-func GetMemberReplacementAddress(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (common.Address, err) {
+func GetMemberReplacementAddress(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return common.Address{}, err

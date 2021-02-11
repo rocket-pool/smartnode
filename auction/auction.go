@@ -50,7 +50,7 @@ func GetLots(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]LotDetails, erro
 
     // Load lot details in batches
     details := make([]LotDetails, lotCount)
-    for bsi := 0; bsi < lotCount; bsi += LotDetailsBatchSize {
+    for bsi := uint64(0); bsi < lotCount; bsi += LotDetailsBatchSize {
 
         // Get batch start & end index
         lsi := bsi
@@ -90,7 +90,7 @@ func GetLotsWithBids(rp *rocketpool.RocketPool, bidder common.Address, opts *bin
 
     // Load lot details in batches
     details := make([]LotDetails, lotCount)
-    for bsi := 0; bsi < lotCount; bsi += LotDetailsBatchSize {
+    for bsi := uint64(0); bsi < lotCount; bsi += LotDetailsBatchSize {
 
         // Get batch start & end index
         lsi := bsi

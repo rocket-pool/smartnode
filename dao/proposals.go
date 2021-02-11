@@ -54,7 +54,7 @@ func GetProposals(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]ProposalDet
 
     // Load proposal details in batches
     details := make([]ProposalDetails, proposalCount)
-    for bsi := 0; bsi < proposalCount; bsi += ProposalDetailsBatchSize {
+    for bsi := uint64(0); bsi < proposalCount; bsi += ProposalDetailsBatchSize {
 
         // Get batch start & end index
         psi := bsi
@@ -94,7 +94,7 @@ func GetProposalsWithMember(rp *rocketpool.RocketPool, memberAddress common.Addr
 
     // Load proposal details in batches
     details := make([]ProposalDetails, proposalCount)
-    for bsi := 0; bsi < proposalCount; bsi += ProposalDetailsBatchSize {
+    for bsi := uint64(0); bsi < proposalCount; bsi += ProposalDetailsBatchSize {
 
         // Get batch start & end index
         psi := bsi
@@ -214,7 +214,7 @@ func GetDAOProposalIDs(rp *rocketpool.RocketPool, daoName string, opts *bind.Cal
 
     // Load proposal DAO names in batches
     proposalDaoNames := make([]string, proposalCount)
-    for bsi := 0; bsi < proposalCount; bsi += ProposalDAONamesBatchSize {
+    for bsi := uint64(0); bsi < proposalCount; bsi += ProposalDAONamesBatchSize {
 
         // Get batch start & end index
         psi := bsi
@@ -241,7 +241,7 @@ func GetDAOProposalIDs(rp *rocketpool.RocketPool, daoName string, opts *bind.Cal
     ids := []uint64{}
     for pi, proposalDaoName := range proposalDaoNames {
         if proposalDaoName == daoName {
-            ids = append(ids, pi + 1) // Proposals are 1-indexed
+            ids = append(ids, uint64(pi + 1)) // Proposals are 1-indexed
         }
     }
     return ids, nil
@@ -429,7 +429,7 @@ func GetProposalDAO(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Cal
     }
     daoName := new(string)
     if err := rocketDAOProposal.Call(opts, daoName, "getDAO", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d DAO: %w", proposalId, err)
+        return "", fmt.Errorf("Could not get proposal %d DAO: %w", proposalId, err)
     }
     return *daoName, nil
 }
@@ -440,7 +440,7 @@ func GetProposalProposerAddress(rp *rocketpool.RocketPool, proposalId uint64, op
     }
     proposerAddress := new(common.Address)
     if err := rocketDAOProposal.Call(opts, proposerAddress, "getProposer", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d proposer address: %w", proposalId, err)
+        return common.Address{}, fmt.Errorf("Could not get proposal %d proposer address: %w", proposalId, err)
     }
     return *proposerAddress, nil
 }
@@ -528,7 +528,7 @@ func GetProposalIsCancelled(rp *rocketpool.RocketPool, proposalId uint64, opts *
     }
     cancelled := new(bool)
     if err := rocketDAOProposal.Call(opts, cancelled, "getCancelled", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d cancelled status: %w", proposalId, err)
+        return false, fmt.Errorf("Could not get proposal %d cancelled status: %w", proposalId, err)
     }
     return *cancelled, nil
 }
@@ -539,7 +539,7 @@ func GetProposalIsExecuted(rp *rocketpool.RocketPool, proposalId uint64, opts *b
     }
     executed := new(bool)
     if err := rocketDAOProposal.Call(opts, executed, "getExecuted", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d executed status: %w", proposalId, err)
+        return false, fmt.Errorf("Could not get proposal %d executed status: %w", proposalId, err)
     }
     return *executed, nil
 }
@@ -550,7 +550,7 @@ func GetProposalPayload(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     }
     payload := new([]byte)
     if err := rocketDAOProposal.Call(opts, payload, "getPayload", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d payload: %w", proposalId, err)
+        return []byte{}, fmt.Errorf("Could not get proposal %d payload: %w", proposalId, err)
     }
     return *payload, nil
 }
