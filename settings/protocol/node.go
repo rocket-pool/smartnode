@@ -56,11 +56,11 @@ func BootstrapNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bi
 func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
     nodeSettingsContract, err := getNodeSettingsContract(rp)
     if err != nil {
-        return nil, err
+        return 0, err
     }
     value := new(*big.Int)
     if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
-        return nil, fmt.Errorf("Could not get minimum RPL stake per minipool: %w", err)
+        return 0, fmt.Errorf("Could not get minimum RPL stake per minipool: %w", err)
     }
     return eth.WeiToEth(*value), nil
 }
@@ -73,11 +73,11 @@ func BootstrapMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, 
 func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
     nodeSettingsContract, err := getNodeSettingsContract(rp)
     if err != nil {
-        return nil, err
+        return 0, err
     }
     value := new(*big.Int)
     if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
-        return nil, fmt.Errorf("Could not get maximum RPL stake per minipool: %w", err)
+        return 0, fmt.Errorf("Could not get maximum RPL stake per minipool: %w", err)
     }
     return eth.WeiToEth(*value), nil
 }

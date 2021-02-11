@@ -67,11 +67,11 @@ func ProposeRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.Transa
 func GetMinipoolUnbondedMax(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     membersSettingsContract, err := getMembersSettingsContract(rp)
     if err != nil {
-        return nil, err
+        return 0, err
     }
     value := new(*big.Int)
     if err := membersSettingsContract.Call(opts, value, "getMinipoolUnbondedMax"); err != nil {
-        return nil, fmt.Errorf("Could not get member unbonded minipool limit: %w", err)
+        return 0, fmt.Errorf("Could not get member unbonded minipool limit: %w", err)
     }
     return (*value).Uint64(), nil
 }

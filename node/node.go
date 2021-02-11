@@ -199,11 +199,11 @@ func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *
 func GetNodeWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
-        return "", err
+        return common.Address{}, err
     }
     withdrawalAddress := new(common.Address)
     if err := rocketNodeManager.Call(opts, withdrawalAddress, "getNodeWithdrawalAddress", nodeAddress); err != nil {
-        return "", fmt.Errorf("Could not get node %s withdrawal address: %w", nodeAddress.Hex(), err)
+        return common.Address{}, fmt.Errorf("Could not get node %s withdrawal address: %w", nodeAddress.Hex(), err)
     }
     return *withdrawalAddress, nil
 }
