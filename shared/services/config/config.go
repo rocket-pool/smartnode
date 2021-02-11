@@ -3,6 +3,7 @@ package config
 import (
     "fmt"
     "io/ioutil"
+    "os"
 
     "github.com/imdario/mergo"
     "github.com/urfave/cli"
@@ -125,11 +126,11 @@ func Merge(configs ...*RocketPoolConfig) RocketPoolConfig {
 func Load(c *cli.Context) (RocketPoolConfig, error) {
 
     // Load configs
-    globalConfig, err := loadFile(c.GlobalString("config"), true)
+    globalConfig, err := loadFile(os.ExpandEnv(c.GlobalString("config")), true)
     if err != nil {
         return RocketPoolConfig{}, err
     }
-    userConfig, err := loadFile(c.GlobalString("settings"), false)
+    userConfig, err := loadFile(os.ExpandEnv(c.GlobalString("settings")), false)
     if err != nil {
         return RocketPoolConfig{}, err
     }
