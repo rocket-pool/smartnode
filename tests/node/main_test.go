@@ -19,6 +19,7 @@ var (
     client *ethclient.Client
     rp *rocketpool.RocketPool
 
+    ownerAccount *accounts.Account
     nodeAccount *accounts.Account
 )
 
@@ -35,6 +36,8 @@ func TestMain(m *testing.M) {
     if err != nil { log.Fatal(err) }
 
     // Initialize accounts
+    ownerAccount, err = accounts.GetAccount(0)
+    if err != nil { log.Fatal(err) }
     nodeAccount, err = accounts.GetAccount(1)
     if err != nil { log.Fatal(err) }
 

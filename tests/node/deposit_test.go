@@ -8,6 +8,8 @@ import (
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
@@ -27,6 +29,11 @@ func TestDeposit(t *testing.T) {
     if err != nil {
         t.Fatal(err)
     }
+
+    // Mint & stake RPL required for mininpool
+    rplRequired, err := minipoolutils.GetMinipoolRPLRequired(rp)
+    if err != nil { t.Fatal(err) }
+    if err := nodeutils.StakeRPL(rp, ownerAccount, nodeAccount, rplRequired); err != nil { t.Fatal(err) }
 
     // Deposit
     opts := nodeAccount.GetTransactor()
