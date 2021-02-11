@@ -9,6 +9,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
 )
 
 
@@ -56,13 +57,9 @@ func TestAssignDeposits(t *testing.T) {
     userDepositOpts.Value = eth.EthToWei(32)
     if _, err := deposit.Deposit(rp, userDepositOpts); err != nil { t.Fatal(err) }
 
-    // Register node
+    // Register node & create minipool
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
-
-    // Make node deposit
-    nodeDepositOpts := nodeAccount.GetTransactor()
-    nodeDepositOpts.Value = eth.EthToWei(16)
-    if _, err := node.Deposit(rp, 0, nodeDepositOpts); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }
 
     // Re-enable deposit assignments
     if _, err := protocol.BootstrapAssignDepositsEnabled(rp, true, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }

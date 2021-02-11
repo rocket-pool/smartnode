@@ -8,7 +8,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/tokens"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+    rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
 )
 
 
@@ -20,7 +20,7 @@ func StakeRPL(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accounts.Acc
     if err != nil { return err }
 
     // Mint, approve & stake RPL
-    if err := rpl.MintRPL(rp, ownerAccount, nodeAccount, amount); err != nil { return err }
+    if err := rplutils.MintRPL(rp, ownerAccount, nodeAccount, amount); err != nil { return err }
     if _, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amount, nodeAccount.GetTransactor()); err != nil { return err }
     if _, err := node.StakeRPL(rp, amount, nodeAccount.GetTransactor()); err != nil { return err }
 
