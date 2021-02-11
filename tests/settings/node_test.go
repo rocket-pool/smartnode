@@ -17,7 +17,7 @@ func TestNodeSettings(t *testing.T) {
 
     // Set & get node registrations enabled
     nodeRegistrationsEnabled := false
-    if _, err := protocol.SetNodeRegistrationEnabled(rp, nodeRegistrationsEnabled, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapNodeRegistrationEnabled(rp, nodeRegistrationsEnabled, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetNodeRegistrationEnabled(rp, nil); err != nil {
         t.Error(err)
@@ -27,7 +27,7 @@ func TestNodeSettings(t *testing.T) {
 
     // Set & get node deposits enabled
     nodeDepositsEnabled := false
-    if _, err := protocol.SetNodeDepositEnabled(rp, nodeDepositsEnabled, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapNodeDepositEnabled(rp, nodeDepositsEnabled, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetNodeDepositEnabled(rp, nil); err != nil {
         t.Error(err)

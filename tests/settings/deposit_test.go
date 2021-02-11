@@ -18,7 +18,7 @@ func TestDepositSettings(t *testing.T) {
 
     // Set & get deposits enabled
     depositEnabled := false
-    if _, err := protocol.SetDepositEnabled(rp, depositEnabled, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapDepositEnabled(rp, depositEnabled, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetDepositEnabled(rp, nil); err != nil {
         t.Error(err)
@@ -28,7 +28,7 @@ func TestDepositSettings(t *testing.T) {
 
     // Set & get deposit assignments enabled
     assignDepositsEnabled := false
-    if _, err := protocol.SetAssignDepositsEnabled(rp, assignDepositsEnabled, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapAssignDepositsEnabled(rp, assignDepositsEnabled, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetAssignDepositsEnabled(rp, nil); err != nil {
         t.Error(err)
@@ -38,7 +38,7 @@ func TestDepositSettings(t *testing.T) {
 
     // Set & get minimum deposit amount
     minimumDeposit := eth.EthToWei(1000)
-    if _, err := protocol.SetMinimumDeposit(rp, minimumDeposit, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapMinimumDeposit(rp, minimumDeposit, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMinimumDeposit(rp, nil); err != nil {
         t.Error(err)
@@ -48,7 +48,7 @@ func TestDepositSettings(t *testing.T) {
 
     // Set & get maximum deposit pool size
     maximumDepositPoolSize := eth.EthToWei(1)
-    if _, err := protocol.SetMaximumDepositPoolSize(rp, maximumDepositPoolSize, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapMaximumDepositPoolSize(rp, maximumDepositPoolSize, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMaximumDepositPoolSize(rp, nil); err != nil {
         t.Error(err)
@@ -58,7 +58,7 @@ func TestDepositSettings(t *testing.T) {
 
     // Set & get maximum deposit assignments
     var maximumDepositAssignments uint64 = 50
-    if _, err := protocol.SetMaximumDepositAssignments(rp, maximumDepositAssignments, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapMaximumDepositAssignments(rp, maximumDepositAssignments, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMaximumDepositAssignments(rp, nil); err != nil {
         t.Error(err)

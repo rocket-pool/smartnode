@@ -18,7 +18,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get node consensus threshold
     nodeConsensusThreshold := 0.1
-    if _, err := protocol.SetNodeConsensusThreshold(rp, nodeConsensusThreshold, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapNodeConsensusThreshold(rp, nodeConsensusThreshold, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetNodeConsensusThreshold(rp, nil); err != nil {
         t.Error(err)
@@ -28,7 +28,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get network balance submissions enabled
     submitBalancesEnabled := false
-    if _, err := protocol.SetSubmitBalancesEnabled(rp, submitBalancesEnabled, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapSubmitBalancesEnabled(rp, submitBalancesEnabled, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetSubmitBalancesEnabled(rp, nil); err != nil {
         t.Error(err)
@@ -38,7 +38,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get network balance submission frequency
     var submitBalancesFrequency uint64 = 10
-    if _, err := protocol.SetSubmitBalancesFrequency(rp, submitBalancesFrequency, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapSubmitBalancesFrequency(rp, submitBalancesFrequency, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetSubmitBalancesFrequency(rp, nil); err != nil {
         t.Error(err)
@@ -48,7 +48,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get process withdrawals enabled
     processWithdrawalsEnabled := false
-    if _, err := protocol.SetProcessWithdrawalsEnabled(rp, processWithdrawalsEnabled, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapProcessWithdrawalsEnabled(rp, processWithdrawalsEnabled, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetProcessWithdrawalsEnabled(rp, nil); err != nil {
         t.Error(err)
@@ -58,7 +58,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get minimum node fee
     minimumNodeFee := 0.80
-    if _, err := protocol.SetMinimumNodeFee(rp, minimumNodeFee, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapMinimumNodeFee(rp, minimumNodeFee, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMinimumNodeFee(rp, nil); err != nil {
         t.Error(err)
@@ -68,7 +68,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get target node fee
     targetNodeFee := 0.85
-    if _, err := protocol.SetTargetNodeFee(rp, targetNodeFee, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapTargetNodeFee(rp, targetNodeFee, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetTargetNodeFee(rp, nil); err != nil {
         t.Error(err)
@@ -78,7 +78,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get maximum node fee
     maximumNodeFee := 0.90
-    if _, err := protocol.SetMaximumNodeFee(rp, maximumNodeFee, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapMaximumNodeFee(rp, maximumNodeFee, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMaximumNodeFee(rp, nil); err != nil {
         t.Error(err)
@@ -88,7 +88,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get node fee demand range
     nodeFeeDemandRange := eth.EthToWei(10)
-    if _, err := protocol.SetNodeFeeDemandRange(rp, nodeFeeDemandRange, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapNodeFeeDemandRange(rp, nodeFeeDemandRange, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetNodeFeeDemandRange(rp, nil); err != nil {
         t.Error(err)
@@ -98,7 +98,7 @@ func TestNetworkSettings(t *testing.T) {
 
     // Set & get target rETH collateral rate
     targetRethCollateralRate := 0.95
-    if _, err := protocol.SetTargetRethCollateralRate(rp, targetRethCollateralRate, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapTargetRethCollateralRate(rp, targetRethCollateralRate, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetTargetRethCollateralRate(rp, nil); err != nil {
         t.Error(err)

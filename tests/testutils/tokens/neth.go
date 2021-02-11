@@ -32,14 +32,14 @@ func MintNETH(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trusted
     // Disable minipool withdrawal delay
     withdrawalDelay, err := protocol.GetMinipoolWithdrawalDelay(rp, nil)
     if err != nil { return err }
-    if _, err := protocol.SetMinipoolWithdrawalDelay(rp, 0, ownerAccount.GetTransactor()); err != nil { return err }
+    if _, err := protocol.BootstrapMinipoolWithdrawalDelay(rp, 0, ownerAccount.GetTransactor()); err != nil { return err }
 
     // Mark minipool as withdrawable and withdraw
     if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), amount, trustedNodeAccount.GetTransactor()); err != nil { return err }
     if _, err := mp.Withdraw(toAccount.GetTransactor()); err != nil { return err }
 
     // Re-enable minipool withdrawal delay
-    if _, err := protocol.SetMinipoolWithdrawalDelay(rp, withdrawalDelay, ownerAccount.GetTransactor()); err != nil { return err }
+    if _, err := protocol.BootstrapMinipoolWithdrawalDelay(rp, withdrawalDelay, ownerAccount.GetTransactor()); err != nil { return err }
 
     // Return
     return nil

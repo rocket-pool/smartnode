@@ -49,7 +49,7 @@ func TestAssignDeposits(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Disable deposit assignments
-    if _, err := protocol.SetAssignDepositsEnabled(rp, false, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapAssignDepositsEnabled(rp, false, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Make user deposit
     userDepositOpts := userAccount.GetTransactor()
@@ -65,7 +65,7 @@ func TestAssignDeposits(t *testing.T) {
     if _, err := node.Deposit(rp, 0, nodeDepositOpts); err != nil { t.Fatal(err) }
 
     // Re-enable deposit assignments
-    if _, err := protocol.SetAssignDepositsEnabled(rp, true, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapAssignDepositsEnabled(rp, true, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get initial deposit pool balance
     balance1, err := deposit.GetBalance(rp, nil)

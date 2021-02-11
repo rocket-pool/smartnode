@@ -215,7 +215,7 @@ func TestWithdraw(t *testing.T) {
     // Disable minipool withdrawal delay
     withdrawalDelay, err := protocol.GetMinipoolWithdrawalDelay(rp, nil)
     if err != nil { t.Fatal(err) }
-    if _, err := protocol.SetMinipoolWithdrawalDelay(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapMinipoolWithdrawalDelay(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Withdraw minipool
     if _, err := mp.Withdraw(nodeAccount.GetTransactor()); err != nil {
@@ -223,7 +223,7 @@ func TestWithdraw(t *testing.T) {
     }
 
     // Re-enable minipool withdrawal delay
-    if _, err := protocol.SetMinipoolWithdrawalDelay(rp, withdrawalDelay, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapMinipoolWithdrawalDelay(rp, withdrawalDelay, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check updated minipool exists status
     if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {

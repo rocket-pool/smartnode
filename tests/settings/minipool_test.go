@@ -58,7 +58,7 @@ func TestMinipoolSettings(t *testing.T) {
 
     // Set & get submit withdrawable enabled
     submitWithdrawableEnabled := false
-    if _, err := protocol.SetMinipoolSubmitWithdrawableEnabled(rp, submitWithdrawableEnabled, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapMinipoolSubmitWithdrawableEnabled(rp, submitWithdrawableEnabled, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMinipoolSubmitWithdrawableEnabled(rp, nil); err != nil {
         t.Error(err)
@@ -68,7 +68,7 @@ func TestMinipoolSettings(t *testing.T) {
 
     // Set & get minipool launch timeout
     var minipoolLaunchTimeout uint64 = 5
-    if _, err := protocol.SetMinipoolLaunchTimeout(rp, minipoolLaunchTimeout, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapMinipoolLaunchTimeout(rp, minipoolLaunchTimeout, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMinipoolLaunchTimeout(rp, nil); err != nil {
         t.Error(err)
@@ -78,7 +78,7 @@ func TestMinipoolSettings(t *testing.T) {
 
     // Set & get minipool withdrawal delay
     var minipoolWithdrawalDelay uint64 = 5
-    if _, err := protocol.SetMinipoolWithdrawalDelay(rp, minipoolWithdrawalDelay, ownerAccount.GetTransactor()); err != nil {
+    if _, err := protocol.BootstrapMinipoolWithdrawalDelay(rp, minipoolWithdrawalDelay, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMinipoolWithdrawalDelay(rp, nil); err != nil {
         t.Error(err)
