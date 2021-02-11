@@ -45,6 +45,7 @@ type ClientOption struct {
     Image string                        `yaml:"image,omitempty"`
     BeaconImage string                  `yaml:"beaconImage,omitempty"`
     ValidatorImage string               `yaml:"validatorImage,omitempty"`
+    Link string                         `yaml:"link,omitempty"`
     Params []ClientParam                `yaml:"params,omitempty"`
 }
 type ClientParam struct {
