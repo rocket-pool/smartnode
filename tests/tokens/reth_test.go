@@ -11,7 +11,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    tokenutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens"
+    rethutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/reth"
 )
 
 
@@ -26,7 +26,7 @@ func TestRETHBalances(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := tokenutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := rethutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
 
     // Get & check rETH total supply
     if rethTotalSupply, err := tokens.GetRETHTotalSupply(rp, nil); err != nil {
@@ -53,7 +53,7 @@ func TestTransferRETH(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := tokenutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := rethutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
 
     // Transfer rETH
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
@@ -80,7 +80,7 @@ func TestBurnRETH(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := tokenutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := rethutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
 
     // Get initial balances
     balances1, err := tokens.GetBalances(rp, userAccount.Address, nil)

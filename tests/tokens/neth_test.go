@@ -11,7 +11,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    tokenutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens"
+    nethutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/neth"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
 )
 
@@ -28,7 +28,7 @@ func TestNETHBalances(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if err := tokenutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
 
     // Get & check nETH total supply
     if nethTotalSupply, err := tokens.GetNETHTotalSupply(rp, nil); err != nil {
@@ -56,7 +56,7 @@ func TestTransferNETH(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if err := tokenutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
 
     // Transfer nETH
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
@@ -84,7 +84,7 @@ func TestBurnNETH(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if err := tokenutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
 
     // Transfer validator balance
     opts := userAccount.GetTransactor()
