@@ -7,8 +7,10 @@ import (
     "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/rocketpool-go/minipool"
+    "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
@@ -63,6 +65,27 @@ func StakeMinipool(rp *rocketpool.RocketPool, mp *minipool.Minipool, nodeAccount
     // Stake minipool & return
     _, err = mp.Stake(validatorPubkey, validatorSignature, depositDataRoot, nodeAccount.GetTransactor())
     return err
+
+}
+
+
+// Get the RPL required per minipool
+func GetMinipoolRPLRequired(rp *rocketpool.RocketPool) (*big.Int, error) {
+
+    // Get data
+    depositUserAmount, err := protocol.GetMinipoolHalfDepositUserAmount(rp, nil)
+    if err != nil { return err }
+    minimumPerMinipoolStake, err := protocol.GetMinimumPerMinipoolStake(rp, nil)
+    if err != nil { return err }
+    rplPrice, err := network.GetRPLPrice(rp, nil)
+    if err != nil { return err }
+
+    // Calculate and return RPL required
+    var tmp big.Int
+    var rplRequired big.Int
+    tmp.Mul(depositUserAmount, minimumPerMinipoolStake)
+    rplRequired.Quo(tmp, rplPrice)
+    return &rplRequired, nil
 
 }
 
