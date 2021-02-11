@@ -99,11 +99,15 @@ func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPat
 
 // Submit a proposal to upgrade a contract
 func ProposeUpgradeContract(rp *rocketpool.RocketPool, message, upgradeType, contractName, contractAbi string, contractAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    compressedAbi, err := rocketpool.EncodeAbiStr(contractAbi)
+    if err != nil {
+        return nil, err
+    }
     rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
     if err != nil {
         return nil, err
     }
-    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalUpgrade", upgradeType, contractName, contractAbi, contractAddress)
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
     if err != nil {
         return nil, fmt.Errorf("Could not encode upgrade contract proposal payload: %w", err)
     }

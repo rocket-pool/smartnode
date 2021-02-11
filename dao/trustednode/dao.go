@@ -373,11 +373,15 @@ func BootstrapMember(rp *rocketpool.RocketPool, id, email string, nodeAddress co
 
 // Bootstrap a contract upgrade
 func BootstrapUpgrade(rp *rocketpool.RocketPool, upgradeType, contractName, contractAbi string, contractAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    compressedAbi, err := rocketpool.EncodeAbiStr(contractAbi)
+    if err != nil {
+        return nil, err
+    }
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketDAONodeTrusted.Transact(opts, "bootstrapUpgrade", upgradeType, contractName, contractAbi, contractAddress)
+    txReceipt, err := rocketDAONodeTrusted.Transact(opts, "bootstrapUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
     if err != nil {
         return nil, fmt.Errorf("Could not bootstrap contract '%s' upgrade (%s): %w", contractName, upgradeType, err)
     }

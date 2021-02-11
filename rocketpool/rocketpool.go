@@ -1,9 +1,6 @@
 package rocketpool
 
 import (
-    "bytes"
-    "compress/zlib"
-    "encoding/base64"
     "fmt"
     "sync"
     "time"
@@ -146,7 +143,7 @@ func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
     }
 
     // Decode ABI
-    abi, err := decodeAbi(abiEncoded)
+    abi, err := DecodeAbi(abiEncoded)
     if err != nil {
         return nil, fmt.Errorf("Could not decode contract %s ABI: %w", contractName, err)
     }
@@ -341,33 +338,5 @@ func (rp *RocketPool) deleteCachedContract(contractName string) {
     rp.contractsLock.Lock()
     defer rp.contractsLock.Unlock()
     delete(rp.contracts, contractName)
-}
-
-
-// Decode, decompress and parse zlib-compressed, base64-encoded ABI
-func decodeAbi(abiEncoded string) (*abi.ABI, error) {
-
-    // Base 64 decode
-    abiCompressed, err := base64.StdEncoding.DecodeString(abiEncoded)
-    if err != nil {
-        return nil, fmt.Errorf("Could not decode base64 data: %w", err)
-    }
-
-    // Zlib decompress
-    byteReader := bytes.NewReader(abiCompressed)
-    zlibReader, err := zlib.NewReader(byteReader)
-    if err != nil {
-        return nil, fmt.Errorf("Could not decompress zlib data: %w", err)
-    }
-
-    // Parse ABI
-    abiParsed, err := abi.JSON(zlibReader)
-    if err != nil {
-        return nil, fmt.Errorf("Could not parse JSON: %w", err)
-    }
-
-    // Return
-    return &abiParsed, nil
-
 }
 
