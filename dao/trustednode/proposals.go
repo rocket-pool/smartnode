@@ -97,6 +97,20 @@ func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPat
 }
 
 
+// Submit a proposal to upgrade a contract
+func ProposeUpgradeContract(rp *rocketpool.RocketPool, message, upgradeType, contractName, contractAbi string, contractAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+    if err != nil {
+        return nil, err
+    }
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalUpgrade", upgradeType, contractName, contractAbi, contractAddress)
+    if err != nil {
+        return nil, fmt.Errorf("Could not encode upgrade contract proposal payload: %w", err)
+    }
+    return SubmitProposal(rp, message, payload, opts)
+}
+
+
 // Submit a trusted node DAO proposal
 func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
