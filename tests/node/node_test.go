@@ -4,6 +4,8 @@ import (
     "bytes"
     "testing"
 
+    "github.com/ethereum/go-ethereum/common"
+
     "github.com/rocket-pool/rocketpool-go/node"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
@@ -49,9 +51,39 @@ func TestRegisterNode(t *testing.T) {
         if !nodeDetails.Exists {
             t.Error("Incorrect node exists status")
         }
+        if !bytes.Equal(nodeDetails.WithdrawalAddress.Bytes(), nodeAccount.Address.Bytes()) {
+            t.Errorf("Incorrect node withdrawal address '%s'", nodeDetails.WithdrawalAddress.Hex())
+        }
         if nodeDetails.TimezoneLocation != timezoneLocation {
             t.Errorf("Incorrect node timezone location '%s'", nodeDetails.TimezoneLocation)
         }
+    }
+
+}
+
+
+func TestSetWithdrawalAddress(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register node
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Set withdrawal address
+    withdrawalAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    if _, err := node.SetWithdrawalAddress(rp, withdrawalAddress, nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check node withdrawal address
+    if nodeWithdrawalAddress, err := node.GetNodeWithdrawalAddress(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(nodeWithdrawalAddress.Bytes(), withdrawalAddress.Bytes()) {
+        t.Errorf("Incorrect node withdrawal address '%s'", nodeWithdrawalAddress.Hex())
     }
 
 }
