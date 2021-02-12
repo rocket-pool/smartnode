@@ -22,6 +22,7 @@ type RocketPoolConfig struct {
         PasswordPath string             `yaml:"passwordPath,omitempty"`
         WalletPath string               `yaml:"walletPath,omitempty"`
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
+        ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
         Eth1 Chain                      `yaml:"eth1,omitempty"`
