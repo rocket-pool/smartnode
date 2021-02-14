@@ -43,16 +43,6 @@ func GetMinipools(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]MinipoolDet
 }
 
 
-// Get unprocessed minipool details
-func GetUnprocessedMinipools(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]MinipoolDetails, error) {
-    minipoolAddresses, err := GetUnprocessedMinipoolAddresses(rp, opts)
-    if err != nil {
-        return []MinipoolDetails{}, err
-    }
-    return loadMinipoolDetails(rp, minipoolAddresses, opts);
-}
-
-
 // Get a node's minipool details
 func GetNodeMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) ([]MinipoolDetails, error) {
     minipoolAddresses, err := GetNodeMinipoolAddresses(rp, nodeAddress, opts)
@@ -122,46 +112,6 @@ func GetMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]com
             mi := mi
             wg.Go(func() error {
                 address, err := GetMinipoolAt(rp, mi, opts)
-                if err == nil { addresses[mi] = address }
-                return err
-            })
-        }
-        if err := wg.Wait(); err != nil {
-            return []common.Address{}, err
-        }
-
-    }
-
-    // Return
-    return addresses, nil
-
-}
-
-
-// Get unprocessed minipool addresses
-func GetUnprocessedMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.Address, error) {
-
-    // Get minipool count
-    minipoolCount, err := GetUnprocessedMinipoolCount(rp, opts)
-    if err != nil {
-        return []common.Address{}, err
-    }
-
-    // Load minipool addresses in batches
-    addresses := make([]common.Address, minipoolCount)
-    for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolAddressBatchSize {
-
-        // Get batch start & end index
-        msi := bsi
-        mei := bsi + MinipoolAddressBatchSize
-        if mei > minipoolCount { mei = minipoolCount }
-
-        // Load addresses
-        var wg errgroup.Group
-        for mi := msi; mi < mei; mi++ {
-            mi := mi
-            wg.Go(func() error {
-                address, err := GetUnprocessedMinipoolAt(rp, mi, opts)
                 if err == nil { addresses[mi] = address }
                 return err
             })
@@ -351,34 +301,6 @@ func GetMinipoolAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts)
     minipoolAddress := new(common.Address)
     if err := rocketMinipoolManager.Call(opts, minipoolAddress, "getMinipoolAt", big.NewInt(int64(index))); err != nil {
         return common.Address{}, fmt.Errorf("Could not get minipool %d address: %w", index, err)
-    }
-    return *minipoolAddress, nil
-}
-
-
-// Get the unprocessed minipool count
-func GetUnprocessedMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
-    if err != nil {
-        return 0, err
-    }
-    minipoolCount := new(*big.Int)
-    if err := rocketMinipoolManager.Call(opts, minipoolCount, "getUnprocessedMinipoolCount"); err != nil {
-        return 0, fmt.Errorf("Could not get unprocessed minipool count: %w", err)
-    }
-    return (*minipoolCount).Uint64(), nil
-}
-
-
-// Get an unprocessed minipool address by index
-func GetUnprocessedMinipoolAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, error) {
-    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
-    if err != nil {
-        return common.Address{}, err
-    }
-    minipoolAddress := new(common.Address)
-    if err := rocketMinipoolManager.Call(opts, minipoolAddress, "getUnprocessedMinipoolAt", big.NewInt(int64(index))); err != nil {
-        return common.Address{}, fmt.Errorf("Could not get unprocessed minipool %d address: %w", index, err)
     }
     return *minipoolAddress, nil
 }
