@@ -8,7 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
 
-    "github.com/rocket-pool/rocketpool-go/dao/protocol"
+    protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
@@ -30,7 +30,7 @@ func GetDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, er
     return *value, nil
 }
 func BootstrapDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapBool(rp, DepositSettingsContractName, "deposit.enabled", value, opts)
+    return protocoldao.BootstrapBool(rp, DepositSettingsContractName, "deposit.enabled", value, opts)
 }
 
 
@@ -47,7 +47,7 @@ func GetAssignDepositsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (b
     return *value, nil
 }
 func BootstrapAssignDepositsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapBool(rp, DepositSettingsContractName, "deposit.assign.enabled", value, opts)
+    return protocoldao.BootstrapBool(rp, DepositSettingsContractName, "deposit.assign.enabled", value, opts)
 }
 
 
@@ -64,7 +64,7 @@ func GetMinimumDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int
     return *value, nil
 }
 func BootstrapMinimumDeposit(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, DepositSettingsContractName, "deposit.minimum", value, opts)
+    return protocoldao.BootstrapUint(rp, DepositSettingsContractName, "deposit.minimum", value, opts)
 }
 
 
@@ -81,7 +81,7 @@ func GetMaximumDepositPoolSize(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
     return *value, nil
 }
 func BootstrapMaximumDepositPoolSize(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, DepositSettingsContractName, "deposit.pool.maximum", value, opts)
+    return protocoldao.BootstrapUint(rp, DepositSettingsContractName, "deposit.pool.maximum", value, opts)
 }
 
 
@@ -98,7 +98,7 @@ func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts
     return (*value).Uint64(), nil
 }
 func BootstrapMaximumDepositAssignments(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, DepositSettingsContractName, "deposit.assign.maximum", big.NewInt(int64(value)), opts)
+    return protocoldao.BootstrapUint(rp, DepositSettingsContractName, "deposit.assign.maximum", big.NewInt(int64(value)), opts)
 }
 
 

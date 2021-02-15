@@ -8,7 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
 
-    "github.com/rocket-pool/rocketpool-go/dao/protocol"
+    protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -31,7 +31,7 @@ func GetInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
     return eth.WeiToEth(*value), nil
 }
 func BootstrapInflationIntervalRate(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.rate", eth.EthToWei(value), opts)
+    return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.rate", eth.EthToWei(value), opts)
 }
 
 
@@ -48,7 +48,7 @@ func GetInflationIntervalBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     return (*value).Uint64(), nil
 }
 func BootstrapInflationIntervalBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.blocks", big.NewInt(int64(value)), opts)
+    return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.blocks", big.NewInt(int64(value)), opts)
 }
 
 
@@ -65,7 +65,7 @@ func GetInflationStartBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
     return (*value).Uint64(), nil
 }
 func BootstrapInflationStartBlock(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.start", big.NewInt(int64(value)), opts)
+    return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.start", big.NewInt(int64(value)), opts)
 }
 
 

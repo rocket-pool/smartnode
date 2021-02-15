@@ -8,7 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
 
-    "github.com/rocket-pool/rocketpool-go/dao/protocol"
+    protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -31,7 +31,7 @@ func GetCreateLotEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, 
     return *value, nil
 }
 func BootstrapCreateLotEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapBool(rp, AuctionSettingsContractName, "auction.lot.create.enabled", value, opts)
+    return protocoldao.BootstrapBool(rp, AuctionSettingsContractName, "auction.lot.create.enabled", value, opts)
 }
 
 
@@ -48,7 +48,7 @@ func GetBidOnLotEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, e
     return *value, nil
 }
 func BootstrapBidOnLotEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapBool(rp, AuctionSettingsContractName, "auction.lot.bidding.enabled", value, opts)
+    return protocoldao.BootstrapBool(rp, AuctionSettingsContractName, "auction.lot.bidding.enabled", value, opts)
 }
 
 
@@ -65,7 +65,7 @@ func GetLotMinimumEthValue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
     return *value, nil
 }
 func BootstrapLotMinimumEthValue(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, AuctionSettingsContractName, "auction.lot.value.minimum", value, opts)
+    return protocoldao.BootstrapUint(rp, AuctionSettingsContractName, "auction.lot.value.minimum", value, opts)
 }
 
 
@@ -82,7 +82,7 @@ func GetLotMaximumEthValue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
     return *value, nil
 }
 func BootstrapLotMaximumEthValue(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, AuctionSettingsContractName, "auction.lot.value.maximum", value, opts)
+    return protocoldao.BootstrapUint(rp, AuctionSettingsContractName, "auction.lot.value.maximum", value, opts)
 }
 
 
@@ -99,7 +99,7 @@ func GetLotDuration(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
     return (*value).Uint64(), nil
 }
 func BootstrapLotDuration(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, AuctionSettingsContractName, "auction.lot.duration", big.NewInt(int64(value)), opts)
+    return protocoldao.BootstrapUint(rp, AuctionSettingsContractName, "auction.lot.duration", big.NewInt(int64(value)), opts)
 }
 
 
@@ -116,7 +116,7 @@ func GetLotStartingPriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
     return eth.WeiToEth(*value), nil
 }
 func BootstrapLotStartingPriceRatio(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, AuctionSettingsContractName, "auction.price.start", eth.EthToWei(value), opts)
+    return protocoldao.BootstrapUint(rp, AuctionSettingsContractName, "auction.price.start", eth.EthToWei(value), opts)
 }
 
 
@@ -133,7 +133,7 @@ func GetLotReservePriceRatio(rp *rocketpool.RocketPool, opts *bind.CallOpts) (fl
     return eth.WeiToEth(*value), nil
 }
 func BootstrapLotReservePriceRatio(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, AuctionSettingsContractName, "auction.price.reserve", eth.EthToWei(value), opts)
+    return protocoldao.BootstrapUint(rp, AuctionSettingsContractName, "auction.price.reserve", eth.EthToWei(value), opts)
 }
 
 

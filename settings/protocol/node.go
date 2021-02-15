@@ -8,7 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
 
-    "github.com/rocket-pool/rocketpool-go/dao/protocol"
+    protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
@@ -31,7 +31,7 @@ func GetNodeRegistrationEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     return *value, nil
 }
 func BootstrapNodeRegistrationEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapBool(rp, NodeSettingsContractName, "node.registration.enabled", value, opts)
+    return protocoldao.BootstrapBool(rp, NodeSettingsContractName, "node.registration.enabled", value, opts)
 }
 
 
@@ -48,7 +48,7 @@ func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool
     return *value, nil
 }
 func BootstrapNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapBool(rp, NodeSettingsContractName, "node.deposit.enabled", value, opts)
+    return protocoldao.BootstrapBool(rp, NodeSettingsContractName, "node.deposit.enabled", value, opts)
 }
 
 
@@ -65,7 +65,7 @@ func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     return eth.WeiToEth(*value), nil
 }
 func BootstrapMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.minimum", eth.EthToWei(value), opts)
+    return protocoldao.BootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.minimum", eth.EthToWei(value), opts)
 }
 
 
@@ -82,7 +82,7 @@ func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     return eth.WeiToEth(*value), nil
 }
 func BootstrapMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocol.BootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.maximum", eth.EthToWei(value), opts)
+    return protocoldao.BootstrapUint(rp, NodeSettingsContractName, "node.per.minipool.stake.maximum", eth.EthToWei(value), opts)
 }
 
 

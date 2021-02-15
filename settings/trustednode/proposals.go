@@ -8,7 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/core/types"
 
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
@@ -37,10 +37,10 @@ func GetProposalCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
     return (*value).Uint64(), nil
 }
 func BootstrapProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
 }
 func ProposeProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
-    return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownSettingPath), ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownSettingPath), ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
@@ -57,10 +57,10 @@ func GetProposalVoteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
     return (*value).Uint64(), nil
 }
 func BootstrapProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 func ProposeProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
-    return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteBlocksSettingPath), ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteBlocksSettingPath), ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
@@ -77,10 +77,10 @@ func GetProposalVoteDelayBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
     return (*value).Uint64(), nil
 }
 func BootstrapProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 func ProposeProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
-    return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayBlocksSettingPath), ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayBlocksSettingPath), ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
@@ -97,10 +97,10 @@ func GetProposalExecuteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
     return (*value).Uint64(), nil
 }
 func BootstrapProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 func ProposeProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
-    return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteBlocksSettingPath), ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteBlocksSettingPath), ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
@@ -117,10 +117,10 @@ func GetProposalActionBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
     return (*value).Uint64(), nil
 }
 func BootstrapProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 func ProposeProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
-    return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", ActionBlocksSettingPath), ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ActionBlocksSettingPath), ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
