@@ -57,6 +57,7 @@ type networkBalances struct {
 }
 type minipoolBalanceDetails struct {
     IsStaking bool
+    IsWithdrawnButUnprocessed bool
     UserBalance *big.Int
 }
 
@@ -255,7 +256,8 @@ func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkB
     // Data
     var wg errgroup.Group
     var depositPoolBalance *big.Int
-    var minipoolBalanceDetails []minipoolBalanceDetails
+    var minipoolBalances []minipoolBalanceDetails
+    var minipoolWithdrawableDetails []minipoolBalanceDetails
     var rethContractBalance *big.Int
     var rethTotalSupply *big.Int
 
@@ -269,7 +271,13 @@ func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkB
     // Get minipool balance details
     wg.Go(func() error {
         var err error
-        minipoolBalanceDetails, err = t.getNetworkMinipoolBalanceDetails(opts)
+        minipoolBalances, err = t.getNetworkMinipoolBalanceDetails(opts)
+        return err
+    })
+
+    wg.Go(func() error {
+        var err error
+        minipoolWithdrawableDetails, err = t.getNetworkMinipoolWithdrawableDetails(opts)
         return err
     })
 
@@ -306,10 +314,18 @@ func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkB
     }
 
     // Add minipool balances
-    for _, mp := range minipoolBalanceDetails {
+    for _, mp := range minipoolBalances {
         balances.MinipoolsTotal.Add(balances.MinipoolsTotal, mp.UserBalance)
         if mp.IsStaking {
             balances.MinipoolsStaking.Add(balances.MinipoolsStaking, mp.UserBalance)
+        }
+    }
+
+    // Add withdrawable but not withdrawn (to network) balances
+    for _, mp := range minipoolWithdrawableDetails {
+        // only take the balance of withdrawn but unprocessed balances
+        if mp.IsWithdrawnButUnprocessed {
+            balances.MinipoolsTotal.Add(balances.MinipoolsTotal, mp.UserBalance)
         }
     }
 
@@ -520,6 +536,35 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         IsStaking: (validator.ExitEpoch > blockEpoch),
         UserBalance: userBalance,
     }, nil
+
+}
+
+
+// Get all minipool balance details
+func (t *submitNetworkBalances) getNetworkMinipoolWithdrawableDetails(opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+
+    // Get unprocessed minipool details
+    withdrawalDetails, err := minipool.GetUnprocessedMinipools(t.rp, opts)
+    if err != nil { return []minipoolBalanceDetails{}, err }
+
+    // Compute user withdraw balance and withdrawn but unprocessed state
+    details := make([]minipoolBalanceDetails, len(withdrawalDetails))
+    for i, withdrawal := range withdrawalDetails {
+        // logic:
+        // user balance = total balance - node balance
+        // withdrawn but not processed: there's a window where a minipool.Withdraw has been called
+        // but network.ProcessWithdrawal has not happened, this boolean flag captures the state in between this window
+        userBalance := big.NewInt(0)
+        userBalance.Sub(withdrawal.WithdrawalTotalBalance, withdrawal.WithdrawalNodeBalance)
+        balanceDetail := minipoolBalanceDetails {
+            IsWithdrawnButUnprocessed: !withdrawal.Exists && !withdrawal.WithdrawalProcessed,
+            UserBalance: userBalance,
+        }
+        details[i] = balanceDetail
+    }
+
+    // Return
+    return details, nil
 
 }
 
