@@ -35,5 +35,25 @@ func TestNodeSettings(t *testing.T) {
         t.Error("Incorrect node deposits enabled value")
     }
 
+    // Set & get minimum per minipool RPL stake
+    minimumPerMinipoolStake := 1.0
+    if _, err := protocol.BootstrapMinimumPerMinipoolStake(rp, minimumPerMinipoolStake, ownerAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if value, err := protocol.GetMinimumPerMinipoolStake(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != minimumPerMinipoolStake {
+        t.Error("Incorrect minimum per minipool stake value")
+    }
+
+    // Set & get maximum per minipool RPL stake
+    maximumPerMinipoolStake := 10.0
+    if _, err := protocol.BootstrapMaximumPerMinipoolStake(rp, maximumPerMinipoolStake, ownerAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if value, err := protocol.GetMaximumPerMinipoolStake(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != maximumPerMinipoolStake {
+        t.Error("Incorrect maximum per minipool stake value")
+    }
+
 }
 

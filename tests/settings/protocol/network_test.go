@@ -46,6 +46,26 @@ func TestNetworkSettings(t *testing.T) {
         t.Error("Incorrect network balance submission frequency value")
     }
 
+    // Set & get network price submissions enabled
+    submitPricesEnabled := false
+    if _, err := protocol.BootstrapSubmitPricesEnabled(rp, submitPricesEnabled, ownerAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if value, err := protocol.GetSubmitPricesEnabled(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != submitPricesEnabled {
+        t.Error("Incorrect network price submissions enabled value")
+    }
+
+    // Set & get network price submission frequency
+    var submitPricesFrequency uint64 = 10
+    if _, err := protocol.BootstrapSubmitPricesFrequency(rp, submitPricesFrequency, ownerAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if value, err := protocol.GetSubmitPricesFrequency(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != submitPricesFrequency {
+        t.Error("Incorrect network price submission frequency value")
+    }
+
     // Set & get process withdrawals enabled
     processWithdrawalsEnabled := false
     if _, err := protocol.BootstrapProcessWithdrawalsEnabled(rp, processWithdrawalsEnabled, ownerAccount.GetTransactor()); err != nil {
