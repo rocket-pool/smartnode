@@ -158,9 +158,11 @@ func TestStake(t *testing.T) {
     // Get validator & deposit data
     validatorPubkey, err := validator.GetValidatorPubkey()
     if err != nil { t.Fatal(err) }
+    withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil)
+    if err != nil { t.Fatal(err) }
     validatorSignature, err := validator.GetValidatorSignature()
     if err != nil { t.Fatal(err) }
-    depositDataRoot, err := validator.GetDepositDataRoot(validatorPubkey, validator.GetWithdrawalCredentials(), validatorSignature)
+    depositDataRoot, err := validator.GetDepositDataRoot(validatorPubkey, withdrawalCredentials, validatorSignature)
     if err != nil { t.Fatal(err) }
 
     // Get & check initial minipool status
@@ -205,11 +207,11 @@ func TestWithdraw(t *testing.T) {
     // Set minipool withdrawable status
     if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), eth.EthToWei(32), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
-    // Get & check initial minipool exists status
-    if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+    // Get & check initial minipool node withdrawn status
+    if nodeWithdrawn, err := mp.GetNodeWithdrawn(nil); err != nil {
         t.Error(err)
-    } else if !exists {
-        t.Error("Incorrect initial minipool exists status")
+    } else if nodeWithdrawn {
+        t.Error("Incorrect initial minipool node withdrawn status")
     }
 
     // Disable minipool withdrawal delay
@@ -225,11 +227,11 @@ func TestWithdraw(t *testing.T) {
     // Re-enable minipool withdrawal delay
     if _, err := protocol.BootstrapMinipoolWithdrawalDelay(rp, withdrawalDelay, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
-    // Get & check updated minipool exists status
-    if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+    // Get & check updated minipool node withdrawn status
+    if nodeWithdrawn, err := mp.GetNodeWithdrawn(nil); err != nil {
         t.Error(err)
-    } else if exists {
-        t.Error("Incorrect updated minipool exists status")
+    } else if !nodeWithdrawn {
+        t.Error("Incorrect updated minipool node withdrawn status")
     }
 
 }

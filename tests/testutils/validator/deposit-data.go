@@ -35,12 +35,6 @@ func GetValidatorSignature() (types.ValidatorSignature, error) {
 }
 
 
-// Get the withdrawal credentials
-func GetWithdrawalCredentials() common.Hash {
-    return common.HexToHash(tests.WithdrawalCredentials)
-}
-
-
 // Get the validator deposit depositDataRoot
 func GetDepositDataRoot(validatorPubkey types.ValidatorPubkey, withdrawalCredentials common.Hash, validatorSignature types.ValidatorSignature) (common.Hash, error) {
     return ssz.HashTreeRoot(depositData{

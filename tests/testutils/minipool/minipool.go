@@ -64,9 +64,11 @@ func StakeMinipool(rp *rocketpool.RocketPool, mp *minipool.Minipool, nodeAccount
     // Get validator & deposit data
     validatorPubkey, err := validator.GetValidatorPubkey()
     if err != nil { return err }
+    withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil)
+    if err != nil { return err }
     validatorSignature, err := validator.GetValidatorSignature()
     if err != nil { return err }
-    depositDataRoot, err := validator.GetDepositDataRoot(validatorPubkey, validator.GetWithdrawalCredentials(), validatorSignature)
+    depositDataRoot, err := validator.GetDepositDataRoot(validatorPubkey, withdrawalCredentials, validatorSignature)
     if err != nil { return err }
 
     // Stake minipool & return

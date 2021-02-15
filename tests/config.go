@@ -13,7 +13,6 @@ const (
 const (
     ValidatorPubkey = "968bcf4081af4a10d054c1cde1dadfd6e85a120a397174173ca869f66bdc72835f9918ea251930778e5ba67a7907e30e"
     ValidatorSignature = "83757098b3b118c67d993218afb69e80a13eb3b174cd3da9958971f05e6b30b9ff5a55677d644f972b31c24e0544604703e8cf18b109fde1e0d3cde0446147bf2f38f02fefce604e4119a605348dfc8a99935dbd65a64eb773c77508f9150e33"
-    WithdrawalCredentials = "00d77be6277f1cdcfce33fdcb127b95fe91e09eec04aecc521dc94866f0055f0"
 )
 
 var AccountPrivateKeys = []string{
