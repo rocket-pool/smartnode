@@ -10,6 +10,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/settings/protocol"
+    "github.com/rocket-pool/rocketpool-go/tokens"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -322,6 +323,93 @@ func TestClose(t *testing.T) {
         t.Error(err)
     } else if exists {
         t.Error("Incorrect updated minipool exists status")
+    }
+
+}
+
+
+func TestWithdrawValidatorBalance(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register nodes
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    if err != nil { t.Fatal(err) }
+
+    // Make user deposit
+    userDepositAmount := eth.EthToWei(16)
+    userDepositOpts := userAccount.GetTransactor()
+    userDepositOpts.Value = userDepositAmount
+    if _, err := deposit.Deposit(rp, userDepositOpts); err != nil { t.Fatal(err) }
+
+    // Stake minipool
+    if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
+
+    // Set minipool withdrawable status
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), eth.EthToWei(32), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Set SWC address
+    if _, err := network.SetSystemWithdrawalContractAddress(rp, swcAccount.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Get & check initial minipool validator balance withdrawn status
+    if validatorBalanceWithdrawn, err := mp.GetValidatorBalanceWithdrawn(nil); err != nil {
+        t.Error(err)
+    } else if validatorBalanceWithdrawn {
+        t.Error("Incorrect initial minipool validator balance withdrawn status")
+    }
+
+    // Get initial token contract ETH balances
+    nethContractBalance1, err := tokens.GetNETHContractETHBalance(rp, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+    rethContractBalance1, err := tokens.GetRETHContractETHBalance(rp, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    // Withdraw minipool validator balance
+    opts := swcAccount.GetTransactor()
+    opts.Value = eth.EthToWei(32)
+    if _, err := mp.Contract.Transfer(opts); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated minipool validator balance withdrawn status
+    if validatorBalanceWithdrawn, err := mp.GetValidatorBalanceWithdrawn(nil); err != nil {
+        t.Error(err)
+    } else if !validatorBalanceWithdrawn {
+        t.Error("Incorrect updated minipool validator balance withdrawn status")
+    }
+
+    // Get & check updated token contract ETH balances
+    if nethContractBalance2, err := tokens.GetNETHContractETHBalance(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if nethContractBalance2.Cmp(nethContractBalance1) != 1 {
+        t.Error("nETH contract ETH balance did not increase after processing withdrawal")
+    }
+    if rethContractBalance2, err := tokens.GetRETHContractETHBalance(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if rethContractBalance2.Cmp(rethContractBalance1) != 1 {
+        t.Error("rETH contract ETH balance did not increase after processing withdrawal")
+    }
+
+    // Get & check rETH collateral amount & rate
+    if rethTotalCollateral, err := tokens.GetRETHTotalCollateral(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if rethTotalCollateral.Cmp(userDepositAmount) != 0 {
+        t.Errorf("Incorrect rETH total collateral amount %s", rethTotalCollateral.String())
+    }
+    if rethCollateralRate, err := tokens.GetRETHCollateralRate(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if rethCollateralRate != 1 {
+        t.Errorf("Incorrect rETH collateral rate %f", rethCollateralRate)
     }
 
 }
