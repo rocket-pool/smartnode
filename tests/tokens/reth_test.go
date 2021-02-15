@@ -74,7 +74,7 @@ func TestTransferRETH(t *testing.T) {
 }
 
 
-func TestBurnRETH(t *testing.T) {
+func TestTransferFromRETH(t *testing.T) {
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
@@ -84,29 +84,30 @@ func TestBurnRETH(t *testing.T) {
     rethAmount := eth.EthToWei(100)
     if err := rethutils.MintRETH(rp, userAccount1, rethAmount); err != nil { t.Fatal(err) }
 
-    // Get initial balances
-    balances1, err := tokens.GetBalances(rp, userAccount1.Address, nil)
-    if err != nil {
+    // Approve rETH spender
+    sendAmount := eth.EthToWei(50)
+    if _, err := tokens.ApproveRETH(rp, userAccount2.Address, sendAmount, userAccount1.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
-    // Burn rETH
-    burnAmount := eth.EthToWei(50)
-    if _, err := tokens.BurnRETH(rp, burnAmount, userAccount1.GetTransactor()); err != nil {
+    // Get & check spender allowance
+    if allowance, err := tokens.GetRETHAllowance(rp, userAccount1.Address, userAccount2.Address, nil); err != nil {
+        t.Error(err)
+    } else if allowance.Cmp(sendAmount) != 0 {
+        t.Errorf("Incorrect rETH spender allowance %s", allowance.String())
+    }
+
+    // Transfer rETH from account
+    toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    if _, err := tokens.TransferFromRETH(rp, userAccount1.Address, toAddress, sendAmount, userAccount2.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
-    // Get & check updated balances
-    balances2, err := tokens.GetBalances(rp, userAccount1.Address, nil)
-    if err != nil {
-        t.Fatal(err)
-    } else {
-        if balances2.RETH.Cmp(balances1.RETH) != -1 {
-            t.Error("rETH balance did not decrease after burning rETH")
-        }
-        if balances2.ETH.Cmp(balances1.ETH) != 1 {
-            t.Error("ETH balance did not increase after burning rETH")
-        }
+    // Get & check rETH account balance
+    if rethBalance, err := tokens.GetRETHBalance(rp, toAddress, nil); err != nil {
+        t.Error(err)
+    } else if rethBalance.Cmp(sendAmount) != 0 {
+        t.Errorf("Incorrect rETH account balance %s", rethBalance.String())
     }
 
 }
@@ -145,6 +146,44 @@ func TestRETHExchangeRate(t *testing.T) {
         t.Error(err)
     } else if exchangeRate != 2 {
         t.Errorf("Incorrect ETH : rETH exchange rate %f : 1", exchangeRate)
+    }
+
+}
+
+
+func TestBurnRETH(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Mint rETH
+    rethAmount := eth.EthToWei(100)
+    if err := rethutils.MintRETH(rp, userAccount1, rethAmount); err != nil { t.Fatal(err) }
+
+    // Get initial balances
+    balances1, err := tokens.GetBalances(rp, userAccount1.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    // Burn rETH
+    burnAmount := eth.EthToWei(50)
+    if _, err := tokens.BurnRETH(rp, burnAmount, userAccount1.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated balances
+    balances2, err := tokens.GetBalances(rp, userAccount1.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    } else {
+        if balances2.RETH.Cmp(balances1.RETH) != -1 {
+            t.Error("rETH balance did not decrease after burning rETH")
+        }
+        if balances2.ETH.Cmp(balances1.ETH) != 1 {
+            t.Error("ETH balance did not increase after burning rETH")
+        }
     }
 
 }
