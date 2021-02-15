@@ -5,10 +5,13 @@ import (
     "testing"
 
     "github.com/rocket-pool/rocketpool-go/node"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
     rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
 )
 
@@ -22,8 +25,13 @@ func TestStakeRPL(t *testing.T) {
     // Register node
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
+    // Get RPL amount required for 2 minipools
+    minipoolRplRequired, err := minipoolutils.GetMinipoolRPLRequired(rp)
+    if err != nil { t.Fatal(err) }
+    rplAmount := new(big.Int)
+    rplAmount.Mul(minipoolRplRequired, big.NewInt(2))
+
     // Mint RPL
-    rplAmount := eth.EthToWei(1000)
     if err := rplutils.MintRPL(rp, ownerAccount, nodeAccount, rplAmount); err != nil { t.Fatal(err) }
 
     // Approve RPL transfer for staking
@@ -76,7 +84,7 @@ func TestStakeRPL(t *testing.T) {
     // Check updated staking details
     if totalRplStake, err := node.GetTotalRPLStake(rp, nil); err != nil {
         t.Error(err)
-    } else if totalRplStake.Cmp(big.NewInt(0)) != 1 {
+    } else if totalRplStake.Cmp(rplAmount) != 0 {
         t.Errorf("Incorrect updated total RPL stake 1 %s", totalRplStake.String())
     }
     if totalEffectiveRplStake, err := node.GetTotalEffectiveRPLStake(rp, nil); err != nil {
@@ -86,7 +94,7 @@ func TestStakeRPL(t *testing.T) {
     }
     if nodeRplStake, err := node.GetNodeRPLStake(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
-    } else if nodeRplStake.Cmp(big.NewInt(0)) != 1 {
+    } else if nodeRplStake.Cmp(rplAmount) != 0 {
         t.Errorf("Incorrect updated node RPL stake 1 %s", nodeRplStake.String())
     }
     if nodeEffectiveRplStake, err := node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil); err != nil {
@@ -106,7 +114,7 @@ func TestStakeRPL(t *testing.T) {
     }
     if nodeMinipoolLimit, err := node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
-    } else if nodeMinipoolLimit == 0 {
+    } else if nodeMinipoolLimit != 2 {
         t.Errorf("Incorrect updated node minipool limit 1 %d", nodeMinipoolLimit)
     }
 
@@ -118,17 +126,17 @@ func TestStakeRPL(t *testing.T) {
     // Check updated staking details
     if totalEffectiveRplStake, err := node.GetTotalEffectiveRPLStake(rp, nil); err != nil {
         t.Error(err)
-    } else if totalEffectiveRplStake.Cmp(big.NewInt(0)) != 1 {
+    } else if totalEffectiveRplStake.Cmp(rplAmount) != 0 {
         t.Errorf("Incorrect updated total effective RPL stake 2 %s", totalEffectiveRplStake.String())
     }
     if nodeEffectiveRplStake, err := node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
-    } else if nodeEffectiveRplStake.Cmp(big.NewInt(0)) != 1 {
+    } else if nodeEffectiveRplStake.Cmp(rplAmount) != 0 {
         t.Errorf("Incorrect updated node effective RPL stake 2 %s", nodeEffectiveRplStake.String())
     }
     if nodeMinimumRplStake, err := node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
-    } else if nodeMinimumRplStake.Cmp(big.NewInt(0)) != 1 {
+    } else if nodeMinimumRplStake.Cmp(minipoolRplRequired) != 0 {
         t.Errorf("Incorrect updated node minimum RPL stake 2 %s", nodeMinimumRplStake.String())
     }
 
@@ -140,6 +148,54 @@ func TestWithdrawRPL(t *testing.T) {
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register node
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Mint & stake RPL
+    rplAmount := eth.EthToWei(1000)
+    if err := nodeutils.StakeRPL(rp, ownerAccount, nodeAccount, rplAmount); err != nil { t.Fatal(err) }
+
+    // Get & set rewards claim interval
+    rewardsClaimIntervalBlocks, err := protocol.GetRewardsClaimIntervalBlocks(rp, nil)
+    if err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapRewardsClaimIntervalBlocks(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Check initial staking details
+    if totalRplStake, err := node.GetTotalRPLStake(rp, nil); err != nil {
+        t.Error(err)
+    } else if totalRplStake.Cmp(rplAmount) != 0 {
+        t.Errorf("Incorrect initial total RPL stake %s", totalRplStake.String())
+    }
+    if nodeRplStake, err := node.GetNodeRPLStake(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if nodeRplStake.Cmp(rplAmount) != 0 {
+        t.Errorf("Incorrect initial node RPL stake %s", nodeRplStake.String())
+    }
+
+    // Withdraw RPL
+    if _, err := node.WithdrawRPL(rp, rplAmount, nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Check updated staking details
+    if totalRplStake, err := node.GetTotalRPLStake(rp, nil); err != nil {
+        t.Error(err)
+    } else if totalRplStake.Cmp(big.NewInt(0)) != 0 {
+        t.Errorf("Incorrect updated total RPL stake %s", totalRplStake.String())
+    }
+    if nodeRplStake, err := node.GetNodeRPLStake(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if nodeRplStake.Cmp(big.NewInt(0)) != 0 {
+        t.Errorf("Incorrect updated node RPL stake %s", nodeRplStake.String())
+    }
+
+    // Reset rewards claim interval
+    if _, err := protocol.BootstrapRewardsClaimIntervalBlocks(rp, rewardsClaimIntervalBlocks, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
 }
 
