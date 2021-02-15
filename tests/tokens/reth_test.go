@@ -16,6 +16,8 @@ import (
 
 
 // GetRETHContractETHBalance test under minipool.TestWithdrawValidatorBalance
+// GetRETHTotalCollateral test under minipool.TestWithdrawValidatorBalance
+// GetRETHCollateralRate test under minipool.TestWithdrawValidatorBalance
 
 
 func TestRETHBalances(t *testing.T) {
@@ -26,7 +28,7 @@ func TestRETHBalances(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := rethutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := rethutils.MintRETH(rp, userAccount1, rethAmount); err != nil { t.Fatal(err) }
 
     // Get & check rETH total supply
     if rethTotalSupply, err := tokens.GetRETHTotalSupply(rp, nil); err != nil {
@@ -36,7 +38,7 @@ func TestRETHBalances(t *testing.T) {
     }
 
     // Get & check rETH account balance
-    if rethBalance, err := tokens.GetRETHBalance(rp, userAccount.Address, nil); err != nil {
+    if rethBalance, err := tokens.GetRETHBalance(rp, userAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if rethBalance.Cmp(rethAmount) != 0 {
         t.Errorf("Incorrect rETH account balance %s", rethBalance.String())
@@ -53,12 +55,12 @@ func TestTransferRETH(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := rethutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := rethutils.MintRETH(rp, userAccount1, rethAmount); err != nil { t.Fatal(err) }
 
     // Transfer rETH
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
     sendAmount := eth.EthToWei(50)
-    if _, err := tokens.TransferRETH(rp, toAddress, sendAmount, userAccount.GetTransactor()); err != nil {
+    if _, err := tokens.TransferRETH(rp, toAddress, sendAmount, userAccount1.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
@@ -80,22 +82,22 @@ func TestBurnRETH(t *testing.T) {
 
     // Mint rETH
     rethAmount := eth.EthToWei(100)
-    if err := rethutils.MintRETH(rp, userAccount, rethAmount); err != nil { t.Fatal(err) }
+    if err := rethutils.MintRETH(rp, userAccount1, rethAmount); err != nil { t.Fatal(err) }
 
     // Get initial balances
-    balances1, err := tokens.GetBalances(rp, userAccount.Address, nil)
+    balances1, err := tokens.GetBalances(rp, userAccount1.Address, nil)
     if err != nil {
         t.Fatal(err)
     }
 
     // Burn rETH
     burnAmount := eth.EthToWei(50)
-    if _, err := tokens.BurnRETH(rp, burnAmount, userAccount.GetTransactor()); err != nil {
+    if _, err := tokens.BurnRETH(rp, burnAmount, userAccount1.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Get & check updated balances
-    balances2, err := tokens.GetBalances(rp, userAccount.Address, nil)
+    balances2, err := tokens.GetBalances(rp, userAccount1.Address, nil)
     if err != nil {
         t.Fatal(err)
     } else {
@@ -146,9 +148,4 @@ func TestRETHExchangeRate(t *testing.T) {
     }
 
 }
-
-
-// GetRETHTotalCollateral test under minipool.TestWithdrawValidatorBalance
-
-// GetRETHCollateralRate test under minipool.TestWithdrawValidatorBalance
 

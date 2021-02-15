@@ -27,7 +27,7 @@ func TestNETHBalances(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if _, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if _, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount1, nethAmount); err != nil { t.Fatal(err) }
 
     // Get & check nETH total supply
     if nethTotalSupply, err := tokens.GetNETHTotalSupply(rp, nil); err != nil {
@@ -37,7 +37,7 @@ func TestNETHBalances(t *testing.T) {
     }
 
     // Get & check nETH account balance
-    if nethBalance, err := tokens.GetNETHBalance(rp, userAccount.Address, nil); err != nil {
+    if nethBalance, err := tokens.GetNETHBalance(rp, userAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if nethBalance.Cmp(nethAmount) != 0 {
         t.Errorf("Incorrect nETH account balance %s", nethBalance.String())
@@ -55,12 +55,52 @@ func TestTransferNETH(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if _, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if _, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount1, nethAmount); err != nil { t.Fatal(err) }
 
     // Transfer nETH
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
     sendAmount := eth.EthToWei(50)
-    if _, err := tokens.TransferNETH(rp, toAddress, sendAmount, userAccount.GetTransactor()); err != nil {
+    if _, err := tokens.TransferNETH(rp, toAddress, sendAmount, userAccount1.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check nETH account balance
+    if nethBalance, err := tokens.GetNETHBalance(rp, toAddress, nil); err != nil {
+        t.Error(err)
+    } else if nethBalance.Cmp(sendAmount) != 0 {
+        t.Errorf("Incorrect nETH account balance %s", nethBalance.String())
+    }
+
+}
+
+
+func TestTransferFromNETH(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Mint nETH
+    nethAmount := eth.EthToWei(100)
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+    if _, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount1, nethAmount); err != nil { t.Fatal(err) }
+
+    // Approve nETH spender
+    sendAmount := eth.EthToWei(50)
+    if _, err := tokens.ApproveNETH(rp, userAccount2.Address, sendAmount, userAccount1.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check spender allowance
+    if allowance, err := tokens.GetNETHAllowance(rp, userAccount1.Address, userAccount2.Address, nil); err != nil {
+        t.Error(err)
+    } else if allowance.Cmp(sendAmount) != 0 {
+        t.Errorf("Incorrect nETH spender allowance %s", allowance.String())
+    }
+
+    // Transfer nETH from account
+    toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    if _, err := tokens.TransferFromNETH(rp, userAccount1.Address, toAddress, sendAmount, userAccount2.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
@@ -83,7 +123,7 @@ func TestBurnNETH(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    mp, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount)
+    mp, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount1, nethAmount)
     if err != nil { t.Fatal(err) }
 
     // Set SWC address
@@ -95,19 +135,19 @@ func TestBurnNETH(t *testing.T) {
     if _, err := mp.Contract.Transfer(opts); err != nil { t.Fatal(err) }
 
     // Get initial balances
-    balances1, err := tokens.GetBalances(rp, userAccount.Address, nil)
+    balances1, err := tokens.GetBalances(rp, userAccount1.Address, nil)
     if err != nil {
         t.Fatal(err)
     }
 
     // Burn nETH
     burnAmount := eth.EthToWei(50)
-    if _, err := tokens.BurnNETH(rp, burnAmount, userAccount.GetTransactor()); err != nil {
+    if _, err := tokens.BurnNETH(rp, burnAmount, userAccount1.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Get & check updated balances
-    balances2, err := tokens.GetBalances(rp, userAccount.Address, nil)
+    balances2, err := tokens.GetBalances(rp, userAccount1.Address, nil)
     if err != nil {
         t.Fatal(err)
     } else {
