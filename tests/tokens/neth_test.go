@@ -12,11 +12,10 @@ import (
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
     nethutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/neth"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
 )
 
 
-// GetNETHContractETHBalance test under network.TestProcessWithdrawal
+// GetNETHContractETHBalance test under minipool.TestWithdrawValidatorBalance
 
 
 func TestNETHBalances(t *testing.T) {
@@ -28,7 +27,7 @@ func TestNETHBalances(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if _, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
 
     // Get & check nETH total supply
     if nethTotalSupply, err := tokens.GetNETHTotalSupply(rp, nil); err != nil {
@@ -56,7 +55,7 @@ func TestTransferNETH(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
+    if _, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
 
     // Transfer nETH
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
@@ -84,17 +83,16 @@ func TestBurnNETH(t *testing.T) {
     // Mint nETH
     nethAmount := eth.EthToWei(100)
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount); err != nil { t.Fatal(err) }
-
-    // Transfer validator balance
-    opts := userAccount.GetTransactor()
-    opts.Value = nethAmount
-    if _, err := network.TransferWithdrawal(rp, opts); err != nil { t.Fatal(err) }
-
-    // Process validator withdrawal
-    validatorPubkey, err := validator.GetValidatorPubkey()
+    mp, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount, nethAmount)
     if err != nil { t.Fatal(err) }
-    if _, err := network.ProcessWithdrawal(rp, validatorPubkey, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Set SWC address
+    if _, err := network.SetSystemWithdrawalContractAddress(rp, swcAccount.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Withdraw minipool validator balance
+    opts := swcAccount.GetTransactor()
+    opts.Value = nethAmount
+    if _, err := mp.Contract.Transfer(opts); err != nil { t.Fatal(err) }
 
     // Get initial balances
     balances1, err := tokens.GetBalances(rp, userAccount.Address, nil)

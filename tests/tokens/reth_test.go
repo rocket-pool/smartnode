@@ -15,7 +15,7 @@ import (
 )
 
 
-// GetRETHContractETHBalance test under network.TestProcessWithdrawal
+// GetRETHContractETHBalance test under minipool.TestWithdrawValidatorBalance
 
 
 func TestRETHBalances(t *testing.T) {
@@ -148,7 +148,7 @@ func TestRETHExchangeRate(t *testing.T) {
 }
 
 
-// GetRETHTotalCollateral test under network.TestProcessWithdrawal
+// GetRETHTotalCollateral test under minipool.TestWithdrawValidatorBalance
 
-// GetRETHCollateralRate test under network.TestProcessWithdrawal
+// GetRETHCollateralRate test under minipool.TestWithdrawValidatorBalance
 
