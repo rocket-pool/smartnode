@@ -25,7 +25,7 @@ const (
 
 
 // The cooldown period a member must wait after making a proposal before making another in blocks
-func GetCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetProposalCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     proposalsSettingsContract, err := getProposalsSettingsContract(rp)
     if err != nil {
         return 0, err
@@ -36,16 +36,16 @@ func GetCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error)
     }
     return (*value).Uint64(), nil
 }
-func BootstrapCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownSettingPath), ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
 // The period a proposal can be voted on for in blocks
-func GetVoteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetProposalVoteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     proposalsSettingsContract, err := getProposalsSettingsContract(rp)
     if err != nil {
         return 0, err
@@ -56,16 +56,16 @@ func GetVoteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, erro
     }
     return (*value).Uint64(), nil
 }
-func BootstrapVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteBlocksSettingPath), ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
 // The delay after creation before a proposal can be voted on in blocks
-func GetVoteDelayBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetProposalVoteDelayBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     proposalsSettingsContract, err := getProposalsSettingsContract(rp)
     if err != nil {
         return 0, err
@@ -76,16 +76,16 @@ func GetVoteDelayBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64,
     }
     return (*value).Uint64(), nil
 }
-func BootstrapVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayBlocksSettingPath), ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
 // The period during which a passed proposal can be executed in blocks
-func GetExecuteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetProposalExecuteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     proposalsSettingsContract, err := getProposalsSettingsContract(rp)
     if err != nil {
         return 0, err
@@ -96,16 +96,16 @@ func GetExecuteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
     }
     return (*value).Uint64(), nil
 }
-func BootstrapExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteBlocksSettingPath), ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
 // The period during which an action can be performed on an executed proposal in blocks
-func GetActionBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetProposalActionBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     proposalsSettingsContract, err := getProposalsSettingsContract(rp)
     if err != nil {
         return 0, err
@@ -116,10 +116,10 @@ func GetActionBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, er
     }
     return (*value).Uint64(), nil
 }
-func BootstrapActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", ActionBlocksSettingPath), ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
