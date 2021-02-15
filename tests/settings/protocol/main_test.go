@@ -1,4 +1,4 @@
-package settings
+package protocol
 
 import (
     "log"
