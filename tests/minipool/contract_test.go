@@ -2,6 +2,7 @@ package minipool
 
 import (
     "bytes"
+    "encoding/hex"
     "testing"
 
     "github.com/rocket-pool/rocketpool-go/deposit"
@@ -77,6 +78,9 @@ func TestDetails(t *testing.T) {
         if !node.DepositAssigned {
             t.Error("Incorrect minipool node deposit assigned status")
         }
+        if node.Withdrawn {
+            t.Error("Incorrect minipool node withdrawn status")
+        }
     }
     if user, err := mp.GetUserDetails(nil); err != nil {
         t.Error(err)
@@ -96,6 +100,19 @@ func TestDetails(t *testing.T) {
         }
         if staking.EndBalance.Cmp(eth.EthToWei(36)) != 0 {
             t.Errorf("Incorrect minipool staking end balance %s", staking.EndBalance.String())
+        }
+        if staking.BalanceWithdrawn {
+            t.Error("Incorrect minipool validator balance withdrawn status")
+        }
+    }
+    if withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil); err != nil {
+        t.Error(err)
+    } else {
+        withdrawalPrefix := byte(1)
+        padding := make([]byte, 11)
+        expectedWithdrawalCredentials := bytes.Join([][]byte{[]byte{withdrawalPrefix}, padding, mp.Address.Bytes()}, []byte{})
+        if !bytes.Equal(withdrawalCredentials.Bytes(), expectedWithdrawalCredentials) {
+            t.Errorf("Incorrect minipool withdrawal credentials %s", hex.EncodeToString(withdrawalCredentials.Bytes()))
         }
     }
 
