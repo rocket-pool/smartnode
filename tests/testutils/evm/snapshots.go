@@ -36,11 +36,8 @@ func RevertSnapshot() error {
     client, err := rpc.Dial(tests.Eth1ProviderAddress)
     if err != nil { return err }
 
-    // Make RPC call
-    if err := client.Call(nil, "evm_revert", snapshotId); err != nil { return err }
-
-    // Return
-    return nil
+    // Make RPC call & return
+    return client.Call(nil, "evm_revert", snapshotId)
 
 }
 
