@@ -39,7 +39,7 @@ func GetProposalCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 func BootstrapProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownSettingPath), ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
 }
 
@@ -59,7 +59,7 @@ func GetProposalVoteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 func BootstrapProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteBlocksSettingPath), ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
@@ -79,7 +79,7 @@ func GetProposalVoteDelayBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 func BootstrapProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayBlocksSettingPath), ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
@@ -99,7 +99,7 @@ func GetProposalExecuteBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
 func BootstrapProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteBlocksSettingPath), ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
@@ -119,7 +119,7 @@ func GetProposalActionBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (ui
 func BootstrapProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return trustednode.BootstrapUint(rp, ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ProposeProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
     return trustednode.ProposeSetUint(rp, fmt.Sprintf("set %s", ActionBlocksSettingPath), ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
