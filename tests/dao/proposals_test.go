@@ -61,12 +61,19 @@ func TestProposalDetails(t *testing.T) {
     if _, err := trustednodedao.VoteOnProposal(rp, proposalId, true, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := trustednodedao.ExecuteProposal(rp, proposalId, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
+    // Submit invite member proposal & cancel it
+    cancelledProposalId, _, err := trustednodedao.ProposeInviteMember(rp, "cancel this", nodeAccount.Address, "cancel", "cancel@rocketpool.net", trustedNodeAccount.GetTransactor())
+    if err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.CancelProposal(rp, cancelledProposalId, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Get & check updated proposal details
     if proposals, err := dao.GetProposalsWithMember(rp, trustedNodeAccount.Address, nil); err != nil {
         t.Error(err)
-    } else if len(proposals) != 1 {
+    } else if len(proposals) != 2 {
         t.Error("Incorrect updated proposal count")
     } else {
+
+        // Passed proposal
         proposal := proposals[0]
         if proposal.ID != proposalId {
             t.Errorf("Incorrect proposal ID %d", proposal.ID)
@@ -116,10 +123,20 @@ func TestProposalDetails(t *testing.T) {
         if proposal.State != rptypes.Executed {
             t.Errorf("Incorrect proposal state %s", proposal.State.String())
         }
+
+        // Cancelled proposal
+        cancelledProposal := proposals[1]
+        if cancelledProposal.ID != cancelledProposalId {
+            t.Errorf("Incorrect cancelled proposal ID %d", cancelledProposal.ID)
+        }
+        if !cancelledProposal.IsCancelled {
+            t.Error("Incorrect cancelled proposal cancelled status")
+        }
+
     }
     if daoProposals, err := dao.GetDAOProposalsWithMember(rp, proposalDaoName, trustedNodeAccount.Address, nil); err != nil {
         t.Error(err)
-    } else if len(daoProposals) != 1 {
+    } else if len(daoProposals) != 2 {
         t.Error("Incorrect updated DAO proposal count")
     }
 
