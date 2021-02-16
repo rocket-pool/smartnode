@@ -25,12 +25,12 @@ func TestProposalDetails(t *testing.T) {
     // The DAO to check for proposals under
     proposalDaoName := "rocketDAONodeTrustedProposals"
 
+    // Set proposal cooldown
+    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-
-    // Set proposal cooldown
-    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check initial proposal details
     if proposals, err := dao.GetProposalsWithMember(rp, trustedNodeAccount.Address, nil); err != nil {

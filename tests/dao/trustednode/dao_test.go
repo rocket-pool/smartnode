@@ -29,11 +29,11 @@ func TestMemberDetails(t *testing.T) {
         t.Error("Incorrect initial trusted node DAO member count")
     }
 
-    // Register node
-    if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
-
     // Set proposal cooldown
     if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Register node
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Bootstrap trusted node DAO member
     memberId := "coolguy"

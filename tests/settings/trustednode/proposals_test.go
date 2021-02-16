@@ -76,11 +76,11 @@ func TestProposeProposalsSettings(t *testing.T) {
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
-    // Register trusted node
-    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-
     // Set proposal cooldown
     if _, err := trustednode.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Register trusted node
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Set & get cooldown
     var cooldown uint64 = 1
