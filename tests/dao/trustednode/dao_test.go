@@ -2,6 +2,7 @@ package trustednode
 
 import (
     "bytes"
+    "math/big"
     "testing"
 
     trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
@@ -10,6 +11,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/tokens"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
     rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
 )
 
@@ -30,6 +32,9 @@ func TestMemberDetails(t *testing.T) {
     // Register node
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
+    // Set proposal cooldown
+    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Bootstrap trusted node DAO member
     memberId := "coolguy"
     memberEmail := "coolguy@rocketpool.net"
@@ -44,7 +49,15 @@ func TestMemberDetails(t *testing.T) {
     if _, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Join trusted node DAO
-    if _, err := trustednodedao.Join(rp, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.Join(rp, trustedNodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Submit a proposal
+    if _, _, err := trustednodedao.ProposeMemberLeave(rp, "bye", trustedNodeAccount.Address, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Create an unbonded minipool
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount, big.NewInt(0)); err != nil { t.Fatal(err) }
 
     // Get & check updated member details
     if members, err := trustednodedao.GetMembers(rp, nil); err != nil {
@@ -68,13 +81,13 @@ func TestMemberDetails(t *testing.T) {
         if member.JoinedBlock == 0 {
             t.Errorf("Incorrect member joined block %d", member.JoinedBlock)
         }
-        if member.LastProposalBlock != 0 {
+        if member.LastProposalBlock == 0 {
             t.Errorf("Incorrect member last proposal block %d", member.LastProposalBlock)
         }
         if member.RPLBondAmount.Cmp(rplBondAmount) != 0 {
             t.Errorf("Incorrect member RPL bond amount %s", member.RPLBondAmount.String())
         }
-        if member.UnbondedValidatorCount != 0 {
+        if member.UnbondedValidatorCount != 1 {
             t.Errorf("Incorrect member unbonded validator count %d", member.UnbondedValidatorCount)
         }
     }
