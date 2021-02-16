@@ -27,6 +27,22 @@ func RegisterTrustedNode(rp *rocketpool.RocketPool, ownerAccount *accounts.Accou
     // Bootstrap trusted node DAO member
     if _, err := trustednodedao.BootstrapMember(rp, fmt.Sprintf("tn%d", trustedNodeIndex), fmt.Sprintf("tn%d@rocketpool.net", trustedNodeIndex), trustedNodeAccount.Address, ownerAccount.GetTransactor()); err != nil { return err }
 
+    // Mint trusted node RPL bond
+    if err := MintTrustedNodeBond(rp, ownerAccount, trustedNodeAccount); err != nil { return err }
+
+    // Join trusted node DAO
+    if _, err := trustednodedao.Join(rp, trustedNodeAccount.GetTransactor()); err != nil { return err }
+
+    // Increment trusted node counter & return
+    trustedNodeIndex++
+    return nil
+
+}
+
+
+// Mint trusted node DAO RPL bond to a node account and approve it for spending
+func MintTrustedNodeBond(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trustedNodeAccount *accounts.Account) error {
+
     // Get RPL bond amount
     rplBondAmount, err := trustednodesettings.GetRPLBond(rp, nil)
     if err != nil { return err }
@@ -39,11 +55,7 @@ func RegisterTrustedNode(rp *rocketpool.RocketPool, ownerAccount *accounts.Accou
     if err := rplutils.MintRPL(rp, ownerAccount, trustedNodeAccount, rplBondAmount); err != nil { return err }
     if _, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, trustedNodeAccount.GetTransactor()); err != nil { return err }
 
-    // Join trusted node DAO
-    if _, err := trustednodedao.Join(rp, trustedNodeAccount.GetTransactor()); err != nil { return err }
-
-    // Increment trusted node counter & return
-    trustedNodeIndex++
+    // Return
     return nil
 
 }

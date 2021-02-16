@@ -8,12 +8,11 @@ import (
     trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-    "github.com/rocket-pool/rocketpool-go/tokens"
 
     daoutils "github.com/rocket-pool/rocketpool-go/tests/testutils/dao"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
@@ -42,15 +41,12 @@ func TestMemberDetails(t *testing.T) {
     memberEmail := "coolguy@rocketpool.net"
     if _, err := trustednodedao.BootstrapMember(rp, memberId, memberEmail, trustedNodeAccount.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
-    // Mint RPL bond to node & allow trusted node DAO contract to spend it
+    // Get RPL bond amount
     rplBondAmount, err := trustednodesettings.GetRPLBond(rp, nil)
     if err != nil { t.Fatal(err) }
-    rocketDAONodeTrustedActionsAddress, err := rp.GetAddress("rocketDAONodeTrustedActions")
-    if err != nil { t.Fatal(err) }
-    if err := rplutils.MintRPL(rp, ownerAccount, trustedNodeAccount, rplBondAmount); err != nil { t.Fatal(err) }
-    if _, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
-    // Join trusted node DAO
+    // Mint trusted node RPL bond & join trusted node DAO
+    if err := nodeutils.MintTrustedNodeBond(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
     if _, err := trustednodedao.Join(rp, trustedNodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
