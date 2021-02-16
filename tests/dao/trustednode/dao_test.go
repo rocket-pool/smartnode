@@ -9,6 +9,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/node"
     trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
     daoutils "github.com/rocket-pool/rocketpool-go/tests/testutils/dao"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
@@ -33,31 +34,31 @@ func TestMemberDetails(t *testing.T) {
     if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
-    if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Bootstrap trusted node DAO member
     memberId := "coolguy"
     memberEmail := "coolguy@rocketpool.net"
-    if _, err := trustednodedao.BootstrapMember(rp, memberId, memberEmail, trustedNodeAccount.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.BootstrapMember(rp, memberId, memberEmail, trustedNodeAccount1.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get RPL bond amount
     rplBondAmount, err := trustednodesettings.GetRPLBond(rp, nil)
     if err != nil { t.Fatal(err) }
 
     // Mint trusted node RPL bond & join trusted node DAO
-    if err := nodeutils.MintTrustedNodeBond(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if _, err := trustednodedao.Join(rp, trustedNodeAccount.GetTransactor()); err != nil {
+    if err := nodeutils.MintTrustedNodeBond(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.Join(rp, trustedNodeAccount1.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Submit, pass & execute replace member proposal
-    proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace me", trustedNodeAccount.Address, nodeAccount.Address, "newguy", "newguy@rocketpool.net", trustedNodeAccount.GetTransactor())
+    proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace me", trustedNodeAccount1.Address, nodeAccount.Address, "newguy", "newguy@rocketpool.net", trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
-    if err := daoutils.PassAndExecuteProposal(rp, proposalId, trustedNodeAccount); err != nil { t.Fatal(err) }
+    if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1}); err != nil { t.Fatal(err) }
 
     // Create an unbonded minipool
-    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount, big.NewInt(0)); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount1, big.NewInt(0)); err != nil { t.Fatal(err) }
 
     // Get & check updated member details
     if members, err := trustednodedao.GetMembers(rp, nil); err != nil {
@@ -66,7 +67,7 @@ func TestMemberDetails(t *testing.T) {
         t.Error("Incorrect updated trusted node DAO member count")
     } else {
         member := members[0]
-        if !bytes.Equal(member.Address.Bytes(), trustedNodeAccount.Address.Bytes()) {
+        if !bytes.Equal(member.Address.Bytes(), trustedNodeAccount1.Address.Bytes()) {
             t.Errorf("Incorrect member address %s", member.Address.Hex())
         }
         if !member.Exists {
@@ -93,14 +94,14 @@ func TestMemberDetails(t *testing.T) {
     }
 
     // Get & check member invite executed block
-    if inviteExecutedBlock, err := trustednodedao.GetMemberInviteProposalExecutedBlock(rp, trustedNodeAccount.Address, nil); err != nil {
+    if inviteExecutedBlock, err := trustednodedao.GetMemberInviteProposalExecutedBlock(rp, trustedNodeAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if inviteExecutedBlock == 0 {
         t.Errorf("Incorrect member invite proposal executed block %d", inviteExecutedBlock)
     }
 
     // Get & check member replacement address
-    if replacementAddress, err := trustednodedao.GetMemberReplacementAddress(rp, trustedNodeAccount.Address, nil); err != nil {
+    if replacementAddress, err := trustednodedao.GetMemberReplacementAddress(rp, trustedNodeAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if !bytes.Equal(replacementAddress.Bytes(), nodeAccount.Address.Bytes()) {
         t.Errorf("Incorrect member replacement address %s", replacementAddress.Hex())

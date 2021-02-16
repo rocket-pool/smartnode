@@ -5,6 +5,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
     daoutils "github.com/rocket-pool/rocketpool-go/tests/testutils/dao"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
@@ -86,7 +87,7 @@ func TestProposeProposalsSettings(t *testing.T) {
     var cooldown uint64 = 1
     if proposalId, _, err := trustednode.ProposeProposalCooldown(rp, cooldown, trustedNodeAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, trustedNodeAccount); err != nil {
+    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount}); err != nil {
         t.Error(err)
     } else if value, err := trustednode.GetProposalCooldown(rp, nil); err != nil {
         t.Error(err)
@@ -98,7 +99,7 @@ func TestProposeProposalsSettings(t *testing.T) {
     var voteBlocks uint64 = 10
     if proposalId, _, err := trustednode.ProposeProposalVoteBlocks(rp, voteBlocks, trustedNodeAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, trustedNodeAccount); err != nil {
+    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount}); err != nil {
         t.Error(err)
     } else if value, err := trustednode.GetProposalVoteBlocks(rp, nil); err != nil {
         t.Error(err)
@@ -110,7 +111,7 @@ func TestProposeProposalsSettings(t *testing.T) {
     var executeBlocks uint64 = 10
     if proposalId, _, err := trustednode.ProposeProposalExecuteBlocks(rp, executeBlocks, trustedNodeAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, trustedNodeAccount); err != nil {
+    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount}); err != nil {
         t.Error(err)
     } else if value, err := trustednode.GetProposalExecuteBlocks(rp, nil); err != nil {
         t.Error(err)
@@ -122,7 +123,7 @@ func TestProposeProposalsSettings(t *testing.T) {
     var actionBlocks uint64 = 10
     if proposalId, _, err := trustednode.ProposeProposalActionBlocks(rp, actionBlocks, trustedNodeAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, trustedNodeAccount); err != nil {
+    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount}); err != nil {
         t.Error(err)
     } else if value, err := trustednode.GetProposalActionBlocks(rp, nil); err != nil {
         t.Error(err)
@@ -134,7 +135,7 @@ func TestProposeProposalsSettings(t *testing.T) {
     var voteDelayBlocks uint64 = 1000
     if proposalId, _, err := trustednode.ProposeProposalVoteDelayBlocks(rp, voteDelayBlocks, trustedNodeAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, trustedNodeAccount); err != nil {
+    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount}); err != nil {
         t.Error(err)
     } else if value, err := trustednode.GetProposalVoteDelayBlocks(rp, nil); err != nil {
         t.Error(err)

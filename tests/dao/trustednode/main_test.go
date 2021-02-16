@@ -20,7 +20,10 @@ var (
     rp *rocketpool.RocketPool
 
     ownerAccount *accounts.Account
-    trustedNodeAccount *accounts.Account
+    trustedNodeAccount1 *accounts.Account
+    trustedNodeAccount2 *accounts.Account
+    trustedNodeAccount3 *accounts.Account
+    trustedNodeAccount4 *accounts.Account
     nodeAccount *accounts.Account
 )
 
@@ -39,9 +42,15 @@ func TestMain(m *testing.M) {
     // Initialize accounts
     ownerAccount, err = accounts.GetAccount(0)
     if err != nil { log.Fatal(err) }
-    trustedNodeAccount, err = accounts.GetAccount(1)
+    trustedNodeAccount1, err = accounts.GetAccount(1)
     if err != nil { log.Fatal(err) }
-    nodeAccount, err = accounts.GetAccount(2)
+    trustedNodeAccount2, err = accounts.GetAccount(2)
+    if err != nil { log.Fatal(err) }
+    trustedNodeAccount3, err = accounts.GetAccount(3)
+    if err != nil { log.Fatal(err) }
+    trustedNodeAccount4, err = accounts.GetAccount(4)
+    if err != nil { log.Fatal(err) }
+    nodeAccount, err = accounts.GetAccount(5)
     if err != nil { log.Fatal(err) }
 
     // Run tests
