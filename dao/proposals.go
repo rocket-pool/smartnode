@@ -555,6 +555,21 @@ func GetProposalPayload(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     }
     return *payload, nil
 }
+func GetProposalPayloadStr(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (string, error) {
+    dao, err := GetProposalDAO(rp, proposalId, opts)
+    if err != nil {
+        return "", err
+    }
+    payload, err := GetProposalPayload(rp, proposalId, opts)
+    if err != nil {
+        return "", err
+    }
+    payloadStr, err := GetProposalPayloadString(rp, dao, payload)
+    if err != nil {
+        payloadStr = "(unknown)"
+    }
+    return payloadStr, nil
+}
 func GetProposalState(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (rptypes.ProposalState, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
     if err != nil {
