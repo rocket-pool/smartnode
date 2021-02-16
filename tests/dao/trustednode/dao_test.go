@@ -10,6 +10,7 @@ import (
     trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
     "github.com/rocket-pool/rocketpool-go/tokens"
 
+    daoutils "github.com/rocket-pool/rocketpool-go/tests/testutils/dao"
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
     rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
@@ -54,18 +55,10 @@ func TestMemberDetails(t *testing.T) {
         t.Fatal(err)
     }
 
-    // Submit replace member proposal
+    // Submit, pass & execute replace member proposal
     proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace me", trustedNodeAccount.Address, nodeAccount.Address, "newguy", "newguy@rocketpool.net", trustedNodeAccount.GetTransactor())
     if err != nil { t.Fatal(err) }
-
-    // Mine blocks until proposal voting delay has passed
-    voteDelayBlocks, err := trustednodesettings.GetProposalVoteDelayBlocks(rp, nil)
-    if err != nil { t.Fatal(err) }
-    if err := evm.MineBlocks(int(voteDelayBlocks)); err != nil { t.Fatal(err) }
-
-    // Pass & execute replace member proposal
-    if _, err := trustednodedao.VoteOnProposal(rp, proposalId, true, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := trustednodedao.ExecuteProposal(rp, proposalId, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := daoutils.PassAndExecuteProposal(rp, proposalId, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Create an unbonded minipool
     if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount, big.NewInt(0)); err != nil { t.Fatal(err) }

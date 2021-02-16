@@ -6,8 +6,8 @@ import (
     "github.com/rocket-pool/rocketpool-go/settings/trustednode"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     daoutils "github.com/rocket-pool/rocketpool-go/tests/testutils/dao"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
     nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
