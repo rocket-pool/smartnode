@@ -49,7 +49,7 @@ func Replace(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave")
+    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionReplace")
     if err != nil {
         return nil, fmt.Errorf("Could not replace node's position in the trusted node DAO: %w", err)
     }
