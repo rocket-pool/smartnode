@@ -101,3 +101,53 @@ func TestMemberLeave(t *testing.T) {
 
 }
 
+
+func TestReplaceMember(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Set proposal cooldown
+    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Register nodes
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+
+    // Submit, pass & execute replace member proposal
+    proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace me", trustedNodeAccount1.Address, nodeAccount.Address, "coolguy", "coolguy@rocketpool.net", trustedNodeAccount1.GetTransactor())
+    if err != nil { t.Fatal(err) }
+    if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1}); err != nil { t.Fatal(err) }
+
+    // Get & check initial member exists statuses
+    if oldMemberExists, err := trustednodedao.GetMemberExists(rp, trustedNodeAccount1.Address, nil); err != nil {
+        t.Error(err)
+    } else if !oldMemberExists {
+        t.Error("Incorrect initial old member exists status")
+    }
+    if newMemberExists, err := trustednodedao.GetMemberExists(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if newMemberExists {
+        t.Error("Incorrect initial new member exists status")
+    }
+
+    // Replace position in trusted node DAO
+    if _, err := trustednodedao.Replace(rp, trustedNodeAccount1.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated member exists status
+    if oldMemberExists, err := trustednodedao.GetMemberExists(rp, trustedNodeAccount1.Address, nil); err != nil {
+        t.Error(err)
+    } else if oldMemberExists {
+        t.Error("Incorrect updated old member exists status")
+    }
+    if newMemberExists, err := trustednodedao.GetMemberExists(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if !newMemberExists {
+        t.Error("Incorrect updated new member exists status")
+    }
+
+}
+
