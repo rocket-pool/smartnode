@@ -106,3 +106,33 @@ func TestTransferFromRPL(t *testing.T) {
 
 }
 
+
+func TestSwapFixedSupplyRPLForRPL(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Mint fixed-supply RPL
+    rplAmount := eth.EthToWei(100)
+    if err := rplutils.MintFixedSupplyRPL(rp, ownerAccount, userAccount1, rplAmount); err != nil { t.Fatal(err) }
+
+    // Approve fixed-supply RPL spend
+    rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+    if err != nil { t.Fatal(err) }
+    if _, err := tokens.ApproveFixedSupplyRPL(rp, *rocketTokenRPLAddress, rplAmount, userAccount1.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Swap fixed-supply RP for RPL
+    if _, err := tokens.SwapFixedSupplyRPLForRPL(rp, rplAmount, userAccount1.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check RPL account balance
+    if rplBalance, err := tokens.GetRPLBalance(rp, userAccount1.Address, nil); err != nil {
+        t.Error(err)
+    } else if rplBalance.Cmp(rplAmount) != 0 {
+        t.Errorf("Incorrect RPL account balance %s", rplBalance.String())
+    }
+
+}
+
