@@ -60,6 +60,9 @@ func TestProposeMembersSettings(t *testing.T) {
     // Register trusted node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
+    // Set proposal cooldown
+    if _, err := trustednode.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Set & get quorum
     quorum := 0.1
     if proposalId, _, err := trustednode.ProposeQuorum(rp, quorum, trustedNodeAccount.GetTransactor()); err != nil {

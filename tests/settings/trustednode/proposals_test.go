@@ -79,8 +79,11 @@ func TestProposeProposalsSettings(t *testing.T) {
     // Register trusted node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
+    // Set proposal cooldown
+    if _, err := trustednode.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Set & get cooldown
-    var cooldown uint64 = 1000000
+    var cooldown uint64 = 1
     if proposalId, _, err := trustednode.ProposeProposalCooldown(rp, cooldown, trustedNodeAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, trustedNodeAccount); err != nil {
