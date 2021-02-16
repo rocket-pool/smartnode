@@ -11,6 +11,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -30,7 +31,7 @@ type ProposalDetails struct {
     StartBlock uint64               `json:"startBlock"`
     EndBlock uint64                 `json:"endBlock"`
     ExpiryBlock uint64              `json:"expiryBlock"`
-    VotesRequired uint64            `json:"votesRequired"`
+    VotesRequired float64           `json:"votesRequired"`
     VotesFor uint64                 `json:"votesFor"`
     VotesAgainst uint64             `json:"votesAgainst"`
     MemberVoted bool                `json:"memberVoted"`
@@ -260,7 +261,7 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     var startBlock uint64
     var endBlock uint64
     var expiryBlock uint64
-    var votesRequired uint64
+    var votesRequired float64
     var votesFor uint64
     var votesAgainst uint64
     var isCancelled bool
@@ -488,7 +489,7 @@ func GetProposalExpiryBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *
     }
     return (*expiryBlock).Uint64(), nil
 }
-func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
     if err != nil {
         return 0, err
@@ -497,7 +498,7 @@ func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts
     if err := rocketDAOProposal.Call(opts, votesRequired, "getVotesRequired", big.NewInt(int64(proposalId))); err != nil {
         return 0, fmt.Errorf("Could not get proposal %d votes required: %w", proposalId, err)
     }
-    return (*votesRequired).Uint64(), nil
+    return eth.WeiToEth(*votesRequired), nil
 }
 func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
