@@ -32,8 +32,8 @@ type ProposalDetails struct {
     EndBlock uint64                 `json:"endBlock"`
     ExpiryBlock uint64              `json:"expiryBlock"`
     VotesRequired float64           `json:"votesRequired"`
-    VotesFor uint64                 `json:"votesFor"`
-    VotesAgainst uint64             `json:"votesAgainst"`
+    VotesFor float64                `json:"votesFor"`
+    VotesAgainst float64            `json:"votesAgainst"`
     MemberVoted bool                `json:"memberVoted"`
     MemberSupported bool            `json:"memberSupported"`
     IsCancelled bool                `json:"isCancelled"`
@@ -262,8 +262,8 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     var endBlock uint64
     var expiryBlock uint64
     var votesRequired float64
-    var votesFor uint64
-    var votesAgainst uint64
+    var votesFor float64
+    var votesAgainst float64
     var isCancelled bool
     var isExecuted bool
     var payload []byte
@@ -500,7 +500,7 @@ func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts
     }
     return eth.WeiToEth(*votesRequired), nil
 }
-func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
     if err != nil {
         return 0, err
@@ -509,9 +509,9 @@ func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bin
     if err := rocketDAOProposal.Call(opts, votesFor, "getVotesFor", big.NewInt(int64(proposalId))); err != nil {
         return 0, fmt.Errorf("Could not get proposal %d votes for: %w", proposalId, err)
     }
-    return (*votesFor).Uint64(), nil
+    return eth.WeiToEth(*votesFor), nil
 }
-func GetProposalVotesAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+func GetProposalVotesAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
     if err != nil {
         return 0, err
@@ -520,7 +520,7 @@ func GetProposalVotesAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts 
     if err := rocketDAOProposal.Call(opts, votesAgainst, "getVotesAgainst", big.NewInt(int64(proposalId))); err != nil {
         return 0, fmt.Errorf("Could not get proposal %d votes against: %w", proposalId, err)
     }
-    return (*votesAgainst).Uint64(), nil
+    return eth.WeiToEth(*votesAgainst), nil
 }
 func GetProposalIsCancelled(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (bool, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
