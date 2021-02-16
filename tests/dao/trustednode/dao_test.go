@@ -32,8 +32,9 @@ func TestMemberDetails(t *testing.T) {
     // Set proposal cooldown
     if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
-    // Register node
+    // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Bootstrap trusted node DAO member
     memberId := "coolguy"
@@ -53,8 +54,18 @@ func TestMemberDetails(t *testing.T) {
         t.Fatal(err)
     }
 
-    // Submit a proposal
-    if _, _, err := trustednodedao.ProposeMemberLeave(rp, "bye", trustedNodeAccount.Address, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    // Submit replace member proposal
+    proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace me", trustedNodeAccount.Address, nodeAccount.Address, "newguy", "newguy@rocketpool.net", trustedNodeAccount.GetTransactor())
+    if err != nil { t.Fatal(err) }
+
+    // Mine blocks until proposal voting delay has passed
+    voteDelayBlocks, err := trustednodesettings.GetProposalVoteDelayBlocks(rp, nil)
+    if err != nil { t.Fatal(err) }
+    if err := evm.MineBlocks(int(voteDelayBlocks)); err != nil { t.Fatal(err) }
+
+    // Pass & execute replace member proposal
+    if _, err := trustednodedao.VoteOnProposal(rp, proposalId, true, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.ExecuteProposal(rp, proposalId, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create an unbonded minipool
     if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount, big.NewInt(0)); err != nil { t.Fatal(err) }
@@ -90,6 +101,20 @@ func TestMemberDetails(t *testing.T) {
         if member.UnbondedValidatorCount != 1 {
             t.Errorf("Incorrect member unbonded validator count %d", member.UnbondedValidatorCount)
         }
+    }
+
+    // Get & check member invite executed block
+    if inviteExecutedBlock, err := trustednodedao.GetMemberInviteProposalExecutedBlock(rp, trustedNodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if inviteExecutedBlock == 0 {
+        t.Errorf("Incorrect member invite proposal executed block %d", inviteExecutedBlock)
+    }
+
+    // Get & check member replacement address
+    if replacementAddress, err := trustednodedao.GetMemberReplacementAddress(rp, trustedNodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(replacementAddress.Bytes(), nodeAccount.Address.Bytes()) {
+        t.Errorf("Incorrect member replacement address %s", replacementAddress.Hex())
     }
 
 }
