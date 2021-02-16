@@ -6,6 +6,7 @@ import (
     trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
     daoutils "github.com/rocket-pool/rocketpool-go/tests/testutils/dao"
@@ -71,7 +72,7 @@ func TestMemberLeave(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount4); err != nil { t.Fatal(err) }
 
     // Submit, pass & execute member leave proposal
-    proposalId, _, err := trustednodedao.ProposeMemberLeave(rp, "bye", trustedNodeAccount1.Address, trustedNodeAccount1.GetTransactor())
+    proposalId, _, err := trustednodedao.ProposeMemberLeave(rp, "node 1 leave", trustedNodeAccount1.Address, trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
     if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{
         trustedNodeAccount1,
@@ -116,7 +117,7 @@ func TestReplaceMember(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
 
     // Submit, pass & execute replace member proposal
-    proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace me", trustedNodeAccount1.Address, nodeAccount.Address, "coolguy", "coolguy@rocketpool.net", trustedNodeAccount1.GetTransactor())
+    proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace node 1", trustedNodeAccount1.Address, nodeAccount.Address, "coolguy", "coolguy@rocketpool.net", trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
     if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1}); err != nil { t.Fatal(err) }
 
@@ -147,6 +148,41 @@ func TestReplaceMember(t *testing.T) {
         t.Error(err)
     } else if !newMemberExists {
         t.Error("Incorrect updated new member exists status")
+    }
+
+}
+
+
+func TestKickMember(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Set proposal cooldown
+    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Register nodes
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
+
+    // Get & check initial member exists status
+    if exists, err := trustednodedao.GetMemberExists(rp, trustedNodeAccount2.Address, nil); err != nil {
+        t.Error(err)
+    } else if !exists {
+        t.Error("Incorrect initial member exists status")
+    }
+
+    // Submit, pass & execute kick member proposal
+    proposalId, _, err := trustednodedao.ProposeKickMember(rp, "kick node 2", trustedNodeAccount2.Address, eth.EthToWei(1000), trustedNodeAccount1.GetTransactor())
+    if err != nil { t.Fatal(err) }
+    if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil { t.Fatal(err) }
+
+    // Get & check updated member exists status
+    if exists, err := trustednodedao.GetMemberExists(rp, trustedNodeAccount2.Address, nil); err != nil {
+        t.Error(err)
+    } else if exists {
+        t.Error("Incorrect updated member exists status")
     }
 
 }
