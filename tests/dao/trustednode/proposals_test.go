@@ -1,8 +1,10 @@
 package trustednode
 
 import (
+    "fmt"
     "testing"
 
+    "github.com/rocket-pool/rocketpool-go/dao"
     trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -29,7 +31,10 @@ func TestInviteMember(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
 
     // Submit, pass & execute invite member proposal
-    proposalId, _, err := trustednodedao.ProposeInviteMember(rp, "invite coolguy", nodeAccount.Address, "coolguy", "coolguy@rocketpool.net", trustedNodeAccount1.GetTransactor())
+    proposalMemberAddress := nodeAccount.Address
+    proposalMemberId := "coolguy"
+    proposalMemberEmail := "coolguy@rocketpool.net"
+    proposalId, _, err := trustednodedao.ProposeInviteMember(rp, "invite coolguy", proposalMemberAddress, proposalMemberId, proposalMemberEmail, trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
     if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1}); err != nil { t.Fatal(err) }
 
@@ -53,6 +58,13 @@ func TestInviteMember(t *testing.T) {
         t.Error("Incorrect updated member exists status")
     }
 
+    // Get & check proposal payload string
+    if payloadStr, err := dao.GetProposalPayloadStr(rp, proposalId, nil); err != nil {
+        t.Error(err)
+    } else if payloadStr != fmt.Sprintf("proposalInvite(%s,%s,%s)", proposalMemberId, proposalMemberEmail, proposalMemberAddress.Hex()) {
+        t.Errorf("Incorrect proposal payload string %s", payloadStr)
+    }
+
 }
 
 
@@ -72,7 +84,8 @@ func TestMemberLeave(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount4); err != nil { t.Fatal(err) }
 
     // Submit, pass & execute member leave proposal
-    proposalId, _, err := trustednodedao.ProposeMemberLeave(rp, "node 1 leave", trustedNodeAccount1.Address, trustedNodeAccount1.GetTransactor())
+    proposalMemberAddress := trustedNodeAccount1.Address
+    proposalId, _, err := trustednodedao.ProposeMemberLeave(rp, "node 1 leave", proposalMemberAddress, trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
     if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{
         trustedNodeAccount1,
@@ -100,6 +113,13 @@ func TestMemberLeave(t *testing.T) {
         t.Error("Incorrect updated member exists status")
     }
 
+    // Get & check proposal payload string
+    if payloadStr, err := dao.GetProposalPayloadStr(rp, proposalId, nil); err != nil {
+        t.Error(err)
+    } else if payloadStr != fmt.Sprintf("proposalLeave(%s)", proposalMemberAddress.Hex()) {
+        t.Errorf("Incorrect proposal payload string %s", payloadStr)
+    }
+
 }
 
 
@@ -117,7 +137,11 @@ func TestReplaceMember(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
 
     // Submit, pass & execute replace member proposal
-    proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace node 1", trustedNodeAccount1.Address, nodeAccount.Address, "coolguy", "coolguy@rocketpool.net", trustedNodeAccount1.GetTransactor())
+    proposalOldMemberAddress := trustedNodeAccount1.Address
+    proposalNewMemberAddress := nodeAccount.Address
+    proposalNewMemberId := "coolguy"
+    proposalNewMemberEmail := "coolguy@rocketpool.net"
+    proposalId, _, err := trustednodedao.ProposeReplaceMember(rp, "replace node 1", proposalOldMemberAddress, proposalNewMemberAddress, proposalNewMemberId, proposalNewMemberEmail, trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
     if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1}); err != nil { t.Fatal(err) }
 
@@ -150,6 +174,13 @@ func TestReplaceMember(t *testing.T) {
         t.Error("Incorrect updated new member exists status")
     }
 
+    // Get & check proposal payload string
+    if payloadStr, err := dao.GetProposalPayloadStr(rp, proposalId, nil); err != nil {
+        t.Error(err)
+    } else if payloadStr != fmt.Sprintf("proposalReplace(%s,%s,%s,%s)", proposalOldMemberAddress.Hex(), proposalNewMemberId, proposalNewMemberEmail, proposalNewMemberAddress.Hex()) {
+        t.Errorf("Incorrect proposal payload string %s", payloadStr)
+    }
+
 }
 
 
@@ -174,7 +205,9 @@ func TestKickMember(t *testing.T) {
     }
 
     // Submit, pass & execute kick member proposal
-    proposalId, _, err := trustednodedao.ProposeKickMember(rp, "kick node 2", trustedNodeAccount2.Address, eth.EthToWei(1000), trustedNodeAccount1.GetTransactor())
+    proposalMemberAddress := trustedNodeAccount2.Address
+    proposalFineAmount := eth.EthToWei(1000)
+    proposalId, _, err := trustednodedao.ProposeKickMember(rp, "kick node 2", proposalMemberAddress, proposalFineAmount, trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
     if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil { t.Fatal(err) }
 
@@ -183,6 +216,13 @@ func TestKickMember(t *testing.T) {
         t.Error(err)
     } else if exists {
         t.Error("Incorrect updated member exists status")
+    }
+
+    // Get & check proposal payload string
+    if payloadStr, err := dao.GetProposalPayloadStr(rp, proposalId, nil); err != nil {
+        t.Error(err)
+    } else if payloadStr != fmt.Sprintf("proposalKick(%s,%s)", proposalMemberAddress.Hex(), proposalFineAmount.String()) {
+        t.Errorf("Incorrect proposal payload string %s", payloadStr)
     }
 
 }
