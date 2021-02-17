@@ -1,10 +1,12 @@
 package tokens
 
 import (
+    "context"
     "testing"
 
     "github.com/ethereum/go-ethereum/common"
 
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -102,6 +104,44 @@ func TestTransferFromRPL(t *testing.T) {
         t.Error(err)
     } else if rplBalance.Cmp(sendAmount) != 0 {
         t.Errorf("Incorrect RPL account balance %s", rplBalance.String())
+    }
+
+}
+
+
+func TestMintInflationRPL(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Set network parameters
+    if _, err := protocol.BootstrapInflationIntervalBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Start RPL inflation
+    if header, err := rp.Client.HeaderByNumber(context.Background(), nil); err != nil {
+        t.Fatal(err)
+    } else if _, err := protocol.BootstrapInflationStartBlock(rp, header.Number.Uint64() + 2, ownerAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Mine blocks until rewards are available
+    if err := evm.MineBlocks(10); err != nil { t.Fatal(err) }
+
+    // Get initial total supply
+    rplTotalSupply1, err := tokens.GetRPLTotalSupply(rp, nil)
+    if err != nil { t.Fatal(err) }
+
+    // Mint RPL from inflation
+    if _, err := tokens.MintInflationRPL(rp, userAccount1.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated total supply
+    rplTotalSupply2, err := tokens.GetRPLTotalSupply(rp, nil)
+    if err != nil { t.Fatal(err) }
+    if rplTotalSupply2.Cmp(rplTotalSupply1) != 1 {
+        t.Errorf("Incorrect updated RPL total supply %s", rplTotalSupply2.String())
     }
 
 }
