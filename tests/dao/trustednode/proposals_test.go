@@ -17,7 +17,7 @@ import (
 )
 
 
-func TestInviteMember(t *testing.T) {
+func TestProposeInviteMember(t *testing.T) {
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
@@ -68,7 +68,7 @@ func TestInviteMember(t *testing.T) {
 }
 
 
-func TestMemberLeave(t *testing.T) {
+func TestProposeMemberLeave(t *testing.T) {
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
@@ -123,7 +123,7 @@ func TestMemberLeave(t *testing.T) {
 }
 
 
-func TestReplaceMember(t *testing.T) {
+func TestProposeReplaceMember(t *testing.T) {
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
@@ -184,7 +184,7 @@ func TestReplaceMember(t *testing.T) {
 }
 
 
-func TestKickMember(t *testing.T) {
+func TestProposeKickMember(t *testing.T) {
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }

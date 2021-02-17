@@ -5,6 +5,8 @@ import (
     "math/big"
     "testing"
 
+    "github.com/ethereum/go-ethereum/common"
+
     trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -105,6 +107,35 @@ func TestMemberDetails(t *testing.T) {
         t.Error(err)
     } else if !bytes.Equal(replacementAddress.Bytes(), nodeAccount.Address.Bytes()) {
         t.Errorf("Incorrect member replacement address %s", replacementAddress.Hex())
+    }
+
+}
+
+
+func TestUpgradeContract(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Upgrade contract
+    contractName := "rocketDepositPool"
+    contractNewAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    contractNewAbi := "[{\"name\":\"foo\",\"type\":\"function\",\"inputs\":[],\"outputs\":[]}]"
+    if _, err := trustednodedao.BootstrapUpgrade(rp, "upgradeContract", contractName, contractNewAbi, contractNewAddress, ownerAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated contract details
+    if contractAddress, err := rp.GetAddress(contractName); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(contractAddress.Bytes(), contractNewAddress.Bytes()) {
+        t.Errorf("Incorrect updated contract address %s", contractAddress.Hex())
+    }
+    if contractAbi, err := rp.GetABI(contractName); err != nil {
+        t.Error(err)
+    } else if _, ok := contractAbi.Methods["foo"]; !ok {
+        t.Errorf("Incorrect updated contract ABI")
     }
 
 }
