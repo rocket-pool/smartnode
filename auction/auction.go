@@ -129,6 +129,7 @@ func GetLotDetails(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOp
     var endBlock uint64
     var startPrice *big.Int 
     var reservePrice *big.Int 
+    var priceAtCurrentBlock *big.Int
     var priceByTotalBids *big.Int 
     var currentPrice *big.Int 
     var totalRplAmount *big.Int 
@@ -162,6 +163,11 @@ func GetLotDetails(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOp
     wg.Go(func() error {
         var err error
         reservePrice, err = GetLotReservePrice(rp, lotIndex, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        priceAtCurrentBlock, err = GetLotPriceAtCurrentBlock(rp, lotIndex, opts)
         return err
     })
     wg.Go(func() error {
@@ -218,6 +224,7 @@ func GetLotDetails(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOp
         EndBlock: endBlock,
         StartPrice: startPrice,
         ReservePrice: reservePrice,
+        PriceAtCurrentBlock: priceAtCurrentBlock,
         PriceByTotalBids: priceByTotalBids,
         CurrentPrice: currentPrice,
         TotalRPLAmount: totalRplAmount,
