@@ -7,6 +7,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/auction"
     "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/settings/protocol"
+    "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
     auctionutils "github.com/rocket-pool/rocketpool-go/tests/testutils/auction"
@@ -101,6 +102,7 @@ func TestLotDetails(t *testing.T) {
     if _, err := protocol.BootstrapLotStartingPriceRatio(rp, 1.0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotReservePriceRatio(rp, 0.5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotMaximumEthValue(rp, eth.EthToWei(10), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapLotDuration(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Mint slashed RPL to auction contract
     if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount, userAccount1); err != nil { t.Fatal(err) }
@@ -112,76 +114,111 @@ func TestLotDetails(t *testing.T) {
         t.Error("Incorrect initial lot count")
     }
 
-    // Create lot
-    lotIndex, _, err := auction.CreateLot(rp, userAccount1.GetTransactor())
+    // Create lots
+    lot1Index, _, err := auction.CreateLot(rp, userAccount1.GetTransactor())
+    if err != nil { t.Fatal(err) }
+    lot2Index, _, err := auction.CreateLot(rp, userAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
 
-    // Place bid on lot
+    // Place bid on lot 1
     bidAmount := eth.EthToWei(1)
     bid1Opts := userAccount1.GetTransactor()
     bid1Opts.Value = bidAmount
-    if _, err := auction.PlaceBid(rp, lotIndex, bid1Opts); err != nil { t.Fatal(err) }
+    if _, err := auction.PlaceBid(rp, lot1Index, bid1Opts); err != nil { t.Fatal(err) }
 
-    // Place another lot on bid to close it
+    // Place another bid on lot 1 to clear it
     bid2Opts := userAccount2.GetTransactor()
     bid2Opts.Value = eth.EthToWei(1000)
-    if _, err := auction.PlaceBid(rp, lotIndex, bid2Opts); err != nil { t.Fatal(err) }
+    if _, err := auction.PlaceBid(rp, lot1Index, bid2Opts); err != nil { t.Fatal(err) }
+
+    // Mine blocks until lot 2 hits reserve price & recover unclaimed RPL from it
+    if err := evm.MineBlocks(5); err != nil { t.Fatal(err) }
+    if _, err := auction.RecoverUnclaimedRPL(rp, lot2Index, userAccount1.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get updated lot details
     if lots, err := auction.GetLotsWithBids(rp, userAccount1.Address, nil); err != nil {
         t.Error(err)
-    } else if len(lots) != 1 {
+    } else if len(lots) != 2 {
         t.Error("Incorrect updated lot count")
     } else {
-        lot := lots[0]
-        if lot.Index != lotIndex {
-            t.Errorf("Incorrect lot index %d", lot.Index)
+        lot1 := lots[0]
+        lot2 := lots[1]
+
+        // Lot 1
+        if lot1.Index != lot1Index {
+            t.Errorf("Incorrect lot index %d", lot1.Index)
         }
-        if !lot.Exists {
+        if !lot1.Exists {
             t.Error("Incorrect lot exists status")
         }
-        if lot.StartBlock == 0 {
-            t.Errorf("Incorrect lot start block %d", lot.StartBlock)
+        if lot1.StartBlock == 0 {
+            t.Errorf("Incorrect lot start block %d", lot1.StartBlock)
         }
-        if lot.EndBlock <= lot.StartBlock {
-            t.Errorf("Incorrect lot end block %d", lot.EndBlock)
+        if lot1.EndBlock <= lot1.StartBlock {
+            t.Errorf("Incorrect lot end block %d", lot1.EndBlock)
         }
-        if lot.StartPrice.Cmp(eth.EthToWei(1)) != 0 {
-            t.Errorf("Incorrect lot start price %s", lot.StartPrice.String())
+        if lot1.StartPrice.Cmp(eth.EthToWei(1)) != 0 {
+            t.Errorf("Incorrect lot start price %s", lot1.StartPrice.String())
         }
-        if lot.ReservePrice.Cmp(eth.EthToWei(0.5)) != 0 {
-            t.Errorf("Incorrect lot reserve price %s", lot.ReservePrice.String())
+        if lot1.ReservePrice.Cmp(eth.EthToWei(0.5)) != 0 {
+            t.Errorf("Incorrect lot reserve price %s", lot1.ReservePrice.String())
         }
-        if lot.PriceAtCurrentBlock.Cmp(lot.StartPrice) == 1 || lot.PriceAtCurrentBlock.Cmp(lot.ReservePrice) == -1 {
-            t.Errorf("Incorrect lot price at current block %s", lot.PriceAtCurrentBlock.String())
+        if lot1.PriceAtCurrentBlock.Cmp(lot1.StartPrice) == 1 || lot1.PriceAtCurrentBlock.Cmp(lot1.ReservePrice) == -1 {
+            t.Errorf("Incorrect lot price at current block %s", lot1.PriceAtCurrentBlock.String())
         }
-        if lot.PriceByTotalBids.Cmp(lot.StartPrice) == 1 || lot.PriceByTotalBids.Cmp(lot.ReservePrice) == -1 {
-            t.Errorf("Incorrect lot price at current block %s", lot.PriceByTotalBids.String())
+        if lot1.PriceByTotalBids.Cmp(lot1.StartPrice) == 1 || lot1.PriceByTotalBids.Cmp(lot1.ReservePrice) == -1 {
+            t.Errorf("Incorrect lot price at current block %s", lot1.PriceByTotalBids.String())
         }
-        if lot.CurrentPrice.Cmp(lot.StartPrice) == 1 || lot.CurrentPrice.Cmp(lot.ReservePrice) == -1 {
-            t.Errorf("Incorrect lot price at current block %s", lot.CurrentPrice.String())
+        if lot1.CurrentPrice.Cmp(lot1.StartPrice) == 1 || lot1.CurrentPrice.Cmp(lot1.ReservePrice) == -1 {
+            t.Errorf("Incorrect lot price at current block %s", lot1.CurrentPrice.String())
         }
-        if lot.TotalRPLAmount.Cmp(eth.EthToWei(10)) != 0 {
-            t.Errorf("Incorrect lot total RPL amount %s", lot.TotalRPLAmount.String())
+        if lot1.TotalRPLAmount.Cmp(eth.EthToWei(10)) != 0 {
+            t.Errorf("Incorrect lot total RPL amount %s", lot1.TotalRPLAmount.String())
         }
-        if lot.ClaimedRPLAmount.Cmp(eth.EthToWei(10)) != 0 {
-            t.Errorf("Incorrect lot claimed RPL amount %s", lot.ClaimedRPLAmount.String())
+        if lot1.ClaimedRPLAmount.Cmp(eth.EthToWei(10)) != 0 {
+            t.Errorf("Incorrect lot claimed RPL amount %s", lot1.ClaimedRPLAmount.String())
         }
-        if lot.RemainingRPLAmount.Cmp(big.NewInt(0)) != 0 {
-            t.Errorf("Incorrect lot remaining RPL amount %s", lot.RemainingRPLAmount.String())
+        if lot1.RemainingRPLAmount.Cmp(big.NewInt(0)) != 0 {
+            t.Errorf("Incorrect lot remaining RPL amount %s", lot1.RemainingRPLAmount.String())
         }
-        if lot.TotalBidAmount.Cmp(bidAmount) != 1 {
-            t.Errorf("Incorrect lot total bid amount %s", lot.TotalBidAmount.String())
+        if lot1.TotalBidAmount.Cmp(bidAmount) != 1 {
+            t.Errorf("Incorrect lot total bid amount %s", lot1.TotalBidAmount.String())
         }
-        if lot.AddressBidAmount.Cmp(bidAmount) != 0 {
-            t.Errorf("Incorrect lot address bid amount %s", lot.AddressBidAmount.String())
+        if lot1.AddressBidAmount.Cmp(bidAmount) != 0 {
+            t.Errorf("Incorrect lot address bid amount %s", lot1.AddressBidAmount.String())
         }
-        if !lot.Cleared {
+        if !lot1.Cleared {
             t.Error("Incorrect lot cleared status")
         }
-        if lot.RPLRecovered {
+        if lot1.RPLRecovered {
             t.Error("Incorrect lot RPL recovered status")
         }
+
+        // Lot 2
+        if lot2.Index != lot2Index {
+            t.Errorf("Incorrect lot index %d", lot2.Index)
+        }
+        if !lot2.RPLRecovered {
+            t.Error("Incorrect lot RPL recovered status")
+        }
+
+    }
+
+    // Get & check initial bidder RPL balance
+    if rplBalance, err := tokens.GetRPLBalance(rp, userAccount1.Address, nil); err != nil {
+        t.Error(err)
+    } else if rplBalance.Cmp(big.NewInt(0)) != 0 {
+        t.Errorf("Incorrect initial bidder RPL balance %s", rplBalance.String())
+    }
+
+    // Claim bid on lot 1
+    if _, err := auction.ClaimBid(rp, lot1Index, userAccount1.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Get & check updated bidder RPL balance
+    if rplBalance, err := tokens.GetRPLBalance(rp, userAccount1.Address, nil); err != nil {
+        t.Error(err)
+    } else if rplBalance.Cmp(big.NewInt(0)) != 1 {
+        t.Errorf("Incorrect updated bidder RPL balance %s", rplBalance.String())
     }
 
 }
