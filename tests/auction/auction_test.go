@@ -108,6 +108,11 @@ func TestLotDetails(t *testing.T) {
     if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount, userAccount1); err != nil { t.Fatal(err) }
 
     // Get & check initial lot details
+    if lots, err := auction.GetLots(rp, nil); err != nil {
+        t.Error(err)
+    } else if len(lots) != 0 {
+        t.Error("Incorrect initial lot count")
+    }
     if lots, err := auction.GetLotsWithBids(rp, userAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if len(lots) != 0 {
@@ -136,6 +141,13 @@ func TestLotDetails(t *testing.T) {
     if _, err := auction.RecoverUnclaimedRPL(rp, lot2Index, userAccount1.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check updated lot details
+    if lots, err := auction.GetLots(rp, nil); err != nil {
+        t.Error(err)
+    } else if len(lots) != 2 {
+        t.Error("Incorrect updated lot count")
+    } else if lots[0].Index != lot1Index || lots[1].Index != lot2Index {
+        t.Error("Incorrect lot indexes")
+    }
     if lots, err := auction.GetLotsWithBids(rp, userAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if len(lots) != 2 {
