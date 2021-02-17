@@ -14,6 +14,16 @@ import (
 )
 
 
+// short blurb describing each status
+var minipoolStatusDescriptions = []string {
+    "", // Initialized
+    "", // Prelaunch
+    "", // Staking
+    "Exited state - withdraw may not be available until after delay", // Withdrawable
+    "Exited and withdrawn", // Dissolved
+}
+
+
 func getStatus(c *cli.Context) error {
 
     // Get RP client
@@ -58,10 +68,13 @@ func getStatus(c *cli.Context) error {
     if len(status.Minipools) == 0 {
         fmt.Println("The node does not have any minipools yet.")
     }
-    for _, statusName := range types.MinipoolStatuses {
+    for i, statusName := range types.MinipoolStatuses {
         minipools, ok := statusMinipools[statusName]
         if !ok { continue }
         fmt.Printf("%d %s minipool(s):\n", len(minipools), statusName)
+        if len(minipoolStatusDescriptions[i]) > 0 {
+        fmt.Printf("(%s)\n", minipoolStatusDescriptions[i])
+        }
         fmt.Println("")
         for _, minipool := range minipools {
             fmt.Printf("-----------------\n")
@@ -94,6 +107,7 @@ func getStatus(c *cli.Context) error {
             }
             if minipool.Status.Status == types.Withdrawable {
             fmt.Printf("Final balance:     %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Staking.EndBalance), 6))
+            fmt.Printf("Withdrawal available in: %d blocks\n", minipool.WithdrawalAvailableInBlocks)
             }
             fmt.Printf("\n")
         }
