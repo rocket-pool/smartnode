@@ -107,7 +107,7 @@ func TestLotDetails(t *testing.T) {
     // Mint slashed RPL to auction contract
     if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount, userAccount1); err != nil { t.Fatal(err) }
 
-    // Get initial lot details
+    // Get & check initial lot details
     if lots, err := auction.GetLotsWithBids(rp, userAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if len(lots) != 0 {
@@ -135,7 +135,7 @@ func TestLotDetails(t *testing.T) {
     if err := evm.MineBlocks(5); err != nil { t.Fatal(err) }
     if _, err := auction.RecoverUnclaimedRPL(rp, lot2Index, userAccount1.GetTransactor()); err != nil { t.Fatal(err) }
 
-    // Get updated lot details
+    // Get & check updated lot details
     if lots, err := auction.GetLotsWithBids(rp, userAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if len(lots) != 2 {
@@ -192,6 +192,18 @@ func TestLotDetails(t *testing.T) {
         }
         if lot1.RPLRecovered {
             t.Error("Incorrect lot RPL recovered status")
+        }
+
+        // Lot 1 prices at blocks
+        if priceAtBlock, err := auction.GetLotPriceAtBlock(rp, lot1Index, 0, nil); err != nil {
+            t.Error(err)
+        } else if priceAtBlock.Cmp(lot1.StartPrice) != 0 {
+            t.Errorf("Incorrect lot price at block 1 %s", priceAtBlock.String())
+        }
+        if priceAtBlock, err := auction.GetLotPriceAtBlock(rp, lot1Index, 1000000, nil); err != nil {
+            t.Error(err)
+        } else if priceAtBlock.Cmp(lot1.ReservePrice) != 0 {
+            t.Errorf("Incorrect lot price at block 2 %s", priceAtBlock.String())
         }
 
         // Lot 2
