@@ -505,16 +505,20 @@ func GetLotAddressBidAmount(rp *rocketpool.RocketPool, lotIndex uint64, bidder c
 
 
 // Create a new lot
-func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
     if err != nil {
-        return nil, err
+        return 0, nil, err
+    }
+    lotCount, err := GetLotCount(rp, nil)
+    if err != nil {
+        return 0, nil, err
     }
     txReceipt, err := rocketAuctionManager.Transact(opts, "createLot")
     if err != nil {
-        return nil, fmt.Errorf("Could not create lot: %w", err)
+        return 0, nil, fmt.Errorf("Could not create lot: %w", err)
     }
-    return txReceipt, nil
+    return lotCount, txReceipt, nil
 }
 
 
