@@ -143,12 +143,18 @@ func TestLotDetails(t *testing.T) {
         if lot.PriceAtCurrentBlock.Cmp(lot.StartPrice) == 1 || lot.PriceAtCurrentBlock.Cmp(lot.ReservePrice) == -1 {
             t.Errorf("Incorrect lot price at current block %s", lot.PriceAtCurrentBlock.String())
         }
-        //if lot.PriceByTotalBids
-        //if lot.CurrentPrice
+        if lot.PriceByTotalBids.Cmp(lot.StartPrice) == 1 || lot.PriceByTotalBids.Cmp(lot.ReservePrice) == -1 {
+            t.Errorf("Incorrect lot price at current block %s", lot.PriceByTotalBids.String())
+        }
+        if lot.CurrentPrice.Cmp(lot.StartPrice) == 1 || lot.CurrentPrice.Cmp(lot.ReservePrice) == -1 {
+            t.Errorf("Incorrect lot price at current block %s", lot.CurrentPrice.String())
+        }
         //if lot.TotalRPLAmount
         //if lot.ClaimedRPLAmount
         //if lot.RemainingRPLAmount
-        //if lot.TotalBidAmount
+        if lot.TotalBidAmount.Cmp(bidAmount) != 1 {
+            t.Errorf("Incorrect lot total bid amount %s", lot.TotalBidAmount.String())
+        }
         if lot.AddressBidAmount.Cmp(bidAmount) != 0 {
             t.Errorf("Incorrect lot address bid amount %s", lot.AddressBidAmount.String())
         }
