@@ -5,6 +5,8 @@ import (
     "testing"
 
     "github.com/rocket-pool/rocketpool-go/auction"
+    "github.com/rocket-pool/rocketpool-go/network"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
     auctionutils "github.com/rocket-pool/rocketpool-go/tests/testutils/auction"
@@ -94,6 +96,12 @@ func TestLotDetails(t *testing.T) {
     // Register node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
+    // Set network parameters
+    if _, err := network.SubmitPrices(rp, 1, eth.EthToWei(1), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapLotStartingPriceRatio(rp, 1.0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapLotReservePriceRatio(rp, 0.5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapLotMaximumEthValue(rp, eth.EthToWei(10), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Mint slashed RPL to auction contract
     if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount, userAccount1); err != nil { t.Fatal(err) }
 
@@ -138,8 +146,12 @@ func TestLotDetails(t *testing.T) {
         if lot.EndBlock <= lot.StartBlock {
             t.Errorf("Incorrect lot end block %d", lot.EndBlock)
         }
-        //if lot.StartPrice
-        //if lot.ReservePrice
+        if lot.StartPrice.Cmp(eth.EthToWei(1)) != 0 {
+            t.Errorf("Incorrect lot start price %s", lot.StartPrice.String())
+        }
+        if lot.ReservePrice.Cmp(eth.EthToWei(0.5)) != 0 {
+            t.Errorf("Incorrect lot reserve price %s", lot.ReservePrice.String())
+        }
         if lot.PriceAtCurrentBlock.Cmp(lot.StartPrice) == 1 || lot.PriceAtCurrentBlock.Cmp(lot.ReservePrice) == -1 {
             t.Errorf("Incorrect lot price at current block %s", lot.PriceAtCurrentBlock.String())
         }
@@ -149,9 +161,15 @@ func TestLotDetails(t *testing.T) {
         if lot.CurrentPrice.Cmp(lot.StartPrice) == 1 || lot.CurrentPrice.Cmp(lot.ReservePrice) == -1 {
             t.Errorf("Incorrect lot price at current block %s", lot.CurrentPrice.String())
         }
-        //if lot.TotalRPLAmount
-        //if lot.ClaimedRPLAmount
-        //if lot.RemainingRPLAmount
+        if lot.TotalRPLAmount.Cmp(eth.EthToWei(10)) != 0 {
+            t.Errorf("Incorrect lot total RPL amount %s", lot.TotalRPLAmount.String())
+        }
+        if lot.ClaimedRPLAmount.Cmp(eth.EthToWei(10)) != 0 {
+            t.Errorf("Incorrect lot claimed RPL amount %s", lot.ClaimedRPLAmount.String())
+        }
+        if lot.RemainingRPLAmount.Cmp(big.NewInt(0)) != 0 {
+            t.Errorf("Incorrect lot remaining RPL amount %s", lot.RemainingRPLAmount.String())
+        }
         if lot.TotalBidAmount.Cmp(bidAmount) != 1 {
             t.Errorf("Incorrect lot total bid amount %s", lot.TotalBidAmount.String())
         }
