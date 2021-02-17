@@ -1,12 +1,16 @@
 package trustednode
 
 import (
+    "bytes"
     "fmt"
     "testing"
+
+    "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/rocketpool-go/dao"
     trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
     trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -222,6 +226,51 @@ func TestProposeKickMember(t *testing.T) {
     if payloadStr, err := dao.GetProposalPayloadStr(rp, proposalId, nil); err != nil {
         t.Error(err)
     } else if payloadStr != fmt.Sprintf("proposalKick(%s,%s)", proposalMemberAddress.Hex(), proposalFineAmount.String()) {
+        t.Errorf("Incorrect proposal payload string %s", payloadStr)
+    }
+
+}
+
+
+func TestProposeUpgradeContract(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Set proposal cooldown
+    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Register node
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+
+    // Submit, pass & execute upgrade contract proposal
+    proposalUpgradeType := "upgradeContract"
+    proposalContractName := "rocketDepositPool"
+    proposalContractAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    proposalContractAbi := "[{\"name\":\"foo\",\"type\":\"function\",\"inputs\":[],\"outputs\":[]}]"
+    proposalId, _, err := trustednodedao.ProposeUpgradeContract(rp, "upgrade rocketDepositPool", proposalUpgradeType, proposalContractName, proposalContractAbi, proposalContractAddress, trustedNodeAccount1.GetTransactor())
+    if err != nil { t.Fatal(err) }
+    if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil { t.Fatal(err) }
+
+    // Get & check updated contract details
+    if contractAddress, err := rp.GetAddress(proposalContractName); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(contractAddress.Bytes(), proposalContractAddress.Bytes()) {
+        t.Errorf("Incorrect updated contract address %s", contractAddress.Hex())
+    }
+    if contractAbi, err := rp.GetABI(proposalContractName); err != nil {
+        t.Error(err)
+    } else if _, ok := contractAbi.Methods["foo"]; !ok {
+        t.Errorf("Incorrect updated contract ABI")
+    }
+
+    // Get & check proposal payload string
+    if payloadStr, err := dao.GetProposalPayloadStr(rp, proposalId, nil); err != nil {
+        t.Error(err)
+    } else if encodedAbi, err := rocketpool.EncodeAbiStr(proposalContractAbi); err != nil {
+        t.Error(err)
+    } else if payloadStr != fmt.Sprintf("proposalUpgrade(%s,%s,%s,%s)", proposalUpgradeType, proposalContractName, encodedAbi, proposalContractAddress.Hex()) {
         t.Errorf("Incorrect proposal payload string %s", payloadStr)
     }
 
