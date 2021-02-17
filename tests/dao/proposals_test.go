@@ -84,6 +84,9 @@ func TestProposalDetails(t *testing.T) {
         if !bytes.Equal(proposal.ProposerAddress.Bytes(), trustedNodeAccount.Address.Bytes()) {
             t.Errorf("Incorrect proposal proposer address %s", proposal.ProposerAddress.Hex())
         }
+        if proposal.Message != proposalMessage {
+            t.Errorf("Incorrect proposal message %s", proposal.Message)
+        }
         if proposal.CreatedBlock == 0 {
             t.Errorf("Incorrect proposal created block %d", proposal.CreatedBlock)
         }

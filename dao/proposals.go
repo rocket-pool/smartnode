@@ -27,6 +27,7 @@ type ProposalDetails struct {
     ID uint64                       `json:"id"`
     DAO string                      `json:"dao"`
     ProposerAddress common.Address  `json:"proposerAddress"`
+    Message string                  `json:"message"`
     CreatedBlock uint64             `json:"createdBlock"`
     StartBlock uint64               `json:"startBlock"`
     EndBlock uint64                 `json:"endBlock"`
@@ -257,6 +258,7 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     var wg errgroup.Group
     var dao string
     var proposerAddress common.Address
+    var message string
     var createdBlock uint64
     var startBlock uint64
     var endBlock uint64
@@ -278,6 +280,11 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     wg.Go(func() error {
         var err error
         proposerAddress, err = GetProposalProposerAddress(rp, proposalId, opts)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        message, err = GetProposalMessage(rp, proposalId, opts)
         return err
     })
     wg.Go(func() error {
@@ -352,6 +359,7 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
         ID: proposalId,
         DAO: dao,
         ProposerAddress: proposerAddress,
+        Message: message,
         CreatedBlock: createdBlock,
         StartBlock: startBlock,
         EndBlock: endBlock,
@@ -444,6 +452,17 @@ func GetProposalProposerAddress(rp *rocketpool.RocketPool, proposalId uint64, op
         return common.Address{}, fmt.Errorf("Could not get proposal %d proposer address: %w", proposalId, err)
     }
     return *proposerAddress, nil
+}
+func GetProposalMessage(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (string, error) {
+    rocketDAOProposal, err := getRocketDAOProposal(rp)
+    if err != nil {
+        return "", err
+    }
+    message := new(string)
+    if err := rocketDAOProposal.Call(opts, message, "getMessage", big.NewInt(int64(proposalId))); err != nil {
+        return "", fmt.Errorf("Could not get proposal %d message: %w", proposalId, err)
+    }
+    return *message, nil
 }
 func GetProposalCreatedBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
