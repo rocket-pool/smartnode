@@ -69,6 +69,13 @@ func TestProposeInviteMember(t *testing.T) {
         t.Errorf("Incorrect proposal payload string %s", payloadStr)
     }
 
+    // Get & check member invite executed block
+    if inviteExecutedBlock, err := trustednodedao.GetMemberInviteProposalExecutedBlock(rp, proposalMemberAddress, nil); err != nil {
+        t.Error(err)
+    } else if inviteExecutedBlock == 0 {
+        t.Errorf("Incorrect member invite proposal executed block %d", inviteExecutedBlock)
+    }
+
 }
 
 
@@ -122,6 +129,13 @@ func TestProposeMemberLeave(t *testing.T) {
         t.Error(err)
     } else if payloadStr != fmt.Sprintf("proposalLeave(%s)", proposalMemberAddress.Hex()) {
         t.Errorf("Incorrect proposal payload string %s", payloadStr)
+    }
+
+    // Get & check member leave executed block
+    if leaveExecutedBlock, err := trustednodedao.GetMemberLeaveProposalExecutedBlock(rp, proposalMemberAddress, nil); err != nil {
+        t.Error(err)
+    } else if leaveExecutedBlock == 0 {
+        t.Errorf("Incorrect member leave proposal executed block %d", leaveExecutedBlock)
     }
 
 }
@@ -183,6 +197,20 @@ func TestProposeReplaceMember(t *testing.T) {
         t.Error(err)
     } else if payloadStr != fmt.Sprintf("proposalReplace(%s,%s,%s,%s)", proposalOldMemberAddress.Hex(), proposalNewMemberId, proposalNewMemberEmail, proposalNewMemberAddress.Hex()) {
         t.Errorf("Incorrect proposal payload string %s", payloadStr)
+    }
+
+    // Get & check member replace executed block
+    if replaceExecutedBlock, err := trustednodedao.GetMemberReplaceProposalExecutedBlock(rp, proposalOldMemberAddress, nil); err != nil {
+        t.Error(err)
+    } else if replaceExecutedBlock == 0 {
+        t.Errorf("Incorrect member replace proposal executed block %d", replaceExecutedBlock)
+    }
+
+    // Get & check member replacement address
+    if replacementAddress, err := trustednodedao.GetMemberReplacementAddress(rp, proposalOldMemberAddress, nil); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(replacementAddress.Bytes(), proposalNewMemberAddress.Bytes()) {
+        t.Errorf("Incorrect member replacement address %s", replacementAddress.Hex())
     }
 
 }
