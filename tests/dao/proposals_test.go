@@ -33,10 +33,20 @@ func TestProposalDetails(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Get & check initial proposal details
+    if proposals, err := dao.GetProposals(rp, nil); err != nil {
+        t.Error(err)
+    } else if len(proposals) != 0 {
+        t.Error("Incorrect initial proposal count")
+    }
     if proposals, err := dao.GetProposalsWithMember(rp, trustedNodeAccount.Address, nil); err != nil {
         t.Error(err)
     } else if len(proposals) != 0 {
         t.Error("Incorrect initial proposal count")
+    }
+    if daoProposals, err := dao.GetDAOProposals(rp, proposalDaoName, nil); err != nil {
+        t.Error(err)
+    } else if len(daoProposals) != 0 {
+        t.Error("Incorrect initial DAO proposal count")
     }
     if daoProposals, err := dao.GetDAOProposalsWithMember(rp, proposalDaoName, trustedNodeAccount.Address, nil); err != nil {
         t.Error(err)
@@ -67,6 +77,13 @@ func TestProposalDetails(t *testing.T) {
     if _, err := trustednodedao.CancelProposal(rp, cancelledProposalId, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check updated proposal details
+    if proposals, err := dao.GetProposals(rp, nil); err != nil {
+        t.Error(err)
+    } else if len(proposals) != 2 {
+        t.Error("Incorrect updated proposal count")
+    } else if proposals[0].ID != proposalId || proposals[1].ID != cancelledProposalId {
+        t.Error("Incorrect proposal indexes")
+    }
     if proposals, err := dao.GetProposalsWithMember(rp, trustedNodeAccount.Address, nil); err != nil {
         t.Error(err)
     } else if len(proposals) != 2 {
@@ -137,10 +154,19 @@ func TestProposalDetails(t *testing.T) {
         }
 
     }
+    if daoProposals, err := dao.GetDAOProposals(rp, proposalDaoName, nil); err != nil {
+        t.Error(err)
+    } else if len(daoProposals) != 2 {
+        t.Error("Incorrect updated DAO proposal count")
+    } else if daoProposals[0].ID != proposalId || daoProposals[1].ID != cancelledProposalId {
+        t.Error("Incorrect DAO proposal indexes")
+    }
     if daoProposals, err := dao.GetDAOProposalsWithMember(rp, proposalDaoName, trustedNodeAccount.Address, nil); err != nil {
         t.Error(err)
     } else if len(daoProposals) != 2 {
         t.Error("Incorrect updated DAO proposal count")
+    } else if daoProposals[0].ID != proposalId || daoProposals[1].ID != cancelledProposalId {
+        t.Error("Incorrect DAO proposal indexes")
     }
 
 }
