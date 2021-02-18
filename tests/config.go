@@ -1,8 +1,8 @@
 package tests
 
 
-// Contract addresses and account private keys are based on the following ganache-cli startup command:
-// ganache-cli -l 12450000 -e 1000000 -m "jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet" -i 1337
+// Contract addresses and account private keys are based on the following mnemonic:
+// jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet
 
 
 const (

@@ -14,10 +14,20 @@ rp_repo_url="https://github.com/rocket-pool/rocketpool.git"
 rp_repo_branch="v2.5-Tokenomics-updates"
 
 # Dependencies
+rp_dependencies=(
+    "@openzeppelin/contracts@3.3.0"
+    "babel-polyfill@6.26.0"
+    "babel-register@6.26.0"
+    "ganache-cli@6.12.2"
+    "pako@1.0.11"
+    "truffle@5.1.66"
+    "truffle-contract@4.0.31"
+    "web3@1.2.8"
+)
 
 # Ganache settings
-ganache_gas_limit="12450000"
 ganache_eth_balance="1000000"
+ganache_gas_limit="12450000"
 ganache_mnemonic="jungle neck govern chief unaware rubber frequent tissue service license alcohol velvet"
 ganache_port="8545"
 
@@ -53,22 +63,14 @@ clone_rp() {
 install_rp_deps() {
     cd "$rp_path"
     rm package.json package-lock.json
-    npm install \
-        babel-register \
-        babel-polyfill \
-        web3@1.2.8 \
-        ganache-cli@6.12.2 \
-        truffle@5.1.66 \
-        truffle-contract@4.0.31 \
-        @openzeppelin/contracts@3.3.0 \
-        pako@1.0.11
+    npm install "${rp_dependencies[@]}"
     cd - > /dev/null
 }
 
 # Start ganache-cli instance
 start_ganache() {
     cd "$rp_path"
-    node_modules/.bin/ganache-cli -l "$ganache_gas_limit" -e "$ganache_eth_balance" -m "$ganache_mnemonic" -p "$ganache_port" > /dev/null &
+    node_modules/.bin/ganache-cli -e "$ganache_eth_balance" -l "$ganache_gas_limit" -m "$ganache_mnemonic" -p "$ganache_port" > /dev/null &
     ganache_pid=$!
     cd - > /dev/null
 }
