@@ -3,6 +3,17 @@
 # Exit if a command fails
 set -o errexit
 
+# Check commands
+if ! command -v git &> /dev/null; then
+    echo "git command required"; exit
+fi
+if ! command -v npm &> /dev/null; then
+    echo "npm command required"; exit
+fi
+if ! command -v go &> /dev/null; then
+    echo "go command required"; exit
+fi
+
 
 ##
 # Config
@@ -82,6 +93,12 @@ migrate_rp() {
     cd - > /dev/null
 }
 
+# Run tests
+run_tests() {
+    go clean -testcache
+    go test -p 1 ./...
+}
+
 
 ##
 # Run
@@ -114,4 +131,10 @@ echo ""
 echo "Migrating Rocket Pool contracts..."
 echo ""
 migrate_rp
+
+# Run tests
+echo ""
+echo "Running tests..."
+echo ""
+run_tests
 
