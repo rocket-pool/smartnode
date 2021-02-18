@@ -53,8 +53,16 @@ func TestDetails(t *testing.T) {
     // Get & check minipool details
     if status, err := mp.GetStatusDetails(nil); err != nil {
         t.Error(err)
-    } else if status.Status != rptypes.Withdrawable {
-        t.Errorf("Incorrect minipool status %s", status.Status.String())
+    } else {
+        if status.Status != rptypes.Withdrawable {
+            t.Errorf("Incorrect minipool status %s", status.Status.String())
+        }
+        if status.StatusBlock == 0 {
+            t.Errorf("Incorrect minipool status block %d", status.StatusBlock)
+        }
+        if status.StatusTime.Unix() == 0 {
+            t.Errorf("Incorrect minipool status time %v", status.StatusTime)
+        }
     }
     if depositType, err := mp.GetDepositType(nil); err != nil {
         t.Error(err)
@@ -91,6 +99,9 @@ func TestDetails(t *testing.T) {
         }
         if !user.DepositAssigned {
             t.Error("Incorrect minipool user deposit assigned status")
+        }
+        if user.DepositAssignedTime.Unix() == 0 {
+            t.Errorf("Incorrect minipool user deposit assigned time %v", user.DepositAssignedTime)
         }
     }
     if staking, err := mp.GetStakingDetails(nil); err != nil {
