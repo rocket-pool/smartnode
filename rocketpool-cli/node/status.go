@@ -46,7 +46,7 @@ func getStatus(c *cli.Context) error {
             fmt.Printf("- %d staking\n", status.MinipoolCounts.Staking)
         }
         if status.MinipoolCounts.Withdrawable > 0 {
-            fmt.Printf("- %d withdrawable\n", status.MinipoolCounts.Withdrawable)
+            fmt.Printf("- %d withdrawable (after delay)\n", status.MinipoolCounts.Withdrawable)
         }
         if status.MinipoolCounts.Dissolved > 0 {
             fmt.Printf("- %d dissolved\n", status.MinipoolCounts.Dissolved)
