@@ -414,7 +414,7 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 
     }
 
-    // batch up validator request because of limit on url length
+    // Load validator data in batches & return
     data := make([]Validator, 0, len(pubkeys))
     for bsi := 0; bsi < len(pubkeys); bsi += MaxRequestValidatorsCount {
 
@@ -423,13 +423,13 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
         vei := bsi + MaxRequestValidatorsCount
         if vei > len(pubkeys) { vei = len(pubkeys) }
 
+        // Get validator pubkeys for batch request
         pubkeysHex := make([]string, vei - vsi)
         for vi := vsi; vi < vei; vi++ {
-            pubkey := pubkeys[vi]
-            pubkeysHex[vi-vsi] = hexutil.AddPrefix(pubkey.Hex())
+            pubkeysHex[vi - vsi] = hexutil.AddPrefix(pubkeys[vi].Hex())
         }
 
-        // Get & return validators
+        // Get & add validators
         validators, err := c.getValidators(stateId, pubkeysHex)
         if err != nil {
             return ValidatorsResponse{}, err
@@ -437,10 +437,10 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
         for _, validator := range validators.Data {
             data = append(data, validator)
         }
-    }
 
-    response := ValidatorsResponse{ Data: data, }    
-    return response, nil
+    }
+    return ValidatorsResponse{Data: data}, nil
+
 }
 
 
