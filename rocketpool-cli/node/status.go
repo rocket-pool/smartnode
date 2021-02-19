@@ -43,10 +43,10 @@ func getStatus(c *cli.Context) error {
             fmt.Printf("- %d at prelaunch\n", status.MinipoolCounts.Prelaunch)
         }
         if status.MinipoolCounts.Staking > 0 {
-            fmt.Printf("- %d staking\n", status.MinipoolCounts.Staking)
+            fmt.Printf("- %d staking (after eth2 activation)\n", status.MinipoolCounts.Staking)
         }
         if status.MinipoolCounts.Withdrawable > 0 {
-            fmt.Printf("- %d withdrawable (after delay)\n", status.MinipoolCounts.Withdrawable)
+            fmt.Printf("- %d withdrawable (after withdrawal delay)\n", status.MinipoolCounts.Withdrawable)
         }
         if status.MinipoolCounts.Dissolved > 0 {
             fmt.Printf("- %d dissolved\n", status.MinipoolCounts.Dissolved)
