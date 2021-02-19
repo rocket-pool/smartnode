@@ -434,9 +434,7 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
         if err != nil {
             return ValidatorsResponse{}, err
         }
-        for _, validator := range validators.Data {
-            data = append(data, validator)
-        }
+        data = append(data, validators.Data...)
 
     }
     return ValidatorsResponse{Data: data}, nil
