@@ -184,8 +184,6 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 // Get multiple validators' statuses
 func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
-    statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus, len(pubkeys))
-
     // Build validator statuses request
     validatorsRequest := &pb.ListValidatorsRequest{
         PublicKeys: make([][]byte, len(pubkeys)),
@@ -196,90 +194,86 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
     if opts != nil {
         validatorsRequest.QueryFilter = &pb.ListValidatorsRequest_Epoch{Epoch: opts.Epoch}
     }
-    
-    // loop for multiple page response
-    // loopIndex is for sanity to exit infinite loop
-    for loopIndex := 0; loopIndex < 10000; loopIndex++ {
-        // Get validator statuses
+
+    // Load validator statuses in pages
+    validators := make([]*pb.Validators_ValidatorContainer, 0, len(pubkeys))
+    for {
+
+        // Get & add validators
         response, err := c.bc.ListValidators(context.Background(), validatorsRequest)
         if err != nil {
             return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
         }
+        validators = append(validators, response.ValidatorList...)
 
-        // Build status map
-        for _, valCont := range response.ValidatorList {
-
-            // Get validator status & pubkey
-            validator := valCont.Validator
-            pubkey := types.BytesToValidatorPubkey(validator.PublicKey)
-
-            // Add status
-            statuses[pubkey] = beacon.ValidatorStatus{
-                Pubkey: pubkey,
-                WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
-                EffectiveBalance: validator.EffectiveBalance,
-                Slashed: validator.Slashed,
-                ActivationEligibilityEpoch: validator.ActivationEligibilityEpoch,
-                ActivationEpoch: validator.ActivationEpoch,
-                ExitEpoch: validator.ExitEpoch,
-                WithdrawableEpoch: validator.WithdrawableEpoch,
-                Exists: true,
-            }
-
-        }
-
-        // break if no validators found
-        if len(response.NextPageToken) == 0 || len(response.ValidatorList) == 0 {
-            break;
-        }
-
-        // iterate to next page of the request
+        // Update request page token; break on last page
+        if response.NextPageToken == "" { break }
         validatorsRequest.PageToken = response.NextPageToken
+
     }
-    
+
+    // Return if no validators found
+    if len(validators) == 0 {
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, nil
+    }
+
     // Build validator balances request
     balancesRequest := &pb.ListValidatorBalancesRequest{
-        PublicKeys: make([][]byte, len(statuses)),
+        PublicKeys: make([][]byte, len(validators.ValidatorList)),
     }
-    vi := 0
-    for pubkey := range statuses {
-        balancesRequest.PublicKeys[vi] = pubkey.Bytes()
-        vi++
+    for vi, validator := range validators.ValidatorList {
+        balancesRequest.PublicKeys[vi] = validator.Validator.PublicKey
     }
     if opts != nil {
         balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
     }
 
-    // loop for multiple page response
-    // loopIndex is for sanity to exit infinite loop
-    for loopIndex := 0; loopIndex < 10000; loopIndex++ {
-        // Get validator balances
+    // Load validator balances in pages
+    balances := make([]*ValidatorBalances_Balance, 0, len(pubkeys))
+    for {
+
+        // Get & add balances
         response, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
         if err != nil {
             return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator balances: %w", err)
         }
+        balances = append(balances, response.Balances...)
 
-
-        // Build status map
-        for _, bal := range response.Balances {
-
-            pubkey := types.BytesToValidatorPubkey(bal.PublicKey)
-            if status, ok := statuses[pubkey]; ok {
-                status.Balance = bal.Balance
-                statuses[pubkey] = status
-            }
-        }
-
-        // break if no responses left
-        if len(response.NextPageToken) == 0 || len(response.Balances) == 0 {
-            break;
-        }
-
-        // iterate to next page of the request
+        // Update request page token; break on last page
+        if response.NextPageToken == "" { break }
         balancesRequest.PageToken = response.NextPageToken
+
     }
 
-    // Return
+    // Check validator balances count
+    if len(validators) != len(balances) {
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Validator status and balance result counts do not match")
+    }
+
+    // Build & return status map
+    statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
+    for vi := 0; vi < len(validators); vi++ {
+
+        // Get validator status, balance & pubkey
+        validator := validators[vi].Validator
+        validatorBalance := balances[vi].Balance
+        pubkey := types.BytesToValidatorPubkey(validator.PublicKey)
+
+        // Add status
+        statuses[pubkey] = beacon.ValidatorStatus{
+            Pubkey: pubkey,
+            WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
+            Balance: validatorBalance,
+            EffectiveBalance: validator.EffectiveBalance,
+            Slashed: validator.Slashed,
+            ActivationEligibilityEpoch: validator.ActivationEligibilityEpoch,
+            ActivationEpoch: validator.ActivationEpoch,
+            ExitEpoch: validator.ExitEpoch,
+            WithdrawableEpoch: validator.WithdrawableEpoch,
+            Exists: true,
+        }
+
+    }
     return statuses, nil
 
 }
