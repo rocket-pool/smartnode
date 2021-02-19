@@ -19,7 +19,7 @@ import (
 
 // Config
 const (
-    RequestSyncStatusMethod          = "get_v1_node_syncing"
+    RequestSyncStatusMethod          = "getSyncing"
     RequestEth2ConfigMethod          = "get_v1_config_spec"
     RequestGenesisMethod             = "get_v1_beacon_genesis"
     RequestFinalityCheckpointsMethod = "get_v1_beacon_states_finality_checkpoints"
@@ -69,9 +69,8 @@ func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
     }
 
     // Return response
-    isSyncing := (syncStatus.SyncDistance != 0)
     return beacon.SyncStatus{
-        Syncing: isSyncing,
+        Syncing: syncStatus,
     }, nil
 
 }
@@ -289,10 +288,10 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 }
 
 // Get sync status
-func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
-    var syncStatus SyncStatusResponse
+func (c *Client) getSyncStatus() (bool, error) {
+    var syncStatus bool
     if err := c.client.Call(&syncStatus, RequestSyncStatusMethod); err != nil {
-        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %w", err)
+        return false, fmt.Errorf("Could not get node sync status: %w", err)
     }
     return syncStatus, nil
 }
