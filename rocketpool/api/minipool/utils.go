@@ -207,7 +207,6 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
             details.WithdrawalAvailableInBlocks = withdrawalDelay - (currentBlock - details.Status.StatusBlock)
         }
     }
-
     return details, nil
 
 }
