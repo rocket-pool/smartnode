@@ -219,9 +219,9 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 
     // Build validator balances request
     balancesRequest := &pb.ListValidatorBalancesRequest{
-        PublicKeys: make([][]byte, len(validators.ValidatorList)),
+        PublicKeys: make([][]byte, len(validators)),
     }
-    for vi, validator := range validators.ValidatorList {
+    for vi, validator := range validators {
         balancesRequest.PublicKeys[vi] = validator.Validator.PublicKey
     }
     if opts != nil {
@@ -229,7 +229,7 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
     }
 
     // Load validator balances in pages
-    balances := make([]*ValidatorBalances_Balance, 0, len(pubkeys))
+    balances := make([]*pb.ValidatorBalances_Balance, 0, len(pubkeys))
     for {
 
         // Get & add balances
