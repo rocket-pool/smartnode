@@ -19,10 +19,6 @@ type VoluntaryExitMessage struct {
 }
 
 // Response types
-type SyncStatusResponse struct {
-    HeadSlot     uint64 `json:"head_slot"`
-    SyncDistance uint64 `json:"sync_distance"`
-}
 type Eth2ConfigResponse struct {
     SecondsPerSlot uinteger `json:"SECONDS_PER_SLOT"`
     SlotsPerEpoch  uinteger `json:"SLOTS_PER_EPOCH"`
