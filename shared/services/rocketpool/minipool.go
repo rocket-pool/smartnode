@@ -46,7 +46,7 @@ func (c *Client) CanRefundMinipool(address common.Address) (api.CanRefundMinipoo
 
 // Refund ETH from a minipool
 func (c *Client) RefundMinipool(address common.Address) (api.RefundMinipoolResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("minipool refund %s", address.Hex()))
+    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("minipool refund %s", address.Hex()))
     if err != nil {
         return api.RefundMinipoolResponse{}, fmt.Errorf("Could not refund minipool: %w", err)
     }
@@ -80,7 +80,7 @@ func (c *Client) CanDissolveMinipool(address common.Address) (api.CanDissolveMin
 
 // Dissolve a minipool
 func (c *Client) DissolveMinipool(address common.Address) (api.DissolveMinipoolResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("minipool dissolve %s", address.Hex()))
+    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("minipool dissolve %s", address.Hex()))
     if err != nil {
         return api.DissolveMinipoolResponse{}, fmt.Errorf("Could not dissolve minipool: %w", err)
     }
@@ -148,7 +148,7 @@ func (c *Client) CanWithdrawMinipool(address common.Address) (api.CanWithdrawMin
 
 // Withdraw a minipool
 func (c *Client) WithdrawMinipool(address common.Address) (api.WithdrawMinipoolResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("minipool withdraw %s", address.Hex()))
+    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("minipool withdraw %s", address.Hex()))
     if err != nil {
         return api.WithdrawMinipoolResponse{}, fmt.Errorf("Could not withdraw minipool: %w", err)
     }
@@ -182,7 +182,7 @@ func (c *Client) CanCloseMinipool(address common.Address) (api.CanCloseMinipoolR
 
 // Close a minipool
 func (c *Client) CloseMinipool(address common.Address) (api.CloseMinipoolResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("minipool close %s", address.Hex()))
+    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("minipool close %s", address.Hex()))
     if err != nil {
         return api.CloseMinipoolResponse{}, fmt.Errorf("Could not close minipool: %w", err)
     }

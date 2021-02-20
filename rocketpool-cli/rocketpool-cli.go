@@ -60,6 +60,14 @@ ______           _        _    ______           _
             Value: "~/.rocketpool",
         },
         cli.StringFlag{
+            Name:  "gasPrice, g",
+            Usage: "Desired gas price in wei",
+        },
+        cli.StringFlag{
+            Name:  "gasLimit, l",
+            Usage: "Desired gas limit in wei",
+        },
+        cli.StringFlag{
             Name:  "daemon-path, d",
             Usage: "Interact with a Rocket Pool service daemon at a `path` on the host OS, running outside of docker",
         },

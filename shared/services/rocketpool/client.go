@@ -38,18 +38,27 @@ const (
 type Client struct {
     configPath string
     daemonPath string
+    gasPrice string
+    gasLimit string
     client *ssh.Client
 }
 
 
 // Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
-    return NewClient(c.GlobalString("config-path"), c.GlobalString("daemon-path"), c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"), c.GlobalString("passphrase"))
+    return NewClient(c.GlobalString("config-path"), 
+                     c.GlobalString("daemon-path"), 
+                     c.GlobalString("host"), 
+                     c.GlobalString("user"), 
+                     c.GlobalString("key"), 
+                     c.GlobalString("passphrase"), 
+                     c.GlobalString("gasPrice"), 
+                     c.GlobalString("gasLimit"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase string) (*Client, error) {
+func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase, gasPrice, gasLimit string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -96,6 +105,8 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase
     return &Client{
         configPath: os.ExpandEnv(configPath),
         daemonPath: os.ExpandEnv(daemonPath),
+        gasPrice: gasPrice,
+        gasLimit: gasLimit,
         client: sshClient,
     }, nil
 
@@ -362,6 +373,13 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 }
 
 
+// Call Rocketpool service supplying gas options for transaction
+func (c *Client) callAPIWithGasOpts(args string) ([]byte, error) {
+    gasOpts := c.getGasOpts()
+    return c.callAPI(gasOpts + args)
+}
+
+
 // Call the Rocket Pool API
 func (c *Client) callAPI(args string) ([]byte, error) {
     var cmd string
@@ -447,5 +465,19 @@ func (c *Client) readOutput(cmdText string) ([]byte, error) {
     // Run command and return output
     return cmd.Output()
 
+}
+
+
+func (c *Client) getGasOpts() string {
+    var params string
+    if len(c.gasPrice) > 0 {
+        gasPriceParam := fmt.Sprintf("--gasPrice %s ", c.gasPrice)
+        params = params + gasPriceParam
+    }
+    if len(c.gasLimit) > 0 {
+        gasLimitParam := fmt.Sprintf("--gasLimit %s ", c.gasLimit)
+        params = params + gasLimitParam
+    }
+    return params
 }
 

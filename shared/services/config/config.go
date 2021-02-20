@@ -3,11 +3,14 @@ package config
 import (
     "fmt"
     "io/ioutil"
+    "math/big"
     "os"
 
     "github.com/imdario/mergo"
     "github.com/urfave/cli"
     "gopkg.in/yaml.v2"
+
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -23,6 +26,8 @@ type RocketPoolConfig struct {
         WalletPath string               `yaml:"walletPath,omitempty"`
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
         ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
+        GasPrice string                 `yaml:"gasPrice,omitempty"`
+        GasLimit string                 `yaml:"gasLimit,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
         Eth1 Chain                      `yaml:"eth1,omitempty"`
@@ -176,8 +181,44 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
+    config.Smartnode.GasPrice = c.GlobalString("gasPrice")
+    config.Smartnode.GasLimit = c.GlobalString("gasLimit")
     config.Chains.Eth1.Provider = c.GlobalString("eth1Provider")
     config.Chains.Eth2.Provider = c.GlobalString("eth2Provider")
     return config
+}
+
+
+// Gets gas price from config into big.Int type
+func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
+    var gasPrice *big.Int
+    var err error
+
+    if len(config.Smartnode.GasPrice) > 0 {
+        gasPrice, err = cliutils.ValidateWeiAmount("gas price", config.Smartnode.GasPrice)
+        if err != nil { 
+            return gasPrice, err
+        }
+        // if 0 detected replace with nil
+        if len(gasPrice.Bits()) == 0 { gasPrice = nil } 
+    }
+
+    return gasPrice, nil
+}
+
+
+// Gets gas limit from config into uint64 type
+func (config *RocketPoolConfig) GetGasLimit() (uint64, error) {
+    var gasLimit uint64
+
+    if len(config.Smartnode.GasLimit) > 0 {
+        biGasLimit, err := cliutils.ValidateWeiAmount("gas limit", config.Smartnode.GasLimit)
+        if err != nil { 
+            return gasLimit, err
+        }
+        gasLimit = biGasLimit.Uint64()
+    }
+
+    return gasLimit, nil
 }
 

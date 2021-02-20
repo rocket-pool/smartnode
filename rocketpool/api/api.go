@@ -22,6 +22,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Subcommands: []cli.Command{},
     }
 
+    // Gas price & limit flags
+    command.Flags = []cli.Flag{
+        cli.StringFlag{
+            Name:  "gasPrice, g",
+            Usage: "Desired gas price in wei",
+        },
+        cli.StringFlag{
+            Name:  "gasLimit, l",
+            Usage: "Desired gas limit in wei",
+        },
+    }
+
     // Don't show help message for api errors because of JSON serialisation
     command.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
         return err
