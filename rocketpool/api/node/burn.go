@@ -1,7 +1,6 @@
 package node
 
 import (
-    "context"
     "math/big"
 
     "github.com/rocket-pool/rocketpool-go/tokens"
@@ -19,8 +18,6 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
-    if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
