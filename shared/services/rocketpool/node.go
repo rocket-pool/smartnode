@@ -62,6 +62,23 @@ func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse
 }
 
 
+// Set the node's withdrawal address
+func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address) (api.SetNodeWithdrawalAddressResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node set-withdrawal-address %s", withdrawalAddress.Hex()))
+    if err != nil {
+        return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
+    }
+    var response api.SetNodeWithdrawalAddressResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode set node withdrawal address response: %w", err)
+    }
+    if response.Error != "" {
+        return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Set the node's timezone location
 func (c *Client) SetNodeTimezone(timezoneLocation string) (api.SetNodeTimezoneResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("node set-timezone \"%s\"", timezoneLocation))

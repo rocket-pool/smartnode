@@ -45,6 +45,13 @@ type RegisterNodeResponse struct {
 }
 
 
+type SetNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
+}
+
+
 type SetNodeTimezoneResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
