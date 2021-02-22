@@ -64,7 +64,7 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase
         }
 
         // Read private key
-        keyBytes, err := ioutil.ReadFile(keyPath)
+        keyBytes, err := ioutil.ReadFile(os.ExpandEnv(keyPath))
         if err != nil {
             return nil, fmt.Errorf("Could not read SSH private key at %s: %w", keyPath, err)
         }
@@ -94,8 +94,8 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase
 
     // Return client
     return &Client{
-        configPath: configPath,
-        daemonPath: daemonPath,
+        configPath: os.ExpandEnv(configPath),
+        daemonPath: os.ExpandEnv(daemonPath),
         client: sshClient,
     }, nil
 

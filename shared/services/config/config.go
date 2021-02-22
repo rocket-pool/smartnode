@@ -3,6 +3,7 @@ package config
 import (
     "fmt"
     "io/ioutil"
+    "os"
 
     "github.com/imdario/mergo"
     "github.com/urfave/cli"
@@ -21,6 +22,7 @@ type RocketPoolConfig struct {
         PasswordPath string             `yaml:"passwordPath,omitempty"`
         WalletPath string               `yaml:"walletPath,omitempty"`
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
+        ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
         Eth1 Chain                      `yaml:"eth1,omitempty"`
@@ -125,11 +127,11 @@ func Merge(configs ...*RocketPoolConfig) RocketPoolConfig {
 func Load(c *cli.Context) (RocketPoolConfig, error) {
 
     // Load configs
-    globalConfig, err := loadFile(c.GlobalString("config"), true)
+    globalConfig, err := loadFile(os.ExpandEnv(c.GlobalString("config")), true)
     if err != nil {
         return RocketPoolConfig{}, err
     }
-    userConfig, err := loadFile(c.GlobalString("settings"), false)
+    userConfig, err := loadFile(os.ExpandEnv(c.GlobalString("settings")), false)
     if err != nil {
         return RocketPoolConfig{}, err
     }
