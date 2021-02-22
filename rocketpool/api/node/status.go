@@ -56,6 +56,28 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
         return err
     })
 
+    // Get staking details
+    wg1.Go(func() error {
+        var err error
+        response.RplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+        return err
+    })
+    wg1.Go(func() error {
+        var err error
+        response.EffectiveRplStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
+        return err
+    })
+    wg1.Go(func() error {
+        var err error
+        response.MinimumRplStake, err = node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+        return err
+    })
+    wg1.Go(func() error {
+        var err error
+        response.MinipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
+        return err
+    })
+
     // Get node minipool counts
     wg1.Go(func() error {
         details, err := getNodeMinipoolCountDetails(rp, nodeAccount.Address)

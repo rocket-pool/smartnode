@@ -1,6 +1,8 @@
 package api
 
 import (
+    "math/big"
+
     "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/rocketpool-go/tokens"
@@ -17,6 +19,10 @@ type NodeStatusResponse struct {
     TimezoneLocation string             `json:"timezoneLocation"`
     AccountBalances tokens.Balances     `json:"accountBalances"`
     WithdrawalBalances tokens.Balances  `json:"withdrawalBalances"`
+    RplStake *big.Int                   `json:"rplStake"`
+    EffectiveRplStake *big.Int          `json:"effectiveRplStake"`
+    MinimumRplStake *big.Int            `json:"minimumRplStake"`
+    MinipoolLimit uint64                `json:"minipoolLimit"`
     MinipoolCounts struct {
         Total int                           `json:"total"`
         Initialized int                     `json:"initialized"`
