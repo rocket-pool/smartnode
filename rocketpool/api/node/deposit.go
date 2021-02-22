@@ -61,12 +61,12 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
 
     // Get node staking information
     wg.Go(func() error {
-        var err
+        var err error
         minipoolCount, err = minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
         return err
     })
     wg.Go(func() error {
-        var err
+        var err error
         minipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
         return err
     })
