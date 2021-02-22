@@ -96,40 +96,6 @@ func (c *Client) SetNodeTimezone(timezoneLocation string) (api.SetNodeTimezoneRe
 }
 
 
-// Check whether the node can make a deposit
-func (c *Client) CanNodeDeposit(amountWei *big.Int) (api.CanNodeDepositResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s", amountWei.String()))
-    if err != nil {
-        return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %w", err)
-    }
-    var response api.CanNodeDepositResponse
-    if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.CanNodeDepositResponse{}, fmt.Errorf("Could not decode can node deposit response: %w", err)
-    }
-    if response.Error != "" {
-        return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %s", response.Error)
-    }
-    return response, nil
-}
-
-
-// Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64) (api.NodeDepositResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f", amountWei.String(), minFee))
-    if err != nil {
-        return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
-    }
-    var response api.NodeDepositResponse
-    if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.NodeDepositResponse{}, fmt.Errorf("Could not decode node deposit response: %w", err)
-    }
-    if response.Error != "" {
-        return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %s", response.Error)
-    }
-    return response, nil
-}
-
-
 // Check whether the node can swap RPL tokens
 func (c *Client) CanNodeSwapRpl(amountWei *big.Int) (api.CanNodeSwapRplResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("node can-swap-rpl %s", amountWei.String()))
@@ -159,6 +125,108 @@ func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplResponse, error
     }
     if response.Error != "" {
         return api.NodeSwapRplResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Check whether the node can stake RPL
+func (c *Client) CanNodeStakeRpl(amountWei *big.Int) (api.CanNodeStakeRplResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-stake-rpl %s", amountWei.String()))
+    if err != nil {
+        return api.CanNodeStakeRplResponse{}, fmt.Errorf("Could not get can node stake RPL status: %w", err)
+    }
+    var response api.CanNodeStakeRplResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanNodeStakeRplResponse{}, fmt.Errorf("Could not decode can node stake RPL response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanNodeStakeRplResponse{}, fmt.Errorf("Could not get can node stake RPL status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Stake RPL against the node
+func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl %s", amountWei.String()))
+    if err != nil {
+        return api.NodeStakeRplResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
+    }
+    var response api.NodeStakeRplResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeStakeRplResponse{}, fmt.Errorf("Could not decode stake node RPL response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeStakeRplResponse{}, fmt.Errorf("Could not stake node RPL: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Check whether the node can withdraw RPL
+func (c *Client) CanNodeWithdrawRpl(amountWei *big.Int) (api.CanNodeWithdrawRplResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl %s", amountWei.String()))
+    if err != nil {
+        return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
+    }
+    var response api.CanNodeWithdrawRplResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Withdraw RPL staked against the node
+func (c *Client) NodeWithdrawRpl(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-rpl %s", amountWei.String()))
+    if err != nil {
+        return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
+    }
+    var response api.NodeWithdrawRplResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not decode withdraw node RPL response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Check whether the node can make a deposit
+func (c *Client) CanNodeDeposit(amountWei *big.Int) (api.CanNodeDepositResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s", amountWei.String()))
+    if err != nil {
+        return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %w", err)
+    }
+    var response api.CanNodeDepositResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanNodeDepositResponse{}, fmt.Errorf("Could not decode can node deposit response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Make a node deposit
+func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64) (api.NodeDepositResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f", amountWei.String(), minFee))
+    if err != nil {
+        return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
+    }
+    var response api.NodeDepositResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeDepositResponse{}, fmt.Errorf("Could not decode node deposit response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %s", response.Error)
     }
     return response, nil
 }

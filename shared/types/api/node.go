@@ -65,6 +65,43 @@ type SetNodeTimezoneResponse struct {
 }
 
 
+type CanNodeSwapRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanSwap bool                        `json:"canSwap"`
+    InsufficientBalance bool            `json:"insufficientBalance"`
+}
+type NodeSwapRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
+}
+
+
+type CanNodeStakeRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanStake bool                       `json:"canStake"`
+}
+type NodeStakeRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
+}
+
+
+type CanNodeWithdrawRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanWithdraw bool                    `json:"canWithdraw"`
+}
+type NodeWithdrawRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
+}
+
+
 type CanNodeDepositResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
@@ -79,19 +116,6 @@ type NodeDepositResponse struct {
     Error string                        `json:"error"`
     TxHash common.Hash                  `json:"txHash"`
     MinipoolAddress common.Address      `json:"minipoolAddress"`
-}
-
-
-type CanNodeSwapRplResponse struct {
-    Status string                       `json:"status"`
-    Error string                        `json:"error"`
-    CanSwap bool                        `json:"canSwap"`
-    InsufficientBalance bool            `json:"insufficientBalance"`
-}
-type NodeSwapRplResponse struct {
-    Status string                       `json:"status"`
-    Error string                        `json:"error"`
-    TxHash common.Hash                  `json:"txHash"`
 }
 
 

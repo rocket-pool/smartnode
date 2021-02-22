@@ -106,6 +106,114 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "can-swap-rpl",
+                Usage:     "Check whether the node can swap old RPL for new RPL",
+                UsageText: "rocketpool api node can-swap-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canNodeSwapRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "swap-rpl",
+                Aliases:   []string{"p"},
+                Usage:     "Swap old RPL for new RPL",
+                UsageText: "rocketpool api node swap-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(nodeSwapRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "can-stake-rpl",
+                Usage:     "Check whether the node can stake RPL",
+                UsageText: "rocketpool api node can-stake-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidateDepositWeiAmount("stake amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canNodeStakeRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "stake-rpl",
+                Aliases:   []string{"k"},
+                Usage:     "Stake RPL against the node",
+                UsageText: "rocketpool api node stake-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidateDepositWeiAmount("stake amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(nodeStakeRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "can-withdraw-rpl",
+                Usage:     "Check whether the node can withdraw staked RPL",
+                UsageText: "rocketpool api node can-withdraw-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidateDepositWeiAmount("withdrawal amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canNodeWithdrawRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "withdraw-rpl",
+                Aliases:   []string{"i"},
+                Usage:     "Withdraw RPL staked against the node",
+                UsageText: "rocketpool api node withdraw-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidateDepositWeiAmount("withdrawal amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(nodeWithdrawRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
                 Name:      "can-deposit",
                 Usage:     "Check whether the node can make a deposit",
                 UsageText: "rocketpool api node can-deposit amount",
@@ -138,42 +246,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(nodeDeposit(c, amountWei, minNodeFee))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
-                Name:      "can-swap-rpl",
-                Usage:     "Check whether the node can swap old RPL for new RPL",
-                UsageText: "rocketpool api node can-swap-rpl amount",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canNodeSwapRpl(c, amountWei))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "swap-rpl",
-                Aliases:   []string{"p"},
-                Usage:     "Swap old RPL for new RPL",
-                UsageText: "rocketpool api node swap-rpl amount",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(nodeSwapRpl(c, amountWei))
                     return nil
 
                 },
