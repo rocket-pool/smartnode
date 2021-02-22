@@ -1,5 +1,9 @@
 package api
 
+import (
+    "math/big"
+)
+
 
 type NodeFeeResponse struct {
     Status string               `json:"status"`
@@ -9,4 +13,10 @@ type NodeFeeResponse struct {
     TargetNodeFee float64       `json:"targetNodeFee"`
     MaxNodeFee float64          `json:"maxNodeFee"`
     SuggestedMinNodeFee float64 `json:"suggestedMinNodeFee"`
+}
+
+
+type RplPriceResponse struct {
+    RplPrice *big.Int           `json:"rplPrice"`
+    RplPriceBlock uint64        `json:"rplPriceBlock"`
 }
