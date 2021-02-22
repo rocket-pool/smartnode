@@ -130,6 +130,40 @@ func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64) (api.NodeDeposi
 }
 
 
+// Check whether the node can swap RPL tokens
+func (c *Client) CanNodeSwapRpl(amountWei *big.Int) (api.CanNodeSwapRplResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-swap-rpl %s", amountWei.String()))
+    if err != nil {
+        return api.CanNodeSwapRplResponse{}, fmt.Errorf("Could not get can node swap RPL status: %w", err)
+    }
+    var response api.CanNodeSwapRplResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanNodeSwapRplResponse{}, fmt.Errorf("Could not decode can node swap RPL response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanNodeSwapRplResponse{}, fmt.Errorf("Could not get can node swap RPL status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Swap node's old RPL tokens for new RPL tokens
+func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl %s", amountWei.String()))
+    if err != nil {
+        return api.NodeSwapRplResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
+    }
+    var response api.NodeSwapRplResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeSwapRplResponse{}, fmt.Errorf("Could not decode node swap RPL tokens response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeSwapRplResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Check whether the node can send tokens
 func (c *Client) CanNodeSend(amountWei *big.Int, token string) (api.CanNodeSendResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("node can-send %s %s", amountWei.String(), token))

@@ -75,6 +75,19 @@ type NodeDepositResponse struct {
 }
 
 
+type CanNodeSwapRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanSwap bool                        `json:"canSwap"`
+    InsufficientBalance bool            `json:"insufficientBalance"`
+}
+type NodeSwapRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
+}
+
+
 type CanNodeSendResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`

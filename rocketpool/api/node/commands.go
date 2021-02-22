@@ -144,6 +144,42 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "can-swap-rpl",
+                Usage:     "Check whether the node can swap old RPL for new RPL",
+                UsageText: "rocketpool api node can-swap-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canNodeSwapRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "swap-rpl",
+                Aliases:   []string{"p"},
+                Usage:     "Swap old RPL for new RPL",
+                UsageText: "rocketpool api node swap-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(nodeSwapRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
                 Name:      "can-send",
                 Usage:     "Check whether the node can send ETH or tokens to an address",
                 UsageText: "rocketpool api node can-send amount token",
