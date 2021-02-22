@@ -15,7 +15,8 @@ type NodeStatusResponse struct {
     Registered bool                     `json:"registered"`
     Trusted bool                        `json:"trusted"`
     TimezoneLocation string             `json:"timezoneLocation"`
-    Balances tokens.Balances            `json:"balances"`
+    AccountBalances tokens.Balances     `json:"accountBalances"`
+    WithdrawalBalances tokens.Balances  `json:"withdrawalBalances"`
     MinipoolCounts struct {
         Total int                           `json:"total"`
         Initialized int                     `json:"initialized"`

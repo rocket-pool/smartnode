@@ -25,7 +25,7 @@ func getStatus(c *cli.Context) error {
     }
 
     // Print & return
-    fmt.Printf("The node %s has a balance of %.6f ETH and %.6f nETH.\n", status.AccountAddress.Hex(), math.RoundDown(eth.WeiToEth(status.Balances.ETH), 6), math.RoundDown(eth.WeiToEth(status.Balances.NETH), 6))
+    fmt.Printf("The node %s has a balance of %.6f ETH and %.6f nETH.\n", status.AccountAddress.Hex(), math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6), math.RoundDown(eth.WeiToEth(status.AccountBalances.NETH), 6))
     if status.Registered {
         fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
         if status.Trusted {

@@ -34,10 +34,10 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     response.AccountAddress = nodeAccount.Address
 
     // Sync
-    var wg errgroup.Group
+    var wg1 errgroup.Group
 
     // Get node trusted status
-    wg.Go(func() error {
+    wg1.Go(func() error {
         trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
         if err == nil {
             response.Trusted = trusted
@@ -46,7 +46,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     })
 
     // Get node details
-    wg.Go(func() error {
+    wg1.Go(func() error {
         details, err := node.GetNodeDetails(rp, nodeAccount.Address, nil)
         if err == nil {
             response.Registered = details.Exists
@@ -56,15 +56,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
         return err
     })
 
-    // Get node balances
-    wg.Go(func() error {
-        var err error
-        response.Balances, err = tokens.GetBalances(rp, nodeAccount.Address, nil)
-        return err
-    })
-
     // Get node minipool counts
-    wg.Go(func() error {
+    wg1.Go(func() error {
         details, err := getNodeMinipoolCountDetails(rp, nodeAccount.Address)
         if err == nil {
             response.MinipoolCounts.Total = len(details)
@@ -91,7 +84,27 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     })
 
     // Wait for data
-    if err := wg.Wait(); err != nil {
+    if err := wg1.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Sync
+    var wg2 errgroup.Group
+
+    // Get node balances
+    wg2.Go(func() error {
+        var err error
+        response.AccountBalances, err = tokens.GetBalances(rp, nodeAccount.Address, nil)
+        return err
+    })
+    wg2.Go(func() error {
+        var err error
+        response.WithdrawalBalances, err = tokens.GetBalances(rp, response.WithdrawalAddress, nil)
+        return err
+    })
+
+    // Wait for data
+    if err := wg2.Wait(); err != nil {
         return nil, err
     }
 
