@@ -149,7 +149,7 @@ func (t *stakePrelaunchMinipools) run() error {
         }
     }
 
-    // Restart validator container
+    // Restart validator process
     if err := t.restartValidator(); err != nil {
         return err
     }
@@ -260,16 +260,19 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawa
 }
 
 
-// Restart validator container
+// Restart validator process
 func (t *stakePrelaunchMinipools) restartValidator() error {
 
-    if isInsideDocker() {    
+    // Restart validator docker container
+    if isInsideDocker() {
+
         // Get validator container name
         if t.cfg.Smartnode.ProjectName == "" {
             return errors.New("Rocket Pool docker project name not set")
         }
         containerName := t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
 
+        // Log
         t.log.Printlnf("Restarting validator container (%s)...", containerName)
 
         // Get all containers
@@ -295,34 +298,43 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
             return fmt.Errorf("Could not restart validator container: %w", err)
         }
 
+    // Restart external validator process
     } else {
-        scriptPath := os.ExpandEnv(t.cfg.Smartnode.ValidatorRestartCommand)
 
-        t.log.Printlnf("Restarting validator with command: '%s'", scriptPath)
+        // Get validator restart command
+        restartCommand := os.ExpandEnv(t.cfg.Smartnode.ValidatorRestartCommand)
 
-        cmd := exec.Command(scriptPath)
+        // Log
+        t.log.Printlnf("Restarting validator process with command '%s'...", restartCommand)
+
+        // Run validator restart command bound to os stdout/stderr
+        cmd := exec.Command(restartCommand)
         cmd.Stdout = os.Stdout
         cmd.Stderr = os.Stderr
-        err := cmd.Run()
-        if err != nil {
-            return fmt.Errorf("Script failed with error: %w", err)
+        if err := cmd.Run(); err != nil {
+            return fmt.Errorf("Could not restart validator process: %w", err)
         }
+
     }
 
+    // Log & return
     t.log.Println("Successfully restarted validator")
     return nil
+
 }
 
 
-// Checks whether this process in running inside a docker container
+// Check whether process is running inside docker
 func isInsideDocker() bool {
 
+    // Read process control group info; assume non-docker on failure
     cgroup, err := ioutil.ReadFile("/proc/1/cgroup")
     if err != nil {
         return false
     }
-    cgroupStr := string(cgroup)
-    // check whether cgroup contains docker
-    return strings.Contains(cgroupStr, "docker")
+
+    // check whether control group info contains docker references
+    return strings.Contains(string(cgroup), "docker")
+
 }
 
