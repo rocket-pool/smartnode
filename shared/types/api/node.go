@@ -74,7 +74,8 @@ type CanNodeSwapRplResponse struct {
 type NodeSwapRplResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
-    TxHash common.Hash                  `json:"txHash"`
+    ApproveTxHash common.Hash           `json:"approveTxHash"`
+    SwapTxHash common.Hash              `json:"swapTxHash"`
 }
 
 
@@ -86,7 +87,8 @@ type CanNodeStakeRplResponse struct {
 type NodeStakeRplResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
-    TxHash common.Hash                  `json:"txHash"`
+    ApproveTxHash common.Hash           `json:"approveTxHash"`
+    StakeTxHash common.Hash             `json:"stakeTxHash"`
 }
 
 

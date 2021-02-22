@@ -41,6 +41,19 @@ func nodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.NodeWithdrawRplRe
     // Response
     response := api.NodeWithdrawRplResponse{}
 
+    // Get transactor
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
+        return nil, err
+    }
+
+    // Withdraw RPL
+    txReceipt, err := node.WithdrawRPL(rp, amountWei, opts)
+    if err != nil {
+        return nil, err
+    }
+    response.TxHash = txReceipt.TxHash
+
     // Return response
     return &response, nil
 

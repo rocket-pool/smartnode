@@ -64,24 +64,22 @@ func nodeSwapRpl(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplResponse, 
     }
 
     // Approve fixed-supply RPL allowance
-    approveOpts, err := w.GetNodeAccountTransactor()
-    if err != nil {
+    if opts, err := w.GetNodeAccountTransactor(); err != nil {
         return nil, err
-    }
-    if _, err := tokens.ApproveFixedSupplyRPL(rp, *rocketTokenRPLAddress, amountWei, approveOpts); err != nil {
+    } else if txReceipt, err := tokens.ApproveFixedSupplyRPL(rp, *rocketTokenRPLAddress, amountWei, opts); err != nil {
         return nil, err
+    } else {
+        response.ApproveTxHash = txReceipt.TxHash
     }
 
     // Swap fixed-supply RPL for RPL
-    swapOpts, err := w.GetNodeAccountTransactor()
-    if err != nil {
+    if opts, err := w.GetNodeAccountTransactor(); err != nil {
         return nil, err
-    }
-    txReceipt, err := tokens.SwapFixedSupplyRPLForRPL(rp, amountWei, swapOpts)
-    if err != nil {
+    } else if txReceipt, err := tokens.SwapFixedSupplyRPLForRPL(rp, amountWei, opts); err != nil {
         return nil, err
+    } else {
+        response.SwapTxHash = txReceipt.TxHash
     }
-    response.TxHash = txReceipt.TxHash
 
     // Return response
     return &response, nil

@@ -42,6 +42,30 @@ func nodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplResponse
     // Response
     response := api.NodeStakeRplResponse{}
 
+    // Get staking contract address
+    rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking")
+    if err != nil {
+        return nil, err
+    }
+
+    // Approve RPL allowance
+    if opts, err := w.GetNodeAccountTransactor(); err != nil {
+        return nil, err
+    } else if txReceipt, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts); err != nil {
+        return nil, err
+    } else {
+        response.ApproveTxHash = txReceipt.TxHash
+    }
+
+    // Stake RPL
+    if opts, err := w.GetNodeAccountTransactor(); err != nil {
+        return nil, err
+    } else if txReceipt, err := node.StakeRPL(rp, amountWei, opts); err != nil {
+        return nil, err
+    } else {
+        response.StakeTxHash = txReceipt.TxHash
+    }
+
     // Return response
     return &response, nil
 
