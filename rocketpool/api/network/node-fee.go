@@ -2,7 +2,7 @@ package network
 
 import (
     "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -37,21 +37,21 @@ func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
         return err
     })
     wg.Go(func() error {
-        minNodeFee, err := settings.GetMinimumNodeFee(rp, nil)
+        minNodeFee, err := protocol.GetMinimumNodeFee(rp, nil)
         if err == nil {
             response.MinNodeFee = minNodeFee
         }
         return err
     })
     wg.Go(func() error {
-        targetNodeFee, err := settings.GetTargetNodeFee(rp, nil)
+        targetNodeFee, err := protocol.GetTargetNodeFee(rp, nil)
         if err == nil {
             response.TargetNodeFee = targetNodeFee
         }
         return err
     })
     wg.Go(func() error {
-        maxNodeFee, err := settings.GetMaximumNodeFee(rp, nil)
+        maxNodeFee, err := protocol.GetMaximumNodeFee(rp, nil)
         if err == nil {
             response.MaxNodeFee = maxNodeFee
         }

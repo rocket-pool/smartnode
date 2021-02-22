@@ -7,7 +7,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/types"
     "golang.org/x/sync/errgroup"
 )
@@ -54,7 +54,7 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
     // Get withdrawal delay
     wg1.Go(func() error {
         var err error
-        withdrawalDelay, err = settings.GetMinipoolWithdrawalDelay(rp, nil)
+        withdrawalDelay, err = protocol.GetMinipoolWithdrawalDelay(rp, nil)
         return err
     })
 

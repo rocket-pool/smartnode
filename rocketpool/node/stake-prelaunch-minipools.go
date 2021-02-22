@@ -14,7 +14,6 @@ import (
     "github.com/docker/docker/client"
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/urfave/cli"
@@ -115,27 +114,9 @@ func (t *stakePrelaunchMinipools) run() error {
         return nil
     }
 
-    // Data
-    var wg errgroup.Group
-    var withdrawalCredentials common.Hash
-    var eth2Config beacon.Eth2Config
-
-    // Get Rocket pool withdrawal credentials
-    wg.Go(func() error {
-        var err error
-        withdrawalCredentials, err = network.GetWithdrawalCredentials(t.rp, nil)
-        return err
-    })
-
     // Get eth2 config
-    wg.Go(func() error {
-        var err error
-        eth2Config, err = t.bc.GetEth2Config()
-        return err
-    })
-
-    // Wait for data
-    if err := wg.Wait(); err != nil {
+    eth2Config, err := t.bc.GetEth2Config()
+    if err != nil {
         return err
     }
 
@@ -144,7 +125,7 @@ func (t *stakePrelaunchMinipools) run() error {
 
     // Stake minipools
     for _, mp := range minipools {
-        if err := t.stakeMinipool(mp, withdrawalCredentials, eth2Config); err != nil {
+        if err := t.stakeMinipool(mp, eth2Config); err != nil {
             t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
         }
     }
@@ -213,10 +194,16 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 
 
 // Stake a minipool
-func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawalCredentials common.Hash, eth2Config beacon.Eth2Config) error {
+func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Config beacon.Eth2Config) error {
 
     // Log
     t.log.Printlnf("Staking minipool %s...", mp.Address.Hex())
+
+    // Get minipool withdrawal credentials
+    withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil)
+    if err != nil {
+        return err
+    }
 
     // Create new validator key
     validatorKey, err := t.w.CreateValidatorKey()

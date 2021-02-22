@@ -9,12 +9,12 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/crypto"
     "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -112,12 +112,12 @@ func (t *submitNetworkBalances) run() error {
     // Get data
     wg.Go(func() error {
         var err error
-        nodeTrusted, err = node.GetNodeTrusted(t.rp, nodeAccount.Address, nil)
+        nodeTrusted, err = trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        submitBalancesEnabled, err = settings.GetSubmitBalancesEnabled(t.rp, nil)
+        submitBalancesEnabled, err = protocol.GetSubmitBalancesEnabled(t.rp, nil)
         return err
     })
 
@@ -196,7 +196,7 @@ func (t *submitNetworkBalances) getLatestReportableBlock() (uint64, error) {
     // Get balance submission frequency
     wg.Go(func() error {
         var err error
-        submitBalancesFrequency, err = settings.GetSubmitBalancesFrequency(t.rp, nil)
+        submitBalancesFrequency, err = protocol.GetSubmitBalancesFrequency(t.rp, nil)
         return err
     })
 

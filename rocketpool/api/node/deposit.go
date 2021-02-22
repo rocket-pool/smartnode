@@ -6,8 +6,9 @@ import (
     "math/big"
 
     "github.com/ethereum/go-ethereum/common"
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -60,7 +61,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         if amountWei.Cmp(big.NewInt(0)) > 0 {
             return nil
         }
-        trusted, err := node.GetNodeTrusted(rp, nodeAccount.Address, nil)
+        trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
         if err == nil {
             response.InvalidAmount = !trusted
         }
@@ -69,7 +70,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
 
     // Check node deposits are enabled
     wg.Go(func() error {
-        depositEnabled, err := settings.GetNodeDepositEnabled(rp, nil)
+        depositEnabled, err := protocol.GetNodeDepositEnabled(rp, nil)
         if err == nil {
             response.DepositDisabled = !depositEnabled
         }

@@ -6,10 +6,10 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/crypto"
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
@@ -95,12 +95,12 @@ func (t *submitWithdrawableMinipools) run() error {
     // Get data
     wg.Go(func() error {
         var err error
-        nodeTrusted, err = node.GetNodeTrusted(t.rp, nodeAccount.Address, nil)
+        nodeTrusted, err = trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        submitWithdrawableEnabled, err = settings.GetMinipoolSubmitWithdrawableEnabled(t.rp, nil)
+        submitWithdrawableEnabled, err = protocol.GetMinipoolSubmitWithdrawableEnabled(t.rp, nil)
         return err
     })
 

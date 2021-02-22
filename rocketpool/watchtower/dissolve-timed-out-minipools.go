@@ -6,10 +6,10 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/ethclient"
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/types"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
@@ -72,7 +72,7 @@ func (t *dissolveTimedOutMinipools) run() error {
     }
 
     // Check node trusted status
-    nodeTrusted, err := node.GetNodeTrusted(t.rp, nodeAccount.Address, nil)
+    nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
     if err != nil {
         return err
     }
@@ -136,7 +136,7 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
     // Get launch timeout
     wg1.Go(func() error {
         var err error
-        launchTimeout, err = settings.GetMinipoolLaunchTimeout(t.rp, nil)
+        launchTimeout, err = protocol.GetMinipoolLaunchTimeout(t.rp, nil)
         return err
     })
 

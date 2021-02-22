@@ -1,6 +1,7 @@
 package node
 
 import (
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/types"
@@ -35,12 +36,21 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     // Sync
     var wg errgroup.Group
 
+    // Get node trusted status
+    wg.Go(func() error {
+        trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.Trusted = trusted
+        }
+        return err
+    })
+
     // Get node details
     wg.Go(func() error {
         details, err := node.GetNodeDetails(rp, nodeAccount.Address, nil)
         if err == nil {
             response.Registered = details.Exists
-            response.Trusted = details.Trusted
+            response.WithdrawalAddress = details.WithdrawalAddress
             response.TimezoneLocation = details.TimezoneLocation
         }
         return err

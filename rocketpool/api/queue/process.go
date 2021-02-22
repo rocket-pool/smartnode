@@ -5,7 +5,7 @@ import (
 
     "github.com/rocket-pool/rocketpool-go/deposit"
     "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -32,7 +32,7 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 
     // Check deposit assignments are enabled
     wg.Go(func() error {
-        assignDepositsEnabled, err := settings.GetAssignDepositsEnabled(rp, nil)
+        assignDepositsEnabled, err := protocol.GetAssignDepositsEnabled(rp, nil)
         if err == nil {
             response.AssignDepositsDisabled = !assignDepositsEnabled
         }

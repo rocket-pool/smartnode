@@ -2,7 +2,7 @@ package node
 
 import (
     "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -43,7 +43,7 @@ func canRegisterNode(c *cli.Context) (*api.CanRegisterNodeResponse, error) {
 
     // Check node registrations are enabled
     wg.Go(func() error {
-        registrationEnabled, err := settings.GetNodeRegistrationEnabled(rp, nil)
+        registrationEnabled, err := protocol.GetNodeRegistrationEnabled(rp, nil)
         if err == nil {
             response.RegistrationDisabled = !registrationEnabled
         }
