@@ -81,8 +81,8 @@ func ValidatePercentage(name, value string) (float64, error) {
 // Validate a token type
 func ValidateTokenType(name, value string) (string, error) {
     val := strings.ToLower(value)
-    if !(val == "eth" || val == "neth") {
-        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH' and 'nETH'", name, value)
+    if !(val == "eth" || val == "rpl" || val == "fsrpl" || val == "neth" || val == "reth") {
+        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH', 'RPL', 'fsRPL', 'nETH' and 'rETH'", name, value)
     }
     return val, nil
 }
@@ -148,8 +148,8 @@ func ValidateDepositEthAmount(name, value string) (float64, error) {
 // Validate a burnable token type
 func ValidateBurnableTokenType(name, value string) (string, error) {
     val := strings.ToLower(value)
-    if !(val == "neth") {
-        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'nETH'", name, value)
+    if !(val == "neth" || val == "reth") {
+        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'nETH' and 'rETH'", name, value)
     }
     return val, nil
 }

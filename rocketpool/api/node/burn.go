@@ -28,6 +28,12 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
     // Response
     response := api.CanNodeBurnResponse{}
 
+    // Get node account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
     // Sync
     var wg errgroup.Group
 
@@ -37,15 +43,20 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
             case "neth":
 
                 // Check node nETH balance
-                nodeAccount, err := w.GetNodeAccount()
-                if err != nil {
-                    return err
-                }
                 nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address, nil)
                 if err != nil {
                     return err
                 }
                 response.InsufficientBalance = (amountWei.Cmp(nethBalanceWei) > 0)
+
+            case "reth":
+
+                // Check node rETH balance
+                rethBalanceWei, err := tokens.GetRETHBalance(rp, nodeAccount.Address, nil)
+                if err != nil {
+                    return err
+                }
+                response.InsufficientBalance = (amountWei.Cmp(rethBalanceWei) > 0)
 
         }
         return nil
@@ -56,16 +67,21 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
         switch token {
             case "neth":
 
-                // Check nETH contract balance
-                nethContractAddress, err := rp.GetAddress("rocketNodeETHToken")
-                if err != nil {
-                    return err
-                }
-                nethContractEthBalanceWei, err := ec.BalanceAt(context.Background(), *nethContractAddress, nil)
+                // Check nETH collateral
+                nethContractEthBalanceWei, err := tokens.GetNETHContractETHBalance(rp, nil)
                 if err != nil {
                     return err
                 }
                 response.InsufficientCollateral = (amountWei.Cmp(nethContractEthBalanceWei) > 0)
+
+            case "reth":
+
+                // Check rETH collateral
+                rethTotalCollateral, err := tokens.GetRETHTotalCollateral(rp, nil)
+                if err != nil {
+                    return err
+                }
+                response.InsufficientCollateral = (amountWei.Cmp(rethTotalCollateral) > 0)
 
         }
         return nil
@@ -108,6 +124,15 @@ func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.NodeBurnRe
 
             // Burn nETH
             txReceipt, err := tokens.BurnNETH(rp, amountWei, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.TxHash = txReceipt.TxHash
+
+        case "reth":
+
+            // Burn rETH
+            txReceipt, err := tokens.BurnRETH(rp, amountWei, opts)
             if err != nil {
                 return nil, err
             }

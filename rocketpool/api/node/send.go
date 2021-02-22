@@ -46,6 +46,24 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
             }
             response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
 
+        case "rpl":
+
+            // Check node RPL balance
+            rplBalanceWei, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
+            if err != nil {
+                return nil, err
+            }
+            response.InsufficientBalance = (amountWei.Cmp(rplBalanceWei) > 0)
+
+        case "fsrpl":
+
+            // Check node fixed-supply RPL balance
+            fixedSupplyRplBalanceWei, err := tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
+            if err != nil {
+                return nil, err
+            }
+            response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalanceWei) > 0)
+
         case "neth":
 
             // Check node nETH balance
@@ -54,6 +72,15 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
                 return nil, err
             }
             response.InsufficientBalance = (amountWei.Cmp(nethBalanceWei) > 0)
+
+        case "reth":
+
+            // Check node rETH balance
+            rethBalanceWei, err := tokens.GetRETHBalance(rp, nodeAccount.Address, nil)
+            if err != nil {
+                return nil, err
+            }
+            response.InsufficientBalance = (amountWei.Cmp(rethBalanceWei) > 0)
 
     }
 
@@ -97,10 +124,37 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
             }
             response.TxHash = txReceipt.TxHash
 
+        case "rpl":
+
+            // Transfer RPL
+            txReceipt, err := tokens.TransferRPL(rp, to, amountWei, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.TxHash = txReceipt.TxHash
+
+        case "fsrpl":
+
+            // Transfer fixed-supply RPL
+            txReceipt, err := tokens.TransferFixedSupplyRPL(rp, to, amountWei, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.TxHash = txReceipt.TxHash
+
         case "neth":
 
             // Transfer nETH
             txReceipt, err := tokens.TransferNETH(rp, to, amountWei, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.TxHash = txReceipt.TxHash
+
+        case "reth":
+
+            // Transfer rETH
+            txReceipt, err := tokens.TransferRETH(rp, to, amountWei, opts)
             if err != nil {
                 return nil, err
             }
