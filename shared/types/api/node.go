@@ -64,6 +64,7 @@ type CanNodeDepositResponse struct {
     Error string                        `json:"error"`
     CanDeposit bool                     `json:"canDeposit"`
     InsufficientBalance bool            `json:"insufficientBalance"`
+    InsufficientRplStake bool           `json:"insufficientRplStake"`
     InvalidAmount bool                  `json:"invalidAmount"`
     DepositDisabled bool                `json:"depositDisabled"`
 }

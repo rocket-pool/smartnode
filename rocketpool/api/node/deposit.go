@@ -7,6 +7,7 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/urfave/cli"
@@ -44,8 +45,10 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         return nil, err
     }
 
-    // Sync
+    // Data
     var wg errgroup.Group
+    var minipoolCount uint64
+    var minipoolLimit uint64
 
     // Check node balance
     wg.Go(func() error {
@@ -53,6 +56,18 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         if err == nil {
             response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
         }
+        return err
+    })
+
+    // Get node staking information
+    wg.Go(func() error {
+        var err
+        minipoolCount, err = minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
+        return err
+    })
+    wg.Go(func() error {
+        var err
+        minipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
         return err
     })
 
@@ -83,7 +98,8 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
     }
 
     // Update & return response
-    response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled)
+    response.InsufficientRplStake = (minipoolCount >= minipoolLimit)
+    response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
     return &response, nil
 
 }
