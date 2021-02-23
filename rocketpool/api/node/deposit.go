@@ -59,18 +59,6 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         return err
     })
 
-    // Get node staking information
-    wg.Go(func() error {
-        var err error
-        minipoolCount, err = minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        minipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
-        return err
-    })
-
     // Check deposit amount
     wg.Go(func() error {
         if amountWei.Cmp(big.NewInt(0)) > 0 {
@@ -92,13 +80,27 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         return err
     })
 
+    // Get node staking information
+    wg.Go(func() error {
+        var err error
+        minipoolCount, err = minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        minipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err
     }
 
-    // Update & return response
+    // Check node RPL stake
     response.InsufficientRplStake = (minipoolCount >= minipoolLimit)
+
+    // Update & return response
     response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
     return &response, nil
 
