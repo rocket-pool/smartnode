@@ -19,7 +19,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "members",
                 Aliases:   []string{"m"},
-                Usage:     "View the trusted node DAO members",
+                Usage:     "Get the trusted node DAO members",
                 UsageText: "rocketpool api tndao members",
                 Action: func(c *cli.Context) error {
 
@@ -36,7 +36,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "proposals",
                 Aliases:   []string{"p"},
-                Usage:     "View the trusted node DAO proposals",
+                Usage:     "Get the trusted node DAO proposals",
                 UsageText: "rocketpool api tndao proposals",
                 Action: func(c *cli.Context) error {
 
