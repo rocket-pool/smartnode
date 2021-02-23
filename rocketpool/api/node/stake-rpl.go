@@ -24,7 +24,21 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
     // Response
     response := api.CanNodeStakeRplResponse{}
 
+    // Get node account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
+    // Check RPL balance
+    rplBalance, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
+    if err != nil {
+        return nil, err
+    }
+    response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
+
     // Update & return response
+    response.CanStake = !response.InsufficientBalance
     return &response, nil
 
 }

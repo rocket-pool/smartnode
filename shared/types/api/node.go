@@ -83,6 +83,7 @@ type CanNodeStakeRplResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     CanStake bool                       `json:"canStake"`
+    InsufficientBalance bool            `json:"insufficientBalance"`
 }
 type NodeStakeRplResponse struct {
     Status string                       `json:"status"`
@@ -96,6 +97,9 @@ type CanNodeWithdrawRplResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     CanWithdraw bool                    `json:"canWithdraw"`
+    InsufficientBalance bool            `json:"insufficientBalance"`
+    MinipoolsUndercollateralized bool   `json:"minipoolsUndercollateralized"`
+    WithdrawalDelayActive bool          `json:"withdrawalDelayActive"`
 }
 type NodeWithdrawRplResponse struct {
     Status string                       `json:"status"`
