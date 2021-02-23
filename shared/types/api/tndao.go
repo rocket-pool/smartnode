@@ -1,5 +1,9 @@
 package api
 
+import (
+    "github.com/ethereum/go-ethereum/common"
+)
+
 
 type TNDAOMembersResponse struct {
     Status string                   `json:"status"`
