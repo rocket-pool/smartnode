@@ -85,6 +85,8 @@ type CanCancelTNDAOProposalResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanCancel bool                  `json:"canCancel"`
+    InvalidState bool               `json:"invalidState"`
+    InvalidProposer bool            `json:"invalidProposer"`
 }
 type CancelTNDAOProposalResponse struct {
     Status string                   `json:"status"`
@@ -97,6 +99,9 @@ type CanVoteOnTNDAOProposalResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanVote bool                    `json:"canVote"`
+    InvalidState bool               `json:"invalidState"`
+    JoinedAfterCreated bool         `json:"joinedAfterCreated"`
+    AlreadyVoted bool               `json:"alreadyVoted"`
 }
 type VoteOnTNDAOProposalResponse struct {
     Status string                   `json:"status"`
@@ -109,6 +114,7 @@ type CanExecuteTNDAOProposalResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanExecute bool                 `json:"canExecute"`
+    InvalidState bool               `json:"invalidState"`
 }
 type ExecuteTNDAOProposalResponse struct {
     Status string                   `json:"status"`
