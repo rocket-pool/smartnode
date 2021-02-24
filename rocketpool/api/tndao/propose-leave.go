@@ -27,7 +27,7 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
     // Data
     var wg errgroup.Group
     var memberCount uint64
-    var minMembersRequired uint64
+    var minMemberCount uint64
 
     // Check if proposal cooldown is active
     wg.Go(func() error {
@@ -49,11 +49,10 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
         return err
     })
 
-    // Get min members required
-    // TODO: implement
+    // Get min member count
     wg.Go(func() error {
         var err error
-        minMembersRequired = 3
+        minMemberCount, err = trustednode.GetMinimumMemberCount(rp, nil)
         return err
     })
 
@@ -63,7 +62,7 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
     }
 
     // Check data
-    response.InsufficientMembers = (memberCount <= minMembersRequired)
+    response.InsufficientMembers = (memberCount <= minMemberCount)
 
     // Update & return response
     response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientMembers)
