@@ -1,8 +1,11 @@
 package tndao
 
 import (
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+    "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/urfave/cli"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/types/api"
@@ -27,15 +30,44 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
         return nil, err
     }
 
+    // Data
+    var wg errgroup.Group
+    var nodeRplBalance *big.Int
+    var rplBondAmount *big.Int
+
     // Check proposal expired status
-    proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "invited")
-    if err != nil {
+    wg.Go(func() error {
+        proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "invited")
+        if err == nil {
+            response.ProposalExpired = proposalExpired
+        }
+        return err
+    })
+
+    // Get node RPL balance
+    wg.Go(func() error {
+        var err error
+        nodeRplBalance, err = tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
+        return err
+    })
+
+    // Get RPL bond amount
+    wg.Go(func() error {
+        var err error
+        rplBondAmount, err = tnsettings.GetRPLBond(rp, nil)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
         return nil, err
     }
-    response.ProposalExpired = proposalExpired
+
+    // Check data
+    response.InsufficientRplBalance = (nodeRplBalance.Cmp(rplBondAmount) < 0)
 
     // Update & return response
-    response.CanJoin = !response.ProposalExpired
+    response.CanJoin = !(response.ProposalExpired || proposal.InsufficientRplBalance)
     return &response, nil
 
 }
@@ -60,7 +92,7 @@ func join(c *cli.Context) (*api.JoinTNDAOResponse, error) {
     }
 
     // Join
-    txReceipt, err := trustednode.Join(rp, opts)
+    txReceipt, err := tndao.Join(rp, opts)
     if err != nil {
         return nil, err
     }

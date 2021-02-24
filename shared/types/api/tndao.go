@@ -128,6 +128,7 @@ type CanJoinTNDAOResponse struct {
     Error string                    `json:"error"`
     CanJoin bool                    `json:"canJoin"`
     ProposalExpired bool            `json:"proposalExpired"`
+    InsufficientRplBalance bool     `json:"insufficientRplBalance"`
 }
 type JoinTNDAOResponse struct {
     Status string                   `json:"status"`
