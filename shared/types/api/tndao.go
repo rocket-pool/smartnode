@@ -29,6 +29,7 @@ type CanProposeTNDAOInviteResponse struct {
 type ProposeTNDAOInviteResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
 
@@ -41,6 +42,7 @@ type CanProposeTNDAOLeaveResponse struct {
 type ProposeTNDAOLeaveResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
 
@@ -53,6 +55,7 @@ type CanProposeTNDAOReplaceResponse struct {
 type ProposeTNDAOReplaceResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
 
@@ -65,6 +68,7 @@ type CanProposeTNDAOKickResponse struct {
 type ProposeTNDAOKickResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
 
