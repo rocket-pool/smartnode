@@ -1,6 +1,9 @@
 package tndao
 
 import (
+    "math/big"
+
+    "github.com/ethereum/go-ethereum/common"
     tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
     "github.com/rocket-pool/rocketpool-go/tokens"
@@ -67,7 +70,7 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
     response.InsufficientRplBalance = (nodeRplBalance.Cmp(rplBondAmount) < 0)
 
     // Update & return response
-    response.CanJoin = !(response.ProposalExpired || proposal.InsufficientRplBalance)
+    response.CanJoin = !(response.ProposalExpired || response.InsufficientRplBalance)
     return &response, nil
 
 }
@@ -85,18 +88,47 @@ func join(c *cli.Context) (*api.JoinTNDAOResponse, error) {
     // Response
     response := api.JoinTNDAOResponse{}
 
-    // Get transactor
-    opts, err := w.GetNodeAccountTransactor()
-    if err != nil {
+    // Data
+    var wg errgroup.Group
+    var rocketDAONodeTrustedActionsAddress *common.Address
+    var rplBondAmount *big.Int
+
+    // Get trusted node actions contract address
+    wg.Go(func() error {
+        var err error
+        rocketDAONodeTrustedActionsAddress, err = rp.GetAddress("rocketDAONodeTrustedActions")
+        return err
+    })
+
+    // Get RPL bond amount
+    wg.Go(func() error {
+        var err error
+        rplBondAmount, err = tnsettings.GetRPLBond(rp, nil)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
         return nil, err
     }
 
-    // Join
-    txReceipt, err := tndao.Join(rp, opts)
-    if err != nil {
+    // Approve RPL allowance
+    if opts, err := w.GetNodeAccountTransactor(); err != nil {
         return nil, err
+    } else if txReceipt, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts); err != nil {
+        return nil, err
+    } else {
+        response.ApproveTxHash = txReceipt.TxHash
     }
-    response.TxHash = txReceipt.TxHash
+
+    // Join
+    if opts, err := w.GetNodeAccountTransactor(); err != nil {
+        return nil, err
+    } else if txReceipt, err := tndao.Join(rp, opts); err != nil {
+        return nil, err
+    } else {
+        response.JoinTxHash = txReceipt.TxHash
+    }
 
     // Return response
     return &response, nil

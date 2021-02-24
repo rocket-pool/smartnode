@@ -133,7 +133,8 @@ type CanJoinTNDAOResponse struct {
 type JoinTNDAOResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    TxHash common.Hash              `json:"txHash"`
+    ApproveTxHash common.Hash       `json:"approveTxHash"`
+    JoinTxHash common.Hash          `json:"joinTxHash"`
 }
 
 
