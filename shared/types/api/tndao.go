@@ -25,6 +25,8 @@ type CanProposeTNDAOInviteResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanPropose bool                 `json:"canPropose"`
+    ProposalCooldownActive bool     `json:"proposalCooldownActive"`
+    MemberAlreadyExists bool        `json:"memberAlreadyExists"`
 }
 type ProposeTNDAOInviteResponse struct {
     Status string                   `json:"status"`
@@ -38,6 +40,8 @@ type CanProposeTNDAOLeaveResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanPropose bool                 `json:"canPropose"`
+    ProposalCooldownActive bool     `json:"proposalCooldownActive"`
+    InsufficientMembers bool        `json:"insufficientMembers"`
 }
 type ProposeTNDAOLeaveResponse struct {
     Status string                   `json:"status"`
@@ -51,6 +55,8 @@ type CanProposeTNDAOReplaceResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanPropose bool                 `json:"canPropose"`
+    ProposalCooldownActive bool     `json:"proposalCooldownActive"`
+    MemberAlreadyExists bool        `json:"memberAlreadyExists"`
 }
 type ProposeTNDAOReplaceResponse struct {
     Status string                   `json:"status"`
@@ -64,6 +70,8 @@ type CanProposeTNDAOKickResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanPropose bool                 `json:"canPropose"`
+    ProposalCooldownActive bool     `json:"proposalCooldownActive"`
+    InsufficientRplBond bool        `json:"insufficientRplBond"`
 }
 type ProposeTNDAOKickResponse struct {
     Status string                   `json:"status"`

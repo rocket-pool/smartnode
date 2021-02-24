@@ -13,7 +13,62 @@ import (
 
 
 func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) {
-    return nil, nil
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.CanProposeTNDAOLeaveResponse{}
+
+    // Data
+    var wg errgroup.Group
+    var memberCount uint64
+    var minMembersRequired uint64
+
+    // Check if proposal cooldown is active
+    wg.Go(func() error {
+        nodeAccount, err := w.GetNodeAccount()
+        if err != nil {
+            return err
+        }
+        proposalCooldownActive, err := getProposalCooldownActive(rp, nodeAccount.Address)
+        if err == nil {
+            response.ProposalCooldownActive = proposalCooldownActive
+        }
+        return err
+    })
+
+    // Get member count
+    wg.Go(func() error {
+        var err error
+        memberCount, err = trustednode.GetMemberCount(rp, nil)
+        return err
+    })
+
+    // Get min members required
+    // TODO: implement
+    wg.Go(func() error {
+        var err error
+        minMembersRequired = 3
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Check data
+    response.InsufficientMembers = (memberCount <= minMembersRequired)
+
+    // Update & return response
+    response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientMembers)
+    return &response, nil
+
 }
 
 

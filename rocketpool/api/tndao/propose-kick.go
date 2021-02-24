@@ -17,7 +17,51 @@ import (
 
 
 func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *big.Int) (*api.CanProposeTNDAOKickResponse, error) {
-    return nil, nil
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.CanProposeTNDAOKickResponse{}
+
+    // Sync
+    var wg errgroup.Group
+
+    // Check if proposal cooldown is active
+    wg.Go(func() error {
+        nodeAccount, err := w.GetNodeAccount()
+        if err != nil {
+            return err
+        }
+        proposalCooldownActive, err := getProposalCooldownActive(rp, nodeAccount.Address)
+        if err == nil {
+            response.ProposalCooldownActive = proposalCooldownActive
+        }
+        return err
+    })
+
+    // Check member's RPL bond amount
+    wg.Go(func() error {
+        rplBondAmount, err := trustednode.GetMemberRPLBondAmount(rp, memberAddress, nil)
+        if err == nil {
+            response.InsufficientRplBond = (fineAmountWei.Cmp(rplBondAmount) > 0)
+        }
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Update & return response
+    response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientRplBond)
+    return &response, nil
+
 }
 
 

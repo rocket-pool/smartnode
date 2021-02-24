@@ -14,7 +14,51 @@ import (
 
 
 func canProposeReplace(c *cli.Context, newMemberAddress common.Address) (*api.CanProposeTNDAOReplaceResponse, error) {
-    return nil, nil
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.CanProposeTNDAOReplaceResponse{}
+
+    // Sync
+    var wg errgroup.Group
+
+    // Check if proposal cooldown is active
+    wg.Go(func() error {
+        nodeAccount, err := w.GetNodeAccount()
+        if err != nil {
+            return err
+        }
+        proposalCooldownActive, err := getProposalCooldownActive(rp, nodeAccount.Address)
+        if err == nil {
+            response.ProposalCooldownActive = proposalCooldownActive
+        }
+        return err
+    })
+
+    // Check if member exists
+    wg.Go(func() error {
+        memberExists, err := trustednode.GetMemberExists(rp, newMemberAddress, nil)
+        if err == nil {
+            response.MemberAlreadyExists = memberExists
+        }
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
+
+    // Update & return response
+    response.CanPropose = !(response.ProposalCooldownActive || response.MemberAlreadyExists)
+    return &response, nil
+
 }
 
 
