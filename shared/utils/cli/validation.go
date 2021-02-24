@@ -215,10 +215,11 @@ func ValidateTimezoneLocation(name, value string) (string, error) {
 
 // Validate a DAO member ID
 func ValidateDAOMemberID(name, value string) (string, error) {
-    if len(value) < MinDAOMemberIDLength {
-        return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, MinDAOMemberIDLength)
+    val := strings.TrimSpace(value)
+    if len(val) < MinDAOMemberIDLength {
+        return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, val, MinDAOMemberIDLength)
     }
-    return value, nil
+    return val, nil
 }
 
 
