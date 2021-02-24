@@ -2,6 +2,7 @@ package api
 
 import (
     "github.com/ethereum/go-ethereum/common"
+    "github.com/rocket-pool/rocketpool-go/dao"
     tn "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 )
 
@@ -16,6 +17,7 @@ type TNDAOMembersResponse struct {
 type TNDAOProposalsResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
+    Proposals []dao.ProposalDetails `json:"proposals"`
 }
 
 
