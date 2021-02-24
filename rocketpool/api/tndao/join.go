@@ -10,7 +10,34 @@ import (
 
 
 func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
-    return nil, nil
+
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.CanJoinTNDAOResponse{}
+
+    // Get node account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
+    // Check proposal expired status
+    proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "invited")
+    if err != nil {
+        return nil, err
+    }
+    response.ProposalExpired = proposalExpired
+
+    // Update & return response
+    response.CanJoin = !response.ProposalExpired
+    return &response, nil
+
 }
 
 

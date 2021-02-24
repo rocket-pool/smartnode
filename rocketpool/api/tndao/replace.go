@@ -10,7 +10,34 @@ import (
 
 
 func canReplace(c *cli.Context) (*api.CanReplaceTNDAOPositionResponse, error) {
-    return nil, nil
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.CanReplaceTNDAOPositionResponse{}
+
+    // Get node account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
+    // Check proposal expired status
+    proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "replace")
+    if err != nil {
+        return nil, err
+    }
+    response.ProposalExpired = proposalExpired
+
+    // Update & return response
+    response.CanReplace = !response.ProposalExpired
+    return &response, nil
+
 }
 
 

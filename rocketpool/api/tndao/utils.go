@@ -53,3 +53,79 @@ func getProposalCooldownActive(rp *rocketpool.RocketPool, nodeAddress common.Add
 
 }
 
+
+// Check if a proposal for a node action has expired
+func getProposalExpired(rp *rocketpool.RocketPool, nodeAddress common.Address, proposalType string) (bool, error) {
+
+    // Data
+    var wg errgroup.Group
+    var currentBlock uint64
+    var proposalExecutedBlock uint64
+    var actionBlocks uint64
+
+    // Get current block
+    wg.Go(func() error {
+        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
+        if err == nil {
+            currentBlock = header.Number.Uint64()
+        }
+        return err
+    })
+
+    // Get proposal executed block
+    wg.Go(func() error {
+        var err error
+        proposalExecutedBlock, err = tndao.GetMemberProposalExecutedBlock(rp, proposalType, nodeAddress, nil)
+        return err
+    })
+
+    // Get action window in blocks
+    wg.Go(func() error {
+        var err error
+        actionBlocks, err = tnsettings.GetProposalActionBlocks(rp, nil)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return false, err
+    }
+
+    // Return
+    return (currentBlock >= (proposalExecutedBlock + actionBlocks)), nil
+
+}
+
+
+// Check if members can leave the trusted node DAO
+func getMembersCanLeave(rp *rocketpool.RocketPool) (bool, error) {
+
+    // Data
+    var wg errgroup.Group
+    var memberCount uint64
+    var minMemberCount uint64
+
+    // Get member count
+    wg.Go(func() error {
+        var err error
+        memberCount, err = tndao.GetMemberCount(rp, nil)
+        return err
+    })
+
+    // Get min member count
+    wg.Go(func() error {
+        var err error
+        minMemberCount, err = tndao.GetMinimumMemberCount(rp, nil)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return false, err
+    }
+
+    // Return
+    return (memberCount > minMemberCount), nil
+
+}
+

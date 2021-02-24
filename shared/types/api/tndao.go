@@ -127,6 +127,7 @@ type CanJoinTNDAOResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanJoin bool                    `json:"canJoin"`
+    ProposalExpired bool            `json:"proposalExpired"`
 }
 type JoinTNDAOResponse struct {
     Status string                   `json:"status"`
@@ -139,6 +140,8 @@ type CanLeaveTNDAOResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanLeave bool                   `json:"canLeave"`
+    ProposalExpired bool            `json:"proposalExpired"`
+    InsufficientMembers bool        `json:"insufficientMembers"`
 }
 type LeaveTNDAOResponse struct {
     Status string                   `json:"status"`
@@ -151,6 +154,7 @@ type CanReplaceTNDAOPositionResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanReplace bool                 `json:"canReplace"`
+    ProposalExpired bool            `json:"proposalExpired"`
 }
 type ReplaceTNDAOPositionResponse struct {
     Status string                   `json:"status"`

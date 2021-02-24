@@ -24,10 +24,8 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
     // Response
     response := api.CanProposeTNDAOLeaveResponse{}
 
-    // Data
+    // Sync
     var wg errgroup.Group
-    var memberCount uint64
-    var minMemberCount uint64
 
     // Check if proposal cooldown is active
     wg.Go(func() error {
@@ -42,17 +40,12 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
         return err
     })
 
-    // Get member count
+    // Check if members can leave the trusted node DAO
     wg.Go(func() error {
-        var err error
-        memberCount, err = trustednode.GetMemberCount(rp, nil)
-        return err
-    })
-
-    // Get min member count
-    wg.Go(func() error {
-        var err error
-        minMemberCount, err = trustednode.GetMinimumMemberCount(rp, nil)
+        membersCanLeave, err := getMembersCanLeave(rp)
+        if err == nil {
+            response.InsufficientMembers = !membersCanLeave
+        }
         return err
     })
 
@@ -60,9 +53,6 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
     if err := wg.Wait(); err != nil {
         return nil, err
     }
-
-    // Check data
-    response.InsufficientMembers = (memberCount <= minMemberCount)
 
     // Update & return response
     response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientMembers)
