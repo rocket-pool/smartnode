@@ -15,6 +15,13 @@ import (
 )
 
 
+// Config
+const (
+    MinDAOMemberIDLength = 3
+    MinDAOMemberEmailLength = 6
+)
+
+
 //
 // General types
 //
@@ -26,6 +33,30 @@ func ValidateArgCount(c *cli.Context, count int) error {
         return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
     }
     return nil
+}
+
+
+// Validate a boolean value
+func ValidateBool(name, value string) (bool, error) {
+    val := strings.ToLower(value)
+    if !(val == "true" || val == "yes" || val == "false" || val == "no") {
+        return false, fmt.Errorf("Invalid %s '%s' - valid values are 'true', 'yes', 'false' and 'no'", name, value)
+    }
+    if val == "true" || val == "yes" {
+        return true, nil
+    } else {
+        return false, nil
+    }
+}
+
+
+// Validate an unsigned integer value
+func ValidateUint(name, value string) (uint64, error) {
+    val, err := strconv.ParseUint(value, 10, 64)
+    if err != nil {
+        return 0, fmt.Errorf("Invalid %s '%s'", name, value)
+    }
+    return val, nil
 }
 
 
@@ -177,6 +208,27 @@ func ValidateWalletMnemonic(name, value string) (string, error) {
 func ValidateTimezoneLocation(name, value string) (string, error) {
     if !regexp.MustCompile("^\\w{2,}\\/\\w{2,}$").MatchString(value) {
         return "", fmt.Errorf("Invalid %s '%s' - must be in the format 'Country/City'", name, value)
+    }
+    return value, nil
+}
+
+
+// Validate a DAO member ID
+func ValidateDAOMemberID(name, value string) (string, error) {
+    if len(value) < MinDAOMemberIDLength {
+        return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, MinDAOMemberIDLength)
+    }
+    return value, nil
+}
+
+
+// Validate a DAO member email
+func ValidateDAOMemberEmail(name, value string) (string, error) {
+    if len(value) < MinDAOMemberEmailLength {
+        return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, MinDAOMemberEmailLength)
+    }
+    if !regexp.MustCompile("^\\S+@\\S+(\\.\\S+)+$").MatchString(value) {
+        return "", fmt.Errorf("Invalid %s '%s' - must be a valid email address", name, value)
     }
     return value, nil
 }

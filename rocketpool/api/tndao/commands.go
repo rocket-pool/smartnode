@@ -210,7 +210,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalId, err := cliutils.ValidateInteger("proposal id", c.Args().Get(0))
+                    proposalId, err := cliutils.ValidateUint("proposal id", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -228,7 +228,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalId, err := cliutils.ValidateInteger("proposal id", c.Args().Get(0))
+                    proposalId, err := cliutils.ValidateUint("proposal id", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -246,7 +246,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalId, err := cliutils.ValidateInteger("proposal id", c.Args().Get(0))
+                    proposalId, err := cliutils.ValidateUint("proposal id", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -264,7 +264,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
-                    proposalId, err := cliutils.ValidateInteger("proposal id", c.Args().Get(0))
+                    proposalId, err := cliutils.ValidateUint("proposal id", c.Args().Get(0))
                     if err != nil { return err }
                     support, err := cliutils.ValidateBool("support", c.Args().Get(1))
                     if err != nil { return err }
@@ -284,7 +284,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalId, err := cliutils.ValidateInteger("proposal id", c.Args().Get(0))
+                    proposalId, err := cliutils.ValidateUint("proposal id", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -302,7 +302,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalId, err := cliutils.ValidateInteger("proposal id", c.Args().Get(0))
+                    proposalId, err := cliutils.ValidateUint("proposal id", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
