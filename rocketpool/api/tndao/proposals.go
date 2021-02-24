@@ -29,7 +29,7 @@ func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
     }
 
     // Get proposals
-    proposals, err := dao.GetDAOProposalsWithMember(rp, "", nodeAccount.Address, nil)
+    proposals, err := dao.GetDAOProposalsWithMember(rp, "rocketDAONodeTrustedProposals", nodeAccount.Address, nil)
     if err != nil {
         return nil, err
     }
