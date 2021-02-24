@@ -24,8 +24,7 @@ func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei 
 func proposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *big.Int) (*api.ProposeTNDAOKickResponse, error) {
 
     // Get services
-    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
-    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)

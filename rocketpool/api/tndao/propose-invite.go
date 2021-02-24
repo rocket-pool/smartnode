@@ -20,8 +20,7 @@ func canProposeInvite(c *cli.Context, memberAddress common.Address) (*api.CanPro
 func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberEmail string) (*api.ProposeTNDAOInviteResponse, error) {
 
     // Get services
-    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
-    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)

@@ -21,8 +21,7 @@ func canProposeReplace(c *cli.Context, newMemberAddress common.Address) (*api.Ca
 func proposeReplace(c *cli.Context, newMemberAddress common.Address, newMemberId, newMemberEmail string) (*api.ProposeTNDAOReplaceResponse, error) {
 
     // Get services
-    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
-    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)

@@ -8,6 +8,7 @@ import (
     "time"
 
     "github.com/ethereum/go-ethereum/common"
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/urfave/cli"
 )
@@ -108,6 +109,24 @@ func RequireNodeRegistered(c *cli.Context) error {
     }
     if !nodeRegistered {
         return errors.New("The node is not registered with Rocket Pool. Please run 'rocketpool node register' and try again.")
+    }
+    return nil
+}
+
+
+func RequireNodeTrusted(c *cli.Context) error {
+    if err := RequireNodeWallet(c); err != nil {
+        return err
+    }
+    if err := RequireRocketStorage(c); err != nil {
+        return err
+    }
+    nodeTrusted, err := getNodeTrusted(c)
+    if err != nil {
+        return err
+    }
+    if !nodeTrusted {
+        return errors.New("The node is not a member of the trusted node DAO. Nodes can only join the trusted node DAO by invite.")
     }
     return nil
 }
@@ -268,6 +287,24 @@ func getNodeRegistered(c *cli.Context) (bool, error) {
         return false, err
     }
     return node.GetNodeExists(rp, nodeAccount.Address, nil)
+}
+
+
+// Check if the node is a member of the trusted node DAO
+func getNodeTrusted(c *cli.Context) (bool, error) {
+    w, err := GetWallet(c)
+    if err != nil {
+        return false, err
+    }
+    rp, err := GetRocketPool(c)
+    if err != nil {
+        return false, err
+    }
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return false, err
+    }
+    return trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
 }
 
 

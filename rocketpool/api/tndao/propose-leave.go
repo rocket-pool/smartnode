@@ -20,8 +20,7 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
 func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
 
     // Get services
-    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
-    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
