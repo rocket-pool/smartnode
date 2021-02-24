@@ -23,6 +23,13 @@ func TestMemberDetails(t *testing.T) {
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
+    // Get & check minimum member count
+    if minMemberCount, err := trustednodedao.GetMinimumMemberCount(rp, nil); err != nil {
+        t.Error(err)
+    } else if minMemberCount == 0 {
+        t.Error("Incorrect trusted node DAO minimum member count")
+    }
+
     // Get & check initial member details
     if members, err := trustednodedao.GetMembers(rp, nil); err != nil {
         t.Error(err)

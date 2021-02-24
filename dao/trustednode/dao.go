@@ -185,6 +185,20 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 }
 
 
+// Get the minimum member count
+func GetMinimumMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+    rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+    if err != nil {
+        return 0, err
+    }
+    minMemberCount := new(*big.Int)
+    if err := rocketDAONodeTrusted.Call(opts, minMemberCount, "getMemberMinRequired"); err != nil {
+        return 0, fmt.Errorf("Could not get trusted node DAO minimum member count: %w", err)
+    }
+    return (*minMemberCount).Uint64(), nil
+}
+
+
 // Get the member count
 func GetMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
