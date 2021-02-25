@@ -30,7 +30,7 @@ type CanCreateLotResponse struct {
 type CreateLotResponse struct {
     Status string               `json:"status"`
     Error string                `json:"error"`
-    LotID uint64                `json:"lotId"`
+    LotId uint64                `json:"lotId"`
     TxHash common.Hash          `json:"txHash"`
 }
 
