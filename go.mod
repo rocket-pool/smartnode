@@ -18,6 +18,7 @@ require (
 	github.com/minio/highwayhash v1.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/prometheus/client_golang v1.0.0
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/rocket-pool/rocketpool-go v0.0.10

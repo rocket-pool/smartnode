@@ -9,6 +9,7 @@ import (
     "github.com/rocket-pool/smartnode/rocketpool/api"
     "github.com/rocket-pool/smartnode/rocketpool/node"
     "github.com/rocket-pool/smartnode/rocketpool/watchtower"
+    "github.com/rocket-pool/smartnode/rocketpool/metrics"
     apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -93,6 +94,7 @@ func main() {
            api.RegisterCommands(app, "api",        []string{"a"})
           node.RegisterCommands(app, "node",       []string{"n"})
     watchtower.RegisterCommands(app, "watchtower", []string{"w"})
+       metrics.RegisterCommands(app, "metrics",    []string{"t"})
 
     // Get command being run
     var commandName string
