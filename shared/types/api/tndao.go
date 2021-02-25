@@ -152,6 +152,7 @@ type CanJoinTNDAOResponse struct {
     Error string                    `json:"error"`
     CanJoin bool                    `json:"canJoin"`
     ProposalExpired bool            `json:"proposalExpired"`
+    AlreadyMember bool              `json:"alreadyMember"`
     InsufficientRplBalance bool     `json:"insufficientRplBalance"`
 }
 type JoinTNDAOResponse struct {
@@ -181,6 +182,7 @@ type CanReplaceTNDAOPositionResponse struct {
     Error string                    `json:"error"`
     CanReplace bool                 `json:"canReplace"`
     ProposalExpired bool            `json:"proposalExpired"`
+    MemberAlreadyExists bool        `json:"memberAlreadyExists"`
 }
 type ReplaceTNDAOPositionResponse struct {
     Status string                   `json:"status"`

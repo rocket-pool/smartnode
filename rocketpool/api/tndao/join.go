@@ -47,6 +47,15 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
         return err
     })
 
+    // Check if already a member
+    wg.Go(func() error {
+        isMember, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.AlreadyMember = isMember
+        }
+        return err
+    })
+
     // Get node RPL balance
     wg.Go(func() error {
         var err error
@@ -70,7 +79,7 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
     response.InsufficientRplBalance = (nodeRplBalance.Cmp(rplBondAmount) < 0)
 
     // Update & return response
-    response.CanJoin = !(response.ProposalExpired || response.InsufficientRplBalance)
+    response.CanJoin = !(response.ProposalExpired || response.AlreadyMember || response.InsufficientRplBalance)
     return &response, nil
 
 }

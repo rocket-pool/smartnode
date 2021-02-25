@@ -27,15 +27,38 @@ func canReplace(c *cli.Context) (*api.CanReplaceTNDAOPositionResponse, error) {
         return nil, err
     }
 
+    // Sync
+    var wg errgroup.Group
+
     // Check proposal expired status
-    proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "replace")
-    if err != nil {
+    wg.Go(func() error {
+        proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "replace")
+        if err == nil {
+            response.ProposalExpired = proposalExpired
+        }
+        return err
+    })
+
+    // Check if replacing member already exists
+    wg.Go(func() error {
+        replacementAddress, err := trustednode.GetMemberReplacementAddress(rp, nodeAccount.Address, nil)
+        if err != nil {
+            return err
+        }
+        memberExists, err := trustednode.GetMemberExists(rp, replacementAddress, nil)
+        if err == nil {
+            response.MemberAlreadyExists = memberExists
+        }
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
         return nil, err
     }
-    response.ProposalExpired = proposalExpired
 
     // Update & return response
-    response.CanReplace = !response.ProposalExpired
+    response.CanReplace = !(response.ProposalExpired || response.MemberAlreadyExists)
     return &response, nil
 
 }
