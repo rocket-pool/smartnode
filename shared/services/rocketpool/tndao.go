@@ -11,6 +11,23 @@ import (
 )
 
 
+// Get trusted node DAO status
+func (c *Client) TNDAOStatus() (api.TNDAOStatusResponse, error) {
+    responseBytes, err := c.callAPI("tndao status")
+    if err != nil {
+        return api.TNDAOStatusResponse{}, fmt.Errorf("Could not get trusted node DAO status: %w", err)
+    }
+    var response api.TNDAOStatusResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.TNDAOStatusResponse{}, fmt.Errorf("Could not decode trusted node DAO stats response: %w", err)
+    }
+    if response.Error != "" {
+        return api.TNDAOStatusResponse{}, fmt.Errorf("Could not get trusted node DAO status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Get trusted node DAO members
 func (c *Client) TNDAOMembers() (api.TNDAOMembersResponse, error) {
     responseBytes, err := c.callAPI("tndao members")

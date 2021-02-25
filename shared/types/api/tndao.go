@@ -7,6 +7,12 @@ import (
 )
 
 
+type TNDAOStatusResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+}
+
+
 type TNDAOMembersResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`

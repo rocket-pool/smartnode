@@ -17,6 +17,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
         Subcommands: []cli.Command{
 
             cli.Command{
+                Name:      "status",
+                Aliases:   []string{"s"},
+                Usage:     "Get trusted node DAO status",
+                UsageText: "rocketpool api tndao status",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getStatus(c))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
                 Name:      "members",
                 Aliases:   []string{"m"},
                 Usage:     "Get the trusted node DAO members",
