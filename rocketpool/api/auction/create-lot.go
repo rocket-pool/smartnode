@@ -1,12 +1,8 @@
 package auction
 
 import (
-    "math/big"
-
     "github.com/rocket-pool/rocketpool-go/auction"
-    "github.com/rocket-pool/rocketpool-go/network"
     "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -26,11 +22,17 @@ func canCreateLot(c *cli.Context) (*api.CanCreateLotResponse, error) {
     // Response
     response := api.CanCreateLotResponse{}
 
-    // Data
+    // Sync
     var wg errgroup.Group
-    var remainingRplBalance *big.Int
-    var lotMinimumEthValue *big.Int
-    var rplPrice *big.Int
+
+    // Check if sufficient remaining RPL is available to create a lot
+    wg.Go(func() error {
+        sufficientRemainingRplForLot, err := getSufficientRemainingRPLForLot(rp)
+        if err == nil {
+            response.InsufficientBalance = !sufficientRemainingRplForLot
+        }
+        return err
+    })
 
     // Check if lot creation is enabled
     wg.Go(func() error {
@@ -41,34 +43,10 @@ func canCreateLot(c *cli.Context) (*api.CanCreateLotResponse, error) {
         return err
     })
 
-    // Get data
-    wg.Go(func() error {
-        var err error
-        remainingRplBalance, err = auction.GetRemainingRPLBalance(rp, nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        lotMinimumEthValue, err = protocol.GetLotMinimumEthValue(rp, nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        rplPrice, err = network.GetRPLPrice(rp, nil)
-        return err
-    })
-
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err
     }
-
-    // Check auction contract remaining RPL balance
-    var tmp big.Int
-    var lotMinimumRplAmount big.Int
-    tmp.Mul(lotMinimumEthValue, eth.EthToWei(1))
-    lotMinimumRplAmount.Quo(&tmp, rplPrice)
-    response.InsufficientBalance = (remainingRplBalance.Cmp(&lotMinimumRplAmount) < 0)
 
     // Update & return response
     response.CanCreate = !(response.InsufficientBalance || response.CreateLotDisabled)
