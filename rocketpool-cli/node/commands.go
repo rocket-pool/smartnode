@@ -32,6 +32,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "leader",
+                Aliases:   []string{"l"},
+                Usage:     "node leaderboard",
+                UsageText: "rocketpool node leader",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return getLeader(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "register",
                 Aliases:   []string{"r"},
                 Usage:     "Register the node with Rocket Pool",

@@ -32,6 +32,23 @@ func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
 }
 
 
+// Get minipool leader
+func (c *Client) MinipoolLeader() (api.MinipoolStatusResponse, error) {
+    responseBytes, err := c.callAPI("minipool leader")
+    if err != nil {
+        return api.MinipoolStatusResponse{}, fmt.Errorf("Could not get minipool status: %w", err)
+    }
+    var response api.MinipoolStatusResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.MinipoolStatusResponse{}, fmt.Errorf("Could not decode minipool status response: %w", err)
+    }
+    if response.Error != "" {
+        return api.MinipoolStatusResponse{}, fmt.Errorf("Could not get minipool status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Check whether a minipool is eligible for a refund
 func (c *Client) CanRefundMinipool(address common.Address) (api.CanRefundMinipoolResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-refund %s", address.Hex()))

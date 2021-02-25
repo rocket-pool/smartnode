@@ -26,6 +26,7 @@ require (
 	github.com/wealdtech/go-eth2-types/v2 v2.5.0
 	github.com/wealdtech/go-eth2-util v1.6.0
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.1
+	go.uber.org/multierr v1.6.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/sys v0.0.0-20210305230114-8fe3ee5dd75b // indirect
