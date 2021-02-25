@@ -67,6 +67,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
             cli.Command{
                 Name:      "create-lot",
+                Aliases:   []string{"t"},
                 Usage:     "Create a new lot",
                 UsageText: "rocketpool api auction create-lot",
                 Action: func(c *cli.Context) error {
@@ -100,17 +101,20 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
             cli.Command{
                 Name:      "bid-lot",
+                Aliases:   []string{"b"},
                 Usage:     "Bid on a lot",
-                UsageText: "rocketpool api auction bid-lot lot-id",
+                UsageText: "rocketpool api auction bid-lot lot-id amount",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
                     lotIndex, err := cliutils.ValidateUint("lot id", c.Args().Get(0))
+                    if err != nil { return err }
+                    amountWei, err := cliutils.ValidateDepositWeiAmount("bid amount", c.Args().Get(1))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(bidOnLot(c, lotIndex))
+                    api.PrintResponse(bidOnLot(c, lotIndex, amountWei))
                     return nil
 
                 },
@@ -135,6 +139,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
             cli.Command{
                 Name:      "claim-lot",
+                Aliases:   []string{"c"},
                 Usage:     "Claim RPL from a lot",
                 UsageText: "rocketpool api auction claim-lot lot-id",
                 Action: func(c *cli.Context) error {
@@ -170,6 +175,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
             cli.Command{
                 Name:      "recover-lot",
+                Aliases:   []string{"r"},
                 Usage:     "Recover unclaimed RPL from a lot (returning it to the auction contract)",
                 UsageText: "rocketpool api auction recover-lot lot-id",
                 Action: func(c *cli.Context) error {
