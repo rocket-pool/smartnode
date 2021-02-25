@@ -13,7 +13,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
     command.Subcommands = append(command.Subcommands, cli.Command{
         Name:      name,
         Aliases:   aliases,
-        Usage:     "Manage Rocket Pool trusted node DAO",
+        Usage:     "Manage the Rocket Pool trusted node DAO",
         Subcommands: []cli.Command{
 
             cli.Command{
