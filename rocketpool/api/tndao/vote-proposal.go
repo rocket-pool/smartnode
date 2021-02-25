@@ -39,7 +39,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
     wg.Go(func() error {
         proposalCount, err := dao.GetProposalCount(rp, nil)
         if err == nil {
-            proposal.DoesNotExist = (proposalId > proposalCount)
+            response.DoesNotExist = (proposalId > proposalCount)
         }
         return err
     })

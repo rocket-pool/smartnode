@@ -33,7 +33,7 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOPr
     wg.Go(func() error {
         proposalCount, err := dao.GetProposalCount(rp, nil)
         if err == nil {
-            proposal.DoesNotExist = (proposalId > proposalCount)
+            response.DoesNotExist = (proposalId > proposalCount)
         }
         return err
     })
