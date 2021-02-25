@@ -30,10 +30,19 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
         return nil, err
     }
 
-    // Sync
+    // Data
     var wg errgroup.Group
     var memberJoinedBlock uint64
     var proposalCreatedBlock uint64
+
+    // Check proposal exists
+    wg.Go(func() error {
+        proposalCount, err := dao.GetProposalCount(rp, nil)
+        if err == nil {
+            proposal.DoesNotExist = (proposalId > proposalCount)
+        }
+        return err
+    })
 
     // Check proposal state
     wg.Go(func() error {
@@ -76,7 +85,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
     response.JoinedAfterCreated = (memberJoinedBlock >= proposalCreatedBlock)
 
     // Update & return response
-    response.CanVote = !(response.InvalidState || response.JoinedAfterCreated || response.AlreadyVoted)
+    response.CanVote = !(response.DoesNotExist || response.InvalidState || response.JoinedAfterCreated || response.AlreadyVoted)
     return &response, nil
 
 }

@@ -29,6 +29,15 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOPr
     // Sync
     var wg errgroup.Group
 
+    // Check proposal exists
+    wg.Go(func() error {
+        proposalCount, err := dao.GetProposalCount(rp, nil)
+        if err == nil {
+            proposal.DoesNotExist = (proposalId > proposalCount)
+        }
+        return err
+    })
+
     // Check proposal state
     wg.Go(func() error {
         proposalState, err := dao.GetProposalState(rp, proposalId, nil)
@@ -57,7 +66,7 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOPr
     }
 
     // Update & return response
-    response.CanCancel = !(response.InvalidState || response.InvalidProposer)
+    response.CanCancel = !(response.DoesNotExist || response.InvalidState || response.InvalidProposer)
     return &response, nil
 
 }

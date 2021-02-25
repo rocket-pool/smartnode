@@ -124,6 +124,19 @@ func ValidateTokenType(name, value string) (string, error) {
 //
 
 
+// Validate a positive unsigned integer value
+func ValidatePositiveUint(name, value string) (uint64, error) {
+    val, err := ValidateUint(name, value)
+    if err != nil {
+        return 0, err
+    }
+    if val == 0 {
+        return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
+    }
+    return val, nil
+}
+
+
 // Validate a positive wei amount
 func ValidatePositiveWeiAmount(name, value string) (*big.Int, error) {
     val, err := ValidateWeiAmount(name, value)
