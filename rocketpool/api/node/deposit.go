@@ -6,10 +6,11 @@ import (
     "math/big"
 
     "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/minipool"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/settings/protocol"
+    tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -39,6 +40,9 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
     // Response
     response := api.CanNodeDepositResponse{}
 
+    // Check if amount is zero
+    amountIsZero := (amountWei.Cmp(big.NewInt(0)) == 0)
+
     // Get node account
     nodeAccount, err := w.GetNodeAccount()
     if err != nil {
@@ -46,12 +50,13 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
     }
 
     // Data
-    var wg errgroup.Group
+    var wg1 errgroup.Group
+    var isTrusted bool
     var minipoolCount uint64
     var minipoolLimit uint64
 
     // Check node balance
-    wg.Go(func() error {
+    wg1.Go(func() error {
         ethBalanceWei, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
         if err == nil {
             response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
@@ -59,20 +64,8 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         return err
     })
 
-    // Check deposit amount
-    wg.Go(func() error {
-        if amountWei.Cmp(big.NewInt(0)) > 0 {
-            return nil
-        }
-        trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
-        if err == nil {
-            response.InvalidAmount = !trusted
-        }
-        return err
-    })
-
     // Check node deposits are enabled
-    wg.Go(func() error {
+    wg1.Go(func() error {
         depositEnabled, err := protocol.GetNodeDepositEnabled(rp, nil)
         if err == nil {
             response.DepositDisabled = !depositEnabled
@@ -80,28 +73,66 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         return err
     })
 
+    // Get trusted status
+    wg1.Go(func() error {
+        var err error
+        isTrusted, err = tndao.GetMemberExists(rp, nodeAccount.Address, nil)
+        return err
+    })
+
     // Get node staking information
-    wg.Go(func() error {
+    wg1.Go(func() error {
         var err error
         minipoolCount, err = minipool.GetNodeMinipoolCount(rp, nodeAccount.Address, nil)
         return err
     })
-    wg.Go(func() error {
+    wg1.Go(func() error {
         var err error
         minipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
         return err
     })
 
     // Wait for data
-    if err := wg.Wait(); err != nil {
+    if err := wg1.Wait(); err != nil {
         return nil, err
     }
 
-    // Check node RPL stake
+    // Check data
     response.InsufficientRplStake = (minipoolCount >= minipoolLimit)
+    response.InvalidAmount = (!isTrusted && amountIsZero)
+
+    // Check trusted node unbonded minipool limit
+    if isTrusted && amountIsZero {
+
+        // Data
+        var wg2 errgroup.Group
+        var unbondedMinipoolCount uint64
+        var unbondedMinipoolsMax uint64
+
+        // Get unbonded minipool details
+        wg2.Go(func() error {
+            var err error
+            unbondedMinipoolCount, err = tndao.GetMemberUnbondedValidatorCount(rp, nodeAccount.Address, nil)
+            return err
+        })
+        wg2.Go(func() error {
+            var err error
+            unbondedMinipoolsMax, err = tnsettings.GetMinipoolUnbondedMax(rp, nil)
+            return err
+        })
+
+        // Wait for data
+        if err := wg2.Wait(); err != nil {
+            return nil, err
+        }
+
+        // Check unbonded minipool limit
+        response.UnbondedMinipoolsAtMax = (unbondedMinipoolCount >= unbondedMinipoolsMax)
+
+    }
 
     // Update & return response
-    response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
+    response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.UnbondedMinipoolsAtMax || response.DepositDisabled)
     return &response, nil
 
 }
