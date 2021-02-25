@@ -3,6 +3,7 @@ package tndao
 import (
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/urfave/cli"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/types/api"

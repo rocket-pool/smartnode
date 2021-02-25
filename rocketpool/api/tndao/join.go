@@ -49,7 +49,7 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
 
     // Check if already a member
     wg.Go(func() error {
-        isMember, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
+        isMember, err := tndao.GetMemberExists(rp, nodeAccount.Address, nil)
         if err == nil {
             response.AlreadyMember = isMember
         }
