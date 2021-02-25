@@ -71,7 +71,7 @@ type CanRecoverRPLFromLotResponse struct {
     Error string                `json:"error"`
     CanRecover bool             `json:"canRecover"`
     DoesNotExist bool           `json:"doesNotExist"`
-    NotCleared bool             `json:"notCleared"`
+    BiddingNotEnded bool        `json:"biddingNotEnded"`
     NoUnclaimedRPL bool         `json:"noUnclaimedRpl"`
     RPLAlreadyRecovered bool    `json:"rplAlreadyRecovered"`
 }

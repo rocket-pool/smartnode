@@ -1,8 +1,11 @@
 package auction
 
 import (
+    "math/big"
+
     "github.com/rocket-pool/rocketpool-go/auction"
     "github.com/urfave/cli"
+    "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/types/api"
@@ -20,10 +23,52 @@ func canRecoverRplFromLot(c *cli.Context, lotIndex uint64) (*api.CanRecoverRPLFr
     // Response
     response := api.CanRecoverRPLFromLotResponse{}
 
-    _ = rp
+    // Sync
+    var wg errgroup.Group
+
+    // Check if lot exists
+    wg.Go(func() error {
+        lotExists, err := auction.GetLotExists(rp, lotIndex, nil)
+        if err == nil {
+            response.DoesNotExist = !lotExists
+        }
+        return err
+    })
+
+    // Check if lot bidding has ended
+    wg.Go(func() error {
+        biddingEnded, err := getLotBiddingEnded(rp, lotIndex)
+        if err == nil {
+            response.BiddingNotEnded = !biddingEnded
+        }
+        return err
+    })
+
+    // Check if lot contains unclaimed RPL
+    wg.Go(func() error {
+        remainingRpl, err := auction.GetLotRemainingRPLAmount(rp, lotIndex, nil)
+        if err == nil {
+            response.NoUnclaimedRPL = (remainingRpl.Cmp(big.NewInt(0)) == 0)
+        }
+        return err
+    })
+
+    // Check if unclaimed RPL has already been recovered
+    wg.Go(func() error {
+        rplRecovered, err := auction.GetLotRPLRecovered(rp, lotIndex, nil)
+        if err == nil {
+            response.RPLAlreadyRecovered = rplRecovered
+        }
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return nil, err
+    }
 
     // Update & return response
-    response.CanRecover = !(response.DoesNotExist || response.NotCleared || response.NoUnclaimedRPL || response.RPLAlreadyRecovered)
+    response.CanRecover = !(response.DoesNotExist || response.BiddingNotEnded || response.NoUnclaimedRPL || response.RPLAlreadyRecovered)
     return &response, nil
 
 }
