@@ -110,7 +110,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
                     lotIndex, err := cliutils.ValidateUint("lot id", c.Args().Get(0))
                     if err != nil { return err }
-                    amountWei, err := cliutils.ValidateDepositWeiAmount("bid amount", c.Args().Get(1))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("bid amount", c.Args().Get(1))
                     if err != nil { return err }
 
                     // Run

@@ -1,6 +1,8 @@
 package api
 
 import (
+    "github.com/ethereum/go-ethereum/common"
+
     "github.com/rocket-pool/rocketpool-go/auction"
 )
 
