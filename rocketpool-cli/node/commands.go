@@ -147,7 +147,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
-            /*
             cli.Command{
                 Name:      "burn",
                 Aliases:   []string{"b"},
@@ -167,7 +166,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                 },
             },
-            */
 
         },
     })

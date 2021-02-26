@@ -32,7 +32,7 @@ func nodeBurn(c *cli.Context, amount float64, token string) error {
             fmt.Printf("The node's %s balance is insufficient.\n", token)
         }
         if canBurn.InsufficientCollateral {
-            fmt.Printf("The %s contract contains insufficient ETH for trade.\n", token)
+            fmt.Printf("There is insufficient ETH collateral to trade %s for.\n", token)
         }
         return nil
     }
