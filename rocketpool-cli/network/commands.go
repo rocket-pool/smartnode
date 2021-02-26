@@ -31,6 +31,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "rpl-price",
+                Aliases:   []string{"p"},
+                Usage:     "Get the current network RPL price in ETH",
+                UsageText: "rocketpool network rpl-price",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return getRplPrice(c)
+
+                },
+            },
+
         },
     })
 }
