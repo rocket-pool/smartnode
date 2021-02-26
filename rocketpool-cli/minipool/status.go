@@ -111,6 +111,8 @@ func getStatus(c *cli.Context) error {
             fmt.Printf("Final balance:        %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Staking.EndBalance), 6))
                 if minipool.WithdrawalAvailable {
             fmt.Printf("Withdrawal available: yes\n")
+                } else if minipool.AlreadyWithdrawn {
+            fmt.Printf("Withdrawal available: no (already withdrawn)\n")
                 } else {
             fmt.Printf("Withdrawal available: in %d blocks\n", minipool.WithdrawalAvailableInBlocks)
                 }
