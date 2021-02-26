@@ -4,11 +4,17 @@ import (
     "context"
 
     "github.com/ethereum/go-ethereum/common"
+    "github.com/rocket-pool/rocketpool-go/dao"
     tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
     "golang.org/x/sync/errgroup"
 )
+
+
+// Settings
+const ProposalStatesBatchSize = 50
 
 
 // Check if the proposal cooldown for a trusted node is active
@@ -126,6 +132,46 @@ func getMembersCanLeave(rp *rocketpool.RocketPool) (bool, error) {
 
     // Return
     return (memberCount > minMemberCount), nil
+
+}
+
+
+// Get all proposal states
+func getProposalStates(rp *rocketpool.RocketPool) ([]rptypes.ProposalState, error) {
+
+    // Get proposal IDs
+    proposalIds, err := dao.GetDAOProposalIDs(rp, "rocketDAONodeTrustedProposals", nil)
+    if err != nil {
+        return []rptypes.ProposalState{}, err
+    }
+
+    // Load proposal states in batches
+    states := make([]rptypes.ProposalState, len(proposalIds))
+    for bsi := 0; bsi < len(proposalIds); bsi += ProposalStatesBatchSize {
+
+        // Get batch start & end index
+        psi := bsi
+        pei := bsi + ProposalStatesBatchSize
+        if pei > len(proposalIds) { pei = len(proposalIds) }
+
+        // Load states
+        var wg errgroup.Group
+        for pi := psi; pi < pei; pi++ {
+            pi := pi
+            wg.Go(func() error {
+                proposalState, err := dao.GetProposalState(rp, proposalIds[pi], nil)
+                if err == nil { states[pi] = proposalState }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []rptypes.ProposalState{}, err
+        }
+
+    }
+
+    // Return
+    return states, nil
 
 }
 

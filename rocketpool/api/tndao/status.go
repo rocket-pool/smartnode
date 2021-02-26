@@ -2,6 +2,7 @@ package tndao
 
 import (
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -78,6 +79,26 @@ func getStatus(c *cli.Context) (*api.TNDAOStatusResponse, error) {
         memberCount, err := trustednode.GetMemberCount(rp, nil)
         if err == nil {
             response.TotalMembers = memberCount
+        }
+        return err
+    })
+
+    // Get proposal counts
+    wg.Go(func() error {
+        proposalStates, err := getProposalStates(rp)
+        if err == nil {
+            response.ProposalCounts.Total = len(proposalStates)
+            for _, state := range proposalStates {
+                switch state {
+                    case rptypes.Pending:   response.ProposalCounts.Pending++
+                    case rptypes.Active:    response.ProposalCounts.Active++
+                    case rptypes.Cancelled: response.ProposalCounts.Cancelled++
+                    case rptypes.Defeated:  response.ProposalCounts.Defeated++
+                    case rptypes.Succeeded: response.ProposalCounts.Succeeded++
+                    case rptypes.Expired:   response.ProposalCounts.Expired++
+                    case rptypes.Executed:  response.ProposalCounts.Executed++
+                }
+            }
         }
         return err
     })
