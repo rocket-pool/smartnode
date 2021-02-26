@@ -59,6 +59,30 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "set-withdrawal-address",
+                Aliases:   []string{"w"},
+                Usage:     "Set the node's withdrawal address",
+                UsageText: "rocketpool node set-withdrawal-address address",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm setting withdrawal address",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    withdrawalAddress, err := cliutils.ValidateAddress("withdrawal address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    return setWithdrawalAddress(c, withdrawalAddress)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "set-timezone",
                 Aliases:   []string{"t"},
                 Usage:     "Set the node's timezone location",
@@ -81,6 +105,95 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run
                     return setTimezoneLocation(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "swap-rpl",
+                Aliases:   []string{"p"},
+                Usage:     "Swap old RPL for new RPL",
+                UsageText: "rocketpool node swap-rpl",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "amount, a",
+                        Usage: "The amount of old RPL to swap (or 'all')",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("amount") != "" && c.String("amount") != "all" {
+                        if _, err := cliutils.ValidatePositiveEthAmount("swap amount", c.String("amount")); err != nil { return err }
+                    }
+
+                    // Run
+                    return nodeSwapRpl(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "stake-rpl",
+                Aliases:   []string{"k"},
+                Usage:     "Stake RPL against the node",
+                UsageText: "rocketpool node stake-rpl",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "amount, a",
+                        Usage: "The amount of RPL to stake (or 'min', 'max', or 'all')",
+                    },
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm RPL stake",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("amount") != "" && c.String("amount") != "min" && c.String("amount") != "max" && c.String("amount") != "all" {
+                        if _, err := cliutils.ValidatePositiveEthAmount("stake amount", c.String("amount")); err != nil { return err }
+                    }
+
+                    // Run
+                    return nodeStakeRpl(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "withdraw-rpl",
+                Aliases:   []string{"i"},
+                Usage:     "Withdraw RPL staked against the node",
+                UsageText: "rocketpool node withdraw-rpl",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "amount, a",
+                        Usage: "The amount of RPL to withdraw (or 'max')",
+                    },
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm RPL withdrawal",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("amount") != "" && c.String("amount") != "max" {
+                        if _, err := cliutils.ValidatePositiveEthAmount("withdrawal amount", c.String("amount")); err != nil { return err }
+                    }
+
+                    // Run
+                    return nodeWithdrawRpl(c)
 
                 },
             },
