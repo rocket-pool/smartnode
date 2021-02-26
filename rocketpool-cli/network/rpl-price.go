@@ -26,7 +26,7 @@ func getRplPrice(c *cli.Context) error {
 
     // Print & return
     fmt.Printf("The current network RPL price is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(response.RplPrice), 6))
-    fmt.Printf("Prices last updated at block: %f%%\n", response.RplPriceBlock)
+    fmt.Printf("Prices last updated at block: %d\n", response.RplPriceBlock)
     return nil
 
 }
