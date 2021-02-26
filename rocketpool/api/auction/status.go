@@ -58,6 +58,29 @@ func getStatus(c *cli.Context) (*api.AuctionStatusResponse, error) {
         return err
     })
 
+    // Get lot counts
+    wg.Go(func() error {
+        nodeAccount, err := w.GetNodeAccount()
+        if err != nil {
+            return err
+        }
+        lotCountDetails, err := getAllLotCountDetails(rp, nodeAccount.Address)
+        if err == nil {
+            for _, details := range lotCountDetails {
+                if details.AddressHasBid && details.BiddingEnded {
+                    response.LotCounts.ClaimAvailable++
+                }
+                if !details.BiddingEnded && details.HasRemainingRpl {
+                    response.LotCounts.BiddingAvailable++
+                }
+                if details.BiddingEnded && details.HasRemainingRpl && !details.RplRecovered {
+                    response.LotCounts.RPLRecoveryAvailable++
+                }
+            }
+        }
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err
