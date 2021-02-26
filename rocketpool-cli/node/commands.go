@@ -151,13 +151,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "burn",
                 Aliases:   []string{"b"},
                 Usage:     "Burn tokens for ETH",
-                UsageText: "rocketpool node burn [options] amount token",
-                Flags: []cli.Flag{
-                    cli.BoolFlag{
-                        Name:  "yes, y",
-                        Usage: "Automatically confirm token burn",
-                    },
-                },
+                UsageText: "rocketpool node burn amount token",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
