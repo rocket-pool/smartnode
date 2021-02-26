@@ -39,7 +39,7 @@ func nodeBurn(c *cli.Context, amount float64, token string) error {
     }
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to burn %.6f %s?", math.RoundDown(eth.WeiToEth(amountWei), 6), token))) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to burn %.6f %s for ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6), token))) {
         fmt.Println("Cancelled.")
         return nil
     }
