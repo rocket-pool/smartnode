@@ -109,6 +109,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     var status types.MinipoolStatus
     var statusBlock uint64
     var refundBalance *big.Int
+    var nodeWithdrawn bool
 
     // Load data
     wg.Go(func() error {
@@ -126,6 +127,11 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
         refundBalance, err = mp.GetNodeRefundBalance(nil)
         return err
     })
+    wg.Go(func() error {
+        var err error
+        nodeWithdrawn, err = mp.GetNodeWithdrawn(nil)
+        return err
+    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
@@ -136,7 +142,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     return minipoolCountDetails{
         Status: status,
         RefundAvailable: (refundBalance.Cmp(big.NewInt(0)) > 0),
-        WithdrawalAvailable: (status == types.Withdrawable && (currentBlock - statusBlock) >= withdrawalDelay),
+        WithdrawalAvailable: (status == types.Withdrawable && !nodeWithdrawn && (currentBlock - statusBlock) >= withdrawalDelay),
         CloseAvailable: (status == types.Dissolved),
     }, nil
 

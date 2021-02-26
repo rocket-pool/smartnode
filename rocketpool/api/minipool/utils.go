@@ -201,10 +201,14 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
     details.RefundAvailable = (details.Node.RefundBalance.Cmp(big.NewInt(0)) > 0)
     details.CloseAvailable = (details.Status.Status == types.Dissolved)
     if details.Status.Status == types.Withdrawable {
-        if (currentBlock - details.Status.StatusBlock) >= withdrawalDelay {
-            details.WithdrawalAvailable = true
+        if details.Node.Withdrawn {
+            details.AlreadyWithdrawn = true
         } else {
-            details.WithdrawalAvailableInBlocks = withdrawalDelay - (currentBlock - details.Status.StatusBlock)
+            if (currentBlock - details.Status.StatusBlock) >= withdrawalDelay {
+                details.WithdrawalAvailable = true
+            } else {
+                details.WithdrawalAvailableInBlocks = withdrawalDelay - (currentBlock - details.Status.StatusBlock)
+            }
         }
     }
     return details, nil
