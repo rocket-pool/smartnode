@@ -82,6 +82,7 @@ type CanWithdrawMinipoolResponse struct {
     Error string                    `json:"error"`
     CanWithdraw bool                `json:"canWithdraw"`
     InvalidStatus bool              `json:"invalidStatus"`
+    AlreadyWithdrawn bool           `json:"alreadyWithdrawn"`
     WithdrawalDelayActive bool      `json:"withdrawalDelayActive"`
 }
 type WithdrawMinipoolResponse struct {

@@ -59,6 +59,15 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
         return err
     })
 
+    // Check if node has already withdrawn from minipool
+    wg.Go(func() error {
+        nodeWithdrawn, err := mp.GetNodeWithdrawn(nil)
+        if err == nil {
+            response.AlreadyWithdrawn = nodeWithdrawn
+        }
+        return err
+    })
+
     // Get current block
     wg.Go(func() error {
         header, err := ec.HeaderByNumber(context.Background(), nil)
@@ -91,7 +100,7 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     response.WithdrawalDelayActive = ((currentBlock - statusBlock) < withdrawalDelay)
 
     // Update & return response
-    response.CanWithdraw = !(response.InvalidStatus || response.WithdrawalDelayActive)
+    response.CanWithdraw = !(response.InvalidStatus || response.AlreadyWithdrawn || response.WithdrawalDelayActive)
     return &response, nil
 
 }
