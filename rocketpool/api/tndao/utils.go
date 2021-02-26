@@ -54,8 +54,8 @@ func getProposalCooldownActive(rp *rocketpool.RocketPool, nodeAddress common.Add
 }
 
 
-// Check if a proposal for a node action has expired
-func getProposalExpired(rp *rocketpool.RocketPool, nodeAddress common.Address, proposalType string) (bool, error) {
+// Check if a proposal for a node exists & is actionable
+func getProposalIsActionable(rp *rocketpool.RocketPool, nodeAddress common.Address, proposalType string) (bool, error) {
 
     // Data
     var wg errgroup.Group
@@ -92,7 +92,7 @@ func getProposalExpired(rp *rocketpool.RocketPool, nodeAddress common.Address, p
     }
 
     // Return
-    return (currentBlock >= (proposalExecutedBlock + actionBlocks)), nil
+    return (currentBlock < (proposalExecutedBlock + actionBlocks)), nil
 
 }
 

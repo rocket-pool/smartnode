@@ -31,11 +31,11 @@ func canReplace(c *cli.Context) (*api.CanReplaceTNDAOPositionResponse, error) {
     // Sync
     var wg errgroup.Group
 
-    // Check proposal expired status
+    // Check proposal actionable status
     wg.Go(func() error {
-        proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "replace")
+        proposalActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "replace")
         if err == nil {
-            response.ProposalExpired = proposalExpired
+            response.ProposalExpired = !proposalActionable
         }
         return err
     })

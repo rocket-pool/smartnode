@@ -29,14 +29,55 @@ func getStatus(c *cli.Context) (*api.TNDAOStatusResponse, error) {
         return nil, err
     }
 
+    // Get membership status
+    isMember, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
+    if err != nil {
+        return nil, err
+    }
+    response.IsMember = isMember
+
     // Sync
     var wg errgroup.Group
 
-    // Get member status
+    // Get pending executed proposal statuses
+    if isMember {
+
+        // Check if node can leave
+        wg.Go(func() error {
+            leaveActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "leave")
+            if err == nil {
+                response.CanLeave = leaveActionable
+            }
+            return err
+        })
+
+        // Check if node can replace position
+        wg.Go(func() error {
+            replaceActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "replace")
+            if err == nil {
+                response.CanReplace = replaceActionable
+            }
+            return err
+        })
+
+    } else {
+
+        // Check if node can join
+        wg.Go(func() error {
+            joinActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "invited")
+            if err == nil {
+                response.CanJoin = joinActionable
+            }
+            return err
+        })
+
+    }
+
+    // Get total DAO members
     wg.Go(func() error {
-        isMember, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
+        memberCount, err := trustednode.GetMemberCount(rp, nil)
         if err == nil {
-            response.IsMember = isMember
+            response.TotalMembers = memberCount
         }
         return err
     })

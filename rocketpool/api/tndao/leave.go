@@ -26,15 +26,15 @@ func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
     // Sync
     var wg errgroup.Group
 
-    // Check proposal expired status
+    // Check proposal actionable status
     wg.Go(func() error {
         nodeAccount, err := w.GetNodeAccount()
         if err != nil {
             return err
         }
-        proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "leave")
+        proposalActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "leave")
         if err == nil {
-            response.ProposalExpired = proposalExpired
+            response.ProposalExpired = !proposalActionable
         }
         return err
     })

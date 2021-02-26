@@ -38,11 +38,11 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
     var nodeRplBalance *big.Int
     var rplBondAmount *big.Int
 
-    // Check proposal expired status
+    // Check proposal actionable status
     wg.Go(func() error {
-        proposalExpired, err := getProposalExpired(rp, nodeAccount.Address, "invited")
+        proposalActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "invited")
         if err == nil {
-            response.ProposalExpired = proposalExpired
+            response.ProposalExpired = !proposalActionable
         }
         return err
     })
