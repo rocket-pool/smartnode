@@ -25,13 +25,11 @@ func nodeSwapRpl(c *cli.Context) error {
     var amountWei *big.Int
     if c.String("amount") == "max" {
 
-        // Get node status
+        // Set amount to node fixed-supply RPL balance
         status, err := rp.NodeStatus()
         if err != nil {
             return err
         }
-
-        // Set amount to node old RPL balance
         amountWei = status.AccountBalances.FixedSupplyRPL
 
     } else if c.String("amount") != "" {
@@ -45,8 +43,27 @@ func nodeSwapRpl(c *cli.Context) error {
 
     } else {
 
-        // Prompt for amount
-        // TODO: implement
+        // Get maximum swap amount
+        status, err := rp.NodeStatus()
+        if err != nil {
+            return err
+        }
+        maxAmount := status.AccountBalances.FixedSupplyRPL
+
+        // Prompt for maximum amount
+        if cliutils.Confirm(fmt.Sprintf("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
+            amountWei = maxAmount
+        } else {
+
+            // Prompt for custom amount
+            inputAmount := cliutils.Prompt("Please enter an amount of old RPL to swap:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+            swapAmount, err := strconv.ParseFloat(inputAmount, 64)
+            if err != nil {
+                return fmt.Errorf("Invalid swap amount '%s': %w", inputAmount, err)
+            }
+            amountWei = eth.EthToWei(swapAmount)
+
+        }
 
     }
 
