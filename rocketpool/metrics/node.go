@@ -210,19 +210,22 @@ func (p *nodeMetricsProcess) updateHistogram(nodeRanks []api.NodeRank) {
     sort.Float64s(buckets)
 
     accCount := 0
-    nextB := buckets[0]
-    for _, b := range buckets {
 
-        // fill in the gaps
-        for nextB < b {
-            p.metrics.nodeScoreHist.With(prometheus.Labels{"le":fmt.Sprintf("%.3f", nextB)}).Set(float64(accCount))
-            nextB = nextB + BucketInterval
+    if len(buckets) > 0 {
+        nextB := buckets[0]
+        for _, b := range buckets {
+
+            // fill in the gaps
+            for nextB < b {
+                p.metrics.nodeScoreHist.With(prometheus.Labels{"le":fmt.Sprintf("%.3f", nextB)}).Set(float64(accCount))
+                nextB = nextB + BucketInterval
+            }
+
+            accCount += histogram[b]
+            p.metrics.nodeScoreHist.With(prometheus.Labels{"le":fmt.Sprintf("%.3f", b)}).Set(float64(accCount))
+
+            nextB = b + BucketInterval
         }
-
-        accCount += histogram[b]
-        p.metrics.nodeScoreHist.With(prometheus.Labels{"le":fmt.Sprintf("%.3f", b)}).Set(float64(accCount))
-
-        nextB = b + BucketInterval
     }
 
     p.metrics.nodeScoreHistSum.Set(sumScores)

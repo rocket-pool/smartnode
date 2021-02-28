@@ -47,7 +47,7 @@ func startMinipoolMetricsProcess(c *cli.Context, interval time.Duration, logger 
         if p != nil && err == nil {
             break;
         }
-        logger.Printlnf("minipoolMetricsProcess retry loop")
+        logger.Printlnf("minipoolMetricsProcess retry loop: %w", err)
     }
     logger.Printlnf("minipoolMetricsProcess created")
 

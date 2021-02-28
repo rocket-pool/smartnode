@@ -30,6 +30,8 @@ type networkGauges struct {
     minipoolCount          prometheus.Gauge
     minipoolQueue          *prometheus.GaugeVec
     networkFees            *prometheus.GaugeVec
+    rplPriceBlock          prometheus.Gauge
+    rplPrice               prometheus.Gauge
     networkBlock           prometheus.Gauge
     networkBalances        *prometheus.GaugeVec
     settingsFlags          *prometheus.GaugeVec
@@ -109,7 +111,7 @@ func newNetworkMetricsProcess(c *cli.Context, logger log.ColorLogger) (*networkM
             Name:           "total_count",
             Help:           "total number of minipools in Rocket Pool",
         }),
-        minipoolQueue:    promauto.NewGaugeVec(
+        minipoolQueue:      promauto.NewGaugeVec(
             prometheus.GaugeOpts{
                 Namespace:  "rocketpool",
                 Subsystem:  "minipool",
@@ -118,7 +120,7 @@ func newNetworkMetricsProcess(c *cli.Context, logger log.ColorLogger) (*networkM
             },
             []string{"depositType"},
         ),
-        networkFees:    promauto.NewGaugeVec(
+        networkFees:        promauto.NewGaugeVec(
             prometheus.GaugeOpts{
                 Namespace:  "rocketpool",
                 Subsystem:  "network",
@@ -127,11 +129,23 @@ func newNetworkMetricsProcess(c *cli.Context, logger log.ColorLogger) (*networkM
             },
             []string{"range"},
         ),
+        rplPriceBlock:      promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:      "rocketpool",
+            Subsystem:      "network",
+            Name:           "rpl_price_updated_block",
+            Help:           "block of current submitted RPL price",
+        }),
+        rplPrice:           promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:      "rocketpool",
+            Subsystem:      "network",
+            Name:           "rpl_price_eth",
+            Help:           "RPL price in ETH",
+        }),
         networkBlock:       promauto.NewGauge(prometheus.GaugeOpts{
             Namespace:      "rocketpool",
             Subsystem:      "network",
-            Name:           "updated_block",
-            Help:           "block of lastest submitted balances",
+            Name:           "balance_updated_block",
+            Help:           "block of current submitted balances",
         }),
         networkBalances:    promauto.NewGaugeVec(
             prometheus.GaugeOpts{
@@ -217,6 +231,12 @@ func (p *networkMetricsProcess) updateNetwork() error {
     p.metrics.networkFees.With(prometheus.Labels{"range":"target"}).Set(nodeFees.TargetNodeFee)
     p.metrics.networkFees.With(prometheus.Labels{"range":"max"}).Set(nodeFees.MaxNodeFee)
 
+    rplPrice, err := apiNetwork.GetRplPrice(p.rp)
+    if err != nil { return err }
+
+    p.metrics.rplPriceBlock.Set(float64(rplPrice.RplPriceBlock))
+    p.metrics.rplPrice.Set(eth.WeiToEth(rplPrice.RplPrice))
+
     stuff, err := getOtherNetworkStuff(p.rp)
     if err != nil { return err }
 
@@ -263,13 +283,6 @@ func getOtherNetworkStuff(rp *rocketpool.RocketPool) (*networkStuff, error) {
         totalRETH, err := network.GetTotalRETHSupply(rp, nil)
         if err == nil {
             stuff.TotalRETH = totalRETH
-        }
-        return err
-    })
-    wg.Go(func() error {
-        depositBalance, err := deposit.GetBalance(rp, nil)
-        if err == nil {
-            stuff.DepositBalance = depositBalance
         }
         return err
     })
