@@ -69,8 +69,14 @@ func nodeDeposit(c *cli.Context) error {
         if canDeposit.InsufficientBalance {
             fmt.Println("The node's ETH balance is insufficient.")
         }
+        if canDeposit.InsufficientRplStake {
+            fmt.Println("The node has not staked enough RPL to collateralize a new minipool.")
+        }
         if canDeposit.InvalidAmount {
             fmt.Println("The deposit amount is invalid.")
+        }
+        if canDeposit.UnbondedMinipoolsAtMax {
+            fmt.Println("The node cannot create any more unbonded minipools.")
         }
         if canDeposit.DepositDisabled {
             fmt.Println("Node deposits are currently disabled.")
