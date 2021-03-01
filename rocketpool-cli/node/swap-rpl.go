@@ -23,7 +23,7 @@ func nodeSwapRpl(c *cli.Context) error {
 
     // Get swap amount
     var amountWei *big.Int
-    if c.String("amount") == "max" {
+    if c.String("amount") == "all" {
 
         // Set amount to node fixed-supply RPL balance
         status, err := rp.NodeStatus()
