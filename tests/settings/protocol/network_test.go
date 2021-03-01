@@ -1,8 +1,10 @@
 package protocol
 
 import (
+    "bytes"
     "testing"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -124,6 +126,16 @@ func TestNetworkSettings(t *testing.T) {
         t.Error(err)
     } else if value != targetRethCollateralRate {
         t.Error("Incorrect target rETH collateral rate value")
+    }
+
+    // Set & get system withdrawal contract address
+    swcAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    if _, err := protocol.BootstrapSystemWithdrawalContractAddress(rp, swcAddress, ownerAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if value, err := protocol.GetSystemWithdrawalContractAddress(rp, nil); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(value.Bytes(), swcAddress.Bytes()) {
+        t.Error("Incorrect system withdrawal contract address")
     }
 
 }

@@ -6,6 +6,7 @@ import (
     "sync"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
 
     protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
@@ -202,6 +203,23 @@ func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 }
 func BootstrapTargetRethCollateralRate(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (*types.Receipt, error) {
     return protocoldao.BootstrapUint(rp, NetworkSettingsContractName, "network.reth.collateral.target", eth.EthToWei(value), opts)
+}
+
+
+// The eth2 system withdrawal contract address
+func GetSystemWithdrawalContractAddress(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address, error) {
+    networkSettingsContract, err := getNetworkSettingsContract(rp)
+    if err != nil {
+        return common.Address{}, err
+    }
+    value := new(common.Address)
+    if err := networkSettingsContract.Call(opts, value, "getSystemWithdrawalContractAddress"); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get system withdrawal contract address: %w", err)
+    }
+    return *value, nil
+}
+func BootstrapSystemWithdrawalContractAddress(rp *rocketpool.RocketPool, value common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return protocoldao.BootstrapAddress(rp, NetworkSettingsContractName, "network.withdrawal.contract.address", value, opts)
 }
 
 

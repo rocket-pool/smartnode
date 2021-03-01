@@ -5,7 +5,7 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/network"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -127,7 +127,7 @@ func TestBurnNETH(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Set SWC address
-    if _, err := network.SetSystemWithdrawalContractAddress(rp, swcAccount.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapSystemWithdrawalContractAddress(rp, swcAccount.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Withdraw minipool validator balance
     opts := swcAccount.GetTransactor()

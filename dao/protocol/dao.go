@@ -6,6 +6,7 @@ import (
     "sync"
 
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -34,6 +35,20 @@ func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
         return nil, err
     }
     txReceipt, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
+    if err != nil {
+        return nil, fmt.Errorf("Could not bootstrap protocol setting %s.%s: %w", contractName, settingPath, err)
+    }
+    return txReceipt, nil
+}
+
+
+// Bootstrap an address setting
+func BootstrapAddress(rp *rocketpool.RocketPool, contractName, settingPath string, value common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDAOProtocol, err := getRocketDAOProtocol(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingAddress", contractName, settingPath, value)
     if err != nil {
         return nil, fmt.Errorf("Could not bootstrap protocol setting %s.%s: %w", contractName, settingPath, err)
     }

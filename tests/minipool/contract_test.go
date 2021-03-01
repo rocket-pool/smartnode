@@ -366,7 +366,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
     if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), eth.EthToWei(32), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Set SWC address
-    if _, err := network.SetSystemWithdrawalContractAddress(rp, swcAccount.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapSystemWithdrawalContractAddress(rp, swcAccount.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check initial minipool validator balance withdrawn status
     if validatorBalanceWithdrawn, err := mp.GetValidatorBalanceWithdrawn(nil); err != nil {
