@@ -1,7 +1,9 @@
 package node
 
 import (
+    "bytes"
     "fmt"
+    "math/big"
 
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
@@ -25,11 +27,33 @@ func getStatus(c *cli.Context) error {
     }
 
     // Print & return
-    fmt.Printf("The node %s has a balance of %.6f ETH and %.6f nETH.\n", status.AccountAddress.Hex(), math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6), math.RoundDown(eth.WeiToEth(status.AccountBalances.NETH), 6))
+    fmt.Printf(
+        "The node %s has a balance of %.6f ETH, %.6f RPL and %.6f nETH.\n",
+        status.AccountAddress.Hex(),
+        math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6),
+        math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6),
+        math.RoundDown(eth.WeiToEth(status.AccountBalances.NETH), 6))
+    if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
+        fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+    }
+    if !bytes.Equal(status.AccountAddress.Bytes(), status.WithdrawalAddress.Bytes()) {
+        fmt.Printf(
+            "The node's withdrawal address %s has a balance of %.6f ETH, %.6f RPL and %.6f nETH.\n",
+            status.WithdrawalAddress.Hex(),
+            math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
+            math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6),
+            math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.NETH), 6))
+    }
     if status.Registered {
         fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
+        fmt.Printf(
+            "The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to run %d minipools in total.\n",
+            math.RoundDown(eth.WeiToEth(status.RplStake), 6),
+            math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6),
+            status.MinipoolLimit)
+        fmt.Printf("The node must keep at least %.6f RPL staked to collateralize its minipools and claim RPL rewards.", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
         if status.Trusted {
-            fmt.Println("The node is trusted - it can create empty minipools and will perform watchtower duties.")
+            fmt.Println("The node is a member of the trusted node DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
         }
         if status.MinipoolCounts.Total > 0 {
             fmt.Printf("The node has a total of %d minipool(s):\n", status.MinipoolCounts.Total)
