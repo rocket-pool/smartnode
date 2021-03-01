@@ -34,10 +34,10 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     response.AccountAddress = nodeAccount.Address
 
     // Sync
-    var wg1 errgroup.Group
+    var wg errgroup.Group
 
     // Get node trusted status
-    wg1.Go(func() error {
+    wg.Go(func() error {
         trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
         if err == nil {
             response.Trusted = trusted
@@ -46,7 +46,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     })
 
     // Get node details
-    wg1.Go(func() error {
+    wg.Go(func() error {
         details, err := node.GetNodeDetails(rp, nodeAccount.Address, nil)
         if err == nil {
             response.Registered = details.Exists
@@ -56,30 +56,37 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
         return err
     })
 
+    // Get node account balances
+    wg.Go(func() error {
+        var err error
+        response.AccountBalances, err = tokens.GetBalances(rp, nodeAccount.Address, nil)
+        return err
+    })
+
     // Get staking details
-    wg1.Go(func() error {
+    wg.Go(func() error {
         var err error
         response.RplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
         return err
     })
-    wg1.Go(func() error {
+    wg.Go(func() error {
         var err error
         response.EffectiveRplStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
         return err
     })
-    wg1.Go(func() error {
+    wg.Go(func() error {
         var err error
         response.MinimumRplStake, err = node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
         return err
     })
-    wg1.Go(func() error {
+    wg.Go(func() error {
         var err error
         response.MinipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
         return err
     })
 
     // Get node minipool counts
-    wg1.Go(func() error {
+    wg.Go(func() error {
         details, err := getNodeMinipoolCountDetails(rp, nodeAccount.Address)
         if err == nil {
             response.MinipoolCounts.Total = len(details)
@@ -106,29 +113,16 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     })
 
     // Wait for data
-    if err := wg1.Wait(); err != nil {
+    if err := wg.Wait(); err != nil {
         return nil, err
     }
 
-    // Sync
-    var wg2 errgroup.Group
-
-    // Get node balances
-    wg2.Go(func() error {
-        var err error
-        response.AccountBalances, err = tokens.GetBalances(rp, nodeAccount.Address, nil)
-        return err
-    })
-    wg2.Go(func() error {
-        var err error
-        response.WithdrawalBalances, err = tokens.GetBalances(rp, response.WithdrawalAddress, nil)
-        return err
-    })
-
-    // Wait for data
-    if err := wg2.Wait(); err != nil {
+    // Get withdrawal address balances
+    withdrawalBalances, err := tokens.GetBalances(rp, response.WithdrawalAddress, nil)
+    if err != nil {
         return nil, err
     }
+    response.WithdrawalBalances = withdrawalBalances
 
     // Return response
     return &response, nil
