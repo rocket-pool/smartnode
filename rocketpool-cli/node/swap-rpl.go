@@ -25,7 +25,7 @@ func nodeSwapRpl(c *cli.Context) error {
     var amountWei *big.Int
     if c.String("amount") == "all" {
 
-        // Set amount to node fixed-supply RPL balance
+        // Set amount to node's entire fixed-supply RPL balance
         status, err := rp.NodeStatus()
         if err != nil {
             return err
@@ -43,16 +43,16 @@ func nodeSwapRpl(c *cli.Context) error {
 
     } else {
 
-        // Get maximum swap amount
+        // Get entire fixed-supply RPL balance amount
         status, err := rp.NodeStatus()
         if err != nil {
             return err
         }
-        maxAmount := status.AccountBalances.FixedSupplyRPL
+        entireAmount := status.AccountBalances.FixedSupplyRPL
 
-        // Prompt for maximum amount
-        if cliutils.Confirm(fmt.Sprintf("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
-            amountWei = maxAmount
+        // Prompt for entire amount
+        if cliutils.Confirm(fmt.Sprintf("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(entireAmount), 6))) {
+            amountWei = entireAmount
         } else {
 
             // Prompt for custom amount
