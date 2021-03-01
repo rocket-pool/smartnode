@@ -1,6 +1,8 @@
 package node
 
 import (
+    "bytes"
+
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/tokens"
@@ -118,11 +120,13 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     }
 
     // Get withdrawal address balances
-    withdrawalBalances, err := tokens.GetBalances(rp, response.WithdrawalAddress, nil)
-    if err != nil {
-        return nil, err
+    if !bytes.Equal(nodeAccount.Address.Bytes(), response.WithdrawalAddress.Bytes()) {
+        withdrawalBalances, err := tokens.GetBalances(rp, response.WithdrawalAddress, nil)
+        if err != nil {
+            return nil, err
+        }
+        response.WithdrawalBalances = withdrawalBalances
     }
-    response.WithdrawalBalances = withdrawalBalances
 
     // Return response
     return &response, nil
