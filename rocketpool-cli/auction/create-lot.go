@@ -39,7 +39,7 @@ func createLot(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Printf("Successfully created lot with ID %d.\n", response.LotId)
+    fmt.Printf("Successfully created a new lot with ID %d.\n", response.LotId)
     return nil
 
 }
