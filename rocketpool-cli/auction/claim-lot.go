@@ -97,7 +97,7 @@ func claimFromLot(c *cli.Context) error {
         }
     }
 
-    // Log & return
+    // Return
     return nil
 
 }
