@@ -90,7 +90,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    lotIndex, err := cliutils.ValidateUint("lot id", c.Args().Get(0))
+                    lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -108,7 +108,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
-                    lotIndex, err := cliutils.ValidateUint("lot id", c.Args().Get(0))
+                    lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
                     if err != nil { return err }
                     amountWei, err := cliutils.ValidatePositiveWeiAmount("bid amount", c.Args().Get(1))
                     if err != nil { return err }
@@ -128,7 +128,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    lotIndex, err := cliutils.ValidateUint("lot id", c.Args().Get(0))
+                    lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -146,7 +146,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    lotIndex, err := cliutils.ValidateUint("lot id", c.Args().Get(0))
+                    lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -164,7 +164,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    lotIndex, err := cliutils.ValidateUint("lot id", c.Args().Get(0))
+                    lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -182,7 +182,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    lotIndex, err := cliutils.ValidateUint("lot id", c.Args().Get(0))
+                    lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
