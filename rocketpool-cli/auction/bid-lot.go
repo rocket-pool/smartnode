@@ -44,17 +44,7 @@ func bidOnLot(c *cli.Context) error {
 
     // Get selected lot
     var selectedLot api.LotDetails
-    if c.String("lot") == "" {
-
-        // Prompt for lot selection
-        options := make([]string, len(openLots))
-        for li, lot := range openLots {
-            options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
-        }
-        selected, _ := cliutils.Select("Please select a lot to bid on:", options)
-        selectedLot = openLots[selected]
-
-    } else {
+    if c.String("lot") != "" {
 
         // Get selected lot index
         selectedIndex, err := strconv.ParseUint(c.String("lot"), 10, 64)
@@ -74,6 +64,16 @@ func bidOnLot(c *cli.Context) error {
         if !found {
             return fmt.Errorf("Lot %d is not available for bidding.", selectedIndex)
         }
+
+    } else {
+
+        // Prompt for lot selection
+        options := make([]string, len(openLots))
+        for li, lot := range openLots {
+            options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
+        }
+        selected, _ := cliutils.Select("Please select a lot to bid on:", options)
+        selectedLot = openLots[selected]
 
     }
 
