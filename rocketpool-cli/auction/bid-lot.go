@@ -70,7 +70,7 @@ func bidOnLot(c *cli.Context) error {
         // Prompt for lot selection
         options := make([]string, len(openLots))
         for li, lot := range openLots {
-            options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
+            options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
         }
         selected, _ := cliutils.Select("Please select a lot to bid on:", options)
         selectedLot = openLots[selected]
@@ -129,15 +129,6 @@ func bidOnLot(c *cli.Context) error {
     }
     if !canBid.CanBid {
         fmt.Println("Cannot bid on lot:")
-        if canBid.DoesNotExist {
-            fmt.Printf("Lot %d does not exist.\n", selectedLot.Details.Index)
-        }
-        if canBid.BiddingEnded {
-            fmt.Printf("Bidding on lot %d has ended.\n", selectedLot.Details.Index)
-        }
-        if canBid.RPLExhausted {
-            fmt.Printf("Lot %d has no more RPL remaining.\n", selectedLot.Details.Index)
-        }
         if canBid.BidOnLotDisabled {
             fmt.Println("Bidding on lots is currently disabled.")
         }
