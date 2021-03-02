@@ -1,7 +1,7 @@
 package auction
 
 import (
-    //"fmt"
+    "fmt"
 
     "github.com/urfave/cli"
 
@@ -16,9 +16,30 @@ func createLot(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    _ = rp
+    // Check lot can be created
+    canCreate, err := rp.CanCreateLot()
+    if err != nil {
+        return err
+    }
+    if !canCreate.CanCreate {
+        fmt.Println("Cannot create lot:")
+        if canCreate.InsufficientBalance {
+            fmt.Println("The auction contract does not have a sufficient RPL balance to create a lot.")
+        }
+        if canCreate.CreateLotDisabled {
+            fmt.Println("Lot creation is currently disabled.")
+        }
+        return nil
+    }
+
+    // Create lot
+    response, err := rp.CreateLot()
+    if err != nil {
+        return err
+    }
 
     // Log & return
+    fmt.Printf("Successfully created lot with ID %d.\n", response.LotId)
     return nil
 
 }
