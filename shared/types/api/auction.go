@@ -27,7 +27,13 @@ type AuctionStatusResponse struct {
 type AuctionLotsResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
-    Lots []auction.LotDetails       `json:"lots"`
+    Lots []LotDetails               `json:"lots"`
+}
+type LotDetails struct {
+    Details auction.LotDetails      `json:"details"`
+    ClaimAvailable bool             `json:"claimAvailable"`
+    BiddingAvailable bool           `json:"biddingAvailable"`
+    RPLRecoveryAvailable bool       `json:"rplRecoveryAvailable"`
 }
 
 

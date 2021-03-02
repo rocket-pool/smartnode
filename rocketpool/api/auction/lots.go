@@ -1,7 +1,6 @@
 package auction
 
 import (
-    "github.com/rocket-pool/rocketpool-go/auction"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
@@ -28,8 +27,8 @@ func getLots(c *cli.Context) (*api.AuctionLotsResponse, error) {
         return nil, err
     }
 
-    // Get lots
-    lots, err := auction.GetLotsWithBids(rp, nodeAccount.Address, nil)
+    // Get lot details
+    lots, err := getAllLotDetails(rp, nodeAccount.Address)
     if err != nil {
         return nil, err
     }

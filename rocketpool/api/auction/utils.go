@@ -11,11 +11,14 @@ import (
     "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "golang.org/x/sync/errgroup"
+
+    "github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
 // Settings
 const LotCountDetailsBatchSize = 10
+const LotDetailsBatchSize = 10
 
 
 // Lot count details
@@ -214,6 +217,92 @@ func getLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address,
         BiddingEnded: (currentBlock >= endBlock),
         HasRemainingRpl: (remainingRpl.Cmp(big.NewInt(0)) > 0),
         RplRecovered: rplRecovered,
+    }, nil
+
+}
+
+
+// Get all lot details
+func getAllLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address) ([]api.LotDetails, error) {
+
+    // Data
+    var wg1 errgroup.Group
+    var lotCount uint64
+    var currentBlock uint64
+
+    // Get lot count
+    wg1.Go(func() error {
+        var err error
+        lotCount, err = auction.GetLotCount(rp, nil)
+        return err
+    })
+
+    // Get current block
+    wg1.Go(func() error {
+        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
+        if err == nil {
+            currentBlock = header.Number.Uint64()
+        }
+        return err
+    })
+
+    // Wait for data
+    if err := wg1.Wait(); err != nil {
+        return []api.LotDetails{}, err
+    }
+
+    // Load details in batches
+    details := make([]api.LotDetails, lotCount)
+    for bsi := uint64(0); bsi < lotCount; bsi += LotDetailsBatchSize {
+
+        // Get batch start & end index
+        lsi := bsi
+        lei := bsi + LotDetailsBatchSize
+        if lei > lotCount { lei = lotCount }
+
+        // Load details
+        var wg errgroup.Group
+        for li := lsi; li < lei; li++ {
+            li := li
+            wg.Go(func() error {
+                lotDetails, err := getLotDetails(rp, bidderAddress, li, currentBlock)
+                if err == nil { details[li] = lotDetails }
+                return err
+            })
+        }
+        if err := wg.Wait(); err != nil {
+            return []api.LotDetails{}, err
+        }
+
+    }
+
+    // Return
+    return details, nil
+
+}
+
+
+// Get a lot's details
+func getLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotIndex, currentBlock uint64) (api.LotDetails, error) {
+
+    // Get lot details
+    details, err := auction.GetLotDetailsWithBids(rp, lotIndex, bidderAddress, nil)
+    if err != nil {
+        return api.LotDetails{}, err
+    }
+
+    // Check lot conditions
+    addressHasBid := (details.AddressBidAmount.Cmp(big.NewInt(0)) > 0)
+    biddingEnded := (currentBlock >= details.EndBlock)
+    hasRemainingRpl := (details.RemainingRPLAmount.Cmp(big.NewInt(0)) > 0)
+    rplRecovered := details.RPLRecovered
+
+    // Return
+    return api.LotDetails{
+        Details: details,
+        ClaimAvailable: (addressHasBid && biddingEnded),
+        BiddingAvailable: (!biddingEnded && hasRemainingRpl),
+        RPLRecoveryAvailable: (biddingEnded && hasRemainingRpl && !rplRecovered),
     }, nil
 
 }
