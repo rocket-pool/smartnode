@@ -111,7 +111,7 @@ func getLots(c *cli.Context) error {
     if len(biddableLots) > 0 {
         fmt.Printf("%d lots are open for bidding:\n", len(biddableLots))
         for _, lot := range biddableLots {
-            fmt.Printf("- lot %d (current price %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
+            fmt.Printf("- lot %d (%.6f RPL available @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
         }
         fmt.Println("")
     }
