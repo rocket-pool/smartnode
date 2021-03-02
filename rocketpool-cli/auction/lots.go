@@ -2,6 +2,7 @@ package auction
 
 import (
     "fmt"
+    "math/big"
 
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
@@ -69,13 +70,31 @@ func getLots(c *cli.Context) error {
         // Print
         fmt.Printf(statusFormat, len(statusLots))
         for _, lot := range statusLots {
-
             fmt.Printf("--------------------\n")
-
-
-
             fmt.Printf("\n")
-
+            fmt.Printf("Start block:          %d\n", lot.Details.StartBlock)
+            fmt.Printf("End block:            %d\n", lot.Details.EndBlock)
+            fmt.Printf("RPL starting price:   %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.StartPrice), 6))
+            fmt.Printf("RPL reserve price:    %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.ReservePrice), 6))
+            fmt.Printf("RPL current price:    %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
+            fmt.Printf("Total RPL amount:     %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.TotalRPLAmount), 6))
+            fmt.Printf("Claimed RPL amount:   %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.ClaimedRPLAmount), 6))
+            fmt.Printf("Remaining RPL amount: %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6))
+            fmt.Printf("Total ETH bid:        %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.TotalBidAmount), 6))
+            fmt.Printf("ETH bid by node:      %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.AddressBidAmount), 6))
+            if lot.Details.Cleared {
+            fmt.Printf("Cleared:              yes\n")
+                if lot.Details.RemainingRPLAmount.Cmp(big.NewInt(0)) == 0 {
+            fmt.Printf("Unclaimed RPL:        no\n")
+                } else if lot.Details.RPLRecovered {
+            fmt.Printf("Unclaimed RPL:        recovered\n")
+                } else {
+            fmt.Printf("Unclaimed RPL:        yes\n")
+                }
+            } else {
+            fmt.Printf("Cleared:              no\n")
+            }
+            fmt.Printf("\n")
         }
         fmt.Println("")
 
