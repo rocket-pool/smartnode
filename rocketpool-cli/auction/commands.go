@@ -77,6 +77,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Name:  "amount, a",
                         Usage: "The amount of ETH to bid (or 'max')",
                     },
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm bid",
+                    },
                 },
                 Action: func(c *cli.Context) error {
 
