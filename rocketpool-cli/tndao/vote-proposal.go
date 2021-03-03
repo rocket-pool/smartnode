@@ -99,6 +99,19 @@ func voteOnProposal(c *cli.Context) error {
 
     }
 
+    // Check if proposal can be voted on
+    canVote, err := rp.CanVoteOnTNDAOProposal(memberAddress)
+    if err != nil {
+        return err
+    }
+    if !canVote.CanVote {
+        fmt.Println("Cannot vote on proposal:")
+        if canVote.JoinedAfterCreated {
+            fmt.Println("You cannot vote on proposals created before you joined the trusted node DAO.")
+        }
+        return nil
+    }
+
     // Vote on proposal
     if _, err := rp.VoteOnTNDAOProposal(selectedProposal.ID, support); err != nil {
         return err
