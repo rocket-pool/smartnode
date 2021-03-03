@@ -71,10 +71,10 @@ func getStatus(c *cli.Context) error {
 
         // Minipools
         for _, minipool := range minipools {
-
-            // Main details
             fmt.Printf("--------------------\n")
             fmt.Printf("\n")
+
+            // Main details
             fmt.Printf("Address:              %s\n", minipool.Address.Hex())
             fmt.Printf("Status updated:       %s\n", minipool.Status.StatusTime.Format(TimeFormat))
             fmt.Printf("Node fee:             %f%%\n", minipool.Node.Fee * 100)
