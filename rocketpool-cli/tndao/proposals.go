@@ -84,12 +84,12 @@ func getProposals(c *cli.Context) error {
             fmt.Printf("Votes against:        %.2f\n", proposal.VotesAgainst)
             if proposal.MemberVoted {
                 if proposal.MemberSupported {
-            fmt.Printf("Node voted:           for\n")
+            fmt.Printf("Node has voted:       for\n")
                 } else {
-            fmt.Printf("Node voted:           against\n")
+            fmt.Printf("Node has voted:       against\n")
                 }
             } else {
-            fmt.Printf("Node voted:           no\n")
+            fmt.Printf("Node has voted:       no\n")
             }
 
             fmt.Printf("\n")
