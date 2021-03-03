@@ -12,6 +12,7 @@ import (
     "github.com/rocket-pool/smartnode/rocketpool-cli/node"
     "github.com/rocket-pool/smartnode/rocketpool-cli/queue"
     "github.com/rocket-pool/smartnode/rocketpool-cli/service"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/tndao"
     "github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 )
 
@@ -89,6 +90,7 @@ ______           _        _    ______           _
         node.RegisterCommands(app, "node",     []string{"n"})
        queue.RegisterCommands(app, "queue",    []string{"q"})
      service.RegisterCommands(app, "service",  []string{"s"})
+       tndao.RegisterCommands(app, "tndao",    []string{"t"})
       wallet.RegisterCommands(app, "wallet",   []string{"w"})
 
     // Check user ID
