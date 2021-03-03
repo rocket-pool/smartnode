@@ -100,7 +100,7 @@ func voteOnProposal(c *cli.Context) error {
     }
 
     // Check if proposal can be voted on
-    canVote, err := rp.CanVoteOnTNDAOProposal(memberAddress)
+    canVote, err := rp.CanVoteOnTNDAOProposal(selectedProposal.ID)
     if err != nil {
         return err
     }
