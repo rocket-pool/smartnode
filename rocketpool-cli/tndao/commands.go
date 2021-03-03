@@ -157,6 +157,94 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "cancel-proposal",
+                Aliases:   []string{"c"},
+                Usage:     "Cancel a proposal made by the node",
+                UsageText: "rocketpool tndao cancel-proposal [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "proposal, p",
+                        Usage: "The ID of the proposal to cancel",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("proposal") != "" {
+                        if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
+                    }
+
+                    // Run
+                    return cancelProposal(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "vote-proposal",
+                Aliases:   []string{"v"},
+                Usage:     "Vote on a proposal",
+                UsageText: "rocketpool tndao vote-proposal [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "proposal, p",
+                        Usage: "The ID of the proposal to vote on",
+                    },
+                    cli.StringFlag{
+                        Name:  "support, s",
+                        Usage: "Whether to support the proposal ('yes' or 'no')",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("proposal") != "" {
+                        if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
+                    }
+                    if c.String("support") != "" {
+                        if _, err := cliutils.ValidateBool("support", c.String("support")); err != nil { return err }
+                    }
+
+                    // Run
+                    return voteOnProposal(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "execute-proposal",
+                Aliases:   []string{"x"},
+                Usage:     "Execute a proposal",
+                UsageText: "rocketpool api tndao execute-proposal [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "proposal, p",
+                        Usage: "The ID of the proposal to execute (or 'all')",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("proposal") != "" && c.String("proposal") != "all" {
+                        if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
+                    }
+
+                    // Run
+                    return executeProposal(c)
+
+                },
+            },
+
         },
     })
 }
