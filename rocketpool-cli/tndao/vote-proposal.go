@@ -85,6 +85,7 @@ func voteOnProposal(c *cli.Context) error {
 
     // Get support status
     var support bool
+    var supportLabel string
     if c.String("support") != "" {
 
         // Parse support status
@@ -97,6 +98,11 @@ func voteOnProposal(c *cli.Context) error {
         // Prompt for support status
         support = cliutils.Confirm("Would you like to vote in support of the proposal?")
 
+    }
+    if support {
+        supportLabel = "in support of"
+    } else {
+        supportLabel = "against"
     }
 
     // Check if proposal can be voted on
@@ -112,17 +118,19 @@ func voteOnProposal(c *cli.Context) error {
         return nil
     }
 
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID))) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Vote on proposal
     if _, err := rp.VoteOnTNDAOProposal(selectedProposal.ID, support); err != nil {
         return err
     }
 
     // Log & return
-    if support {
-        fmt.Printf("Successfully voted in support of proposal %d.\n", selectedProposal.ID)
-    } else {
-        fmt.Printf("Successfully voted against proposal %d.\n", selectedProposal.ID)
-    }
+    fmt.Printf("Successfully voted %s proposal %d.\n", supportLabel, selectedProposal.ID)
     return nil
 
 }

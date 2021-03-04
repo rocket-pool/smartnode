@@ -6,6 +6,7 @@ import (
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -32,6 +33,12 @@ func join(c *cli.Context) error {
         if canJoin.InsufficientRplBalance {
             fmt.Println("The node does not have enough RPL to pay the trusted node RPL bond.")
         }
+        return nil
+    }
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to join the trusted node DAO? Your RPL bond will be locked until you leave.")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 

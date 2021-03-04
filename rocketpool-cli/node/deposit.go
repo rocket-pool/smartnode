@@ -115,6 +115,12 @@ func nodeDeposit(c *cli.Context) error {
 
     }
 
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to deposit %.6f ETH? Running a minipool is a long-term commitment.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Make deposit
     response, err := rp.NodeDeposit(amountWei, minNodeFee)
     if err != nil {

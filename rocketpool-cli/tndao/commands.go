@@ -198,6 +198,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Name:  "support, s",
                         Usage: "Whether to support the proposal ('yes' or 'no')",
                     },
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm vote",
+                    },
                 },
                 Action: func(c *cli.Context) error {
 
@@ -250,6 +254,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"j"},
                 Usage:     "Join the trusted node DAO (requires an executed invite proposal)",
                 UsageText: "rocketpool tndao join",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm joining",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args

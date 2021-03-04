@@ -212,6 +212,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Name:  "min-fee, f",
                         Usage: "The minimum node commission rate for the deposit (or 'auto')",
                     },
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm deposit",
+                    },
                 },
                 Action: func(c *cli.Context) error {
 
