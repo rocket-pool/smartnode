@@ -25,7 +25,7 @@ func replace(c *cli.Context) error {
     if !canReplace.CanReplace {
         fmt.Println("Cannot replace the node's position in the trusted node DAO:")
         if canReplace.ProposalExpired {
-            fmt.Println("The proposal for you to replace your position in the trusted node DAO does not exist or has expired.")
+            fmt.Println("The proposal to replace your node's position in the trusted node DAO does not exist or has expired.")
         }
         if canReplace.MemberAlreadyExists {
             fmt.Println("The replacing node is already a member of the trusted node DAO.")
@@ -34,7 +34,7 @@ func replace(c *cli.Context) error {
     }
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to replace your position in the trusted node DAO? This action cannot be undone!")) {
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to replace your node's position in the trusted node DAO? This action cannot be undone!")) {
         fmt.Println("Cancelled.")
         return nil
     }

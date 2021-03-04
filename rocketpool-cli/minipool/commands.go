@@ -123,7 +123,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "withdraw",
                 Aliases:   []string{"w"},
-                Usage:     "Withdraw final balances and rewards from withdrawable minipools and close them",
+                Usage:     "Withdraw final balances and rewards from withdrawable minipools",
                 UsageText: "rocketpool minipool withdraw [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
