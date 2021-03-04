@@ -30,7 +30,6 @@ import (
 
 // Settings
 const ValidatorContainerSuffix = "_validator"
-var stakePrelaunchMinipoolsInterval, _ = time.ParseDuration("5m")
 var validatorRestartTimeout, _ = time.ParseDuration("5s")
 
 
@@ -72,19 +71,6 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
         d: d,
     }, nil
 
-}
-
-
-// Start stake prelaunch minipools task
-func (t *stakePrelaunchMinipools) Start() {
-    go (func() {
-        for {
-            if err := t.run(); err != nil {
-                t.log.Println(err)
-            }
-            time.Sleep(stakePrelaunchMinipoolsInterval)
-        }
-    })()
 }
 
 
