@@ -1,4 +1,4 @@
-package node
+package watchtower
 
 import (
     "math/big"
@@ -67,7 +67,7 @@ func (t *claimRplRewards) run() error {
     }
 
     // Check for rewards
-    rewardsAmountWei, err := rewards.GetNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil)
+    rewardsAmountWei, err := rewards.GetTrustedNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil)
     if err != nil {
         return err
     }
@@ -85,7 +85,7 @@ func (t *claimRplRewards) run() error {
     }
 
     // Claim rewards
-    if _, err := rewards.ClaimNodeRewards(t.rp, opts); err != nil {
+    if _, err := rewards.ClaimTrustedNodeRewards(t.rp, opts); err != nil {
         return err
     }
 

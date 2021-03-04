@@ -18,6 +18,7 @@ var taskCooldown, _ = time.ParseDuration("10s")
 const (
     MaxConcurrentEth1Requests = 200
 
+    ClaimRplRewardsColor = color.FgGreen
     SubmitNetworkBalancesColor = color.FgYellow
     SubmitWithdrawableMinipoolsColor = color.FgBlue
     DissolveTimedOutMinipoolsColor = color.FgMagenta
@@ -49,6 +50,8 @@ func run(c *cli.Context) error {
     if err := services.WaitNodeRegistered(c, true); err != nil { return err }
 
     // Initialize tasks
+    claimRplRewards, err := newClaimRplRewards(c, log.NewColorLogger(ClaimRplRewardsColor))
+    if err != nil { return err }
     submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor))
     if err != nil { return err }
     submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c, log.NewColorLogger(SubmitWithdrawableMinipoolsColor))
@@ -63,6 +66,10 @@ func run(c *cli.Context) error {
 
     // Run task loop
     for {
+        if err := claimRplRewards.run(); err != nil {
+            errorLog.Println(err)
+        }
+        time.Sleep(taskCooldown)
         if err := submitNetworkBalances.run(); err != nil {
             errorLog.Println(err)
         }
