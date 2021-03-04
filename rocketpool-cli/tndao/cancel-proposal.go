@@ -28,7 +28,7 @@ func cancelProposal(c *cli.Context) error {
     }
 
     // Get wallet status
-    status, err := rp.WalletStatus()
+    wallet, err := rp.WalletStatus()
     if err != nil {
         return err
     }
@@ -36,7 +36,7 @@ func cancelProposal(c *cli.Context) error {
     // Get cancelable proposals
     cancelableProposals := []dao.ProposalDetails{}
     for _, proposal := range proposals.Proposals {
-        if bytes.Equal(proposal.ProposerAddress.Bytes(), status.AccountAddress.Bytes()) && (proposal.State == types.Pending || proposal.State == types.Active) {
+        if bytes.Equal(proposal.ProposerAddress.Bytes(), wallet.AccountAddress.Bytes()) && (proposal.State == types.Pending || proposal.State == types.Active) {
             cancelableProposals = append(cancelableProposals, proposal)
         }
     }

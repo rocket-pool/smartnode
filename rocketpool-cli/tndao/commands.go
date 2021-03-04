@@ -245,6 +245,75 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "join",
+                Aliases:   []string{"j"},
+                Usage:     "Join the trusted node DAO (requires an executed invite proposal)",
+                UsageText: "rocketpool tndao join",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return join(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "leave",
+                Aliases:   []string{"e"},
+                Usage:     "Leave the trusted node DAO (requires an executed leave proposal)",
+                UsageText: "rocketpool tndao leave [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "refund-address, r",
+                        Usage: "The address to refund the node's RPL bond to (or 'node')",
+                    },
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm leaving",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("refund-address") != "" && c.String("refund-address") != "node" {
+                        if _, err := cliutils.ValidateAddress("bond refund address", c.String("refund-address")); err != nil { return err }
+                    }
+
+                    // Run
+                    return leave(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "replace",
+                Aliases:   []string{"a"},
+                Usage:     "Replace the node's position in the trusted node DAO (requires an executed replace proposal)",
+                UsageText: "rocketpool tndao replace [options]",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm replacement",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return replace(c)
+
+                },
+            },
+
         },
     })
 }
