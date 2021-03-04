@@ -253,7 +253,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "join",
                 Aliases:   []string{"j"},
                 Usage:     "Join the trusted node DAO (requires an executed invite proposal)",
-                UsageText: "rocketpool tndao join",
+                UsageText: "rocketpool tndao join [options]",
                 Flags: []cli.Flag{
                     cli.BoolFlag{
                         Name:  "yes, y",
