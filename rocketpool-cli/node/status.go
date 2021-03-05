@@ -67,8 +67,12 @@ func getStatus(c *cli.Context) error {
 
         // Minipool details
         if status.MinipoolCounts.Total > 0 {
+
+            // RPL stake
             fmt.Printf("The node must keep at least %.6f RPL staked to collateralize its minipools and claim RPL rewards.\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
             fmt.Println("")
+
+            // Minipools
             fmt.Printf("The node has a total of %d minipool(s):\n", status.MinipoolCounts.Total)
             if status.MinipoolCounts.Initialized > 0 {
                 fmt.Printf("- %d initialized\n", status.MinipoolCounts.Initialized)
@@ -94,6 +98,7 @@ func getStatus(c *cli.Context) error {
             if status.MinipoolCounts.CloseAvailable > 0 {
                 fmt.Printf("* %d dissolved minipool(s) can be closed!\n", status.MinipoolCounts.CloseAvailable)
             }
+
         } else {
             fmt.Println("The node does not have any minipools yet.")
         }
