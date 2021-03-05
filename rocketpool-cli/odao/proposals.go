@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "encoding/hex"
@@ -19,7 +19,7 @@ func getProposals(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Get trusted node DAO proposals
+    // Get oracle DAO proposals
     allProposals, err := rp.TNDAOProposals()
     if err != nil {
         return err
@@ -40,7 +40,7 @@ func getProposals(c *cli.Context) error {
 
     // Print & return
     if len(allProposals.Proposals) == 0 {
-        fmt.Println("There are no trusted node DAO proposals yet.")
+        fmt.Println("There are no oracle DAO proposals yet.")
     }
     for _, stateName := range proposalStates {
         proposals, ok := stateProposals[stateName]

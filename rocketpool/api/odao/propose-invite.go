@@ -1,6 +1,8 @@
-package tndao
+package odao
 
 import (
+    "fmt"
+
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/urfave/cli"
@@ -11,7 +13,7 @@ import (
 )
 
 
-func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
+func canProposeInvite(c *cli.Context, memberAddress common.Address) (*api.CanProposeTNDAOInviteResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -21,29 +23,29 @@ func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
     if err != nil { return nil, err }
 
     // Response
-    response := api.CanLeaveTNDAOResponse{}
+    response := api.CanProposeTNDAOInviteResponse{}
 
     // Sync
     var wg errgroup.Group
 
-    // Check proposal actionable status
+    // Check if proposal cooldown is active
     wg.Go(func() error {
         nodeAccount, err := w.GetNodeAccount()
         if err != nil {
             return err
         }
-        proposalActionable, err := getProposalIsActionable(rp, nodeAccount.Address, "leave")
+        proposalCooldownActive, err := getProposalCooldownActive(rp, nodeAccount.Address)
         if err == nil {
-            response.ProposalExpired = !proposalActionable
+            response.ProposalCooldownActive = proposalCooldownActive
         }
         return err
     })
 
-    // Check if members can leave the trusted node DAO
+    // Check if member exists
     wg.Go(func() error {
-        membersCanLeave, err := getMembersCanLeave(rp)
+        memberExists, err := trustednode.GetMemberExists(rp, memberAddress, nil)
         if err == nil {
-            response.InsufficientMembers = !membersCanLeave
+            response.MemberAlreadyExists = memberExists
         }
         return err
     })
@@ -54,13 +56,13 @@ func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
     }
 
     // Update & return response
-    response.CanLeave = !(response.ProposalExpired || response.InsufficientMembers)
+    response.CanPropose = !(response.ProposalCooldownActive || response.MemberAlreadyExists)
     return &response, nil
 
 }
 
 
-func leave(c *cli.Context, bondRefundAddress common.Address) (*api.LeaveTNDAOResponse, error) {
+func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberEmail string) (*api.ProposeTNDAOInviteResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -70,7 +72,7 @@ func leave(c *cli.Context, bondRefundAddress common.Address) (*api.LeaveTNDAORes
     if err != nil { return nil, err }
 
     // Response
-    response := api.LeaveTNDAOResponse{}
+    response := api.ProposeTNDAOInviteResponse{}
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
@@ -78,11 +80,13 @@ func leave(c *cli.Context, bondRefundAddress common.Address) (*api.LeaveTNDAORes
         return nil, err
     }
 
-    // Leave
-    txReceipt, err := trustednode.Leave(rp, bondRefundAddress, opts)
+    // Submit proposal
+    message := fmt.Sprintf("invite %s (%s)", memberId, memberEmail)
+    proposalId, txReceipt, err := trustednode.ProposeInviteMember(rp, message, memberAddress, memberId, memberEmail, opts)
     if err != nil {
         return nil, err
     }
+    response.ProposalId = proposalId
     response.TxHash = txReceipt.TxHash
 
     // Return response

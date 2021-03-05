@@ -1,6 +1,8 @@
-package tndao
+package odao
 
 import (
+    "bytes"
+
     "github.com/rocket-pool/rocketpool-go/dao"
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -12,7 +14,7 @@ import (
 )
 
 
-func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOProposalResponse, error) {
+func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOProposalResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -22,18 +24,10 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
     if err != nil { return nil, err }
 
     // Response
-    response := api.CanVoteOnTNDAOProposalResponse{}
+    response := api.CanCancelTNDAOProposalResponse{}
 
-    // Get node account
-    nodeAccount, err := w.GetNodeAccount()
-    if err != nil {
-        return nil, err
-    }
-
-    // Data
+    // Sync
     var wg errgroup.Group
-    var memberJoinedBlock uint64
-    var proposalCreatedBlock uint64
 
     // Check proposal exists
     wg.Go(func() error {
@@ -48,31 +42,21 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
     wg.Go(func() error {
         proposalState, err := dao.GetProposalState(rp, proposalId, nil)
         if err == nil {
-            response.InvalidState = (proposalState != rptypes.Active)
+            response.InvalidState = !(proposalState == rptypes.Pending || proposalState == rptypes.Active)
         }
         return err
     })
 
-    // Check if member has already voted
+    // Check proposer address
     wg.Go(func() error {
-        hasVoted, err := dao.GetProposalMemberVoted(rp, proposalId, nodeAccount.Address, nil)
+        nodeAccount, err := w.GetNodeAccount()
+        if err != nil {
+            return err
+        }
+        proposerAddress, err := dao.GetProposalProposerAddress(rp, proposalId, nil)
         if err == nil {
-            response.AlreadyVoted = hasVoted
+            response.InvalidProposer = !bytes.Equal(proposerAddress.Bytes(), nodeAccount.Address.Bytes())
         }
-        return err
-    })
-
-    // Get member joined block
-    wg.Go(func() error {
-        var err error
-        memberJoinedBlock, err = trustednode.GetMemberJoinedBlock(rp, nodeAccount.Address, nil)
-        return err
-    })
-
-    // Get proposal created block
-    wg.Go(func() error {
-        var err error
-        proposalCreatedBlock, err = dao.GetProposalCreatedBlock(rp, proposalId, nil)
         return err
     })
 
@@ -81,17 +65,14 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
         return nil, err
     }
 
-    // Check data
-    response.JoinedAfterCreated = (memberJoinedBlock >= proposalCreatedBlock)
-
     // Update & return response
-    response.CanVote = !(response.DoesNotExist || response.InvalidState || response.JoinedAfterCreated || response.AlreadyVoted)
+    response.CanCancel = !(response.DoesNotExist || response.InvalidState || response.InvalidProposer)
     return &response, nil
 
 }
 
 
-func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.VoteOnTNDAOProposalResponse, error) {
+func cancelProposal(c *cli.Context, proposalId uint64) (*api.CancelTNDAOProposalResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -101,7 +82,7 @@ func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.VoteO
     if err != nil { return nil, err }
 
     // Response
-    response := api.VoteOnTNDAOProposalResponse{}
+    response := api.CancelTNDAOProposalResponse{}
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
@@ -109,8 +90,8 @@ func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.VoteO
         return nil, err
     }
 
-    // Vote on proposal
-    txReceipt, err := trustednode.VoteOnProposal(rp, proposalId, support, opts)
+    // Cancel proposal
+    txReceipt, err := trustednode.CancelProposal(rp, proposalId, opts)
     if err != nil {
         return nil, err
     }

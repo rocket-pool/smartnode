@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"

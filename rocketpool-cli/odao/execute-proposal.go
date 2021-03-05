@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "fmt"
@@ -20,7 +20,7 @@ func executeProposal(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Get trusted node DAO proposals
+    // Get oracle DAO proposals
     proposals, err := rp.TNDAOProposals()
     if err != nil {
         return err

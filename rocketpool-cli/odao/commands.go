@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "github.com/urfave/cli"
@@ -12,14 +12,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
         Name:      name,
         Aliases:   aliases,
-        Usage:     "Manage the Rocket Pool trusted node DAO",
+        Usage:     "Manage the Rocket Pool oracle DAO",
         Subcommands: []cli.Command{
 
             cli.Command{
                 Name:      "status",
                 Aliases:   []string{"s"},
-                Usage:     "Get trusted node DAO status",
-                UsageText: "rocketpool tndao status",
+                Usage:     "Get oracle DAO status",
+                UsageText: "rocketpool odao status",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -34,8 +34,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "members",
                 Aliases:   []string{"m"},
-                Usage:     "Get the trusted node DAO members",
-                UsageText: "rocketpool tndao members",
+                Usage:     "Get the oracle DAO members",
+                UsageText: "rocketpool odao members",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -50,8 +50,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "proposals",
                 Aliases:   []string{"p"},
-                Usage:     "Get the trusted node DAO proposals",
-                UsageText: "rocketpool tndao proposals",
+                Usage:     "Get the oracle DAO proposals",
+                UsageText: "rocketpool odao proposals",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -67,7 +67,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "propose-invite",
                 Aliases:   []string{"i"},
                 Usage:     "Propose inviting a new member",
-                UsageText: "rocketpool tndao propose-invite member-address member-id member-email",
+                UsageText: "rocketpool odao propose-invite member-address member-id member-email",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -88,8 +88,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "propose-leave",
                 Aliases:   []string{"l"},
-                Usage:     "Propose leaving the trusted node DAO",
-                UsageText: "rocketpool tndao propose-leave",
+                Usage:     "Propose leaving the oracle DAO",
+                UsageText: "rocketpool odao propose-leave",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -105,7 +105,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "propose-replace",
                 Aliases:   []string{"r"},
                 Usage:     "Propose replacing the node's position with a new member",
-                UsageText: "rocketpool tndao propose-replace member-address member-id member-email",
+                UsageText: "rocketpool odao propose-replace member-address member-id member-email",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -127,7 +127,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "propose-kick",
                 Aliases:   []string{"k"},
                 Usage:     "Propose kicking a member",
-                UsageText: "rocketpool tndao propose-kick [options]",
+                UsageText: "rocketpool odao propose-kick [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "member, m",
@@ -161,7 +161,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "cancel-proposal",
                 Aliases:   []string{"c"},
                 Usage:     "Cancel a proposal made by the node",
-                UsageText: "rocketpool tndao cancel-proposal [options]",
+                UsageText: "rocketpool odao cancel-proposal [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "proposal, p",
@@ -188,7 +188,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "vote-proposal",
                 Aliases:   []string{"v"},
                 Usage:     "Vote on a proposal",
-                UsageText: "rocketpool tndao vote-proposal [options]",
+                UsageText: "rocketpool odao vote-proposal [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "proposal, p",
@@ -226,7 +226,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Name:      "execute-proposal",
                 Aliases:   []string{"x"},
                 Usage:     "Execute a proposal",
-                UsageText: "rocketpool api tndao execute-proposal [options]",
+                UsageText: "rocketpool api odao execute-proposal [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "proposal, p",
@@ -252,8 +252,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "join",
                 Aliases:   []string{"j"},
-                Usage:     "Join the trusted node DAO (requires an executed invite proposal)",
-                UsageText: "rocketpool tndao join [options]",
+                Usage:     "Join the oracle DAO (requires an executed invite proposal)",
+                UsageText: "rocketpool odao join [options]",
                 Flags: []cli.Flag{
                     cli.BoolFlag{
                         Name:  "yes, y",
@@ -278,8 +278,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "leave",
                 Aliases:   []string{"e"},
-                Usage:     "Leave the trusted node DAO (requires an executed leave proposal)",
-                UsageText: "rocketpool tndao leave [options]",
+                Usage:     "Leave the oracle DAO (requires an executed leave proposal)",
+                UsageText: "rocketpool odao leave [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "refund-address, r",
@@ -309,8 +309,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "replace",
                 Aliases:   []string{"a"},
-                Usage:     "Replace the node's position in the trusted node DAO (requires an executed replace proposal)",
-                UsageText: "rocketpool tndao replace [options]",
+                Usage:     "Replace the node's position in the oracle DAO (requires an executed replace proposal)",
+                UsageText: "rocketpool odao replace [options]",
                 Flags: []cli.Flag{
                     cli.BoolFlag{
                         Name:  "yes, y",

@@ -10,9 +10,9 @@ import (
     "github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
     "github.com/rocket-pool/smartnode/rocketpool-cli/network"
     "github.com/rocket-pool/smartnode/rocketpool-cli/node"
+    "github.com/rocket-pool/smartnode/rocketpool-cli/odao"
     "github.com/rocket-pool/smartnode/rocketpool-cli/queue"
     "github.com/rocket-pool/smartnode/rocketpool-cli/service"
-    "github.com/rocket-pool/smartnode/rocketpool-cli/tndao"
     "github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 )
 
@@ -88,9 +88,9 @@ ______           _        _    ______           _
     minipool.RegisterCommands(app, "minipool", []string{"m"})
      network.RegisterCommands(app, "network",  []string{"e"})
         node.RegisterCommands(app, "node",     []string{"n"})
+        odao.RegisterCommands(app, "odao",     []string{"o"})
        queue.RegisterCommands(app, "queue",    []string{"q"})
      service.RegisterCommands(app, "service",  []string{"s"})
-       tndao.RegisterCommands(app, "tndao",    []string{"t"})
       wallet.RegisterCommands(app, "wallet",   []string{"w"})
 
     // Check user ID

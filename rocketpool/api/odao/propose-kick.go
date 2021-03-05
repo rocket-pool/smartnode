@@ -1,18 +1,22 @@
-package tndao
+package odao
 
 import (
     "fmt"
+    "math/big"
 
+    "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/types/api"
+    "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
-func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) {
+func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *big.Int) (*api.CanProposeTNDAOKickResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -22,7 +26,7 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
     if err != nil { return nil, err }
 
     // Response
-    response := api.CanProposeTNDAOLeaveResponse{}
+    response := api.CanProposeTNDAOKickResponse{}
 
     // Sync
     var wg errgroup.Group
@@ -40,11 +44,11 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
         return err
     })
 
-    // Check if members can leave the trusted node DAO
+    // Check member's RPL bond amount
     wg.Go(func() error {
-        membersCanLeave, err := getMembersCanLeave(rp)
+        rplBondAmount, err := trustednode.GetMemberRPLBondAmount(rp, memberAddress, nil)
         if err == nil {
-            response.InsufficientMembers = !membersCanLeave
+            response.InsufficientRplBond = (fineAmountWei.Cmp(rplBondAmount) > 0)
         }
         return err
     })
@@ -55,13 +59,13 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
     }
 
     // Update & return response
-    response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientMembers)
+    response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientRplBond)
     return &response, nil
 
 }
 
 
-func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
+func proposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *big.Int) (*api.ProposeTNDAOKickResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -71,28 +75,22 @@ func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
     if err != nil { return nil, err }
 
     // Response
-    response := api.ProposeTNDAOLeaveResponse{}
-
-    // Get node account
-    nodeAccount, err := w.GetNodeAccount()
-    if err != nil {
-        return nil, err
-    }
+    response := api.ProposeTNDAOKickResponse{}
 
     // Data
     var wg errgroup.Group
-    var nodeMemberId string
-    var nodeMemberEmail string
+    var memberId string
+    var memberEmail string
 
-    // Get node member details
+    // Get member details
     wg.Go(func() error {
         var err error
-        nodeMemberId, err = trustednode.GetMemberID(rp, nodeAccount.Address, nil)
+        memberId, err = trustednode.GetMemberID(rp, memberAddress, nil)
         return err
     })
     wg.Go(func() error {
         var err error
-        nodeMemberEmail, err = trustednode.GetMemberEmail(rp, nodeAccount.Address, nil)
+        memberEmail, err = trustednode.GetMemberEmail(rp, memberAddress, nil)
         return err
     })
 
@@ -108,8 +106,8 @@ func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
     }
 
     // Submit proposal
-    message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberEmail)
-    proposalId, txReceipt, err := trustednode.ProposeMemberLeave(rp, message, nodeAccount.Address, opts)
+    message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberEmail, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
+    proposalId, txReceipt, err := trustednode.ProposeKickMember(rp, message, memberAddress, fineAmountWei, opts)
     if err != nil {
         return nil, err
     }

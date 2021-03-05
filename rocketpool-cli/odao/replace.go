@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "fmt"
@@ -17,35 +17,35 @@ func replace(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Check if node can replace its position in the trusted node DAO
+    // Check if node can replace its position in the oracle DAO
     canReplace, err := rp.CanReplaceTNDAOMember()
     if err != nil {
         return err
     }
     if !canReplace.CanReplace {
-        fmt.Println("Cannot replace the node's position in the trusted node DAO:")
+        fmt.Println("Cannot replace the node's position in the oracle DAO:")
         if canReplace.ProposalExpired {
-            fmt.Println("The proposal to replace your node's position in the trusted node DAO does not exist or has expired.")
+            fmt.Println("The proposal to replace your node's position in the oracle DAO does not exist or has expired.")
         }
         if canReplace.MemberAlreadyExists {
-            fmt.Println("The replacing node is already a member of the trusted node DAO.")
+            fmt.Println("The replacing node is already a member of the oracle DAO.")
         }
         return nil
     }
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to replace your node's position in the trusted node DAO? This action cannot be undone!")) {
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to replace your node's position in the oracle DAO? This action cannot be undone!")) {
         fmt.Println("Cancelled.")
         return nil
     }
 
-    // Replace node's position in the trusted node DAO
+    // Replace node's position in the oracle DAO
     if _, err := rp.ReplaceTNDAOMember(); err != nil {
         return err
     }
 
     // Log & return
-    fmt.Println("Successfully replaced the node's position in the trusted node DAO.")
+    fmt.Println("Successfully replaced the node's position in the oracle DAO.")
     return nil
 
 }

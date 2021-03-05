@@ -1,8 +1,6 @@
-package tndao
+package odao
 
 import (
-    "bytes"
-
     "github.com/rocket-pool/rocketpool-go/dao"
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -14,17 +12,16 @@ import (
 )
 
 
-func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOProposalResponse, error) {
+func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecuteTNDAOProposalResponse, error) {
 
     // Get services
-    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
-    w, err := services.GetWallet(c)
-    if err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
     // Response
-    response := api.CanCancelTNDAOProposalResponse{}
+    response := api.CanExecuteTNDAOProposalResponse{}
 
     // Sync
     var wg errgroup.Group
@@ -42,20 +39,7 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOPr
     wg.Go(func() error {
         proposalState, err := dao.GetProposalState(rp, proposalId, nil)
         if err == nil {
-            response.InvalidState = !(proposalState == rptypes.Pending || proposalState == rptypes.Active)
-        }
-        return err
-    })
-
-    // Check proposer address
-    wg.Go(func() error {
-        nodeAccount, err := w.GetNodeAccount()
-        if err != nil {
-            return err
-        }
-        proposerAddress, err := dao.GetProposalProposerAddress(rp, proposalId, nil)
-        if err == nil {
-            response.InvalidProposer = !bytes.Equal(proposerAddress.Bytes(), nodeAccount.Address.Bytes())
+            response.InvalidState = (proposalState != rptypes.Succeeded)
         }
         return err
     })
@@ -66,23 +50,24 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOPr
     }
 
     // Update & return response
-    response.CanCancel = !(response.DoesNotExist || response.InvalidState || response.InvalidProposer)
+    response.CanExecute = !(response.DoesNotExist || response.InvalidState)
     return &response, nil
 
 }
 
 
-func cancelProposal(c *cli.Context, proposalId uint64) (*api.CancelTNDAOProposalResponse, error) {
+func executeProposal(c *cli.Context, proposalId uint64) (*api.ExecuteTNDAOProposalResponse, error) {
 
     // Get services
-    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
     // Response
-    response := api.CancelTNDAOProposalResponse{}
+    response := api.ExecuteTNDAOProposalResponse{}
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
@@ -91,7 +76,7 @@ func cancelProposal(c *cli.Context, proposalId uint64) (*api.CancelTNDAOProposal
     }
 
     // Cancel proposal
-    txReceipt, err := trustednode.CancelProposal(rp, proposalId, opts)
+    txReceipt, err := trustednode.ExecuteProposal(rp, proposalId, opts)
     if err != nil {
         return nil, err
     }

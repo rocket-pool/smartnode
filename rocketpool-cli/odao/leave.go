@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "fmt"
@@ -55,35 +55,35 @@ func leave(c *cli.Context) error {
 
     }
 
-    // Check if node can leave the trusted node DAO
+    // Check if node can leave the oracle DAO
     canLeave, err := rp.CanLeaveTNDAO()
     if err != nil {
         return err
     }
     if !canLeave.CanLeave {
-        fmt.Println("Cannot leave the trusted node DAO:")
+        fmt.Println("Cannot leave the oracle DAO:")
         if canLeave.ProposalExpired {
-            fmt.Println("The proposal for you to leave the trusted node DAO does not exist or has expired.")
+            fmt.Println("The proposal for you to leave the oracle DAO does not exist or has expired.")
         }
         if canLeave.InsufficientMembers {
-            fmt.Println("There are not enough members in the trusted node DAO to allow a member to leave.")
+            fmt.Println("There are not enough members in the oracle DAO to allow a member to leave.")
         }
         return nil
     }
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to leave the trusted node DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex()))) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to leave the oracle DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex()))) {
         fmt.Println("Cancelled.")
         return nil
     }
 
-    // Leave the trusted node DAO
+    // Leave the oracle DAO
     if _, err := rp.LeaveTNDAO(bondRefundAddress); err != nil {
         return err
     }
 
     // Log & return
-    fmt.Println("Successfully left the trusted node DAO.")
+    fmt.Println("Successfully left the oracle DAO.")
     return nil
 
 }

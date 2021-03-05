@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "fmt"
@@ -27,7 +27,7 @@ func proposeLeave(c *cli.Context) error {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
         if canPropose.InsufficientMembers {
-            fmt.Println("There are not enough members in the trusted node DAO to allow a member to leave.")
+            fmt.Println("There are not enough members in the oracle DAO to allow a member to leave.")
         }
         return nil
     }

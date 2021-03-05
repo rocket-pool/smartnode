@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "bytes"
@@ -43,7 +43,7 @@ func proposeKick(c *cli.Context) error {
             }
         }
         if !selectedMember.Exists {
-            return fmt.Errorf("The trusted node DAO member %s does not exist.", selectedAddress.Hex())
+            return fmt.Errorf("The oracle DAO member %s does not exist.", selectedAddress.Hex())
         }
 
     } else {

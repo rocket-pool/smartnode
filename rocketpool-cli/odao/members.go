@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "fmt"
@@ -18,7 +18,7 @@ func getMembers(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Get trusted node DAO members
+    // Get oracle DAO members
     members, err := rp.TNDAOMembers()
     if err != nil {
         return err
@@ -26,10 +26,10 @@ func getMembers(c *cli.Context) error {
 
     // Print & return
     if len(members.Members) > 0 {
-        fmt.Printf("The trusted node DAO has %d members:\n", len(members.Members))
+        fmt.Printf("The oracle DAO has %d members:\n", len(members.Members))
         fmt.Println("")
     } else {
-        fmt.Println("The trusted node DAO does not have any members yet.")
+        fmt.Println("The oracle DAO does not have any members yet.")
     }
     for _, member := range members.Members {
         fmt.Printf("--------------------\n")

@@ -1,4 +1,4 @@
-package tndao
+package odao
 
 import (
     "fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 
-func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberEmail string) error {
+func proposeReplace(c *cli.Context, memberAddress common.Address, memberId, memberEmail string) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
@@ -18,29 +18,29 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeInviteToTNDAO(memberAddress)
+    canPropose, err := rp.CanProposeReplaceTNDAOMember(memberAddress)
     if err != nil {
         return err
     }
     if !canPropose.CanPropose {
-        fmt.Println("Cannot propose inviting member:")
+        fmt.Println("Cannot propose member replacement:")
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
         if canPropose.MemberAlreadyExists {
-            fmt.Printf("The node %s is already a member of the trusted node DAO.\n", memberAddress.Hex())
+            fmt.Printf("The node %s is already a member of the oracle DAO.\n", memberAddress.Hex())
         }
         return nil
     }
 
     // Submit proposal
-    response, err := rp.ProposeInviteToTNDAO(memberAddress, memberId, memberEmail)
+    response, err := rp.ProposeReplaceTNDAOMember(memberAddress, memberId, memberEmail)
     if err != nil {
         return err
     }
 
     // Log & return
-    fmt.Printf("Successfully submitted an invite proposal with ID %d for node %s.\n", response.ProposalId, memberAddress.Hex())
+    fmt.Printf("Successfully submitted a replacement proposal with ID %d for node %s.\n", response.ProposalId, memberAddress.Hex())
     return nil
 
 }
