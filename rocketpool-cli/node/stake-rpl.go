@@ -28,7 +28,7 @@ func nodeStakeRpl(c *cli.Context) error {
     }
 
     // Check for fixed-supply RPL balance
-    var rplBalance big.Int
+    rplBalance := *(status.AccountBalances.RPL)
     if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 
         // Confirm swapping RPL
@@ -44,8 +44,7 @@ func nodeStakeRpl(c *cli.Context) error {
 
             // Get new account RPL balance
             rplBalance.Add(status.AccountBalances.RPL, status.AccountBalances.FixedSupplyRPL)
-        } else {
-            rplBalance = *(status.AccountBalances.RPL)
+
         }
 
     }
