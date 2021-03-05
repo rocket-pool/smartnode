@@ -21,6 +21,28 @@ func nodeStakeRpl(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
+    // Get node status
+    status, err := rp.NodeStatus()
+    if err != nil {
+        return err
+    }
+
+    // Check for fixed-supply RPL balance
+    var rplBalance big.Int
+    if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
+
+        // Confirm & swap; get new account RPL balance
+        if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before staking?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
+            if _, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL); err != nil {
+                return err
+            }
+            rplBalance.Add(status.AccountBalances.RPL, status.AccountBalances.FixedSupplyRPL)
+        } else {
+            rplBalance = *(status.AccountBalances.RPL)
+        }
+
+    }
+
     // Get stake mount
     var amountWei *big.Int
     if c.String("amount") == "min" {
@@ -44,11 +66,7 @@ func nodeStakeRpl(c *cli.Context) error {
     } else if c.String("amount") == "all" {
 
         // Set amount to node's entire RPL balance
-        status, err := rp.NodeStatus()
-        if err != nil {
-            return err
-        }
-        amountWei = status.AccountBalances.RPL
+        amountWei = &rplBalance
 
     } else if c.String("amount") != "" {
 
@@ -69,25 +87,18 @@ func nodeStakeRpl(c *cli.Context) error {
         minAmount := rplPrice.MinPerMinipoolRplStake
         maxAmount := rplPrice.MaxPerMinipoolRplStake
 
-        // Get entire RPL balance amount
-        status, err := rp.NodeStatus()
-        if err != nil {
-            return err
-        }
-        entireAmount := status.AccountBalances.RPL
-
         // Prompt for amount option
         amountOptions := []string{
             fmt.Sprintf("The minimum minipool stake amount (%.6f RPL)?", math.RoundDown(eth.WeiToEth(minAmount), 6)),
             fmt.Sprintf("The maximum effective minipool stake amount (%.6f RPL)?", math.RoundDown(eth.WeiToEth(maxAmount), 6)),
-            fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(entireAmount), 6)),
+            fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
             "A custom amount",
         }
         selected, _ := cliutils.Select("Please choose an amount of RPL to stake:", amountOptions)
         switch selected {
             case 0: amountWei = minAmount
             case 1: amountWei = maxAmount
-            case 2: amountWei = entireAmount
+            case 2: amountWei = &rplBalance
         }
 
         // Prompt for custom amount

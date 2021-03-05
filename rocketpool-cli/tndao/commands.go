@@ -259,6 +259,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Name:  "yes, y",
                         Usage: "Automatically confirm joining",
                     },
+                    cli.BoolFlag{
+                        Name:  "swap, s",
+                        Usage: "Automatically confirm swapping old RPL before joining",
+                    },
                 },
                 Action: func(c *cli.Context) error {
 

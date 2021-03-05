@@ -2,11 +2,14 @@ package tndao
 
 import (
     "fmt"
+    "math/big"
 
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -16,6 +19,24 @@ func join(c *cli.Context) error {
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
+
+    // Get node status
+    status, err := rp.NodeStatus()
+    if err != nil {
+        return err
+    }
+
+    // Check for fixed-supply RPL balance
+    if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
+
+        // Confirm & swap
+        if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
+            if _, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL); err != nil {
+                return err
+            }
+        }
+
+    }
 
     // Check if node can join the trusted node DAO
     canJoin, err := rp.CanJoinTNDAO()
