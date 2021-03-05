@@ -39,6 +39,7 @@ func join(c *cli.Context) error {
 
             // log
             fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+            fmt.Println("")
 
         }
 

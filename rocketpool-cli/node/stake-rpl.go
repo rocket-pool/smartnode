@@ -41,6 +41,7 @@ func nodeStakeRpl(c *cli.Context) error {
 
             // Log
             fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+            fmt.Println("")
 
             // Get new account RPL balance
             rplBalance.Add(status.AccountBalances.RPL, status.AccountBalances.FixedSupplyRPL)
