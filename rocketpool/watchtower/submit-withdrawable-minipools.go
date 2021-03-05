@@ -127,7 +127,7 @@ func (t *submitWithdrawableMinipools) run() error {
     }
 
     // Log
-    t.log.Printlnf("%d minipools are withdrawable...", len(minipools))
+    t.log.Printlnf("%d minipool(s) are withdrawable...", len(minipools))
 
     // Submit minipools withdrawable status
     for _, details := range minipools {

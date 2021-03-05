@@ -107,7 +107,7 @@ func (t *stakePrelaunchMinipools) run() error {
     }
 
     // Log
-    t.log.Printlnf("%d minipools are ready for staking...", len(minipools))
+    t.log.Printlnf("%d minipool(s) are ready for staking...", len(minipools))
 
     // Stake minipools
     for _, mp := range minipools {

@@ -93,7 +93,7 @@ func (t *dissolveTimedOutMinipools) run() error {
     }
 
     // Log
-    t.log.Printlnf("%d minipools have timed out and will be dissolved...", len(minipools))
+    t.log.Printlnf("%d minipool(s) have timed out and will be dissolved...", len(minipools))
 
     // Dissolve minipools
     for _, mp := range minipools {

@@ -102,21 +102,21 @@ func getLots(c *cli.Context) error {
 
     // Print actionable lot details
     if len(claimableLots) > 0 {
-        fmt.Printf("%d lots you have bid on have RPL available to claim:\n", len(claimableLots))
+        fmt.Printf("%d lot(s) you have bid on have RPL available to claim:\n", len(claimableLots))
         for _, lot := range claimableLots {
             fmt.Printf("- lot %d (%.6f ETH bid @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.AddressBidAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
         }
         fmt.Println("")
     }
     if len(biddableLots) > 0 {
-        fmt.Printf("%d lots are open for bidding:\n", len(biddableLots))
+        fmt.Printf("%d lot(s) are open for bidding:\n", len(biddableLots))
         for _, lot := range biddableLots {
             fmt.Printf("- lot %d (%.6f RPL available @ %.6f ETH per RPL)\n", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
         }
         fmt.Println("")
     }
     if len(recoverableLots) > 0 {
-        fmt.Printf("%d lots have unclaimed RPL ready to recover:\n", len(recoverableLots))
+        fmt.Printf("%d lot(s) have unclaimed RPL ready to recover:\n", len(recoverableLots))
         for _, lot := range recoverableLots {
             fmt.Printf("- lot %d (%.6f RPL unclaimed)\n", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6))
         }

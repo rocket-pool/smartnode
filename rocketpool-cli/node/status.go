@@ -58,7 +58,7 @@ func getStatus(c *cli.Context) error {
 
         // RPL stake details
         fmt.Printf(
-            "The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to run %d minipools in total.\n",
+            "The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to run %d minipool(s) in total.\n",
             math.RoundDown(eth.WeiToEth(status.RplStake), 6),
             math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6),
             status.MinipoolLimit)
@@ -83,13 +83,13 @@ func getStatus(c *cli.Context) error {
                 fmt.Printf("- %d dissolved\n", status.MinipoolCounts.Dissolved)
             }
             if status.MinipoolCounts.RefundAvailable > 0 {
-                fmt.Printf("* %d minipools have refunds available!\n", status.MinipoolCounts.RefundAvailable)
+                fmt.Printf("* %d minipool(s) have refunds available!\n", status.MinipoolCounts.RefundAvailable)
             }
             if status.MinipoolCounts.WithdrawalAvailable > 0 {
-                fmt.Printf("* %d minipools are ready for withdrawal!\n", status.MinipoolCounts.WithdrawalAvailable)
+                fmt.Printf("* %d minipool(s) are ready for withdrawal!\n", status.MinipoolCounts.WithdrawalAvailable)
             }
             if status.MinipoolCounts.CloseAvailable > 0 {
-                fmt.Printf("* %d dissolved minipools can be closed!\n", status.MinipoolCounts.CloseAvailable)
+                fmt.Printf("* %d dissolved minipool(s) can be closed!\n", status.MinipoolCounts.CloseAvailable)
             }
         } else {
             fmt.Println("The node does not have any minipools yet.")

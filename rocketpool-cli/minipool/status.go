@@ -126,21 +126,21 @@ func getStatus(c *cli.Context) error {
 
     // Print actionable minipool details
     if len(refundableMinipools) > 0 {
-        fmt.Printf("%d minipools have refunds available:\n", len(refundableMinipools))
+        fmt.Printf("%d minipool(s) have refunds available:\n", len(refundableMinipools))
         for _, minipool := range refundableMinipools {
             fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.RefundBalance), 6))
         }
         fmt.Println("")
     }
     if len(withdrawableMinipools) > 0 {
-        fmt.Printf("%d minipools are ready for withdrawal:\n", len(withdrawableMinipools))
+        fmt.Printf("%d minipool(s) are ready for withdrawal:\n", len(withdrawableMinipools))
         for _, minipool := range withdrawableMinipools {
             fmt.Printf("- %s (%.6f nETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balances.NETH), 6))
         }
         fmt.Println("")
     }
     if len(closeableMinipools) > 0 {
-        fmt.Printf("%d dissolved minipools can be closed:\n", len(closeableMinipools))
+        fmt.Printf("%d dissolved minipool(s) can be closed:\n", len(closeableMinipools))
         for _, minipool := range closeableMinipools {
             fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
         }

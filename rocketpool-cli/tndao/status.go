@@ -47,19 +47,19 @@ func getStatus(c *cli.Context) error {
         fmt.Println("There are no trusted node DAO proposals.")
     }
     if status.ProposalCounts.Pending > 0 {
-        fmt.Printf("- %d proposals are pending and cannot be voted on yet\n", status.ProposalCounts.Pending)
+        fmt.Printf("- %d proposal(s) are pending and cannot be voted on yet\n", status.ProposalCounts.Pending)
     }
     if status.ProposalCounts.Active > 0 {
-        fmt.Printf("- %d proposals are active and can be voted on\n", status.ProposalCounts.Active)
+        fmt.Printf("- %d proposal(s) are active and can be voted on\n", status.ProposalCounts.Active)
     }
     if status.ProposalCounts.Succeeded > 0 {
-        fmt.Printf("- %d proposals have passed and can be executed\n", status.ProposalCounts.Succeeded)
+        fmt.Printf("- %d proposal(s) have passed and can be executed\n", status.ProposalCounts.Succeeded)
     }
     if status.ProposalCounts.Executed > 0 {
-        fmt.Printf("- %d proposals have passed and been executed\n", status.ProposalCounts.Executed)
+        fmt.Printf("- %d proposal(s) have passed and been executed\n", status.ProposalCounts.Executed)
     }
     if failedProposalCount > 0 {
-        fmt.Printf("- %d proposals were cancelled, defeated, or have expired\n", failedProposalCount)
+        fmt.Printf("- %d proposal(s) were cancelled, defeated, or have expired\n", failedProposalCount)
     }
     return nil
 
