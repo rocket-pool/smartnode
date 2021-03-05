@@ -102,7 +102,7 @@ func join(c *cli.Context) (*api.JoinTNDAOResponse, error) {
     var rocketDAONodeTrustedActionsAddress *common.Address
     var rplBondAmount *big.Int
 
-    // Get trusted node actions contract address
+    // Get oracle node actions contract address
     wg.Go(func() error {
         var err error
         rocketDAONodeTrustedActionsAddress, err = rp.GetAddress("rocketDAONodeTrustedActions")

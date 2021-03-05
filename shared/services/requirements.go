@@ -126,7 +126,7 @@ func RequireNodeTrusted(c *cli.Context) error {
         return err
     }
     if !nodeTrusted {
-        return errors.New("The node is not a member of the trusted node DAO. Nodes can only join the trusted node DAO by invite.")
+        return errors.New("The node is not a member of the oracle DAO. Nodes can only join the oracle DAO by invite.")
     }
     return nil
 }
@@ -290,7 +290,7 @@ func getNodeRegistered(c *cli.Context) (bool, error) {
 }
 
 
-// Check if the node is a member of the trusted node DAO
+// Check if the node is a member of the oracle DAO
 func getNodeTrusted(c *cli.Context) (bool, error) {
     w, err := GetWallet(c)
     if err != nil {

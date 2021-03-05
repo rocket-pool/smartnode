@@ -17,7 +17,7 @@ import (
 const ProposalStatesBatchSize = 50
 
 
-// Check if the proposal cooldown for a trusted node is active
+// Check if the proposal cooldown for an oracle node is active
 func getProposalCooldownActive(rp *rocketpool.RocketPool, nodeAddress common.Address) (bool, error) {
 
     // Data
@@ -103,7 +103,7 @@ func getProposalIsActionable(rp *rocketpool.RocketPool, nodeAddress common.Addre
 }
 
 
-// Check if members can leave the trusted node DAO
+// Check if members can leave the oracle DAO
 func getMembersCanLeave(rp *rocketpool.RocketPool) (bool, error) {
 
     // Data

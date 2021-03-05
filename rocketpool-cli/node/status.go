@@ -54,7 +54,7 @@ func getStatus(c *cli.Context) error {
         // Node status
         fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
         if status.Trusted {
-            fmt.Println("The node is a member of the trusted node DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
+            fmt.Println("The node is a member of the oracle DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
         }
         fmt.Println("")
 

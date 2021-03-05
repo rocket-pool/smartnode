@@ -40,7 +40,7 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
         return err
     })
 
-    // Check if members can leave the trusted node DAO
+    // Check if members can leave the oracle DAO
     wg.Go(func() error {
         membersCanLeave, err := getMembersCanLeave(rp)
         if err == nil {

@@ -101,7 +101,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
     response.InsufficientRplStake = (minipoolCount >= minipoolLimit)
     response.InvalidAmount = (!isTrusted && amountIsZero)
 
-    // Check trusted node unbonded minipool limit
+    // Check oracle node unbonded minipool limit
     if isTrusted && amountIsZero {
 
         // Data
