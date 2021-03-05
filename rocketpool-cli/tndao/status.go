@@ -25,7 +25,7 @@ func getStatus(c *cli.Context) error {
     // Get failed proposal count
     failedProposalCount := (status.ProposalCounts.Cancelled + status.ProposalCounts.Defeated + status.ProposalCounts.Expired)
 
-    // Print & return
+    // Membership status
     if status.IsMember {
         fmt.Println("The node is a member of the trusted node DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
         if status.CanLeave {
@@ -40,27 +40,35 @@ func getStatus(c *cli.Context) error {
             fmt.Println("The node has an executed proposal to join - you can join the trusted node DAO with 'rocketpool tndao join'")
         }
     }
-    fmt.Printf("There are currently %d members in the trusted node DAO.\n", status.TotalMembers)
+    fmt.Println("")
+
+    // Members
+    fmt.Printf("There are currently %d member(s) in the trusted node DAO.\n", status.TotalMembers)
+    fmt.Println("")
+
+    // Proposals
     if status.ProposalCounts.Total > 0 {
         fmt.Printf("There are %d trusted node DAO proposal(s) in total:\n", status.ProposalCounts.Total)
+        if status.ProposalCounts.Pending > 0 {
+            fmt.Printf("- %d proposal(s) are pending and cannot be voted on yet\n", status.ProposalCounts.Pending)
+        }
+        if status.ProposalCounts.Active > 0 {
+            fmt.Printf("- %d proposal(s) are active and can be voted on\n", status.ProposalCounts.Active)
+        }
+        if status.ProposalCounts.Succeeded > 0 {
+            fmt.Printf("- %d proposal(s) have passed and can be executed\n", status.ProposalCounts.Succeeded)
+        }
+        if status.ProposalCounts.Executed > 0 {
+            fmt.Printf("- %d proposal(s) have passed and been executed\n", status.ProposalCounts.Executed)
+        }
+        if failedProposalCount > 0 {
+            fmt.Printf("- %d proposal(s) were cancelled, defeated, or have expired\n", failedProposalCount)
+        }
     } else {
         fmt.Println("There are no trusted node DAO proposals.")
     }
-    if status.ProposalCounts.Pending > 0 {
-        fmt.Printf("- %d proposal(s) are pending and cannot be voted on yet\n", status.ProposalCounts.Pending)
-    }
-    if status.ProposalCounts.Active > 0 {
-        fmt.Printf("- %d proposal(s) are active and can be voted on\n", status.ProposalCounts.Active)
-    }
-    if status.ProposalCounts.Succeeded > 0 {
-        fmt.Printf("- %d proposal(s) have passed and can be executed\n", status.ProposalCounts.Succeeded)
-    }
-    if status.ProposalCounts.Executed > 0 {
-        fmt.Printf("- %d proposal(s) have passed and been executed\n", status.ProposalCounts.Executed)
-    }
-    if failedProposalCount > 0 {
-        fmt.Printf("- %d proposal(s) were cancelled, defeated, or have expired\n", failedProposalCount)
-    }
+
+    // Return
     return nil
 
 }
