@@ -36,15 +36,15 @@ func getStatus(c *cli.Context) error {
     if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
         fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
     }
-    if !bytes.Equal(status.AccountAddress.Bytes(), status.WithdrawalAddress.Bytes()) {
-        fmt.Printf(
-            "The node's withdrawal address %s has a balance of %.6f ETH, %.6f RPL and %.6f nETH.\n",
-            status.WithdrawalAddress.Hex(),
-            math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
-            math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6),
-            math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.NETH), 6))
-    }
     if status.Registered {
+        if !bytes.Equal(status.AccountAddress.Bytes(), status.WithdrawalAddress.Bytes()) {
+            fmt.Printf(
+                "The node's withdrawal address %s has a balance of %.6f ETH, %.6f RPL and %.6f nETH.\n",
+                status.WithdrawalAddress.Hex(),
+                math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
+                math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6),
+                math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.NETH), 6))
+        }
         fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
         fmt.Printf(
             "The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to run %d minipools in total.\n",
