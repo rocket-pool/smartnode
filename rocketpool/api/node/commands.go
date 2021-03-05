@@ -149,7 +149,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    amountWei, err := cliutils.ValidateDepositWeiAmount("stake amount", c.Args().Get(0))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("stake amount", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -167,7 +167,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    amountWei, err := cliutils.ValidateDepositWeiAmount("stake amount", c.Args().Get(0))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("stake amount", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -185,7 +185,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    amountWei, err := cliutils.ValidateDepositWeiAmount("withdrawal amount", c.Args().Get(0))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
@@ -203,7 +203,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    amountWei, err := cliutils.ValidateDepositWeiAmount("withdrawal amount", c.Args().Get(0))
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
