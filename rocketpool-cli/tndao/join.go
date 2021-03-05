@@ -29,11 +29,17 @@ func join(c *cli.Context) error {
     // Check for fixed-supply RPL balance
     if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 
-        // Confirm & swap
+        // Confirm swapping RPL
         if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
+
+            // Swap RPL
             if _, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL); err != nil {
                 return err
             }
+
+            // log
+            fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+
         }
 
     }

@@ -31,11 +31,18 @@ func nodeStakeRpl(c *cli.Context) error {
     var rplBalance big.Int
     if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 
-        // Confirm & swap; get new account RPL balance
+        // Confirm swapping RPL
         if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before staking?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
+
+            // Swap RPL
             if _, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL); err != nil {
                 return err
             }
+
+            // Log
+            fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+
+            // Get new account RPL balance
             rplBalance.Add(status.AccountBalances.RPL, status.AccountBalances.FixedSupplyRPL)
         } else {
             rplBalance = *(status.AccountBalances.RPL)
