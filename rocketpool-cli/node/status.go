@@ -49,12 +49,14 @@ func getStatus(c *cli.Context) error {
                 math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6),
                 math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.NETH), 6))
         }
+        fmt.Println("")
 
         // Node status
         fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
         if status.Trusted {
             fmt.Println("The node is a member of the trusted node DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
         }
+        fmt.Println("")
 
         // RPL stake details
         fmt.Printf(
@@ -66,6 +68,7 @@ func getStatus(c *cli.Context) error {
         // Minipool details
         if status.MinipoolCounts.Total > 0 {
             fmt.Printf("The node must keep at least %.6f RPL staked to collateralize its minipools and claim RPL rewards.\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
+            fmt.Println("")
             fmt.Printf("The node has a total of %d minipool(s):\n", status.MinipoolCounts.Total)
             if status.MinipoolCounts.Initialized > 0 {
                 fmt.Printf("- %d initialized\n", status.MinipoolCounts.Initialized)
