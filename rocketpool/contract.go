@@ -34,7 +34,9 @@ type Contract struct {
 
 // Call a contract method
 func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-    return c.Contract.Call(opts, result, method, params...)
+    results := make([]interface{}, 1)
+    results[0] = result
+    return c.Contract.Call(opts, &results, method, params...)
 }
 
 
