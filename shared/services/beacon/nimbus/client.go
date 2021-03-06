@@ -27,7 +27,7 @@ const (
     RequestValidatorsMethod          = "get_v1_beacon_states_stateId_validators"
     RequestVoluntaryExitMethod       = "post_v1_beacon_pool_voluntary_exits"
 
-    MaxRequestValidatorsCount = 600
+    MaxRequestValidatorsCount = 600 
 )
 
 // Nimbus client
@@ -290,7 +290,8 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 func (c *Client) getSyncStatus() (bool, error) {
     var syncStatus bool
     if err := c.client.Call(&syncStatus, RequestSyncStatusMethod); err != nil {
-        return false, fmt.Errorf("Could not get node sync status: %w", err)
+        message := c.getErrorString(err)
+        return false, fmt.Errorf("Could not get node sync status: %s", message)
     }
     return syncStatus, nil
 }
@@ -299,7 +300,8 @@ func (c *Client) getSyncStatus() (bool, error) {
 func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
     var eth2Config Eth2ConfigResponse
     if err := c.client.Call(&eth2Config, RequestEth2ConfigMethod); err != nil {
-        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %w", err)
+        message := c.getErrorString(err)
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %s", message)
     }
     return eth2Config, nil
 }
@@ -308,7 +310,8 @@ func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
 func (c *Client) getGenesis() (GenesisResponse, error) {
     var genesis GenesisResponse
     if err := c.client.Call(&genesis, RequestGenesisMethod); err != nil {
-        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %w", err)
+        message := c.getErrorString(err)
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %s", message)
     }
     return genesis, nil
 }
@@ -317,7 +320,8 @@ func (c *Client) getGenesis() (GenesisResponse, error) {
 func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResponse, error) {
     var finalityCheckpoints FinalityCheckpointsResponse
     if err := c.client.Call(&finalityCheckpoints, RequestFinalityCheckpointsMethod, stateId); err != nil {
-        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %w", err)
+        message := c.getErrorString(err)
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %s", message)
     }
     return finalityCheckpoints, nil
 }
@@ -326,7 +330,8 @@ func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResp
 func (c *Client) getFork(stateId string) (ForkResponse, error) {
     var fork ForkResponse
     if err := c.client.Call(&fork, RequestForkMethod, stateId); err != nil {
-        return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
+        message := c.getErrorString(err)
+        return ForkResponse{}, fmt.Errorf("Could not get fork data: %s", message)
     }
     return fork, nil
 }
@@ -335,7 +340,8 @@ func (c *Client) getFork(stateId string) (ForkResponse, error) {
 func (c *Client) getValidators(stateId string, pubkeys []string) ([]Validator, error) {
     var validators []Validator
     if err := c.client.Call(&validators, RequestValidatorsMethod, stateId, pubkeys); err != nil {
-        return []Validator{}, fmt.Errorf("Could not get validators: %w", err)
+        message := c.getErrorString(err)
+        return []Validator{}, fmt.Errorf("Could not get validators: %s", message)
     }
     return validators, nil
 }
@@ -405,7 +411,29 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 // Send voluntary exit request
 func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
     if err := c.client.Call(nil, RequestVoluntaryExitMethod, request); err != nil {
-        return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
+        message := c.getErrorString(err)
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: %s", request.Message.ValidatorIndex, message)
     }
     return nil
+}
+
+// Format an error from Nimbus into a string
+func (c *Client) getErrorString(err error) string {
+    var message string
+
+    // Check if this is a JSON error response
+    if dataError, ok := err.(rpc.DataError); ok {
+        // If so, grab the message and the data from it
+        message = dataError.Error()
+        message += " - " + fmt.Sprintf("%v", dataError.ErrorData())
+
+        // Add the error code if available
+        if err, ok := err.(rpc.Error); ok {
+            message += " (code " + fmt.Sprintf("%d", err.ErrorCode()) + ")"
+        }
+    } else {
+        message = err.Error()
+    }
+
+    return message
 }
