@@ -61,7 +61,7 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
     tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, []byte{})
 
     // Sign transaction
-    signedTx, err := opts.Signer(types.HomesteadSigner{}, opts.From, tx)
+    signedTx, err := opts.Signer(opts.From, tx)
     if err != nil {
         return nil, err
     }
