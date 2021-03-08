@@ -31,6 +31,7 @@ type RocketPoolConfig struct {
 }
 type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
+    ChainID string                      `yaml:"chainID,omitempty"`
     Client struct {
         Options []ClientOption          `yaml:"options,omitempty"`
         Selected string                 `yaml:"selected,omitempty"`

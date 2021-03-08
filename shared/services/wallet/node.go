@@ -64,7 +64,7 @@ func (w *Wallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
     }
 
     // Create & return transactor
-    return bind.NewKeyedTransactor(privateKey), nil
+    return bind.NewKeyedTransactorWithChainID(privateKey, w.chainID)
 
 }
 
