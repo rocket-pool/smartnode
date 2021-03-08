@@ -445,12 +445,8 @@ github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388/go.mod h1:Vec
 github.com/retailnext/hllpp v1.0.1-0.20180308014038-101a6d2f8b52/go.mod h1:RDpi1RftBQPUCDRw6SmxeaREsAaRKnOclghuzp/WRzc=
 github.com/rjeczalik/notify v0.9.1 h1:CLCKso/QK1snAlnhNR/CNvNiFU2saUtjV0bx3EwNeCE=
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
-github.com/rocket-pool/rocketpool-go v0.0.1 h1:VlnsIwAIsaexh/SfaVshBJM9aa6DI9SMoWSvQebj3wY=
-github.com/rocket-pool/rocketpool-go v0.0.1/go.mod h1:Hvj1hs2zE4pk5LabsyJi9DNRTaEhhK0uEPV8UBjAW84=
 github.com/rocket-pool/rocketpool-go v0.0.2-0.20210308003030-c6fe46652f9f h1:kxZY/yfxuzQ0u0JMWxMQ9+CCWzQiRH0c0FvpJdMKCr4=
 github.com/rocket-pool/rocketpool-go v0.0.2-0.20210308003030-c6fe46652f9f/go.mod h1:MeuybBrGF9KXWlssxG6ebrtB0aKJUZK4qwjNF9X1jQg=
-github.com/rocket-pool/rocketpool-go v0.0.5 h1:LXlKbSOSc0TJWTPTUc+G4SusrQD5kQcbn4/21K5WMtM=
-github.com/rocket-pool/rocketpool-go v0.0.5/go.mod h1:MeuybBrGF9KXWlssxG6ebrtB0aKJUZK4qwjNF9X1jQg=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
