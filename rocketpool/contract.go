@@ -5,6 +5,7 @@ import (
     "context"
     "errors"
     "fmt"
+    "math/big"
     "reflect"
 
     "github.com/ethereum/go-ethereum"
@@ -13,6 +14,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/ethclient"
+    "golang.org/x/sync/errgroup"
 )
 
 
@@ -29,6 +31,15 @@ type Contract struct {
     Address *common.Address
     ABI *abi.ABI
     Client *ethclient.Client
+}
+
+
+// Response for gas prices and limits from network and from user request
+type GasInfo struct {
+    EstGasPrice *big.Int            `json:"estGasPrice"`
+    EstGasLimit uint64              `json:"estGasLimit"`
+    ReqGasPrice *big.Int            `json:"reqGasPrice"`
+    ReqGasLimit uint64              `json:"reqGasLimit"`
 }
 
 
@@ -89,6 +100,45 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
     // Get & return transaction receipt
     return c.getTransactionReceipt(tx)
 
+}
+
+
+// Get Gas Price and Gas Limit for transaction
+func (c *Contract) GetGasInfo(methodName string, opts *bind.TransactOpts, params ...interface{}) (GasInfo, error) {
+
+    // Find user option for gas price and gas limit
+    response := GasInfo {
+        ReqGasPrice: opts.GasPrice,
+        ReqGasLimit: opts.GasLimit,
+    }
+
+    input, err := c.ABI.Pack(methodName, params...)
+    if err != nil {
+        return response, fmt.Errorf("Could not encode input data: %w", err)
+    }
+
+    // Sync
+    var wg errgroup.Group
+
+    wg.Go(func() error {
+        estGasPrice, err := c.Client.SuggestGasPrice(context.Background())
+        if err == nil {
+            response.EstGasPrice = estGasPrice
+        }
+        return err
+    })
+
+    wg.Go(func() error {
+        estGasLimit, err := c.estimateGasLimit(opts, input)
+        if err == nil {
+            response.EstGasLimit = estGasLimit
+        }
+        return err
+    })
+
+    // Wait for data
+    err = wg.Wait()
+    return response, err
 }
 
 
