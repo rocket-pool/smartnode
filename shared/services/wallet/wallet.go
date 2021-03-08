@@ -6,6 +6,7 @@ import (
     "errors"
     "fmt"
     "io/ioutil"
+    "math/big"
 
     "github.com/btcsuite/btcd/chaincfg"
     "github.com/btcsuite/btcutil/hdkeychain"
@@ -33,6 +34,7 @@ type Wallet struct {
     walletPath string
     pm *passwords.PasswordManager
     encryptor *eth2ks.Encryptor
+    chainID *big.Int
 
     // Encrypted store
     ws *walletStore
@@ -66,13 +68,20 @@ type walletStore struct {
 
 
 // Create new wallet
-func NewWallet(walletPath string, passwordManager *passwords.PasswordManager) (*Wallet, error) {
+func NewWallet(walletPath, chainIDStr string, passwordManager *passwords.PasswordManager) (*Wallet, error) {
+
+    // Parse chain ID
+    chainID := new(big.Int)
+    if _, ok := chainID.SetString(chainIDStr, 10); !ok {
+        return nil, fmt.Errorf("Invalid Chain ID '%s'", chainIDStr)
+    }
 
     // Initialize wallet
     w := &Wallet{
         walletPath: walletPath,
         pm: passwordManager,
         encryptor: eth2ks.New(),
+        chainID: chainID,
         validatorKeys: map[uint]*eth2types.BLSPrivateKey{},
         validatorKeyIndices: map[string]uint{},
         keystores: map[string]keystore.Keystore{},
