@@ -68,10 +68,12 @@ type walletStore struct {
 
 
 // Create new wallet
-func NewWallet(walletPath, chainID string, passwordManager *passwords.PasswordManager) (*Wallet, error) {
-    biChainID := new(big.Int)
-    if _, ok := biChainID.SetString(chainID, 10); !ok {
-        return nil, fmt.Errorf("Invalid ChainID: %s", chainID)
+func NewWallet(walletPath, chainIDStr string, passwordManager *passwords.PasswordManager) (*Wallet, error) {
+
+    // Parse chain ID
+    chainID := new(big.Int)
+    if _, ok := chainID.SetString(chainIDStr, 10); !ok {
+        return nil, fmt.Errorf("Invalid Chain ID '%s'", chainIDStr)
     }
 
     // Initialize wallet
@@ -79,7 +81,7 @@ func NewWallet(walletPath, chainID string, passwordManager *passwords.PasswordMa
         walletPath: walletPath,
         pm: passwordManager,
         encryptor: eth2ks.New(),
-        chainID: biChainID,
+        chainID: chainID,
         validatorKeys: map[uint]*eth2types.BLSPrivateKey{},
         validatorKeyIndices: map[string]uint{},
         keystores: map[string]keystore.Keystore{},
