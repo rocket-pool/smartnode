@@ -199,7 +199,7 @@ func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
     }
 
     // Parse gas price in gwei
-    gasPriceGwei, err := strconv.ParseUint(config.Smartnode.GasPrice, 10, 64)
+    gasPriceGwei, err := strconv.ParseFloat(config.Smartnode.GasPrice, 64)
     if err != nil {
         return nil, fmt.Errorf("Invalid gas price '%s': %w", config.Smartnode.GasPrice, err)
     }
