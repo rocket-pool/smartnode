@@ -22,12 +22,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Subcommands: []cli.Command{},
     }
 
-    onUsageHandler := func(context *cli.Context, err error, isSubcommand bool) error {
-        // Don't show help message for api errors because it screws up deserialisation
+    // Don't show help message for api errors because of JSON serialisation
+    command.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
         return err
     }
-    command.OnUsageError = onUsageHandler
-    
+
     // Register subcommands
     minipool.RegisterSubcommands(&command, "minipool", []string{"m"})
      network.RegisterSubcommands(&command, "network",  []string{"e"})
