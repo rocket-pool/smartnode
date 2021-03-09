@@ -5,13 +5,13 @@ import (
     "io/ioutil"
     "math/big"
     "os"
+    "strconv"
 
     "github.com/imdario/mergo"
     "github.com/urfave/cli"
     "gopkg.in/yaml.v2"
 
     "github.com/rocket-pool/rocketpool-go/utils/eth"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -190,37 +190,47 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
 }
 
 
-// Gets gas price from config (in gwei) into big.Int type
+// Parse and return the gas price in wei
 func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
 
-    if len(config.Smartnode.GasPrice) == 0 {
+    // No gas price specified
+    if config.Smartnode.GasPrice == "" {
         return nil, nil
     }
-    gasPriceGwei, err := cliutils.ValidateEthAmount("gas price", config.Smartnode.GasPrice)
-    if err != nil { return nil, err }
 
-    // convert input gas price from gwei to wei
-    gasPrice := eth.GweiToWei(gasPriceGwei)
+    // Parse gas price in gwei
+    gasPriceGwei, err := strconv.ParseUint(config.Smartnode.GasPrice, 10, 64)
+    if err != nil {
+        return nil, fmt.Errorf("Invalid gas price '%s': %w", config.Smartnode.GasPrice, err)
+    }
 
-    // if 0 detected replace with nil
-    if len(gasPrice.Bits()) == 0 { gasPrice = nil } 
+    // Return nil if gas price is set to zero
+    if gasPriceGwei == 0 {
+        return nil, nil
+    }
 
-    return gasPrice, nil
+    // Return gas price in wei
+    return eth.GweiToWei(gasPriceGwei), nil
+
 }
 
 
-// Gets gas limit from config into uint64 type
+// Parse and return the gas limit
 func (config *RocketPoolConfig) GetGasLimit() (uint64, error) {
-    
-    if len(config.Smartnode.GasLimit) == 0 {
+
+    // No gas limit specified
+    if config.Smartnode.GasLimit == "" {
         return 0, nil
     }
-    biGasLimit, err := cliutils.ValidateWeiAmount("gas limit", config.Smartnode.GasLimit)
-    if err != nil { 
-        return 0, err
-    }
-    gasLimit := biGasLimit.Uint64()
 
+    // Parse gas limit
+    gasLimit, err := strconv.ParseUint(config.Smartnode.GasLimit, 10, 64)
+    if err != nil {
+        return 0, fmt.Errorf("Invalid gas limit '%s': %w", config.Smartnode.GasLimit, err)
+    }
+
+    // Return
     return gasLimit, nil
+
 }
 
