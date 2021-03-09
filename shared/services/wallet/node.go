@@ -67,8 +67,8 @@ func (w *Wallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
     transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, w.chainID)
     transactor.GasPrice = w.gasPrice
     transactor.GasLimit = w.gasLimit
-
     return transactor, err
+
 }
 
 

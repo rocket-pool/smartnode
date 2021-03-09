@@ -140,7 +140,7 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
         if err != nil { return }
         gasLimit, err := cfg.GetGasLimit()
         if err != nil { return }
-        nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, pm, gasPrice, gasLimit)
+        nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, gasPrice, gasLimit, pm)
         if err == nil {
             lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
             prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)

@@ -54,11 +54,10 @@ type Wallet struct {
     // Keystores
     keystores map[string]keystore.Keystore
 
-    // Desired gas price set in config or cli
+    // Desired gas price & limit from config
     gasPrice *big.Int
-
-    // Desired gas limit set in config or cli
     gasLimit uint64
+
 }
 
 
@@ -73,7 +72,7 @@ type walletStore struct {
 
 
 // Create new wallet
-func NewWallet(walletPath, chainIDStr string, passwordManager *passwords.PasswordManager, gasPrice *big.Int, gasLimit uint64) (*Wallet, error) {
+func NewWallet(walletPath, chainIDStr string, gasPrice *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager) (*Wallet, error) {
 
     // Parse chain ID
     chainID := new(big.Int)

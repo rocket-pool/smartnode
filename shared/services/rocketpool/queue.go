@@ -44,7 +44,7 @@ func (c *Client) CanProcessQueue() (api.CanProcessQueueResponse, error) {
 
 // Process the queue
 func (c *Client) ProcessQueue() (api.ProcessQueueResponse, error) {
-    responseBytes, err := c.callAPIWithGasOpts("queue process")
+    responseBytes, err := c.callAPI("queue process")
     if err != nil {
         return api.ProcessQueueResponse{}, fmt.Errorf("Could not process queue: %w", err)
     }

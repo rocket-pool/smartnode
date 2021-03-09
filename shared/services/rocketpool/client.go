@@ -373,13 +373,6 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 }
 
 
-// Call Rocketpool service supplying gas options for transaction
-func (c *Client) callAPIWithGasOpts(args string) ([]byte, error) {
-    gasOpts := c.getGasOpts()
-    return c.callAPI(gasOpts + args)
-}
-
-
 // Call the Rocket Pool API
 func (c *Client) callAPI(args string) ([]byte, error) {
     var cmd string
@@ -388,9 +381,9 @@ func (c *Client) callAPI(args string) ([]byte, error) {
         if err != nil {
             return []byte{}, err
         }
-        cmd = fmt.Sprintf("docker exec %s %s api %s", containerName, APIBinPath, args)
+        cmd = fmt.Sprintf("docker exec %s %s %s api %s", containerName, APIBinPath, c.getGasOpts(), args)
     } else {
-        cmd = fmt.Sprintf("%s --config %s --settings %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), args)
+        cmd = fmt.Sprintf("%s --config %s --settings %s %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), c.getGasOpts(), args)
     }
     return c.readOutput(cmd)
 }
@@ -406,6 +399,19 @@ func (c *Client) getAPIContainerName() (string, error) {
       return "", errors.New("Rocket Pool docker project name not set")
     }
     return cfg.Smartnode.ProjectName + APIContainerSuffix, nil
+}
+
+
+// Get gas price & limit flags
+func (c *Client) getGasOpts() string {
+    var opts string
+    if c.gasPrice != "" {
+        opts += fmt.Sprintf("--gasPrice %s ", c.gasPrice)
+    }
+    if c.gasLimit != "" {
+        opts += fmt.Sprintf("--gasLimit %s ", c.gasLimit)
+    }
+    return opts
 }
 
 
@@ -465,19 +471,5 @@ func (c *Client) readOutput(cmdText string) ([]byte, error) {
     // Run command and return output
     return cmd.Output()
 
-}
-
-
-func (c *Client) getGasOpts() string {
-    var params string
-    if len(c.gasPrice) > 0 {
-        gasPriceParam := fmt.Sprintf("--gasPrice %s ", c.gasPrice)
-        params = params + gasPriceParam
-    }
-    if len(c.gasLimit) > 0 {
-        gasLimitParam := fmt.Sprintf("--gasLimit %s ", c.gasLimit)
-        params = params + gasLimitParam
-    }
-    return params
 }
 

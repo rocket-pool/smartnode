@@ -47,7 +47,7 @@ func (c *Client) CanRegisterNode() (api.CanRegisterNodeResponse, error) {
 
 // Register the node
 func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse, error) {
-    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("node register \"%s\"", timezoneLocation))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node register \"%s\"", timezoneLocation))
     if err != nil {
         return api.RegisterNodeResponse{}, fmt.Errorf("Could not register node: %w", err)
     }
@@ -64,7 +64,7 @@ func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse
 
 // Set the node's timezone location
 func (c *Client) SetNodeTimezone(timezoneLocation string) (api.SetNodeTimezoneResponse, error) {
-    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("node set-timezone \"%s\"", timezoneLocation))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node set-timezone \"%s\"", timezoneLocation))
     if err != nil {
         return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not set node timezone: %w", err)
     }
@@ -98,7 +98,7 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int) (api.CanNodeDepositResponse,
 
 // Make a node deposit
 func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64) (api.NodeDepositResponse, error) {
-    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("node deposit %s %f", amountWei.String(), minFee))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f", amountWei.String(), minFee))
     if err != nil {
         return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
     }
@@ -132,7 +132,7 @@ func (c *Client) CanNodeSend(amountWei *big.Int, token string) (api.CanNodeSendR
 
 // Send tokens from the node to an address
 func (c *Client) NodeSend(amountWei *big.Int, token string, toAddress common.Address) (api.NodeSendResponse, error) {
-    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("node send %s %s %s", amountWei.String(), token, toAddress.Hex()))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node send %s %s %s", amountWei.String(), token, toAddress.Hex()))
     if err != nil {
         return api.NodeSendResponse{}, fmt.Errorf("Could not send tokens from node: %w", err)
     }
@@ -166,7 +166,7 @@ func (c *Client) CanNodeBurn(amountWei *big.Int, token string) (api.CanNodeBurnR
 
 // Burn tokens owned by the node for ETH
 func (c *Client) NodeBurn(amountWei *big.Int, token string) (api.NodeBurnResponse, error) {
-    responseBytes, err := c.callAPIWithGasOpts(fmt.Sprintf("node burn %s %s", amountWei.String(), token))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node burn %s %s", amountWei.String(), token))
     if err != nil {
         return api.NodeBurnResponse{}, fmt.Errorf("Could not burn tokens owned by node: %w", err)
     }

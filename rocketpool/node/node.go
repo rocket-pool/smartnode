@@ -17,27 +17,14 @@ const (
 
 // Register node command
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-    command := cli.Command{
+    app.Commands = append(app.Commands, cli.Command{
         Name:      name,
         Aliases:   aliases,
         Usage:     "Run Rocket Pool node activity daemon",
         Action: func(c *cli.Context) error {
             return run(c)
         },
-    }
-
-    command.Flags = []cli.Flag{
-        cli.StringFlag{
-            Name:  "gasPrice, g",
-            Usage: "Desired gas price in wei",
-        },
-        cli.StringFlag{
-            Name:  "gasLimit, l",
-            Usage: "Desired gas limit in wei",
-        },
-    }
-
-    app.Commands = append(app.Commands, command)
+    })
 }
 
 
