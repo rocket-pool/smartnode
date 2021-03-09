@@ -10,6 +10,7 @@ import (
     "github.com/urfave/cli"
     "gopkg.in/yaml.v2"
 
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -189,19 +190,20 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
 }
 
 
-// Gets gas price from config into big.Int type
+// Gets gas price from config (in gwei) into big.Int type
 func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
-    var gasPrice *big.Int
-    var err error
 
-    if len(config.Smartnode.GasPrice) > 0 {
-        gasPrice, err = cliutils.ValidateWeiAmount("gas price", config.Smartnode.GasPrice)
-        if err != nil { 
-            return gasPrice, err
-        }
-        // if 0 detected replace with nil
-        if len(gasPrice.Bits()) == 0 { gasPrice = nil } 
+    if len(config.Smartnode.GasPrice) == 0 {
+        return nil, nil
     }
+    gasPriceGwei, err := cliutils.ValidateEthAmount("gas price", config.Smartnode.GasPrice)
+    if err != nil { return nil, err }
+
+    // convert input gas price from gwei to wei
+    gasPrice := eth.GweiToWei(gasPriceGwei)
+
+    // if 0 detected replace with nil
+    if len(gasPrice.Bits()) == 0 { gasPrice = nil } 
 
     return gasPrice, nil
 }
@@ -209,15 +211,15 @@ func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
 
 // Gets gas limit from config into uint64 type
 func (config *RocketPoolConfig) GetGasLimit() (uint64, error) {
-    var gasLimit uint64
-
-    if len(config.Smartnode.GasLimit) > 0 {
-        biGasLimit, err := cliutils.ValidateWeiAmount("gas limit", config.Smartnode.GasLimit)
-        if err != nil { 
-            return gasLimit, err
-        }
-        gasLimit = biGasLimit.Uint64()
+    
+    if len(config.Smartnode.GasLimit) == 0 {
+        return 0, nil
     }
+    biGasLimit, err := cliutils.ValidateWeiAmount("gas limit", config.Smartnode.GasLimit)
+    if err != nil { 
+        return 0, err
+    }
+    gasLimit := biGasLimit.Uint64()
 
     return gasLimit, nil
 }
