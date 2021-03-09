@@ -29,15 +29,15 @@ func getStatus(c *cli.Context) error {
     if status.IsMember {
         fmt.Println("The node is a member of the oracle DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
         if status.CanLeave {
-            fmt.Println("The node has an executed proposal to leave - you can leave the oracle DAO with 'rocketpool tndao leave'")
+            fmt.Println("The node has an executed proposal to leave - you can leave the oracle DAO with 'rocketpool odao leave'")
         }
         if status.CanReplace {
-            fmt.Println("The node has an executed proposal to replace itself - you can replace your position in the oracle DAO with 'rocketpool tndao replace'")
+            fmt.Println("The node has an executed proposal to replace itself - you can replace your position in the oracle DAO with 'rocketpool odao replace'")
         }
     } else {
         fmt.Println("The node is not a member of the oracle DAO.")
         if status.CanJoin {
-            fmt.Println("The node has an executed proposal to join - you can join the oracle DAO with 'rocketpool tndao join'")
+            fmt.Println("The node has an executed proposal to join - you can join the oracle DAO with 'rocketpool odao join'")
         }
     }
     fmt.Println("")
