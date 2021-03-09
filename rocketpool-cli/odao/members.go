@@ -36,6 +36,7 @@ func getMembers(c *cli.Context) error {
         fmt.Printf("\n")
         fmt.Printf("Member ID:            %s\n", member.ID)
         fmt.Printf("Email address:        %s\n", member.Email)
+        fmt.Printf("Node address:         %s\n", member.Address.Hex())
         fmt.Printf("Joined at block:      %d\n", member.JoinedBlock)
         fmt.Printf("Last proposal block:  %d\n", member.LastProposalBlock)
         fmt.Printf("RPL bond amount:      %.6f\n", math.RoundDown(eth.WeiToEth(member.RPLBondAmount), 6))
