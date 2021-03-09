@@ -38,18 +38,27 @@ const (
 type Client struct {
     configPath string
     daemonPath string
+    gasPrice string
+    gasLimit string
     client *ssh.Client
 }
 
 
 // Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
-    return NewClient(c.GlobalString("config-path"), c.GlobalString("daemon-path"), c.GlobalString("host"), c.GlobalString("user"), c.GlobalString("key"), c.GlobalString("passphrase"))
+    return NewClient(c.GlobalString("config-path"), 
+                     c.GlobalString("daemon-path"), 
+                     c.GlobalString("host"), 
+                     c.GlobalString("user"), 
+                     c.GlobalString("key"), 
+                     c.GlobalString("passphrase"), 
+                     c.GlobalString("gasPrice"), 
+                     c.GlobalString("gasLimit"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase string) (*Client, error) {
+func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase, gasPrice, gasLimit string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -96,6 +105,8 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase
     return &Client{
         configPath: os.ExpandEnv(configPath),
         daemonPath: os.ExpandEnv(daemonPath),
+        gasPrice: gasPrice,
+        gasLimit: gasLimit,
         client: sshClient,
     }, nil
 
@@ -370,9 +381,9 @@ func (c *Client) callAPI(args string) ([]byte, error) {
         if err != nil {
             return []byte{}, err
         }
-        cmd = fmt.Sprintf("docker exec %s %s api %s", containerName, APIBinPath, args)
+        cmd = fmt.Sprintf("docker exec %s %s %s api %s", containerName, APIBinPath, c.getGasOpts(), args)
     } else {
-        cmd = fmt.Sprintf("%s --config %s --settings %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), args)
+        cmd = fmt.Sprintf("%s --config %s --settings %s %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), c.getGasOpts(), args)
     }
     return c.readOutput(cmd)
 }
@@ -388,6 +399,19 @@ func (c *Client) getAPIContainerName() (string, error) {
       return "", errors.New("Rocket Pool docker project name not set")
     }
     return cfg.Smartnode.ProjectName + APIContainerSuffix, nil
+}
+
+
+// Get gas price & limit flags
+func (c *Client) getGasOpts() string {
+    var opts string
+    if c.gasPrice != "" {
+        opts += fmt.Sprintf("--gasPrice %s ", c.gasPrice)
+    }
+    if c.gasLimit != "" {
+        opts += fmt.Sprintf("--gasLimit %s ", c.gasLimit)
+    }
+    return opts
 }
 
 

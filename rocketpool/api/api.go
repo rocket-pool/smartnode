@@ -24,6 +24,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Subcommands: []cli.Command{},
     }
 
+    // Don't show help message for api errors because of JSON serialisation
+    command.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
+        return err
+    }
+
     // Register subcommands
      auction.RegisterSubcommands(&command, "auctions", []string{"a"})
     minipool.RegisterSubcommands(&command, "minipool", []string{"m"})

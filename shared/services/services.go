@@ -136,7 +136,11 @@ func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager 
 func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
     var err error
     initNodeWallet.Do(func() {
-        nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, pm)
+        gasPrice, err := cfg.GetGasPrice()
+        if err != nil { return }
+        gasLimit, err := cfg.GetGasLimit()
+        if err != nil { return }
+        nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, gasPrice, gasLimit, pm)
         if err == nil {
             lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
             prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)

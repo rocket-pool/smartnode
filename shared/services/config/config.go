@@ -3,11 +3,15 @@ package config
 import (
     "fmt"
     "io/ioutil"
+    "math/big"
     "os"
+    "strconv"
 
     "github.com/imdario/mergo"
     "github.com/urfave/cli"
     "gopkg.in/yaml.v2"
+
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -23,6 +27,8 @@ type RocketPoolConfig struct {
         WalletPath string               `yaml:"walletPath,omitempty"`
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
         ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
+        GasPrice string                 `yaml:"gasPrice,omitempty"`
+        GasLimit string                 `yaml:"gasLimit,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
         Eth1 Chain                      `yaml:"eth1,omitempty"`
@@ -176,8 +182,55 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
+    config.Smartnode.GasPrice = c.GlobalString("gasPrice")
+    config.Smartnode.GasLimit = c.GlobalString("gasLimit")
     config.Chains.Eth1.Provider = c.GlobalString("eth1Provider")
     config.Chains.Eth2.Provider = c.GlobalString("eth2Provider")
     return config
+}
+
+
+// Parse and return the gas price in wei
+func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
+
+    // No gas price specified
+    if config.Smartnode.GasPrice == "" {
+        return nil, nil
+    }
+
+    // Parse gas price in gwei
+    gasPriceGwei, err := strconv.ParseFloat(config.Smartnode.GasPrice, 64)
+    if err != nil {
+        return nil, fmt.Errorf("Invalid gas price '%s': %w", config.Smartnode.GasPrice, err)
+    }
+
+    // Return nil if gas price is set to zero
+    if gasPriceGwei == 0 {
+        return nil, nil
+    }
+
+    // Return gas price in wei
+    return eth.GweiToWei(gasPriceGwei), nil
+
+}
+
+
+// Parse and return the gas limit
+func (config *RocketPoolConfig) GetGasLimit() (uint64, error) {
+
+    // No gas limit specified
+    if config.Smartnode.GasLimit == "" {
+        return 0, nil
+    }
+
+    // Parse gas limit
+    gasLimit, err := strconv.ParseUint(config.Smartnode.GasLimit, 10, 64)
+    if err != nil {
+        return 0, fmt.Errorf("Invalid gas limit '%s': %w", config.Smartnode.GasLimit, err)
+    }
+
+    // Return
+    return gasLimit, nil
+
 }
 

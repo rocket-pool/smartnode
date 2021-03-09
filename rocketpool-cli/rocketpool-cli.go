@@ -81,6 +81,14 @@ ______           _        _    ______           _
             Name:  "passphrase, p",
             Usage: "Smart node SSH key `passphrase`",
         },
+        cli.StringFlag{
+            Name:  "gasPrice, g",
+            Usage: "Desired gas price in gwei",
+        },
+        cli.StringFlag{
+            Name:  "gasLimit, l",
+            Usage: "Desired gas limit",
+        },
     }
 
     // Register commands
