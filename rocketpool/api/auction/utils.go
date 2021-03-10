@@ -24,7 +24,7 @@ const LotDetailsBatchSize = 10
 // Lot count details
 type lotCountDetails struct {
     AddressHasBid bool
-    BiddingEnded bool
+    Cleared bool
     HasRemainingRpl bool
     RplRecovered bool
 }
@@ -111,29 +111,9 @@ func getSufficientRemainingRPLForLot(rp *rocketpool.RocketPool) (bool, error) {
 // Get all lot count details
 func getAllLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address) ([]lotCountDetails, error) {
 
-    // Data
-    var wg1 errgroup.Group
-    var lotCount uint64
-    var currentBlock uint64
-
     // Get lot count
-    wg1.Go(func() error {
-        var err error
-        lotCount, err = auction.GetLotCount(rp, nil)
-        return err
-    })
-
-    // Get current block
-    wg1.Go(func() error {
-        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
-        if err == nil {
-            currentBlock = header.Number.Uint64()
-        }
-        return err
-    })
-
-    // Wait for data
-    if err := wg1.Wait(); err != nil {
+    lotCount, err := auction.GetLotCount(rp, nil)
+    if err != nil {
         return []lotCountDetails{}, err
     }
 
@@ -151,7 +131,7 @@ func getAllLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Addre
         for li := lsi; li < lei; li++ {
             li := li
             wg.Go(func() error {
-                lotDetails, err := getLotCountDetails(rp, bidderAddress, li, currentBlock)
+                lotDetails, err := getLotCountDetails(rp, bidderAddress, li)
                 if err == nil { details[li] = lotDetails }
                 return err
             })
@@ -169,12 +149,12 @@ func getAllLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Addre
 
 
 // Get a lot's count details
-func getLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotIndex, currentBlock uint64) (lotCountDetails, error) {
+func getLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotIndex uint64) (lotCountDetails, error) {
 
     // Data
     var wg errgroup.Group
     var addressBidAmount *big.Int
-    var endBlock uint64
+    var cleared bool
     var remainingRpl *big.Int
     var rplRecovered bool
 
@@ -185,10 +165,10 @@ func getLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address,
         return err
     })
 
-    // Get lot end block
+    // Get lot cleared status
     wg.Go(func() error {
         var err error
-        endBlock, err = auction.GetLotEndBlock(rp, lotIndex, nil)
+        cleared, err = auction.GetLotIsCleared(rp, lotIndex, nil)
         return err
     })
 
@@ -214,7 +194,7 @@ func getLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address,
     // Return
     return lotCountDetails{
         AddressHasBid: (addressBidAmount.Cmp(big.NewInt(0)) > 0),
-        BiddingEnded: (currentBlock >= endBlock),
+        Cleared: cleared,
         HasRemainingRpl: (remainingRpl.Cmp(big.NewInt(0)) > 0),
         RplRecovered: rplRecovered,
     }, nil
@@ -225,29 +205,9 @@ func getLotCountDetails(rp *rocketpool.RocketPool, bidderAddress common.Address,
 // Get all lot details
 func getAllLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address) ([]api.LotDetails, error) {
 
-    // Data
-    var wg1 errgroup.Group
-    var lotCount uint64
-    var currentBlock uint64
-
     // Get lot count
-    wg1.Go(func() error {
-        var err error
-        lotCount, err = auction.GetLotCount(rp, nil)
-        return err
-    })
-
-    // Get current block
-    wg1.Go(func() error {
-        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
-        if err == nil {
-            currentBlock = header.Number.Uint64()
-        }
-        return err
-    })
-
-    // Wait for data
-    if err := wg1.Wait(); err != nil {
+    lotCount, err := auction.GetLotCount(rp, nil)
+    if err != nil {
         return []api.LotDetails{}, err
     }
 
@@ -265,7 +225,7 @@ func getAllLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address) (
         for li := lsi; li < lei; li++ {
             li := li
             wg.Go(func() error {
-                lotDetails, err := getLotDetails(rp, bidderAddress, li, currentBlock)
+                lotDetails, err := getLotDetails(rp, bidderAddress, li)
                 if err == nil { details[li] = lotDetails }
                 return err
             })
@@ -283,7 +243,7 @@ func getAllLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address) (
 
 
 // Get a lot's details
-func getLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotIndex, currentBlock uint64) (api.LotDetails, error) {
+func getLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotIndex uint64) (api.LotDetails, error) {
 
     // Get lot details
     details, err := auction.GetLotDetailsWithBids(rp, lotIndex, bidderAddress, nil)
@@ -293,16 +253,14 @@ func getLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotI
 
     // Check lot conditions
     addressHasBid := (details.AddressBidAmount.Cmp(big.NewInt(0)) > 0)
-    biddingEnded := (currentBlock >= details.EndBlock)
     hasRemainingRpl := (details.RemainingRPLAmount.Cmp(big.NewInt(0)) > 0)
-    rplRecovered := details.RPLRecovered
 
     // Return
     return api.LotDetails{
         Details: details,
-        ClaimAvailable: (addressHasBid && biddingEnded),
-        BiddingAvailable: (!biddingEnded && hasRemainingRpl),
-        RPLRecoveryAvailable: (biddingEnded && hasRemainingRpl && !rplRecovered),
+        ClaimAvailable: (addressHasBid && details.Cleared),
+        BiddingAvailable: (!details.Cleared && hasRemainingRpl),
+        RPLRecoveryAvailable: (details.Cleared && hasRemainingRpl && !details.RPLRecovered),
     }, nil
 
 }

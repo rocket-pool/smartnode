@@ -67,13 +67,13 @@ func getStatus(c *cli.Context) (*api.AuctionStatusResponse, error) {
         lotCountDetails, err := getAllLotCountDetails(rp, nodeAccount.Address)
         if err == nil {
             for _, details := range lotCountDetails {
-                if details.AddressHasBid && details.BiddingEnded {
+                if details.AddressHasBid && details.Cleared {
                     response.LotCounts.ClaimAvailable++
                 }
-                if !details.BiddingEnded && details.HasRemainingRpl {
+                if !details.Cleared && details.HasRemainingRpl {
                     response.LotCounts.BiddingAvailable++
                 }
-                if details.BiddingEnded && details.HasRemainingRpl && !details.RplRecovered {
+                if details.Cleared && details.HasRemainingRpl && !details.RplRecovered {
                     response.LotCounts.RPLRecoveryAvailable++
                 }
             }
