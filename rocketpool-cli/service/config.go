@@ -75,7 +75,7 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         for oi, option := range globalChain.Client.Options {
             optionText := option.Name
             if option.Desc != "" {
-                optionText += fmt.Sprintf(" - %s", option.Desc)
+                optionText += fmt.Sprintf(" %s\n\t\t%s\n", option.Desc, option.Link)
             }
             clientOptions[oi] = optionText
         }

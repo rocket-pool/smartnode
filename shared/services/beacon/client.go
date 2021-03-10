@@ -42,9 +42,24 @@ type ValidatorStatus struct {
     Exists bool
 }
 
+// Beacon client type
+type BeaconClientType int
+const(
+	// This client is a traditional "split process" design, where the beacon
+	// client and validator process are separate and run in different
+	// containers
+	SplitProcess BeaconClientType = iota
+
+	// This client is a "single process" where the beacon client and
+	// validator run in the same process (or run as separate processes
+	// within the same docker container)
+	SingleProcess
+)
+
 
 // Beacon client interface
 type Client interface {
+    GetClientType() (BeaconClientType)
     GetSyncStatus() (SyncStatus, error)
     GetEth2Config() (Eth2Config, error)
     GetBeaconHead() (BeaconHead, error)
