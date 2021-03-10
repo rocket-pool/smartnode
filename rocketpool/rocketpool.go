@@ -71,6 +71,14 @@ func main() {
             Name:  "eth2Provider, b",
             Usage: "Eth 2.0 provider `address`",
         },
+        cli.StringFlag{
+            Name:  "gasPrice, g",
+            Usage: "Desired gas price in gwei",
+        },
+        cli.StringFlag{
+            Name:  "gasLimit, l",
+            Usage: "Desired gas limit",
+        },
     }
 
     // Register commands
