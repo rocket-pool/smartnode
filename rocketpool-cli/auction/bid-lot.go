@@ -111,7 +111,7 @@ func bidOnLot(c *cli.Context) error {
         } else {
 
             // Prompt for custom amount
-            inputAmount := cliutils.Prompt("Please enter an amount of ETH to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+            inputAmount := cliutils.Prompt("Please enter an amount of ETH to bid:", "^\\d+(\\.\\d+)?$", "Invalid amount")
             bidAmount, err := strconv.ParseFloat(inputAmount, 64)
             if err != nil {
                 return fmt.Errorf("Invalid bid amount '%s': %w", inputAmount, err)
