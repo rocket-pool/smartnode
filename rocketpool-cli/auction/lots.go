@@ -72,6 +72,7 @@ func getLots(c *cli.Context) error {
         for _, lot := range statusLots {
             fmt.Printf("--------------------\n")
             fmt.Printf("\n")
+            fmt.Printf("Lot ID:               %d\n", lot.Details.Index)
             fmt.Printf("Start block:          %d\n", lot.Details.StartBlock)
             fmt.Printf("End block:            %d\n", lot.Details.EndBlock)
             fmt.Printf("RPL starting price:   %.6f\n", math.RoundDown(eth.WeiToEth(lot.Details.StartPrice), 6))
