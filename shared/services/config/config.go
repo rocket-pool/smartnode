@@ -37,6 +37,7 @@ type RocketPoolConfig struct {
 }
 type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
+    WsProvider string                   `yaml:"wsProvider,omitempty"`
     ChainID string                      `yaml:"chainID,omitempty"`
     Client struct {
         Options []ClientOption          `yaml:"options,omitempty"`
@@ -51,6 +52,7 @@ type ClientOption struct {
     Image string                        `yaml:"image,omitempty"`
     BeaconImage string                  `yaml:"beaconImage,omitempty"`
     ValidatorImage string               `yaml:"validatorImage,omitempty"`
+    Link string                         `yaml:"link,omitempty"`
     Params []ClientParam                `yaml:"params,omitempty"`
 }
 type ClientParam struct {

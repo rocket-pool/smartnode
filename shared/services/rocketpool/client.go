@@ -351,6 +351,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         fmt.Sprintf("VALIDATOR_CLIENT='%s'",        cfg.GetSelectedEth2Client().ID),
         fmt.Sprintf("VALIDATOR_IMAGE='%s'",         cfg.GetSelectedEth2Client().GetValidatorImage()),
         fmt.Sprintf("ETH1_PROVIDER='%s'",           cfg.Chains.Eth1.Provider),
+        fmt.Sprintf("ETH1_WS_PROVIDER='%s'",        cfg.Chains.Eth1.WsProvider),
         fmt.Sprintf("ETH2_PROVIDER='%s'",           cfg.Chains.Eth2.Provider),
     }
     for _, param := range cfg.Chains.Eth1.Client.Params {
