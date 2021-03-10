@@ -8,7 +8,6 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/settings"
-    "github.com/rocket-pool/rocketpool-go/utils/contract"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -95,8 +94,6 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
-    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -117,14 +114,14 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     }
     response.TxHash = txReceipt.TxHash
 
-    // Get minipool manager contract details
-    minipoolManagerAddress, minipoolManagerABI, err := contract.GetDetails(rp, "rocketMinipoolManager")
+    // Get minipool manager contract
+    minipoolManager, err := rp.GetContract("rocketMinipoolManager")
     if err != nil {
         return nil, err
     }
 
     // Get created minipool address
-    minipoolCreatedEvents, err := contract.GetTransactionEvents(ec, minipoolManagerAddress, minipoolManagerABI, txReceipt, "MinipoolCreated", minipoolCreated{})
+    minipoolCreatedEvents, err := minipoolManager.GetTransactionEvents(txReceipt, "MinipoolCreated", minipoolCreated{})
     if err != nil || len(minipoolCreatedEvents) == 0 {
         return nil, errors.New("Could not get minipool created event")
     }

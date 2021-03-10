@@ -2,6 +2,7 @@ package services
 
 import (
     "fmt"
+    "os"
     "sync"
 
     "github.com/docker/docker/client"
@@ -128,7 +129,7 @@ func getConfig(c *cli.Context) (config.RocketPoolConfig, error) {
 
 func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager {
     initPasswordManager.Do(func() {
-        passwordManager = passwords.NewPasswordManager(cfg.Smartnode.PasswordPath)
+        passwordManager = passwords.NewPasswordManager(os.ExpandEnv(cfg.Smartnode.PasswordPath))
     })
     return passwordManager
 }
@@ -137,10 +138,14 @@ func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager 
 func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
     var err error
     initNodeWallet.Do(func() {
-        nodeWallet, err = wallet.NewWallet(cfg.Smartnode.WalletPath, pm)
+        gasPrice, err := cfg.GetGasPrice()
+        if err != nil { return }
+        gasLimit, err := cfg.GetGasLimit()
+        if err != nil { return }
+        nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, gasPrice, gasLimit, pm)
         if err == nil {
-            lighthouseKeystore := lhkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
-            prysmKeystore := prkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
+            lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+            prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
             tekuKeystore := tkkeystore.NewKeystore(cfg.Smartnode.ValidatorKeychainPath, pm)
             nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
             nodeWallet.AddKeystore("prysm", prysmKeystore)

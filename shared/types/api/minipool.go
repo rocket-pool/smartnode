@@ -28,6 +28,7 @@ type MinipoolDetails struct {
     Validator ValidatorDetails              `json:"validator"`
     RefundAvailable bool                    `json:"refundAvailable"`
     WithdrawalAvailable bool                `json:"withdrawalAvailable"`
+    WithdrawalAvailableInBlocks uint64      `json:"withdrawalAvailableInBlocks"`
     CloseAvailable bool                     `json:"closeAvailable"`
 }
 type ValidatorDetails struct {

@@ -195,46 +195,68 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         validatorsRequest.QueryFilter = &pb.ListValidatorsRequest_Epoch{Epoch: opts.Epoch}
     }
 
-    // Get validator statuses
-    validators, err := c.bc.ListValidators(context.Background(), validatorsRequest)
-    if err != nil {
-        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
+    // Load validator statuses in pages
+    validators := make([]*pb.Validators_ValidatorContainer, 0, len(pubkeys))
+    for {
+
+        // Get & add validators
+        response, err := c.bc.ListValidators(context.Background(), validatorsRequest)
+        if err != nil {
+            return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
+        }
+        validators = append(validators, response.ValidatorList...)
+
+        // Update request page token; break on last page
+        if response.NextPageToken == "" { break }
+        validatorsRequest.PageToken = response.NextPageToken
+
     }
 
     // Return if no validators found
-    if len(validators.ValidatorList) == 0 {
+    if len(validators) == 0 {
         return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, nil
     }
 
     // Build validator balances request
     balancesRequest := &pb.ListValidatorBalancesRequest{
-        PublicKeys: make([][]byte, len(validators.ValidatorList)),
+        PublicKeys: make([][]byte, len(validators)),
     }
-    for vi, validator := range validators.ValidatorList {
+    for vi, validator := range validators {
         balancesRequest.PublicKeys[vi] = validator.Validator.PublicKey
     }
     if opts != nil {
         balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
     }
 
-    // Get validator balances
-    balances, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
-    if err != nil {
-        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator balances: %w", err)
+    // Load validator balances in pages
+    balances := make([]*pb.ValidatorBalances_Balance, 0, len(pubkeys))
+    for {
+
+        // Get & add balances
+        response, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
+        if err != nil {
+            return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator balances: %w", err)
+        }
+        balances = append(balances, response.Balances...)
+
+        // Update request page token; break on last page
+        if response.NextPageToken == "" { break }
+        balancesRequest.PageToken = response.NextPageToken
+
     }
 
     // Check validator balances count
-    if len(validators.ValidatorList) != len(balances.Balances) {
+    if len(validators) != len(balances) {
         return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Validator status and balance result counts do not match")
     }
 
-    // Build status map
+    // Build & return status map
     statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
-    for vi := 0; vi < len(validators.ValidatorList); vi++ {
+    for vi := 0; vi < len(validators); vi++ {
 
         // Get validator status, balance & pubkey
-        validator := validators.ValidatorList[vi].Validator
-        validatorBalance := balances.Balances[vi].Balance
+        validator := validators[vi].Validator
+        validatorBalance := balances[vi].Balance
         pubkey := types.BytesToValidatorPubkey(validator.PublicKey)
 
         // Add status
@@ -252,8 +274,6 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         }
 
     }
-
-    // Return
     return statuses, nil
 
 }

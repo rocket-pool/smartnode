@@ -4,6 +4,10 @@ import (
     "context"
     "errors"
     "fmt"
+    "io/ioutil"
+    "os"
+    "os/exec"
+    "strings"
     "time"
 
     "github.com/docker/docker/api/types"
@@ -145,7 +149,7 @@ func (t *stakePrelaunchMinipools) run() error {
         }
     }
 
-    // Restart validator container
+    // Restart validator process
     if err := t.restartValidator(); err != nil {
         return err
     }
@@ -256,46 +260,81 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, withdrawa
 }
 
 
-// Restart validator container
+// Restart validator process
 func (t *stakePrelaunchMinipools) restartValidator() error {
 
-    // Get validator container name
-    if t.cfg.Smartnode.ProjectName == "" {
-        return errors.New("Rocket Pool docker project name not set")
-    }
-    containerName := t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
+    // Restart validator docker container
+    if isInsideDocker() {
 
-    // Log
-    t.log.Printlnf("Restarting validator container (%s)...", containerName)
-
-    // Get all containers
-    containers, err := t.d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
-    if err != nil {
-        return fmt.Errorf("Could not get docker containers: %w", err)
-    }
-
-    // Get validator container ID
-    var validatorContainerId string
-    for _, container := range containers {
-        if container.Names[0] == "/" + containerName {
-            validatorContainerId = container.ID
-            break
+        // Get validator container name
+        if t.cfg.Smartnode.ProjectName == "" {
+            return errors.New("Rocket Pool docker project name not set")
         }
-    }
-    if validatorContainerId == "" {
-        return errors.New("Validator container not found")
+        containerName := t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
+
+        // Log
+        t.log.Printlnf("Restarting validator container (%s)...", containerName)
+
+        // Get all containers
+        containers, err := t.d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+        if err != nil {
+            return fmt.Errorf("Could not get docker containers: %w", err)
+        }
+
+        // Get validator container ID
+        var validatorContainerId string
+        for _, container := range containers {
+            if container.Names[0] == "/" + containerName {
+                validatorContainerId = container.ID
+                break
+            }
+        }
+        if validatorContainerId == "" {
+            return errors.New("Validator container not found")
+        }
+
+        // Restart validator container
+        if err := t.d.ContainerRestart(context.Background(), validatorContainerId, &validatorRestartTimeout); err != nil {
+            return fmt.Errorf("Could not restart validator container: %w", err)
+        }
+
+    // Restart external validator process
+    } else {
+
+        // Get validator restart command
+        restartCommand := os.ExpandEnv(t.cfg.Smartnode.ValidatorRestartCommand)
+
+        // Log
+        t.log.Printlnf("Restarting validator process with command '%s'...", restartCommand)
+
+        // Run validator restart command bound to os stdout/stderr
+        cmd := exec.Command(restartCommand)
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+        if err := cmd.Run(); err != nil {
+            return fmt.Errorf("Could not restart validator process: %w", err)
+        }
+
     }
 
-    // Restart validator container
-    if err := t.d.ContainerRestart(context.Background(), validatorContainerId, &validatorRestartTimeout); err != nil {
-        return fmt.Errorf("Could not restart validator container: %w", err)
-    }
-
-    // Log
-    t.log.Println("Successfully restarted validator container.")
-
-    // Return
+    // Log & return
+    t.log.Println("Successfully restarted validator")
     return nil
+
+}
+
+
+// Check whether process is running inside docker
+func isInsideDocker() bool {
+
+    // Read process control group info; assume non-docker on failure
+    cgroup, err := ioutil.ReadFile("/proc/1/cgroup")
+    if err != nil {
+        return false
+    }
+
+    // check whether control group info contains docker references
+    return strings.Contains(string(cgroup), "docker")
 
 }
 
