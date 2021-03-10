@@ -267,24 +267,25 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
     // Restart validator docker container
     if isInsideDocker() {
 
-        // Get validator container name
+        // Get validator container name & client type label
         var containerName string
+        var clientTypeLabel string
         if t.cfg.Smartnode.ProjectName == "" {
             return errors.New("Rocket Pool docker project name not set")
         }
-
         switch clientType := t.bc.GetClientType(); clientType {
-        case beacon.SplitProcess:
-            containerName = t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
-        case beacon.SingleProcess:
-            containerName = t.cfg.Smartnode.ProjectName + BeaconContainerSuffix
-            t.log.Printlnf("NOTE: using a single-process type client, so the validator container is the beacon container.")
-        default:
-            return fmt.Errorf("Can't restart the validator, unknown client type [%w]", clientType)
+            case beacon.SplitProcess:
+                containerName = t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
+                clientTypeLabel = "validator"
+            case beacon.SingleProcess:
+                containerName = t.cfg.Smartnode.ProjectName + BeaconContainerSuffix
+                clientTypeLabel = "beacon"
+            default:
+                return fmt.Errorf("Can't restart the validator, unknown client type '%d'", clientType)
         }
 
         // Log
-        t.log.Printlnf("Restarting validator container (%s)...", containerName)
+        t.log.Printlnf("Restarting %s container (%s)...", clientTypeLabel, containerName)
 
         // Get all containers
         containers, err := t.d.ContainerList(context.Background(), types.ContainerListOptions{All: true})

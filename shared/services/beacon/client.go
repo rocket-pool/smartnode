@@ -42,6 +42,7 @@ type ValidatorStatus struct {
     Exists bool
 }
 
+
 // Beacon client type
 type BeaconClientType int
 const(
