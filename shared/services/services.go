@@ -13,16 +13,16 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services/beacon"
     "github.com/rocket-pool/smartnode/shared/services/beacon/lighthouse"
+    "github.com/rocket-pool/smartnode/shared/services/beacon/nimbus"
     "github.com/rocket-pool/smartnode/shared/services/beacon/prysm"
     "github.com/rocket-pool/smartnode/shared/services/beacon/teku"
-    "github.com/rocket-pool/smartnode/shared/services/beacon/nimbus"
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/passwords"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
+    nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
     prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
     tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
-    nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 )
 
 
@@ -147,13 +147,13 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
         nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, gasPrice, gasLimit, pm)
         if err == nil {
             lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+            nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
             prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
             tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-            nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
             nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
+            nodeWallet.AddKeystore("nimbus", nimbusKeystore)
             nodeWallet.AddKeystore("prysm", prysmKeystore)
             nodeWallet.AddKeystore("teku", tekuKeystore)
-            nodeWallet.AddKeystore("nimbus", nimbusKeystore)
         }
     })
     return nodeWallet, err
@@ -184,12 +184,12 @@ func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
         switch cfg.Chains.Eth2.Client.Selected {
             case "lighthouse":
                 beaconClient = lighthouse.NewClient(cfg.Chains.Eth2.Provider)
+            case "nimbus":
+                beaconClient, err = nimbus.NewClient(cfg.Chains.Eth2.Provider)
             case "prysm":
                 beaconClient, err = prysm.NewClient(cfg.Chains.Eth2.Provider)
             case "teku":
                 beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
-            case "nimbus":
-                beaconClient, err = nimbus.NewClient(cfg.Chains.Eth2.Provider)
             default:
                 err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
         }

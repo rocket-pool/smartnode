@@ -56,6 +56,7 @@ func NewClient(providerAddress string) *Client {
 // Close the client connection
 func (c *Client) Close() {}
 
+
 // Get the beacon client type
 func (c *Client) GetClientType() (beacon.BeaconClientType) {
     return beacon.SplitProcess;

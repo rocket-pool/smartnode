@@ -53,6 +53,7 @@ func (c *Client) Close() {
     c.conn.Close()
 }
 
+
 // Get the beacon client type
 func (c *Client) GetClientType() (beacon.BeaconClientType) {
     return beacon.SplitProcess;
