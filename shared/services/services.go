@@ -2,6 +2,7 @@ package services
 
 import (
     "fmt"
+    "math/big"
     "os"
     "sync"
 
@@ -140,21 +141,22 @@ func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager 
 func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
     var err error
     initNodeWallet.Do(func() {
-        gasPrice, err := cfg.GetGasPrice()
+        var gasPrice *big.Int
+        var gasLimit uint64
+        gasPrice, err = cfg.GetGasPrice()
         if err != nil { return }
-        gasLimit, err := cfg.GetGasLimit()
+        gasLimit, err = cfg.GetGasLimit()
         if err != nil { return }
         nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, gasPrice, gasLimit, pm)
-        if err == nil {
-            lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-            nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-            prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-            tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-            nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
-            nodeWallet.AddKeystore("nimbus", nimbusKeystore)
-            nodeWallet.AddKeystore("prysm", prysmKeystore)
-            nodeWallet.AddKeystore("teku", tekuKeystore)
-        }
+        if err != nil { return }
+        lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+        nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+        prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+        tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+        nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
+        nodeWallet.AddKeystore("nimbus", nimbusKeystore)
+        nodeWallet.AddKeystore("prysm", prysmKeystore)
+        nodeWallet.AddKeystore("teku", tekuKeystore)
     })
     return nodeWallet, err
 }
