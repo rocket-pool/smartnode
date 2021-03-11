@@ -8,6 +8,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/rocket-pool/rocketpool-go/settings"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
     "golang.org/x/sync/errgroup"
 
@@ -72,6 +73,17 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         depositEnabled, err := settings.GetNodeDepositEnabled(rp, nil)
         if err == nil {
             response.DepositDisabled = !depositEnabled
+        }
+        return err
+    })
+
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { return err }
+        opts.Value = amountWei
+        gasInfo, err := services.GetGasInfo(rp, opts, "rocketNodeDeposit", "deposit", eth.EthToWei(0.1))
+        if err == nil {
+            response.GasInfo = gasInfo
         }
         return err
     })

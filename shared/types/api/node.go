@@ -3,6 +3,7 @@ package api
 import (
     "github.com/ethereum/go-ethereum/common"
 
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tokens"
 )
 
@@ -57,6 +58,7 @@ type CanNodeDepositResponse struct {
     InsufficientBalance bool        `json:"insufficientBalance"`
     InvalidAmount bool              `json:"invalidAmount"`
     DepositDisabled bool            `json:"depositDisabled"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type NodeDepositResponse struct {
     Status string                   `json:"status"`

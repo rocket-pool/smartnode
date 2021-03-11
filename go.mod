@@ -32,3 +32,6 @@ require (
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.3.0
 )
+
+// TODO remove this and update with proper rocket-pool/rocketpool-go version after merge
+replace github.com/rocket-pool/rocketpool-go => github.com/kidkal/rocketpool-go v0.0.0-20210308222949-0ba3d4fa4698
