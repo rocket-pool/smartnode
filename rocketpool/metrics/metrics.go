@@ -50,6 +50,7 @@ func run(c *cli.Context) error {
     // Start metrics processes
     go (func() { startNetworkMetricsProcess(c, networkUpdateInterval, log.NewColorLogger(networkMetricsColor)) })()
     go (func() { startMinipoolMetricsProcess(c, minipoolUpdateInterval, log.NewColorLogger(minipoolMetricsColor)) })()
+    go (func() { startAuctionMetricsProcess(c, minipoolUpdateInterval, log.NewColorLogger(minipoolMetricsColor)) })()
     go (func() { startNodeMetricsProcess(c, nodeUpdateInterval, log.NewColorLogger(nodeMetricsColor)) })()
 
     // Serve metrics

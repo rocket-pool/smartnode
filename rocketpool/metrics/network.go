@@ -152,9 +152,9 @@ func newNetworkMetricsProcess(c *cli.Context, logger log.ColorLogger) (*networkM
                 Namespace:  "rocketpool",
                 Subsystem:  "network",
                 Name:       "balance_eth",
-                Help:       "network balances and supplies in given unit",
+                Help:       "network balances and supplies in given category",
             },
-            []string{"unit"},
+            []string{"category"},
         ),
         settingsFlags:      promauto.NewGaugeVec(
             prometheus.GaugeOpts{
@@ -241,11 +241,11 @@ func (p *networkMetricsProcess) updateNetwork() error {
     if err != nil { return err }
 
     p.metrics.networkBlock.Set(float64(stuff.Block))
-    p.metrics.networkBalances.With(prometheus.Labels{"unit":"TotalETH"}).Set(eth.WeiToEth(stuff.TotalETH))
-    p.metrics.networkBalances.With(prometheus.Labels{"unit":"StakingETH"}).Set(eth.WeiToEth(stuff.StakingETH))
-    p.metrics.networkBalances.With(prometheus.Labels{"unit":"TotalRETH"}).Set(eth.WeiToEth(stuff.TotalRETH))
-    p.metrics.networkBalances.With(prometheus.Labels{"unit":"Deposit"}).Set(eth.WeiToEth(stuff.DepositBalance))
-    p.metrics.networkBalances.With(prometheus.Labels{"unit":"DepositExcess"}).Set(eth.WeiToEth(stuff.DepositExcessBalance))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"TotalETH"}).Set(eth.WeiToEth(stuff.TotalETH))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"StakingETH"}).Set(eth.WeiToEth(stuff.StakingETH))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"TotalRETH"}).Set(eth.WeiToEth(stuff.TotalRETH))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"Deposit"}).Set(eth.WeiToEth(stuff.DepositBalance))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"DepositExcess"}).Set(eth.WeiToEth(stuff.DepositExcessBalance))
 
     return nil
 }
