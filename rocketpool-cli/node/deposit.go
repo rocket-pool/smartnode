@@ -59,25 +59,6 @@ func nodeDeposit(c *cli.Context) error {
     }
     amountWei := eth.EthToWei(amount)
 
-    // Check deposit can be made
-    canDeposit, err := rp.CanNodeDeposit(amountWei)
-    if err != nil {
-        return err
-    }
-    if !canDeposit.CanDeposit {
-        fmt.Println("Cannot make node deposit:")
-        if canDeposit.InsufficientBalance {
-            fmt.Println("The node's ETH balance is insufficient.")
-        }
-        if canDeposit.InvalidAmount {
-            fmt.Println("The deposit amount is invalid.")
-        }
-        if canDeposit.DepositDisabled {
-            fmt.Println("Node deposits are currently disabled.")
-        }
-        return nil
-    }
-
     // Get minimum node fee
     var minNodeFee float64
     if c.String("min-fee") == "auto" {
@@ -106,7 +87,31 @@ func nodeDeposit(c *cli.Context) error {
             return err
         }
         minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.SuggestedMinNodeFee)
+    }
 
+    // Check deposit can be made
+    canDeposit, err := rp.CanNodeDeposit(amountWei)
+    if err != nil {
+        return err
+    }
+    if !canDeposit.CanDeposit {
+        fmt.Println("Cannot make node deposit:")
+        if canDeposit.InsufficientBalance {
+            fmt.Println("The node's ETH balance is insufficient.")
+        }
+        if canDeposit.InvalidAmount {
+            fmt.Println("The deposit amount is invalid.")
+        }
+        if canDeposit.DepositDisabled {
+            fmt.Println("Node deposits are currently disabled.")
+        }
+        return nil
+    }
+
+    rp.PrintGasInfo(canDeposit.GasInfo)
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to deposit %.6f ETH with minimum node commission rate of %f%%?", math.RoundDown(eth.WeiToEth(amountWei), 6), minNodeFee * 100))) {
+        fmt.Println("Cancelled.")
+        return nil
     }
 
     // Make deposit
