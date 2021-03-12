@@ -19,6 +19,7 @@ import (
 type RocketPoolConfig struct {
     Rocketpool struct {
         StorageAddress string           `yaml:"storageAddress,omitempty"`
+        RPLFaucetAddress string         `yaml:"rplFaucetAddress,omitempty"`
     }                                   `yaml:"rocketpool,omitempty"`
     Smartnode struct {
         ProjectName string              `yaml:"projectName,omitempty"`
@@ -181,6 +182,7 @@ func loadFile(path string, required bool) (RocketPoolConfig, error) {
 func getCliConfig(c *cli.Context) RocketPoolConfig {
     var config RocketPoolConfig
     config.Rocketpool.StorageAddress = c.GlobalString("storageAddress")
+    config.Rocketpool.RPLFaucetAddress = c.GlobalString("rplFaucetAddress")
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
