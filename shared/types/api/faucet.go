@@ -29,6 +29,7 @@ type CanFaucetWithdrawRplResponse struct {
 type FaucetWithdrawRplResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
+    Amount *big.Int                     `json:"amount"`
     TxHash common.Hash                  `json:"txHash"`
 }
 

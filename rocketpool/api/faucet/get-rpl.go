@@ -143,6 +143,7 @@ func getRpl(c *cli.Context) (*api.FaucetWithdrawRplResponse, error) {
     } else {
         amount = balance
     }
+    response.Amount = amount
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
