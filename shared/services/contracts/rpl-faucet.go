@@ -27,7 +27,7 @@ var (
 )
 
 // RPLFaucetABI is the input ABI used to generate the binding from.
-const RPLFaucetABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"maxWithdrawalPerPeriod\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"withdrawalPeriod\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_rplTokenAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"created\",\"type\":\"uint256\"}],\"name\":\"Withdrawal\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdrawTo\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getAllowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"getAllowanceFor\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getWithdrawalPeriodStart\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_withdrawalPeriod\",\"type\":\"uint256\"}],\"name\":\"setWithdrawalPeriod\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_maxWithdrawalPerPeriod\",\"type\":\"uint256\"}],\"name\":\"setMaxWithdrawalPerPeriod\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const RPLFaucetABI = "[{\"constant\":true,\"inputs\":[],\"name\":\"maxWithdrawalPerPeriod\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"withdrawalFee\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"withdrawalPeriod\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"_rplTokenAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"created\",\"type\":\"uint256\"}],\"name\":\"Withdrawal\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdrawTo\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getAllowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"getAllowanceFor\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getWithdrawalPeriodStart\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_withdrawalPeriod\",\"type\":\"uint256\"}],\"name\":\"setWithdrawalPeriod\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_maxWithdrawalPerPeriod\",\"type\":\"uint256\"}],\"name\":\"setMaxWithdrawalPerPeriod\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_withdrawalFee\",\"type\":\"uint256\"}],\"name\":\"setWithdrawalFee\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // RPLFaucet is an auto generated Go binding around an Ethereum contract.
 type RPLFaucet struct {
@@ -357,6 +357,37 @@ func (_RPLFaucet *RPLFaucetCallerSession) Owner() (common.Address, error) {
 	return _RPLFaucet.Contract.Owner(&_RPLFaucet.CallOpts)
 }
 
+// WithdrawalFee is a free data retrieval call binding the contract method 0x8bc7e8c4.
+//
+// Solidity: function withdrawalFee() view returns(uint256)
+func (_RPLFaucet *RPLFaucetCaller) WithdrawalFee(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _RPLFaucet.contract.Call(opts, &out, "withdrawalFee")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// WithdrawalFee is a free data retrieval call binding the contract method 0x8bc7e8c4.
+//
+// Solidity: function withdrawalFee() view returns(uint256)
+func (_RPLFaucet *RPLFaucetSession) WithdrawalFee() (*big.Int, error) {
+	return _RPLFaucet.Contract.WithdrawalFee(&_RPLFaucet.CallOpts)
+}
+
+// WithdrawalFee is a free data retrieval call binding the contract method 0x8bc7e8c4.
+//
+// Solidity: function withdrawalFee() view returns(uint256)
+func (_RPLFaucet *RPLFaucetCallerSession) WithdrawalFee() (*big.Int, error) {
+	return _RPLFaucet.Contract.WithdrawalFee(&_RPLFaucet.CallOpts)
+}
+
 // WithdrawalPeriod is a free data retrieval call binding the contract method 0xbca7093d.
 //
 // Solidity: function withdrawalPeriod() view returns(uint256)
@@ -409,6 +440,27 @@ func (_RPLFaucet *RPLFaucetTransactorSession) SetMaxWithdrawalPerPeriod(_maxWith
 	return _RPLFaucet.Contract.SetMaxWithdrawalPerPeriod(&_RPLFaucet.TransactOpts, _maxWithdrawalPerPeriod)
 }
 
+// SetWithdrawalFee is a paid mutator transaction binding the contract method 0xac1e5025.
+//
+// Solidity: function setWithdrawalFee(uint256 _withdrawalFee) returns()
+func (_RPLFaucet *RPLFaucetTransactor) SetWithdrawalFee(opts *bind.TransactOpts, _withdrawalFee *big.Int) (*types.Transaction, error) {
+	return _RPLFaucet.contract.Transact(opts, "setWithdrawalFee", _withdrawalFee)
+}
+
+// SetWithdrawalFee is a paid mutator transaction binding the contract method 0xac1e5025.
+//
+// Solidity: function setWithdrawalFee(uint256 _withdrawalFee) returns()
+func (_RPLFaucet *RPLFaucetSession) SetWithdrawalFee(_withdrawalFee *big.Int) (*types.Transaction, error) {
+	return _RPLFaucet.Contract.SetWithdrawalFee(&_RPLFaucet.TransactOpts, _withdrawalFee)
+}
+
+// SetWithdrawalFee is a paid mutator transaction binding the contract method 0xac1e5025.
+//
+// Solidity: function setWithdrawalFee(uint256 _withdrawalFee) returns()
+func (_RPLFaucet *RPLFaucetTransactorSession) SetWithdrawalFee(_withdrawalFee *big.Int) (*types.Transaction, error) {
+	return _RPLFaucet.Contract.SetWithdrawalFee(&_RPLFaucet.TransactOpts, _withdrawalFee)
+}
+
 // SetWithdrawalPeriod is a paid mutator transaction binding the contract method 0x973b294f.
 //
 // Solidity: function setWithdrawalPeriod(uint256 _withdrawalPeriod) returns()
@@ -432,42 +484,42 @@ func (_RPLFaucet *RPLFaucetTransactorSession) SetWithdrawalPeriod(_withdrawalPer
 
 // Withdraw is a paid mutator transaction binding the contract method 0x2e1a7d4d.
 //
-// Solidity: function withdraw(uint256 _amount) returns(bool)
+// Solidity: function withdraw(uint256 _amount) payable returns(bool)
 func (_RPLFaucet *RPLFaucetTransactor) Withdraw(opts *bind.TransactOpts, _amount *big.Int) (*types.Transaction, error) {
 	return _RPLFaucet.contract.Transact(opts, "withdraw", _amount)
 }
 
 // Withdraw is a paid mutator transaction binding the contract method 0x2e1a7d4d.
 //
-// Solidity: function withdraw(uint256 _amount) returns(bool)
+// Solidity: function withdraw(uint256 _amount) payable returns(bool)
 func (_RPLFaucet *RPLFaucetSession) Withdraw(_amount *big.Int) (*types.Transaction, error) {
 	return _RPLFaucet.Contract.Withdraw(&_RPLFaucet.TransactOpts, _amount)
 }
 
 // Withdraw is a paid mutator transaction binding the contract method 0x2e1a7d4d.
 //
-// Solidity: function withdraw(uint256 _amount) returns(bool)
+// Solidity: function withdraw(uint256 _amount) payable returns(bool)
 func (_RPLFaucet *RPLFaucetTransactorSession) Withdraw(_amount *big.Int) (*types.Transaction, error) {
 	return _RPLFaucet.Contract.Withdraw(&_RPLFaucet.TransactOpts, _amount)
 }
 
 // WithdrawTo is a paid mutator transaction binding the contract method 0x205c2878.
 //
-// Solidity: function withdrawTo(address _to, uint256 _amount) returns(bool)
+// Solidity: function withdrawTo(address _to, uint256 _amount) payable returns(bool)
 func (_RPLFaucet *RPLFaucetTransactor) WithdrawTo(opts *bind.TransactOpts, _to common.Address, _amount *big.Int) (*types.Transaction, error) {
 	return _RPLFaucet.contract.Transact(opts, "withdrawTo", _to, _amount)
 }
 
 // WithdrawTo is a paid mutator transaction binding the contract method 0x205c2878.
 //
-// Solidity: function withdrawTo(address _to, uint256 _amount) returns(bool)
+// Solidity: function withdrawTo(address _to, uint256 _amount) payable returns(bool)
 func (_RPLFaucet *RPLFaucetSession) WithdrawTo(_to common.Address, _amount *big.Int) (*types.Transaction, error) {
 	return _RPLFaucet.Contract.WithdrawTo(&_RPLFaucet.TransactOpts, _to, _amount)
 }
 
 // WithdrawTo is a paid mutator transaction binding the contract method 0x205c2878.
 //
-// Solidity: function withdrawTo(address _to, uint256 _amount) returns(bool)
+// Solidity: function withdrawTo(address _to, uint256 _amount) payable returns(bool)
 func (_RPLFaucet *RPLFaucetTransactorSession) WithdrawTo(_to common.Address, _amount *big.Int) (*types.Transaction, error) {
 	return _RPLFaucet.Contract.WithdrawTo(&_RPLFaucet.TransactOpts, _to, _amount)
 }
