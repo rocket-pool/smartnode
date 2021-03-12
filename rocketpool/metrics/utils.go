@@ -6,3 +6,4 @@ func B2i(b bool) int8 {
     }
     return 0
 }
+

@@ -44,9 +44,7 @@ func startAuctionMetricsProcess(c *cli.Context, interval time.Duration, logger l
         if p != nil && err == nil {
             break;
         }
-        logger.Printlnf("minipoolMetricsProcess retry loop: %w", err)
     }
-    logger.Printlnf("minipoolMetricsProcess created")
 
     // Update metrics on interval
     for ; true; <- timer.C {
@@ -145,5 +143,4 @@ func (p *auctionMetricsProcess) updateMetrics() error {
 
     return nil
 }
-
 

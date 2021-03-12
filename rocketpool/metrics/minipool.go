@@ -133,3 +133,4 @@ func (p *minipoolMetricsProcess) updateMinipool() error {
 
     return nil
 }
+

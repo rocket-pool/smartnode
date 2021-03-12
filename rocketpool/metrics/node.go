@@ -278,3 +278,4 @@ func (p *nodeMetricsProcess) updateMinipoolCount(nodeRanks []api.NodeRank) {
     p.metrics.minipoolCounts.With(prometheus.Labels{"status":"validatorExists"}).Set(float64(validatorExistsCount))
     p.metrics.minipoolCounts.With(prometheus.Labels{"status":"validatorActive"}).Set(float64(validatorActiveCount))
 }
+

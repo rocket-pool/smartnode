@@ -437,3 +437,4 @@ func (p *networkMetricsProcess) updateSettings() error {
 
     return nil
 }
+

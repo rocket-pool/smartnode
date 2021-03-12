@@ -48,10 +48,11 @@ func run(c *cli.Context) error {
     configureHTTP()
 
     // Start metrics processes
-    go (func() { startNetworkMetricsProcess(c, networkUpdateInterval, log.NewColorLogger(networkMetricsColor)) })()
-    go (func() { startMinipoolMetricsProcess(c, minipoolUpdateInterval, log.NewColorLogger(minipoolMetricsColor)) })()
-    go (func() { startAuctionMetricsProcess(c, minipoolUpdateInterval, log.NewColorLogger(minipoolMetricsColor)) })()
-    go (func() { startNodeMetricsProcess(c, nodeUpdateInterval, log.NewColorLogger(nodeMetricsColor)) })()
+    go (func() { startAuctionMetricsProcess(c, minipoolUpdateInterval, logger) })()
+    go (func() { startDaoMetricsProcess(c, minipoolUpdateInterval, logger) })()
+    go (func() { startMinipoolMetricsProcess(c, minipoolUpdateInterval, logger) })()
+    go (func() { startNetworkMetricsProcess(c, networkUpdateInterval, logger) })()
+    go (func() { startNodeMetricsProcess(c, nodeUpdateInterval, logger) })()
 
     // Serve metrics
     http.Handle("/metrics", promhttp.Handler())
@@ -75,3 +76,4 @@ func configureHTTP() {
     http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = maxConcurrentEth1Requests
 
 }
+
