@@ -34,32 +34,32 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "can-get-rpl",
-                Usage:     "Check whether the node can get RPL from the faucet",
-                UsageText: "rocketpool api faucet can-get-rpl",
+                Name:      "can-withdraw-rpl",
+                Usage:     "Check whether the node can withdraw RPL from the faucet",
+                UsageText: "rocketpool api faucet can-withdraw-rpl",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canGetRpl(c))
+                    api.PrintResponse(canWithdrawRpl(c))
                     return nil
 
                 },
             },
             cli.Command{
-                Name:      "get-rpl",
-                Aliases:   []string{"g"},
-                Usage:     "Get RPL from the faucet",
-                UsageText: "rocketpool api faucet get-rpl",
+                Name:      "withdraw-rpl",
+                Aliases:   []string{"w"},
+                Usage:     "Withdraw RPL from the faucet",
+                UsageText: "rocketpool api faucet withdraw-rpl",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    api.PrintResponse(getRpl(c))
+                    api.PrintResponse(withdrawRpl(c))
                     return nil
 
                 },

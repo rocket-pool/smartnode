@@ -12,7 +12,7 @@ import (
 )
 
 
-func canGetRpl(c *cli.Context) (*api.CanFaucetWithdrawRplResponse, error) {
+func canWithdrawRpl(c *cli.Context) (*api.CanFaucetWithdrawRplResponse, error) {
 
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
@@ -85,7 +85,7 @@ func canGetRpl(c *cli.Context) (*api.CanFaucetWithdrawRplResponse, error) {
 }
 
 
-func getRpl(c *cli.Context) (*api.FaucetWithdrawRplResponse, error) {
+func withdrawRpl(c *cli.Context) (*api.FaucetWithdrawRplResponse, error) {
 
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
