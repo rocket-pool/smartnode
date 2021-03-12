@@ -52,6 +52,13 @@ func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
         return err
     })
 
+    // Get withdrawal fee
+    wg.Go(func() error {
+        var err error
+        response.WithdrawalFee, err = f.WithdrawalFee(nil)
+        return err
+    })
+
     // Get current withdrawal period start block
     wg.Go(func() error {
         withdrawalPeriodStart, err := f.GetWithdrawalPeriodStart(nil)
