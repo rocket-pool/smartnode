@@ -2,6 +2,8 @@ package api
 
 import (
     "math/big"
+
+    "github.com/ethereum/go-ethereum/common"
 )
 
 
@@ -13,5 +15,20 @@ type FaucetStatusResponse struct {
     WithdrawableAmount *big.Int `json:"withdrawableAmount"`
     WithdrawalFee *big.Int      `json:"withdrawalFee"`
     ResetsInBlocks uint64       `json:"resetsInBlocks"`
+}
+
+
+type CanFaucetWithdrawRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanWithdraw bool                    `json:"canWithdraw"`
+    InsufficientFaucetBalance bool      `json:"insufficientFaucetBalance"`
+    InsufficientAllowance bool          `json:"insufficientAllowance"`
+    InsufficientNodeBalance bool        `json:"insufficientNodeBalance"`
+}
+type FaucetWithdrawRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
 }
 

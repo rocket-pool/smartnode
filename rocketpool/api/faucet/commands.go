@@ -33,6 +33,38 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "can-get-rpl",
+                Usage:     "Check whether the node can get RPL from the faucet",
+                UsageText: "rocketpool api faucet can-get-rpl",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canGetRpl(c))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "get-rpl",
+                Aliases:   []string{"g"},
+                Usage:     "Get RPL from the faucet",
+                UsageText: "rocketpool api faucet get-rpl",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getRpl(c))
+                    return nil
+
+                },
+            },
+
         },
     })
 }
