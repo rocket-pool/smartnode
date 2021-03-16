@@ -284,7 +284,7 @@ func (c *Client) GetServiceVersion() (string, error) {
     }
 
     // Parse version number
-    versionNumberBytes := regexp.MustCompile("v?(\\d+\\.)*\\d+").Find(versionBytes)
+    versionNumberBytes := regexp.MustCompile("v?(\\d+\\.)*\\d+(\\-\\w+\\.\\d+)?").Find(versionBytes)
     if versionNumberBytes == nil {
         return "", errors.New("Could not parse Rocket Pool service version number.")
     }
