@@ -3,6 +3,7 @@ package watchtower
 import (
     "math/big"
 
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/rewards"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -64,6 +65,15 @@ func (t *claimRplRewards) run() error {
     nodeAccount, err := t.w.GetNodeAccount()
     if err != nil {
         return err
+    }
+
+    // Check node trusted status
+    nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
+    if err != nil {
+        return err
+    }
+    if !nodeTrusted {
+        return nil
     }
 
     // Check for rewards
