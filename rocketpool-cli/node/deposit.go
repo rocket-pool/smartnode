@@ -13,6 +13,10 @@ import (
 )
 
 
+// Config
+const DefaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
+
+
 func nodeDeposit(c *cli.Context) error {
 
     // Get RP client
@@ -84,41 +88,47 @@ func nodeDeposit(c *cli.Context) error {
         return nil
     }
 
+    // Get network node fees
+    nodeFees, err := rp.NodeFee()
+    if err != nil {
+        return err
+    }
+
     // Get minimum node fee
     var minNodeFee float64
-    if c.String("min-fee") == "auto" {
+    if c.String("max-slippage") == "auto" {
 
-        // Use suggested fee
-        nodeFees, err := rp.NodeFee()
+        // Use default max slippage
+        minNodeFee = nodeFees.NodeFee - DefaultMaxNodeFeeSlippage
+        if minNodeFee < nodeFees.MinNodeFee { minNodeFee = nodeFees.MinNodeFee }
+
+    } else if c.String("max-slippage") != "" {
+
+        // Parse max slippage
+        maxNodeFeeSlippagePerc, err := strconv.ParseFloat(c.String("max-slippage"), 64)
         if err != nil {
-            return err
+            return fmt.Errorf("Invalid maximum commission rate slippage '%s': %w", c.String("max-slippage"), err)
         }
-        minNodeFee = nodeFees.SuggestedMinNodeFee
+        maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
 
-    } else if c.String("min-fee") != "" {
-
-        // Parse fee
-        minNodeFeePerc, err := strconv.ParseFloat(c.String("min-fee"), 64)
-        if err != nil {
-            return fmt.Errorf("Invalid minimum node fee '%s': %w", c.String("min-fee"), err)
-        }
-        minNodeFee = minNodeFeePerc / 100
+        // Calculate min node fee
+        minNodeFee = nodeFees.NodeFee - maxNodeFeeSlippage
+        if minNodeFee < nodeFees.MinNodeFee { minNodeFee = nodeFees.MinNodeFee }
 
     } else {
 
-        // Prompt for fee
-        nodeFees, err := rp.NodeFee()
-        if err != nil {
-            return err
-        }
-        minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.SuggestedMinNodeFee)
+        // Prompt for min node fee
+        minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)
 
     }
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to deposit %.6f ETH? Running a minipool is a long-term commitment.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
-        fmt.Println("Cancelled.")
-        return nil
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
+        "Are you sure you want to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%? Running a minipool is a long-term commitment.",
+        math.RoundDown(eth.WeiToEth(amountWei), 6),
+        minNodeFee * 100))) {
+            fmt.Println("Cancelled.")
+            return nil
     }
 
     // Make deposit

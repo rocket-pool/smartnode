@@ -12,7 +12,6 @@ type NodeFeeResponse struct {
     MinNodeFee float64              `json:"minNodeFee"`
     TargetNodeFee float64           `json:"targetNodeFee"`
     MaxNodeFee float64              `json:"maxNodeFee"`
-    SuggestedMinNodeFee float64     `json:"suggestedMinNodeFee"`
 }
 
 

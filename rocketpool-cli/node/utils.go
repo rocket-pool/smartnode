@@ -74,28 +74,42 @@ func promptTimezone() string {
 
 
 // Prompt user for a minimum node fee
-func promptMinNodeFee(currentNodeFee, suggestedMinNodeFee float64) float64 {
+func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 {
 
-    // Prompt for suggested min node fee
-    fmt.Printf("The current network node commission rate is %f%%.\n", currentNodeFee * 100)
-    fmt.Printf("The suggested minimum node commission rate for your deposit is %f%%.\n", suggestedMinNodeFee * 100)
-    if cliutils.Confirm("Do you want to use the suggested minimum?") {
+    // Get suggested min node fee
+    suggestedMinNodeFee := networkCurrentNodeFee - DefaultMaxNodeFeeSlippage
+    if suggestedMinNodeFee < networkMinNodeFee { suggestedMinNodeFee = networkMinNodeFee }
+
+    // Prompt for suggested max slippage
+    fmt.Printf("The current network node commission rate that your minipool should receive is %f%%.\n", networkCurrentNodeFee * 100)
+    fmt.Printf("The suggested maximum commission rate slippage for your deposit transaction is %f%%.\n", DefaultMaxNodeFeeSlippage * 100)
+    fmt.Printf("This will result in your minipool receiving a minimum possible commission rate of %f%%.\n", suggestedMinNodeFee * 100)
+    if cliutils.Confirm("Do you want to use the suggested maximum commission rate slippage?") {
         return suggestedMinNodeFee
     }
 
-    // Prompt for custom min node fee
+    // Prompt for custom max slippage
     for {
-        minNodeFeePercentStr := cliutils.Prompt("Please enter a minimum node commission rate % for your deposit:", "^\\d+(\\.\\d+)?$", "Invalid commission rate")
-        minNodeFeePercent, _ := strconv.ParseFloat(minNodeFeePercentStr, 64)
-        minNodeFee := minNodeFeePercent / 100
-        if minNodeFee < 0 || minNodeFee > 1 {
-            fmt.Println("Invalid commission rate")
+
+        // Get max slippage
+        maxNodeFeeSlippagePercStr := cliutils.Prompt("Please enter a maximum commission rate slippage % for your deposit:", "^\\d+(\\.\\d+)?$", "Invalid maximum commission rate slippage")
+        maxNodeFeeSlippagePerc, _ := strconv.ParseFloat(maxNodeFeeSlippagePercStr, 64)
+        maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
+        if maxNodeFeeSlippage < 0 || maxNodeFeeSlippage > 1 {
+            fmt.Println("Invalid maximum commission rate slippage")
             fmt.Println("")
             continue
         }
-        if cliutils.Confirm(fmt.Sprintf("You have chosen a minimum node commission rate of %f%%, is this correct?", minNodeFee * 100)) {
+
+        // Calculate min node fee
+        minNodeFee := networkCurrentNodeFee - maxNodeFeeSlippage
+        if minNodeFee < networkMinNodeFee { minNodeFee = networkMinNodeFee }
+
+        // Confirm max slippage
+        if cliutils.Confirm(fmt.Sprintf("You have chosen a maximum commission rate slippage of %f%%, resulting in a minimum possible commission rate of %f%%. Is this correct?", maxNodeFeeSlippage * 100, minNodeFee * 100)) {
             return minNodeFee
         }
+
     }
 
 }
