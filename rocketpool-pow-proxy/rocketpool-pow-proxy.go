@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "os"
+    "sync"
 
     "github.com/urfave/cli"
 
@@ -36,8 +37,13 @@ func main() {
     app.Flags = []cli.Flag{
         cli.StringFlag{
             Name:  "port, p",
-            Usage: "Port to listen on",
+            Usage: "HTTP port to listen on",
             Value: "8545",
+        },
+        cli.StringFlag{
+            Name:  "wsPort, w",
+            Usage: "Websocket port to listen on",
+            Value: "8546",
         },
         cli.StringFlag{
             Name:  "providerUrl, u",
@@ -59,9 +65,26 @@ func main() {
     // Set application action
     app.Action = func(c *cli.Context) error {
 
-        // Initialise and start proxy server
-        proxyServer := proxy.NewProxyServer(c.GlobalString("port"), c.GlobalString("providerUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
-        return proxyServer.Start()
+        // We need a wait group since we have 2 HTTP listeners
+        wg := new(sync.WaitGroup)
+        wg.Add(2)
+
+        // HTTP server
+        go func() {
+            proxyServer := proxy.NewHttpProxyServer(c.GlobalString("port"), c.GlobalString("providerUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
+            proxyServer.Start()
+            wg.Done()
+        }()
+    
+        // Websocket server
+        go func() {
+            proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("providerUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
+            proxyServer.Start()
+            wg.Done()
+        }()
+
+        // Wait for both servers to stop
+        return wg.Wait()
 
     }
 
