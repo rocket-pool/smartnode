@@ -61,7 +61,7 @@ func promptTimezone() string {
 
     // Prompt for time zone
     for timezone == "" {
-        timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Country/City':", "^\\w{2,}\\/\\w{2,}$", "Please enter a timezone in the format 'Country/City'")
+        timezone = cliutils.Prompt("Please enter a timezone to register with in the format 'Country/City':", "^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$", "Please enter a timezone in the format 'Country/City'")
         if !cliutils.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct?", timezone)) {
             timezone = ""
         }

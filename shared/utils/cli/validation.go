@@ -219,7 +219,7 @@ func ValidateWalletMnemonic(name, value string) (string, error) {
 
 // Validate a timezone location
 func ValidateTimezoneLocation(name, value string) (string, error) {
-    if !regexp.MustCompile("^\\w{2,}\\/\\w{2,}$").MatchString(value) {
+    if !regexp.MustCompile("^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$").MatchString(value) {
         return "", fmt.Errorf("Invalid %s '%s' - must be in the format 'Country/City'", name, value)
     }
     return value, nil
