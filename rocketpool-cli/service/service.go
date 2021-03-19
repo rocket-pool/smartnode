@@ -162,9 +162,37 @@ func serviceVersion(c *cli.Context) error {
     serviceVersion, err := rp.GetServiceVersion()
     if err != nil { return err }
 
+    // Get config
+    cfg, err := rp.LoadMergedConfig()
+    if err != nil { return err }
+    eth1Client := cfg.GetSelectedEth1Client()
+    eth2Client := cfg.GetSelectedEth2Client()
+
+    // Get client versions
+    var eth1ClientVersion string
+    var eth2ClientVersion string
+    var eth2ClientImage string
+    if eth1Client != nil {
+        eth1ClientVersion = fmt.Sprintf("%s (%s)", eth1Client.Name, eth1Client.Image)
+    } else {
+        eth1ClientVersion = "(none)"
+    }
+    if eth2Client != nil {
+        if eth2Client.Image != "" {
+            eth2ClientImage = eth2Client.Image
+        } else {
+            eth2ClientImage = eth2Client.BeaconImage
+        }
+        eth2ClientVersion = fmt.Sprintf("%s (%s)", eth2Client.Name, eth2ClientImage)
+    } else {
+        eth2ClientVersion = "(none)"
+    }
+
     // Print version info
     fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
     fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
+    fmt.Printf("Selected Eth 1.0 client: %s\n", eth1ClientVersion)
+    fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientVersion)
     return nil
 
 }

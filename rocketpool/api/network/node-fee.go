@@ -11,10 +11,6 @@ import (
 )
 
 
-// Config
-const SuggestedMinNodeFeeDelta = -0.01 // 1% below current
-
-
 func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
 
     // Get services
@@ -62,13 +58,6 @@ func getNodeFee(c *cli.Context) (*api.NodeFeeResponse, error) {
     if err := wg.Wait(); err != nil {
         return nil, err
     }
-
-    // Suggest minimum node fee
-    suggestedMinNodeFee := response.NodeFee + SuggestedMinNodeFeeDelta
-    if suggestedMinNodeFee < response.MinNodeFee {
-        suggestedMinNodeFee = response.MinNodeFee
-    }
-    response.SuggestedMinNodeFee = suggestedMinNodeFee
 
     // Return response
     return &response, nil

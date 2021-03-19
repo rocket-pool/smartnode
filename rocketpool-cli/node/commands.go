@@ -213,8 +213,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Usage: "The amount of ETH to deposit (0, 16 or 32)",
                     },
                     cli.StringFlag{
-                        Name:  "min-fee, f",
-                        Usage: "The minimum node commission rate for the deposit (or 'auto')",
+                        Name:  "max-slippage, s",
+                        Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto')",
                     },
                     cli.BoolFlag{
                         Name:  "yes, y",
@@ -230,8 +230,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     if c.String("amount") != "" {
                         if _, err := cliutils.ValidateDepositEthAmount("deposit amount", c.String("amount")); err != nil { return err }
                     }
-                    if c.String("min-fee") != "" && c.String("min-fee") != "auto" {
-                        if _, err := cliutils.ValidatePercentage("minimum node fee", c.String("min-fee")); err != nil { return err }
+                    if c.String("max-slippage") != "" && c.String("max-slippage") != "auto" {
+                        if _, err := cliutils.ValidatePercentage("maximum commission rate slippage", c.String("max-slippage")); err != nil { return err }
                     }
 
                     // Run
