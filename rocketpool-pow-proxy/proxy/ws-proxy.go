@@ -1,17 +1,16 @@
 package proxy
 
 import (
-    "errors"
     "fmt"
-    "io"
     "log"
-    "net/http"
+	"net/http"
+	"sync"
     "github.com/gorilla/websocket"
 )
 
 
 // Config
-const InfuraURL = "wss://%s.infura.io/ws/v3/%s"
+const InfuraWsURL = "wss://%s.infura.io/ws/v3/%s"
 
 
 // Proxy server
@@ -26,7 +25,7 @@ func NewWsProxyServer(port string, providerUrl string, network string, projectId
 
     // Default provider to Infura
     if providerUrl == "" {
-        providerUrl = fmt.Sprintf(InfuraURL, network, projectId)
+        providerUrl = fmt.Sprintf(InfuraWsURL, network, projectId)
     }
 
     // Create and return proxy server
@@ -52,7 +51,9 @@ func (p *WsProxyServer) Start() error {
 // Handle request / serve response
 func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-    var upgrader = websocket.Upgrader{} // use default options
+    var upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
 
     // Establish a websocket with the requester
     eth2Connection, err := upgrader.Upgrade(w, r, nil)
@@ -61,7 +62,7 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         fmt.Fprintln(w, fmt.Errorf("Error upgrading websocket: %w", err))
 		return
 	}
-	defer c.Close()
+	defer eth2Connection.Close()
 
     // Connect to Infura
     infuraConnection, _, err := websocket.DefaultDialer.Dial(p.ProviderUrl, nil)
@@ -69,7 +70,7 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         log.Println(fmt.Errorf("Error connecting to Infura: %w", err))
         fmt.Fprintln(w, fmt.Errorf("Error connecting to Infura: %w", err))
 	}
-	defer c.Close()
+	defer infuraConnection.Close()
 
     // Wait groups for the proxy loops
     wg := new(sync.WaitGroup)
@@ -87,7 +88,7 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		    }
 
             // Log request
-            log.Print("New websocket message request received from Infura\n")
+            // log.Print("New websocket message request received from ETH2\n")
 
             // Send it to Infura
             if err = infuraConnection.WriteMessage(mt, message); err != nil {
@@ -112,7 +113,7 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		    }
 
             // Log request
-            log.Print("New websocket message request received from Infura\n")
+            // log.Print("New websocket message request received from Infura\n")
 
             // Send it to eth2
             if err = eth2Connection.WriteMessage(mt, message); err != nil {
@@ -125,28 +126,7 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         wg.Done()
     }()
 
-    for {
-		mt, message, err := c.ReadMessage()
-		if err != nil {
-            log.Println(fmt.Errorf("Error reading from websocket: %w", err))
-            fmt.Fprintln(w, fmt.Errorf("Error reading from websocket: %w", err))
-			break
-		}
-
-        // Log request
-        log.Printf("New websocket message request received from %s\n", r.RemoteAddr)
-
-        // TODO: FORWARD IT
-
-
-		err = c.WriteMessage(mt, message)
-		if err != nil {
-            log.Println(fmt.Errorf("Error writing to websocket: %w", err))
-            fmt.Fprintln(w, fmt.Errorf("Error writing to websocket: %w", err))
-			break
-		}
-	}
-
     // Wait for both loops to stop
-    return wg.Wait()
+	wg.Wait()
+	return
 }

@@ -84,8 +84,9 @@ func main() {
         }()
 
         // Wait for both servers to stop
-        return wg.Wait()
-
+        wg.Wait()
+		return nil
+		
     }
 
     // Run application
