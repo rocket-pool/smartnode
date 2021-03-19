@@ -13,6 +13,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/google/uuid v1.1.5
+	github.com/gorilla/websocket v1.4.2
 	github.com/imdario/mergo v0.3.9
 	github.com/minio/highwayhash v1.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
