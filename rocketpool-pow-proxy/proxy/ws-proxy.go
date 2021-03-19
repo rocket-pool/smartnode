@@ -46,9 +46,6 @@ func (p *WsProxyServer) Start() error {
 
     // Listen on RPC port
     return http.ListenAndServe(":" + p.Port, p)
-
-    // TODO: CONNECT TO INFURA
-
 }
 
 
@@ -57,15 +54,77 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
     var upgrader = websocket.Upgrader{} // use default options
 
-    c, err := upgrader.Upgrade(w, r, nil)
+    // Establish a websocket with the requester
+    eth2Connection, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
         log.Println(fmt.Errorf("Error upgrading websocket: %w", err))
         fmt.Fprintln(w, fmt.Errorf("Error upgrading websocket: %w", err))
 		return
 	}
-
 	defer c.Close()
+
+    // Connect to Infura
+    infuraConnection, _, err := websocket.DefaultDialer.Dial(p.ProviderUrl, nil)
+    if err != nil {
+        log.Println(fmt.Errorf("Error connecting to Infura: %w", err))
+        fmt.Fprintln(w, fmt.Errorf("Error connecting to Infura: %w", err))
+	}
+	defer c.Close()
+
+    // Wait groups for the proxy loops
+    wg := new(sync.WaitGroup)
+    wg.Add(2)
+
+    // Run the eth2-to-Infura loop
+	go func() {
+        for {
+            // Read from eth2
+            mt, message, err := eth2Connection.ReadMessage()
+		    if err != nil {
+                log.Println(fmt.Errorf("Error reading from eth2: %w", err))
+                fmt.Fprintln(w, fmt.Errorf("Error reading from eth2: %w", err))
+			    break
+		    }
+
+            // Log request
+            log.Print("New websocket message request received from Infura\n")
+
+            // Send it to Infura
+            if err = infuraConnection.WriteMessage(mt, message); err != nil {
+                log.Println(fmt.Errorf("Error writing to Infura: %w", err))
+                fmt.Fprintln(w, fmt.Errorf("Error writing to Infura: %w", err))
+			    break
+		    }
+        }
+
+        wg.Done()
+	}()
 	
+    // Run the Infura-to-eth2 loop
+    go func() {
+        for {
+            // Read from Infura
+            mt, message, err := infuraConnection.ReadMessage()
+		    if err != nil {
+                log.Println(fmt.Errorf("Error reading from Infura: %w", err))
+                fmt.Fprintln(w, fmt.Errorf("Error reading from Infura: %w", err))
+			    break
+		    }
+
+            // Log request
+            log.Print("New websocket message request received from Infura\n")
+
+            // Send it to eth2
+            if err = eth2Connection.WriteMessage(mt, message); err != nil {
+                log.Println(fmt.Errorf("Error writing to eth2: %w", err))
+                fmt.Fprintln(w, fmt.Errorf("Error writing to eth2: %w", err))
+			    break
+		    }
+        }
+
+        wg.Done()
+    }()
+
     for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
@@ -88,40 +147,6 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-    /*
-
-    // Get request content type
-    contentTypes, ok := r.Header["Content-Type"]
-    if !ok || len(contentTypes) == 0 {
-        log.Println(errors.New("Request Content-Type header not specified"))
-        fmt.Fprintln(w, errors.New("Request Content-Type header not specified"))
-        return
-    }
-
-    // Forward request to provider
-    response, err := http.Post(p.ProviderUrl, contentTypes[0], r.Body)
-    if err != nil {
-        log.Println(fmt.Errorf("Error forwarding request to remote server: %w", err))
-        fmt.Fprintln(w, fmt.Errorf("Error forwarding request to remote server: %w", err))
-        return
-    }
-    defer response.Body.Close()
-
-    // Set response writer header
-    w.Header().Set("Content-Type", "application/json")
-
-    // Copy provider response body to response writer
-    _, err = io.Copy(w, response.Body)
-    if err != nil {
-        log.Println(fmt.Errorf("Error reading response from remote server: %w", err))
-        fmt.Fprintln(w, fmt.Errorf("Error reading response from remote server: %w", err))
-        return
-    }
-
-    // Log success
-    log.Printf("Response sent to %s successfully\n", r.RemoteAddr)
-
-    */
-
+    // Wait for both loops to stop
+    return wg.Wait()
 }
-
