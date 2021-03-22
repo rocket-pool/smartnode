@@ -1,6 +1,8 @@
 package rp
 
 import (
+    "bytes"
+
     "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/rocket-pool/rocketpool-go/minipool"
@@ -45,8 +47,27 @@ func GetMinipoolValidators(rp *rocketpool.RocketPool, bc beacon.Client, addresse
 
     }
 
+    // Filter out null and duplicate pubkeys
+    filteredPubkeys := []types.ValidatorPubkey{}
+    for _, pubkey := range pubkeys {
+        if bytes.Equal(pubkey.Bytes(), types.ValidatorPubkey{}.Bytes()) {
+            continue
+        }
+        isDuplicate := false
+        for _, pk := range filteredPubkeys {
+            if bytes.Equal(pubkey.Bytes(), pk.Bytes()) {
+                isDuplicate = true
+                break
+            }
+        }
+        if isDuplicate {
+            continue
+        }
+        filteredPubkeys = append(filteredPubkeys, pubkey)
+    }
+
     // Get validator statuses
-    statuses, err := bc.GetValidatorStatuses(pubkeys, validatorStatusOpts)
+    statuses, err := bc.GetValidatorStatuses(filteredPubkeys, validatorStatusOpts)
     if err != nil {
         return map[common.Address]beacon.ValidatorStatus{}, err
     }
@@ -55,7 +76,7 @@ func GetMinipoolValidators(rp *rocketpool.RocketPool, bc beacon.Client, addresse
     validators := make(map[common.Address]beacon.ValidatorStatus)
     for mi := 0; mi < len(addresses); mi++ {
         address := addresses[mi]
-        pubkey := pubkeys[mi]
+        pubkey := filteredPubkeys[mi]
         status, ok := statuses[pubkey]
         if !ok { status = beacon.ValidatorStatus{} }
         validators[address] = status
