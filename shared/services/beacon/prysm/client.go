@@ -190,6 +190,11 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 // Get multiple validators' statuses
 func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
+    // Return if no pubkeys defined
+    if len(pubkeys) == 0 {
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, nil
+    }
+
     // Build validator statuses request
     validatorsRequest := &pb.ListValidatorsRequest{
         PublicKeys: make([][]byte, len(pubkeys)),
