@@ -218,7 +218,7 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         validators = append(validators, response.ValidatorList...)
 
         // Update request page token; break on last page
-        if response.NextPageToken == "" { break }
+        if response.NextPageToken == "" || response.NextPageToken == "0" { break }
         validatorsRequest.PageToken = response.NextPageToken
 
     }
@@ -251,7 +251,7 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         balances = append(balances, response.Balances...)
 
         // Update request page token; break on last page
-        if response.NextPageToken == "" { break }
+        if response.NextPageToken == "" || response.NextPageToken == "0" { break }
         balancesRequest.PageToken = response.NextPageToken
 
     }
