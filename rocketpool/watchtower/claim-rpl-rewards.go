@@ -58,9 +58,6 @@ func (t *claimRplRewards) run() error {
         return err
     }
 
-    // Log
-    t.log.Println("Checking for RPL rewards to claim...")
-
     // Get node account
     nodeAccount, err := t.w.GetNodeAccount()
     if err != nil {
@@ -75,6 +72,9 @@ func (t *claimRplRewards) run() error {
     if !nodeTrusted {
         return nil
     }
+
+    // Log
+    t.log.Println("Checking for RPL rewards to claim...")
 
     // Check for rewards
     rewardsAmountWei, err := rewards.GetTrustedNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil)
