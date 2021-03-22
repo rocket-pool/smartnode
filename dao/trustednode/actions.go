@@ -57,6 +57,34 @@ func Replace(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt
 }
 
 
+// Make a challenge against a node
+func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeMake", memberAddress)
+    if err != nil {
+        return nil, fmt.Errorf("Could not challenge trusted node DAO member %s: %w", memberAddress.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
+// Decide a challenge against a node
+func DecideChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeDecide", memberAddress)
+    if err != nil {
+        return nil, fmt.Errorf("Could not decide the challenge against trusted node DAO member %s: %w", memberAddress.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
 // Get contracts
 var rocketDAONodeTrustedActionsLock sync.Mutex
 func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {

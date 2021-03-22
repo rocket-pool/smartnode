@@ -344,6 +344,20 @@ func GetMemberReplacementAddress(rp *rocketpool.RocketPool, memberAddress common
 }
 
 
+// Get whether a member has an active challenge against them
+func GetMemberIsChallenged(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
+    rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+    if err != nil {
+        return false, err
+    }
+    isChallenged := new(bool)
+    if err := rocketDAONodeTrusted.Call(opts, isChallenged, "getMemberIsChallenged", memberAddress); err != nil {
+        return false, fmt.Errorf("Could not get trusted node DAO member %s is challenged status: %w", memberAddress.Hex(), err)
+    }
+    return *isChallenged, nil
+}
+
+
 // Bootstrap a bool setting
 func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
