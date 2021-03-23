@@ -1,24 +1,19 @@
 package watchtower
 
 import (
-    "math/big"
-
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/rewards"
     "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services"
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     "github.com/rocket-pool/smartnode/shared/utils/log"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
-// Claim RPL rewards task
-type claimRplRewards struct {
+// Respond to challenges task
+type respondChallenges struct {
     c *cli.Context
     log log.ColorLogger
     cfg config.RocketPoolConfig
@@ -27,8 +22,8 @@ type claimRplRewards struct {
 }
 
 
-// Create claim RPL rewards task
-func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplRewards, error) {
+// Create respond to challenges task
+func newRespondChallenges(c *cli.Context, logger log.ColorLogger) (*respondChallenges, error) {
 
     // Get services
     cfg, err := services.GetConfig(c)
@@ -39,7 +34,7 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
     if err != nil { return nil, err }
 
     // Return task
-    return &claimRplRewards{
+    return &respondChallenges{
         c: c,
         log: logger,
         cfg: cfg,
@@ -50,8 +45,8 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 }
 
 
-// Claim RPL rewards
-func (t *claimRplRewards) run() error {
+// Respond to challenges
+func (t *respondChallenges) run() error {
 
     // Wait for eth client to sync
     if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -74,19 +69,19 @@ func (t *claimRplRewards) run() error {
     }
 
     // Log
-    t.log.Println("Checking for RPL rewards to claim...")
+    t.log.Println("Checking for challenges to respond to...")
 
-    // Check for rewards
-    rewardsAmountWei, err := rewards.GetTrustedNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil)
+    // Check for active challenges
+    isChallenged, err := trustednode.GetMemberIsChallenged(t.rp, nodeAccount.Address, nil)
     if err != nil {
         return err
     }
-    if rewardsAmountWei.Cmp(big.NewInt(0)) == 0 {
+    if !isChallenged {
         return nil
     }
 
     // Log
-    t.log.Printlnf("%.6f RPL is available to claim...", math.RoundDown(eth.WeiToEth(rewardsAmountWei), 6))
+    t.log.Printlnf("Node %s has an active challenge against it, responding...", nodeAccount.Address.Hex())
 
     // Get transactor
     opts, err := t.w.GetNodeAccountTransactor()
@@ -94,13 +89,13 @@ func (t *claimRplRewards) run() error {
         return err
     }
 
-    // Claim rewards
-    if _, err := rewards.ClaimTrustedNodeRewards(t.rp, opts); err != nil {
+    // Respond to challenge
+    if _, err := trustednode.DecideChallenge(t.rp, nodeAccount.Address, opts); err != nil {
         return err
     }
 
     // Log & return
-    t.log.Printlnf("Successfully claimed %.6f RPL in rewards.", math.RoundDown(eth.WeiToEth(rewardsAmountWei), 6))
+    t.log.Printlnf("Successfully responded to challenge against node %s.", nodeAccount.Address.Hex())
     return nil
 
 }
