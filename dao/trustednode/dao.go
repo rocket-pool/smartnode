@@ -11,6 +11,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/strings"
 )
 
 
@@ -248,7 +249,7 @@ func GetMemberID(rp *rocketpool.RocketPool, memberAddress common.Address, opts *
     if err := rocketDAONodeTrusted.Call(opts, id, "getMemberID", memberAddress); err != nil {
         return "", fmt.Errorf("Could not get trusted node DAO member %s ID: %w", memberAddress.Hex(), err)
     }
-    return *id, nil
+    return strings.Sanitize(*id), nil
 }
 func GetMemberEmail(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
@@ -259,7 +260,7 @@ func GetMemberEmail(rp *rocketpool.RocketPool, memberAddress common.Address, opt
     if err := rocketDAONodeTrusted.Call(opts, email, "getMemberEmail", memberAddress); err != nil {
         return "", fmt.Errorf("Could not get trusted node DAO member %s email: %w", memberAddress.Hex(), err)
     }
-    return *email, nil
+    return strings.Sanitize(*email), nil
 }
 func GetMemberJoinedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)

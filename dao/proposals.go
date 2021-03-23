@@ -12,6 +12,7 @@ import (
     "github.com/rocket-pool/rocketpool-go/rocketpool"
     rptypes "github.com/rocket-pool/rocketpool-go/types"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
+    "github.com/rocket-pool/rocketpool-go/utils/strings"
 )
 
 
@@ -440,7 +441,7 @@ func GetProposalDAO(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Cal
     if err := rocketDAOProposal.Call(opts, daoName, "getDAO", big.NewInt(int64(proposalId))); err != nil {
         return "", fmt.Errorf("Could not get proposal %d DAO: %w", proposalId, err)
     }
-    return *daoName, nil
+    return strings.Sanitize(*daoName), nil
 }
 func GetProposalProposerAddress(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (common.Address, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
@@ -462,7 +463,7 @@ func GetProposalMessage(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     if err := rocketDAOProposal.Call(opts, message, "getMessage", big.NewInt(int64(proposalId))); err != nil {
         return "", fmt.Errorf("Could not get proposal %d message: %w", proposalId, err)
     }
-    return *message, nil
+    return strings.Sanitize(*message), nil
 }
 func GetProposalCreatedBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)

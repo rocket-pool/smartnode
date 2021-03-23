@@ -11,6 +11,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/strings"
 )
 
 
@@ -219,7 +220,7 @@ func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Addre
     if err := rocketNodeManager.Call(opts, timezoneLocation, "getNodeTimezoneLocation", nodeAddress); err != nil {
         return "", fmt.Errorf("Could not get node %s timezone location: %w", nodeAddress.Hex(), err)
     }
-    return *timezoneLocation, nil
+    return strings.Sanitize(*timezoneLocation), nil
 }
 
 

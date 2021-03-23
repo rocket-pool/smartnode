@@ -10,6 +10,7 @@ import (
     "github.com/ethereum/go-ethereum/common"
 
     "github.com/rocket-pool/rocketpool-go/rocketpool"
+    strutils "github.com/rocket-pool/rocketpool-go/utils/strings"
 )
 
 
@@ -57,7 +58,7 @@ func GetProposalPayloadString(rp *rocketpool.RocketPool, daoName string, payload
     }
 
     // Build & return payload string
-    return fmt.Sprintf("%s(%s)", method.RawName, strings.Join(argStrs, ",")), nil
+    return strutils.Sanitize(fmt.Sprintf("%s(%s)", method.RawName, strings.Join(argStrs, ","))), nil
 
 }
 
