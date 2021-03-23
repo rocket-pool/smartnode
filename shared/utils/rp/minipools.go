@@ -76,7 +76,7 @@ func GetMinipoolValidators(rp *rocketpool.RocketPool, bc beacon.Client, addresse
     validators := make(map[common.Address]beacon.ValidatorStatus)
     for mi := 0; mi < len(addresses); mi++ {
         address := addresses[mi]
-        pubkey := filteredPubkeys[mi]
+        pubkey := pubkeys[mi]
         status, ok := statuses[pubkey]
         if !ok { status = beacon.ValidatorStatus{} }
         validators[address] = status
