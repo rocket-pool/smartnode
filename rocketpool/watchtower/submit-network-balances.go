@@ -275,7 +275,7 @@ func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkB
 
     // Get rETH contract balance
     wg.Go(func() error {
-        rethContractAddress, err := t.rp.GetAddress("rocketETHToken")
+        rethContractAddress, err := t.rp.GetAddress("rocketTokenRETH")
         if err != nil {
             return err
         }
