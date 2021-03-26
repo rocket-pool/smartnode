@@ -343,6 +343,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     // Set environment variables from config
     env := []string{
         fmt.Sprintf("COMPOSE_PROJECT_NAME='%s'",    cfg.Smartnode.ProjectName),
+        fmt.Sprintf("ROCKET_POOL_VERSION='%s'",     cfg.Smartnode.GraffitiVersion),
         fmt.Sprintf("SMARTNODE_IMAGE='%s'",         cfg.Smartnode.Image),
         fmt.Sprintf("ETH1_CLIENT='%s'",             cfg.GetSelectedEth1Client().ID),
         fmt.Sprintf("ETH1_IMAGE='%s'",              cfg.GetSelectedEth1Client().Image),
