@@ -48,203 +48,230 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "proposals",
+                Name:      "propose",
                 Aliases:   []string{"p"},
-                Usage:     "Get the oracle DAO proposals",
-                UsageText: "rocketpool odao proposals",
-                Action: func(c *cli.Context) error {
+                Usage:     "Make an oracle DAO proposal",
+                Subcommands: []cli.Command{
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+                    cli.Command{
+                        Name:      "member",
+                        Aliases:   []string{"m"},
+                        Usage:     "Make an oracle DAO member proposal",
+                        Subcommands: []cli.Command{
 
-                    // Run
-                    return getProposals(c)
+                            cli.Command{
+                                Name:      "invite",
+                                Aliases:   []string{"i"},
+                                Usage:     "Propose inviting a new member",
+                                UsageText: "rocketpool odao propose member invite member-address member-id member-email",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
+                                    memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
+                                    if err != nil { return err }
+                                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
+                                    if err != nil { return err }
+                                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeInvite(c, memberAddress, memberId, memberEmail)
+
+                                },
+                            },
+
+                            cli.Command{
+                                Name:      "leave",
+                                Aliases:   []string{"l"},
+                                Usage:     "Propose leaving the oracle DAO",
+                                UsageText: "rocketpool odao propose member leave",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                                    // Run
+                                    return proposeLeave(c)
+
+                                },
+                            },
+
+                            cli.Command{
+                                Name:      "replace",
+                                Aliases:   []string{"r"},
+                                Usage:     "Propose replacing the node's position with a new member",
+                                UsageText: "rocketpool odao propose member replace member-address member-id member-email",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
+                                    memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
+                                    if err != nil { return err }
+                                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
+                                    if err != nil { return err }
+                                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeReplace(c, memberAddress, memberId, memberEmail)
+
+                                },
+                            },
+
+                            cli.Command{
+                                Name:      "kick",
+                                Aliases:   []string{"k"},
+                                Usage:     "Propose kicking a member",
+                                UsageText: "rocketpool odao propose member kick [options]",
+                                Flags: []cli.Flag{
+                                    cli.StringFlag{
+                                        Name:  "member, m",
+                                        Usage: "The address of the member to propose kicking",
+                                    },
+                                    cli.StringFlag{
+                                        Name:  "fine, f",
+                                        Usage: "The amount of RPL to fine the member (or 'max')",
+                                    },
+                                },
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                                    // Validate flags
+                                    if c.String("member") != "" {
+                                        if _, err := cliutils.ValidateAddress("member address", c.String("member")); err != nil { return err }
+                                    }
+                                    if c.String("fine") != "" && c.String("fine") != "max" {
+                                        if _, err := cliutils.ValidatePositiveEthAmount("fine amount", c.String("fine")); err != nil { return err }
+                                    }
+
+                                    // Run
+                                    return proposeKick(c)
+
+                                },
+                            },
+
+                        },
+                    },
 
                 },
             },
 
             cli.Command{
-                Name:      "propose-invite",
-                Aliases:   []string{"i"},
-                Usage:     "Propose inviting a new member",
-                UsageText: "rocketpool odao propose-invite member-address member-id member-email",
-                Action: func(c *cli.Context) error {
+                Name:      "proposals",
+                Aliases:   []string{"o"},
+                Usage:     "Manage oracle DAO proposals",
+                Subcommands: []cli.Command{
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
-                    memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
-                    if err != nil { return err }
-                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
-                    if err != nil { return err }
-                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
-                    if err != nil { return err }
+                    cli.Command{
+                        Name:      "list",
+                        Aliases:   []string{"l"},
+                        Usage:     "List the oracle DAO proposals",
+                        UsageText: "rocketpool odao proposals list",
+                        Action: func(c *cli.Context) error {
 
-                    // Run
-                    return proposeInvite(c, memberAddress, memberId, memberEmail)
+                            // Validate args
+                            if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
-                },
-            },
+                            // Run
+                            return getProposals(c)
 
-            cli.Command{
-                Name:      "propose-leave",
-                Aliases:   []string{"l"},
-                Usage:     "Propose leaving the oracle DAO",
-                UsageText: "rocketpool odao propose-leave",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Run
-                    return proposeLeave(c)
-
-                },
-            },
-
-            cli.Command{
-                Name:      "propose-replace",
-                Aliases:   []string{"r"},
-                Usage:     "Propose replacing the node's position with a new member",
-                UsageText: "rocketpool odao propose-replace member-address member-id member-email",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
-                    memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
-                    if err != nil { return err }
-                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
-                    if err != nil { return err }
-                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
-                    if err != nil { return err }
-
-                    // Run
-                    return proposeReplace(c, memberAddress, memberId, memberEmail)
-
-                },
-            },
-
-            cli.Command{
-                Name:      "propose-kick",
-                Aliases:   []string{"k"},
-                Usage:     "Propose kicking a member",
-                UsageText: "rocketpool odao propose-kick [options]",
-                Flags: []cli.Flag{
-                    cli.StringFlag{
-                        Name:  "member, m",
-                        Usage: "The address of the member to propose kicking",
+                        },
                     },
-                    cli.StringFlag{
-                        Name:  "fine, f",
-                        Usage: "The amount of RPL to fine the member (or 'max')",
+
+                    cli.Command{
+                        Name:      "cancel",
+                        Aliases:   []string{"c"},
+                        Usage:     "Cancel a proposal made by the node",
+                        UsageText: "rocketpool odao proposals cancel [options]",
+                        Flags: []cli.Flag{
+                            cli.StringFlag{
+                                Name:  "proposal, p",
+                                Usage: "The ID of the proposal to cancel",
+                            },
+                        },
+                        Action: func(c *cli.Context) error {
+
+                            // Validate args
+                            if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                            // Validate flags
+                            if c.String("proposal") != "" {
+                                if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
+                            }
+
+                            // Run
+                            return cancelProposal(c)
+
+                        },
                     },
-                },
-                Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+                    cli.Command{
+                        Name:      "vote",
+                        Aliases:   []string{"v"},
+                        Usage:     "Vote on a proposal",
+                        UsageText: "rocketpool odao proposals vote [options]",
+                        Flags: []cli.Flag{
+                            cli.StringFlag{
+                                Name:  "proposal, p",
+                                Usage: "The ID of the proposal to vote on",
+                            },
+                            cli.StringFlag{
+                                Name:  "support, s",
+                                Usage: "Whether to support the proposal ('yes' or 'no')",
+                            },
+                            cli.BoolFlag{
+                                Name:  "yes, y",
+                                Usage: "Automatically confirm vote",
+                            },
+                        },
+                        Action: func(c *cli.Context) error {
 
-                    // Validate flags
-                    if c.String("member") != "" {
-                        if _, err := cliutils.ValidateAddress("member address", c.String("member")); err != nil { return err }
-                    }
-                    if c.String("fine") != "" && c.String("fine") != "max" {
-                        if _, err := cliutils.ValidatePositiveEthAmount("fine amount", c.String("fine")); err != nil { return err }
-                    }
+                            // Validate args
+                            if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
-                    // Run
-                    return proposeKick(c)
+                            // Validate flags
+                            if c.String("proposal") != "" {
+                                if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
+                            }
+                            if c.String("support") != "" {
+                                if _, err := cliutils.ValidateBool("support", c.String("support")); err != nil { return err }
+                            }
 
-                },
-            },
+                            // Run
+                            return voteOnProposal(c)
 
-            cli.Command{
-                Name:      "cancel-proposal",
-                Aliases:   []string{"c"},
-                Usage:     "Cancel a proposal made by the node",
-                UsageText: "rocketpool odao cancel-proposal [options]",
-                Flags: []cli.Flag{
-                    cli.StringFlag{
-                        Name:  "proposal, p",
-                        Usage: "The ID of the proposal to cancel",
+                        },
                     },
-                },
-                Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+                    cli.Command{
+                        Name:      "execute",
+                        Aliases:   []string{"x"},
+                        Usage:     "Execute a proposal",
+                        UsageText: "rocketpool odao proposals execute [options]",
+                        Flags: []cli.Flag{
+                            cli.StringFlag{
+                                Name:  "proposal, p",
+                                Usage: "The ID of the proposal to execute (or 'all')",
+                            },
+                        },
+                        Action: func(c *cli.Context) error {
 
-                    // Validate flags
-                    if c.String("proposal") != "" {
-                        if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
-                    }
+                            // Validate args
+                            if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
-                    // Run
-                    return cancelProposal(c)
+                            // Validate flags
+                            if c.String("proposal") != "" && c.String("proposal") != "all" {
+                                if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
+                            }
 
-                },
-            },
+                            // Run
+                            return executeProposal(c)
 
-            cli.Command{
-                Name:      "vote-proposal",
-                Aliases:   []string{"v"},
-                Usage:     "Vote on a proposal",
-                UsageText: "rocketpool odao vote-proposal [options]",
-                Flags: []cli.Flag{
-                    cli.StringFlag{
-                        Name:  "proposal, p",
-                        Usage: "The ID of the proposal to vote on",
+                        },
                     },
-                    cli.StringFlag{
-                        Name:  "support, s",
-                        Usage: "Whether to support the proposal ('yes' or 'no')",
-                    },
-                    cli.BoolFlag{
-                        Name:  "yes, y",
-                        Usage: "Automatically confirm vote",
-                    },
-                },
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Validate flags
-                    if c.String("proposal") != "" {
-                        if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
-                    }
-                    if c.String("support") != "" {
-                        if _, err := cliutils.ValidateBool("support", c.String("support")); err != nil { return err }
-                    }
-
-                    // Run
-                    return voteOnProposal(c)
-
-                },
-            },
-
-            cli.Command{
-                Name:      "execute-proposal",
-                Aliases:   []string{"x"},
-                Usage:     "Execute a proposal",
-                UsageText: "rocketpool api odao execute-proposal [options]",
-                Flags: []cli.Flag{
-                    cli.StringFlag{
-                        Name:  "proposal, p",
-                        Usage: "The ID of the proposal to execute (or 'all')",
-                    },
-                },
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Validate flags
-                    if c.String("proposal") != "" && c.String("proposal") != "all" {
-                        if _, err := cliutils.ValidatePositiveUint("proposal ID", c.String("proposal")); err != nil { return err }
-                    }
-
-                    // Run
-                    return executeProposal(c)
 
                 },
             },
@@ -277,7 +304,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
             cli.Command{
                 Name:      "leave",
-                Aliases:   []string{"e"},
+                Aliases:   []string{"l"},
                 Usage:     "Leave the oracle DAO (requires an executed leave proposal)",
                 UsageText: "rocketpool odao leave [options]",
                 Flags: []cli.Flag{
@@ -308,7 +335,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
             cli.Command{
                 Name:      "replace",
-                Aliases:   []string{"a"},
+                Aliases:   []string{"r"},
                 Usage:     "Replace the node's position in the oracle DAO (requires an executed replace proposal)",
                 UsageText: "rocketpool odao replace [options]",
                 Flags: []cli.Flag{
