@@ -427,6 +427,158 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "can-propose-setting",
+                Usage:     "Check whether the node can propose an oracle DAO setting update",
+                UsageText: "rocketpool api odao can-propose-setting",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canProposeSetting(c))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-members-quorum",
+                Usage:     "Propose updating the members.quorum setting",
+                UsageText: "rocketpool api odao propose-members-quorum value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    quorum, err := cliutils.ValidateFraction("quorum", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingMembersQuorum(c, quorum))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-members-rplbond",
+                Usage:     "Propose updating the members.rplbond setting",
+                UsageText: "rocketpool api odao propose-members-rplbond value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    bondAmountWei, err := cliutils.ValidateWeiAmount("RPL bond amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingMembersRplBond(c, bondAmountWei))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-members-minipool-unbonded-max",
+                Usage:     "Propose updating the members.minipool.unbonded.max setting",
+                UsageText: "rocketpool api odao propose-members-minipool-unbonded-max value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    unbondedMinipoolMax, err := cliutils.ValidateUint("maximum unbonded minipool count", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingMinipoolUnbondedMax(c, unbondedMinipoolMax))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-proposal-cooldown",
+                Usage:     "Propose updating the proposal.cooldown setting",
+                UsageText: "rocketpool api odao propose-proposal-cooldown value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    proposalCooldownBlocks, err := cliutils.ValidateUint("proposal cooldown period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingProposalCooldown(c, proposalCooldownBlocks))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-proposal-vote-blocks",
+                Usage:     "Propose updating the proposal.vote.blocks setting",
+                UsageText: "rocketpool api odao propose-proposal-vote-blocks value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    proposalVoteBlocks, err := cliutils.ValidateUint("proposal voting period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingProposalVoteBlocks(c, proposalVoteBlocks))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-proposal-vote-delay-blocks",
+                Usage:     "Propose updating the proposal.vote.delay.blocks setting",
+                UsageText: "rocketpool api odao propose-proposal-vote-delay-blocks value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    proposalDelayBlocks, err := cliutils.ValidateUint("proposal delay period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingProposalVoteDelayBlocks(c, proposalDelayBlocks))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-proposal-execute-blocks",
+                Usage:     "Propose updating the proposal.execute.blocks setting",
+                UsageText: "rocketpool api odao propose-proposal-execute-blocks value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    proposalExecuteBlocks, err := cliutils.ValidateUint("proposal execution period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingProposalExecuteBlocks(c, proposalExecuteBlocks))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-proposal-action-blocks",
+                Usage:     "Propose updating the proposal.action.blocks setting",
+                UsageText: "rocketpool api odao propose-proposal-action-blocks value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    proposalActionBlocks, err := cliutils.ValidateUint("proposal action period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingProposalActionBlocks(c, proposalActionBlocks))
+                    return nil
+
+                },
+            },
+
         },
     })
 }
