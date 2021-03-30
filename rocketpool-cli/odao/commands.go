@@ -156,6 +156,152 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         },
                     },
 
+                    cli.Command{
+                        Name:      "setting",
+                        Aliases:   []string{"s"},
+                        Usage:     "Make an oracle DAO setting proposal",
+                        Subcommands: []cli.Command{
+
+                            cli.Command{
+                                Name:       "members-quorum",
+                                Aliases:    []string{"q"},
+                                Usage:      "Propose updating the members.quorum setting",
+                                UsageText:  "rocketpool odao propose setting members-quorum value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                                    quorumPercent, err := cliutils.ValidatePercentage("quorum percentage", c.Args().Get(0))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingMembersQuorum(c, quorumPercent)
+
+                                },
+                            },
+                            cli.Command{
+                                Name:       "members-rplbond",
+                                Aliases:    []string{"b"},
+                                Usage:      "Propose updating the members.rplbond setting",
+                                UsageText:  "rocketpool odao propose setting members-rplbond value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                                    bondAmountEth, err := cliutils.ValidateEthAmount("RPL bond amount", c.Args().Get(0))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingMembersRplBond(c, bondAmountEth)
+
+                                },
+                            },
+                            cli.Command{
+                                Name:       "members-minipool-unbonded-max",
+                                Aliases:    []string{"u"},
+                                Usage:      "Propose updating the members.minipool.unbonded.max setting",
+                                UsageText:  "rocketpool odao propose setting members-minipool-unbonded-max value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                                    unbondedMinipoolMax, err := cliutils.ValidateUint("maximum unbonded minipool count", c.Args().Get(0))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingMinipoolUnbondedMax(c, unbondedMinipoolMax)
+
+                                },
+                            },
+                            cli.Command{
+                                Name:       "proposal-cooldown",
+                                Aliases:    []string{"c"},
+                                Usage:      "Propose updating the proposal.cooldown setting",
+                                UsageText:  "rocketpool odao propose setting proposal-cooldown value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                                    proposalCooldownBlocks, err := cliutils.ValidateUint("proposal cooldown period", c.Args().Get(0))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingProposalCooldown(c, proposalCooldownBlocks)
+
+                                },
+                            },
+                            cli.Command{
+                                Name:       "proposal-vote-blocks",
+                                Aliases:    []string{"v"},
+                                Usage:      "Propose updating the proposal.vote.blocks setting",
+                                UsageText:  "rocketpool odao propose setting proposal-vote-blocks value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                                    proposalVoteBlocks, err := cliutils.ValidateUint("proposal voting period", c.Args().Get(0))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingProposalVoteBlocks(c, proposalVoteBlocks)
+
+                                },
+                            },
+                            cli.Command{
+                                Name:       "proposal-vote-delay-blocks",
+                                Aliases:    []string{"d"},
+                                Usage:      "Propose updating the proposal.vote.delay.blocks setting",
+                                UsageText:  "rocketpool odao propose setting proposal-vote-delay-blocks value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                                    proposalDelayBlocks, err := cliutils.ValidateUint("proposal delay period", c.Args().Get(0))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingProposalVoteDelayBlocks(c, proposalDelayBlocks)
+
+                                },
+                            },
+                            cli.Command{
+                                Name:       "proposal-execute-blocks",
+                                Aliases:    []string{"x"},
+                                Usage:      "Propose updating the proposal.execute.blocks setting",
+                                UsageText:  "rocketpool odao propose setting proposal-execute-blocks value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                                    proposalExecuteBlocks, err := cliutils.ValidateUint("proposal execution period", c.Args().Get(0))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingProposalExecuteBlocks(c, proposalExecuteBlocks)
+
+                                },
+                            },
+                            cli.Command{
+                                Name:       "proposal-action-blocks",
+                                Aliases:    []string{"a"},
+                                Usage:      "Propose updating the proposal.action.blocks setting",
+                                UsageText:  "rocketpool odao propose setting proposal-action-blocks value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                                    proposalActionBlocks, err := cliutils.ValidateUint("proposal action period", c.Args().Get(0))
+                                    if err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingProposalActionBlocks(c, proposalActionBlocks)
+
+                                },
+                            },
+
+                        },
+                    },
+
                 },
             },
 

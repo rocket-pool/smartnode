@@ -190,3 +190,59 @@ type ReplaceTNDAOPositionResponse struct {
     TxHash common.Hash              `json:"txHash"`
 }
 
+
+type CanProposeTNDAOSettingResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    CanPropose bool                 `json:"canPropose"`
+    ProposalCooldownActive bool     `json:"proposalCooldownActive"`
+}
+type ProposeTNDAOSettingMembersQuorumResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
+type ProposeTNDAOSettingMembersRplBondResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
+type ProposeTNDAOSettingMinipoolUnbondedMaxResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
+type ProposeTNDAOSettingProposalCooldownResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
+type ProposeTNDAOSettingProposalVoteBlocksResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
+type ProposeTNDAOSettingProposalVoteDelayBlocksResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
+type ProposeTNDAOSettingProposalExecuteBlocksResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
+type ProposeTNDAOSettingProposalActionBlocksResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
+
