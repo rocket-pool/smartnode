@@ -33,3 +33,27 @@ func getMemberSettings(c *cli.Context) error {
     return nil
 
 }
+
+
+func getProposalSettings(c* cli.Context) error {
+
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Submit proposal
+    response, err := rp.GetTNDAOProposalSettings()
+    if err != nil {
+        return err
+    }
+
+    // Log & return
+    fmt.Printf("Cooldown Between Proposals: %d Blocks\n", response.Cooldown)
+    fmt.Printf("Proposal Voting Window: %d Blocks\n", response.VoteBlocks)
+    fmt.Printf("Delay Before Voting on a Proposal is Allowed: %d Blocks\n", response.VoteDelayBlocks)
+    fmt.Printf("Window to Execute an Accepted Proposal: %d Blocks\n", response.ExecuteBlocks)
+    fmt.Printf("Window to Act on an Executed Proposal: %d Blocks\n", response.ActionBlocks)
+    return nil
+
+}

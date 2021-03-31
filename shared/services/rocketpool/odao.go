@@ -534,17 +534,34 @@ func (c *Client) ProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks ui
 
 
 // Get the member settings
-func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOSettingMembersResponse, error) {
+func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOMemberSettingsResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("odao get-member-settings"))
     if err != nil {
-        return api.GetTNDAOSettingMembersResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
+        return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
     }
-    var response api.GetTNDAOSettingMembersResponse
+    var response api.GetTNDAOMemberSettingsResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.GetTNDAOSettingMembersResponse{}, fmt.Errorf("Could not decode get oracle DAO member settings response: %w", err)
+        return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not decode get oracle DAO member settings response: %w", err)
     }
     if response.Error != "" {
-        return api.GetTNDAOSettingMembersResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
+        return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
+    }
+    return response, nil
+}
+
+
+// Get the proposal settings
+func (c *Client) GetTNDAOProposalSettings() (api.GetTNDAOProposalSettingsResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao get-proposal-settings"))
+    if err != nil {
+        return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not get oracle DAO proposal settings: %w", err)
+    }
+    var response api.GetTNDAOProposalSettingsResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not decode get oracle DAO proposal settings response: %w", err)
+    }
+    if response.Error != "" {
+        return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not get oracle DAO proposal settings: %w", err)
     }
     return response, nil
 }

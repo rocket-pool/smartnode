@@ -11,7 +11,7 @@ import (
 )
 
 
-func getMemberSettings(c *cli.Context) (*api.GetTNDAOSettingMembersResponse, error) {
+func getMemberSettings(c *cli.Context) (*api.GetTNDAOMemberSettingsResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -19,7 +19,7 @@ func getMemberSettings(c *cli.Context) (*api.GetTNDAOSettingMembersResponse, err
     if err != nil { return nil, err }
 
     // Response
-    response := api.GetTNDAOSettingMembersResponse{}
+    response := api.GetTNDAOMemberSettingsResponse{}
 
     quorum, err := trustednode.GetQuorum(rp, nil)
     if(err != nil) {
@@ -57,6 +57,52 @@ func getMemberSettings(c *cli.Context) (*api.GetTNDAOSettingMembersResponse, err
     response.ChallengeCooldown = challengeCooldown
     response.ChallengeWindow = challengeWindow
     response.ChallengeCost = challengeCost
+    
+    // Return response
+    return &response, nil
+}
+
+
+func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.GetTNDAOProposalSettingsResponse{}
+
+    cooldown, err := trustednode.GetProposalCooldown(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting proposal cooldown: %w", err)
+    }
+
+    voteBlocks, err := trustednode.GetProposalVoteBlocks(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting proposal vote blocks: %w", err)
+    }
+
+    voteDelayBlocks, err := trustednode.GetProposalVoteDelayBlocks(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting proposal vote delay blocks: %w", err)
+    }
+
+    executeBlocks, err := trustednode.GetProposalExecuteBlocks(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting proposal execute blocks: %w", err)
+    }
+
+    actionBlocks, err := trustednode.GetProposalActionBlocks(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting proposal action blocks: %w", err)
+    }
+
+    response.Cooldown = cooldown
+    response.VoteBlocks = voteBlocks
+    response.VoteDelayBlocks = voteDelayBlocks
+    response.ExecuteBlocks = executeBlocks
+    response.ActionBlocks = actionBlocks
     
     // Return response
     return &response, nil

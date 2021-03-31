@@ -589,6 +589,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                 },
             },
+            cli.Command{
+                Name:      "get-proposal-settings",
+                Usage:     "Get the ODAO settings related to ODAO proposals",
+                UsageText: "rocketpool api odao get-proposal-settings",
+                Action: func(c *cli.Context) error {
+
+                    // Run
+                    api.PrintResponse(getProposalSettings(c))
+                    return nil
+
+                },
+            },
 
         },
     })
