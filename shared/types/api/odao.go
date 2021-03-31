@@ -250,7 +250,7 @@ type ProposeTNDAOSettingProposalActionBlocksResponse struct {
 
 
 // ODAO Getters
-type GetTNDAOSettingMembersResponse struct {
+type GetTNDAOMemberSettingsResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     Quorum float64                  `json:"quorum"`
@@ -259,4 +259,13 @@ type GetTNDAOSettingMembersResponse struct {
     ChallengeCooldown uint64        `json:"challengeCooldown"`
     ChallengeWindow uint64          `json:"challengeWindow"`
     ChallengeCost *big.Int          `json:"challengeCost"`
+}
+type GetTNDAOProposalSettingsResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Cooldown uint64                 `json:"cooldown"`
+    VoteBlocks uint64               `json:"voteBlocks"`
+    VoteDelayBlocks uint64          `json:"voteDelayBlocks"`
+    ExecuteBlocks uint64            `json:"executeBlocks"`
+    ActionBlocks uint64             `json:"actionBlocks"`
 }

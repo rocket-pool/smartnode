@@ -60,6 +60,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:       "proposal-settings",
+                Aliases:    []string{"a"},
+                Usage:      "Get the oracle DAO settings related to oracle DAO proposals",
+                UsageText:  "rocketpool odao proposal-settings",
+                Action: func(c *cli.Context) error {
+
+                    // Run
+                    return getProposalSettings(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "propose",
                 Aliases:   []string{"p"},
                 Usage:     "Make an oracle DAO proposal",
