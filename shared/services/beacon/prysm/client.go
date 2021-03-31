@@ -1,18 +1,17 @@
 package prysm
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 
-    "github.com/ethereum/go-ethereum/common"
-    pbtypes "github.com/gogo/protobuf/types"
-    pb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "google.golang.org/grpc"
+	"github.com/ethereum/go-ethereum/common"
+	pbtypes "github.com/gogo/protobuf/types"
+	pb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"google.golang.org/grpc"
 
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
-
 
 // Prysm client
 type Client struct {
@@ -168,11 +167,15 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
     if len(balances.Balances) == 0 {
         return beacon.ValidatorStatus{}, nil
     }
+
     validatorBalance := balances.Balances[0].Balance
+    pubKey := types.BytesToValidatorPubkey(validator.PublicKey)
+    index, _ := c.GetValidatorIndex(pubKey)
 
     // Return response
     return beacon.ValidatorStatus{
-        Pubkey: types.BytesToValidatorPubkey(validator.PublicKey),
+        Pubkey: pubKey,
+        ValidatorIndex: index,
         WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
         Balance: validatorBalance,
         EffectiveBalance: validator.EffectiveBalance,
@@ -264,10 +267,12 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         validator := validators[vi].Validator
         validatorBalance := balances[vi].Balance
         pubkey := types.BytesToValidatorPubkey(validator.PublicKey)
+        index, _ := c.GetValidatorIndex(pubkey)
 
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
             Pubkey: pubkey,
+            ValidatorIndex: index,
             WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
             Balance: validatorBalance,
             EffectiveBalance: validator.EffectiveBalance,

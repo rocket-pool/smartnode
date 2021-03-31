@@ -1,10 +1,9 @@
 package beacon
 
 import (
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/types"
 )
-
 
 // API request options
 type ValidatorStatusOptions struct {
@@ -31,6 +30,7 @@ type BeaconHead struct {
 }
 type ValidatorStatus struct {
     Pubkey types.ValidatorPubkey
+    ValidatorIndex uint64
     WithdrawalCredentials common.Hash
     Balance uint64
     EffectiveBalance uint64

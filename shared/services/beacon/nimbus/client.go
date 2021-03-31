@@ -1,20 +1,20 @@
 package nimbus
 
 import (
-    "bytes"
-    "fmt"
-    "strconv"
-    "time"
+	"bytes"
+	"fmt"
+	"strconv"
+	"time"
 
-    "github.com/ethereum/go-ethereum/common"
-    rpc "github.com/ethereum/go-ethereum/rpc"
-    "github.com/rocket-pool/rocketpool-go/types"
-    eth2types "github.com/wealdtech/go-eth2-types/v2"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	rpc "github.com/ethereum/go-ethereum/rpc"
+	"github.com/rocket-pool/rocketpool-go/types"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
-    "github.com/rocket-pool/smartnode/shared/utils/eth2"
-    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
@@ -160,11 +160,15 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
     if len(validators) == 0 {
         return beacon.ValidatorStatus{}, nil
     }
+
     validator := validators[0]
+    pubKey := types.BytesToValidatorPubkey(validator.Validator.Pubkey)
+    index, _ := c.GetValidatorIndex(pubKey)
 
     // Return response
     return beacon.ValidatorStatus{
-        Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+        Pubkey:                     pubKey,
+        ValidatorIndex:             index,
         WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
         Balance:                    uint64(validator.Balance),
         EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
@@ -193,10 +197,12 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 
         // Get validator pubkey
         pubkey := types.BytesToValidatorPubkey(validator.Validator.Pubkey)
+        index, _ := c.GetValidatorIndex(pubkey)
 
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
-            Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+            Pubkey:                     pubkey,
+            ValidatorIndex:             index,
             WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
             Balance:                    uint64(validator.Balance),
             EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
