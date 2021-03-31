@@ -1,15 +1,14 @@
 package rocketpool
 
 import (
-    "encoding/json"
-    "fmt"
-    "math/big"
+	"encoding/json"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
 
 // Get oracle DAO status
 func (c *Client) TNDAOStatus() (api.TNDAOStatusResponse, error) {
@@ -533,3 +532,19 @@ func (c *Client) ProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks ui
     return response, nil
 }
 
+
+// Get the member settings
+func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOSettingMembersResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao get-member-settings"))
+    if err != nil {
+        return api.GetTNDAOSettingMembersResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
+    }
+    var response api.GetTNDAOSettingMembersResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.GetTNDAOSettingMembersResponse{}, fmt.Errorf("Could not decode get oracle DAO member settings response: %w", err)
+    }
+    if response.Error != "" {
+        return api.GetTNDAOSettingMembersResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
+    }
+    return response, nil
+}

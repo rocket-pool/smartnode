@@ -1,9 +1,11 @@
 package api
 
 import (
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/dao"
-    tn "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	tn "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 )
 
 
@@ -246,3 +248,12 @@ type ProposeTNDAOSettingProposalActionBlocksResponse struct {
     TxHash common.Hash              `json:"txHash"`
 }
 
+
+// ODAO Getters
+type GetTNDAOSettingMembersResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Quorum float64                  `json:"quorum"`
+    RPLBond *big.Int                `json:"rplBond"`
+    MinipoolUnbondedMax uint64      `json:"minipoolUnbondedMax"`
+}
