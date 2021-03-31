@@ -6,6 +6,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -23,9 +24,9 @@ func getMemberSettings(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Printf("ODAO Voting Quorum Threshold: %f", response.Quorum)
-    fmt.Printf("Required Member RPL Bond: %s", response.RPLBond.String())
-    fmt.Printf("Max Number of Unbonded Minipools: %d", response.MinipoolUnbondedMax)
+    fmt.Printf("ODAO Voting Quorum Threshold: %f%%\n", response.Quorum * 100)
+    fmt.Printf("Required Member RPL Bond: %f RPL\n", eth.WeiToEth(response.RPLBond))
+    fmt.Printf("Max Number of Unbonded Minipools: %d\n", response.MinipoolUnbondedMax)
     return nil
 
 }
