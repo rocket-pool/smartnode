@@ -36,9 +36,27 @@ func getMemberSettings(c *cli.Context) (*api.GetTNDAOSettingMembersResponse, err
         return nil, fmt.Errorf("Error getting minipool unbonded max: %w", err)
     }
 
+    challengeCooldown, err := trustednode.GetChallengeCooldown(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting challenge cooldown: %w", err)
+    }
+
+    challengeWindow, err := trustednode.GetChallengeWindow(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting challenge window: %w", err)
+    }
+
+    challengeCost, err := trustednode.GetChallengeCost(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting challenge cost: %w", err)
+    }
+
     response.Quorum = quorum
     response.RPLBond = rplBond
     response.MinipoolUnbondedMax = minipoolUnbondedMax
+    response.ChallengeCooldown = challengeCooldown
+    response.ChallengeWindow = challengeWindow
+    response.ChallengeCost = challengeCost
     
     // Return response
     return &response, nil
