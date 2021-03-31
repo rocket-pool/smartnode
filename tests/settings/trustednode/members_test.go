@@ -100,5 +100,41 @@ func TestProposeMembersSettings(t *testing.T) {
         t.Error("Incorrect maximum unbonded minipools value")
     }
 
+    // Set & get member challenge cooldown period
+    var memberChallengeCooldown uint64 = 1
+    if proposalId, _, err := trustednode.ProposeChallengeCooldown(rp, memberChallengeCooldown, trustedNodeAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount}); err != nil {
+        t.Error(err)
+    } else if value, err := trustednode.GetChallengeCooldown(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != memberChallengeCooldown {
+        t.Error("Incorrect member challenge cooldown value")
+    }
+
+    // Set & get member challenge window period
+    var memberChallengeWindow uint64 = 1
+    if proposalId, _, err := trustednode.ProposeChallengeWindow(rp, memberChallengeWindow, trustedNodeAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount}); err != nil {
+        t.Error(err)
+    } else if value, err := trustednode.GetChallengeWindow(rp, nil); err != nil {
+        t.Error(err)
+    } else if value != memberChallengeWindow {
+        t.Error("Incorrect member challenge window value")
+    }
+
+    // Set & get member challenge cost amount
+    challengeCost := eth.EthToWei(1)
+    if proposalId, _, err := trustednode.ProposeChallengeCost(rp, challengeCost, trustedNodeAccount.GetTransactor()); err != nil {
+        t.Error(err)
+    } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount}); err != nil {
+        t.Error(err)
+    } else if value, err := trustednode.GetChallengeCost(rp, nil); err != nil {
+        t.Error(err)
+    } else if value.Cmp(challengeCost) != 0 {
+        t.Error("Incorrect member challenge cost value")
+    }
+
 }
 

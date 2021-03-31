@@ -20,6 +20,9 @@ const (
     QuorumSettingPath = "members.quorum"
     RPLBondSettingPath = "members.rplbond"
     MinipoolUnbondedMaxSettingPath = "members.minipool.unbonded.max"
+    ChallengeCooldownSettingPath = "members.challenge.cooldown"
+    ChallengeWindowSettingPath = "members.challenge.window"
+    ChallengeCostSettingPath = "members.challenge.cost"
 )
 
 
@@ -80,6 +83,66 @@ func BootstrapMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts 
 }
 func ProposeMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUnbondedMaxSettingPath), MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
+}
+
+
+// The period a member must wait for before submitting another challenge, in blocks
+func GetChallengeCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+    membersSettingsContract, err := getMembersSettingsContract(rp)
+    if err != nil {
+        return 0, err
+    }
+    value := new(*big.Int)
+    if err := membersSettingsContract.Call(opts, value, "getChallengeCooldown"); err != nil {
+        return 0, fmt.Errorf("Could not get member challenge cooldown period: %w", err)
+    }
+    return (*value).Uint64(), nil
+}
+func BootstrapChallengeCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, ChallengeCooldownSettingPath, big.NewInt(int64(value)), opts)
+}
+func ProposeChallengeCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCooldownSettingPath), MembersSettingsContractName, ChallengeCooldownSettingPath, big.NewInt(int64(value)), opts)
+}
+
+
+// The period during which a member can respond to a challenge, in blocks
+func GetChallengeWindow(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+    membersSettingsContract, err := getMembersSettingsContract(rp)
+    if err != nil {
+        return 0, err
+    }
+    value := new(*big.Int)
+    if err := membersSettingsContract.Call(opts, value, "getChallengeWindow"); err != nil {
+        return 0, fmt.Errorf("Could not get member challenge window period: %w", err)
+    }
+    return (*value).Uint64(), nil
+}
+func BootstrapChallengeWindow(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, ChallengeWindowSettingPath, big.NewInt(int64(value)), opts)
+}
+func ProposeChallengeWindow(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeWindowSettingPath), MembersSettingsContractName, ChallengeWindowSettingPath, big.NewInt(int64(value)), opts)
+}
+
+
+// The fee for a non-member to challenge a member, in wei
+func GetChallengeCost(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    membersSettingsContract, err := getMembersSettingsContract(rp)
+    if err != nil {
+        return nil, err
+    }
+    value := new(*big.Int)
+    if err := membersSettingsContract.Call(opts, value, "getChallengeCost"); err != nil {
+        return nil, fmt.Errorf("Could not get member challenge cost: %w", err)
+    }
+    return *value, nil
+}
+func BootstrapChallengeCost(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+    return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, ChallengeCostSettingPath, value, opts)
+}
+func ProposeChallengeCost(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCostSettingPath), MembersSettingsContractName, ChallengeCostSettingPath, value, opts)
 }
 
 
