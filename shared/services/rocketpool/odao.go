@@ -1,15 +1,14 @@
 package rocketpool
 
 import (
-    "encoding/json"
-    "fmt"
-    "math/big"
+	"encoding/json"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
 
 // Get oracle DAO status
 func (c *Client) TNDAOStatus() (api.TNDAOStatusResponse, error) {
@@ -397,6 +396,172 @@ func (c *Client) ReplaceTNDAOMember() (api.ReplaceTNDAOPositionResponse, error) 
     }
     if response.Error != "" {
         return api.ReplaceTNDAOPositionResponse{}, fmt.Errorf("Could not replace oracle DAO member: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Check whether the node can propose a setting update
+func (c *Client) CanProposeTNDAOSetting() (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI("odao can-propose-setting")
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting status: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Propose a setting update
+func (c *Client) ProposeTNDAOSettingMembersQuorum(quorum float64) (api.ProposeTNDAOSettingMembersQuorumResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-members-quorum %f", quorum))
+    if err != nil {
+        return api.ProposeTNDAOSettingMembersQuorumResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.quorum: %w", err)
+    }
+    var response api.ProposeTNDAOSettingMembersQuorumResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingMembersQuorumResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting members.quorum response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingMembersQuorumResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.quorum %w", err)
+    }
+    return response, nil
+}
+func (c *Client) ProposeTNDAOSettingMembersRplBond(bondAmountWei *big.Int) (api.ProposeTNDAOSettingMembersRplBondResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-members-rplbond %s", bondAmountWei.String()))
+    if err != nil {
+        return api.ProposeTNDAOSettingMembersRplBondResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.rplbond: %w", err)
+    }
+    var response api.ProposeTNDAOSettingMembersRplBondResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingMembersRplBondResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting members.rplbond response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingMembersRplBondResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.rplbond %w", err)
+    }
+    return response, nil
+}
+func (c *Client) ProposeTNDAOSettingMinipoolUnbondedMax(unbondedMinipoolMax uint64) (api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-members-minipool-unbonded-max %d", unbondedMinipoolMax))
+    if err != nil {
+        return api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.minipool.unbonded.max: %w", err)
+    }
+    var response api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting members.minipool.unbonded.max response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse{}, fmt.Errorf("Could not propose oracle DAO setting members.minipool.unbonded.max %w", err)
+    }
+    return response, nil
+}
+func (c *Client) ProposeTNDAOSettingProposalCooldown(proposalCooldownBlocks uint64) (api.ProposeTNDAOSettingProposalCooldownResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-cooldown %d", proposalCooldownBlocks))
+    if err != nil {
+        return api.ProposeTNDAOSettingProposalCooldownResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.cooldown: %w", err)
+    }
+    var response api.ProposeTNDAOSettingProposalCooldownResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingProposalCooldownResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.cooldown response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingProposalCooldownResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.cooldown %w", err)
+    }
+    return response, nil
+}
+func (c *Client) ProposeTNDAOSettingProposalVoteBlocks(proposalVoteBlocks uint64) (api.ProposeTNDAOSettingProposalVoteBlocksResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-vote-blocks %d", proposalVoteBlocks))
+    if err != nil {
+        return api.ProposeTNDAOSettingProposalVoteBlocksResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.vote.blocks: %w", err)
+    }
+    var response api.ProposeTNDAOSettingProposalVoteBlocksResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingProposalVoteBlocksResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.vote.blocks response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingProposalVoteBlocksResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.vote.blocks %w", err)
+    }
+    return response, nil
+}
+func (c *Client) ProposeTNDAOSettingProposalVoteDelayBlocks(proposalDelayBlocks uint64) (api.ProposeTNDAOSettingProposalVoteDelayBlocksResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-vote-delay-blocks %d", proposalDelayBlocks))
+    if err != nil {
+        return api.ProposeTNDAOSettingProposalVoteDelayBlocksResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.vote.delay.blocks: %w", err)
+    }
+    var response api.ProposeTNDAOSettingProposalVoteDelayBlocksResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingProposalVoteDelayBlocksResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.vote.delay.blocks response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingProposalVoteDelayBlocksResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.vote.delay.blocks %w", err)
+    }
+    return response, nil
+}
+func (c *Client) ProposeTNDAOSettingProposalExecuteBlocks(proposalExecuteBlocks uint64) (api.ProposeTNDAOSettingProposalExecuteBlocksResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-execute-blocks %d", proposalExecuteBlocks))
+    if err != nil {
+        return api.ProposeTNDAOSettingProposalExecuteBlocksResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.execute.blocks: %w", err)
+    }
+    var response api.ProposeTNDAOSettingProposalExecuteBlocksResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingProposalExecuteBlocksResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.execute.blocks response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingProposalExecuteBlocksResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.execute.blocks %w", err)
+    }
+    return response, nil
+}
+func (c *Client) ProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks uint64) (api.ProposeTNDAOSettingProposalActionBlocksResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-action-blocks %d", proposalActionBlocks))
+    if err != nil {
+        return api.ProposeTNDAOSettingProposalActionBlocksResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.action.blocks: %w", err)
+    }
+    var response api.ProposeTNDAOSettingProposalActionBlocksResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingProposalActionBlocksResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.action.blocks response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingProposalActionBlocksResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.action.blocks %w", err)
+    }
+    return response, nil
+}
+
+
+// Get the member settings
+func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOMemberSettingsResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao get-member-settings"))
+    if err != nil {
+        return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
+    }
+    var response api.GetTNDAOMemberSettingsResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not decode oracle DAO member settings response: %w", err)
+    }
+    if response.Error != "" {
+        return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
+    }
+    return response, nil
+}
+
+
+// Get the proposal settings
+func (c *Client) GetTNDAOProposalSettings() (api.GetTNDAOProposalSettingsResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao get-proposal-settings"))
+    if err != nil {
+        return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not get oracle DAO proposal settings: %w", err)
+    }
+    var response api.GetTNDAOProposalSettingsResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not decode oracle DAO proposal settings response: %w", err)
+    }
+    if response.Error != "" {
+        return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not get oracle DAO proposal settings: %w", err)
     }
     return response, nil
 }

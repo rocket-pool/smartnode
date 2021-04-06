@@ -4,10 +4,8 @@ import (
     "context"
     "errors"
     "fmt"
-    "io/ioutil"
     "os"
     "os/exec"
-    "strings"
     "time"
 
     "github.com/docker/docker/api/types"
@@ -237,8 +235,8 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Conf
 // Restart validator process
 func (t *stakePrelaunchMinipools) restartValidator() error {
 
-    // Restart validator docker container
-    if isInsideDocker() {
+    // Restart validator container
+    if isInsideContainer() {
 
         // Get validator container name & client type label
         var containerName string
@@ -309,17 +307,31 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
 }
 
 
-// Check whether process is running inside docker
-func isInsideDocker() bool {
+// Check if path exists
+func pathExists(path string) bool {
 
-    // Read process control group info; assume non-docker on failure
-    cgroup, err := ioutil.ReadFile("/proc/1/cgroup")
-    if err != nil {
-        return false
+    // Check for file info at path
+    if _, err := os.Stat(path); err == nil {
+        return true;
     }
 
-    // check whether control group info contains docker references
-    return strings.Contains(string(cgroup), "docker")
+    // Assume that the path does not exist; this may result in false negatives (e.g. due to permissions)
+    return false;
 
+}
+
+
+// Check whether process is running inside a container
+func isInsideContainer() bool {
+    containerMarkerPaths := []string {
+        "/.dockerenv", // Docker
+        "/run/.containerenv", // Podman
+    }
+    for _, path := range containerMarkerPaths {
+        if pathExists(path) {
+            return true;
+        }
+    }
+    return false;
 }
 
