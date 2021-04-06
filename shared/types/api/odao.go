@@ -249,7 +249,6 @@ type ProposeTNDAOSettingProposalActionBlocksResponse struct {
 }
 
 
-// ODAO Getters
 type GetTNDAOMemberSettingsResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
@@ -269,3 +268,4 @@ type GetTNDAOProposalSettingsResponse struct {
     ExecuteBlocks uint64            `json:"executeBlocks"`
     ActionBlocks uint64             `json:"actionBlocks"`
 }
+

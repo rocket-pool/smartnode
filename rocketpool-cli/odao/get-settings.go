@@ -17,7 +17,7 @@ func getMemberSettings(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Submit proposal
+    // Get oracle DAO member settings
     response, err := rp.GetTNDAOMemberSettings()
     if err != nil {
         return err
@@ -42,7 +42,7 @@ func getProposalSettings(c* cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Submit proposal
+    // Get oracle DAO proposal settings
     response, err := rp.GetTNDAOProposalSettings()
     if err != nil {
         return err
@@ -57,3 +57,4 @@ func getProposalSettings(c* cli.Context) error {
     return nil
 
 }
+

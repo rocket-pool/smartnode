@@ -107,3 +107,4 @@ func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse,
     // Return response
     return &response, nil
 }
+

@@ -541,7 +541,7 @@ func (c *Client) GetTNDAOMemberSettings() (api.GetTNDAOMemberSettingsResponse, e
     }
     var response api.GetTNDAOMemberSettingsResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not decode get oracle DAO member settings response: %w", err)
+        return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not decode oracle DAO member settings response: %w", err)
     }
     if response.Error != "" {
         return api.GetTNDAOMemberSettingsResponse{}, fmt.Errorf("Could not get oracle DAO member settings: %w", err)
@@ -558,10 +558,11 @@ func (c *Client) GetTNDAOProposalSettings() (api.GetTNDAOProposalSettingsRespons
     }
     var response api.GetTNDAOProposalSettingsResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not decode get oracle DAO proposal settings response: %w", err)
+        return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not decode oracle DAO proposal settings response: %w", err)
     }
     if response.Error != "" {
         return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not get oracle DAO proposal settings: %w", err)
     }
     return response, nil
 }
+
