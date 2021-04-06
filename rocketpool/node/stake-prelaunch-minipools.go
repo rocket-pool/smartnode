@@ -333,15 +333,20 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
 
 }
 
+
 // Check if path exists
 func pathExists(path string) bool {
+
+    // Check for file info at path
     if _, err := os.Stat(path); err == nil {
         return true;
     }
-    // Assuming that the path does not exist. Note that this may result in false negatives.
-    // E.g. a path may exist, but we have no permission to read it or its ancestors.
+
+    // Assume that the path does not exist; this may result in false negatives (e.g. due to permissions)
     return false;
+
 }
+
 
 // Check whether process is running inside a container
 func isInsideContainer() bool {
