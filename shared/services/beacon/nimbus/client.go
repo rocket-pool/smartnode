@@ -26,7 +26,7 @@ const (
     RequestValidatorsMethod          = "get_v1_beacon_states_stateId_validators"
     RequestVoluntaryExitMethod       = "post_v1_beacon_pool_voluntary_exits"
 
-    MaxRequestValidatorsCount = 600 
+    MaxRequestValidatorsCount = 30
 )
 
 // Nimbus client
