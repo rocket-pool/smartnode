@@ -164,6 +164,7 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
     // Return response
     return beacon.ValidatorStatus{
         Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+        Index:                      uint64(validator.Index),
         WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
         Balance:                    uint64(validator.Balance),
         EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
@@ -196,6 +197,7 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
             Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+            Index:                      uint64(validator.Index),
             WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
             Balance:                    uint64(validator.Balance),
             EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
