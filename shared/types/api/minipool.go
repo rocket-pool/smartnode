@@ -35,6 +35,7 @@ type MinipoolDetails struct {
 type ValidatorDetails struct {
     Exists bool                     `json:"exists"`
     Active bool                     `json:"active"`
+    Index uint64                    `json:"index"`
     Balance *big.Int                `json:"balance"`
     NodeBalance *big.Int            `json:"nodeBalance"`
 }
