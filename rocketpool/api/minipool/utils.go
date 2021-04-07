@@ -227,6 +227,7 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
     if validator.Exists {
         details.Exists = true
         details.Active = (validator.ActivationEpoch < currentEpoch && validator.ExitEpoch > currentEpoch)
+        details.Index = validator.Index
         validatorActivated = (validator.ActivationEpoch < currentEpoch)
     }
 
