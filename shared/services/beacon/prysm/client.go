@@ -158,7 +158,7 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
     if len(validators.ValidatorList) == 0 {
         return beacon.ValidatorStatus{}, nil
     }
-    validator := validators.ValidatorList[0].Validator
+    validator := validators.ValidatorList[0]
 
     // Get validator balance
     balances, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
@@ -168,19 +168,20 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
     if len(balances.Balances) == 0 {
         return beacon.ValidatorStatus{}, nil
     }
-    validatorBalance := balances.Balances[0].Balance
+    validatorBalance := balances.Balances[0]
 
     // Return response
     return beacon.ValidatorStatus{
-        Pubkey: types.BytesToValidatorPubkey(validator.PublicKey),
-        WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
-        Balance: validatorBalance,
-        EffectiveBalance: validator.EffectiveBalance,
-        Slashed: validator.Slashed,
-        ActivationEligibilityEpoch: validator.ActivationEligibilityEpoch,
-        ActivationEpoch: validator.ActivationEpoch,
-        ExitEpoch: validator.ExitEpoch,
-        WithdrawableEpoch: validator.WithdrawableEpoch,
+        Pubkey: types.BytesToValidatorPubkey(validator.Validator.PublicKey),
+        Index: validator.Index,
+        WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
+        Balance: validatorBalance.Balance,
+        EffectiveBalance: validator.Validator.EffectiveBalance,
+        Slashed: validator.Validator.Slashed,
+        ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,
+        ActivationEpoch: validator.Validator.ActivationEpoch,
+        ExitEpoch: validator.Validator.ExitEpoch,
+        WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
         Exists: true,
     }, nil
 
@@ -266,21 +267,22 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
     for vi := 0; vi < len(validators); vi++ {
 
         // Get validator status, balance & pubkey
-        validator := validators[vi].Validator
-        validatorBalance := balances[vi].Balance
-        pubkey := types.BytesToValidatorPubkey(validator.PublicKey)
+        validator := validators[vi]
+        validatorBalance := balances[vi]
+        pubkey := types.BytesToValidatorPubkey(validator.Validator.PublicKey)
 
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
             Pubkey: pubkey,
-            WithdrawalCredentials: common.BytesToHash(validator.WithdrawalCredentials),
-            Balance: validatorBalance,
-            EffectiveBalance: validator.EffectiveBalance,
-            Slashed: validator.Slashed,
-            ActivationEligibilityEpoch: validator.ActivationEligibilityEpoch,
-            ActivationEpoch: validator.ActivationEpoch,
-            ExitEpoch: validator.ExitEpoch,
-            WithdrawableEpoch: validator.WithdrawableEpoch,
+            Index: validator.Index,
+            WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
+            Balance: validatorBalance.Balance,
+            EffectiveBalance: validator.Validator.EffectiveBalance,
+            Slashed: validator.Validator.Slashed,
+            ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,
+            ActivationEpoch: validator.Validator.ActivationEpoch,
+            ExitEpoch: validator.Validator.ExitEpoch,
+            WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
             Exists: true,
         }
 
