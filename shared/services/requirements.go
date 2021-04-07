@@ -20,6 +20,7 @@ const BeaconClientSyncTimeout = 16 // 16 seconds
 var checkNodePasswordInterval, _ = time.ParseDuration("15s")
 var checkNodeWalletInterval, _ = time.ParseDuration("15s")
 var checkRocketStorageInterval, _ = time.ParseDuration("15s")
+var checkOneInchOracleInterval, _ = time.ParseDuration("15s")
 var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
 var ethClientSyncPollInterval, _ = time.ParseDuration("5s")
 var beaconClientSyncPollInterval, _ = time.ParseDuration("5s")
@@ -91,6 +92,21 @@ func RequireRocketStorage(c *cli.Context) error {
     }
     if !rocketStorageLoaded {
         return errors.New("The Rocket Pool storage contract was not found; the configured address may be incorrect, or the Eth 1.0 node may not be synced. Please try again later.")
+    }
+    return nil
+}
+
+
+func RequireOneInchOracle(c *cli.Context) error {
+    if err := RequireEthClientSynced(c); err != nil {
+        return err
+    }
+    oneInchOracleLoaded, err := getOneInchOracleLoaded(c)
+    if err != nil {
+        return err
+    }
+    if !oneInchOracleLoaded {
+        return errors.New("The 1inch oracle contract was not found; the configured address may be incorrect, or the Eth 1.0 node may not be synced. Please try again later.")
     }
     return nil
 }
@@ -206,6 +222,26 @@ func WaitRocketStorage(c *cli.Context, verbose bool) error {
 }
 
 
+func WaitOneInchOracle(c *cli.Context, verbose bool) error {
+    if err := WaitEthClientSynced(c, verbose); err != nil {
+        return err
+    }
+    for {
+        oneInchOracleLoaded, err := getOneInchOracleLoaded(c)
+        if err != nil {
+            return err
+        }
+        if oneInchOracleLoaded {
+            return nil
+        }
+        if verbose {
+            log.Printf("The 1inch oracle contract was not found, retrying in %s...\n", checkOneInchOracleInterval.String())
+        }
+        time.Sleep(checkOneInchOracleInterval)
+    }
+}
+
+
 func WaitNodeRegistered(c *cli.Context, verbose bool) error {
     if err := WaitNodeWallet(c, verbose); err != nil {
         return err
@@ -265,6 +301,24 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
         return false, err
     }
     code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Rocketpool.StorageAddress), nil)
+    if err != nil {
+        return false, err
+    }
+    return (len(code) > 0), nil
+}
+
+
+// Check if the 1inch exchange oracle contract is loaded
+func getOneInchOracleLoaded(c *cli.Context) (bool, error) {
+    cfg, err := GetConfig(c)
+    if err != nil {
+        return false, err
+    }
+    ec, err := GetEthClient(c)
+    if err != nil {
+        return false, err
+    }
+    code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), nil)
     if err != nil {
         return false, err
     }
