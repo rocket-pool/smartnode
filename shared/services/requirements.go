@@ -8,6 +8,7 @@ import (
     "time"
 
     "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/ethclient"
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/urfave/cli"
@@ -20,7 +21,6 @@ const BeaconClientSyncTimeout = 16 // 16 seconds
 var checkNodePasswordInterval, _ = time.ParseDuration("15s")
 var checkNodeWalletInterval, _ = time.ParseDuration("15s")
 var checkRocketStorageInterval, _ = time.ParseDuration("15s")
-var checkOneInchOracleInterval, _ = time.ParseDuration("15s")
 var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
 var ethClientSyncPollInterval, _ = time.ParseDuration("5s")
 var beaconClientSyncPollInterval, _ = time.ParseDuration("5s")
@@ -59,12 +59,24 @@ func RequireNodeWallet(c *cli.Context) error {
 
 
 func RequireEthClientSynced(c *cli.Context) error {
-    ethClientSynced, err := waitEthClientSynced(c, false, EthClientSyncTimeout)
+    ethClientSynced, err := waitEthClientSynced(c, false, EthClientSyncTimeout, false)
     if err != nil {
         return err
     }
     if !ethClientSynced {
         return errors.New("The Eth 1.0 node is currently syncing. Please try again later.")
+    }
+    return nil
+}
+
+
+func RequireMainnetEthClientSynced(c *cli.Context) error {
+    mainnetEthClientSynced, err := waitEthClientSynced(c, false, EthClientSyncTimeout, true)
+    if err != nil {
+        return err
+    }
+    if !mainnetEthClientSynced {
+        return errors.New("The mainnet Eth 1.0 node is currently syncing. Please try again later.")
     }
     return nil
 }
@@ -98,7 +110,7 @@ func RequireRocketStorage(c *cli.Context) error {
 
 
 func RequireOneInchOracle(c *cli.Context) error {
-    if err := RequireEthClientSynced(c); err != nil {
+    if err := RequireMainnetEthClientSynced(c); err != nil {
         return err
     }
     oneInchOracleLoaded, err := getOneInchOracleLoaded(c)
@@ -191,7 +203,7 @@ func WaitNodeWallet(c *cli.Context, verbose bool) error {
 
 
 func WaitEthClientSynced(c *cli.Context, verbose bool) error {
-    _, err := waitEthClientSynced(c, verbose, 0)
+    _, err := waitEthClientSynced(c, verbose, 0, false)
     return err
 }
 
@@ -218,26 +230,6 @@ func WaitRocketStorage(c *cli.Context, verbose bool) error {
             log.Printf("The Rocket Pool storage contract was not found, retrying in %s...\n", checkRocketStorageInterval.String())
         }
         time.Sleep(checkRocketStorageInterval)
-    }
-}
-
-
-func WaitOneInchOracle(c *cli.Context, verbose bool) error {
-    if err := WaitEthClientSynced(c, verbose); err != nil {
-        return err
-    }
-    for {
-        oneInchOracleLoaded, err := getOneInchOracleLoaded(c)
-        if err != nil {
-            return err
-        }
-        if oneInchOracleLoaded {
-            return nil
-        }
-        if verbose {
-            log.Printf("The 1inch oracle contract was not found, retrying in %s...\n", checkOneInchOracleInterval.String())
-        }
-        time.Sleep(checkOneInchOracleInterval)
     }
 }
 
@@ -314,11 +306,11 @@ func getOneInchOracleLoaded(c *cli.Context) (bool, error) {
     if err != nil {
         return false, err
     }
-    ec, err := GetEthClient(c)
+    mnec, err := GetMainnetEthClient(c)
     if err != nil {
         return false, err
     }
-    code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), nil)
+    code, err := mnec.CodeAt(context.Background(), common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), nil)
     if err != nil {
         return false, err
     }
@@ -365,14 +357,20 @@ func getNodeTrusted(c *cli.Context) (bool, error) {
 // Wait for the eth client to sync
 // timeout of 0 indicates no timeout
 var ethClientSyncLock sync.Mutex
-func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
+func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64, mainnet bool) (bool, error) {
 
     // Prevent multiple waiting goroutines from requesting sync progress
     ethClientSyncLock.Lock()
     defer ethClientSyncLock.Unlock()
 
     // Get eth client
-    ec, err := GetEthClient(c)
+    var ec *ethclient.Client
+    var err error
+    if mainnet {
+        ec, err = GetMainnetEthClient(c)
+    } else {
+        ec, err = GetEthClient(c)
+    }
     if err != nil {
         return false, err
     }

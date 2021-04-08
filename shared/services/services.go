@@ -38,6 +38,7 @@ var (
     passwordManager *passwords.PasswordManager
     nodeWallet *wallet.Wallet
     ethClient *ethclient.Client
+    mainnetEthClient *ethclient.Client
     rocketPool *rocketpool.RocketPool
     oneInchOracle *contracts.OneInchOracle
     beaconClient beacon.Client
@@ -47,6 +48,7 @@ var (
     initPasswordManager sync.Once
     initNodeWallet sync.Once
     initEthClient sync.Once
+    initMainnetEthClient sync.Once
     initRocketPool sync.Once
     initOneInchOracle sync.Once
     initBeaconClient sync.Once
@@ -92,6 +94,15 @@ func GetEthClient(c *cli.Context) (*ethclient.Client, error) {
 }
 
 
+func GetMainnetEthClient(c *cli.Context) (*ethclient.Client, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    return getMainnetEthClient(cfg)
+}
+
+
 func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     cfg, err := getConfig(c)
     if err != nil {
@@ -110,11 +121,11 @@ func GetOneInchOracle(c *cli.Context) (*contracts.OneInchOracle, error) {
     if err != nil {
         return nil, err
     }
-    ec, err := getEthClient(cfg)
+    mnec, err := getMainnetEthClient(cfg)
     if err != nil {
         return nil, err
     }
-    return getOneInchOracle(cfg, ec)
+    return getOneInchOracle(cfg, mnec)
 }
 
 
@@ -184,6 +195,15 @@ func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
         ethClient, err = ethclient.Dial(cfg.Chains.Eth1.Provider)
     })
     return ethClient, err
+}
+
+
+func getMainnetEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
+    var err error
+    initMainnetEthClient.Do(func() {
+        mainnetEthClient, err = ethclient.Dial(cfg.Chains.Eth1.Provider)
+    })
+    return mainnetEthClient, err
 }
 
 
