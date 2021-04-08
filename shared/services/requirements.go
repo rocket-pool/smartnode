@@ -118,7 +118,7 @@ func RequireOneInchOracle(c *cli.Context) error {
         return err
     }
     if !oneInchOracleLoaded {
-        return errors.New("The 1inch oracle contract was not found; the configured address may be incorrect, or the Eth 1.0 node may not be synced. Please try again later.")
+        return errors.New("The 1inch oracle contract was not found; the configured address may be incorrect, or the mainnet Eth 1.0 node may not be synced. Please try again later.")
     }
     return nil
 }
