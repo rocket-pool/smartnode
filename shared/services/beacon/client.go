@@ -31,6 +31,7 @@ type BeaconHead struct {
 }
 type ValidatorStatus struct {
     Pubkey types.ValidatorPubkey
+    Index uint64
     WithdrawalCredentials common.Hash
     Balance uint64
     EffectiveBalance uint64

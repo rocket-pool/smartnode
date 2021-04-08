@@ -1,12 +1,11 @@
 package odao
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/utils/api"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
@@ -574,6 +573,30 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(proposeSettingProposalActionBlocks(c, proposalActionBlocks))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "get-member-settings",
+                Usage:     "Get the ODAO settings related to ODAO members",
+                UsageText: "rocketpool api odao get-member-settings",
+                Action: func(c *cli.Context) error {
+
+                    // Run
+                    api.PrintResponse(getMemberSettings(c))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "get-proposal-settings",
+                Usage:     "Get the ODAO settings related to ODAO proposals",
+                UsageText: "rocketpool api odao get-proposal-settings",
+                Action: func(c *cli.Context) error {
+
+                    // Run
+                    api.PrintResponse(getProposalSettings(c))
                     return nil
 
                 },

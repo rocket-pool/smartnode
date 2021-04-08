@@ -170,6 +170,7 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
     // Return response
     return beacon.ValidatorStatus{
         Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+        Index:                      uint64(validator.Index),
         WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
         Balance:                    uint64(validator.Balance),
         EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
@@ -216,6 +217,7 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
             Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+            Index: uint64(validator.Index),
             WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
             Balance: uint64(validator.Balance),
             EffectiveBalance: uint64(validator.Validator.EffectiveBalance),
@@ -425,44 +427,30 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 
     }
 
-    // Get validators
-    if len(pubkeys) <= MaxRequestValidatorsCount {
+    // Load validator data in batches & return
+    data := make([]Validator, 0, len(pubkeys))
+    for bsi := 0; bsi < len(pubkeys); bsi += MaxRequestValidatorsCount {
 
-        // Get validator pubkeys
-        pubkeysHex := make([]string, len(pubkeys))
-        for ki, pubkey := range pubkeys {
-            pubkeysHex[ki] = hexutil.AddPrefix(pubkey.Hex())
+        // Get batch start & end index
+        vsi := bsi
+        vei := bsi + MaxRequestValidatorsCount
+        if vei > len(pubkeys) { vei = len(pubkeys) }
+
+        // Get validator pubkeys for batch request
+        pubkeysHex := make([]string, vei - vsi)
+        for vi := vsi; vi < vei; vi++ {
+            pubkeysHex[vi - vsi] = hexutil.AddPrefix(pubkeys[vi].Hex())
         }
 
-        // Get & return validators
-        return c.getValidators(stateId, pubkeysHex)
-
-    } else {
-
-        // Get all validators
-        validators, err := c.getValidators(stateId, []string{})
+        // Get & add validators
+        validators, err := c.getValidators(stateId, pubkeysHex)
         if err != nil {
             return ValidatorsResponse{}, err
         }
-
-        // Filter validator set by pubkeys and return
-        response := ValidatorsResponse{}
-        for _, validator := range validators.Data {
-            var found bool
-            for _, pubkey := range pubkeys {
-                if bytes.Equal(validator.Validator.Pubkey, pubkey.Bytes()) {
-                    found = true
-                    break
-                }
-            }
-            if !found {
-                continue
-            }
-            response.Data = append(response.Data, validator)
-        }
-        return response, nil
+        data = append(data, validators.Data...)
 
     }
+    return ValidatorsResponse{Data: data}, nil
 
 }
 

@@ -1,9 +1,11 @@
 package api
 
 import (
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/dao"
-    tn "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	tn "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 )
 
 
@@ -244,5 +246,26 @@ type ProposeTNDAOSettingProposalActionBlocksResponse struct {
     Error string                    `json:"error"`
     ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
+}
+
+
+type GetTNDAOMemberSettingsResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Quorum float64                  `json:"quorum"`
+    RPLBond *big.Int                `json:"rplBond"`
+    MinipoolUnbondedMax uint64      `json:"minipoolUnbondedMax"`
+    ChallengeCooldown uint64        `json:"challengeCooldown"`
+    ChallengeWindow uint64          `json:"challengeWindow"`
+    ChallengeCost *big.Int          `json:"challengeCost"`
+}
+type GetTNDAOProposalSettingsResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Cooldown uint64                 `json:"cooldown"`
+    VoteBlocks uint64               `json:"voteBlocks"`
+    VoteDelayBlocks uint64          `json:"voteDelayBlocks"`
+    ExecuteBlocks uint64            `json:"executeBlocks"`
+    ActionBlocks uint64             `json:"actionBlocks"`
 }
 

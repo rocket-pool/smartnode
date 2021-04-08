@@ -1,11 +1,10 @@
 package odao
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
@@ -43,6 +42,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run
                     return getMembers(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:       "member-settings",
+                Aliases:    []string{"b"},
+                Usage:      "Get the oracle DAO settings related to oracle DAO members",
+                UsageText:  "rocketpool odao member-settings",
+                Action: func(c *cli.Context) error {
+
+                    // Run
+                    return getMemberSettings(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:       "proposal-settings",
+                Aliases:    []string{"a"},
+                Usage:      "Get the oracle DAO settings related to oracle DAO proposals",
+                UsageText:  "rocketpool odao proposal-settings",
+                Action: func(c *cli.Context) error {
+
+                    // Run
+                    return getProposalSettings(c)
 
                 },
             },
