@@ -18,6 +18,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/services/contracts"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     "github.com/rocket-pool/smartnode/shared/utils/log"
     "github.com/rocket-pool/smartnode/shared/utils/math"
@@ -29,8 +30,9 @@ type submitRplPrice struct {
     c *cli.Context
     log log.ColorLogger
     w *wallet.Wallet
-    ec *ethclient.Client
+    mnec *ethclient.Client
     rp *rocketpool.RocketPool
+    oio *contracts.OneInchOracle
 }
 
 
@@ -40,9 +42,11 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
     // Get services
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
+    mnec, err := services.GetMainnetEthClient(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+    oio, err := services.GetOneInchOracle(c)
     if err != nil { return nil, err }
 
     // Return task
@@ -50,8 +54,9 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
         c: c,
         log: logger,
         w: w,
-        ec: ec,
+        mnec: mnec,
         rp: rp,
+        oio: oio,
     }, nil
 
 }
@@ -142,16 +147,21 @@ func (t *submitRplPrice) run() error {
 // Get the latest block number to report RPL price for
 func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
 
+    // Require mainnet eth client synced
+    if err := services.RequireMainnetEthClientSynced(t.c); err != nil {
+        return 0, err
+    }
+
     // Data
     var wg errgroup.Group
-    var currentBlock uint64
+    var currentMainnetBlock uint64
     var submitPricesFrequency uint64
 
-    // Get current block
+    // Get current mainnet block
     wg.Go(func() error {
-        header, err := t.ec.HeaderByNumber(context.Background(), nil)
+        header, err := t.mnec.HeaderByNumber(context.Background(), nil)
         if err == nil {
-            currentBlock = header.Number.Uint64()
+            currentMainnetBlock = header.Number.Uint64()
         }
         return err
     })
@@ -169,7 +179,7 @@ func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
     }
 
     // Calculate and return
-    return (currentBlock / submitPricesFrequency) * submitPricesFrequency, nil
+    return (currentMainnetBlock / submitPricesFrequency) * submitPricesFrequency, nil
 
 }
 
@@ -210,12 +220,8 @@ func (t *submitRplPrice) canSubmitBlockPrice(nodeAddress common.Address, blockNu
 // Get RPL price at block
 func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 
-    // Require & get 1inch oracle contract
+    // Require 1inch oracle contract
     if err := services.RequireOneInchOracle(t.c); err != nil {
-        return nil, err
-    }
-    oio, err := services.GetOneInchOracle(t.c)
-    if err != nil {
         return nil, err
     }
 
@@ -231,7 +237,7 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
     }
 
     // Get RPL price
-    rplPrice, err := oio.GetRate(opts, *rplAddress, common.Address{})
+    rplPrice, err := t.oio.GetRate(opts, *rplAddress, common.Address{})
     if err != nil {
         return nil, fmt.Errorf("Could not get RPL price at block %d: %w", blockNumber, err)
     }
