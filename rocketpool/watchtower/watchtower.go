@@ -20,6 +20,7 @@ const (
 
     RespondChallengesColor = color.FgWhite
     ClaimRplRewardsColor = color.FgGreen
+    SubmitRplPriceColor = color.FgYellow
     SubmitNetworkBalancesColor = color.FgYellow
     SubmitWithdrawableMinipoolsColor = color.FgBlue
     DissolveTimedOutMinipoolsColor = color.FgMagenta
@@ -55,6 +56,8 @@ func run(c *cli.Context) error {
     if err != nil { return err }
     claimRplRewards, err := newClaimRplRewards(c, log.NewColorLogger(ClaimRplRewardsColor))
     if err != nil { return err }
+    submitRplPrice, err := newSubmitRplPrice(c, log.NewColorLogger(SubmitRplPriceColor))
+    if err != nil { return err }
     submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor))
     if err != nil { return err }
     submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c, log.NewColorLogger(SubmitWithdrawableMinipoolsColor))
@@ -74,6 +77,10 @@ func run(c *cli.Context) error {
         }
         time.Sleep(taskCooldown)
         if err := claimRplRewards.run(); err != nil {
+            errorLog.Println(err)
+        }
+        time.Sleep(taskCooldown)
+        if err := submitRplPrice.run(); err != nil {
             errorLog.Println(err)
         }
         time.Sleep(taskCooldown)
