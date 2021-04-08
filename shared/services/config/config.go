@@ -1,19 +1,18 @@
 package config
 
 import (
-    "fmt"
-    "io/ioutil"
-    "math/big"
-    "os"
-    "strconv"
+	"fmt"
+	"io/ioutil"
+	"math/big"
+	"os"
+	"strconv"
 
-    "github.com/imdario/mergo"
-    "github.com/urfave/cli"
-    "gopkg.in/yaml.v2"
+	"github.com/imdario/mergo"
+	"github.com/urfave/cli"
+	"gopkg.in/yaml.v2"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
 
 // Rocket Pool config
 type RocketPoolConfig struct {
@@ -62,6 +61,10 @@ type ClientParam struct {
     Env string                          `yaml:"env,omitempty"`
     Required bool                       `yaml:"required,omitempty"`
     Regex string                        `yaml:"regex,omitempty"`
+    Type string                         `yaml:"type,omitempty"`
+    Default string                      `yaml:"default,omitempty"`
+    Max string                          `yaml:"max,omitempty"`
+    BlankText string                    `yaml:"blankText,omitempty"`
 }
 type UserParam struct {
     Env string                          `yaml:"env,omitempty"`
@@ -119,7 +122,48 @@ func Parse(bytes []byte) (RocketPoolConfig, error) {
     if err := yaml.Unmarshal(bytes, &config); err != nil {
         return RocketPoolConfig{}, fmt.Errorf("Could not parse config: %w", err)
     }
+
+    // Validate the defaults
+    if err := ValidateDefaults(config.Chains.Eth1, "eth1"); err != nil {
+        return RocketPoolConfig{}, err
+    }
+    if err := ValidateDefaults(config.Chains.Eth2, "eth2"); err != nil {
+        return RocketPoolConfig{}, err
+    }
+
     return config, nil
+}
+
+
+// Make sure the default parameter values can be parsed into the parameter types
+func ValidateDefaults(Chain Chain, ChainName string) (error) {
+    for _, option := range Chain.Client.Options {
+        for _, param := range option.Params {
+            if param.Default != "" {
+                var err error
+
+                switch param.Type {
+                case "", "string":
+                    continue
+
+                case "uint":
+                    _, err = strconv.ParseUint(param.Default, 0, 0)
+
+                case "uint16":
+                    _, err = strconv.ParseUint(param.Default, 0, 16)
+                }
+
+                if err != nil {
+                    return fmt.Errorf("Could not parse config - " +
+                        "parameter '%s' in %s client option '%s' " +
+                        "is a %s but has a default value of '%s' which failed parsing: %w", 
+                        param.Name, ChainName, option.Name, param.Type, param.Default, err)
+                }
+            }
+        }
+    }
+
+    return nil
 }
 
 
