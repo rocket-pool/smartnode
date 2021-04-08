@@ -201,7 +201,7 @@ func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
 func getMainnetEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
     var err error
     initMainnetEthClient.Do(func() {
-        mainnetEthClient, err = ethclient.Dial(cfg.Chains.Eth1.Provider)
+        mainnetEthClient, err = ethclient.Dial(cfg.Chains.Eth1.MainnetProvider)
     })
     return mainnetEthClient, err
 }
