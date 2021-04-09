@@ -26,17 +26,23 @@ import (
 
 
 type networkGauges struct {
-    nodeCount              prometheus.Gauge
-    minipoolCount          prometheus.Gauge
-    minipoolQueue          *prometheus.GaugeVec
-    networkFees            *prometheus.GaugeVec
-    rplPriceBlock          prometheus.Gauge
-    rplPrice               prometheus.Gauge
-    networkBlock           prometheus.Gauge
-    networkBalances        *prometheus.GaugeVec
-    settingsFlags          *prometheus.GaugeVec
-    settingsMinimumDeposit prometheus.Gauge
-    settingsMaximumDepositPoolSize prometheus.Gauge
+    nodeCount                        prometheus.Gauge
+    minipoolCount                    prometheus.Gauge
+    minipoolQueue                    *prometheus.GaugeVec
+    networkFees                      *prometheus.GaugeVec
+    rplPriceBlock                    prometheus.Gauge
+    rplPrice                         prometheus.Gauge
+    networkBlock                     prometheus.Gauge
+    networkBalances                  *prometheus.GaugeVec
+    settingsFlags                    *prometheus.GaugeVec
+    settingsMinimumDeposit           prometheus.Gauge
+    settingsMaximumDepositPoolSize   prometheus.Gauge
+    settingsInflationIntervalRate    prometheus.Gauge
+    settingsInflationIntervalBlocks  prometheus.Gauge
+    settingsInflationStartBlock      prometheus.Gauge
+    settingsMinipool                 *prometheus.GaugeVec
+    settingsMinipoolLaunchTimeout    prometheus.Gauge
+    settingsMinipoolWithdrawDelay    prometheus.Gauge
 }
 
 
@@ -49,13 +55,15 @@ type networkMetricsProcess struct {
 }
 
 
-type networkStuff struct {
-    Block uint64
-    TotalETH *big.Int
-    StakingETH *big.Int
-    TotalRETH *big.Int
-    DepositBalance *big.Int
-    DepositExcessBalance *big.Int
+type networkBalances struct {
+    Block                   uint64
+    TotalETH                *big.Int
+    StakingETH              *big.Int
+    TotalRETH               *big.Int
+    DepositBalance          *big.Int
+    DepositExcessBalance    *big.Int
+    TotalRplStake           *big.Int
+    TotalEffectiveRplStake  *big.Int
 }
 
 
@@ -161,7 +169,7 @@ func newNetworkMetricsProcess(c *cli.Context, logger log.ColorLogger) (*networkM
                 Namespace:  "rocketpool",
                 Subsystem:  "settings",
                 Name:       "flags_bool",
-                Help:       "settings flags on rocketpool contracts",
+                Help:       "settings flags on rocketpool protocol",
             },
             []string{"flag"},
         ),
@@ -176,6 +184,45 @@ func newNetworkMetricsProcess(c *cli.Context, logger log.ColorLogger) (*networkM
             Subsystem:      "settings",
             Name:           "maximum_pool_eth",
             Help:           "maximum size of deposit pool",
+        }),
+        settingsInflationIntervalRate:  promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:      "rocketpool",
+            Subsystem:      "settings",
+            Name:           "inflation_interval_rate",
+            Help:           "RPL inflation rate per interval",
+        }),
+        settingsInflationIntervalBlocks:  promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:      "rocketpool",
+            Subsystem:      "settings",
+            Name:           "inflation_interval_blocks",
+            Help:           "RPL inflation interval in blocks",
+        }),
+        settingsInflationStartBlock:  promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:      "rocketpool",
+            Subsystem:      "settings",
+            Name:           "inflation_start_block",
+            Help:           "RPL inflation start block",
+        }),
+        settingsMinipool:   promauto.NewGaugeVec(
+            prometheus.GaugeOpts{
+                Namespace:  "rocketpool",
+                Subsystem:  "settings",
+                Name:       "minipool_amounts",
+                Help:       "amount settings for rocketpool minipool",
+            },
+            []string{"category"},
+        ),
+        settingsMinipoolLaunchTimeout:  promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:      "rocketpool",
+            Subsystem:      "settings",
+            Name:           "minipool_launch_timeout_blocks",
+            Help:           "Timeout period in blocks for prelaunch minipools to launch",
+        }),
+        settingsMinipoolWithdrawDelay:  promauto.NewGauge(prometheus.GaugeOpts{
+            Namespace:      "rocketpool",
+            Subsystem:      "settings",
+            Name:           "minipool_withdraw_delay_blocks",
+            Help:           "Withdrawal delay in blocks before withdrawable minipools can be closed",
         }),
     }
 
@@ -237,22 +284,24 @@ func (p *networkMetricsProcess) updateNetwork() error {
     p.metrics.rplPriceBlock.Set(float64(rplPrice.RplPriceBlock))
     p.metrics.rplPrice.Set(eth.WeiToEth(rplPrice.RplPrice))
 
-    stuff, err := getOtherNetworkStuff(p.rp)
+    balances, err := getNetworkBalances(p.rp)
     if err != nil { return err }
 
-    p.metrics.networkBlock.Set(float64(stuff.Block))
-    p.metrics.networkBalances.With(prometheus.Labels{"category":"TotalETH"}).Set(eth.WeiToEth(stuff.TotalETH))
-    p.metrics.networkBalances.With(prometheus.Labels{"category":"StakingETH"}).Set(eth.WeiToEth(stuff.StakingETH))
-    p.metrics.networkBalances.With(prometheus.Labels{"category":"TotalRETH"}).Set(eth.WeiToEth(stuff.TotalRETH))
-    p.metrics.networkBalances.With(prometheus.Labels{"category":"Deposit"}).Set(eth.WeiToEth(stuff.DepositBalance))
-    p.metrics.networkBalances.With(prometheus.Labels{"category":"DepositExcess"}).Set(eth.WeiToEth(stuff.DepositExcessBalance))
+    p.metrics.networkBlock.Set(float64(balances.Block))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"TotalETH"}).Set(eth.WeiToEth(balances.TotalETH))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"StakingETH"}).Set(eth.WeiToEth(balances.StakingETH))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"TotalRETH"}).Set(eth.WeiToEth(balances.TotalRETH))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"Deposit"}).Set(eth.WeiToEth(balances.DepositBalance))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"DepositExcess"}).Set(eth.WeiToEth(balances.DepositExcessBalance))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"TotalRPL"}).Set(eth.WeiToEth(balances.TotalRplStake))
+    p.metrics.networkBalances.With(prometheus.Labels{"category":"TotalEffectiveRPL"}).Set(eth.WeiToEth(balances.TotalEffectiveRplStake))
 
     return nil
 }
 
 
-func getOtherNetworkStuff(rp *rocketpool.RocketPool) (*networkStuff, error) {
-    stuff := networkStuff{}
+func getNetworkBalances(rp *rocketpool.RocketPool) (*networkBalances, error) {
+    stuff := networkBalances{}
 
     // Sync
     var wg errgroup.Group
@@ -297,6 +346,20 @@ func getOtherNetworkStuff(rp *rocketpool.RocketPool) (*networkStuff, error) {
         depositExcessBalance, err := deposit.GetExcessBalance(rp, nil)
         if err == nil {
             stuff.DepositExcessBalance = depositExcessBalance
+        }
+        return err
+    })
+    wg.Go(func() error {
+        totalRplStake, err := node.GetTotalRPLStake(rp, nil)
+        if err == nil {
+            stuff.TotalRplStake = totalRplStake
+        }
+        return err
+    })
+    wg.Go(func() error {
+        totalEffectiveRplStake, err := node.GetTotalEffectiveRPLStake(rp, nil)
+        if err == nil {
+            stuff.TotalEffectiveRplStake = totalEffectiveRplStake
         }
         return err
     })
@@ -354,6 +417,11 @@ func (p *networkMetricsProcess) updateSettings() error {
     var wg errgroup.Group
     var depositEnabled, assignDepositEnabled, minipoolWithdrawEnabled, submitBalancesEnabled, processWithdrawalEnabled, nodeRegistrationEnabled, nodeDepositEnabled bool
     var minimumDeposit, maximumDepositPoolSize *big.Int
+    var inflationIntervalRate float64
+    var inflationIntervalBlocks, inflationStartBlock uint64
+    var minipoolLaunchBalance, minipoolFullDepositNodeAmount, minipoolHalfDepositNodeAmount, minipoolEmptyDepositNodeAmount *big.Int
+    var minipoolFullDepositUserAmount, minipoolHalfDepositUserAmount, minipoolEmptyDepositUserAmount *big.Int
+    var minipoolLaunchTimeout, minipoolWithdrawalDelay uint64
 
     // Get data
     wg.Go(func() error {
@@ -419,7 +487,90 @@ func (p *networkMetricsProcess) updateSettings() error {
         }
         return err
     })
-
+    wg.Go(func() error {
+        response, err := protocol.GetInflationIntervalRate(p.rp, nil)
+        if err == nil {
+            inflationIntervalRate = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetInflationIntervalBlocks(p.rp, nil)
+        if err == nil {
+            inflationIntervalBlocks = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetInflationStartBlock(p.rp, nil)
+        if err == nil {
+            inflationStartBlock = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolLaunchBalance(p.rp, nil)
+        if err == nil {
+            minipoolLaunchBalance = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolFullDepositNodeAmount(p.rp, nil)
+        if err == nil {
+            minipoolFullDepositNodeAmount = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolHalfDepositNodeAmount(p.rp, nil)
+        if err == nil {
+            minipoolHalfDepositNodeAmount = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolEmptyDepositNodeAmount(p.rp, nil)
+        if err == nil {
+            minipoolEmptyDepositNodeAmount = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolFullDepositUserAmount(p.rp, nil)
+        if err == nil {
+            minipoolFullDepositUserAmount = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolHalfDepositUserAmount(p.rp, nil)
+        if err == nil {
+            minipoolHalfDepositUserAmount = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolEmptyDepositUserAmount(p.rp, nil)
+        if err == nil {
+            minipoolEmptyDepositUserAmount = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolLaunchTimeout(p.rp, nil)
+        if err == nil {
+            minipoolLaunchTimeout = response
+        }
+        return err
+    })
+    wg.Go(func() error {
+        response, err := protocol.GetMinipoolWithdrawalDelay(p.rp, nil)
+        if err == nil {
+            minipoolWithdrawalDelay = response
+        }
+        return err
+    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
@@ -434,6 +585,18 @@ func (p *networkMetricsProcess) updateSettings() error {
     p.metrics.settingsFlags.With(prometheus.Labels{"flag":"NodeDepositEnabled"}).Set(float64(B2i(nodeDepositEnabled)))
     p.metrics.settingsMinimumDeposit.Set(eth.WeiToEth(minimumDeposit))
     p.metrics.settingsMaximumDepositPoolSize.Set(eth.WeiToEth(maximumDepositPoolSize))
+    p.metrics.settingsInflationIntervalRate.Set(inflationIntervalRate)
+    p.metrics.settingsInflationIntervalBlocks.Set(float64(inflationIntervalBlocks))
+    p.metrics.settingsInflationStartBlock.Set(float64(inflationStartBlock))
+    p.metrics.settingsMinipool.With(prometheus.Labels{"category":"LaunchBalance"}).Set(eth.WeiToEth(minipoolLaunchBalance))
+    p.metrics.settingsMinipool.With(prometheus.Labels{"category":"FullDepositNodeAmount"}).Set(eth.WeiToEth(minipoolFullDepositNodeAmount))
+    p.metrics.settingsMinipool.With(prometheus.Labels{"category":"HalfDepositNodeAmount"}).Set(eth.WeiToEth(minipoolHalfDepositNodeAmount))
+    p.metrics.settingsMinipool.With(prometheus.Labels{"category":"EmptyDepositNodeAmount"}).Set(eth.WeiToEth(minipoolEmptyDepositNodeAmount))
+    p.metrics.settingsMinipool.With(prometheus.Labels{"category":"FullDepositUserAmount"}).Set(eth.WeiToEth(minipoolFullDepositUserAmount))
+    p.metrics.settingsMinipool.With(prometheus.Labels{"category":"HalfDepositUserAmount"}).Set(eth.WeiToEth(minipoolHalfDepositUserAmount))
+    p.metrics.settingsMinipool.With(prometheus.Labels{"category":"EmptyDepositUserAmount"}).Set(eth.WeiToEth(minipoolEmptyDepositUserAmount))
+    p.metrics.settingsMinipoolLaunchTimeout.Set(float64(minipoolLaunchTimeout))
+    p.metrics.settingsMinipoolWithdrawDelay.Set(float64(minipoolWithdrawalDelay))
 
     return nil
 }

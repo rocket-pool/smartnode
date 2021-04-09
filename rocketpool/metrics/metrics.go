@@ -21,8 +21,8 @@ const (
     errorColor = color.FgRed
 )
 var networkUpdateInterval, _ = time.ParseDuration("30s")
-var minipoolUpdateInterval, _ = time.ParseDuration("30s")
-var nodeUpdateInterval, _ = time.ParseDuration("5m")
+var minipoolUpdateInterval, _ = time.ParseDuration("5m")
+var nodeUpdateInterval, _ = time.ParseDuration("30m")
 
 
 // Register metrics command
@@ -48,8 +48,8 @@ func run(c *cli.Context) error {
     configureHTTP()
 
     // Start metrics processes
-    go (func() { startAuctionMetricsProcess(c, minipoolUpdateInterval, logger) })()
-    go (func() { startDaoMetricsProcess(c, minipoolUpdateInterval, logger) })()
+    go (func() { startAuctionMetricsProcess(c, networkUpdateInterval, logger) })()
+    go (func() { startDaoMetricsProcess(c, networkUpdateInterval, logger) })()
     go (func() { startMinipoolMetricsProcess(c, minipoolUpdateInterval, logger) })()
     go (func() { startNetworkMetricsProcess(c, networkUpdateInterval, logger) })()
     go (func() { startNodeMetricsProcess(c, nodeUpdateInterval, logger) })()
