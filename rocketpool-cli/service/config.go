@@ -3,6 +3,7 @@ package service
 import (
     "fmt"
     "math/rand"
+    "strconv"
     "time"
 
     "github.com/urfave/cli"
@@ -107,14 +108,46 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         // Get param label
         paramText := param.Name
         if !param.Required {
-            paramText += " (leave blank for none)"
+            blankText := "none"
+            if param.BlankText != "" {
+                blankText = param.BlankText
+            }
+            paramText += fmt.Sprintf(" (leave blank for %s)", blankText)
         }
         if param.Desc != "" {
             paramText += fmt.Sprintf("\n(%s)", param.Desc)
         }
 
         // Prompt for value
-        value := cliutils.Prompt(fmt.Sprintf("Please enter the %s", paramText), expectedFormat, fmt.Sprintf("Invalid %s", param.Name))
+        var value string
+        for {
+            value = cliutils.Prompt(fmt.Sprintf("Please enter the %s", paramText), expectedFormat, fmt.Sprintf("Invalid %s", param.Name))
+            isValid := true
+
+            // Allow blanks for optional params
+            if !param.Required && value == "" {
+                value = param.Default
+                break
+            }
+
+            // Type checking
+            switch param.Type {
+                case "uint":
+                    if _, err := strconv.ParseUint(value, 0, 0); err != nil {
+                        fmt.Printf("'%s' is not a valid value for %s, try again.\n", value, param.Name)
+                        isValid = false
+                    }
+                case "uint16":
+                    if _, err := strconv.ParseUint(value, 0, 16); err != nil {
+                        fmt.Printf("'%s' is not a valid value for %s, try again.\n", value, param.Name)
+                        isValid = false
+                    }
+            }
+
+            // Continue if input is valid
+            if isValid { break }
+
+        }
 
         // Add param
         params = append(params, config.UserParam{
