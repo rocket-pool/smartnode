@@ -143,6 +143,9 @@ func nodeDeposit(c *cli.Context) error {
         }
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canDeposit.GasInfo)
+
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
         "Are you sure you want to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%? Running a minipool is a long-term commitment.",

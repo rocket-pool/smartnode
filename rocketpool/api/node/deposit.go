@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -90,6 +91,17 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
     wg1.Go(func() error {
         var err error
         minipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
+        return err
+    })
+
+    wg1.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { return err }
+        opts.Value = amountWei
+        gasInfo, err := services.GetGasInfo(rp, opts, "rocketNodeDeposit", "deposit", eth.EthToWei(0.1))
+        if err == nil {
+            response.GasInfo = gasInfo
+        }
         return err
     })
 
