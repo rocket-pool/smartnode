@@ -1,17 +1,18 @@
 package service
 
 import (
-	"fmt"
-	"math/rand"
-	"strconv"
-	"time"
+    "fmt"
+    "math/rand"
+    "strconv"
+    "time"
 
-	"github.com/urfave/cli"
+    "github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+    "github.com/rocket-pool/smartnode/shared/services/config"
+    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
+
 
 // Configure the Rocket Pool service
 func configureService(c *cli.Context) error {
@@ -131,22 +132,21 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
 
             // Type checking
             switch param.Type {
-            case "uint":
-                if _, err := strconv.ParseUint(value, 0, 0); err != nil {
-                    fmt.Printf("'%s' is not a valid value for %s, try again.\n", value, param.Name)
-                    isValid = false
-                }
-    
-            case "uint16":
-                if _, err := strconv.ParseUint(value, 0, 16); err != nil {
-                    fmt.Printf("'%s' is not a valid value for %s, try again.\n", value, param.Name)
-                    isValid = false
-                }
+                case "uint":
+                    if _, err := strconv.ParseUint(value, 0, 0); err != nil {
+                        fmt.Printf("'%s' is not a valid value for %s, try again.\n", value, param.Name)
+                        isValid = false
+                    }
+                case "uint16":
+                    if _, err := strconv.ParseUint(value, 0, 16); err != nil {
+                        fmt.Printf("'%s' is not a valid value for %s, try again.\n", value, param.Name)
+                        isValid = false
+                    }
             }
-            
-            if isValid {
-                break
-            }
+
+            // Continue if input is valid
+            if isValid { break }
+
         }
 
         // Add param

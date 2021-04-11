@@ -1,18 +1,19 @@
 package config
 
 import (
-	"fmt"
-	"io/ioutil"
-	"math/big"
-	"os"
-	"strconv"
+    "fmt"
+    "io/ioutil"
+    "math/big"
+    "os"
+    "strconv"
 
-	"github.com/imdario/mergo"
-	"github.com/urfave/cli"
-	"gopkg.in/yaml.v2"
+    "github.com/imdario/mergo"
+    "github.com/urfave/cli"
+    "gopkg.in/yaml.v2"
 
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 )
+
 
 // Rocket Pool config
 type RocketPoolConfig struct {
@@ -136,33 +137,28 @@ func Parse(bytes []byte) (RocketPoolConfig, error) {
 
 
 // Make sure the default parameter values can be parsed into the parameter types
-func ValidateDefaults(Chain Chain, ChainName string) (error) {
+func ValidateDefaults(Chain Chain, ChainName string) error {
     for _, option := range Chain.Client.Options {
         for _, param := range option.Params {
             if param.Default != "" {
                 var err error
-
                 switch param.Type {
-                case "", "string":
-                    continue
-
-                case "uint":
-                    _, err = strconv.ParseUint(param.Default, 0, 0)
-
-                case "uint16":
-                    _, err = strconv.ParseUint(param.Default, 0, 16)
+                    case "", "string":
+                        continue
+                    case "uint":
+                        _, err = strconv.ParseUint(param.Default, 0, 0)
+                    case "uint16":
+                        _, err = strconv.ParseUint(param.Default, 0, 16)
                 }
-
                 if err != nil {
                     return fmt.Errorf("Could not parse config - " +
                         "parameter '%s' in %s client option '%s' " +
-                        "is a %s but has a default value of '%s' which failed parsing: %w", 
+                        "is a %s but has a default value of '%s' which failed parsing: %w",
                         param.Name, ChainName, option.Name, param.Type, param.Default, err)
                 }
             }
         }
     }
-
     return nil
 }
 
