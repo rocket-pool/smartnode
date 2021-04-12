@@ -91,6 +91,33 @@ func (chain *Chain) GetSelectedClient() *ClientOption {
 }
 
 
+// Get the value of a chain client param
+func (chain *Chain) GetClientParamValue(userParam UserParam) string {
+
+    // Use param value if set
+    if userParam.Value != "" {
+        return userParam.Value
+    }
+
+    // Get selected client; return empty string if none selected
+    selectedClient := chain.GetSelectedClient()
+    if selectedClient == nil {
+        return ""
+    }
+
+    // Use selected client param default if set
+    for _, clientParam := range selectedClient.Params {
+        if clientParam.Env == userParam.Env {
+            return clientParam.Default
+        }
+    }
+
+    // Default to empty string
+    return ""
+
+}
+
+
 // Get the beacon & validator images for a client
 func (client *ClientOption) GetBeaconImage() string {
     if client.BeaconImage != "" {
