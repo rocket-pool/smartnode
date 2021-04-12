@@ -355,11 +355,26 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         fmt.Sprintf("ETH1_WS_PROVIDER='%s'",        cfg.Chains.Eth1.WsProvider),
         fmt.Sprintf("ETH2_PROVIDER='%s'",           cfg.Chains.Eth2.Provider),
     }
+    paramsSet := map[string]bool{}
     for _, param := range cfg.Chains.Eth1.Client.Params {
-        env = append(env, fmt.Sprintf("%s='%s'", param.Env, cfg.Chains.Eth1.GetClientParamValue(param)))
+        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
+        paramsSet[param.Env] = true
     }
     for _, param := range cfg.Chains.Eth2.Client.Params {
-        env = append(env, fmt.Sprintf("%s='%s'", param.Env, cfg.Chains.Eth2.GetClientParamValue(param)))
+        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
+        paramsSet[param.Env] = true
+    }
+
+    // Set default values from client config
+    for _, param := range cfg.GetSelectedEth1Client().Params {
+        if _, ok := paramsSet[param.Env]; ok { continue }
+        if param.Default == "" { continue }
+        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Default))
+    }
+    for _, param := range cfg.GetSelectedEth2Client().Params {
+        if _, ok := paramsSet[param.Env]; ok { continue }
+        if param.Default == "" { continue }
+        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Default))
     }
 
     // Set compose file flags
