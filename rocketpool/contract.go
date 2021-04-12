@@ -14,7 +14,6 @@ import (
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/ethclient"
-    "golang.org/x/sync/errgroup"
 )
 
 
@@ -51,6 +50,39 @@ func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, 
 }
 
 
+// Get Gas Price and Gas Limit for transaction
+func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string, params ...interface{}) (GasInfo, error) {
+
+    // set user option for gas price and gas limit
+    response := GasInfo {
+        ReqGasPrice: opts.GasPrice,
+        ReqGasLimit: opts.GasLimit,
+    }
+
+    // Pack transaction Info
+    input, err := c.ABI.Pack(method, params...)
+    if err != nil {
+        return response, fmt.Errorf("Error getting transaction gas info: Could not encode input data: %w", err)
+    }
+
+    // Estimate gas limit
+    estGasLimit, err := c.estimateGasLimit(opts, input)
+    if err != nil {
+        return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas limit: %w", err)
+    }
+    response.EstGasLimit = estGasLimit
+
+    // Estimate gas price
+    estGasPrice, err := c.Client.SuggestGasPrice(context.Background())
+    if err != nil {
+        return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas price: %w", err)
+    }
+    response.EstGasPrice = estGasPrice
+
+    return response, err
+}
+
+
 // Transact on a contract method and wait for a receipt
 func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Receipt, error) {
 
@@ -79,6 +111,33 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
 }
 
 
+// Get gas price and gas limit for a transfer call
+func (c *Contract) GetTransferGasInfo(opts *bind.TransactOpts) (GasInfo, error) {
+
+    // set user option for gas price and gas limit
+    response := GasInfo {
+        ReqGasPrice: opts.GasPrice,
+        ReqGasLimit: opts.GasLimit,
+    }
+
+    // Estimate gas limit
+    estGasLimit, err := c.estimateGasLimit(opts, []byte{})
+    if err != nil {
+        return response, fmt.Errorf("Error getting transfer gas info: could not estimate gas limit: %w", err)
+    }
+    response.EstGasLimit = estGasLimit
+
+    // Estimate gas price
+    estGasPrice, err := c.Client.SuggestGasPrice(context.Background())
+    if err != nil {
+        return response, fmt.Errorf("Error getting transfer gas info: could not estimate gas price: %w", err)
+    }
+    response.EstGasPrice = estGasPrice
+
+    return response, nil
+}
+
+
 // Transfer ETH to a contract and wait for a receipt
 func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
 
@@ -100,45 +159,6 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
     // Get & return transaction receipt
     return c.getTransactionReceipt(tx)
 
-}
-
-
-// Get Gas Price and Gas Limit for transaction
-func (c *Contract) GetGasInfo(methodName string, opts *bind.TransactOpts, params ...interface{}) (GasInfo, error) {
-
-    // Find user option for gas price and gas limit
-    response := GasInfo {
-        ReqGasPrice: opts.GasPrice,
-        ReqGasLimit: opts.GasLimit,
-    }
-
-    input, err := c.ABI.Pack(methodName, params...)
-    if err != nil {
-        return response, fmt.Errorf("Could not encode input data: %w", err)
-    }
-
-    // Sync
-    var wg errgroup.Group
-
-    wg.Go(func() error {
-        estGasPrice, err := c.Client.SuggestGasPrice(context.Background())
-        if err == nil {
-            response.EstGasPrice = estGasPrice
-        }
-        return err
-    })
-
-    wg.Go(func() error {
-        estGasLimit, err := c.estimateGasLimit(opts, input)
-        if err == nil {
-            response.EstGasLimit = estGasLimit
-        }
-        return err
-    })
-
-    // Wait for data
-    err = wg.Wait()
-    return response, err
 }
 
 
