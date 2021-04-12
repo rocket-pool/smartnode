@@ -356,10 +356,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         fmt.Sprintf("ETH2_PROVIDER='%s'",           cfg.Chains.Eth2.Provider),
     }
     for _, param := range cfg.Chains.Eth1.Client.Params {
-        env = append(env, fmt.Sprintf("%s='%s'", param.Env, cfg.Chains.Eth1.GetClientParamValue(param)))
+        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
     }
     for _, param := range cfg.Chains.Eth2.Client.Params {
-        env = append(env, fmt.Sprintf("%s='%s'", param.Env, cfg.Chains.Eth2.GetClientParamValue(param)))
+        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
     }
 
     // Set compose file flags
