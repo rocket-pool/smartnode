@@ -18,6 +18,7 @@ import (
     "golang.org/x/sync/errgroup"
 
     "github.com/rocket-pool/smartnode/shared/services"
+    "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/services/contracts"
     "github.com/rocket-pool/smartnode/shared/services/wallet"
     "github.com/rocket-pool/smartnode/shared/utils/log"
@@ -29,6 +30,7 @@ import (
 type submitRplPrice struct {
     c *cli.Context
     log log.ColorLogger
+    cfg config.RocketPoolConfig
     w *wallet.Wallet
     mnec *ethclient.Client
     rp *rocketpool.RocketPool
@@ -40,6 +42,8 @@ type submitRplPrice struct {
 func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice, error) {
 
     // Get services
+    cfg, err := services.GetConfig(c)
+    if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     mnec, err := services.GetMainnetEthClient(c)
@@ -53,6 +57,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
     return &submitRplPrice{
         c: c,
         log: logger,
+        cfg: cfg,
         w: w,
         mnec: mnec,
         rp: rp,
@@ -226,10 +231,7 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
     }
 
     // Get RPL token address
-    rplAddress, err := t.rp.GetAddress("rocketTokenRPL")
-    if err != nil {
-        return nil, err
-    }
+    rplAddress := common.HexToAddress(t.cfg.Rocketpool.RplTokenAddress)
 
     // Initialize call options
     opts := &bind.CallOpts{
@@ -237,7 +239,7 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
     }
 
     // Get RPL price
-    rplPrice, err := t.oio.GetRate(opts, *rplAddress, common.Address{})
+    rplPrice, err := t.oio.GetRate(opts, rplAddress, common.Address{})
     if err != nil {
         return nil, fmt.Errorf("Could not get RPL price at block %d: %w", blockNumber, err)
     }

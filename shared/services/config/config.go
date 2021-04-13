@@ -20,6 +20,7 @@ type RocketPoolConfig struct {
     Rocketpool struct {
         StorageAddress string           `yaml:"storageAddress,omitempty"`
         OneInchOracleAddress string     `yaml:"oneInchOracleAddress,omitempty"`
+        RplTokenAddress string          `yaml:"rplTokenAddress,omitempty"`
     }                                   `yaml:"rocketpool,omitempty"`
     Smartnode struct {
         ProjectName string              `yaml:"projectName,omitempty"`
