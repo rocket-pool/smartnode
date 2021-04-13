@@ -1,18 +1,16 @@
 package auction
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
-
 
 // Settings
 const LotDetailsBatchSize = 10
@@ -512,62 +510,62 @@ func GetLotAddressBidAmount(rp *rocketpool.RocketPool, lotIndex uint64, bidder c
 
 
 // Create a new lot
-func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (uint64, *types.Receipt, error) {
+func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
     if err != nil {
-        return 0, nil, err
+        return 0, common.Hash{}, err
     }
     lotCount, err := GetLotCount(rp, nil)
     if err != nil {
-        return 0, nil, err
+        return 0, common.Hash{}, err
     }
-    txReceipt, err := rocketAuctionManager.Transact(opts, "createLot")
+    hash, err := rocketAuctionManager.Transact(opts, "createLot")
     if err != nil {
-        return 0, nil, fmt.Errorf("Could not create lot: %w", err)
+        return 0, common.Hash{}, fmt.Errorf("Could not create lot: %w", err)
     }
-    return lotCount, txReceipt, nil
+    return lotCount, hash, nil
 }
 
 
 // Place a bid on a lot
-func PlaceBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func PlaceBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (common.Hash, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketAuctionManager.Transact(opts, "placeBid", big.NewInt(int64(lotIndex)))
+    hash, err := rocketAuctionManager.Transact(opts, "placeBid", big.NewInt(int64(lotIndex)))
     if err != nil {
-        return nil, fmt.Errorf("Could not place bid on lot %d: %w", lotIndex, err)
+        return common.Hash{}, fmt.Errorf("Could not place bid on lot %d: %w", lotIndex, err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Claim RPL from a lot that was bid on
-func ClaimBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ClaimBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (common.Hash, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketAuctionManager.Transact(opts, "claimBid", big.NewInt(int64(lotIndex)))
+    hash, err := rocketAuctionManager.Transact(opts, "claimBid", big.NewInt(int64(lotIndex)))
     if err != nil {
-        return nil, fmt.Errorf("Could not claim bid from lot %d: %w", lotIndex, err)
+        return common.Hash{}, fmt.Errorf("Could not claim bid from lot %d: %w", lotIndex, err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Recover unclaimed RPL from a lot
-func RecoverUnclaimedRPL(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func RecoverUnclaimedRPL(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (common.Hash, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketAuctionManager.Transact(opts, "recoverUnclaimedRPL", big.NewInt(int64(lotIndex)))
+    hash, err := rocketAuctionManager.Transact(opts, "recoverUnclaimedRPL", big.NewInt(int64(lotIndex)))
     if err != nil {
-        return nil, fmt.Errorf("Could not recover unclaimed RPL from lot %d: %w", lotIndex, err)
+        return common.Hash{}, fmt.Errorf("Could not recover unclaimed RPL from lot %d: %w", lotIndex, err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

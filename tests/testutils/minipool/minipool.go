@@ -1,23 +1,22 @@
 package minipool
 
 import (
-    "errors"
-    "math/big"
+	"errors"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
 )
-
 
 // Minipool created event
 type minipoolCreated struct {
@@ -38,7 +37,9 @@ func CreateMinipool(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accoun
     // Make node deposit
     opts := nodeAccount.GetTransactor()
     opts.Value = depositAmount
-    txReceipt, err := node.Deposit(rp, 0, opts)
+    hash, err := node.Deposit(rp, 0, opts)
+    if err != nil { return nil, err }
+    txReceipt, err := node.WaitForTransaction(rp, hash)
     if err != nil { return nil, err }
 
     // Get minipool manager contract

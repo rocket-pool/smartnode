@@ -1,20 +1,19 @@
 package rocketpool
 
 import (
-    "bytes"
-    "context"
-    "errors"
-    "fmt"
-    "reflect"
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"reflect"
 
-    "github.com/ethereum/go-ethereum"
-    "github.com/ethereum/go-ethereum/accounts/abi"
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
-    "github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
-
 
 // Transaction settings
 const (
@@ -41,17 +40,17 @@ func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, 
 
 
 // Transact on a contract method and wait for a receipt
-func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Receipt, error) {
+func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (common.Hash, error) {
 
     // Estimate gas limit
     if opts.GasLimit == 0 {
         input, err := c.ABI.Pack(method, params...)
         if err != nil {
-            return nil, fmt.Errorf("Could not encode input data: %w", err)
+            return common.Hash{}, fmt.Errorf("Could not encode input data: %w", err)
         }
         gasLimit, err := c.estimateGasLimit(opts, input)
         if err != nil {
-            return nil, err
+            return common.Hash{}, err
         }
         opts.GasLimit = gasLimit
     }
@@ -59,29 +58,42 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
     // Send transaction
     tx, err := c.Contract.Transact(opts, method, params...)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
 
-    // Get & return transaction receipt
-    return c.getTransactionReceipt(tx)
+    return tx.Hash(), nil
 
 }
 
 
 // Transfer ETH to a contract and wait for a receipt
-func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
+func (c *Contract) Transfer(opts *bind.TransactOpts) (common.Hash, error) {
 
     // Estimate gas limit
     if opts.GasLimit == 0 {
         gasLimit, err := c.estimateGasLimit(opts, []byte{})
         if err != nil {
-            return nil, err
+            return common.Hash{}, err
         }
         opts.GasLimit = gasLimit
     }
 
     // Send transaction
     tx, err := c.Contract.Transfer(opts)
+    if err != nil {
+        return common.Hash{}, err
+    }
+
+    return tx.Hash(), nil
+
+}
+
+
+// Block until a transaction is mined, then return the receipt
+func (c *Contract) WaitForTransaction(hash common.Hash) (*types.Receipt, error) {
+
+    // Get the transaction from its hash
+    tx, _, err := c.Client.TransactionByHash(context.Background(), hash)
     if err != nil {
         return nil, err
     }

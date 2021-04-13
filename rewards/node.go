@@ -1,16 +1,14 @@
 package rewards
 
 import (
-    "math/big"
-    "sync"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
-
 
 // Get whether node reward claims are enabled
 func GetNodeClaimsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
@@ -53,10 +51,10 @@ func GetNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress common.
 
 
 // Claim node rewards
-func ClaimNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ClaimNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketClaimNode, err := getRocketClaimNode(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
     return claim(rocketClaimNode, "node", opts)
 }
