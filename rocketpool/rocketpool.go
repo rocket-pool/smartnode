@@ -56,6 +56,10 @@ func main() {
             Usage: "1inch exchange oracle contract `address`",
         },
         cli.StringFlag{
+            Name:  "rplTokenAddress, t",
+            Usage: "RPL token contract `address`",
+        },
+        cli.StringFlag{
             Name:  "rplFaucetAddress, f",
             Usage: "Rocket Pool RPL token faucet `address`",
         },
