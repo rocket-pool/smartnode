@@ -226,6 +226,7 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     var config RocketPoolConfig
     config.Rocketpool.StorageAddress = c.GlobalString("storageAddress")
     config.Rocketpool.OneInchOracleAddress = c.GlobalString("oneInchOracleAddress")
+    config.Rocketpool.RplTokenAddress = c.GlobalString("rplTokenAddress")
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
