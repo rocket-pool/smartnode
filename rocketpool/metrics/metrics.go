@@ -50,8 +50,9 @@ func run(c *cli.Context) error {
     // Start metrics processes
     go (func() { startAuctionMetricsProcess(c, networkUpdateInterval, logger) })()
     go (func() { startDaoMetricsProcess(c, networkUpdateInterval, logger) })()
-    go (func() { startMinipoolMetricsProcess(c, minipoolUpdateInterval, logger) })()
     go (func() { startNetworkMetricsProcess(c, networkUpdateInterval, logger) })()
+    go (func() { startSettingsMetricsProcess(c, networkUpdateInterval, logger) })()
+    go (func() { startMinipoolMetricsProcess(c, minipoolUpdateInterval, logger) })()
     go (func() { startNodeMetricsProcess(c, nodeUpdateInterval, logger) })()
 
     // Serve metrics
