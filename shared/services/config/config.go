@@ -19,6 +19,8 @@ import (
 type RocketPoolConfig struct {
     Rocketpool struct {
         StorageAddress string           `yaml:"storageAddress,omitempty"`
+        OneInchOracleAddress string     `yaml:"oneInchOracleAddress,omitempty"`
+        RplTokenAddress string          `yaml:"rplTokenAddress,omitempty"`
         RPLFaucetAddress string         `yaml:"rplFaucetAddress,omitempty"`
     }                                   `yaml:"rocketpool,omitempty"`
     Smartnode struct {
@@ -40,6 +42,7 @@ type RocketPoolConfig struct {
 type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
     WsProvider string                   `yaml:"wsProvider,omitempty"`
+    MainnetProvider string              `yaml:"mainnetProvider,omitempty"`
     ChainID string                      `yaml:"chainID,omitempty"`
     Client struct {
         Options []ClientOption          `yaml:"options,omitempty"`
@@ -223,6 +226,7 @@ func loadFile(path string, required bool) (RocketPoolConfig, error) {
 func getCliConfig(c *cli.Context) RocketPoolConfig {
     var config RocketPoolConfig
     config.Rocketpool.StorageAddress = c.GlobalString("storageAddress")
+    config.Rocketpool.OneInchOracleAddress = c.GlobalString("oneInchOracleAddress")
     config.Rocketpool.RPLFaucetAddress = c.GlobalString("rplFaucetAddress")
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")

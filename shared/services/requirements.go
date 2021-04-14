@@ -8,6 +8,7 @@ import (
     "time"
 
     "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/ethclient"
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
     "github.com/urfave/cli"
@@ -58,12 +59,24 @@ func RequireNodeWallet(c *cli.Context) error {
 
 
 func RequireEthClientSynced(c *cli.Context) error {
-    ethClientSynced, err := waitEthClientSynced(c, false, EthClientSyncTimeout)
+    ethClientSynced, err := waitEthClientSynced(c, false, EthClientSyncTimeout, false)
     if err != nil {
         return err
     }
     if !ethClientSynced {
         return errors.New("The Eth 1.0 node is currently syncing. Please try again later.")
+    }
+    return nil
+}
+
+
+func RequireMainnetEthClientSynced(c *cli.Context) error {
+    mainnetEthClientSynced, err := waitEthClientSynced(c, false, EthClientSyncTimeout, true)
+    if err != nil {
+        return err
+    }
+    if !mainnetEthClientSynced {
+        return errors.New("The mainnet Eth 1.0 node is currently syncing. Please try again later.")
     }
     return nil
 }
@@ -91,6 +104,21 @@ func RequireRocketStorage(c *cli.Context) error {
     }
     if !rocketStorageLoaded {
         return errors.New("The Rocket Pool storage contract was not found; the configured address may be incorrect, or the Eth 1.0 node may not be synced. Please try again later.")
+    }
+    return nil
+}
+
+
+func RequireOneInchOracle(c *cli.Context) error {
+    if err := RequireMainnetEthClientSynced(c); err != nil {
+        return err
+    }
+    oneInchOracleLoaded, err := getOneInchOracleLoaded(c)
+    if err != nil {
+        return err
+    }
+    if !oneInchOracleLoaded {
+        return errors.New("The 1inch oracle contract was not found; the configured address may be incorrect, or the mainnet Eth 1.0 node may not be synced. Please try again later.")
     }
     return nil
 }
@@ -190,7 +218,7 @@ func WaitNodeWallet(c *cli.Context, verbose bool) error {
 
 
 func WaitEthClientSynced(c *cli.Context, verbose bool) error {
-    _, err := waitEthClientSynced(c, verbose, 0)
+    _, err := waitEthClientSynced(c, verbose, 0, false)
     return err
 }
 
@@ -287,6 +315,24 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
 }
 
 
+// Check if the 1inch exchange oracle contract is loaded
+func getOneInchOracleLoaded(c *cli.Context) (bool, error) {
+    cfg, err := GetConfig(c)
+    if err != nil {
+        return false, err
+    }
+    mnec, err := GetMainnetEthClient(c)
+    if err != nil {
+        return false, err
+    }
+    code, err := mnec.CodeAt(context.Background(), common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), nil)
+    if err != nil {
+        return false, err
+    }
+    return (len(code) > 0), nil
+}
+
+
 // Check if the RPL faucet contract is loaded
 func getRplFaucetLoaded(c *cli.Context) (bool, error) {
     cfg, err := GetConfig(c)
@@ -344,14 +390,20 @@ func getNodeTrusted(c *cli.Context) (bool, error) {
 // Wait for the eth client to sync
 // timeout of 0 indicates no timeout
 var ethClientSyncLock sync.Mutex
-func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
+func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64, mainnet bool) (bool, error) {
 
     // Prevent multiple waiting goroutines from requesting sync progress
     ethClientSyncLock.Lock()
     defer ethClientSyncLock.Unlock()
 
     // Get eth client
-    ec, err := GetEthClient(c)
+    var ec *ethclient.Client
+    var err error
+    if mainnet {
+        ec, err = GetMainnetEthClient(c)
+    } else {
+        ec, err = GetEthClient(c)
+    }
     if err != nil {
         return false, err
     }

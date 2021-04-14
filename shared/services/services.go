@@ -38,7 +38,9 @@ var (
     passwordManager *passwords.PasswordManager
     nodeWallet *wallet.Wallet
     ethClient *ethclient.Client
+    mainnetEthClient *ethclient.Client
     rocketPool *rocketpool.RocketPool
+    oneInchOracle *contracts.OneInchOracle
     rplFaucet *contracts.RPLFaucet
     beaconClient beacon.Client
     docker *client.Client
@@ -47,7 +49,9 @@ var (
     initPasswordManager sync.Once
     initNodeWallet sync.Once
     initEthClient sync.Once
+    initMainnetEthClient sync.Once
     initRocketPool sync.Once
+    initOneInchOracle sync.Once
     initRplFaucet sync.Once
     initBeaconClient sync.Once
     initDocker sync.Once
@@ -92,6 +96,15 @@ func GetEthClient(c *cli.Context) (*ethclient.Client, error) {
 }
 
 
+func GetMainnetEthClient(c *cli.Context) (*ethclient.Client, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    return getMainnetEthClient(cfg)
+}
+
+
 func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     cfg, err := getConfig(c)
     if err != nil {
@@ -102,6 +115,19 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
         return nil, err
     }
     return getRocketPool(cfg, ec)
+}
+
+
+func GetOneInchOracle(c *cli.Context) (*contracts.OneInchOracle, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    mnec, err := getMainnetEthClient(cfg)
+    if err != nil {
+        return nil, err
+    }
+    return getOneInchOracle(cfg, mnec)
 }
 
 
@@ -187,12 +213,30 @@ func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
 }
 
 
+func getMainnetEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
+    var err error
+    initMainnetEthClient.Do(func() {
+        mainnetEthClient, err = ethclient.Dial(cfg.Chains.Eth1.MainnetProvider)
+    })
+    return mainnetEthClient, err
+}
+
+
 func getRocketPool(cfg config.RocketPoolConfig, client *ethclient.Client) (*rocketpool.RocketPool, error) {
     var err error
     initRocketPool.Do(func() {
         rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Rocketpool.StorageAddress))
     })
     return rocketPool, err
+}
+
+
+func getOneInchOracle(cfg config.RocketPoolConfig, client *ethclient.Client) (*contracts.OneInchOracle, error) {
+    var err error
+    initOneInchOracle.Do(func() {
+        oneInchOracle, err = contracts.NewOneInchOracle(common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), client)
+    })
+    return oneInchOracle, err
 }
 
 
