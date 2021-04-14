@@ -1,14 +1,14 @@
 package auction
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/auction"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -94,11 +94,11 @@ func recoverRplFromLot(c *cli.Context, lotIndex uint64) (*api.RecoverRPLFromLotR
     }
 
     // Recover unclaimed RPL from lot
-    txReceipt, err := auction.RecoverUnclaimedRPL(rp, lotIndex, opts)
+    hash, err := auction.RecoverUnclaimedRPL(rp, lotIndex, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
