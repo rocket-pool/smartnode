@@ -11,22 +11,23 @@ import (
 
 // Config
 const InfuraURL = "https://%s.infura.io/v3/%s"
-
+const PocketURL = "https://%s.gateway.pokt.network/v1/%s"
 
 // Proxy server
 type ProxyServer struct {
-    Port string
-    ProviderUrl string
+	Port        string
+	ProviderUrl string
 }
 
-
 // Create new proxy server
-func NewProxyServer(port string, providerUrl string, network string, projectId string) *ProxyServer {
+func NewProxyServer(port string, providerUrl string, providerType string, network string, projectId string) *ProxyServer {
 
-    // Default provider to Infura
-    if providerUrl == "" {
-        providerUrl = fmt.Sprintf(InfuraURL, network, projectId)
-    }
+	// Default provider to Infura
+	if providerUrl == "" && providerType == "infura" {
+		providerUrl = fmt.Sprintf(InfuraURL, network, projectId)
+	} else if providerUrl == "" && providerType == "pocket" {
+		providerUrl = fmt.Sprintf(PocketURL, network, projectId)
+	}
 
     // Create and return proxy server
     return &ProxyServer{
