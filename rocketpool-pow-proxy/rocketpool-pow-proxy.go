@@ -35,32 +35,37 @@ func main() {
     // Configure application
     app.Flags = []cli.Flag{
         cli.StringFlag{
-            Name:  "port, p",
-            Usage: "Port to listen on",
-            Value: "8545",
-        },
-        cli.StringFlag{
-            Name:  "providerUrl, u",
-            Usage: "External Eth 1.0 provider `URL` (defaults to Infura)",
-            Value: "",
-        },
-        cli.StringFlag{
-            Name:  "network, n",
-            Usage: "`Network` to connect to via Infura",
-            Value: "goerli",
-        },
-        cli.StringFlag{
-            Name:  "projectId, i",
-            Usage: "Infura `project ID` to use for connection",
-            Value: "",
-        },
+			Name:  "port, p",
+			Usage: "Port to listen on",
+			Value: "8545",
+		},
+		cli.StringFlag{
+			Name:  "providerUrl, u",
+			Usage: "External Eth 1.0 provider `URL` (defaults to Infura)",
+			Value: "",
+		},
+		cli.StringFlag{
+			Name:  "providerType, t",
+			Usage: "Eth 1.0 provider type if not using `URL`: Infura or Pocket",
+			Value: "infura",
+		},
+		cli.StringFlag{
+			Name:  "network, n",
+			Usage: "`Network` to connect to via Infura / Pocket",
+			Value: "goerli",
+		},
+		cli.StringFlag{
+			Name:  "projectId, i",
+			Usage: "Infura / Pocket `project ID` to use for connection; for Pocket load balancers prefix with lb/",
+			Value: "",
+		},
     }
 
     // Set application action
     app.Action = func(c *cli.Context) error {
 
         // Initialise and start proxy server
-        proxyServer := proxy.NewProxyServer(c.GlobalString("port"), c.GlobalString("providerUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
+		proxyServer := proxy.NewProxyServer(c.GlobalString("port"), c.GlobalString("providerUrl"), c.GlobalString("providerType"), c.GlobalString("network"), c.GlobalString("projectId"))
         return proxyServer.Start()
 
     }
