@@ -1,21 +1,21 @@
 package node
 
 import (
-    "context"
-    "errors"
-    "math/big"
+	"context"
+	"errors"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
-    tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -158,12 +158,34 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     opts.Value = amountWei
 
     // Deposit
-    txReceipt, err := node.Deposit(rp, minNodeFee, opts)
+    hash, err := node.Deposit(rp, minNodeFee, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
+    // Return response
+    return &response, nil
+
+}
+
+
+func getMinipoolAddress(c *cli.Context, hash common.Hash) (*api.NodeDepositMinipoolResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Wait for the deposit TX to successfully get mined
+    txReceipt, err := node.WaitForTransaction(rp, hash)
+    if err != nil {
+        return nil, err
+    }
+
+    // Response
+    response := api.NodeDepositMinipoolResponse{}
+    
     // Get minipool manager contract
     minipoolManager, err := rp.GetContract("rocketMinipoolManager")
     if err != nil {

@@ -193,7 +193,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             cli.Command{
                 Name:      "wait",
-                Aliases:   []string{"c"},
                 Usage:     "Wait for an auction transaction to be mined",
                 UsageText: "rocketpool api auction wait tx-hash",
                 Action: func(c *cli.Context) error {

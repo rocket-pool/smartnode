@@ -284,3 +284,4 @@ func waitForTransaction(c *cli.Context, hash common.Hash) (*api.APIResponse, err
     return &response, nil
 
 }
+

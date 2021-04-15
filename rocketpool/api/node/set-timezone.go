@@ -1,11 +1,11 @@
 package node
 
 import (
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -28,11 +28,11 @@ func setTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.SetNodeT
     }
 
     // Set timezone location
-    txReceipt, err := node.SetTimezoneLocation(rp, timezoneLocation, opts)
+    hash, err := node.SetTimezoneLocation(rp, timezoneLocation, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

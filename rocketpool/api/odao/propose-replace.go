@@ -1,15 +1,15 @@
 package odao
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -110,12 +110,12 @@ func proposeReplace(c *cli.Context, newMemberAddress common.Address, newMemberId
 
     // Submit proposal
     message := fmt.Sprintf("replace %s (%s) with %s (%s)", nodeMemberId, nodeMemberEmail, newMemberId, newMemberEmail)
-    proposalId, txReceipt, err := trustednode.ProposeReplaceMember(rp, message, nodeAccount.Address, newMemberAddress, newMemberId, newMemberEmail, opts)
+    proposalId, hash, err := trustednode.ProposeReplaceMember(rp, message, nodeAccount.Address, newMemberAddress, newMemberId, newMemberEmail, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

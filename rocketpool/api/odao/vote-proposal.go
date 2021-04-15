@@ -1,14 +1,14 @@
 package odao
 
 import (
-    "github.com/rocket-pool/rocketpool-go/dao"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -110,11 +110,11 @@ func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.VoteO
     }
 
     // Vote on proposal
-    txReceipt, err := trustednode.VoteOnProposal(rp, proposalId, support, opts)
+    hash, err := trustednode.VoteOnProposal(rp, proposalId, support, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

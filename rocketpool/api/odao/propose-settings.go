@@ -1,13 +1,13 @@
 package odao
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -62,12 +62,12 @@ func proposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.ProposeTN
     }
 
     // Submit proposal
-    proposalId, txReceipt, err := trustednode.ProposeQuorum(rp, quorum, opts)
+    proposalId, hash, err := trustednode.ProposeQuorum(rp, quorum, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
@@ -94,12 +94,12 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.
     }
 
     // Submit proposal
-    proposalId, txReceipt, err := trustednode.ProposeRPLBond(rp, bondAmountWei, opts)
+    proposalId, hash, err := trustednode.ProposeRPLBond(rp, bondAmountWei, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
@@ -126,12 +126,12 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
     }
 
     // Submit proposal
-    proposalId, txReceipt, err := trustednode.ProposeMinipoolUnbondedMax(rp, unbondedMinipoolMax, opts)
+    proposalId, hash, err := trustednode.ProposeMinipoolUnbondedMax(rp, unbondedMinipoolMax, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
@@ -158,12 +158,12 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
     }
 
     // Submit proposal
-    proposalId, txReceipt, err := trustednode.ProposeProposalCooldown(rp, proposalCooldownBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalCooldown(rp, proposalCooldownBlocks, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
@@ -190,12 +190,12 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
     }
 
     // Submit proposal
-    proposalId, txReceipt, err := trustednode.ProposeProposalVoteBlocks(rp, proposalVoteBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalVoteBlocks(rp, proposalVoteBlocks, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
@@ -222,12 +222,12 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
     }
 
     // Submit proposal
-    proposalId, txReceipt, err := trustednode.ProposeProposalVoteDelayBlocks(rp, proposalDelayBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalVoteDelayBlocks(rp, proposalDelayBlocks, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
@@ -254,12 +254,12 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
     }
 
     // Submit proposal
-    proposalId, txReceipt, err := trustednode.ProposeProposalExecuteBlocks(rp, proposalExecuteBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalExecuteBlocks(rp, proposalExecuteBlocks, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
@@ -286,12 +286,12 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     }
 
     // Submit proposal
-    proposalId, txReceipt, err := trustednode.ProposeProposalActionBlocks(rp, proposalActionBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalActionBlocks(rp, proposalActionBlocks, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

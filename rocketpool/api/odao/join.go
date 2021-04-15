@@ -1,17 +1,18 @@
 package odao
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
-    tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -85,7 +86,7 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
 }
 
 
-func join(c *cli.Context) (*api.JoinTNDAOResponse, error) {
+func approveRpl(c *cli.Context) (*api.JoinTNDAOApproveResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -95,7 +96,7 @@ func join(c *cli.Context) (*api.JoinTNDAOResponse, error) {
     if err != nil { return nil, err }
 
     // Response
-    response := api.JoinTNDAOResponse{}
+    response := api.JoinTNDAOApproveResponse{}
 
     // Data
     var wg errgroup.Group
@@ -124,19 +125,43 @@ func join(c *cli.Context) (*api.JoinTNDAOResponse, error) {
     // Approve RPL allowance
     if opts, err := w.GetNodeAccountTransactor(); err != nil {
         return nil, err
-    } else if txReceipt, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts); err != nil {
+    } else if hash, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts); err != nil {
         return nil, err
     } else {
-        response.ApproveTxHash = txReceipt.TxHash
+        response.ApproveTxHash = hash
     }
+
+    // Return response
+    return &response, nil
+
+}
+
+
+func waitForApprovalAndJoin(c *cli.Context, hash common.Hash) (*api.JoinTNDAOJoinResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Wait for the RPL approval TX to successfully get mined
+    _, err = trustednode.WaitForTransaction(rp, hash)
+    if err != nil {
+        return nil, err
+    }
+
+    // Response
+    response := api.JoinTNDAOJoinResponse{}
 
     // Join
     if opts, err := w.GetNodeAccountTransactor(); err != nil {
         return nil, err
-    } else if txReceipt, err := tndao.Join(rp, opts); err != nil {
+    } else if hash, err := tndao.Join(rp, opts); err != nil {
         return nil, err
     } else {
-        response.JoinTxHash = txReceipt.TxHash
+        response.JoinTxHash = hash
     }
 
     // Return response

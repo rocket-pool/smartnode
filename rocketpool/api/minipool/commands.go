@@ -1,12 +1,11 @@
 package minipool
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/utils/api"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
@@ -208,6 +207,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(closeMinipool(c, minipoolAddress))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "wait",
+                Usage:     "Wait for a minipool transaction to be mined",
+                UsageText: "rocketpool api minipool wait tx-hash",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(waitForTransaction(c, hash))
                     return nil
 
                 },

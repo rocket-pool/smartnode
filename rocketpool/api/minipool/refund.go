@@ -1,14 +1,14 @@
 package minipool
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -78,11 +78,11 @@ func refundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Refund
     }
 
     // Refund
-    txReceipt, err := mp.Refund(opts)
+    hash, err := mp.Refund(opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
