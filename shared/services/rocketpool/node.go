@@ -267,7 +267,7 @@ func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64) (api.NodeDeposi
 
 // Get the minipool address for a new deposit
 func (c *Client) GetMinipoolAddress(txHash common.Hash) (api.NodeDepositMinipoolResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("get-minipool-address %s", txHash.String()))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node get-minipool-address %s", txHash.String()))
     if err != nil {
         return api.NodeDepositMinipoolResponse{}, fmt.Errorf("Could not get minipool address: %w", err)
     }
