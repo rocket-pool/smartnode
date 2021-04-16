@@ -3,6 +3,7 @@ package rocketpool
 import (
     "encoding/json"
     "fmt"
+    "math/big"
 
     "github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -38,6 +39,9 @@ func (c *Client) RplPrice() (api.RplPriceResponse, error) {
     if response.Error != "" {
         return api.RplPriceResponse{}, fmt.Errorf("Could not get network RPL price: %s", response.Error)
     }
+    if response.RplPrice == nil { response.RplPrice = big.NewInt(0) }
+    if response.MinPerMinipoolRplStake == nil { response.MinPerMinipoolRplStake = big.NewInt(0) }
+    if response.MaxPerMinipoolRplStake == nil { response.MaxPerMinipoolRplStake = big.NewInt(0) }
     return response, nil
 }
 
