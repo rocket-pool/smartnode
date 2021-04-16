@@ -1,18 +1,18 @@
 package minipool
 
 import (
-    "bytes"
-    "fmt"
+	"bytes"
+	"fmt"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    "github.com/rocket-pool/smartnode/shared/types/api"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -90,13 +90,30 @@ func dissolveMinipools(c *cli.Context) error {
 
     // Dissolve and close minipools
     for _, minipool := range selectedMinipools {
-        if _, err := rp.DissolveMinipool(minipool.Address); err != nil {
+        response, err := rp.DissolveMinipool(minipool.Address)
+        if err != nil {
+            fmt.Printf("Could not dissolve minipool %s: %s.\n", minipool.Address.Hex(), err)
+            continue
+        }
+
+        fmt.Printf("Dissolving minipool %s...\n", minipool.Address.Hex())
+        cliutils.PrintTransactionHash(response.TxHash)
+        if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not dissolve minipool %s: %s.\n", minipool.Address.Hex(), err)
             continue
         } else {
             fmt.Printf("Successfully dissolved minipool %s.\n", minipool.Address.Hex())
         }
-        if _, err := rp.CloseMinipool(minipool.Address); err != nil {
+
+        closeResponse, err := rp.CloseMinipool(minipool.Address)
+        if err != nil {
+            fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err)
+            continue
+        }
+
+        fmt.Printf("Closing minipool %s...\n", minipool.Address.Hex())
+        cliutils.PrintTransactionHash(closeResponse.TxHash)
+        if _, err = rp.WaitForTransaction(closeResponse.TxHash); err != nil {
             fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err)
         } else {
             fmt.Printf("Successfully closed minipool %s.\n", minipool.Address.Hex())

@@ -137,6 +137,7 @@ func nodeDeposit(c *cli.Context) error {
     }
 
     // Log and wait for the minipool address
+    fmt.Printf("Creating minipool...\n")
     cliutils.PrintTransactionHash(response.TxHash)
     minipoolResponse, err := rp.GetMinipoolAddress(response.TxHash)
     if err != nil {

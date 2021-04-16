@@ -1,16 +1,16 @@
 package node
 
 import (
-    "fmt"
-    "math/big"
-    "strconv"
+	"fmt"
+	"math/big"
+	"strconv"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -104,7 +104,14 @@ func nodeWithdrawRpl(c *cli.Context) error {
     }
 
     // Withdraw RPL
-    if _, err := rp.NodeWithdrawRpl(amountWei); err != nil {
+    response, err := rp.NodeWithdrawRpl(amountWei)
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("Withdrawing RPL...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

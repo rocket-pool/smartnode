@@ -167,22 +167,3 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
 }
 
-
-func waitForSendTransaction(c *cli.Context, hash common.Hash) (*api.APIResponse, error) {
-
-    // Get services
-    ec, err := services.GetEthClient(c)
-    if err != nil { return nil, err }
-
-    // Response
-    response := api.APIResponse{}
-
-    _, err = eth.WaitForSendTransaction(ec, hash)
-    if err != nil {
-        return nil, err 
-    }
-
-    return &response, nil
-    
-}
-
