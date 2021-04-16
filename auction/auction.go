@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -566,6 +567,16 @@ func RecoverUnclaimedRPL(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.
         return common.Hash{}, fmt.Errorf("Could not recover unclaimed RPL from lot %d: %w", lotIndex, err)
     }
     return hash, nil
+}
+
+
+// Wait for a transaction to get mined
+func WaitForTransaction(rp *rocketpool.RocketPool, hash common.Hash) (*types.Receipt, error) {
+    rocketAuctionManager, err := getRocketAuctionManager(rp)
+    if err != nil {
+        return nil, err
+    }
+    return rocketAuctionManager.WaitForTransaction(hash)
 }
 
 
