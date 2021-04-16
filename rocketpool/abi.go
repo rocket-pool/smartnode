@@ -49,7 +49,9 @@ func EncodeAbiStr(abiStr string) (string, error) {
     if _, err := zlibWriter.Write([]byte(abiStr)); err != nil {
         return "", fmt.Errorf("Could not zlib-compress ABI string: %w", err)
     }
-    zlibWriter.Flush()
+    if err := zlibWriter.Flush(); err != nil {
+        return "", fmt.Errorf("Could not zlib-compress ABI string: %w", err)
+    }
 
     // base64 encode & return
     return base64.StdEncoding.EncodeToString(abiCompressed.Bytes()), nil
