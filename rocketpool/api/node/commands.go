@@ -290,10 +290,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
-                Name:      "deposit-wait",
-                Aliases:   []string{"dw"},
-                Usage:     "Wait for a deposit to complete",
-                UsageText: "rocketpool api node deposit-wait tx-hash",
+                Name:      "get-minipool-address",
+                Aliases:   []string{"m"},
+                Usage:     "Wait for a deposit to complete and get the resulting minipool address",
+                UsageText: "rocketpool api node get-minipool-address tx-hash",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -302,7 +302,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(waitForSendTransaction(c, hash))
+                    api.PrintResponse(getMinipoolAddress(c, hash))
                     return nil
 
                 },
