@@ -58,7 +58,7 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase, gasPrice, gasLimit string) (*Client, error) {
+func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, gasPrice, gasLimit string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -78,12 +78,21 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, keyPassphrase
             return nil, fmt.Errorf("Could not read SSH private key at %s: %w", keyPath, err)
         }
 
+        // Read passphrase
+        var passphrase []byte
+        if passphrasePath != "" {
+            passphrase, err = ioutil.ReadFile(os.ExpandEnv(passphrasePath))
+            if err != nil {
+                return nil, fmt.Errorf("Could not read SSH passphrase at %s: %w", passphrasePath, err)
+            }
+        }
+
         // Parse private key
         var key ssh.Signer
-        if keyPassphrase == "" {
+        if passphrase == nil {
             key, err = ssh.ParsePrivateKey(keyBytes)
         } else {
-            key, err = ssh.ParsePrivateKeyWithPassphrase(keyBytes, []byte(keyPassphrase))
+            key, err = ssh.ParsePrivateKeyWithPassphrase(keyBytes, passphrase)
         }
         if err != nil {
             return nil, fmt.Errorf("Could not parse SSH private key at %s: %w", keyPath, err)

@@ -79,7 +79,7 @@ ______           _        _    ______           _
         },
         cli.StringFlag{
             Name:  "passphrase, p",
-            Usage: "Smart node SSH key `passphrase`",
+            Usage: "Smart node SSH key passphrase `file`",
         },
         cli.StringFlag{
             Name:  "gasPrice, g",
