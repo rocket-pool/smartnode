@@ -87,7 +87,7 @@ func nodeSwapRpl(c *cli.Context) error {
     }
     hash := response.ApproveTxHash
     fmt.Printf("Approving old RPL for swap...\n")
-    cliutils.PrintTransactionHash(hash)
+    cliutils.PrintTransactionHashNoCancel(hash)
     
     // Swap RPL
     swapResponse, err := rp.NodeSwapRpl(amountWei, hash)

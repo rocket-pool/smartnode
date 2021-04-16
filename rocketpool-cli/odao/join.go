@@ -92,7 +92,7 @@ func join(c *cli.Context) error {
     }
     hash := response.ApproveTxHash
     fmt.Printf("Approving RPL for joining the Oracle DAO...\n")
-    cliutils.PrintTransactionHash(hash)
+    cliutils.PrintTransactionHashNoCancel(hash)
 
     // Join the ODAO
     joinResponse, err := rp.JoinTNDAO(hash)

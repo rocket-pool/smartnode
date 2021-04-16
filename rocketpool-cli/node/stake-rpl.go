@@ -41,7 +41,7 @@ func nodeStakeRpl(c *cli.Context) error {
             }
             hash := response.ApproveTxHash
             fmt.Printf("Approving old RPL for swap...\n")
-            cliutils.PrintTransactionHash(hash)
+            cliutils.PrintTransactionHashNoCancel(hash)
             
             // Swap RPL
             swapResponse, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL, hash)
@@ -161,7 +161,7 @@ func nodeStakeRpl(c *cli.Context) error {
     }
     hash := response.ApproveTxHash
     fmt.Printf("Approving RPL for staking...\n")
-    cliutils.PrintTransactionHash(hash)
+    cliutils.PrintTransactionHashNoCancel(hash)
 
     // Stake RPL
     stakeResponse, err := rp.NodeStakeRpl(amountWei, hash)
