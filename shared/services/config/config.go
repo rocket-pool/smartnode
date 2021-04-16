@@ -167,12 +167,14 @@ func ValidateDefaults(Chain Chain, ChainName string) error {
 
 
 // Merge configs
-func Merge(configs ...*RocketPoolConfig) RocketPoolConfig {
+func Merge(configs ...*RocketPoolConfig) (RocketPoolConfig, error) {
     var merged RocketPoolConfig
     for i := len(configs) - 1; i >= 0; i-- {
-        mergo.Merge(&merged, configs[i])
+        if err := mergo.Merge(&merged, configs[i]); err != nil {
+            return RocketPoolConfig{}, fmt.Errorf("Could not merge configs: %w", err)
+        }
     }
-    return merged
+    return merged, nil
 }
 
 
@@ -191,7 +193,7 @@ func Load(c *cli.Context) (RocketPoolConfig, error) {
     cliConfig := getCliConfig(c)
 
     // Merge and return
-    return Merge(&globalConfig, &userConfig, &cliConfig), nil
+    return Merge(&globalConfig, &userConfig, &cliConfig)
 
 }
 

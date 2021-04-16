@@ -146,7 +146,7 @@ func (c *Client) LoadMergedConfig() (config.RocketPoolConfig, error) {
     if err != nil {
         return config.RocketPoolConfig{}, err
     }
-    return config.Merge(&globalConfig, &userConfig), nil
+    return config.Merge(&globalConfig, &userConfig)
 }
 
 
