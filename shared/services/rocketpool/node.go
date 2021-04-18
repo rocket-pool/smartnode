@@ -24,6 +24,9 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
     if response.Error != "" {
         return api.NodeStatusResponse{}, fmt.Errorf("Could not get node status: %s", response.Error)
     }
+    if response.RplStake == nil { response.RplStake = big.NewInt(0) }
+    if response.EffectiveRplStake == nil { response.EffectiveRplStake = big.NewInt(0) }
+    if response.MinimumRplStake == nil { response.MinimumRplStake = big.NewInt(0) }
     return response, nil
 }
 
