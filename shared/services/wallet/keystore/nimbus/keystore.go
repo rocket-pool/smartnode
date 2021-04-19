@@ -28,7 +28,7 @@ const (
 )
 
 
-// Lighthouse keystore
+// Nimbus keystore
 type Keystore struct {
     keystorePath string
     pm *passwords.PasswordManager
@@ -46,7 +46,7 @@ type validatorKey struct {
 }
 
 
-// Create new lighthouse keystore
+// Create new nimbus keystore
 func NewKeystore(keystorePath string, passwordManager *passwords.PasswordManager) *Keystore {
     return &Keystore{
         keystorePath: keystorePath,
