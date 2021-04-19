@@ -1,0 +1,28 @@
+name: rocketpool
+version: git
+description: |
+  Rocket Pool is a next generation Ethereum proof of stake (PoS) infrastructure
+  service designed to be highly decentralised, distributed and compatible with
+  Ethereum 2.0. This package contains the Rocket Pool smart node.
+summary: The Rocket Pool smart node
+base: core18
+confinement: classic
+grade: devel
+parts:
+  rocketpool:
+    plugin: go
+    source: .
+    go-packages:
+      - github.com/rocket-pool/smartnode/rocketpool
+      - github.com/rocket-pool/smartnode/rocketpool-cli
+      - github.com/rocket-pool/smartnode/shared
+      - github.com/rocket-pool/smartnode/rocketpool-pow-proxy
+    go-importpath: github.com/rocket-pool/smartnode
+    stage-packages:
+      - curl
+apps:
+  rocketpool:
+    command: bin/rocketpool-cli
+    plugs:
+    - docker
+    - network
