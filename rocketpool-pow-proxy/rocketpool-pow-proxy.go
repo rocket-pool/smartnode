@@ -51,6 +51,11 @@ func main() {
             Value: "",
         },
         cli.StringFlag{
+            Name:  "wsURL, x",
+            Usage: "External Eth 1.0 provider `wsURL` (defaults to Infura)",
+            Value: "",
+        },
+        cli.StringFlag{
             Name:  "network, n",
             Usage: "`Network` to connect to via Infura",
             Value: "goerli",
@@ -78,7 +83,7 @@ func main() {
     
         // Websocket server
         go func() {
-            proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("providerUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
+            proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("wsURL"), c.GlobalString("network"), c.GlobalString("projectId"))
             proxyServer.Start()
             wg.Done()
         }()
