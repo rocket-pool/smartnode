@@ -37,7 +37,7 @@ ______           _        _    ______           _
     // Set application info
     app.Name = "rocketpool"
     app.Usage = "Rocket Pool CLI"
-    app.Version = "1.0.0-beta.2"
+    app.Version = "1.0.0-beta.3"
     app.Authors = []cli.Author{
         cli.Author{
             Name:  "David Rugendyke",
@@ -79,7 +79,7 @@ ______           _        _    ______           _
         },
         cli.StringFlag{
             Name:  "passphrase, p",
-            Usage: "Smart node SSH key `passphrase`",
+            Usage: "Smart node SSH key passphrase `file`",
         },
         cli.StringFlag{
             Name:  "gasPrice, g",

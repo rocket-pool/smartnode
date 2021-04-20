@@ -9,7 +9,7 @@ import (
 
 // Config
 const (
-    MinPasswordLength = 8
+    MinPasswordLength = 12
     FileMode = 0600
 )
 
