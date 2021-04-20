@@ -1,28 +1,28 @@
 package watchtower
 
 import (
-    "fmt"
-    "math/big"
+	"context"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/crypto"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
-    "github.com/rocket-pool/smartnode/shared/services/wallet"
-    "github.com/rocket-pool/smartnode/shared/utils/eth2"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
-    "github.com/rocket-pool/smartnode/shared/utils/rp"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
-
 
 // Settings
 const MinipoolWithdrawableDetailsBatchSize = 20
@@ -309,6 +309,25 @@ func (t *submitWithdrawableMinipools) getMinipoolWithdrawableDetails(nodeAddress
         return minipoolWithdrawableDetails{}, err
     }
     if nodeSubmittedMinipool {
+        return minipoolWithdrawableDetails{}, nil
+    }
+
+    // Get the current ETH balance
+    ethBalance, err := t.rp.Client.BalanceAt(context.Background(), minipoolAddress, nil)
+    if err != nil {
+        return minipoolWithdrawableDetails{}, err
+    }
+
+    // Get the refund balance
+    refundBalance, err := mp.GetNodeRefundBalance(nil)
+    if err != nil {
+        return minipoolWithdrawableDetails{}, err
+    }
+
+    // Check if there's enough ETH to assume a successful withdrawal)
+    remainingBalance := big.NewInt(0)
+    remainingBalance.Sub(ethBalance, refundBalance)
+    if remainingBalance.Cmp(endBalance) == -1 {
         return minipoolWithdrawableDetails{}, nil
     }
 
