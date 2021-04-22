@@ -19,7 +19,7 @@ func main() {
     // Set application info
     app.Name = "rocketpool-pow-proxy"
     app.Usage = "Rocket Pool Eth 1.0 proxy server"
-    app.Version = "0.0.1"
+    app.Version = "1.0.0-beta.4"
     app.Authors = []cli.Author{
         cli.Author{
             Name:  "David Rugendyke",
