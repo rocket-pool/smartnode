@@ -1,13 +1,13 @@
 package proxy
 
 import (
-    "fmt"
-    "log"
+	"fmt"
+	"log"
 	"net/http"
 	"sync"
-    "github.com/gorilla/websocket"
-)
 
+	"github.com/gorilla/websocket"
+)
 
 // Config
 const InfuraWsURL = "wss://%s.infura.io/ws/v3/%s"
@@ -67,8 +67,8 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     // Connect to Infura
     infuraConnection, _, err := websocket.DefaultDialer.Dial(p.ProviderUrl, nil)
     if err != nil {
-        log.Println(fmt.Errorf("Error connecting to Infura: %w", err))
-        fmt.Fprintln(w, fmt.Errorf("Error connecting to Infura: %w", err))
+        log.Println(fmt.Errorf("Error connecting to remote websocket: %w", err))
+        fmt.Fprintln(w, fmt.Errorf("Error connecting to remote websocket: %w", err))
 	}
 	defer infuraConnection.Close()
 
@@ -76,7 +76,7 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     wg := new(sync.WaitGroup)
     wg.Add(2)
 
-    // Run the eth2-to-Infura loop
+    // Run the eth2-to-remote loop
 	go func() {
         for {
             // Read from eth2
@@ -87,13 +87,10 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			    break
 		    }
 
-            // Log request
-            // log.Print("New websocket message request received from ETH2\n")
-
-            // Send it to Infura
+            // Send it to the remote server
             if err = infuraConnection.WriteMessage(mt, message); err != nil {
-                log.Println(fmt.Errorf("Error writing to Infura: %w", err))
-                fmt.Fprintln(w, fmt.Errorf("Error writing to Infura: %w", err))
+                log.Println(fmt.Errorf("Error writing to remote websocket: %w", err))
+                fmt.Fprintln(w, fmt.Errorf("Error writing to remote websocket: %w", err))
 			    break
 		    }
         }
@@ -101,19 +98,16 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         wg.Done()
 	}()
 	
-    // Run the Infura-to-eth2 loop
+    // Run the remote-to-eth2 loop
     go func() {
         for {
-            // Read from Infura
+            // Read from the remote server
             mt, message, err := infuraConnection.ReadMessage()
 		    if err != nil {
-                log.Println(fmt.Errorf("Error reading from Infura: %w", err))
-                fmt.Fprintln(w, fmt.Errorf("Error reading from Infura: %w", err))
+                log.Println(fmt.Errorf("Error reading from remote websocket: %w", err))
+                fmt.Fprintln(w, fmt.Errorf("Error reading from remote websocket: %w", err))
 			    break
 		    }
-
-            // Log request
-            // log.Print("New websocket message request received from Infura\n")
 
             // Send it to eth2
             if err = eth2Connection.WriteMessage(mt, message); err != nil {
