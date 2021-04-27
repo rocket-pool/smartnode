@@ -239,18 +239,30 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
 
 
 // Set a node's withdrawal address
-func SetWithdrawalAddress(rp *rocketpool.RocketPool, withdrawalAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func SetWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return nil, err
     }
-    txReceipt, err := rocketNodeManager.Transact(opts, "setWithdrawalAddress", withdrawalAddress)
+    txReceipt, err := rocketNodeManager.Transact(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
     if err != nil {
         return nil, fmt.Errorf("Could not set node withdrawal address: %w", err)
     }
     return txReceipt, nil
 }
 
+// Set a node's withdrawal address
+func ConfirmWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
+    if err != nil {
+        return nil, err
+    }
+    txReceipt, err := rocketNodeManager.Transact(opts, "confirmWithdrawalAddress", nodeAddress)
+    if err != nil {
+        return nil, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
+    }
+    return txReceipt, nil
+}
 
 // Set a node's timezone location
 func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (*types.Receipt, error) {

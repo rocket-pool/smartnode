@@ -75,7 +75,39 @@ func TestSetWithdrawalAddress(t *testing.T) {
 
     // Set withdrawal address
     withdrawalAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
-    if _, err := node.SetWithdrawalAddress(rp, withdrawalAddress, nodeAccount.GetTransactor()); err != nil {
+    if _, err := node.SetWithdrawalAddress(rp, nodeAccount.Address, withdrawalAddress, true, nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check node withdrawal address
+    if nodeWithdrawalAddress, err := node.GetNodeWithdrawalAddress(rp, nodeAccount.Address, nil); err != nil {
+        t.Error(err)
+    } else if !bytes.Equal(nodeWithdrawalAddress.Bytes(), withdrawalAddress.Bytes()) {
+        t.Errorf("Incorrect node withdrawal address '%s'", nodeWithdrawalAddress.Hex())
+    }
+
+}
+
+
+func TestSetWithdrawalAddressConfirmation(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register node
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Set withdrawal address
+    withdrawalAddress := withdrawalAccount.Address
+    if _, err := node.SetWithdrawalAddress(rp, nodeAccount.Address, withdrawalAddress, false, nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Confirm withdrawal address
+    if _, err := node.ConfirmWithdrawalAddress(rp, nodeAccount.Address, withdrawalAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
