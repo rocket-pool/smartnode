@@ -42,21 +42,6 @@ func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts 
 }
 
 
-// Replace node's position in the trusted node DAO with another node
-// Requires an executed replace proposal
-func Replace(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return nil, err
-    }
-    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionReplace")
-    if err != nil {
-        return nil, fmt.Errorf("Could not replace node's position in the trusted node DAO: %w", err)
-    }
-    return txReceipt, nil
-}
-
-
 // Make a challenge against a node
 func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
     rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
