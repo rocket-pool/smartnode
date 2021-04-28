@@ -329,7 +329,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
     }
 
     // Call payout method
-    if _, err := mp.Payout(nodeAccount.GetTransactor()); err != nil {
+    if _, err := mp.Payout(true, nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
