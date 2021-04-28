@@ -90,7 +90,7 @@ func withdrawMinipools(c *cli.Context) error {
         }
     
         fmt.Printf("Withdrawing from minipool %s...\n", minipool.Address.Hex())
-        cliutils.PrintTransactionHash(c, response.TxHash)
+        cliutils.PrintTransactionHash(rp, response.TxHash)
         if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not withdraw from minipool %s: %s.\n", minipool.Address.Hex(), err)
         } else {

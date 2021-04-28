@@ -97,7 +97,7 @@ func claimFromLot(c *cli.Context) error {
         }
 
         fmt.Printf("Claiming from lot %d...\n", lot.Details.Index)
-        cliutils.PrintTransactionHash(c, response.TxHash)
+        cliutils.PrintTransactionHash(rp, response.TxHash)
         if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not claim RPL from lot %d: %s.\n", lot.Details.Index, err)
         } else {

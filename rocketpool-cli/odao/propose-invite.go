@@ -41,7 +41,7 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
     }
 
     fmt.Printf("Inviting %s to the oracle DAO...\n", memberAddress.Hex())
-    cliutils.PrintTransactionHash(c, response.TxHash)
+    cliutils.PrintTransactionHash(rp, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

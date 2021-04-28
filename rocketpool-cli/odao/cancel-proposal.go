@@ -89,7 +89,7 @@ func cancelProposal(c *cli.Context) error {
     }
 
     fmt.Printf("Canceling proposal...\n")
-    cliutils.PrintTransactionHash(c, response.TxHash)
+    cliutils.PrintTransactionHash(rp, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

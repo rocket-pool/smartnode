@@ -39,7 +39,7 @@ func join(c *cli.Context) error {
             }
             hash := response.ApproveTxHash
             fmt.Printf("Approving old RPL for swap...\n")
-            cliutils.PrintTransactionHash(c, hash)
+            cliutils.PrintTransactionHash(rp, hash)
             
             // Swap RPL
             swapResponse, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL, hash)
@@ -47,7 +47,7 @@ func join(c *cli.Context) error {
                 return err
             }
             fmt.Printf("Swapping old RPL for new RPL...\n")
-            cliutils.PrintTransactionHash(c, swapResponse.SwapTxHash)
+            cliutils.PrintTransactionHash(rp, swapResponse.SwapTxHash)
             if _, err = rp.WaitForTransaction(swapResponse.SwapTxHash); err != nil {
                 return err
             }
@@ -92,7 +92,7 @@ func join(c *cli.Context) error {
     }
     hash := response.ApproveTxHash
     fmt.Printf("Approving RPL for joining the Oracle DAO...\n")
-    cliutils.PrintTransactionHashNoCancel(c, hash)
+    cliutils.PrintTransactionHashNoCancel(rp, hash)
 
     // Join the ODAO
     joinResponse, err := rp.JoinTNDAO(hash)
@@ -100,7 +100,7 @@ func join(c *cli.Context) error {
         return err
     }
     fmt.Printf("Joining the ODAO...\n")
-    cliutils.PrintTransactionHash(c, joinResponse.JoinTxHash)
+    cliutils.PrintTransactionHash(rp, joinResponse.JoinTxHash)
     if _, err = rp.WaitForTransaction(joinResponse.JoinTxHash); err != nil {
         return err
     }

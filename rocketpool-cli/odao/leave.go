@@ -84,7 +84,7 @@ func leave(c *cli.Context) error {
     }
 
     fmt.Printf("Leaving oracle DAO...\n")
-    cliutils.PrintTransactionHash(c, response.TxHash)
+    cliutils.PrintTransactionHash(rp, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

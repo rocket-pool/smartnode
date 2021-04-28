@@ -41,7 +41,7 @@ func proposeReplace(c *cli.Context, memberAddress common.Address, memberId, memb
     }
 
     fmt.Printf("Proposing member replacement...\n")
-    cliutils.PrintTransactionHash(c, response.TxHash)
+    cliutils.PrintTransactionHash(rp, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

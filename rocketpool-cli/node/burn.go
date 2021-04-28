@@ -45,7 +45,7 @@ func nodeBurn(c *cli.Context, amount float64, token string) error {
     }
 
     fmt.Printf("Burning tokens...\n")
-    cliutils.PrintTransactionHash(c, response.TxHash)
+    cliutils.PrintTransactionHash(rp, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

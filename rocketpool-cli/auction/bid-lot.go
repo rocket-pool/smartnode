@@ -148,7 +148,7 @@ func bidOnLot(c *cli.Context) error {
     }
 
     fmt.Printf("Bidding on lot...\n")
-    cliutils.PrintTransactionHash(c, response.TxHash)
+    cliutils.PrintTransactionHash(rp, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

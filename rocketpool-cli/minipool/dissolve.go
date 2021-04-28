@@ -97,7 +97,7 @@ func dissolveMinipools(c *cli.Context) error {
         }
 
         fmt.Printf("Dissolving minipool %s...\n", minipool.Address.Hex())
-        cliutils.PrintTransactionHash(c, response.TxHash)
+        cliutils.PrintTransactionHash(rp, response.TxHash)
         if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not dissolve minipool %s: %s.\n", minipool.Address.Hex(), err)
             continue
@@ -112,7 +112,7 @@ func dissolveMinipools(c *cli.Context) error {
         }
 
         fmt.Printf("Closing minipool %s...\n", minipool.Address.Hex())
-        cliutils.PrintTransactionHash(c, closeResponse.TxHash)
+        cliutils.PrintTransactionHash(rp, closeResponse.TxHash)
         if _, err = rp.WaitForTransaction(closeResponse.TxHash); err != nil {
             fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err)
         } else {
