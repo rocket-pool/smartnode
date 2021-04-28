@@ -183,7 +183,9 @@ func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, s
     }
 
     // Initialize BLS support
-    initializeBLS()
+    if err := initializeBLS(); err != nil {
+        return nil, "", fmt.Errorf("Could not initialize BLS library: %w", err)
+    }
 
     // Get private key
     privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, derivationPath)
@@ -202,9 +204,11 @@ func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, s
 
 // Initialize BLS support
 var initBLS sync.Once
-func initializeBLS() {
+func initializeBLS() error {
+    var err error
     initBLS.Do(func() {
-        eth2types.InitBLS()
+        err = eth2types.InitBLS()
     })
+    return err
 }
 

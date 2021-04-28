@@ -3,6 +3,7 @@ package rocketpool
 import (
     "encoding/json"
     "fmt"
+    "math/big"
 
     "github.com/ethereum/go-ethereum/common"
 
@@ -22,6 +23,10 @@ func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
     }
     if response.Error != "" {
         return api.MinipoolStatusResponse{}, fmt.Errorf("Could not get minipool status: %s", response.Error)
+    }
+    for _, mp := range response.Minipools {
+        if mp.Validator.Balance == nil { mp.Validator.Balance = big.NewInt(0) }
+        if mp.Validator.NodeBalance == nil { mp.Validator.NodeBalance = big.NewInt(0) }
     }
     return response, nil
 }

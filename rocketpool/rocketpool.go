@@ -22,7 +22,7 @@ func main() {
     // Set application info
     app.Name = "rocketpool"
     app.Usage = "Rocket Pool service"
-    app.Version = "1.0.0-beta.2"
+    app.Version = "1.0.0-beta.3"
     app.Authors = []cli.Author{
         cli.Author{
             Name:  "David Rugendyke",
@@ -50,6 +50,14 @@ func main() {
         cli.StringFlag{
             Name:  "storageAddress, a",
             Usage: "Rocket Pool storage contract `address`",
+        },
+        cli.StringFlag{
+            Name:  "oneInchOracleAddress, o",
+            Usage: "1inch exchange oracle contract `address`",
+        },
+        cli.StringFlag{
+            Name:  "rplTokenAddress, t",
+            Usage: "RPL token contract `address`",
         },
         cli.StringFlag{
             Name:  "password, p",
