@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -173,16 +172,6 @@ func ExecuteProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tr
         return common.Hash{}, fmt.Errorf("Could not execute trusted node DAO proposal %d: %w", proposalId, err)
     }
     return hash, nil
-}
-
-
-// Wait for a transaction to get mined
-func WaitForTransaction(rp *rocketpool.RocketPool, hash common.Hash) (*types.Receipt, error) {
-    rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
-    if err != nil {
-        return nil, err
-    }
-    return rocketDAONodeTrustedProposals.WaitForTransaction(hash)
 }
 
 

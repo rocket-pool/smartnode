@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tests"
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/rocketpool-go/utils"
 )
 
 
@@ -40,7 +41,7 @@ func TestSendTransaction(t *testing.T) {
     if err != nil {
         t.Fatal(err)
     }
-    if _, err := eth.WaitForSendTransaction(client, hash); err != nil {
+    if _, err := utils.WaitForTransaction(client, hash); err != nil {
         t.Fatal(err)
     }
 

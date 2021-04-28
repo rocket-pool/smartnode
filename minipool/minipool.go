@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -457,16 +456,6 @@ func GetMinipoolWithdrawalProcessed(rp *rocketpool.RocketPool, minipoolAddress c
         return false, fmt.Errorf("Could not get minipool %s withdrawal processed status: %w", minipoolAddress.Hex(), err)
     }
     return *processed, nil
-}
-
-
-// Wait for a transaction to get mined
-func WaitForTransaction(rp *rocketpool.RocketPool, hash common.Hash) (*types.Receipt, error) {
-    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
-    if err != nil {
-        return nil, err
-    }
-    return rocketMinipoolManager.WaitForTransaction(hash)
 }
 
 

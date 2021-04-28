@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
@@ -39,7 +40,7 @@ func CreateMinipool(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accoun
     opts.Value = depositAmount
     hash, err := node.Deposit(rp, 0, opts)
     if err != nil { return nil, err }
-    txReceipt, err := node.WaitForTransaction(rp, hash)
+    txReceipt, err := utils.WaitForTransaction(rp.Client, hash)
     if err != nil { return nil, err }
 
     // Get minipool manager contract

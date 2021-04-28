@@ -2,7 +2,6 @@ package eth
 
 import (
 	"context"
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -71,31 +70,6 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
     }
 
     return signedTx.Hash(), nil
-
-}
-
-
-func WaitForSendTransaction(client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
-
-    // Get the tx by its hash
-    tx, _, err := client.TransactionByHash(context.Background(), hash)
-    if err != nil {
-        return nil, err
-    }
-
-    // Wait for transaction to be mined
-    txReceipt, err := bind.WaitMined(context.Background(), client, tx)
-    if err != nil {
-        return nil, err
-    }
-
-    // Check transaction status
-    if txReceipt.Status == 0 {
-        return txReceipt, errors.New("Transaction failed with status 0")
-    }
-
-    // Return
-    return txReceipt, nil
 
 }
 

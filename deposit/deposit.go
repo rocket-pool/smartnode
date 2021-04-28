@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
@@ -65,16 +64,6 @@ func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.
         return common.Hash{}, fmt.Errorf("Could not assign deposits: %w", err)
     }
     return hash, nil
-}
-
-
-// Wait for a transaction to get mined
-func WaitForTransaction(rp *rocketpool.RocketPool, hash common.Hash) (*types.Receipt, error) {
-    rocketDepositPool, err := getRocketDepositPool(rp)
-    if err != nil {
-        return nil, err
-    }
-    return rocketDepositPool.WaitForTransaction(hash)
 }
 
 

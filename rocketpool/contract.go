@@ -89,21 +89,6 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 
-// Block until a transaction is mined, then return the receipt
-func (c *Contract) WaitForTransaction(hash common.Hash) (*types.Receipt, error) {
-
-    // Get the transaction from its hash
-    tx, _, err := c.Client.TransactionByHash(context.Background(), hash)
-    if err != nil {
-        return nil, err
-    }
-
-    // Get & return transaction receipt
-    return c.getTransactionReceipt(tx)
-
-}
-
-
 // Estimate the gas limit for a contract transaction
 func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint64, error) {
 

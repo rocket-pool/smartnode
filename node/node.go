@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -262,16 +261,6 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
         return common.Hash{}, fmt.Errorf("Could not set node timezone location: %w", err)
     }
     return hash, nil
-}
-
-
-// Wait for a transaction to get mined
-func WaitForTransaction(rp *rocketpool.RocketPool, hash common.Hash) (*types.Receipt, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return nil, err
-    }
-    return rocketNodeManager.WaitForTransaction(hash)
 }
 
 
