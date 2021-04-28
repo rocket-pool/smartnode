@@ -13,10 +13,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
@@ -269,25 +267,6 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
 
     // Return
     return details, nil
-
-}
-
-
-// Waits for an ODAO transaction
-func waitForTransaction(c *cli.Context, hash common.Hash) (*api.APIResponse, error) {
-    
-    rp, err := services.GetRocketPool(c)
-    if err != nil { return nil, err }
-
-    // Response
-    response := api.APIResponse{}
-    _, err = minipool.WaitForTransaction(rp, hash)
-    if err != nil {
-        return nil, err
-    }
-
-    // Return response
-    return &response, nil
 
 }
 

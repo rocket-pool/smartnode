@@ -6,13 +6,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -148,25 +144,6 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
         WithdrawalAvailable: (status == types.Withdrawable && !nodeWithdrawn && (currentBlock - statusBlock) >= withdrawalDelay),
         CloseAvailable: (status == types.Dissolved),
     }, nil
-
-}
-
-
-// Waits for an ODAO transaction
-func waitForTransaction(c *cli.Context, hash common.Hash) (*api.APIResponse, error) {
-    
-    rp, err := services.GetRocketPool(c)
-    if err != nil { return nil, err }
-
-    // Response
-    response := api.APIResponse{}
-    _, err = node.WaitForTransaction(rp, hash)
-    if err != nil {
-        return nil, err
-    }
-
-    // Return response
-    return &response, nil
 
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -178,7 +179,7 @@ func getMinipoolAddress(c *cli.Context, hash common.Hash) (*api.NodeDepositMinip
     if err != nil { return nil, err }
 
     // Wait for the deposit TX to successfully get mined
-    txReceipt, err := node.WaitForTransaction(rp, hash)
+    txReceipt, err := utils.WaitForTransaction(rp.Client, hash)
     if err != nil {
         return nil, err
     }

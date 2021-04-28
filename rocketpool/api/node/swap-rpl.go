@@ -4,8 +4,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -91,7 +91,7 @@ func waitForApprovalAndSwapFsRpl(c *cli.Context, amountWei *big.Int, hash common
     if err != nil { return nil, err }
 
     // Wait for the fixed-supply RPL approval TX to successfully get mined
-    _, err = node.WaitForTransaction(rp, hash)
+    _, err = utils.WaitForTransaction(rp.Client, hash)
     if err != nil {
         return nil, err
     }

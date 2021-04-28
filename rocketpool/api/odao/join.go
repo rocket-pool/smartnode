@@ -4,10 +4,10 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -147,7 +147,7 @@ func waitForApprovalAndJoin(c *cli.Context, hash common.Hash) (*api.JoinTNDAOJoi
     if err != nil { return nil, err }
 
     // Wait for the RPL approval TX to successfully get mined
-    _, err = trustednode.WaitForTransaction(rp, hash)
+    _, err = utils.WaitForTransaction(rp.Client, hash)
     if err != nil {
         return nil, err
     }

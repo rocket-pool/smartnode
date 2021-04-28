@@ -5,14 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -175,25 +171,6 @@ func getProposalStates(rp *rocketpool.RocketPool) ([]rptypes.ProposalState, erro
 
     // Return
     return states, nil
-
-}
-
-
-// Waits for an ODAO transaction
-func waitForTransaction(c *cli.Context, hash common.Hash) (*api.APIResponse, error) {
-    
-    rp, err := services.GetRocketPool(c)
-    if err != nil { return nil, err }
-
-    // Response
-    response := api.APIResponse{}
-    _, err = trustednode.WaitForTransaction(rp, hash)
-    if err != nil {
-        return nil, err
-    }
-
-    // Return response
-    return &response, nil
 
 }
 

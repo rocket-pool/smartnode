@@ -212,24 +212,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
-            cli.Command{
-                Name:      "wait",
-                Usage:     "Wait for a minipool transaction to be mined",
-                UsageText: "rocketpool api minipool wait tx-hash",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(waitForTransaction(c, hash))
-                    return nil
-
-                },
-            },
-
         },
     })
 }
