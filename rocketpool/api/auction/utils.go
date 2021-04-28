@@ -10,10 +10,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -266,21 +264,3 @@ func getLotDetails(rp *rocketpool.RocketPool, bidderAddress common.Address, lotI
 
 }
 
-
-// Waits for an auction transaction
-func waitForTransaction(c *cli.Context, hash common.Hash) (*api.APIResponse, error) {
-    
-    rp, err := services.GetRocketPool(c)
-    if err != nil { return nil, err }
-
-    // Response
-    response := api.APIResponse{}
-    _, err = auction.WaitForTransaction(rp, hash)
-    if err != nil {
-        return nil, err
-    }
-
-    // Return response
-    return &response, nil
-
-}

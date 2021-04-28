@@ -1,16 +1,40 @@
 package api
 
 import (
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/rocketpool/api/auction"
-    "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
-    "github.com/rocket-pool/smartnode/rocketpool/api/network"
-    "github.com/rocket-pool/smartnode/rocketpool/api/node"
-    "github.com/rocket-pool/smartnode/rocketpool/api/odao"
-    "github.com/rocket-pool/smartnode/rocketpool/api/queue"
-    "github.com/rocket-pool/smartnode/rocketpool/api/wallet"
+	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/smartnode/rocketpool/api/auction"
+	"github.com/rocket-pool/smartnode/rocketpool/api/minipool"
+	"github.com/rocket-pool/smartnode/rocketpool/api/network"
+	"github.com/rocket-pool/smartnode/rocketpool/api/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/odao"
+	"github.com/rocket-pool/smartnode/rocketpool/api/queue"
+	"github.com/rocket-pool/smartnode/rocketpool/api/wallet"
+	"github.com/rocket-pool/smartnode/shared/services"
+	apitypes "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
+
+// Waits for an auction transaction
+func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.APIResponse, error) {
+    
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := apitypes.APIResponse{}
+    _, err = utils.WaitForTransaction(rp.Client, hash)
+    if err != nil {
+        return nil, err
+    }
+
+    // Return response
+    return &response, nil
+
+}
 
 
 // Register commands
@@ -37,6 +61,24 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         odao.RegisterSubcommands(&command, "odao",     []string{"o"})
        queue.RegisterSubcommands(&command, "queue",    []string{"q"})
       wallet.RegisterSubcommands(&command, "wallet",   []string{"w"})
+
+    // Append a genral wait-for-transaction command to support async operations
+    command.Subcommands = append(command.Subcommands, cli.Command{
+        Name: "wait",
+        Aliases: []string{"t"},
+        Usage: "Wait for a transaction to complete",
+        UsageText: "rocketpool api wait tx-hash",
+        Action: func(c *cli.Context) error {
+            // Validate args
+            if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+            hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(0))
+            if err != nil { return err }
+
+            // Run
+            api.PrintResponse(waitForTransaction(c, hash))
+            return nil
+        },
+    })
 
     // Register CLI command
     app.Commands = append(app.Commands, command)
