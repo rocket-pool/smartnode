@@ -29,7 +29,6 @@ type NodeDetails struct {
     DepositBalance *big.Int         `json:"depositBalance"`
     RefundBalance *big.Int          `json:"refundBalance"`
     DepositAssigned bool            `json:"depositAssigned"`
-    Withdrawn bool                  `json:"withdrawn"`
 }
 type UserDetails struct {
     DepositBalance *big.Int         `json:"depositBalance"`
@@ -39,7 +38,6 @@ type UserDetails struct {
 type StakingDetails struct {
     StartBalance *big.Int           `json:"startBalance"`
     EndBalance *big.Int             `json:"endBalance"`
-    BalanceWithdrawn bool           `json:"balanceWithdrawn"`
 }
 
 
@@ -151,7 +149,6 @@ func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (NodeDetails, error) {
     var depositBalance *big.Int
     var refundBalance *big.Int
     var depositAssigned bool
-    var withdrawn bool
 
     // Load data
     wg.Go(func() error {
@@ -179,11 +176,6 @@ func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (NodeDetails, error) {
         depositAssigned, err = mp.GetNodeDepositAssigned(opts)
         return err
     })
-    wg.Go(func() error {
-        var err error
-        withdrawn, err = mp.GetNodeWithdrawn(opts)
-        return err
-    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
@@ -197,7 +189,6 @@ func (mp *Minipool) GetNodeDetails(opts *bind.CallOpts) (NodeDetails, error) {
         DepositBalance: depositBalance,
         RefundBalance: refundBalance,
         DepositAssigned: depositAssigned,
-        Withdrawn: withdrawn,
     }, nil
 
 }
@@ -236,14 +227,6 @@ func (mp *Minipool) GetNodeDepositAssigned(opts *bind.CallOpts) (bool, error) {
     }
     return *nodeDepositAssigned, nil
 }
-func (mp *Minipool) GetNodeWithdrawn(opts *bind.CallOpts) (bool, error) {
-    nodeWithdrawn := new(bool)
-    if err := mp.Contract.Call(opts, nodeWithdrawn, "getNodeWithdrawn"); err != nil {
-        return false, fmt.Errorf("Could not get minipool %s node withdrawn status: %w", mp.Address.Hex(), err)
-    }
-    return *nodeWithdrawn, nil
-}
-
 
 // Get user deposit details
 func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (UserDetails, error) {
@@ -314,7 +297,6 @@ func (mp *Minipool) GetStakingDetails(opts *bind.CallOpts) (StakingDetails, erro
     var wg errgroup.Group
     var startBalance *big.Int
     var endBalance *big.Int
-    var balanceWithdrawn bool
 
     // Load data
     wg.Go(func() error {
@@ -327,11 +309,6 @@ func (mp *Minipool) GetStakingDetails(opts *bind.CallOpts) (StakingDetails, erro
         endBalance, err = mp.GetStakingEndBalance(opts)
         return err
     })
-    wg.Go(func() error {
-        var err error
-        balanceWithdrawn, err = mp.GetValidatorBalanceWithdrawn(opts)
-        return err
-    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
@@ -342,7 +319,6 @@ func (mp *Minipool) GetStakingDetails(opts *bind.CallOpts) (StakingDetails, erro
     return StakingDetails{
         StartBalance: startBalance,
         EndBalance: endBalance,
-        BalanceWithdrawn: balanceWithdrawn,
     }, nil
 
 }
@@ -359,13 +335,6 @@ func (mp *Minipool) GetStakingEndBalance(opts *bind.CallOpts) (*big.Int, error) 
         return nil, fmt.Errorf("Could not get minipool %s staking end balance: %w", mp.Address.Hex(), err)
     }
     return *stakingEndBalance, nil
-}
-func (mp *Minipool) GetValidatorBalanceWithdrawn(opts *bind.CallOpts) (bool, error) {
-    validatorBalanceWithdrawn := new(bool)
-    if err := mp.Contract.Call(opts, validatorBalanceWithdrawn, "getValidatorBalanceWithdrawn"); err != nil {
-        return false, fmt.Errorf("Could not get minipool %s validator balance withdrawn status: %w", mp.Address.Hex(), err)
-    }
-    return *validatorBalanceWithdrawn, nil
 }
 
 
@@ -398,15 +367,6 @@ func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSign
     return txReceipt, nil
 }
 
-
-// Withdraw node balances & rewards from the withdrawable minipool and close it
-func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := mp.Contract.Transact(opts, "withdraw")
-    if err != nil {
-        return nil, fmt.Errorf("Could not withdraw from minipool %s: %w", mp.Address.Hex(), err)
-    }
-    return txReceipt, nil
-}
 
 
 // Dissolve the initialized or prelaunch minipool
