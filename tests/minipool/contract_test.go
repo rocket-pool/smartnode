@@ -322,9 +322,22 @@ func TestWithdrawValidatorBalance(t *testing.T) {
         t.Fatal(err)
     }
 
+    // Get node balances before payout
+    nodeBalance1, err := tokens.GetBalances(rp, nodeAccount.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+
     // Call payout method
     if _, err := mp.Payout(nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
+    }
+
+    // Get & check updated node ETH balances
+    if nodeBalance2, err := tokens.GetBalances(rp, nodeAccount.Address, nil); err != nil {
+        t.Fatal(err)
+    } else if nodeBalance2.ETH.Cmp(nodeBalance1.ETH) != 1 {
+        t.Error("node ETH balance did not increase after processing withdrawal")
     }
 
     // Get & check updated token contract ETH balances
