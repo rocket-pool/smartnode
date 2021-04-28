@@ -362,7 +362,7 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (*types.Receipt, error) {
 func (mp *Minipool) Payout(opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := mp.Contract.Transact(opts, "payout", true)
     if err != nil {
-        return nil, fmt.Errorf("Could not refund from minipool %s: %w", mp.Address.Hex(), err)
+        return nil, fmt.Errorf("Could not payout minipool %s: %w", mp.Address.Hex(), err)
     }
     return txReceipt, nil
 }
