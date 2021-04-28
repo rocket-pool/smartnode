@@ -33,7 +33,7 @@ func printTransactionHashImpl(c *cli.Context, hash common.Hash, finalMessage str
 
     config, err := services.GetConfig(c)
     if err != nil {
-        fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable.")
+        fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
     } else {
         txWatchUrl = config.Smartnode.TxWatchUrl
     } 
