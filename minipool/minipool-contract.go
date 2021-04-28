@@ -228,6 +228,7 @@ func (mp *Minipool) GetNodeDepositAssigned(opts *bind.CallOpts) (bool, error) {
     return *nodeDepositAssigned, nil
 }
 
+
 // Get user deposit details
 func (mp *Minipool) GetUserDetails(opts *bind.CallOpts) (UserDetails, error) {
 
@@ -359,7 +360,10 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (*types.Receipt, error) {
 
 
 // Payout withdrawn ETH
-func (mp *Minipool) Payout(opts *bind.TransactOpts) (*types.Receipt, error) {
+func (mp *Minipool) Payout(confirm bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+    if !confirm {
+        return nil, fmt.Errorf("Could not payout minipool %s: confirmation flag must be set to true", mp.Address.Hex())
+    }
     txReceipt, err := mp.Contract.Transact(opts, "payout", true)
     if err != nil {
         return nil, fmt.Errorf("Could not payout minipool %s: %w", mp.Address.Hex(), err)
@@ -376,7 +380,6 @@ func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSign
     }
     return txReceipt, nil
 }
-
 
 
 // Dissolve the initialized or prelaunch minipool
