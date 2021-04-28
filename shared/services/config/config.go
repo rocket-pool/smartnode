@@ -1,19 +1,18 @@
 package config
 
 import (
-    "fmt"
-    "io/ioutil"
-    "math/big"
-    "os"
-    "strconv"
+	"fmt"
+	"io/ioutil"
+	"math/big"
+	"os"
+	"strconv"
 
-    "github.com/imdario/mergo"
-    "github.com/urfave/cli"
-    "gopkg.in/yaml.v2"
+	"github.com/imdario/mergo"
+	"github.com/urfave/cli"
+	"gopkg.in/yaml.v2"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
 
 // Rocket Pool config
 type RocketPoolConfig struct {
@@ -32,6 +31,7 @@ type RocketPoolConfig struct {
         ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
         GasPrice string                 `yaml:"gasPrice,omitempty"`
         GasLimit string                 `yaml:"gasLimit,omitempty"`
+        TxWatchUrl string               `yaml:"txWatchUrl,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
         Eth1 Chain                      `yaml:"eth1,omitempty"`

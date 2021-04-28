@@ -109,7 +109,7 @@ func proposeKick(c *cli.Context) error {
     }
 
     fmt.Printf("Kicking %s from the oracle DAO...\n", selectedMember.Address.Hex())
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

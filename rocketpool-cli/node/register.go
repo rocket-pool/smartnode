@@ -48,7 +48,7 @@ func registerNode(c *cli.Context) error {
     }
 
     fmt.Printf("Registering node...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

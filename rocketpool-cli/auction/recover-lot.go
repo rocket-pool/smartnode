@@ -97,7 +97,7 @@ func recoverRplFromLot(c *cli.Context) error {
         }
 
         fmt.Printf("Recovering lot %d...\n", lot.Details.Index)
-        cliutils.PrintTransactionHash(response.TxHash)
+        cliutils.PrintTransactionHash(c, response.TxHash)
         if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not recover unclaimed RPL from lot %d: %s.\n", lot.Details.Index, err)
         } else {

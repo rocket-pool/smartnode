@@ -31,7 +31,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
     }
 
     fmt.Printf("Setting withdrawal address...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

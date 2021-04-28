@@ -38,7 +38,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
     }
 
     fmt.Printf("Submitting proposal...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
@@ -77,7 +77,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
     }
 
     fmt.Printf("Submitting proposal...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
@@ -116,7 +116,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
     }
 
     fmt.Printf("Submitting proposal...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
@@ -155,7 +155,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
     }
 
     fmt.Printf("Submitting proposal...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
@@ -194,7 +194,7 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
     }
 
     fmt.Printf("Submitting proposal...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
@@ -233,7 +233,7 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
     }
 
     fmt.Printf("Submitting proposal...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
@@ -272,7 +272,7 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
     }
 
     fmt.Printf("Submitting proposal...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
@@ -311,7 +311,7 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     }
 
     fmt.Printf("Submitting proposal...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }

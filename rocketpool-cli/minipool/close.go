@@ -90,7 +90,7 @@ func closeMinipools(c *cli.Context) error {
         }
 
         fmt.Printf("Closing minipool %s...\n", minipool.Address.Hex())
-        cliutils.PrintTransactionHash(response.TxHash)
+        cliutils.PrintTransactionHash(c, response.TxHash)
         if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err)
         } else {

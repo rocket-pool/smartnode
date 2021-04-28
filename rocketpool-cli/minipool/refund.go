@@ -90,7 +90,7 @@ func refundMinipools(c *cli.Context) error {
         }
     
         fmt.Printf("Refunding minipool %s...\n", minipool.Address.Hex())
-        cliutils.PrintTransactionHash(response.TxHash)
+        cliutils.PrintTransactionHash(c, response.TxHash)
         if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not refund ETH from minipool %s: %s.\n", minipool.Address.Hex(), err)
         } else {

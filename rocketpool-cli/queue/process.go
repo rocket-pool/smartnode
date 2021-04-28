@@ -43,7 +43,7 @@ func processQueue(c *cli.Context) error {
     }
 
     fmt.Printf("Processing queue...\n")
-    cliutils.PrintTransactionHash(response.TxHash)
+    cliutils.PrintTransactionHash(c, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
