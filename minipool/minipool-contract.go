@@ -358,6 +358,16 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (*types.Receipt, error) {
 }
 
 
+// Payout withdrawn ETH
+func (mp *Minipool) Payout(opts *bind.TransactOpts) (*types.Receipt, error) {
+    txReceipt, err := mp.Contract.Transact(opts, "payout", true)
+    if err != nil {
+        return nil, fmt.Errorf("Could not refund from minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return txReceipt, nil
+}
+
+
 // Progress the prelaunch minipool to staking
 func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (*types.Receipt, error) {
     txReceipt, err := mp.Contract.Transact(opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)

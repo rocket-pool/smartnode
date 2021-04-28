@@ -322,6 +322,11 @@ func TestWithdrawValidatorBalance(t *testing.T) {
         t.Fatal(err)
     }
 
+    // Call payout method
+    if _, err := mp.Payout(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
     // Get & check updated token contract ETH balances
     if rethContractBalance2, err := tokens.GetRETHContractETHBalance(rp, nil); err != nil {
         t.Fatal(err)
