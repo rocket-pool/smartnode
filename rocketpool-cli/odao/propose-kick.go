@@ -1,19 +1,19 @@
 package odao
 
 import (
-    "bytes"
-    "fmt"
-    "math/big"
-    "strconv"
+	"bytes"
+	"fmt"
+	"math/big"
+	"strconv"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -105,6 +105,12 @@ func proposeKick(c *cli.Context) error {
     // Submit proposal
     response, err := rp.ProposeKickFromTNDAO(selectedMember.Address, fineAmountWei)
     if err != nil {
+        return err
+    }
+
+    fmt.Printf("Kicking %s from the oracle DAO...\n", selectedMember.Address.Hex())
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

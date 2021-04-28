@@ -1,12 +1,12 @@
 package node
 
 import (
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -29,11 +29,11 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) (*ap
     }
 
     // Set withdrawal address
-    txReceipt, err := node.SetWithdrawalAddress(rp, withdrawalAddress, opts)
+    hash, err := node.SetWithdrawalAddress(rp, withdrawalAddress, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

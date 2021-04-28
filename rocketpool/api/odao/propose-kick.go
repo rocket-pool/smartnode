@@ -1,18 +1,18 @@
 package odao
 
 import (
-    "fmt"
-    "math/big"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -107,12 +107,12 @@ func proposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *bi
 
     // Submit proposal
     message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberEmail, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
-    proposalId, txReceipt, err := trustednode.ProposeKickMember(rp, message, memberAddress, fineAmountWei, opts)
+    proposalId, hash, err := trustednode.ProposeKickMember(rp, message, memberAddress, fineAmountWei, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

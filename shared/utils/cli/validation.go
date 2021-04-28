@@ -271,3 +271,4 @@ func ValidateTxHash(name, value string) (common.Hash, error) {
     return hash, nil
 
 }
+

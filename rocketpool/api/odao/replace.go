@@ -1,12 +1,12 @@
 package odao
 
 import (
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -84,11 +84,11 @@ func replace(c *cli.Context) (*api.ReplaceTNDAOPositionResponse, error) {
     }
 
     // Replace position
-    txReceipt, err := trustednode.Replace(rp, opts)
+    hash, err := trustednode.Replace(rp, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

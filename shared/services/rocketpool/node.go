@@ -1,15 +1,14 @@
 package rocketpool
 
 import (
-    "encoding/json"
-    "fmt"
-    "math/big"
+	"encoding/json"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
 
 // Get node status
 func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
@@ -116,18 +115,35 @@ func (c *Client) CanNodeSwapRpl(amountWei *big.Int) (api.CanNodeSwapRplResponse,
 }
 
 
-// Swap node's old RPL tokens for new RPL tokens
-func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl %s", amountWei.String()))
+// Approves old RPL for a token swap
+func (c *Client) NodeSwapRplApprove(amountWei *big.Int) (api.NodeSwapRplApproveResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl-approve-rpl %s", amountWei.String()))
     if err != nil {
-        return api.NodeSwapRplResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
+        return api.NodeSwapRplApproveResponse{}, fmt.Errorf("Could not approve old RPL: %w", err)
     }
-    var response api.NodeSwapRplResponse
+    var response api.NodeSwapRplApproveResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.NodeSwapRplResponse{}, fmt.Errorf("Could not decode node swap RPL tokens response: %w", err)
+        return api.NodeSwapRplApproveResponse{}, fmt.Errorf("Could not decode node swap RPL approve response: %w", err)
     }
     if response.Error != "" {
-        return api.NodeSwapRplResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %s", response.Error)
+        return api.NodeSwapRplApproveResponse{}, fmt.Errorf("Could not approve old RPL tokens for swapping: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Swap node's old RPL tokens for new RPL tokens
+func (c *Client) NodeSwapRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeSwapRplSwapResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl %s %s", amountWei.String(), approvalTxHash.String()))
+    if err != nil {
+        return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
+    }
+    var response api.NodeSwapRplSwapResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not decode node swap RPL tokens response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %s", response.Error)
     }
     return response, nil
 }
@@ -150,18 +166,35 @@ func (c *Client) CanNodeStakeRpl(amountWei *big.Int) (api.CanNodeStakeRplRespons
 }
 
 
-// Stake RPL against the node
-func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl %s", amountWei.String()))
+// Approve RPL for staking against the node
+func (c *Client) NodeStakeRplApprove(amountWei *big.Int) (api.NodeStakeRplApproveResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl-approve-rpl %s", amountWei.String()))
     if err != nil {
-        return api.NodeStakeRplResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
+        return api.NodeStakeRplApproveResponse{}, fmt.Errorf("Could not approve RPL for staking: %w", err)
     }
-    var response api.NodeStakeRplResponse
+    var response api.NodeStakeRplApproveResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.NodeStakeRplResponse{}, fmt.Errorf("Could not decode stake node RPL response: %w", err)
+        return api.NodeStakeRplApproveResponse{}, fmt.Errorf("Could not decode stake node RPL approve response: %w", err)
     }
     if response.Error != "" {
-        return api.NodeStakeRplResponse{}, fmt.Errorf("Could not stake node RPL: %s", response.Error)
+        return api.NodeStakeRplApproveResponse{}, fmt.Errorf("Could not approve RPL for staking: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Stake RPL against the node
+func (c *Client) NodeStakeRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeStakeRplStakeResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl %s %s", amountWei.String(), approvalTxHash.String()))
+    if err != nil {
+        return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
+    }
+    var response api.NodeStakeRplStakeResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not decode stake node RPL response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %s", response.Error)
     }
     return response, nil
 }
@@ -235,6 +268,23 @@ func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64) (api.NodeDeposi
 }
 
 
+// Get the minipool address for a new deposit
+func (c *Client) GetMinipoolAddress(txHash common.Hash) (api.NodeDepositMinipoolResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node get-minipool-address %s", txHash.String()))
+    if err != nil {
+        return api.NodeDepositMinipoolResponse{}, fmt.Errorf("Could not get minipool address: %w", err)
+    }
+    var response api.NodeDepositMinipoolResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeDepositMinipoolResponse{}, fmt.Errorf("Could not decode minipool address response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeDepositMinipoolResponse{}, fmt.Errorf("Could not get minipool address: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Check whether the node can send tokens
 func (c *Client) CanNodeSend(amountWei *big.Int, token string) (api.CanNodeSendResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("node can-send %s %s", amountWei.String(), token))
@@ -298,6 +348,23 @@ func (c *Client) NodeBurn(amountWei *big.Int, token string) (api.NodeBurnRespons
     }
     if response.Error != "" {
         return api.NodeBurnResponse{}, fmt.Errorf("Could not burn tokens owned by node: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Wait for a transaction
+func (c *Client) WaitForTransaction(txHash common.Hash) (api.APIResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node wait %s", txHash.String()))
+    if err != nil {
+        return api.APIResponse{}, fmt.Errorf("Error waiting for tx: %w", err)
+    }
+    var response api.APIResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.APIResponse{}, fmt.Errorf("Error decoding wait response: %w", err)
+    }
+    if response.Error != "" {
+        return api.APIResponse{}, fmt.Errorf("Error waiting for tx: %s", response.Error)
     }
     return response, nil
 }

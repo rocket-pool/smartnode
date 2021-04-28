@@ -1,11 +1,12 @@
 package node
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -41,7 +42,14 @@ func registerNode(c *cli.Context) error {
     }
 
     // Register node
-    if _, err := rp.RegisterNode(timezoneLocation); err != nil {
+    response, err := rp.RegisterNode(timezoneLocation)
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("Registering node...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

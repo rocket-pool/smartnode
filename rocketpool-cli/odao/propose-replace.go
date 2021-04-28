@@ -1,12 +1,13 @@
 package odao
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -36,6 +37,12 @@ func proposeReplace(c *cli.Context, memberAddress common.Address, memberId, memb
     // Submit proposal
     response, err := rp.ProposeReplaceTNDAOMember(memberAddress, memberId, memberEmail)
     if err != nil {
+        return err
+    }
+
+    fmt.Printf("Proposing member replacement...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

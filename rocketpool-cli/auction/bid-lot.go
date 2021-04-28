@@ -1,17 +1,17 @@
 package auction
 
 import (
-    "fmt"
-    "math/big"
-    "strconv"
+	"fmt"
+	"math/big"
+	"strconv"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    "github.com/rocket-pool/smartnode/shared/types/api"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -142,7 +142,14 @@ func bidOnLot(c *cli.Context) error {
     }
 
     // Bid on lot
-    if _, err := rp.BidOnLot(selectedLot.Details.Index, amountWei); err != nil {
+    response, err := rp.BidOnLot(selectedLot.Details.Index, amountWei)
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("Bidding on lot...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

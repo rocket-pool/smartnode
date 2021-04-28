@@ -1,12 +1,11 @@
 package node
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/utils/api"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
@@ -123,10 +122,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
-                Name:      "swap-rpl",
-                Aliases:   []string{"p"},
-                Usage:     "Swap old RPL for new RPL",
-                UsageText: "rocketpool api node swap-rpl amount",
+                Name:      "swap-rpl-approve-rpl",
+                Aliases:   []string{"p1"},
+                Usage:     "Approve fixed-supply RPL for swapping to new RPL",
+                UsageText: "rocketpool api node swap-rpl-approve-rpl amount",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -135,7 +134,27 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(nodeSwapRpl(c, amountWei))
+                    api.PrintResponse(approveFsRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "swap-rpl",
+                Aliases:   []string{"p2"},
+                Usage:     "Swap old RPL for new RPL",
+                UsageText: "rocketpool api node swap-rpl amount tx-hash",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
+                    if err != nil { return err }
+                    hash, err := cliutils.ValidateTxHash("swap amount", c.Args().Get(1))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(waitForApprovalAndSwapFsRpl(c, amountWei, hash))
                     return nil
 
                 },
@@ -159,10 +178,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
-                Name:      "stake-rpl",
-                Aliases:   []string{"k"},
-                Usage:     "Stake RPL against the node",
-                UsageText: "rocketpool api node stake-rpl amount",
+                Name:      "stake-rpl-approve-rpl",
+                Aliases:   []string{"k1"},
+                Usage:     "Approve RPL for staking against the node",
+                UsageText: "rocketpool api node stake-rpl-approve-rpl amount",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -171,7 +190,27 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(nodeStakeRpl(c, amountWei))
+                    api.PrintResponse(approveRpl(c, amountWei))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "stake-rpl",
+                Aliases:   []string{"k2"},
+                Usage:     "Stake RPL against the node",
+                UsageText: "rocketpool api node stake-rpl amount tx-hash",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("stake amount", c.Args().Get(0))
+                    if err != nil { return err }
+                    hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(1))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(waitForApprovalAndStakeRpl(c, amountWei, hash))
                     return nil
 
                 },
@@ -246,6 +285,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(nodeDeposit(c, amountWei, minNodeFee))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "get-minipool-address",
+                Aliases:   []string{"m"},
+                Usage:     "Wait for a deposit to complete and get the resulting minipool address",
+                UsageText: "rocketpool api node get-minipool-address tx-hash",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getMinipoolAddress(c, hash))
                     return nil
 
                 },
@@ -328,6 +385,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(nodeBurn(c, amountWei, token))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "wait",
+                Usage:     "Wait for a node transaction to be mined",
+                UsageText: "rocketpool api node wait tx-hash",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(waitForTransaction(c, hash))
                     return nil
 
                 },

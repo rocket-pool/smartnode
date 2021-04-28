@@ -1,17 +1,16 @@
 package node
 
 import (
-    "fmt"
-    "strconv"
+	"fmt"
+	"strconv"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
-
 
 // Config
 const DefaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
@@ -137,9 +136,17 @@ func nodeDeposit(c *cli.Context) error {
         return err
     }
 
+    // Log and wait for the minipool address
+    fmt.Printf("Creating minipool...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    minipoolResponse, err := rp.GetMinipoolAddress(response.TxHash)
+    if err != nil {
+        return err
+    }
+
     // Log & return
     fmt.Printf("The node deposit of %.6f ETH was made successfully.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
-    fmt.Printf("A new minipool was created at %s.\n", response.MinipoolAddress.Hex())
+    fmt.Printf("A new minipool was created at %s.\n", minipoolResponse.MinipoolAddress.Hex())
     return nil
 
 }

@@ -1,12 +1,13 @@
 package odao
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -33,6 +34,12 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
     // Submit proposal
     response, err := rp.ProposeTNDAOSettingMembersQuorum(quorumPercent / 100)
     if err != nil {
+        return err
+    }
+
+    fmt.Printf("Submitting proposal...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 
@@ -69,6 +76,12 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
         return err
     }
 
+    fmt.Printf("Submitting proposal...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+        return err
+    }
+
     // Log & return
     fmt.Printf("Successfully submitted a members.rplbond setting update proposal with ID %d.\n", response.ProposalId)
     return nil
@@ -99,6 +112,12 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
     // Submit proposal
     response, err := rp.ProposeTNDAOSettingMinipoolUnbondedMax(unbondedMinipoolMax)
     if err != nil {
+        return err
+    }
+
+    fmt.Printf("Submitting proposal...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 
@@ -135,6 +154,12 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
         return err
     }
 
+    fmt.Printf("Submitting proposal...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+        return err
+    }
+
     // Log & return
     fmt.Printf("Successfully submitted a proposal.cooldown setting update proposal with ID %d.\n", response.ProposalId)
     return nil
@@ -165,6 +190,12 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
     // Submit proposal
     response, err := rp.ProposeTNDAOSettingProposalVoteBlocks(proposalVoteBlocks)
     if err != nil {
+        return err
+    }
+
+    fmt.Printf("Submitting proposal...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 
@@ -201,6 +232,12 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
         return err
     }
 
+    fmt.Printf("Submitting proposal...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+        return err
+    }
+
     // Log & return
     fmt.Printf("Successfully submitted a proposal.vote.delay.blocks setting update proposal with ID %d.\n", response.ProposalId)
     return nil
@@ -234,6 +271,12 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
         return err
     }
 
+    fmt.Printf("Submitting proposal...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+        return err
+    }
+
     // Log & return
     fmt.Printf("Successfully submitted a proposal.execute.blocks setting update proposal with ID %d.\n", response.ProposalId)
     return nil
@@ -264,6 +307,12 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     // Submit proposal
     response, err := rp.ProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks)
     if err != nil {
+        return err
+    }
+
+    fmt.Printf("Submitting proposal...\n")
+    cliutils.PrintTransactionHash(response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 
