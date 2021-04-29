@@ -1,16 +1,16 @@
 package minipool
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    "github.com/rocket-pool/smartnode/shared/types/api"
-    "github.com/rocket-pool/smartnode/shared/utils/hex"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/hex"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -110,13 +110,7 @@ func getStatus(c *cli.Context) error {
             // Withdrawal details - withdrawable minipools
             if minipool.Status.Status == types.Withdrawable {
             fmt.Printf("Final balance:        %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Staking.EndBalance), 6))
-                if minipool.WithdrawalAvailable {
             fmt.Printf("Withdrawal available: yes\n")
-                } else if minipool.AlreadyWithdrawn {
-            fmt.Printf("Withdrawal available: no (already withdrawn)\n")
-                } else {
-            fmt.Printf("Withdrawal available: in %d blocks\n", minipool.WithdrawalAvailableInBlocks)
-                }
             }
 
             fmt.Printf("\n")
@@ -130,13 +124,6 @@ func getStatus(c *cli.Context) error {
         fmt.Printf("%d minipool(s) have refunds available:\n", len(refundableMinipools))
         for _, minipool := range refundableMinipools {
             fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.RefundBalance), 6))
-        }
-        fmt.Println("")
-    }
-    if len(withdrawableMinipools) > 0 {
-        fmt.Printf("%d minipool(s) are ready for withdrawal:\n", len(withdrawableMinipools))
-        for _, minipool := range withdrawableMinipools {
-            fmt.Printf("- %s (%.6f nETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balances.NETH), 6))
         }
         fmt.Println("")
     }

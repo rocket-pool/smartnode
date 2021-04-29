@@ -37,15 +37,6 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
     // Check node balance
     wg.Go(func() error {
         switch token {
-            case "neth":
-
-                // Check node nETH balance
-                nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address, nil)
-                if err != nil {
-                    return err
-                }
-                response.InsufficientBalance = (amountWei.Cmp(nethBalanceWei) > 0)
-
             case "reth":
 
                 // Check node rETH balance
@@ -62,15 +53,6 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
     // Check token contract collateral
     wg.Go(func() error {
         switch token {
-            case "neth":
-
-                // Check nETH collateral
-                nethContractEthBalanceWei, err := tokens.GetNETHContractETHBalance(rp, nil)
-                if err != nil {
-                    return err
-                }
-                response.InsufficientCollateral = (amountWei.Cmp(nethContractEthBalanceWei) > 0)
-
             case "reth":
 
                 // Check rETH collateral
@@ -117,15 +99,6 @@ func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.NodeBurnRe
 
     // Handle token type
     switch token {
-        case "neth":
-
-            // Burn nETH
-            hash, err := tokens.BurnNETH(rp, amountWei, opts)
-            if err != nil {
-                return nil, err
-            }
-            response.TxHash = hash
-
         case "reth":
 
             // Burn rETH

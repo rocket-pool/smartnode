@@ -64,15 +64,6 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
             }
             response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalanceWei) > 0)
 
-        case "neth":
-
-            // Check node nETH balance
-            nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address, nil)
-            if err != nil {
-                return nil, err
-            }
-            response.InsufficientBalance = (amountWei.Cmp(nethBalanceWei) > 0)
-
         case "reth":
 
             // Check node rETH balance
@@ -137,15 +128,6 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
             // Transfer fixed-supply RPL
             hash, err := tokens.TransferFixedSupplyRPL(rp, to, amountWei, opts)
-            if err != nil {
-                return nil, err
-            }
-            response.TxHash = hash
-
-        case "neth":
-
-            // Transfer nETH
-            hash, err := tokens.TransferNETH(rp, to, amountWei, opts)
             if err != nil {
                 return nil, err
             }

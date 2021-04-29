@@ -413,38 +413,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "can-replace",
-                Usage:     "Check whether the node can replace its position in the oracle DAO",
-                UsageText: "rocketpool api odao can-replace",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canReplace(c))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "replace",
-                Aliases:   []string{"a"},
-                Usage:     "Replace the node's position in the oracle DAO (requires an executed replace proposal)",
-                UsageText: "rocketpool api odao replace",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(replace(c))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
                 Name:      "can-propose-setting",
                 Usage:     "Check whether the node can propose an oracle DAO setting update",
                 UsageText: "rocketpool api odao can-propose-setting",

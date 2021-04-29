@@ -70,16 +70,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Name:      "set-withdrawal-address",
                 Aliases:   []string{"w"},
                 Usage:     "Set the node's withdrawal address",
-                UsageText: "rocketpool api node set-withdrawal-address address",
+                UsageText: "rocketpool api node set-withdrawal-address address confirm",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
                     withdrawalAddress, err := cliutils.ValidateAddress("withdrawal address", c.Args().Get(0))
                     if err != nil { return err }
 
+                    confirm, err := cliutils.ValidateBool("confirm", c.Args().Get(1))
+                    if err != nil { return err }
+
                     // Run
-                    api.PrintResponse(setWithdrawalAddress(c, withdrawalAddress))
+                    api.PrintResponse(setWithdrawalAddress(c, withdrawalAddress, confirm))
                     return nil
 
                 },

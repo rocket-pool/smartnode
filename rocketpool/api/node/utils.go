@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"golang.org/x/sync/errgroup"
 )
@@ -32,7 +31,6 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
     var wg1 errgroup.Group
     var addresses []common.Address
     var currentBlock uint64
-    var withdrawalDelay uint64
 
     // Get minipool addresses
     wg1.Go(func() error {
@@ -47,13 +45,6 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
         if err == nil {
             currentBlock = header.Number.Uint64()
         }
-        return err
-    })
-
-    // Get withdrawal delay
-    wg1.Go(func() error {
-        var err error
-        withdrawalDelay, err = protocol.GetMinipoolWithdrawalDelay(rp, nil)
         return err
     })
 
@@ -77,7 +68,7 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
             mi := mi
             wg.Go(func() error {
                 address := addresses[mi]
-                mpDetails, err := getMinipoolCountDetails(rp, address, currentBlock, withdrawalDelay)
+                mpDetails, err := getMinipoolCountDetails(rp, address, currentBlock)
                 if err == nil { details[mi] = mpDetails }
                 return err
             })
@@ -95,7 +86,7 @@ func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.A
 
 
 // Get a minipool's count details
-func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, currentBlock, withdrawalDelay uint64) (minipoolCountDetails, error) {
+func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, currentBlock uint64) (minipoolCountDetails, error) {
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
@@ -106,9 +97,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     // Data
     var wg errgroup.Group
     var status types.MinipoolStatus
-    var statusBlock uint64
     var refundBalance *big.Int
-    var nodeWithdrawn bool
 
     // Load data
     wg.Go(func() error {
@@ -118,17 +107,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     })
     wg.Go(func() error {
         var err error
-        statusBlock, err = mp.GetStatusBlock(nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
         refundBalance, err = mp.GetNodeRefundBalance(nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        nodeWithdrawn, err = mp.GetNodeWithdrawn(nil)
         return err
     })
 
@@ -141,7 +120,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     return minipoolCountDetails{
         Status: status,
         RefundAvailable: (refundBalance.Cmp(big.NewInt(0)) > 0),
-        WithdrawalAvailable: (status == types.Withdrawable && !nodeWithdrawn && (currentBlock - statusBlock) >= withdrawalDelay),
+        WithdrawalAvailable: (status == types.Withdrawable),
         CloseAvailable: (status == types.Dissolved),
     }, nil
 

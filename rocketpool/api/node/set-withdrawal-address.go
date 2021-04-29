@@ -10,7 +10,7 @@ import (
 )
 
 
-func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) (*api.SetNodeWithdrawalAddressResponse, error) {
+func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.SetNodeWithdrawalAddressResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -28,8 +28,14 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) (*ap
         return nil, err
     }
 
+    // Get the node's account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
     // Set withdrawal address
-    hash, err := node.SetWithdrawalAddress(rp, withdrawalAddress, opts)
+    hash, err := node.SetWithdrawalAddress(rp, nodeAccount.Address, withdrawalAddress, confirm, opts)
     if err != nil {
         return nil, err
     }

@@ -1,15 +1,15 @@
 package node
 
 import (
-    "bytes"
-    "fmt"
-    "math/big"
+	"bytes"
+	"fmt"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -28,11 +28,10 @@ func getStatus(c *cli.Context) error {
 
     // Account address & balances
     fmt.Printf(
-        "The node %s has a balance of %.6f ETH, %.6f RPL and %.6f nETH.\n",
+        "The node %s has a balance of %.6f ETH and %.6f RPL.\n",
         status.AccountAddress.Hex(),
         math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6),
-        math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6),
-        math.RoundDown(eth.WeiToEth(status.AccountBalances.NETH), 6))
+        math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6))
     if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
         fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
     }
@@ -43,11 +42,10 @@ func getStatus(c *cli.Context) error {
         // Withdrawal address & balances
         if !bytes.Equal(status.AccountAddress.Bytes(), status.WithdrawalAddress.Bytes()) {
             fmt.Printf(
-                "The node's withdrawal address %s has a balance of %.6f ETH, %.6f RPL and %.6f nETH.\n",
+                "The node's withdrawal address %s has a balance of %.6f ETH and %.6f RPL.\n",
                 status.WithdrawalAddress.Hex(),
                 math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
-                math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6),
-                math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.NETH), 6))
+                math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6))
         }
         fmt.Println("")
 
