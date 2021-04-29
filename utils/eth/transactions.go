@@ -1,20 +1,18 @@
 package eth
 
 import (
-    "context"
-    "errors"
-    "math/big"
+	"context"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum"
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
-    "github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-
 // Send a transaction to an address
-func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
     var err error
 
     // Get from address nonce
@@ -22,7 +20,7 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
     if opts.Nonce == nil {
         nonce, err = client.PendingNonceAt(context.Background(), opts.From)
         if err != nil {
-            return nil, err
+            return common.Hash{}, err
         }
     } else {
         nonce = opts.Nonce.Uint64()
@@ -39,7 +37,7 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
     if gasPrice == nil {
         gasPrice, err = client.SuggestGasPrice(context.Background())
         if err != nil {
-            return nil, err
+            return common.Hash{}, err
         }
     }
 
@@ -53,7 +51,7 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
             Value: value,
         })
         if err != nil {
-            return nil, err
+            return common.Hash{}, err
         }
     }
 
@@ -63,27 +61,15 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
     // Sign transaction
     signedTx, err := opts.Signer(opts.From, tx)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
 
     // Send transaction
     if err = client.SendTransaction(context.Background(), signedTx); err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
 
-    // Wait for transaction to be mined
-    txReceipt, err := bind.WaitMined(context.Background(), client, signedTx)
-    if err != nil {
-        return nil, err
-    }
-
-    // Check transaction status
-    if txReceipt.Status == 0 {
-        return txReceipt, errors.New("Transaction failed with status 0")
-    }
-
-    // Return
-    return txReceipt, nil
+    return signedTx.Hash(), nil
 
 }
 

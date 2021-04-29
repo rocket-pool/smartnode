@@ -1,72 +1,70 @@
 package trustednode
 
 import (
-    "fmt"
-    "sync"
+	"fmt"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
-
 
 // Join the trusted node DAO
 // Requires an executed invite proposal
-func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionJoin")
+    hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionJoin")
     if err != nil {
-        return nil, fmt.Errorf("Could not join the trusted node DAO: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not join the trusted node DAO: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Leave the trusted node DAO
 // Requires an executed leave proposal
-func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", rplBondRefundAddress)
+    hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", rplBondRefundAddress)
     if err != nil {
-        return nil, fmt.Errorf("Could not leave the trusted node DAO: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not leave the trusted node DAO: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Make a challenge against a node
-func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeMake", memberAddress)
+    hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeMake", memberAddress)
     if err != nil {
-        return nil, fmt.Errorf("Could not challenge trusted node DAO member %s: %w", memberAddress.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not challenge trusted node DAO member %s: %w", memberAddress.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Decide a challenge against a node
-func DecideChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func DecideChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeDecide", memberAddress)
+    hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeDecide", memberAddress)
     if err != nil {
-        return nil, fmt.Errorf("Could not decide the challenge against trusted node DAO member %s: %w", memberAddress.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not decide the challenge against trusted node DAO member %s: %w", memberAddress.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

@@ -1,0 +1,36 @@
+package utils
+
+import (
+	"context"
+	"errors"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+// Wait for a transaction to get mined
+func WaitForTransaction(client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
+    
+    // Get the transaction from its hash
+    tx, _, err := client.TransactionByHash(context.Background(), hash)
+    if err != nil {
+        return nil, err
+    }
+
+    // Wait for transaction to be mined
+    txReceipt, err := bind.WaitMined(context.Background(), client, tx)
+    if err != nil {
+        return nil, err
+    }
+
+    // Check transaction status
+    if txReceipt.Status == 0 {
+        return txReceipt, errors.New("Transaction failed with status 0")
+    }
+
+    // Return
+    return txReceipt, nil
+}
+

@@ -1,18 +1,16 @@
 package tokens
 
 import (
-    "context"
-    "fmt"
-    "math/big"
+	"context"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
-
 
 // Token balances
 type Balances struct {
@@ -114,31 +112,31 @@ func allowance(tokenContract *rocketpool.Contract, tokenName string, owner, spen
 
 
 // Transfer tokens to an address
-func transfer(tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := tokenContract.Transact(opts, "transfer", to, amount)
+func transfer(tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := tokenContract.Transact(opts, "transfer", to, amount)
     if err != nil {
-        return nil, fmt.Errorf("Could not transfer %s to %s: %w", tokenName, to.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not transfer %s to %s: %w", tokenName, to.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Approve a token allowance for a spender
-func approve(tokenContract *rocketpool.Contract, tokenName string, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := tokenContract.Transact(opts, "approve", spender, amount)
+func approve(tokenContract *rocketpool.Contract, tokenName string, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := tokenContract.Transact(opts, "approve", spender, amount)
     if err != nil {
-        return nil, fmt.Errorf("Could not approve %s allowance for %s: %w", tokenName, spender.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not approve %s allowance for %s: %w", tokenName, spender.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Transfer tokens from a sender to an address
-func transferFrom(tokenContract *rocketpool.Contract, tokenName string, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := tokenContract.Transact(opts, "transferFrom", from, to, amount)
+func transferFrom(tokenContract *rocketpool.Contract, tokenName string, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := tokenContract.Transact(opts, "transferFrom", from, to, amount)
     if err != nil {
-        return nil, fmt.Errorf("Could not transfer %s from %s to %s: %w", tokenName, from.Hex(), to.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not transfer %s from %s to %s: %w", tokenName, from.Hex(), to.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 

@@ -1,17 +1,15 @@
 package node
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
-
 
 // Get the total RPL staked in the network
 func GetTotalRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
@@ -112,30 +110,30 @@ func GetNodeMinipoolLimit(rp *rocketpool.RocketPool, nodeAddress common.Address,
 
 
 // Stake RPL
-func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeStaking, err := getRocketNodeStaking(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketNodeStaking.Transact(opts, "stakeRPL", rplAmount)
+    hash, err := rocketNodeStaking.Transact(opts, "stakeRPL", rplAmount)
     if err != nil {
-        return nil, fmt.Errorf("Could not stake RPL: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not stake RPL: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Withdraw staked RPL
-func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeStaking, err := getRocketNodeStaking(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketNodeStaking.Transact(opts, "withdrawRPL", rplAmount)
+    hash, err := rocketNodeStaking.Transact(opts, "withdrawRPL", rplAmount)
     if err != nil {
-        return nil, fmt.Errorf("Could not withdraw staked RPL: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not withdraw staked RPL: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

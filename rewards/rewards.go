@@ -1,17 +1,15 @@
 package rewards
 
 import (
-    "fmt"
-    "math/big"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
 
 // Get whether a claims contract is enabled
 func getEnabled(claimsContract *rocketpool.Contract, claimsName string, opts *bind.CallOpts) (bool, error) {
@@ -56,11 +54,11 @@ func getClaimRewardsAmount(claimsContract *rocketpool.Contract, claimsName strin
 
 
 // Claim rewards
-func claim(claimsContract *rocketpool.Contract, claimsName string, opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := claimsContract.Transact(opts, "claim")
+func claim(claimsContract *rocketpool.Contract, claimsName string, opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := claimsContract.Transact(opts, "claim")
     if err != nil {
-        return nil, fmt.Errorf("Could not claim %s rewards: %w", claimsName, err)
+        return common.Hash{}, fmt.Errorf("Could not claim %s rewards: %w", claimsName, err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
