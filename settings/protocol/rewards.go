@@ -1,18 +1,17 @@
 package protocol
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
 
 // Config
 const RewardsSettingsContractName = "rocketDAOProtocolSettingsRewards"
@@ -72,7 +71,7 @@ func GetRewardsClaimIntervalBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpt
     }
     return (*value).Uint64(), nil
 }
-func BootstrapRewardsClaimIntervalBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapRewardsClaimIntervalBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
     return protocoldao.BootstrapUint(rp, RewardsSettingsContractName, "rpl.rewards.claim.period.blocks", big.NewInt(int64(value)), opts)
 }
 

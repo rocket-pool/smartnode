@@ -1,19 +1,17 @@
 package trustednode
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/strings"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/strings"
 )
-
 
 // Settings
 const (
@@ -360,62 +358,62 @@ func GetMemberIsChallenged(rp *rocketpool.RocketPool, memberAddress common.Addre
 
 
 // Bootstrap a bool setting
-func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingBool", contractName, settingPath, value)
+    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingBool", contractName, settingPath, value)
     if err != nil {
-        return nil, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
+        return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Bootstrap a uint256 setting
-func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
+    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
     if err != nil {
-        return nil, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
+        return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Bootstrap a DAO member
-func BootstrapMember(rp *rocketpool.RocketPool, id, email string, nodeAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapMember(rp *rocketpool.RocketPool, id, email string, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, email, nodeAddress)
+    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, email, nodeAddress)
     if err != nil {
-        return nil, fmt.Errorf("Could not bootstrap trusted node member %s: %w", id, err)
+        return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node member %s: %w", id, err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Bootstrap a contract upgrade
-func BootstrapUpgrade(rp *rocketpool.RocketPool, upgradeType, contractName, contractAbi string, contractAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapUpgrade(rp *rocketpool.RocketPool, upgradeType, contractName, contractAbi string, contractAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
     compressedAbi, err := rocketpool.EncodeAbiStr(contractAbi)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDAONodeTrusted.Transact(opts, "bootstrapUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
+    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
     if err != nil {
-        return nil, fmt.Errorf("Could not bootstrap contract '%s' upgrade (%s): %w", contractName, upgradeType, err)
+        return common.Hash{}, fmt.Errorf("Could not bootstrap contract '%s' upgrade (%s): %w", contractName, upgradeType, err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

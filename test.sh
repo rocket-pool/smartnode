@@ -22,7 +22,7 @@ fi
 
 # Rocket Pool settings
 rp_repo_url="https://github.com/rocket-pool/rocketpool.git"
-rp_repo_branch="v2.5-Tokenomics-updates"
+rp_repo_branch="rp3.0-updates"
 
 # Dependencies
 rp_dependencies=(
@@ -33,6 +33,7 @@ rp_dependencies=(
     "pako@1.0.11"
     "truffle@5.1.66"
     "truffle-contract@4.0.31"
+    "@truffle/hdwallet-provider@^1.2.3"
     "web3@1.2.8"
 )
 

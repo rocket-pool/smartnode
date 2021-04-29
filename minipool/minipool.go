@@ -1,18 +1,17 @@
 package minipool
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
-
 
 // Settings
 const (

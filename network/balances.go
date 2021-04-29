@@ -1,17 +1,16 @@
 package network
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
 
 // Get the block number which network balances are current for
 func GetBalancesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
@@ -84,16 +83,16 @@ func GetETHUtilizationRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 
 
 // Submit network balances for an epoch
-func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEth, rethSupply *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNetworkBalances, err := getRocketNetworkBalances(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
+    hash, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
     if err != nil {
-        return nil, fmt.Errorf("Could not submit network balances: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not submit network balances: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

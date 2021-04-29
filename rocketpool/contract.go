@@ -16,7 +16,6 @@ import (
     "github.com/ethereum/go-ethereum/ethclient"
 )
 
-
 // Transaction settings
 const (
     GasLimitPadding = 100000
@@ -84,17 +83,17 @@ func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string,
 
 
 // Transact on a contract method and wait for a receipt
-func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Receipt, error) {
+func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (common.Hash, error) {
 
     // Estimate gas limit
     if opts.GasLimit == 0 {
         input, err := c.ABI.Pack(method, params...)
         if err != nil {
-            return nil, fmt.Errorf("Could not encode input data: %w", err)
+            return common.Hash{}, fmt.Errorf("Could not encode input data: %w", err)
         }
         gasLimit, err := c.estimateGasLimit(opts, input)
         if err != nil {
-            return nil, err
+            return common.Hash{}, err
         }
         opts.GasLimit = gasLimit
     }
@@ -102,11 +101,10 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
     // Send transaction
     tx, err := c.Contract.Transact(opts, method, params...)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
 
-    // Get & return transaction receipt
-    return c.getTransactionReceipt(tx)
+    return tx.Hash(), nil
 
 }
 
@@ -139,13 +137,13 @@ func (c *Contract) GetTransferGasInfo(opts *bind.TransactOpts) (GasInfo, error) 
 
 
 // Transfer ETH to a contract and wait for a receipt
-func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
+func (c *Contract) Transfer(opts *bind.TransactOpts) (common.Hash, error) {
 
     // Estimate gas limit
     if opts.GasLimit == 0 {
         gasLimit, err := c.estimateGasLimit(opts, []byte{})
         if err != nil {
-            return nil, err
+            return common.Hash{}, err
         }
         opts.GasLimit = gasLimit
     }
@@ -153,11 +151,10 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (*types.Receipt, error) {
     // Send transaction
     tx, err := c.Contract.Transfer(opts)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
 
-    // Get & return transaction receipt
-    return c.getTransactionReceipt(tx)
+    return tx.Hash(), nil
 
 }
 

@@ -1,17 +1,16 @@
 package protocol
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
-
 
 // Config
 const MinipoolSettingsContractName = "rocketDAOProtocolSettingsMinipool"
@@ -115,7 +114,7 @@ func GetMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, opts *bind.
     }
     return *value, nil
 }
-func BootstrapMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
     return protocoldao.BootstrapBool(rp, MinipoolSettingsContractName, "minipool.submit.withdrawable.enabled", value, opts)
 }
 
@@ -132,25 +131,8 @@ func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
     }
     return (*value).Uint64(), nil
 }
-func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
     return protocoldao.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.launch.timeout", big.NewInt(int64(value)), opts)
-}
-
-
-// Withdrawal delay in blocks before withdrawable minipools can be closed
-func GetMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-    minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
-    if err != nil {
-        return 0, err
-    }
-    value := new(*big.Int)
-    if err := minipoolSettingsContract.Call(opts, value, "getWithdrawalDelay"); err != nil {
-        return 0, fmt.Errorf("Could not get minipool withdrawal delay: %w", err)
-    }
-    return (*value).Uint64(), nil
-}
-func BootstrapMinipoolWithdrawalDelay(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (*types.Receipt, error) {
-    return protocoldao.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.withdrawal.delay", big.NewInt(int64(value)), opts)
 }
 
 

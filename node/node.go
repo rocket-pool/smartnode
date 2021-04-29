@@ -1,19 +1,17 @@
 package node
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/strings"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/strings"
 )
-
 
 // Settings
 const (
@@ -225,44 +223,58 @@ func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Addre
 
 
 // Register a node
-func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (*types.Receipt, error) {
+func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
+    hash, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
     if err != nil {
-        return nil, fmt.Errorf("Could not register node: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not register node: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Set a node's withdrawal address
-func SetWithdrawalAddress(rp *rocketpool.RocketPool, withdrawalAddress common.Address, opts *bind.TransactOpts) (*types.Receipt, error) {
+func SetWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketNodeManager.Transact(opts, "setWithdrawalAddress", withdrawalAddress)
+    hash, err := rocketNodeManager.Transact(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
     if err != nil {
-        return nil, fmt.Errorf("Could not set node withdrawal address: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
+}
+
+
+// Set a node's withdrawal address
+func ConfirmWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
+    if err != nil {
+        return common.Hash{}, err
+    }
+    hash, err := rocketNodeManager.Transact(opts, "confirmWithdrawalAddress", nodeAddress)
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
+    }
+    return hash, nil
 }
 
 
 // Set a node's timezone location
-func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (*types.Receipt, error) {
+func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketNodeManager.Transact(opts, "setTimezoneLocation", timezoneLocation)
+    hash, err := rocketNodeManager.Transact(opts, "setTimezoneLocation", timezoneLocation)
     if err != nil {
-        return nil, fmt.Errorf("Could not set node timezone location: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not set node timezone location: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

@@ -1,28 +1,27 @@
 package node
 
 import (
-    "fmt"
-    "sync"
+	"fmt"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
-
 // Make a node deposit
-func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.TransactOpts) (*types.Receipt, error) {
+func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeDeposit, err := getRocketNodeDeposit(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketNodeDeposit.Transact(opts, "deposit", eth.EthToWei(minimumNodeFee))
+    hash, err := rocketNodeDeposit.Transact(opts, "deposit", eth.EthToWei(minimumNodeFee))
     if err != nil {
-        return nil, fmt.Errorf("Could not make node deposit: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not make node deposit: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

@@ -8,8 +8,6 @@ import (
     "github.com/rocket-pool/rocketpool-go/utils/eth"
 
     "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    nethutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/neth"
     rethutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/reth"
     rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
 )
@@ -20,11 +18,6 @@ func TestTokenBalances(t *testing.T) {
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
-
-    // Mint nETH
-    nethAmount := eth.EthToWei(101)
-    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
-    if _, err := nethutils.MintNETH(rp, ownerAccount, trustedNodeAccount, userAccount1, nethAmount); err != nil { t.Fatal(err) }
 
     // Mint rETH
     rethAmount := eth.EthToWei(102)
@@ -44,9 +37,6 @@ func TestTokenBalances(t *testing.T) {
     } else {
         if balances.ETH.Cmp(big.NewInt(0)) != 1 {
             t.Errorf("Incorrect ETH balance %s", balances.ETH.String())
-        }
-        if balances.NETH.Cmp(nethAmount) != 0 {
-            t.Errorf("Incorrect nETH balance %s", balances.NETH.String())
         }
         if balances.RETH.Cmp(rethAmount) != 0 {
             t.Errorf("Incorrect rETH balance %s", balances.RETH.String())
