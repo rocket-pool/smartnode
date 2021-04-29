@@ -15,7 +15,6 @@ import (
 // Token balances
 type Balances struct {
     ETH *big.Int            `json:"eth"`
-    NETH *big.Int           `json:"neth"`
     RETH *big.Int           `json:"reth"`
     RPL *big.Int            `json:"rpl"`
     FixedSupplyRPL *big.Int `json:"fixedSupplyRpl"`
@@ -32,7 +31,6 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
     // Data
     var wg errgroup.Group
     var ethBalance *big.Int
-    var nethBalance *big.Int
     var rethBalance *big.Int
     var rplBalance *big.Int
     var fixedSupplyRplBalance *big.Int
@@ -41,11 +39,6 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
     wg.Go(func() error {
         var err error
         ethBalance, err = rp.Client.BalanceAt(context.Background(), address, blockNumber)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        nethBalance, err = GetNETHBalance(rp, address, opts)
         return err
     })
     wg.Go(func() error {
@@ -72,7 +65,6 @@ func GetBalances(rp *rocketpool.RocketPool, address common.Address, opts *bind.C
     // Return
     return Balances{
         ETH: ethBalance,
-        NETH: nethBalance,
         RETH: rethBalance,
         RPL: rplBalance,
         FixedSupplyRPL: fixedSupplyRplBalance,

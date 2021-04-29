@@ -75,16 +75,5 @@ func TestMinipoolSettings(t *testing.T) {
     } else if value != minipoolLaunchTimeout {
         t.Error("Incorrect minipool launch timeout value")
     }
-
-    // Set & get minipool withdrawal delay
-    var minipoolWithdrawalDelay uint64 = 5
-    if _, err := protocol.BootstrapMinipoolWithdrawalDelay(rp, minipoolWithdrawalDelay, ownerAccount.GetTransactor()); err != nil {
-        t.Error(err)
-    } else if value, err := protocol.GetMinipoolWithdrawalDelay(rp, nil); err != nil {
-        t.Error(err)
-    } else if value != minipoolWithdrawalDelay {
-        t.Error("Incorrect minipool withdrawal delay value")
-    }
-
 }
 

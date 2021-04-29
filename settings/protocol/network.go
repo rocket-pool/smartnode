@@ -204,23 +204,6 @@ func BootstrapTargetRethCollateralRate(rp *rocketpool.RocketPool, value float64,
 }
 
 
-// The eth2 system withdrawal contract address
-func GetSystemWithdrawalContractAddress(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address, error) {
-    networkSettingsContract, err := getNetworkSettingsContract(rp)
-    if err != nil {
-        return common.Address{}, err
-    }
-    value := new(common.Address)
-    if err := networkSettingsContract.Call(opts, value, "getSystemWithdrawalContractAddress"); err != nil {
-        return common.Address{}, fmt.Errorf("Could not get system withdrawal contract address: %w", err)
-    }
-    return *value, nil
-}
-func BootstrapSystemWithdrawalContractAddress(rp *rocketpool.RocketPool, value common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-    return protocoldao.BootstrapAddress(rp, NetworkSettingsContractName, "network.withdrawal.contract.address", value, opts)
-}
-
-
 // Get contracts
 var networkSettingsContractLock sync.Mutex
 func getNetworkSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {

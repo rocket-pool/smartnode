@@ -237,14 +237,28 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
 
 
 // Set a node's withdrawal address
-func SetWithdrawalAddress(rp *rocketpool.RocketPool, withdrawalAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+func SetWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return common.Hash{}, err
     }
-    hash, err := rocketNodeManager.Transact(opts, "setWithdrawalAddress", withdrawalAddress)
+    hash, err := rocketNodeManager.Transact(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
+    }
+    return hash, nil
+}
+
+
+// Set a node's withdrawal address
+func ConfirmWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
+    if err != nil {
+        return common.Hash{}, err
+    }
+    hash, err := rocketNodeManager.Transact(opts, "confirmWithdrawalAddress", nodeAddress)
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
     }
     return hash, nil
 }
