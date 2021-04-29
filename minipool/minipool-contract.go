@@ -1,21 +1,19 @@
 package minipool
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
-    "time"
+	"fmt"
+	"math/big"
+	"sync"
+	"time"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
 
 // Minipool detail types
 type StatusDetails struct {
@@ -380,52 +378,52 @@ func (mp *Minipool) GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, 
 
 
 // Refund node ETH from the minipool
-func (mp *Minipool) Refund(opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := mp.Contract.Transact(opts, "refund")
+func (mp *Minipool) Refund(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "refund")
     if err != nil {
-        return nil, fmt.Errorf("Could not refund from minipool %s: %w", mp.Address.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not refund from minipool %s: %w", mp.Address.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Progress the prelaunch minipool to staking
-func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := mp.Contract.Transact(opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)
+func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)
     if err != nil {
-        return nil, fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Withdraw node balances & rewards from the withdrawable minipool and close it
-func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := mp.Contract.Transact(opts, "withdraw")
+func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "withdraw")
     if err != nil {
-        return nil, fmt.Errorf("Could not withdraw from minipool %s: %w", mp.Address.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not withdraw from minipool %s: %w", mp.Address.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Dissolve the initialized or prelaunch minipool
-func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := mp.Contract.Transact(opts, "dissolve")
+func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "dissolve")
     if err != nil {
-        return nil, fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Withdraw node balances from the dissolved minipool and close it
-func (mp *Minipool) Close(opts *bind.TransactOpts) (*types.Receipt, error) {
-    txReceipt, err := mp.Contract.Transact(opts, "close")
+func (mp *Minipool) Close(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "close")
     if err != nil {
-        return nil, fmt.Errorf("Could not close minipool %s: %w", mp.Address.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not close minipool %s: %w", mp.Address.Hex(), err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

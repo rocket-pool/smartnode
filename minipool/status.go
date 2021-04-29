@@ -1,18 +1,16 @@
 package minipool
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
-
 
 // Get the node reward amount for a minipool by node fee, user deposit balance, and staking start & end balances
 func GetMinipoolNodeRewardAmount(rp *rocketpool.RocketPool, nodeFee float64, userDepositBalance, startBalance, endBalance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
@@ -29,16 +27,16 @@ func GetMinipoolNodeRewardAmount(rp *rocketpool.RocketPool, nodeFee float64, use
 
 
 // Submit a minipool withdrawable event
-func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, stakingStartBalance, stakingEndBalance *big.Int, opts *bind.TransactOpts) (*types.Receipt, error) {
+func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, stakingStartBalance, stakingEndBalance *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketMinipoolStatus.Transact(opts, "submitMinipoolWithdrawable", minipoolAddress, stakingStartBalance, stakingEndBalance)
+    hash, err := rocketMinipoolStatus.Transact(opts, "submitMinipoolWithdrawable", minipoolAddress, stakingStartBalance, stakingEndBalance)
     if err != nil {
-        return nil, fmt.Errorf("Could not submit minipool withdrawable event: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not submit minipool withdrawable event: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

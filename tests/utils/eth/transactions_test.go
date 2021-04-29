@@ -1,17 +1,18 @@
 package eth
 
 import (
-    "context"
-    "testing"
+	"context"
+	"testing"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/rocketpool-go/tests"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/rocketpool-go/utils"
 )
 
 
@@ -36,7 +37,11 @@ func TestSendTransaction(t *testing.T) {
     // Send transaction
     opts := userAccount.GetTransactor()
     opts.Value = sendAmount
-    if _, err := eth.SendTransaction(client, toAddress, opts); err != nil {
+    hash, err := eth.SendTransaction(client, toAddress, opts)
+    if err != nil {
+        t.Fatal(err)
+    }
+    if _, err := utils.WaitForTransaction(client, hash); err != nil {
         t.Fatal(err)
     }
 

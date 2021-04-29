@@ -1,16 +1,15 @@
 package deposit
 
 import (
-    "fmt"
-    "math/big"
-    "sync"
+	"fmt"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
-
 
 // Get the deposit pool balance
 func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
@@ -41,30 +40,30 @@ func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 
 
 // Make a deposit
-func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDepositPool, err := getRocketDepositPool(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDepositPool.Transact(opts, "deposit")
+    hash, err := rocketDepositPool.Transact(opts, "deposit")
     if err != nil {
-        return nil, fmt.Errorf("Could not deposit: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not deposit: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 
 // Assign deposits
-func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDepositPool, err := getRocketDepositPool(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
-    txReceipt, err := rocketDepositPool.Transact(opts, "assignDeposits")
+    hash, err := rocketDepositPool.Transact(opts, "assignDeposits")
     if err != nil {
-        return nil, fmt.Errorf("Could not assign deposits: %w", err)
+        return common.Hash{}, fmt.Errorf("Could not assign deposits: %w", err)
     }
-    return txReceipt, nil
+    return hash, nil
 }
 
 

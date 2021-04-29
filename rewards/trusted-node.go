@@ -1,16 +1,14 @@
 package rewards
 
 import (
-    "math/big"
-    "sync"
+	"math/big"
+	"sync"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
-
 
 // Get whether trusted node reward claims are enabled
 func GetTrustedNodeClaimsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
@@ -53,10 +51,10 @@ func GetTrustedNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress 
 
 
 // Claim trusted node rewards
-func ClaimTrustedNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (*types.Receipt, error) {
+func ClaimTrustedNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
     if err != nil {
-        return nil, err
+        return common.Hash{}, err
     }
     return claim(rocketClaimTrustedNode, "trusted node", opts)
 }
