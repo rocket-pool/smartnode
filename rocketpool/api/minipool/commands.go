@@ -141,42 +141,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "can-withdraw",
-                Usage:     "Check whether the minipool can be withdrawn from",
-                UsageText: "rocketpool api minipool can-withdraw minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canWithdrawMinipool(c, minipoolAddress))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "withdraw",
-                Aliases:   []string{"w"},
-                Usage:     "Withdraw final balance and rewards from a withdrawable minipool",
-                UsageText: "rocketpool api minipool withdraw minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(withdrawMinipool(c, minipoolAddress))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
                 Name:      "can-close",
                 Usage:     "Check whether the minipool can be closed",
                 UsageText: "rocketpool api minipool can-close minipool-address",
