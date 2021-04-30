@@ -1,7 +1,7 @@
 package node
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -42,7 +42,8 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, conf
         return nil, err
     }
     if currentAddress != nodeAccount.Address {
-        return nil, errors.New("")
+        return nil, fmt.Errorf("This wallet's current withdrawal address is %s, " + 
+            "so you cannot call set-withdrawal-address from the node.", currentAddress.String())
     }
 
     // Set withdrawal address
