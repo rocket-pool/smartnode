@@ -123,7 +123,7 @@ func nodeDeposit(c *cli.Context) error {
     }
 
     // Check to see if eth2 is synced
-    bc, err := services.GetBeaconClient(c)
+    bc, err := services.GetBeaconClientFromCLI(rp)
     if err != nil {
         fmt.Printf("**WARNING**: Can't verify the sync status of your eth2 client. If you create a minipool before eth2 is synced, YOU MAY LOSE ETH.\n" +
         "Reason: %s\n", err)
