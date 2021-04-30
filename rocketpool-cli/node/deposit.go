@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -119,6 +120,23 @@ func nodeDeposit(c *cli.Context) error {
         // Prompt for min node fee
         minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)
 
+    }
+
+    // Check to see if eth2 is synced
+    bc, err := services.GetBeaconClient(c)
+    if err != nil {
+        fmt.Printf("**WARNING**: Can't verify the sync status of your eth2 client. If you create a minipool before eth2 is synced, YOU MAY LOSE ETH.\n" +
+        "Reason: %s\n", err)
+    }
+    syncStatus, err := bc.GetSyncStatus()
+    if err != nil {
+        fmt.Printf("**WARNING**: Can't retrieve the sync status of your eth2 client. If you create a minipool before eth2 is synced, YOU MAY LOSE ETH.\n" +
+        "Reason: %s\n", err)
+    }
+    if syncStatus.Syncing {
+        fmt.Printf("**WARNING: your eth2 client is still syncing. If you create a minipool before eth2 is synced, YOU MAY LOSE ETH.\n")
+    } else {
+        fmt.Printf("Your eth2 client is synced, you may safely create a minipool.\n")
     }
 
     // Prompt for confirmation
