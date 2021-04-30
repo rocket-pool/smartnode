@@ -139,7 +139,7 @@ func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
 
 
 func GetBeaconClientFromCLI(rp *rpcli.Client) (beacon.Client, error) {
-    cfg, err := rp.LoadGlobalConfig()
+    cfg, err := rp.LoadMergedConfig()
     if err != nil {
         return nil, err
     }
