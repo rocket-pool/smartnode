@@ -9,3 +9,4 @@ node_modules
 Dockerfile
 /rocketpool-cli/rocketpool-cli
 /rocketpool-pow-proxy/rocketpool-pow-proxy
+.idea
