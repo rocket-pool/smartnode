@@ -1,16 +1,16 @@
 package node
 
 import (
-    "context"
-    "math/big"
+	"context"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -64,15 +64,6 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
             }
             response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalanceWei) > 0)
 
-        case "neth":
-
-            // Check node nETH balance
-            nethBalanceWei, err := tokens.GetNETHBalance(rp, nodeAccount.Address, nil)
-            if err != nil {
-                return nil, err
-            }
-            response.InsufficientBalance = (amountWei.Cmp(nethBalanceWei) > 0)
-
         case "reth":
 
             // Check node rETH balance
@@ -118,47 +109,38 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
             // Transfer ETH
             opts.Value = amountWei
-            txReceipt, err := eth.SendTransaction(ec, to, opts)
+            hash, err := eth.SendTransaction(ec, to, opts)
             if err != nil {
                 return nil, err
             }
-            response.TxHash = txReceipt.TxHash
+            response.TxHash = hash
 
         case "rpl":
 
             // Transfer RPL
-            txReceipt, err := tokens.TransferRPL(rp, to, amountWei, opts)
+            hash, err := tokens.TransferRPL(rp, to, amountWei, opts)
             if err != nil {
                 return nil, err
             }
-            response.TxHash = txReceipt.TxHash
+            response.TxHash = hash
 
         case "fsrpl":
 
             // Transfer fixed-supply RPL
-            txReceipt, err := tokens.TransferFixedSupplyRPL(rp, to, amountWei, opts)
+            hash, err := tokens.TransferFixedSupplyRPL(rp, to, amountWei, opts)
             if err != nil {
                 return nil, err
             }
-            response.TxHash = txReceipt.TxHash
-
-        case "neth":
-
-            // Transfer nETH
-            txReceipt, err := tokens.TransferNETH(rp, to, amountWei, opts)
-            if err != nil {
-                return nil, err
-            }
-            response.TxHash = txReceipt.TxHash
+            response.TxHash = hash
 
         case "reth":
 
             // Transfer rETH
-            txReceipt, err := tokens.TransferRETH(rp, to, amountWei, opts)
+            hash, err := tokens.TransferRETH(rp, to, amountWei, opts)
             if err != nil {
                 return nil, err
             }
-            response.TxHash = txReceipt.TxHash
+            response.TxHash = hash
 
     }
 

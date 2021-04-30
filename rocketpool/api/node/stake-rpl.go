@@ -1,14 +1,16 @@
 package node
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -44,7 +46,7 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 }
 
 
-func nodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplResponse, error) {
+func approveRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -54,7 +56,7 @@ func nodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplResponse
     if err != nil { return nil, err }
 
     // Response
-    response := api.NodeStakeRplResponse{}
+    response := api.NodeStakeRplApproveResponse{}
 
     // Get staking contract address
     rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking")
@@ -65,19 +67,43 @@ func nodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplResponse
     // Approve RPL allowance
     if opts, err := w.GetNodeAccountTransactor(); err != nil {
         return nil, err
-    } else if txReceipt, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts); err != nil {
+    } else if hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts); err != nil {
         return nil, err
     } else {
-        response.ApproveTxHash = txReceipt.TxHash
+        response.ApproveTxHash = hash
     }
 
+    // Return response
+    return &response, nil
+
+}
+
+
+func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.Hash) (*api.NodeStakeRplStakeResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+    
+    // Wait for the RPL approval TX to successfully get mined
+    _, err = utils.WaitForTransaction(rp.Client, hash)
+    if err != nil {
+        return nil, err
+    }
+
+    // Response
+    response := api.NodeStakeRplStakeResponse{}
+    
     // Stake RPL
     if opts, err := w.GetNodeAccountTransactor(); err != nil {
         return nil, err
-    } else if txReceipt, err := node.StakeRPL(rp, amountWei, opts); err != nil {
+    } else if hash, err := node.StakeRPL(rp, amountWei, opts); err != nil {
         return nil, err
     } else {
-        response.StakeTxHash = txReceipt.TxHash
+        response.StakeTxHash = hash
     }
 
     // Return response

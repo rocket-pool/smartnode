@@ -1,17 +1,13 @@
 package minipool
 
 import (
-    "context"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/urfave/cli"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
-
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -20,8 +16,6 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
-    if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -44,63 +38,15 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
         return nil, err
     }
 
-    // Data
-    var wg errgroup.Group
-    var currentBlock uint64
-    var statusBlock uint64
-    var withdrawalDelay uint64
-
     // Check minipool status
-    wg.Go(func() error {
-        status, err := mp.GetStatus(nil)
-        if err == nil {
-            response.InvalidStatus = (status != types.Withdrawable)
-        }
-        return err
-    })
-
-    // Check if node has already withdrawn from minipool
-    wg.Go(func() error {
-        nodeWithdrawn, err := mp.GetNodeWithdrawn(nil)
-        if err == nil {
-            response.AlreadyWithdrawn = nodeWithdrawn
-        }
-        return err
-    })
-
-    // Get current block
-    wg.Go(func() error {
-        header, err := ec.HeaderByNumber(context.Background(), nil)
-        if err == nil {
-            currentBlock = header.Number.Uint64()
-        }
-        return err
-    })
-
-    // Get minipool status block
-    wg.Go(func() error {
-        var err error
-        statusBlock, err = mp.GetStatusBlock(nil)
-        return err
-    })
-
-    // Get withdrawal delay
-    wg.Go(func() error {
-        var err error
-        withdrawalDelay, err = protocol.GetMinipoolWithdrawalDelay(rp, nil)
-        return err
-    })
-
-    // Wait for data
-    if err := wg.Wait(); err != nil {
+    status, err := mp.GetStatus(nil)
+    if err != nil {
         return nil, err
     }
-
-    // Check minipool withdrawal delay
-    response.WithdrawalDelayActive = ((currentBlock - statusBlock) < withdrawalDelay)
+    response.InvalidStatus = (status != types.Withdrawable)
 
     // Update & return response
-    response.CanWithdraw = !(response.InvalidStatus || response.AlreadyWithdrawn || response.WithdrawalDelayActive)
+    response.CanWithdraw = !response.InvalidStatus
     return &response, nil
 
 }
@@ -131,11 +77,11 @@ func withdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.With
     }
 
     // Withdraw
-    txReceipt, err := mp.Withdraw(opts)
+    hash, err := mp.Withdraw(opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

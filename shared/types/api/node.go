@@ -1,11 +1,11 @@
 package api
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/tokens"
 )
 
 
@@ -71,10 +71,14 @@ type CanNodeSwapRplResponse struct {
     CanSwap bool                        `json:"canSwap"`
     InsufficientBalance bool            `json:"insufficientBalance"`
 }
-type NodeSwapRplResponse struct {
+type NodeSwapRplApproveResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     ApproveTxHash common.Hash           `json:"approveTxHash"`
+}
+type NodeSwapRplSwapResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
     SwapTxHash common.Hash              `json:"swapTxHash"`
 }
 
@@ -85,10 +89,14 @@ type CanNodeStakeRplResponse struct {
     CanStake bool                       `json:"canStake"`
     InsufficientBalance bool            `json:"insufficientBalance"`
 }
-type NodeStakeRplResponse struct {
+type NodeStakeRplApproveResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     ApproveTxHash common.Hash           `json:"approveTxHash"`
+}
+type NodeStakeRplStakeResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
     StakeTxHash common.Hash             `json:"stakeTxHash"`
 }
 
@@ -122,6 +130,10 @@ type NodeDepositResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     TxHash common.Hash                  `json:"txHash"`
+}
+type NodeDepositMinipoolResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
     MinipoolAddress common.Address      `json:"minipoolAddress"`
 }
 

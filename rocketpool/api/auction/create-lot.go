@@ -1,13 +1,13 @@
 package auction
 
 import (
-    "github.com/rocket-pool/rocketpool-go/auction"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -75,12 +75,12 @@ func createLot(c *cli.Context) (*api.CreateLotResponse, error) {
     }
 
     // Create lot
-    lotIndex, txReceipt, err := auction.CreateLot(rp, opts)
+    lotIndex, hash, err := auction.CreateLot(rp, opts)
     if err != nil {
         return nil, err
     }
     response.LotId = lotIndex
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

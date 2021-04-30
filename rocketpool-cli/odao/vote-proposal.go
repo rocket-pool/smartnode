@@ -1,15 +1,15 @@
 package odao
 
 import (
-    "fmt"
-    "strconv"
+	"fmt"
+	"strconv"
 
-    "github.com/rocket-pool/rocketpool-go/dao"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -125,7 +125,14 @@ func voteOnProposal(c *cli.Context) error {
     }
 
     // Vote on proposal
-    if _, err := rp.VoteOnTNDAOProposal(selectedProposal.ID, support); err != nil {
+    response, err := rp.VoteOnTNDAOProposal(selectedProposal.ID, support)
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("Submitting vote...\n")
+    cliutils.PrintTransactionHash(rp, response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

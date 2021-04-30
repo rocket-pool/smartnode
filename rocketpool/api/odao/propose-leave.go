@@ -1,14 +1,14 @@
 package odao
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -109,12 +109,12 @@ func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
 
     // Submit proposal
     message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberEmail)
-    proposalId, txReceipt, err := trustednode.ProposeMemberLeave(rp, message, nodeAccount.Address, opts)
+    proposalId, hash, err := trustednode.ProposeMemberLeave(rp, message, nodeAccount.Address, opts)
     if err != nil {
         return nil, err
     }
     response.ProposalId = proposalId
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

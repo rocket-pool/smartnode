@@ -1,11 +1,12 @@
 package node
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -25,7 +26,14 @@ func setTimezoneLocation(c *cli.Context) error {
     }
 
     // Set node's timezone location
-    if _, err := rp.SetNodeTimezone(timezoneLocation); err != nil {
+    response, err := rp.SetNodeTimezone(timezoneLocation)
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("Setting timezone...\n")
+    cliutils.PrintTransactionHash(rp, response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

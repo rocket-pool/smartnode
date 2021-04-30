@@ -1,15 +1,15 @@
 package odao
 
 import (
-    "fmt"
-    "strconv"
+	"fmt"
+	"strconv"
 
-    "github.com/rocket-pool/rocketpool-go/dao"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -89,7 +89,15 @@ func executeProposal(c *cli.Context) error {
 
     // Execute proposals
     for _, proposal := range selectedProposals {
-        if _, err := rp.ExecuteTNDAOProposal(proposal.ID); err != nil {
+        response, err := rp.ExecuteTNDAOProposal(proposal.ID)
+        if err != nil {
+            fmt.Printf("Could not execute proposal %d: %s.\n", proposal.ID, err)
+            continue
+        }
+    
+        fmt.Printf("Executing proposal...\n")
+        cliutils.PrintTransactionHash(rp, response.TxHash)
+        if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not execute proposal %d: %s.\n", proposal.ID, err)
         } else {
             fmt.Printf("Successfully executed proposal %d.\n", proposal.ID)

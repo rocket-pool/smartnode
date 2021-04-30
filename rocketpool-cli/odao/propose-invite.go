@@ -1,12 +1,13 @@
 package odao
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -36,6 +37,12 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
     // Submit proposal
     response, err := rp.ProposeInviteToTNDAO(memberAddress, memberId, memberEmail)
     if err != nil {
+        return err
+    }
+
+    fmt.Printf("Inviting %s to the oracle DAO...\n", memberAddress.Hex())
+    cliutils.PrintTransactionHash(rp, response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

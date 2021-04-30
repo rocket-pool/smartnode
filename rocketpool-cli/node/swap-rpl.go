@@ -1,16 +1,16 @@
 package node
 
 import (
-    "fmt"
-    "math/big"
-    "strconv"
+	"fmt"
+	"math/big"
+	"strconv"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -80,8 +80,23 @@ func nodeSwapRpl(c *cli.Context) error {
         return nil
     }
 
+    // Approve RPL for swapping
+    response, err := rp.NodeSwapRplApprove(amountWei)
+    if err != nil {
+        return err
+    }
+    hash := response.ApproveTxHash
+    fmt.Printf("Approving old RPL for swap...\n")
+    cliutils.PrintTransactionHashNoCancel(rp, hash)
+    
     // Swap RPL
-    if _, err := rp.NodeSwapRpl(amountWei); err != nil {
+    swapResponse, err := rp.NodeSwapRpl(amountWei, hash)
+    if err != nil {
+        return err
+    }
+    fmt.Printf("Swapping old RPL for new RPL...\n")
+    cliutils.PrintTransactionHash(rp, swapResponse.SwapTxHash)
+    if _, err = rp.WaitForTransaction(swapResponse.SwapTxHash); err != nil {
         return err
     }
 

@@ -1,17 +1,16 @@
 package odao
 
 import (
-    "context"
+	"context"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/dao"
-    tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"golang.org/x/sync/errgroup"
 )
-
 
 // Settings
 const ProposalStatesBatchSize = 50

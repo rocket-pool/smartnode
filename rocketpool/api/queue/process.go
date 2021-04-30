@@ -1,16 +1,16 @@
 package queue
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/deposit"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -89,11 +89,11 @@ func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
     }
 
     // Process queue
-    txReceipt, err := deposit.AssignDeposits(rp, opts)
+    hash, err := deposit.AssignDeposits(rp, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

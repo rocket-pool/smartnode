@@ -1,11 +1,12 @@
 package auction
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -35,6 +36,12 @@ func createLot(c *cli.Context) error {
     // Create lot
     response, err := rp.CreateLot()
     if err != nil {
+        return err
+    }
+
+    fmt.Printf("Creating lot...\n")
+    cliutils.PrintTransactionHash(rp, response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 

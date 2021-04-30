@@ -1,15 +1,15 @@
 package node
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -43,7 +43,14 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
     }
 
     // Send tokens
-    if _, err := rp.NodeSend(amountWei, token, toAddress); err != nil {
+    response, err := rp.NodeSend(amountWei, token, toAddress)
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("Sending %s to %s...\n", token, toAddress.Hex())
+    cliutils.PrintTransactionHash(rp, response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 
