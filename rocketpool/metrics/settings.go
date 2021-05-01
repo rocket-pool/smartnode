@@ -34,7 +34,6 @@ type settingsGauges struct {
     inflationStartBlock          prometheus.Gauge
     minipoolAmounts              *prometheus.GaugeVec
     minipoolLaunchTimeout        prometheus.Gauge
-    minipoolWithdrawDelay        prometheus.Gauge
     nodeConsensusThreshold       prometheus.Gauge
     submitBalancesFrequency      prometheus.Gauge
     submitPricesFrequency        prometheus.Gauge
@@ -196,12 +195,6 @@ func newSettingsMetricsProcess(c *cli.Context, logger log.ColorLogger) (*setting
             Subsystem:                "settings",
             Name:                     "minipool_launch_timeout_blocks",
             Help:                     "Timeout period in blocks for prelaunch minipools to launch",
-        }),
-        minipoolWithdrawDelay:        promauto.NewGauge(prometheus.GaugeOpts{
-            Namespace:                "rocketpool",
-            Subsystem:                "settings",
-            Name:                     "minipool_withdraw_delay_blocks",
-            Help:                     "Withdrawal delay in blocks before withdrawable minipools can be closed",
         }),
         nodeConsensusThreshold:       promauto.NewGauge(prometheus.GaugeOpts{
             Namespace:                "rocketpool",
@@ -577,7 +570,7 @@ func (p *settingsMetricsProcess) updateMinipoolSettings() error {
     var minipoolSubmitWithdrawEnabled bool
     var minipoolLaunchBalance, minipoolFullDepositNodeAmount, minipoolHalfDepositNodeAmount, minipoolEmptyDepositNodeAmount *big.Int
     var minipoolFullDepositUserAmount, minipoolHalfDepositUserAmount, minipoolEmptyDepositUserAmount *big.Int
-    var minipoolLaunchTimeout, minipoolWithdrawalDelay uint64
+    var minipoolLaunchTimeout uint64
 
     var wg errgroup.Group
 
@@ -645,13 +638,6 @@ func (p *settingsMetricsProcess) updateMinipoolSettings() error {
         }
         return err
     })
-    wg.Go(func() error {
-        response, err := protocol.GetMinipoolWithdrawalDelay(p.rp, nil)
-        if err == nil {
-            minipoolWithdrawalDelay = response
-        }
-        return err
-    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
@@ -667,7 +653,6 @@ func (p *settingsMetricsProcess) updateMinipoolSettings() error {
     p.metrics.minipoolAmounts.With(prometheus.Labels{"category":"EmptyDepositUserAmount"}).Set(eth.WeiToEth(minipoolEmptyDepositUserAmount))
     p.metrics.flags.With(prometheus.Labels{"flag":"MinipoolSubmitWithdrawEnabled"}).Set(float64(B2i(minipoolSubmitWithdrawEnabled)))
     p.metrics.minipoolLaunchTimeout.Set(float64(minipoolLaunchTimeout))
-    p.metrics.minipoolWithdrawDelay.Set(float64(minipoolWithdrawalDelay))
 
     return nil
 }
