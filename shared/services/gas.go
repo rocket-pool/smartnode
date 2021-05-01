@@ -15,6 +15,6 @@ func GetGasInfo(rp *rocketpool.RocketPool, opts *bind.TransactOpts, contractName
         return rocketpool.GasInfo{}, err
     }
 
-    return contract.GetGasInfo(methodName, opts, params...)
+    return contract.GetTransactionGasInfo(opts, methodName, params...)
 }
 
