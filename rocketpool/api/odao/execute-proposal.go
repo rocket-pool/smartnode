@@ -1,14 +1,14 @@
 package odao
 
 import (
-    "github.com/rocket-pool/rocketpool-go/dao"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -76,11 +76,11 @@ func executeProposal(c *cli.Context, proposalId uint64) (*api.ExecuteTNDAOPropos
     }
 
     // Cancel proposal
-    txReceipt, err := trustednode.ExecuteProposal(rp, proposalId, opts)
+    hash, err := trustednode.ExecuteProposal(rp, proposalId, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil

@@ -1,15 +1,15 @@
 package odao
 
 import (
-    "fmt"
-    "math/big"
+	"fmt"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -32,8 +32,23 @@ func join(c *cli.Context) error {
         // Confirm swapping RPL
         if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
 
+            // Approve RPL for swapping
+            response, err := rp.NodeSwapRplApprove(status.AccountBalances.FixedSupplyRPL)
+            if err != nil {
+                return err
+            }
+            hash := response.ApproveTxHash
+            fmt.Printf("Approving old RPL for swap...\n")
+            cliutils.PrintTransactionHash(rp, hash)
+            
             // Swap RPL
-            if _, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL); err != nil {
+            swapResponse, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL, hash)
+            if err != nil {
+                return err
+            }
+            fmt.Printf("Swapping old RPL for new RPL...\n")
+            cliutils.PrintTransactionHash(rp, swapResponse.SwapTxHash)
+            if _, err = rp.WaitForTransaction(swapResponse.SwapTxHash); err != nil {
                 return err
             }
 
@@ -69,9 +84,24 @@ func join(c *cli.Context) error {
         fmt.Println("Cancelled.")
         return nil
     }
+    
+    // Approve RPL for joining the ODAO
+    response, err := rp.ApproveRPLToJoinTNDAO()
+    if err != nil {
+        return err
+    }
+    hash := response.ApproveTxHash
+    fmt.Printf("Approving RPL for joining the Oracle DAO...\n")
+    cliutils.PrintTransactionHashNoCancel(rp, hash)
 
-    // Join the oracle DAO
-    if _, err := rp.JoinTNDAO(); err != nil {
+    // Join the ODAO
+    joinResponse, err := rp.JoinTNDAO(hash)
+    if err != nil {
+        return err
+    }
+    fmt.Printf("Joining the ODAO...\n")
+    cliutils.PrintTransactionHash(rp, joinResponse.JoinTxHash)
+    if _, err = rp.WaitForTransaction(joinResponse.JoinTxHash); err != nil {
         return err
     }
 

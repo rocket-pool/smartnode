@@ -1,12 +1,11 @@
 package minipool
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/utils/api"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
@@ -136,42 +135,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(exitMinipool(c, minipoolAddress))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
-                Name:      "can-withdraw",
-                Usage:     "Check whether the minipool can be withdrawn from",
-                UsageText: "rocketpool api minipool can-withdraw minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canWithdrawMinipool(c, minipoolAddress))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "withdraw",
-                Aliases:   []string{"w"},
-                Usage:     "Withdraw final balance and rewards from a withdrawable minipool",
-                UsageText: "rocketpool api minipool withdraw minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(withdrawMinipool(c, minipoolAddress))
                     return nil
 
                 },

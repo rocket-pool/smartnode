@@ -1,16 +1,16 @@
 package auction
 
 import (
-    "fmt"
-    "strconv"
+	"fmt"
+	"strconv"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    "github.com/rocket-pool/smartnode/shared/types/api"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -90,7 +90,15 @@ func recoverRplFromLot(c *cli.Context) error {
 
     // Claim RPL from lots
     for _, lot := range selectedLots {
-        if _, err := rp.RecoverUnclaimedRPLFromLot(lot.Details.Index); err != nil {
+        response, err := rp.RecoverUnclaimedRPLFromLot(lot.Details.Index)
+        if err != nil {
+            fmt.Printf("Could not recover unclaimed RPL from lot %d: %s.\n", lot.Details.Index, err)
+            continue
+        }
+
+        fmt.Printf("Recovering lot %d...\n", lot.Details.Index)
+        cliutils.PrintTransactionHash(rp, response.TxHash)
+        if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             fmt.Printf("Could not recover unclaimed RPL from lot %d: %s.\n", lot.Details.Index, err)
         } else {
             fmt.Printf("Successfully recovered unclaimed RPL from lot %d.\n", lot.Details.Index)

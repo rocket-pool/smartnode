@@ -344,17 +344,35 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
-                Name:      "join",
-                Aliases:   []string{"j"},
-                Usage:     "Join the oracle DAO (requires an executed invite proposal)",
-                UsageText: "rocketpool api odao join",
+                Name:      "join-approve-rpl",
+                Aliases:   []string{"j1"},
+                Usage:     "Approves the RPL bond transfer prior to join the oracle DAO",
+                UsageText: "rocketpool api odao join-approve-rpl",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run
-                    api.PrintResponse(join(c))
+                    api.PrintResponse(approveRpl(c))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "join",
+                Aliases:   []string{"j2"},
+                Usage:     "Join the oracle DAO (requires an executed invite proposal)",
+                UsageText: "rocketpool api odao join tx-hash",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(waitForApprovalAndJoin(c, hash))
                     return nil
 
                 },
@@ -389,38 +407,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(leave(c, bondRefundAddress))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
-                Name:      "can-replace",
-                Usage:     "Check whether the node can replace its position in the oracle DAO",
-                UsageText: "rocketpool api odao can-replace",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canReplace(c))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "replace",
-                Aliases:   []string{"a"},
-                Usage:     "Replace the node's position in the oracle DAO (requires an executed replace proposal)",
-                UsageText: "rocketpool api odao replace",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(replace(c))
                     return nil
 
                 },

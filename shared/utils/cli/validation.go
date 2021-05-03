@@ -1,19 +1,19 @@
 package cli
 
 import (
-    "fmt"
-    "math/big"
-    "regexp"
-    "strconv"
-    "strings"
+	"encoding/hex"
+	"fmt"
+	"math/big"
+	"regexp"
+	"strconv"
+	"strings"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/tyler-smith/go-bip39"
-    "github.com/urfave/cli"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/tyler-smith/go-bip39"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
+	"github.com/rocket-pool/smartnode/shared/services/passwords"
 )
-
 
 // Config
 const (
@@ -245,5 +245,30 @@ func ValidateDAOMemberEmail(name, value string) (string, error) {
         return "", fmt.Errorf("Invalid %s '%s' - must be a valid email address", name, value)
     }
     return value, nil
+}
+
+
+// Validate a transaction hash
+func ValidateTxHash(name, value string) (common.Hash, error) {
+
+    // Remove a 0x prefix if present
+    if strings.HasPrefix(value, "0x") {
+        value = value[2:]
+    }
+
+    // Hash should be 64 characters long
+    if len(value) != hex.EncodedLen(common.HashLength) {
+        return common.Hash{}, fmt.Errorf("Invalid %s '%s': it must have 64 characters.", name, value)
+    }
+
+    // Try to parse the string (removing the prefix)
+    bytes, err := hex.DecodeString(value)
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
+    }
+    hash := common.BytesToHash(bytes)
+
+    return hash, nil
+
 }
 

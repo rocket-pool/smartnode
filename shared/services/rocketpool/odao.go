@@ -317,17 +317,34 @@ func (c *Client) CanJoinTNDAO() (api.CanJoinTNDAOResponse, error) {
 
 
 // Join the oracle DAO (requires an executed invite proposal)
-func (c *Client) JoinTNDAO() (api.JoinTNDAOResponse, error) {
-    responseBytes, err := c.callAPI("odao join")
+func (c *Client) ApproveRPLToJoinTNDAO() (api.JoinTNDAOApproveResponse, error) {
+    responseBytes, err := c.callAPI("odao join-approve-rpl")
     if err != nil {
-        return api.JoinTNDAOResponse{}, fmt.Errorf("Could not join oracle DAO: %w", err)
+        return api.JoinTNDAOApproveResponse{}, fmt.Errorf("Could not approve RPL for joining oracle DAO: %w", err)
     }
-    var response api.JoinTNDAOResponse
+    var response api.JoinTNDAOApproveResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.JoinTNDAOResponse{}, fmt.Errorf("Could not decode join oracle DAO response: %w", err)
+        return api.JoinTNDAOApproveResponse{}, fmt.Errorf("Could not decode approve RPL for joining oracle DAO response: %w", err)
     }
     if response.Error != "" {
-        return api.JoinTNDAOResponse{}, fmt.Errorf("Could not join oracle DAO: %s", response.Error)
+        return api.JoinTNDAOApproveResponse{}, fmt.Errorf("Could not approve RPL for joining oracle DAO: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Join the oracle DAO (requires an executed invite proposal)
+func (c *Client) JoinTNDAO(approvalTxHash common.Hash) (api.JoinTNDAOJoinResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao join %s", approvalTxHash.String()))
+    if err != nil {
+        return api.JoinTNDAOJoinResponse{}, fmt.Errorf("Could not join oracle DAO: %w", err)
+    }
+    var response api.JoinTNDAOJoinResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.JoinTNDAOJoinResponse{}, fmt.Errorf("Could not decode join oracle DAO response: %w", err)
+    }
+    if response.Error != "" {
+        return api.JoinTNDAOJoinResponse{}, fmt.Errorf("Could not join oracle DAO: %s", response.Error)
     }
     return response, nil
 }

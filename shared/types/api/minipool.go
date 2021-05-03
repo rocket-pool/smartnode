@@ -1,13 +1,13 @@
 package api
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/types"
 )
 
 
@@ -28,8 +28,6 @@ type MinipoolDetails struct {
     Validator ValidatorDetails              `json:"validator"`
     RefundAvailable bool                    `json:"refundAvailable"`
     WithdrawalAvailable bool                `json:"withdrawalAvailable"`
-    AlreadyWithdrawn bool                   `json:"alreadyWithdrawn"`
-    WithdrawalAvailableInBlocks uint64      `json:"withdrawalAvailableInBlocks"`
     CloseAvailable bool                     `json:"closeAvailable"`
 }
 type ValidatorDetails struct {
@@ -84,8 +82,6 @@ type CanWithdrawMinipoolResponse struct {
     Error string                    `json:"error"`
     CanWithdraw bool                `json:"canWithdraw"`
     InvalidStatus bool              `json:"invalidStatus"`
-    AlreadyWithdrawn bool           `json:"alreadyWithdrawn"`
-    WithdrawalDelayActive bool      `json:"withdrawalDelayActive"`
 }
 type WithdrawMinipoolResponse struct {
     Status string                   `json:"status"`

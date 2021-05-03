@@ -1,16 +1,18 @@
 package node
 
 import (
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/urfave/cli"
+	"fmt"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/urfave/cli"
+
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) (*api.SetNodeWithdrawalAddressResponse, error) {
+func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.SetNodeWithdrawalAddressResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -28,12 +30,28 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) (*ap
         return nil, err
     }
 
-    // Set withdrawal address
-    txReceipt, err := node.SetWithdrawalAddress(rp, withdrawalAddress, opts)
+    // Get the node's account
+    nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+
+    // Make sure the current withdrawal address is set to the node address
+    currentAddress, err := node.GetNodeWithdrawalAddress(rp, nodeAccount.Address, nil)
+    if err != nil {
+        return nil, err
+    }
+    if currentAddress != nodeAccount.Address {
+        return nil, fmt.Errorf("This wallet's current withdrawal address is %s, " + 
+            "so you cannot call set-withdrawal-address from the node.", currentAddress.String())
+    }
+
+    // Set withdrawal address
+    hash, err := node.SetWithdrawalAddress(rp, nodeAccount.Address, withdrawalAddress, confirm, opts)
+    if err != nil {
+        return nil, err
+    }
+    response.TxHash = hash
 
     // Return response
     return &response, nil

@@ -1,11 +1,10 @@
 package minipool
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
@@ -116,33 +115,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run
                     return exitMinipools(c)
-
-                },
-            },
-
-            cli.Command{
-                Name:      "withdraw",
-                Aliases:   []string{"w"},
-                Usage:     "Withdraw final balances and rewards from withdrawable minipools",
-                UsageText: "rocketpool minipool withdraw [options]",
-                Flags: []cli.Flag{
-                    cli.StringFlag{
-                        Name:  "minipool, m",
-                        Usage: "The minipool/s to withdraw from (address or 'all')",
-                    },
-                },
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Validate flags
-                    if c.String("minipool") != "" && c.String("minipool") != "all" {
-                        if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
-                    }
-
-                    // Run
-                    return withdrawMinipools(c)
 
                 },
             },

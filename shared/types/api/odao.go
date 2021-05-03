@@ -157,10 +157,14 @@ type CanJoinTNDAOResponse struct {
     AlreadyMember bool              `json:"alreadyMember"`
     InsufficientRplBalance bool     `json:"insufficientRplBalance"`
 }
-type JoinTNDAOResponse struct {
+type JoinTNDAOApproveResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     ApproveTxHash common.Hash       `json:"approveTxHash"`
+}
+type JoinTNDAOJoinResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
     JoinTxHash common.Hash          `json:"joinTxHash"`
 }
 

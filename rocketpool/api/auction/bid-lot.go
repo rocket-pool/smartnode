@@ -1,15 +1,15 @@
 package auction
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/auction"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -96,11 +96,11 @@ func bidOnLot(c *cli.Context, lotIndex uint64, amountWei *big.Int) (*api.BidOnLo
     opts.Value = amountWei
 
     // Bid on lot
-    txReceipt, err := auction.PlaceBid(rp, lotIndex, opts)
+    hash, err := auction.PlaceBid(rp, lotIndex, opts)
     if err != nil {
         return nil, err
     }
-    response.TxHash = txReceipt.TxHash
+    response.TxHash = hash
 
     // Return response
     return &response, nil
