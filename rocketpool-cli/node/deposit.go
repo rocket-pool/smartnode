@@ -125,6 +125,7 @@ func nodeDeposit(c *cli.Context) error {
     // Check to see if eth2 is synced
     colorReset := "\033[0m"
     colorRed := "\033[31m"
+    colorGreen := "\033[32m"
     bc, err := services.GetBeaconClientFromCLI(rp)
     if err != nil {
         fmt.Printf("%s**WARNING**: Can't verify the sync status of your eth2 client.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n" +
@@ -148,9 +149,12 @@ func nodeDeposit(c *cli.Context) error {
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-        "Are you sure you want to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%? Running a minipool is a long-term commitment.",
+        "You are about to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%.\n" + 
+        "%sARE YOU SURE YOU WANT TO DO THIS? Running a minipool is a long-term commitment, and this action cannot be undone!%s",
         math.RoundDown(eth.WeiToEth(amountWei), 6),
-        minNodeFee * 100))) {
+        minNodeFee * 100,
+        colorGreen,
+        colorReset))) {
             fmt.Println("Cancelled.")
             return nil
     }

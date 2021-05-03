@@ -60,8 +60,7 @@ The following commands are available via the smart node client:
 - `rocketpool minipool status` - Display the current status of all minipools run by the node
 - `rocketpool minipool refund` - Refund ETH from minipools which have had user-deposited ETH assigned to them
 - `rocketpool minipool dissolve` - Dissolve initialized minipools and recover deposited ETH from them
-- `rocketpool minipool exit` - Exit active minipool validators from the beacon chain
-- `rocketpool minipool withdraw` - Withdraw rewards from minipools which have finished staking and close them
+- `rocketpool minipool exit` - Exit active minipool validators from the beacon chainand close them
 - `rocketpool minipool close` - Close minipools which have timed out and been dissolved
 
 - `rocketpool auction status` - Display the current status of the RPL auction contract and lots
