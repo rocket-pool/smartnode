@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 )
 
@@ -125,6 +126,7 @@ type CanNodeDepositResponse struct {
     InvalidAmount bool                  `json:"invalidAmount"`
     UnbondedMinipoolsAtMax bool         `json:"unbondedMinipoolsAtMax"`
     DepositDisabled bool                `json:"depositDisabled"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeDepositResponse struct {
     Status string                       `json:"status"`
