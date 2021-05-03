@@ -24,7 +24,7 @@ func (rp *Client) PrintGasInfo(gasInfo rocketpool.GasInfo) {
         gasPrice = big.NewInt(0)
     }
     totalGasWei := new(big.Int).Mul(gasPrice, gas)
-    fmt.Printf("%sSuggested gas price: %.6f Gwei\nEstimated gas used: %d\nEstimated gas cost: %.6f ETH\n%s",
+    fmt.Printf("%sSuggested gas price: %.6f Gwei\nEstimated gas used: %d gas\nEstimated gas cost: %.6f ETH\n%s",
                colorYellow, 
                eth.WeiToGwei(gasPrice), 
                gasInfo.EstGasLimit, 
