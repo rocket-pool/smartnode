@@ -9,7 +9,46 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
+
+// Estimate the gas of SendTransaction
+func EstimateSendTransactionGas(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+
+    // User-defined settings
+    response := rocketpool.GasInfo {
+        ReqGasPrice: opts.GasPrice,
+        ReqGasLimit: opts.GasLimit,
+    }
+
+    // Set default value
+    value := opts.Value
+    if value == nil {
+        value = big.NewInt(0)
+    }
+
+    // Get suggested gas price
+    gasPrice, err := client.SuggestGasPrice(context.Background())
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    response.EstGasPrice = gasPrice
+
+    // Estimate gas limit
+    gasLimit, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
+        From: opts.From,
+        To: &toAddress,
+        GasPrice: gasPrice,
+        Value: value,
+    })
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    response.EstGasLimit = gasLimit
+
+    return response, err
+}
+
 
 // Send a transaction to an address
 func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
