@@ -17,6 +17,8 @@ func canRecoverRplFromLot(c *cli.Context, lotIndex uint64) (*api.CanRecoverRPLFr
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -58,6 +60,19 @@ func canRecoverRplFromLot(c *cli.Context, lotIndex uint64) (*api.CanRecoverRPLFr
         rplRecovered, err := auction.GetLotRPLRecovered(rp, lotIndex, nil)
         if err == nil {
             response.RPLAlreadyRecovered = rplRecovered
+        }
+        return err
+    })
+
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := auction.EstimateRecoverUnclaimedRPLGas(rp, lotIndex, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
         }
         return err
     })

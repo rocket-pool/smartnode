@@ -16,6 +16,8 @@ func canCreateLot(c *cli.Context) (*api.CanCreateLotResponse, error) {
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -39,6 +41,19 @@ func canCreateLot(c *cli.Context) (*api.CanCreateLotResponse, error) {
         createLotEnabled, err := protocol.GetCreateLotEnabled(rp, nil)
         if err == nil {
             response.CreateLotDisabled = !createLotEnabled
+        }
+        return err
+    })
+
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := auction.EstimateCreateLotGas(rp, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
         }
         return err
     })

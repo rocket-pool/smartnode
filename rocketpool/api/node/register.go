@@ -11,7 +11,7 @@ import (
 )
 
 
-func canRegisterNode(c *cli.Context) (*api.CanRegisterNodeResponse, error) {
+func canRegisterNode(c *cli.Context, timezoneLocation string) (*api.CanRegisterNodeResponse, error) {
 
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
@@ -46,6 +46,19 @@ func canRegisterNode(c *cli.Context) (*api.CanRegisterNodeResponse, error) {
         registrationEnabled, err := protocol.GetNodeRegistrationEnabled(rp, nil)
         if err == nil {
             response.RegistrationDisabled = !registrationEnabled
+        }
+        return err
+    })
+
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := node.EstimateRegisterNodeGas(rp, timezoneLocation, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
         }
         return err
     })

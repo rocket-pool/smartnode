@@ -35,14 +35,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "can-register",
                 Usage:     "Check whether the node can be registered with Rocket Pool",
-                UsageText: "rocketpool api node can-register",
+                UsageText: "rocketpool api node can-register timezone-location",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    timezoneLocation, err := cliutils.ValidateTimezoneLocation("timezone location", c.Args().Get(0))
+                    if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canRegisterNode(c))
+                    api.PrintResponse(canRegisterNode(c, timezoneLocation))
                     return nil
 
                 },

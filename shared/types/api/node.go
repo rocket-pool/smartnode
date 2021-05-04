@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 )
 
@@ -44,6 +44,7 @@ type CanRegisterNodeResponse struct {
     CanRegister bool                    `json:"canRegister"`
     AlreadyRegistered bool              `json:"alreadyRegistered"`
     RegistrationDisabled bool           `json:"registrationDisabled"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type RegisterNodeResponse struct {
     Status string                       `json:"status"`
@@ -145,6 +146,7 @@ type CanNodeSendResponse struct {
     Error string                        `json:"error"`
     CanSend bool                        `json:"canSend"`
     InsufficientBalance bool            `json:"insufficientBalance"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeSendResponse struct {
     Status string                       `json:"status"`
@@ -159,6 +161,7 @@ type CanNodeBurnResponse struct {
     CanBurn bool                        `json:"canBurn"`
     InsufficientBalance bool            `json:"insufficientBalance"`
     InsufficientCollateral bool         `json:"insufficientCollateral"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeBurnResponse struct {
     Status string                       `json:"status"`
