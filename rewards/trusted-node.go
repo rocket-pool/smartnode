@@ -50,6 +50,16 @@ func GetTrustedNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress 
 }
 
 
+// Estimate the gas of ClaimTrustedNodeRewards
+func EstimateClaimTrustedNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return estimateClaimGas(rocketClaimTrustedNode, opts)
+}
+
+
 // Claim trusted node rewards
 func ClaimTrustedNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)

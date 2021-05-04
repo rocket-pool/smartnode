@@ -39,6 +39,16 @@ func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 }
 
 
+// Estimate the gas of Deposit
+func EstimateDepositGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketDepositPool, err := getRocketDepositPool(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketDepositPool.GetTransactionGasInfo(opts, "deposit")
+}
+
+
 // Make a deposit
 func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDepositPool, err := getRocketDepositPool(rp)
@@ -50,6 +60,16 @@ func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, e
         return common.Hash{}, fmt.Errorf("Could not deposit: %w", err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of AssignDeposits
+func EstimateAssignDepositsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketDepositPool, err := getRocketDepositPool(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketDepositPool.GetTransactionGasInfo(opts, "assignDeposits")
 }
 
 

@@ -11,6 +11,16 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
+// Estimate the gas of Deposit
+func EstimateDepositGas(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketNodeDeposit, err := getRocketNodeDeposit(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", eth.EthToWei(minimumNodeFee))
+}
+
+
 // Make a node deposit
 func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeDeposit, err := getRocketNodeDeposit(rp)

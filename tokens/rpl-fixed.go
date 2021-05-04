@@ -44,6 +44,16 @@ func GetFixedSupplyRPLAllowance(rp *rocketpool.RocketPool, owner, spender common
 }
 
 
+// Estimate the gas of TransferFixedSupplyRPL
+func EstimateTransferFixedSupplyRPLGas(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return estimateTransferGas(rocketTokenFixedSupplyRPL, "fixed-supply RPL", to, amount, opts)
+}
+
+
 // Transfer fixed-supply RPL
 func TransferFixedSupplyRPL(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp)
@@ -54,6 +64,16 @@ func TransferFixedSupplyRPL(rp *rocketpool.RocketPool, to common.Address, amount
 }
 
 
+// Estimate the gas of ApproveFixedSupplyRPL
+func EstimateApproveFixedSupplyRPLGas(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return estimateApproveGas(rocketTokenFixedSupplyRPL, "fixed-supply RPL", spender, amount, opts)
+}
+
+
 // Approve an fixed-supply RPL spender
 func ApproveFixedSupplyRPL(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp)
@@ -61,6 +81,16 @@ func ApproveFixedSupplyRPL(rp *rocketpool.RocketPool, spender common.Address, am
         return common.Hash{}, err
     }
     return approve(rocketTokenFixedSupplyRPL, "fixed-supply RPL", spender, amount, opts)
+}
+
+
+// Estimate the gas of TransferFromFixedSupplyRPL
+func EstimateTransferFromFixedSupplyRPLGas(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return estimateTransferFromGas(rocketTokenFixedSupplyRPL, "fixed-supply RPL", from, to, amount, opts)
 }
 
 

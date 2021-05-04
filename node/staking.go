@@ -109,6 +109,16 @@ func GetNodeMinipoolLimit(rp *rocketpool.RocketPool, nodeAddress common.Address,
 }
 
 
+// Estimate the gas of Stake
+func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketNodeStaking, err := getRocketNodeStaking(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketNodeStaking.GetTransactionGasInfo(opts, "stakeRPL", rplAmount)
+}
+
+
 // Stake RPL
 func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNodeStaking, err := getRocketNodeStaking(rp)
@@ -120,6 +130,16 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
         return common.Hash{}, fmt.Errorf("Could not stake RPL: %w", err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of WithdrawRPL
+func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketNodeStaking, err := getRocketNodeStaking(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL", rplAmount)
 }
 
 

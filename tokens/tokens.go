@@ -111,6 +111,12 @@ func allowance(tokenContract *rocketpool.Contract, tokenName string, owner, spen
 }
 
 
+// Estimate the gas of transfer
+func estimateTransferGas(tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return tokenContract.GetTransactionGasInfo(opts, "transfer", to, amount)
+}
+
+
 // Transfer tokens to an address
 func transfer(tokenContract *rocketpool.Contract, tokenName string, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     hash, err := tokenContract.Transact(opts, "transfer", to, amount)
@@ -121,6 +127,12 @@ func transfer(tokenContract *rocketpool.Contract, tokenName string, to common.Ad
 }
 
 
+// Estimate the gas of approve
+func estimateApproveGas(tokenContract *rocketpool.Contract, tokenName string, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return tokenContract.GetTransactionGasInfo(opts, "approve", spender, amount)
+}
+
+
 // Approve a token allowance for a spender
 func approve(tokenContract *rocketpool.Contract, tokenName string, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     hash, err := tokenContract.Transact(opts, "approve", spender, amount)
@@ -128,6 +140,12 @@ func approve(tokenContract *rocketpool.Contract, tokenName string, spender commo
         return common.Hash{}, fmt.Errorf("Could not approve %s allowance for %s: %w", tokenName, spender.Hex(), err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of transferFrom
+func estimateTransferFromGas(tokenContract *rocketpool.Contract, tokenName string, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return tokenContract.GetTransactionGasInfo(opts, "transferFrom", from, to, amount)
 }
 
 
