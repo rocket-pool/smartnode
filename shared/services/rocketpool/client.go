@@ -9,10 +9,12 @@ import (
     "os"
     "regexp"
     "strings"
+    osUser "os/user"
 
     "github.com/fatih/color"
     "github.com/urfave/cli"
     "golang.org/x/crypto/ssh"
+    kh "golang.org/x/crypto/ssh/knownhosts"
 
     "github.com/rocket-pool/smartnode/shared/services/config"
     "github.com/rocket-pool/smartnode/shared/utils/net"
@@ -51,14 +53,15 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
                      c.GlobalString("host"), 
                      c.GlobalString("user"), 
                      c.GlobalString("key"), 
-                     c.GlobalString("passphrase"), 
-                     c.GlobalString("gasPrice"), 
+                     c.GlobalString("passphrase"),
+                     c.GlobalString("known-hosts"),
+                     c.GlobalString("gasPrice"),
                      c.GlobalString("gasLimit"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, gasPrice, gasLimit string) (*Client, error) {
+func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, knownhostsFile, gasPrice, gasLimit string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -98,11 +101,26 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePat
             return nil, fmt.Errorf("Could not parse SSH private key at %s: %w", keyPath, err)
         }
 
+        // Prepare the server host key callback function
+        if knownhostsFile == "" {
+            // Default to using the current users known_hosts file if one wasn't provided
+            usr, err := osUser.Current()
+            if err != nil {
+                return nil, fmt.Errorf("Could not get current user: %w", err)
+            }
+            knownhostsFile = fmt.Sprintf("%s/.ssh/known_hosts", usr.HomeDir)
+        }
+
+        hostKeyCallback, err := kh.New(knownhostsFile)
+        if err != nil {
+            return nil, fmt.Errorf("Could not create hostKeyCallback function: %w", err)
+        }
+
         // Initialise client
         sshClient, err = ssh.Dial("tcp", net.DefaultPort(hostAddress, "22"), &ssh.ClientConfig{
             User: user,
             Auth: []ssh.AuthMethod{ssh.PublicKeys(key)},
-            HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+            HostKeyCallback: hostKeyCallback,
         })
         if err != nil {
             return nil, fmt.Errorf("Could not connect to %s as %s: %w", hostAddress, user, err)
