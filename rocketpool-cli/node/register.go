@@ -17,8 +17,16 @@ func registerNode(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
+    // Prompt for timezone location
+    var timezoneLocation string
+    if c.String("timezone") != "" {
+        timezoneLocation = c.String("timezone")
+    } else {
+        timezoneLocation = promptTimezone()
+    }
+
     // Check node can be registered
-    canRegister, err := rp.CanRegisterNode()
+    canRegister, err := rp.CanRegisterNode(timezoneLocation)
     if err != nil {
         return err
     }
@@ -31,14 +39,6 @@ func registerNode(c *cli.Context) error {
             fmt.Println("Node registrations are currently disabled.")
         }
         return nil
-    }
-
-    // Prompt for timezone location
-    var timezoneLocation string
-    if c.String("timezone") != "" {
-        timezoneLocation = c.String("timezone")
-    } else {
-        timezoneLocation = promptTimezone()
     }
 
     // Register node

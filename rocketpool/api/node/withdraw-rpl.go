@@ -79,6 +79,19 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
         return err
     })
 
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := node.EstimateWithdrawRPLGas(rp, amountWei, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
+        }
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err

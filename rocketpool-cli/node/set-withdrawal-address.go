@@ -25,6 +25,14 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
     }
 
     // Set node's withdrawal address
+    canResponse, err := rp.CanSetNodeWithdrawalAddress(withdrawalAddress)
+    if err != nil {
+        return err
+    }
+
+    // TODO: GAS INFO
+
+    // Set node's withdrawal address
     response, err := rp.SetNodeWithdrawalAddress(withdrawalAddress)
     if err != nil {
         return err

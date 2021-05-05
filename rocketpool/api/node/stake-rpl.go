@@ -32,12 +32,34 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
         return nil, err
     }
 
+    // Get staking contract address
+    rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking")
+    if err != nil {
+        return nil, err
+    }
+
     // Check RPL balance
     rplBalance, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
     if err != nil {
         return nil, err
     }
     response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
+
+    // Get gas estimates
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
+        return nil, err
+    }
+    approveGasInfo, err := tokens.EstimateApproveRPLGas(rp, *rocketNodeStakingAddress, amountWei, opts)
+    if err != nil {
+        return nil, err
+    }
+    stakeGasInfo, err := node.EstimateStakeGas(rp, amountWei, opts)
+    if err != nil {
+        return nil, err
+    }
+    response.GasInfo.EstGasLimit = approveGasInfo.EstGasLimit + stakeGasInfo.EstGasLimit
+    response.GasInfo.EstGasPrice = approveGasInfo.EstGasPrice
 
     // Update & return response
     response.CanStake = !response.InsufficientBalance

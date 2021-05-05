@@ -25,6 +25,14 @@ func setTimezoneLocation(c *cli.Context) error {
         timezoneLocation = promptTimezone()
     }
 
+    // Get the gas estimate
+    canResponse, err := rp.CanSetNodeTimezone(timezoneLocation)
+    if err != nil {
+        return err
+    }
+
+    // TODO: PRINT GAS
+
     // Set node's timezone location
     response, err := rp.SetNodeTimezone(timezoneLocation)
     if err != nil {

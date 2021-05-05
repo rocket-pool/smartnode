@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao"
 	tn "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 
@@ -111,6 +112,7 @@ type CanCancelTNDAOProposalResponse struct {
     DoesNotExist bool               `json:"doesNotExist"`
     InvalidState bool               `json:"invalidState"`
     InvalidProposer bool            `json:"invalidProposer"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type CancelTNDAOProposalResponse struct {
     Status string                   `json:"status"`

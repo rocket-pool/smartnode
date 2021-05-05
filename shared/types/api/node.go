@@ -53,13 +53,24 @@ type RegisterNodeResponse struct {
 }
 
 
+type CanSetNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanSet bool                        ` json:"canSet"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+}
 type SetNodeWithdrawalAddressResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     TxHash common.Hash                  `json:"txHash"`
 }
 
-
+type CanSetNodeTimezoneResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanSet bool                         `json:"canSet"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+}
 type SetNodeTimezoneResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
@@ -72,6 +83,7 @@ type CanNodeSwapRplResponse struct {
     Error string                        `json:"error"`
     CanSwap bool                        `json:"canSwap"`
     InsufficientBalance bool            `json:"insufficientBalance"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeSwapRplApproveResponse struct {
     Status string                       `json:"status"`
@@ -90,6 +102,7 @@ type CanNodeStakeRplResponse struct {
     Error string                        `json:"error"`
     CanStake bool                       `json:"canStake"`
     InsufficientBalance bool            `json:"insufficientBalance"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeStakeRplApproveResponse struct {
     Status string                       `json:"status"`
@@ -110,6 +123,7 @@ type CanNodeWithdrawRplResponse struct {
     InsufficientBalance bool            `json:"insufficientBalance"`
     MinipoolsUndercollateralized bool   `json:"minipoolsUndercollateralized"`
     WithdrawalDelayActive bool          `json:"withdrawalDelayActive"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeWithdrawRplResponse struct {
     Status string                       `json:"status"`
