@@ -13,7 +13,7 @@ import (
 )
 
 
-func canProposeReplace(c *cli.Context, newMemberAddress common.Address) (*api.CanProposeTNDAOReplaceResponse, error) {
+func canProposeReplace(c *cli.Context, newMemberAddress common.Address, newMemberId, newMemberEmail string) (*api.CanProposeTNDAOReplaceResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -46,6 +46,32 @@ func canProposeReplace(c *cli.Context, newMemberAddress common.Address) (*api.Ca
         memberExists, err := trustednode.GetMemberExists(rp, newMemberAddress, nil)
         if err == nil {
             response.MemberAlreadyExists = memberExists
+        }
+        return err
+    })
+
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        nodeAccount, err := w.GetNodeAccount()
+        if err != nil {
+            return err
+        }
+        nodeMemberId, err := trustednode.GetMemberID(rp, nodeAccount.Address, nil)
+        if err != nil { 
+            return err 
+        }
+        nodeMemberEmail, err := trustednode.GetMemberEmail(rp, nodeAccount.Address, nil)
+        if err != nil { 
+            return err 
+        }
+        message := fmt.Sprintf("replace %s (%s) with %s (%s)", nodeMemberId, nodeMemberEmail, newMemberId, newMemberEmail)
+        gasInfo, err := trustednode.EstimateProposeReplaceMemberGas(rp, message, nodeAccount.Address, newMemberAddress, newMemberId, newMemberEmail, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
         }
         return err
     })

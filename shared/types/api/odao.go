@@ -51,6 +51,7 @@ type CanProposeTNDAOInviteResponse struct {
     CanPropose bool                 `json:"canPropose"`
     ProposalCooldownActive bool     `json:"proposalCooldownActive"`
     MemberAlreadyExists bool        `json:"memberAlreadyExists"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ProposeTNDAOInviteResponse struct {
     Status string                   `json:"status"`
@@ -66,6 +67,7 @@ type CanProposeTNDAOLeaveResponse struct {
     CanPropose bool                 `json:"canPropose"`
     ProposalCooldownActive bool     `json:"proposalCooldownActive"`
     InsufficientMembers bool        `json:"insufficientMembers"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ProposeTNDAOLeaveResponse struct {
     Status string                   `json:"status"`
@@ -81,6 +83,7 @@ type CanProposeTNDAOReplaceResponse struct {
     CanPropose bool                 `json:"canPropose"`
     ProposalCooldownActive bool     `json:"proposalCooldownActive"`
     MemberAlreadyExists bool        `json:"memberAlreadyExists"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ProposeTNDAOReplaceResponse struct {
     Status string                   `json:"status"`
@@ -96,6 +99,7 @@ type CanProposeTNDAOKickResponse struct {
     CanPropose bool                 `json:"canPropose"`
     ProposalCooldownActive bool     `json:"proposalCooldownActive"`
     InsufficientRplBond bool        `json:"insufficientRplBond"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ProposeTNDAOKickResponse struct {
     Status string                   `json:"status"`
@@ -143,6 +147,7 @@ type CanExecuteTNDAOProposalResponse struct {
     CanExecute bool                 `json:"canExecute"`
     DoesNotExist bool               `json:"doesNotExist"`
     InvalidState bool               `json:"invalidState"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ExecuteTNDAOProposalResponse struct {
     Status string                   `json:"status"`
@@ -158,6 +163,7 @@ type CanJoinTNDAOResponse struct {
     ProposalExpired bool            `json:"proposalExpired"`
     AlreadyMember bool              `json:"alreadyMember"`
     InsufficientRplBalance bool     `json:"insufficientRplBalance"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type JoinTNDAOApproveResponse struct {
     Status string                   `json:"status"`
@@ -177,6 +183,7 @@ type CanLeaveTNDAOResponse struct {
     CanLeave bool                   `json:"canLeave"`
     ProposalExpired bool            `json:"proposalExpired"`
     InsufficientMembers bool        `json:"insufficientMembers"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type LeaveTNDAOResponse struct {
     Status string                   `json:"status"`

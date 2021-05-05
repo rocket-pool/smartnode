@@ -62,8 +62,8 @@ func (c *Client) TNDAOProposals() (api.TNDAOProposalsResponse, error) {
 
 
 // Check whether the node can propose inviting a new member
-func (c *Client) CanProposeInviteToTNDAO(memberAddress common.Address) (api.CanProposeTNDAOInviteResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-invite %s", memberAddress.Hex()))
+func (c *Client) CanProposeInviteToTNDAO(memberAddress common.Address, memberId, memberEmail string) (api.CanProposeTNDAOInviteResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-invite %s \"%s\" \"%s\"", memberAddress.Hex(), memberId, memberEmail))
     if err != nil {
         return api.CanProposeTNDAOInviteResponse{}, fmt.Errorf("Could not get can propose oracle DAO invite status: %w", err)
     }
@@ -130,8 +130,8 @@ func (c *Client) ProposeLeaveTNDAO() (api.ProposeTNDAOLeaveResponse, error) {
 
 
 // Check whether the node can propose replacing its position with a new member
-func (c *Client) CanProposeReplaceTNDAOMember(memberAddress common.Address) (api.CanProposeTNDAOReplaceResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-replace %s", memberAddress.Hex()))
+func (c *Client) CanProposeReplaceTNDAOMember(memberAddress common.Address, memberId, memberEmail string) (api.CanProposeTNDAOReplaceResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-replace %s \"%s\" \"%s\"", memberAddress.Hex(), memberId, memberEmail))
     if err != nil {
         return api.CanProposeTNDAOReplaceResponse{}, fmt.Errorf("Could not get can propose replacing oracle DAO member status: %w", err)
     }

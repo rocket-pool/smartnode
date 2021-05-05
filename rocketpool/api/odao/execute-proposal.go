@@ -17,6 +17,8 @@ func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecuteTNDAO
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -40,6 +42,19 @@ func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecuteTNDAO
         proposalState, err := dao.GetProposalState(rp, proposalId, nil)
         if err == nil {
             response.InvalidState = (proposalState != rptypes.Succeeded)
+        }
+        return err
+    })
+
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := trustednode.EstimateExecuteProposalGas(rp, proposalId, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
         }
         return err
     })

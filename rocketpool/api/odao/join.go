@@ -71,6 +71,32 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
         return err
     })
 
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        rocketDAONodeTrustedActionsAddress, err := rp.GetAddress("rocketDAONodeTrustedActions")
+        if err != nil {
+            return err
+        }
+        rplBondAmount, err := tnsettings.GetRPLBond(rp, nil)
+        if err != nil {
+            return err
+        }
+        approveGasInfo, err := tokens.EstimateApproveRPLGas(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts)
+        if err != nil {
+            return err
+        }
+        joinGasInfo, err := tndao.EstimateJoinGas(rp, opts)
+        if err == nil {
+            response.GasInfo = approveGasInfo
+            response.GasInfo.EstGasLimit += joinGasInfo.EstGasLimit
+        }
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err

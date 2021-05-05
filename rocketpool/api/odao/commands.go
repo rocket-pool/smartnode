@@ -69,16 +69,20 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "can-propose-invite",
                 Usage:     "Check whether the node can propose inviting a new member",
-                UsageText: "rocketpool api odao can-propose-invite member-address",
+                UsageText: "rocketpool api odao can-propose-invite member-address member-id member-email",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
                     memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
+                    if err != nil { return err }
+                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
+                    if err != nil { return err }
+                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canProposeInvite(c, memberAddress))
+                    api.PrintResponse(canProposeInvite(c, memberAddress, memberId, memberEmail))
                     return nil
 
                 },
@@ -141,16 +145,20 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "can-propose-replace",
                 Usage:     "Check whether the node can propose replacing its position with a new member",
-                UsageText: "rocketpool api odao can-propose-replace member-address",
+                UsageText: "rocketpool api odao can-propose-replace member-address member-id member-email",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
                     memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
+                    if err != nil { return err }
+                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
+                    if err != nil { return err }
+                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canProposeReplace(c, memberAddress))
+                    api.PrintResponse(canProposeReplace(c, memberAddress, memberId, memberEmail))
                     return nil
 
                 },

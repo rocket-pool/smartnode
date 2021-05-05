@@ -58,8 +58,8 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
     if err != nil {
         return nil, err
     }
-    response.GasInfo.EstGasLimit = approveGasInfo.EstGasLimit + stakeGasInfo.EstGasLimit
-    response.GasInfo.EstGasPrice = approveGasInfo.EstGasPrice
+    response.GasInfo = approveGasInfo
+    response.GasInfo.EstGasLimit += stakeGasInfo.EstGasLimit
 
     // Update & return response
     response.CanStake = !response.InsufficientBalance
