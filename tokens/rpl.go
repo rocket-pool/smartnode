@@ -135,7 +135,7 @@ func MintInflationRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 
 
 // Estimate the gas of SwapFixedSupplyRPLForRPL
-func EstimateSwapFixedSupplyRPLForRPLtGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSwapFixedSupplyRPLForRPLGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     rocketTokenRPL, err := getRocketTokenRPL(rp)
     if err != nil {
         return rocketpool.GasInfo{}, err
