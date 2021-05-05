@@ -52,6 +52,7 @@ func run(c *cli.Context) error {
     go (func() { startDaoMetricsProcess(c, networkUpdateInterval, logger) })()
     go (func() { startNetworkMetricsProcess(c, networkUpdateInterval, logger) })()
     go (func() { startSettingsMetricsProcess(c, networkUpdateInterval, logger) })()
+    go (func() { startTokensMetricsProcess(c, networkUpdateInterval, logger) })()
     go (func() { startMinipoolMetricsProcess(c, minipoolUpdateInterval, logger) })()
     //go (func() { startNodeMetricsProcess(c, nodeUpdateInterval, logger) })()
 
