@@ -43,6 +43,9 @@ func BootstrapQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.Transa
 func ProposeQuorum(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, eth.EthToWei(value), opts)
 }
+func EstimateProposeQuorumGas(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", QuorumSettingPath), MembersSettingsContractName, QuorumSettingPath, eth.EthToWei(value), opts)
+}
 
 
 // RPL bond required for a member
@@ -62,6 +65,9 @@ func BootstrapRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.Tran
 }
 func ProposeRPLBond(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", RPLBondSettingPath), MembersSettingsContractName, RPLBondSettingPath, value, opts)
+}
+func EstimateProposeRPLBondGas(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RPLBondSettingPath), MembersSettingsContractName, RPLBondSettingPath, value, opts)
 }
 
 
@@ -83,6 +89,9 @@ func BootstrapMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts 
 func ProposeMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUnbondedMaxSettingPath), MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
 }
+func EstimateProposeMinipoolUnbondedMaxGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolUnbondedMaxSettingPath), MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
+}
 
 
 // The period a member must wait for before submitting another challenge, in blocks
@@ -102,6 +111,9 @@ func BootstrapChallengeCooldown(rp *rocketpool.RocketPool, value uint64, opts *b
 }
 func ProposeChallengeCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCooldownSettingPath), MembersSettingsContractName, ChallengeCooldownSettingPath, big.NewInt(int64(value)), opts)
+}
+func EstimateProposeChallengeCooldownGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeCooldownSettingPath), MembersSettingsContractName, ChallengeCooldownSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
@@ -123,6 +135,9 @@ func BootstrapChallengeWindow(rp *rocketpool.RocketPool, value uint64, opts *bin
 func ProposeChallengeWindow(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeWindowSettingPath), MembersSettingsContractName, ChallengeWindowSettingPath, big.NewInt(int64(value)), opts)
 }
+func EstimateProposeChallengeWindowGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeWindowSettingPath), MembersSettingsContractName, ChallengeWindowSettingPath, big.NewInt(int64(value)), opts)
+}
 
 
 // The fee for a non-member to challenge a member, in wei
@@ -142,6 +157,9 @@ func BootstrapChallengeCost(rp *rocketpool.RocketPool, value *big.Int, opts *bin
 }
 func ProposeChallengeCost(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ChallengeCostSettingPath), MembersSettingsContractName, ChallengeCostSettingPath, value, opts)
+}
+func EstimateProposeChallengeCostGas(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ChallengeCostSettingPath), MembersSettingsContractName, ChallengeCostSettingPath, value, opts)
 }
 
 
