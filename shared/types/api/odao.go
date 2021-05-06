@@ -133,6 +133,7 @@ type CanVoteOnTNDAOProposalResponse struct {
     InvalidState bool               `json:"invalidState"`
     JoinedAfterCreated bool         `json:"joinedAfterCreated"`
     AlreadyVoted bool               `json:"alreadyVoted"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type VoteOnTNDAOProposalResponse struct {
     Status string                   `json:"status"`
@@ -211,6 +212,7 @@ type CanProposeTNDAOSettingResponse struct {
     Error string                    `json:"error"`
     CanPropose bool                 `json:"canPropose"`
     ProposalCooldownActive bool     `json:"proposalCooldownActive"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ProposeTNDAOSettingMembersQuorumResponse struct {
     Status string                   `json:"status"`
