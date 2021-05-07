@@ -38,6 +38,15 @@ func nodeBurn(c *cli.Context, amount float64, token string) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canBurn.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to burn %.6f %s for ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6), token))) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Burn tokens
     response, err := rp.NodeBurn(amountWei, token)
     if err != nil {

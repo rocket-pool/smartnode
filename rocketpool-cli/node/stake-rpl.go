@@ -34,6 +34,21 @@ func nodeStakeRpl(c *cli.Context) error {
         // Confirm swapping RPL
         if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before staking?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
 
+            // Check RPL can be swapped
+            canSwap, err := rp.CanNodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
+            if err != nil {
+                return err
+            }
+
+            // Display gas estimate
+            rp.PrintGasInfo(canSwap.GasInfo)
+        
+            // Prompt for confirmation
+            if !(c.Bool("yes") || cliutils.Confirm("Do you accept this gas cost?")) {
+                fmt.Println("Cancelled.")
+                return nil
+            }
+
             // Approve RPL for swapping
             response, err := rp.NodeSwapRplApprove(status.AccountBalances.FixedSupplyRPL)
             if err != nil {
@@ -147,6 +162,9 @@ func nodeStakeRpl(c *cli.Context) error {
         }
         return nil
     }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canStake.GasInfo)
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? Staked RPL can only be withdrawn after a delay.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {

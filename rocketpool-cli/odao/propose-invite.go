@@ -19,7 +19,7 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeInviteToTNDAO(memberAddress)
+    canPropose, err := rp.CanProposeInviteToTNDAO(memberAddress, memberId, memberEmail)
     if err != nil {
         return err
     }
@@ -31,6 +31,15 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
         if canPropose.MemberAlreadyExists {
             fmt.Printf("The node %s is already a member of the oracle DAO.\n", memberAddress.Hex())
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 

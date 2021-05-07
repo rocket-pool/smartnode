@@ -102,6 +102,15 @@ func proposeKick(c *cli.Context) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Submit proposal
     response, err := rp.ProposeKickFromTNDAO(selectedMember.Address, fineAmountWei)
     if err != nil {

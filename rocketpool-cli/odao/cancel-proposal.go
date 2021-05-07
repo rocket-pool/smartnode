@@ -82,6 +82,19 @@ func cancelProposal(c *cli.Context) error {
 
     }
 
+    // Display gas estimate
+    canResponse, err := rp.CanCancelTNDAOProposal(selectedProposal.ID)
+    if err != nil {
+        return err
+    }
+    rp.PrintGasInfo(canResponse.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to cancel proposal %d?", selectedProposal.ID))) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Cancel proposal
     response, err := rp.CancelTNDAOProposal(selectedProposal.ID)
     if err != nil {

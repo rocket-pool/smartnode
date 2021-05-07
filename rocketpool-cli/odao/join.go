@@ -79,6 +79,9 @@ func join(c *cli.Context) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canJoin.GasInfo)
+
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.")) {
         fmt.Println("Cancelled.")

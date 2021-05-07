@@ -41,6 +41,15 @@ func registerNode(c *cli.Context) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canRegister.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to register this node?")) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Register node
     response, err := rp.RegisterNode(timezoneLocation)
     if err != nil {

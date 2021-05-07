@@ -123,28 +123,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             },
 
                             cli.Command{
-                                Name:      "replace",
-                                Aliases:   []string{"r"},
-                                Usage:     "Propose replacing the node's position with a new member",
-                                UsageText: "rocketpool odao propose member replace member-address member-id member-email",
-                                Action: func(c *cli.Context) error {
-
-                                    // Validate args
-                                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
-                                    memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
-                                    if err != nil { return err }
-                                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
-                                    if err != nil { return err }
-                                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
-                                    if err != nil { return err }
-
-                                    // Run
-                                    return proposeReplace(c, memberAddress, memberId, memberEmail)
-
-                                },
-                            },
-
-                            cli.Command{
                                 Name:      "kick",
                                 Aliases:   []string{"k"},
                                 Usage:     "Propose kicking a member",
@@ -500,28 +478,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run
                     return leave(c)
-
-                },
-            },
-
-            cli.Command{
-                Name:      "replace",
-                Aliases:   []string{"r"},
-                Usage:     "Replace the node's position in the oracle DAO (requires an executed replace proposal)",
-                UsageText: "rocketpool odao replace [options]",
-                Flags: []cli.Flag{
-                    cli.BoolFlag{
-                        Name:  "yes, y",
-                        Usage: "Automatically confirm replacement",
-                    },
-                },
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Run
-                    return replace(c)
 
                 },
             },

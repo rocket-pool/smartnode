@@ -36,6 +36,9 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canSend.GasInfo)
+
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddress.Hex()))) {
         fmt.Println("Cancelled.")

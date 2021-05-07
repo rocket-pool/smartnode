@@ -199,6 +199,7 @@ type CanReplaceTNDAOPositionResponse struct {
     CanReplace bool                 `json:"canReplace"`
     ProposalExpired bool            `json:"proposalExpired"`
     MemberAlreadyExists bool        `json:"memberAlreadyExists"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ReplaceTNDAOPositionResponse struct {
     Status string                   `json:"status"`

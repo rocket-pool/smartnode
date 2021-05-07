@@ -143,50 +143,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "can-propose-replace",
-                Usage:     "Check whether the node can propose replacing its position with a new member",
-                UsageText: "rocketpool api odao can-propose-replace member-address member-id member-email",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
-                    memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
-                    if err != nil { return err }
-                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
-                    if err != nil { return err }
-                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canProposeReplace(c, memberAddress, memberId, memberEmail))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "propose-replace",
-                Aliases:   []string{"r"},
-                Usage:     "Propose replacing the node's position with a new member",
-                UsageText: "rocketpool api odao propose-replace member-address member-id member-email",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
-                    memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
-                    if err != nil { return err }
-                    memberId, err := cliutils.ValidateDAOMemberID("member ID", c.Args().Get(1))
-                    if err != nil { return err }
-                    memberEmail, err := cliutils.ValidateDAOMemberEmail("member email address", c.Args().Get(2))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(proposeReplace(c, memberAddress, memberId, memberEmail))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
                 Name:      "can-propose-kick",
                 Usage:     "Check whether the node can propose kicking a member",
                 UsageText: "rocketpool api odao can-propose-kick member-address fine-amount",

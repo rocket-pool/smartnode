@@ -71,6 +71,9 @@ func leave(c *cli.Context) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canLeave.GasInfo)
+
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to leave the oracle DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex()))) {
         fmt.Println("Cancelled.")
