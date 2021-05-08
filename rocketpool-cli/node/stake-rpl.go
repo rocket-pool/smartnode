@@ -165,6 +165,7 @@ func nodeStakeRpl(c *cli.Context) error {
 
     // Display gas estimate
     rp.PrintGasInfo(canStake.GasInfo)
+    rp.PrintMultiTxWarning()
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? Staked RPL can only be withdrawn after a delay.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
