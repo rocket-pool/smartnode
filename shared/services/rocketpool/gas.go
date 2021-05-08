@@ -17,7 +17,7 @@ const colorYellow string = "\033[33m"
 func (rp *Client) PrintMultiTxWarning() {
 
     fmt.Printf("%sNOTE: This operation requires multiple transactions.\n" +
-        "The actual gas cost will be higher than what is estimated here.\n%s",
+        "The actual gas cost may be higher than what is estimated here.\n%s",
         colorYellow,
         colorReset);
 
