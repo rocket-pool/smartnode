@@ -1,17 +1,19 @@
 package node
 
 import (
-    "bytes"
+	"bytes"
 
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -127,6 +129,15 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
         }
         response.WithdrawalBalances = withdrawalBalances
     }
+
+    // Get the collateral ratio
+    rplPrice, err := network.GetRPLPrice(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    pricePerMinipool := eth.WeiToEth(rplPrice) * 16
+    response.CollateralRatio = eth.WeiToEth(response.RplStake) / pricePerMinipool
+
 
     // Return response
     return &response, nil
