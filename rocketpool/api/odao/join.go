@@ -89,10 +89,10 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
         if err != nil {
             return err
         }
-        joinGasInfo, err := tndao.EstimateJoinGas(rp, opts)
+        //joinGasInfo, err := tndao.EstimateJoinGas(rp, opts)
         if err == nil {
             response.GasInfo = approveGasInfo
-            response.GasInfo.EstGasLimit += joinGasInfo.EstGasLimit
+            //response.GasInfo.EstGasLimit += joinGasInfo.EstGasLimit
         }
         return err
     })

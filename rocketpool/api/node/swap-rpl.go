@@ -54,12 +54,12 @@ func canNodeSwapRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeSwapRplResp
     if err != nil {
         return nil, err
     }
-    swapGasInfo, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
+    /*swapGasInfo, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
     if err != nil {
         return nil, err
-    }
+    }*/
     response.GasInfo = approveGasInfo
-    response.GasInfo.EstGasLimit += swapGasInfo.EstGasLimit
+    //response.GasInfo.EstGasLimit += swapGasInfo.EstGasLimit
 
     // Update & return response
     response.CanSwap = !response.InsufficientBalance
