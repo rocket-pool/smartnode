@@ -21,8 +21,8 @@ type VoluntaryExitMessage struct {
 // Response types
 type SyncStatusResponse struct {
     IsSyncing bool                      `json:"is_syncing"`
-    HeadSlot uinteger                   `json:"head_slot"`
-    SyncDistance uinteger               `json:"sync_distance"`
+    HeadSlot uint64                     `json:"head_slot"`
+    SyncDistance uint64                 `json:"sync_distance"`
 }
 type Eth2ConfigResponse struct {
     SecondsPerSlot uinteger `json:"SECONDS_PER_SLOT"`
