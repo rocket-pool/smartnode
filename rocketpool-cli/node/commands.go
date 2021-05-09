@@ -1,11 +1,10 @@
 package node
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
@@ -27,6 +26,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run
                     return getStatus(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "sync",
+                Aliases:   []string{"y"},
+                Usage:     "Get the sync progress of the eth1 and eth2 clients",
+                UsageText: "rocketpool node sync",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return getSyncProgress(c)
 
                 },
             },

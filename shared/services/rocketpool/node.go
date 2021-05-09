@@ -386,3 +386,20 @@ func (c *Client) NodeBurn(amountWei *big.Int, token string) (api.NodeBurnRespons
     return response, nil
 }
 
+
+// Get node sync progress
+func (c *Client) NodeSync() (api.NodeSyncProgressResponse, error) {
+    responseBytes, err := c.callAPI("node sync")
+    if err != nil {
+        return api.NodeSyncProgressResponse{}, fmt.Errorf("Could not get node sync: %w", err)
+    }
+    var response api.NodeSyncProgressResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeSyncProgressResponse{}, fmt.Errorf("Could not decode node sync response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeSyncProgressResponse{}, fmt.Errorf("Could not get node sync: %s", response.Error)
+    }
+    return response, nil
+}
+

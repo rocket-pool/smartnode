@@ -184,3 +184,12 @@ type NodeBurnResponse struct {
     TxHash common.Hash                  `json:"txHash"`
 }
 
+type NodeSyncProgressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    Eth1Progress float64                `json:"eth1Progress"`
+    Eth2Progress float64                `json:"eth2Progress"`
+    Eth1Synced bool                     `json:"eth1Synced"`
+    Eth2Synced bool                     `json:"eth2Synced"`
+}
+

@@ -33,6 +33,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "sync",
+                Aliases:   []string{"y"},
+                Usage:     "Get the sync progress of the eth1 and eth2 clients",
+                UsageText: "rocketpool api node sync",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getSyncProgress(c))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
                 Name:      "can-register",
                 Usage:     "Check whether the node can be registered with Rocket Pool",
                 UsageText: "rocketpool api node can-register timezone-location",
