@@ -1,10 +1,9 @@
 package beacon
 
 import (
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/types"
 )
-
 
 // API request options
 type ValidatorStatusOptions struct {
@@ -15,6 +14,7 @@ type ValidatorStatusOptions struct {
 // API response types
 type SyncStatus struct {
     Syncing bool
+    Progress float64
 }
 type Eth2Config struct {
     GenesisForkVersion []byte

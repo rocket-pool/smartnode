@@ -1,11 +1,11 @@
 package nimbus
 
 import (
-    "encoding/hex"
-    "encoding/json"
-    "strconv"
+	"encoding/hex"
+	"encoding/json"
+	"strconv"
 
-    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Request types
@@ -19,6 +19,11 @@ type VoluntaryExitMessage struct {
 }
 
 // Response types
+type SyncStatusResponse struct {
+    IsSyncing bool                      `json:"is_syncing"`
+    HeadSlot uinteger                   `json:"head_slot"`
+    SyncDistance uinteger               `json:"sync_distance"`
+}
 type Eth2ConfigResponse struct {
     SecondsPerSlot uinteger `json:"SECONDS_PER_SLOT"`
     SlotsPerEpoch  uinteger `json:"SLOTS_PER_EPOCH"`
