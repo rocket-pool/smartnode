@@ -20,7 +20,7 @@ import (
 // Settings
 const (
     NodeDetailsBatchSize = 10
-    TopMinipoolCount = 2
+    TopMinipoolCount = 1
 )
 
 
@@ -143,8 +143,7 @@ func calculateNodeScore(vals []api.MinipoolDetails) *big.Int {
     for j := 0; j < TopMinipoolCount && j < len(vals); j++ {
         var currMax *api.MinipoolDetails
         for k := 0; k < len(vals); k++ {
-            if vals[k].Validator.Exists &&
-                vals[k].Validator.Balance != nil &&
+            if vals[k].Validator.Balance != nil &&
                 (currMax == nil || vals[k].Validator.Balance.Cmp(currMax.Validator.Balance) > 0) &&
                 (prevMax == nil || vals[k].Validator.Balance.Cmp(prevMax) < 0) {
                     currMax = &vals[k]

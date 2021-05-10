@@ -25,7 +25,7 @@ type minipoolCountDetails struct {
 
 
 // Get all node minipool count details
-func getNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]minipoolCountDetails, error) {
+func GetNodeMinipoolCountDetails(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]minipoolCountDetails, error) {
 
     // Data
     var wg1 errgroup.Group
