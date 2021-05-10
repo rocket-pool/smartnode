@@ -1,24 +1,24 @@
 package rocketpool
 
 import (
-    "bytes"
-    "context"
-    "errors"
-    "fmt"
-    "math/big"
-    "reflect"
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"math/big"
+	"reflect"
 
-    "github.com/ethereum/go-ethereum"
-    "github.com/ethereum/go-ethereum/accounts/abi"
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/core/types"
-    "github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 // Transaction settings
 const (
-    GasLimitPadding = 100000
+    GasLimitMultiplier float64 = 1.5
     MaxGasLimit = 12000000
 )
 
@@ -175,7 +175,7 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
     }
 
     // Pad and return gas limit
-    gasLimit += GasLimitPadding
+    gasLimit = uint64(float64(gasLimit) * GasLimitMultiplier)
     if gasLimit > MaxGasLimit { gasLimit = MaxGasLimit }
     return gasLimit, nil
 
