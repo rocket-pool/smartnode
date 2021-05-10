@@ -83,6 +83,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Name:  "yes, y",
                         Usage: "Automatically confirm setting withdrawal address",
                     },
+                    cli.BoolFlag{
+                        Name:  "force",
+                        Usage: "Force update the withdrawal address, bypassing the 'pending' state that requires a confirmation transaction from the new address",
+                    },
                 },
                 Action: func(c *cli.Context) error {
 
