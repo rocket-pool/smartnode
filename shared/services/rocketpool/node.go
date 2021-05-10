@@ -65,8 +65,8 @@ func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse
 
 
 // Checks if the node's withdrawal address can be set
-func (c *Client) CanSetNodeWithdrawalAddress(withdrawalAddress common.Address) (api.CanSetNodeWithdrawalAddressResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-withdrawal-address %s", withdrawalAddress.Hex()))
+func (c *Client) CanSetNodeWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.CanSetNodeWithdrawalAddressResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-withdrawal-address %s %s", withdrawalAddress.Hex(), confirm))
     if err != nil {
         return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node withdrawal address: %w", err)
     }
@@ -82,8 +82,8 @@ func (c *Client) CanSetNodeWithdrawalAddress(withdrawalAddress common.Address) (
 
 
 // Set the node's withdrawal address
-func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address) (api.SetNodeWithdrawalAddressResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node set-withdrawal-address %s", withdrawalAddress.Hex()))
+func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.SetNodeWithdrawalAddressResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node set-withdrawal-address %s %s", withdrawalAddress.Hex(), confirm))
     if err != nil {
         return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
     }

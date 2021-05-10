@@ -20,8 +20,26 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
     if err != nil { return err }
     defer rp.Close()
 
+    // Print the "pending" disclaimer
+    colorReset := "\033[0m"
+    colorRed := "\033[31m"
+    colorYellow := "\033[33m"
+    var confirm bool
+    fmt.Println("You are about to change your withdrawal address. All future ETH & RPL rewards/refunds will be sent here.")
+    if !c.Bool("force") {
+        confirm = false
+        fmt.Println("By default, this will put your new withdrawal address into a \"pending\" state.")
+        fmt.Println("Rocket Pool will continue to use your old withdrawal address until you confirm that you own the new address via the Rocket Pool website.")
+        fmt.Println("You will need to use MetaMask with your new address to confirm it.")
+        fmt.Printf("%sIf you cannot use MetaMask, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.\n\n%s", colorYellow, colorReset)
+    } else {
+        confirm = true
+        fmt.Printf("%sYou have specified the \"--force\" option, so your new address will take effect immediately.\n", colorRed)
+        fmt.Printf("Please ensure that you have the correct address - you will not be able to change this once set!%s\n\n", colorReset)
+    }
+
     // Set node's withdrawal address
-    canResponse, err := rp.CanSetNodeWithdrawalAddress(withdrawalAddress)
+    canResponse, err := rp.CanSetNodeWithdrawalAddress(withdrawalAddress, confirm)
     if err != nil {
         return err
     }
@@ -52,13 +70,13 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
     rp.PrintGasInfo(canResponse.GasInfo)
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s? All future ETH & RPL rewards/refunds will be sent here.", withdrawalAddress.Hex()))) {
+    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s?", withdrawalAddress.Hex())) {
         fmt.Println("Cancelled.")
         return nil
     }
 
     // Set node's withdrawal address
-    response, err := rp.SetNodeWithdrawalAddress(withdrawalAddress)
+    response, err := rp.SetNodeWithdrawalAddress(withdrawalAddress, confirm)
     if err != nil {
         return err
     }
