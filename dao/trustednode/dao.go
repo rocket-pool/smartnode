@@ -3,6 +3,7 @@ package trustednode
 import (
 	"fmt"
 	"math/big"
+	"net/mail"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -411,7 +412,11 @@ func EstimateBootstrapMemberGas(rp *rocketpool.RocketPool, id, email string, nod
     if err != nil {
         return rocketpool.GasInfo{}, err
     }
-    return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapMember", id, email, nodeAddress)
+    address, err := mail.ParseAddress(email)
+    if err != nil {
+        return rocketpool.GasInfo{}, err 
+    }
+    return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapMember", id, address.Address, nodeAddress)
 }
 
 
@@ -421,7 +426,11 @@ func BootstrapMember(rp *rocketpool.RocketPool, id, email string, nodeAddress co
     if err != nil {
         return common.Hash{}, err
     }
-    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, email, nodeAddress)
+    address, err := mail.ParseAddress(email)
+    if err != nil {
+        return common.Hash{}, err
+    }
+    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, address.Address, nodeAddress)
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node member %s: %w", id, err)
     }
