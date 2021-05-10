@@ -57,13 +57,18 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
             return err
         }
 
+        if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddress)) {
+            fmt.Println("Cancelled.")
+            return nil
+        }
+
         fmt.Printf("Sending ETH to %s...\n", withdrawalAddress.Hex())
         cliutils.PrintTransactionHash(rp, response.TxHash)
         if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
             return err
         }
 
-        fmt.Printf("Successfully sent the test transaction. Please verify that your withdrawal address received it before confirming it below.\n\n")
+        fmt.Printf("Successfully sent the test transaction.\nPlease verify that your withdrawal address received it before confirming it below.\n\n")
     }
 
     // Display gas estimate
