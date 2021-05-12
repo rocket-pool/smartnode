@@ -14,6 +14,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/net"
 )
@@ -309,7 +310,11 @@ func (c *Client) GetServiceVersion() (string, error) {
 
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
-    configBytes, err := ioutil.ReadFile(path)
+    expandedPath, err := homedir.Expand(path)
+    if err != nil {
+        return config.RocketPoolConfig{}, err
+    }
+    configBytes, err := ioutil.ReadFile(expandedPath)
     if err != nil {
         return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %q: %w", path, err)
     }
@@ -391,13 +396,21 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Set compose file flags
     composeFileFlags := make([]string, len(composeFiles) + 1)
-    composeFileFlags[0] = fmt.Sprintf("-f \"%s/%s\"", c.configPath, ComposeFile)
+    expandedConfigPath, err := homedir.Expand(c.configPath)
+    if err != nil {
+        return "", err
+    }
+    composeFileFlags[0] = fmt.Sprintf("-f \"%s/%s\"", expandedConfigPath, ComposeFile)
     for fi, composeFile := range composeFiles {
-        composeFileFlags[fi + 1] = fmt.Sprintf("-f %q", composeFile)
+        expandedFile, err := homedir.Expand(composeFile)
+        if err != nil {
+            return "", err
+        }
+        composeFileFlags[fi + 1] = fmt.Sprintf("-f %q", expandedFile)
     }
 
     // Return command
-    return fmt.Sprintf("%s docker-compose --project-directory %q %s %s", strings.Join(env, " "), c.configPath, strings.Join(composeFileFlags, " "), args), nil
+    return fmt.Sprintf("%s docker-compose --project-directory %q %s %s", strings.Join(env, " "), expandedConfigPath, strings.Join(composeFileFlags, " "), args), nil
 
 }
 
