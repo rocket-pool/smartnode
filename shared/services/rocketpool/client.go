@@ -1,23 +1,22 @@
 package rocketpool
 
 import (
-    "bufio"
-    "errors"
-    "fmt"
-    "io"
-    "io/ioutil"
-    "os"
-    "regexp"
-    "strings"
+	"bufio"
+	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"regexp"
+	"strings"
 
-    "github.com/fatih/color"
-    "github.com/urfave/cli"
-    "golang.org/x/crypto/ssh"
+	"github.com/fatih/color"
+	"github.com/urfave/cli"
+	"golang.org/x/crypto/ssh"
 
-    "github.com/rocket-pool/smartnode/shared/services/config"
-    "github.com/rocket-pool/smartnode/shared/utils/net"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/utils/net"
 )
-
 
 // Config
 const (
@@ -168,8 +167,8 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
 
     // Get installation script flags
     flags := []string{
-        "-n", network,
-        "-v", version,
+        "-n", fmt.Sprintf("%q", network),
+        "-v", fmt.Sprintf("%q", version),
     }
     if noDeps {
         flags = append(flags, "-d")
@@ -251,7 +250,11 @@ func (c *Client) PrintServiceStatus(composeFiles []string) error {
 
 // Print the Rocket Pool service logs
 func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
-    cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", tail, strings.Join(serviceNames, " ")))
+    sanitizedStrings := make([]string, len(serviceNames))
+    for i, serviceName := range serviceNames {
+        sanitizedStrings[i] = fmt.Sprintf("%q", serviceName)
+    }
+    cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %q %s", tail, strings.Join(sanitizedStrings, " ")))
     if err != nil { return err }
     return c.printOutput(cmd)
 }
@@ -283,9 +286,9 @@ func (c *Client) GetServiceVersion() (string, error) {
         if err != nil {
             return "", err
         }
-        cmd = fmt.Sprintf("docker exec %s %s --version", containerName, APIBinPath)
+        cmd = fmt.Sprintf("docker exec %q %q --version", containerName, APIBinPath)
     } else {
-        cmd = fmt.Sprintf("%s --version", c.daemonPath)
+        cmd = fmt.Sprintf("%q --version", c.daemonPath)
     }
     versionBytes, err := c.readOutput(cmd)
     if err != nil {
@@ -306,9 +309,9 @@ func (c *Client) GetServiceVersion() (string, error) {
 
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
-    configBytes, err := c.readOutput(fmt.Sprintf("cat %s", path))
+    configBytes, err := ioutil.ReadFile(path)
     if err != nil {
-        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %s: %w", path, err)
+        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %q: %w", path, err)
     }
     return config.Parse(configBytes)
 }
@@ -320,8 +323,8 @@ func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
     if err != nil {
         return err
     }
-    if _, err := c.readOutput(fmt.Sprintf("cat > %s <<EOF\n%sEOF", path, string(configBytes))); err != nil {
-        return fmt.Errorf("Could not write Rocket Pool config to %s: %w", path, err)
+    if err := ioutil.WriteFile(path, configBytes, 0); err != nil {
+        return fmt.Errorf("Could not write Rocket Pool config to %q: %w", path, err)
     }
     return nil
 }
@@ -351,26 +354,26 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Set environment variables from config
     env := []string{
-        fmt.Sprintf("COMPOSE_PROJECT_NAME='%s'",    cfg.Smartnode.ProjectName),
-        fmt.Sprintf("ROCKET_POOL_VERSION='%s'",     cfg.Smartnode.GraffitiVersion),
-        fmt.Sprintf("SMARTNODE_IMAGE='%s'",         cfg.Smartnode.Image),
-        fmt.Sprintf("ETH1_CLIENT='%s'",             cfg.GetSelectedEth1Client().ID),
-        fmt.Sprintf("ETH1_IMAGE='%s'",              cfg.GetSelectedEth1Client().Image),
-        fmt.Sprintf("ETH2_CLIENT='%s'",             cfg.GetSelectedEth2Client().ID),
-        fmt.Sprintf("ETH2_IMAGE='%s'",              cfg.GetSelectedEth2Client().GetBeaconImage()),
-        fmt.Sprintf("VALIDATOR_CLIENT='%s'",        cfg.GetSelectedEth2Client().ID),
-        fmt.Sprintf("VALIDATOR_IMAGE='%s'",         cfg.GetSelectedEth2Client().GetValidatorImage()),
-        fmt.Sprintf("ETH1_PROVIDER='%s'",           cfg.Chains.Eth1.Provider),
-        fmt.Sprintf("ETH1_WS_PROVIDER='%s'",        cfg.Chains.Eth1.WsProvider),
-        fmt.Sprintf("ETH2_PROVIDER='%s'",           cfg.Chains.Eth2.Provider),
+        fmt.Sprintf("COMPOSE_PROJECT_NAME=%q",    cfg.Smartnode.ProjectName),
+        fmt.Sprintf("ROCKET_POOL_VERSION=%q",     cfg.Smartnode.GraffitiVersion),
+        fmt.Sprintf("SMARTNODE_IMAGE=%q",         cfg.Smartnode.Image),
+        fmt.Sprintf("ETH1_CLIENT=%q",             cfg.GetSelectedEth1Client().ID),
+        fmt.Sprintf("ETH1_IMAGE=%q",              cfg.GetSelectedEth1Client().Image),
+        fmt.Sprintf("ETH2_CLIENT=%q",             cfg.GetSelectedEth2Client().ID),
+        fmt.Sprintf("ETH2_IMAGE=%q",              cfg.GetSelectedEth2Client().GetBeaconImage()),
+        fmt.Sprintf("VALIDATOR_CLIENT=%q",        cfg.GetSelectedEth2Client().ID),
+        fmt.Sprintf("VALIDATOR_IMAGE=%q",         cfg.GetSelectedEth2Client().GetValidatorImage()),
+        fmt.Sprintf("ETH1_PROVIDER=%q",           cfg.Chains.Eth1.Provider),
+        fmt.Sprintf("ETH1_WS_PROVIDER=%q",        cfg.Chains.Eth1.WsProvider),
+        fmt.Sprintf("ETH2_PROVIDER=%q",           cfg.Chains.Eth2.Provider),
     }
     paramsSet := map[string]bool{}
     for _, param := range cfg.Chains.Eth1.Client.Params {
-        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
+        env = append(env, fmt.Sprintf("%s=%q", param.Env, param.Value))
         paramsSet[param.Env] = true
     }
     for _, param := range cfg.Chains.Eth2.Client.Params {
-        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Value))
+        env = append(env, fmt.Sprintf("%s=%q", param.Env, param.Value))
         paramsSet[param.Env] = true
     }
 
@@ -378,23 +381,23 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     for _, param := range cfg.GetSelectedEth1Client().Params {
         if _, ok := paramsSet[param.Env]; ok { continue }
         if param.Default == "" { continue }
-        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Default))
+        env = append(env, fmt.Sprintf("%s=%q", param.Env, param.Default))
     }
     for _, param := range cfg.GetSelectedEth2Client().Params {
         if _, ok := paramsSet[param.Env]; ok { continue }
         if param.Default == "" { continue }
-        env = append(env, fmt.Sprintf("%s='%s'", param.Env, param.Default))
+        env = append(env, fmt.Sprintf("%s=%q", param.Env, param.Default))
     }
 
     // Set compose file flags
     composeFileFlags := make([]string, len(composeFiles) + 1)
-    composeFileFlags[0] = fmt.Sprintf("-f %s/%s", c.configPath, ComposeFile)
+    composeFileFlags[0] = fmt.Sprintf("-f \"%s/%s\"", c.configPath, ComposeFile)
     for fi, composeFile := range composeFiles {
-        composeFileFlags[fi + 1] = fmt.Sprintf("-f %s", composeFile)
+        composeFileFlags[fi + 1] = fmt.Sprintf("-f %q", composeFile)
     }
 
     // Return command
-    return fmt.Sprintf("%s docker-compose --project-directory %s %s %s", strings.Join(env, " "), c.configPath, strings.Join(composeFileFlags, " "), args), nil
+    return fmt.Sprintf("%s docker-compose --project-directory %q %s %s", strings.Join(env, " "), c.configPath, strings.Join(composeFileFlags, " "), args), nil
 
 }
 
@@ -407,9 +410,9 @@ func (c *Client) callAPI(args string) ([]byte, error) {
         if err != nil {
             return []byte{}, err
         }
-        cmd = fmt.Sprintf("docker exec %s %s %s api %s", containerName, APIBinPath, c.getGasOpts(), args)
+        cmd = fmt.Sprintf("docker exec %q %q %s api %s", containerName, APIBinPath, c.getGasOpts(), args)
     } else {
-        cmd = fmt.Sprintf("%s --config %s --settings %s %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), c.getGasOpts(), args)
+        cmd = fmt.Sprintf("%s --config %q --settings %q %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), c.getGasOpts(), args)
     }
     return c.readOutput(cmd)
 }
@@ -432,10 +435,10 @@ func (c *Client) getAPIContainerName() (string, error) {
 func (c *Client) getGasOpts() string {
     var opts string
     if c.gasPrice != "" {
-        opts += fmt.Sprintf("--gasPrice %s ", c.gasPrice)
+        opts += fmt.Sprintf("--gasPrice %q ", c.gasPrice)
     }
     if c.gasLimit != "" {
-        opts += fmt.Sprintf("--gasLimit %s ", c.gasLimit)
+        opts += fmt.Sprintf("--gasLimit %q ", c.gasLimit)
     }
     return opts
 }
