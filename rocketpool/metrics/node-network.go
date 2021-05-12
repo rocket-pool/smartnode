@@ -28,34 +28,34 @@ const (
 
 
 // node metrics process
-type nodeScoreGauges struct {
-    nodeScores             *prometheus.GaugeVec
-    nodeScoreHist          *prometheus.GaugeVec
-    nodeScoreHistSum       prometheus.Gauge
-    nodeScoreHistCount     prometheus.Gauge
+type nodeNetworkGauges struct {
+    scores                 *prometheus.GaugeVec
+    scoreHist              *prometheus.GaugeVec
+    scoreHistSum           prometheus.Gauge
+    scoreHistCount         prometheus.Gauge
     nodeMinipoolCounts     *prometheus.GaugeVec
     minipoolCounts         *prometheus.GaugeVec
 }
 
 
-type nodeScoreMetricsProcess struct {
+type nodeNetworkMetricsProcess struct {
     rp *rocketpool.RocketPool
     bc beacon.Client
-    metrics nodeScoreGauges
+    metrics nodeNetworkGauges
     logger log.ColorLogger
 }
 
 
 // Start node metrics process
-func startNodeMetricsProcess(c *cli.Context, interval time.Duration, logger log.ColorLogger) {
+func startNodeNetworkMetricsProcess(c *cli.Context, interval time.Duration, logger log.ColorLogger) {
 
-    logger.Printlnf("Enter startNodeMetricsProcess")
+    logger.Printlnf("Enter startNodeNetworkMetricsProcess")
     timer := time.NewTicker(interval)
-    var p *nodeScoreMetricsProcess
+    var p *nodeNetworkMetricsProcess
     var err error
     // put create process in a loop because it may fail initially
     for ; true; <- timer.C {
-        p, err = newNodeMetricsProcss(c, logger)
+        p, err = newNodeNetworkMetricsProcss(c, logger)
         if p != nil && err == nil {
             break;
         }
@@ -69,12 +69,12 @@ func startNodeMetricsProcess(c *cli.Context, interval time.Duration, logger log.
             logger.Printlnf("Error in updateMetrics: %w", err)
         }
     }
-    logger.Printlnf("Exit startNodeMetricsProcess")
+    logger.Printlnf("Exit startNodeNetworkMetricsProcess")
 }
 
 
 // Create new nodeMetricsProcess object
-func newNodeMetricsProcss(c *cli.Context, logger log.ColorLogger) (*nodeScoreMetricsProcess, error) {
+func newNodeNetworkMetricsProcss(c *cli.Context, logger log.ColorLogger) (*nodeNetworkMetricsProcess, error) {
 
     // Get services
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
@@ -85,39 +85,39 @@ func newNodeMetricsProcss(c *cli.Context, logger log.ColorLogger) (*nodeScoreMet
     if err != nil { return nil, err }
 
     // Initialise metrics
-    metrics := nodeScoreGauges {
-        nodeScores:         promauto.NewGaugeVec(
+    metrics := nodeNetworkGauges {
+        scores:         promauto.NewGaugeVec(
             prometheus.GaugeOpts{
                 Namespace:  "rocketpool",
-                Subsystem:  "node",
-                Name:       "score_eth",
+                Subsystem:  "node_network",
+                Name:       "eth",
                 Help:       "sum of rewards/penalties of the top two minipools for this node",
             },
             []string{"address", "rank"},
         ),
-        nodeScoreHist: promauto.NewGaugeVec(
+        scoreHist: promauto.NewGaugeVec(
             prometheus.GaugeOpts{
                 Namespace:  "rocketpool",
-                Subsystem:  "node",
-                Name:       "score_hist_eth",
+                Subsystem:  "node_network",
+                Name:       "hist_eth",
                 Help:       "distribution of sum of rewards/penalties of the top two minipools in rocketpool network",
                 },
             []string{"le"},
         ),
-        nodeScoreHistSum:   promauto.NewGauge(prometheus.GaugeOpts{
+        scoreHistSum:   promauto.NewGauge(prometheus.GaugeOpts{
             Namespace:      "rocketpool",
-            Subsystem:      "node",
-            Name:           "score_hist_eth_sum",
+            Subsystem:      "node_network",
+            Name:           "hist_eth_sum",
         }),
-        nodeScoreHistCount: promauto.NewGauge(prometheus.GaugeOpts{
+        scoreHistCount: promauto.NewGauge(prometheus.GaugeOpts{
             Namespace:      "rocketpool",
-            Subsystem:      "node",
-            Name:           "score_hist_eth_count",
+            Subsystem:      "node_network",
+            Name:           "hist_eth_count",
         }),
         nodeMinipoolCounts: promauto.NewGaugeVec(
             prometheus.GaugeOpts{
                 Namespace:  "rocketpool",
-                Subsystem:  "node",
+                Subsystem:  "node_network",
                 Name:       "minipool_count",
                 Help:       "number of activated minipools running for node address",
             },
@@ -126,7 +126,7 @@ func newNodeMetricsProcss(c *cli.Context, logger log.ColorLogger) (*nodeScoreMet
         minipoolCounts: promauto.NewGaugeVec(
             prometheus.GaugeOpts{
                 Namespace:  "rocketpool",
-                Subsystem:  "minipool",
+                Subsystem:  "node_network",
                 Name:       "count",
                 Help:       "minipools counts with various aggregations",
             },
@@ -134,7 +134,7 @@ func newNodeMetricsProcss(c *cli.Context, logger log.ColorLogger) (*nodeScoreMet
         ),
     }
 
-    p := &nodeScoreMetricsProcess {
+    p := &nodeNetworkMetricsProcess {
         rp: rp,
         bc: bc,
         metrics: metrics,
@@ -146,8 +146,8 @@ func newNodeMetricsProcss(c *cli.Context, logger log.ColorLogger) (*nodeScoreMet
 
 
 // Update node metrics
-func (p *nodeScoreMetricsProcess) updateMetrics() error {
-    p.logger.Println("Enter node updateMetrics")
+func (p *nodeNetworkMetricsProcess) updateMetrics() error {
+    p.logger.Println("Enter node-network updateMetrics")
 
     nodeRanks, err := apiNode.GetNodeLeader(p.rp, p.bc)
     if err != nil { return err }
@@ -157,13 +157,13 @@ func (p *nodeScoreMetricsProcess) updateMetrics() error {
     p.updateNodeMinipoolCount(nodeRanks)
     p.updateMinipoolCount(nodeRanks)
 
-    p.logger.Println("Exit node updateMetrics")
+    p.logger.Println("Exit node-network updateMetrics")
     return nil
 }
 
 
-func (p *nodeScoreMetricsProcess) updateScore(nodeRanks []api.NodeRank) {
-    p.metrics.nodeScores.Reset()
+func (p *nodeNetworkMetricsProcess) updateScore(nodeRanks []api.NodeRank) {
+    p.metrics.scores.Reset()
 
     for _, nodeRank := range nodeRanks {
 
@@ -171,14 +171,14 @@ func (p *nodeScoreMetricsProcess) updateScore(nodeRanks []api.NodeRank) {
 
         if nodeRank.Score != nil {
             scoreEth := eth.WeiToEth(nodeRank.Score)
-            p.metrics.nodeScores.With(prometheus.Labels{"address":nodeAddress, "rank":strconv.Itoa(nodeRank.Rank)}).Set(scoreEth)
+            p.metrics.scores.With(prometheus.Labels{"address":nodeAddress, "rank":strconv.Itoa(nodeRank.Rank)}).Set(scoreEth)
         }
     }
 }
 
 
-func (p *nodeScoreMetricsProcess) updateHistogram(nodeRanks []api.NodeRank) {
-    p.metrics.nodeScoreHist.Reset()
+func (p *nodeNetworkMetricsProcess) updateHistogram(nodeRanks []api.NodeRank) {
+    p.metrics.scoreHist.Reset()
 
     if len(nodeRanks) == 0 { return }
 
@@ -217,23 +217,23 @@ func (p *nodeScoreMetricsProcess) updateHistogram(nodeRanks []api.NodeRank) {
 
             // fill in the gaps
             for nextB < b {
-                p.metrics.nodeScoreHist.With(prometheus.Labels{"le":fmt.Sprintf("%.3f", nextB)}).Set(float64(accCount))
+                p.metrics.scoreHist.With(prometheus.Labels{"le":fmt.Sprintf("%.3f", nextB)}).Set(float64(accCount))
                 nextB = nextB + BucketInterval
             }
 
             accCount += histogram[b]
-            p.metrics.nodeScoreHist.With(prometheus.Labels{"le":fmt.Sprintf("%.3f", b)}).Set(float64(accCount))
+            p.metrics.scoreHist.With(prometheus.Labels{"le":fmt.Sprintf("%.3f", b)}).Set(float64(accCount))
 
             nextB = b + BucketInterval
         }
     }
 
-    p.metrics.nodeScoreHistSum.Set(sumScores)
-    p.metrics.nodeScoreHistCount.Set(float64(accCount))
+    p.metrics.scoreHistSum.Set(sumScores)
+    p.metrics.scoreHistCount.Set(float64(accCount))
 }
 
 
-func (p *nodeScoreMetricsProcess) updateNodeMinipoolCount(nodeRanks []api.NodeRank) {
+func (p *nodeNetworkMetricsProcess) updateNodeMinipoolCount(nodeRanks []api.NodeRank) {
     p.metrics.nodeMinipoolCounts.Reset()
 
     for _, nodeRank := range nodeRanks {
@@ -249,7 +249,7 @@ func (p *nodeScoreMetricsProcess) updateNodeMinipoolCount(nodeRanks []api.NodeRa
 }
 
 
-func (p *nodeScoreMetricsProcess) updateMinipoolCount(nodeRanks []api.NodeRank) {
+func (p *nodeNetworkMetricsProcess) updateMinipoolCount(nodeRanks []api.NodeRank) {
     p.metrics.minipoolCounts.Reset()
 
     var totalCount, initializedCount, prelaunchCount, stakingCount, withdrawableCount, dissolvedCount int

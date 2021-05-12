@@ -53,8 +53,8 @@ func run(c *cli.Context) error {
     go (func() { startNetworkMetricsProcess(c, networkUpdateInterval, logger) })()
     go (func() { startSettingsMetricsProcess(c, networkUpdateInterval, logger) })()
     go (func() { startTokensMetricsProcess(c, networkUpdateInterval, logger) })()
-    go (func() { startMinipoolMetricsProcess(c, minipoolUpdateInterval, logger) })()
-    //go (func() { startNodeMetricsProcess(c, nodeUpdateInterval, logger) })()
+    go (func() { startNodeOwnMetricsProcess(c, minipoolUpdateInterval, logger) })()
+    //go (func() { startNodeNetworkMetricsProcess(c, nodeUpdateInterval, logger) })()
 
     // Serve metrics
     http.Handle("/metrics", promhttp.Handler())
