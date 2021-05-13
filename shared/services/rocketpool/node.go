@@ -30,6 +30,23 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 }
 
 
+// Get node status
+func (c *Client) NodeLeader() (api.NodeLeaderResponse, error) {
+    responseBytes, err := c.callAPI("node leader")
+    if err != nil {
+        return api.NodeLeaderResponse{}, fmt.Errorf("Could not get node leader: %w", err)
+    }
+    var response api.NodeLeaderResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeLeaderResponse{}, fmt.Errorf("Could not decode node leader response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeLeaderResponse{}, fmt.Errorf("Could not get node leader: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Check whether the node can be registered
 func (c *Client) CanRegisterNode() (api.CanRegisterNodeResponse, error) {
     responseBytes, err := c.callAPI("node can-register")

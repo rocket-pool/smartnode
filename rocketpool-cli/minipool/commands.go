@@ -31,6 +31,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "leader",
+                Aliases:   []string{"l"},
+                Usage:     "minipool leaderboard",
+                UsageText: "rocketpool minipool leader",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return getLeader(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "refund",
                 Aliases:   []string{"r"},
                 Usage:     "Refund ETH belonging to the node from minipools",

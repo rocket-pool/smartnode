@@ -28,6 +28,7 @@ const (
     ComposeFile = "docker-compose.yml"
 
     APIContainerSuffix = "_api"
+    MetricsContainerSuffix = "_metrics"
     APIBinPath = "/go/bin/rocketpool"
 
     DebugColor = color.FgYellow
@@ -273,6 +274,24 @@ func (c *Client) PrintServiceStats(composeFiles []string) error {
 }
 
 
+func (c *Client) PrintMetricsOutput() error {
+
+    var cmd1 string
+    if c.daemonPath == "" {
+        // get metrics container IP address
+        metricsContainerName, err := c.getMetricsContainerName()
+        if err != nil { return err }
+        cmd1 = fmt.Sprintf("METRICS_IP_ADDRESS=`docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s`;", metricsContainerName)
+    } else {
+        cmd1 = "METRICS_IP_ADDRESS=localhost;"
+    }
+    cmd2 := "curl --silent --show-error http://$METRICS_IP_ADDRESS:2112/metrics"
+    cmd := cmd1 + cmd2
+    // Print metrics output
+    return c.printOutput(cmd)
+}
+
+
 // Get the Rocket Pool service version
 func (c *Client) GetServiceVersion() (string, error) {
 
@@ -425,6 +444,18 @@ func (c *Client) getAPIContainerName() (string, error) {
       return "", errors.New("Rocket Pool docker project name not set")
     }
     return cfg.Smartnode.ProjectName + APIContainerSuffix, nil
+}
+
+
+func (c *Client) getMetricsContainerName() (string, error) {
+    cfg, err := c.LoadMergedConfig()
+    if err != nil {
+        return "", err
+    }
+    if cfg.Smartnode.ProjectName == "" {
+      return "", errors.New("Rocket Pool docker project name not set")
+    }
+    return cfg.Smartnode.ProjectName + MetricsContainerSuffix, nil
 }
 
 

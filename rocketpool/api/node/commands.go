@@ -33,6 +33,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "leader",
+                Aliases:   []string{"l"},
+                Usage:     "node leaderboard",
+                UsageText: "rocketpool api node leader",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getLeader(c))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
                 Name:      "can-register",
                 Usage:     "Check whether the node can be registered with Rocket Pool",
                 UsageText: "rocketpool api node can-register",

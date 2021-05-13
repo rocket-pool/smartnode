@@ -4,6 +4,7 @@ import (
     "math/big"
 
     "github.com/rocket-pool/rocketpool-go/network"
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/settings/protocol"
     "github.com/rocket-pool/rocketpool-go/utils/eth"
     "github.com/urfave/cli"
@@ -21,6 +22,10 @@ func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
+    return GetRplPrice(rp)
+}
+
+func GetRplPrice(rp *rocketpool.RocketPool) (*api.RplPriceResponse, error) {
     // Response
     response := api.RplPriceResponse{}
 

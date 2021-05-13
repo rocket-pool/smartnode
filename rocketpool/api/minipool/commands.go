@@ -33,6 +33,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "leader",
+                Aliases:   []string{"l"},
+                Usage:     "validator leaderboard",
+                UsageText: "rocketpool api minipool leader",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getLeader(c))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
                 Name:      "can-refund",
                 Usage:     "Check whether the node can refund ETH from the minipool",
                 UsageText: "rocketpool api minipool can-refund minipool-address",

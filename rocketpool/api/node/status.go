@@ -3,8 +3,10 @@ package node
 import (
     "bytes"
 
+    "github.com/ethereum/go-ethereum/accounts"
     "github.com/rocket-pool/rocketpool-go/dao/trustednode"
     "github.com/rocket-pool/rocketpool-go/node"
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
     "github.com/rocket-pool/rocketpool-go/tokens"
     "github.com/rocket-pool/rocketpool-go/types"
     "github.com/urfave/cli"
@@ -25,14 +27,20 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
-    // Response
-    response := api.NodeStatusResponse{}
-
     // Get node account
     nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return nil, err
     }
+
+    return GetStatus(rp, nodeAccount)
+}
+
+
+func GetStatus(rp *rocketpool.RocketPool, nodeAccount accounts.Account) (*api.NodeStatusResponse, error) {
+        // Response
+    response := api.NodeStatusResponse{}
+
     response.AccountAddress = nodeAccount.Address
 
     // Sync
@@ -89,7 +97,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
     // Get node minipool counts
     wg.Go(func() error {
-        details, err := getNodeMinipoolCountDetails(rp, nodeAccount.Address)
+        details, err := GetNodeMinipoolCountDetails(rp, nodeAccount.Address)
         if err == nil {
             response.MinipoolCounts.Total = len(details)
             for _, mpDetails := range details {

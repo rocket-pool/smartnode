@@ -38,6 +38,22 @@ type NodeStatusResponse struct {
 }
 
 
+type NodeLeaderResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Nodes []NodeRank                `json:"nodes"`
+}
+
+type NodeRank struct {
+    Rank int                        `json:"rank"`
+    Address common.Address          `json:"address"`
+    Registered bool                 `json:"registered"`
+    TimezoneLocation string         `json:"timezoneLocation"`
+    Score *big.Int                  `json:"score"`
+    Details []MinipoolDetails       `json:"details"`
+}
+
+
 type CanRegisterNodeResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`

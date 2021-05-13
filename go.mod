@@ -18,6 +18,7 @@ require (
 	github.com/minio/highwayhash v1.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/prometheus/client_golang v1.0.0
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/rocket-pool/rocketpool-go v0.0.10
@@ -26,6 +27,7 @@ require (
 	github.com/wealdtech/go-eth2-types/v2 v2.5.0
 	github.com/wealdtech/go-eth2-util v1.6.0
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.1
+	go.uber.org/multierr v1.6.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/sys v0.0.0-20210305230114-8fe3ee5dd75b // indirect
