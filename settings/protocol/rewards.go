@@ -31,15 +31,15 @@ func GetRewardsClaimerPerc(rp *rocketpool.RocketPool, contractName string, opts 
 }
 
 
-// The block that a claimer's share was last updated at
-func GetRewardsClaimerPercBlockUpdated(rp *rocketpool.RocketPool, contractName string, opts *bind.CallOpts) (uint64, error) {
+// The time that a claimer's share was last updated
+func GetRewardsClaimerPercTimeUpdated(rp *rocketpool.RocketPool, contractName string, opts *bind.CallOpts) (uint64, error) {
     rewardsSettingsContract, err := getRewardsSettingsContract(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimerPercBlockUpdated", contractName); err != nil {
-        return 0, fmt.Errorf("Could not get rewards claimer updated block: %w", err)
+    if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimerPercTimeUpdated", contractName); err != nil {
+        return 0, fmt.Errorf("Could not get rewards claimer updated time: %w", err)
     }
     return (*value).Uint64(), nil
 }
@@ -59,20 +59,20 @@ func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 }
 
 
-// Rewards claim interval in blocks
-func GetRewardsClaimIntervalBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+// Rewards claim interval time
+func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     rewardsSettingsContract, err := getRewardsSettingsContract(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimIntervalBlocks"); err != nil {
+    if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimIntervalTime"); err != nil {
         return 0, fmt.Errorf("Could not get rewards claim interval: %w", err)
     }
     return (*value).Uint64(), nil
 }
-func BootstrapRewardsClaimIntervalBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-    return protocoldao.BootstrapUint(rp, RewardsSettingsContractName, "rpl.rewards.claim.period.blocks", big.NewInt(int64(value)), opts)
+func BootstrapRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
+    return protocoldao.BootstrapUint(rp, RewardsSettingsContractName, "rpl.rewards.claim.period.time", big.NewInt(int64(value)), opts)
 }
 
 

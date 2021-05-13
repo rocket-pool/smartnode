@@ -1,20 +1,22 @@
 package rewards
 
 import (
-    "context"
-    "math/big"
-    "testing"
+	"context"
+	"math/big"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/rewards"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/tokens"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
 func TestTrustedNodeRewards(t *testing.T) {
+
+    var secondsPerBlock uint64 = 12
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
@@ -24,8 +26,8 @@ func TestTrustedNodeRewards(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Set network parameters
-    if _, err := protocol.BootstrapRewardsClaimIntervalBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := protocol.BootstrapInflationIntervalBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, 5 * secondsPerBlock, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapInflationIntervalTime(rp, 5 * secondsPerBlock, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check trusted node claims enabled status
     if claimsEnabled, err := rewards.GetTrustedNodeClaimsEnabled(rp, nil); err != nil {
@@ -68,7 +70,7 @@ func TestTrustedNodeRewards(t *testing.T) {
     // Start RPL inflation
     if header, err := rp.Client.HeaderByNumber(context.Background(), nil); err != nil {
         t.Fatal(err)
-    } else if _, err := protocol.BootstrapInflationStartBlock(rp, header.Number.Uint64() + 2, ownerAccount.GetTransactor()); err != nil {
+    } else if _, err := protocol.BootstrapInflationStartTime(rp, (header.Number.Uint64() + 2) * secondsPerBlock, ownerAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 

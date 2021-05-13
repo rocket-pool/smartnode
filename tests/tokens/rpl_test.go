@@ -1,17 +1,17 @@
 package tokens
 
 import (
-    "context"
-    "testing"
+	"context"
+	"testing"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
 )
 
 
@@ -111,17 +111,19 @@ func TestTransferFromRPL(t *testing.T) {
 
 func TestMintInflationRPL(t *testing.T) {
 
+    var secondsPerBlock uint64 = 12
+
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Set network parameters
-    if _, err := protocol.BootstrapInflationIntervalBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapInflationIntervalTime(rp, 5 * secondsPerBlock, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Start RPL inflation
     if header, err := rp.Client.HeaderByNumber(context.Background(), nil); err != nil {
         t.Fatal(err)
-    } else if _, err := protocol.BootstrapInflationStartBlock(rp, header.Number.Uint64() + 2, ownerAccount.GetTransactor()); err != nil {
+    } else if _, err := protocol.BootstrapInflationStartTime(rp, (header.Number.Uint64() + 2) * secondsPerBlock, ownerAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 

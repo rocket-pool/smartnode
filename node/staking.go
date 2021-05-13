@@ -81,17 +81,17 @@ func GetNodeMinimumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addres
 }
 
 
-// Get the block a node last staked RPL at
-func GetNodeRPLStakedBlock(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+// Get the time a node last staked RPL
+func GetNodeRPLStakedTime(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketNodeStaking, err := getRocketNodeStaking(rp)
     if err != nil {
         return 0, err
     }
-    nodeRplStakedBlock := new(*big.Int)
-    if err := rocketNodeStaking.Call(opts, nodeRplStakedBlock, "getNodeRPLStakedBlock", nodeAddress); err != nil {
-        return 0, fmt.Errorf("Could not get node RPL staked block: %w", err)
+    nodeRplStakedTime := new(*big.Int)
+    if err := rocketNodeStaking.Call(opts, nodeRplStakedTime, "getNodeRPLStakedTime", nodeAddress); err != nil {
+        return 0, fmt.Errorf("Could not get node RPL staked time: %w", err)
     }
-    return (*nodeRplStakedBlock).Uint64(), nil
+    return (*nodeRplStakedTime).Uint64(), nil
 }
 
 

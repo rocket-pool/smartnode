@@ -34,36 +34,36 @@ func BootstrapInflationIntervalRate(rp *rocketpool.RocketPool, value float64, op
 }
 
 
-// RPL inflation interval in blocks
-func GetInflationIntervalBlocks(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+// RPL inflation interval time
+func GetInflationIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     inflationSettingsContract, err := getInflationSettingsContract(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalBlocks"); err != nil {
+    if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalTime"); err != nil {
         return 0, fmt.Errorf("Could not get inflation interval: %w", err)
     }
     return (*value).Uint64(), nil
 }
-func BootstrapInflationIntervalBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-    return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.blocks", big.NewInt(int64(value)), opts)
+func BootstrapInflationIntervalTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
+    return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.time", big.NewInt(int64(value)), opts)
 }
 
 
-// RPL inflation start block
-func GetInflationStartBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+// RPL inflation start time
+func GetInflationStartTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     inflationSettingsContract, err := getInflationSettingsContract(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalStartBlock"); err != nil {
-        return 0, fmt.Errorf("Could not get inflation start block: %w", err)
+    if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalStartTime"); err != nil {
+        return 0, fmt.Errorf("Could not get inflation start time: %w", err)
     }
     return (*value).Uint64(), nil
 }
-func BootstrapInflationStartBlock(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
+func BootstrapInflationStartTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
     return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.start", big.NewInt(int64(value)), opts)
 }
 
