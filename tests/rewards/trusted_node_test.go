@@ -45,6 +45,7 @@ func TestTrustedNodeRewards(t *testing.T) {
 
     // Mine blocks until trusted node claims are possible
     if err := evm.MineBlocks(5); err != nil { t.Fatal(err) }
+    if err := evm.IncreaseTime(5 * secondsPerBlock); err != nil { t.Fatal(err) }
 
     // Get & check updated trusted node claim possible status
     if nodeClaimPossible, err := rewards.GetTrustedNodeClaimPossible(rp, trustedNodeAccount.Address, nil); err != nil {
@@ -76,6 +77,7 @@ func TestTrustedNodeRewards(t *testing.T) {
 
     // Mine blocks until rewards are available
     if err := evm.MineBlocks(10); err != nil { t.Fatal(err) }
+    if err := evm.IncreaseTime(10 * secondsPerBlock); err != nil { t.Fatal(err) }
 
     // Get & check updated trusted node claim rewards amount
     if rewardsAmount, err := rewards.GetTrustedNodeClaimRewardsAmount(rp, trustedNodeAccount.Address, nil); err != nil {

@@ -46,7 +46,8 @@ func TestNodeRewards(t *testing.T) {
     }
 
     // Mine blocks until node claims are possible
-    if err := evm.MineBlocks(10); err != nil { t.Fatal(err) }
+    if err := evm.MineBlocks(5); err != nil { t.Fatal(err) }
+    if err := evm.IncreaseTime(5 * secondsPerBlock); err != nil { t.Fatal(err) }
 
     // Get & check updated node claim possible status
     if nodeClaimPossible, err := rewards.GetNodeClaimPossible(rp, nodeAccount.Address, nil); err != nil {
@@ -88,6 +89,7 @@ func TestNodeRewards(t *testing.T) {
 
     // Mine blocks until rewards are available
     if err := evm.MineBlocks(10); err != nil { t.Fatal(err) }
+    if err := evm.IncreaseTime(10 * secondsPerBlock); err != nil { t.Fatal(err) }
 
     // Get & check updated node claim rewards amount
     if rewardsAmount, err := rewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil); err != nil {

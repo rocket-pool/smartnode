@@ -129,6 +129,7 @@ func TestMintInflationRPL(t *testing.T) {
 
     // Mine blocks until rewards are available
     if err := evm.MineBlocks(10); err != nil { t.Fatal(err) }
+    if err := evm.IncreaseTime(10 * secondsPerBlock); err != nil { t.Fatal(err) }
 
     // Get initial total supply
     rplTotalSupply1, err := tokens.GetRPLTotalSupply(rp, nil)
