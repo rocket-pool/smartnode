@@ -118,6 +118,9 @@ func voteOnProposal(c *cli.Context) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canVote.GasInfo)
+
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID))) {
         fmt.Println("Cancelled.")
