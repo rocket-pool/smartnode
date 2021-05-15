@@ -328,8 +328,12 @@ func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
     if err != nil {
         return err
     }
-    if err := ioutil.WriteFile(path, configBytes, 0); err != nil {
-        return fmt.Errorf("Could not write Rocket Pool config to %q: %w", path, err)
+    expandedPath, err := homedir.Expand(path)
+    if err != nil {
+        return err
+    }
+    if err := ioutil.WriteFile(expandedPath, configBytes, 0); err != nil {
+        return fmt.Errorf("Could not write Rocket Pool config to %q: %w", expandedPath, err)
     }
     return nil
 }
