@@ -170,23 +170,10 @@ func (ks *Keystore) initialize() error {
         return nil
     }
 
-    // Read keystore file; initialize empty account store if it doesn't exist
-    ksBytes, err := ioutil.ReadFile(filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystoreFileName))
-    if err != nil {
-        ks.as = &accountStore{}
-        return nil
-    }
-
-    // Decode keystore
-    keystore := &validatorKeystore{}
-    if err = json.Unmarshal(ksBytes, keystore); err != nil {
-        return fmt.Errorf("Could not decode validator keystore: %w", err)
-    }
-
     // Get the random keystore password
     var password string
     passwordFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystorePasswordFileName)
-    _, err = os.Stat(passwordFilePath)
+    _, err := os.Stat(passwordFilePath)
     if os.IsNotExist(err) {
         // Create a new password
         password, err = rpkeystore.GenerateRandomPassword()
@@ -208,6 +195,19 @@ func (ks *Keystore) initialize() error {
             return fmt.Errorf("Error opening account password file: %w", err)
         }
         password = string(passwordBytes)
+    }
+
+    // Read keystore file; initialize empty account store if it doesn't exist
+    ksBytes, err := ioutil.ReadFile(filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystoreFileName))
+    if err != nil {
+        ks.as = &accountStore{}
+        return nil
+    }
+
+    // Decode keystore
+    keystore := &validatorKeystore{}
+    if err = json.Unmarshal(ksBytes, keystore); err != nil {
+        return fmt.Errorf("Could not decode validator keystore: %w", err)
     }
 
     // Decrypt account store
