@@ -22,6 +22,7 @@ require (
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/rocket-pool/rocketpool-go v0.0.10
+    github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	github.com/urfave/cli v1.22.4
 	github.com/wealdtech/go-eth2-types/v2 v2.5.0

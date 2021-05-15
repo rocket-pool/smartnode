@@ -1,19 +1,20 @@
 package teku
 
 import (
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "os"
-    "path/filepath"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
-    "github.com/google/uuid"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    eth2types "github.com/wealdtech/go-eth2-types/v2"
-    eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	"github.com/google/uuid"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
-    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	keystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
+	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
@@ -56,10 +57,10 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
     // Get validator pubkey
     pubkey := rptypes.BytesToValidatorPubkey(key.PublicKey().Marshal())
 
-    // Get wallet password
-    password, err := ks.pm.GetPassword()
+    // Create a new password
+    password, err := keystore.GenerateRandomPassword()
     if err != nil {
-        return fmt.Errorf("Could not get wallet password: %w", err)
+        return fmt.Errorf("Could not generate random password: %w", err)
     }
 
     // Encrypt key
