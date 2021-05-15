@@ -170,7 +170,7 @@ func (ks *Keystore) initialize() error {
         return nil
     }
 
-    // Get the random keystore password
+    // Create the random keystore password if it doesn't exist
     var password string
     passwordFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystorePasswordFileName)
     _, err := os.Stat(passwordFilePath)
@@ -185,17 +185,22 @@ func (ks *Keystore) initialize() error {
         passwordBytes := []byte(password)
 
         // Write it
-        err := ioutil.WriteFile(passwordFilePath, passwordBytes, FileMode)
+        err := os.MkdirAll(filepath.Dir(passwordFilePath), DirMode)
+        if err != nil {
+            return fmt.Errorf("Error creating account password directory: %w", err)
+        }
+        err = ioutil.WriteFile(passwordFilePath, passwordBytes, FileMode)
         if err != nil {
             return fmt.Errorf("Error writing account password file: %w", err)
         }
-    } else {
-        passwordBytes, err := ioutil.ReadFile(passwordFilePath)
-        if err != nil {
-            return fmt.Errorf("Error opening account password file: %w", err)
-        }
-        password = string(passwordBytes)
     }
+
+    // Get the random keystore password
+    passwordBytes, err := ioutil.ReadFile(passwordFilePath)
+    if err != nil {
+        return fmt.Errorf("Error opening account password file: %w", err)
+    }
+    password = string(passwordBytes)
 
     // Read keystore file; initialize empty account store if it doesn't exist
     ksBytes, err := ioutil.ReadFile(filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystoreFileName))
