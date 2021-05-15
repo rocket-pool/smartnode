@@ -7,7 +7,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -126,21 +125,15 @@ func nodeDeposit(c *cli.Context) error {
     colorReset := "\033[0m"
     colorRed := "\033[31m"
     colorYellow := "\033[33m"
-    bc, err := services.GetBeaconClientFromCLI(rp)
+    syncResponse, err := rp.NodeSync()
     if err != nil {
         fmt.Printf("%s**WARNING**: Can't verify the sync status of your eth2 client.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n" +
         "Reason: %s\n%s", colorRed, err, colorReset)
     } else {
-        syncStatus, err := bc.GetSyncStatus()
-        if err != nil {
-            fmt.Printf("%s**WARNING**: Can't retrieve the sync status of your eth2 client.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n" +
-            "Reason: %s\n%s", colorRed, err, colorReset)
+        if !syncResponse.Eth2Synced {
+            fmt.Printf("%s**WARNING**: your eth2 client is still syncing.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n%s", colorRed, colorReset)
         } else {
-            if syncStatus.Syncing {
-                fmt.Printf("%s**WARNING**: your eth2 client is still syncing.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n%s", colorRed, colorReset)
-            } else {
-                fmt.Printf("Your eth2 client is synced, you may safely create a minipool.\n")
-            }
+            fmt.Printf("Your eth2 client is synced, you may safely create a minipool.\n")
         }
     }
 
