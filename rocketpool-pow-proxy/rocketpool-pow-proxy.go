@@ -19,7 +19,7 @@ func main() {
     // Set application info
     app.Name = "rocketpool-pow-proxy"
     app.Usage = "Rocket Pool Eth 1.0 proxy server"
-    app.Version = "1.0.0-beta.4"
+    app.Version = "1.0.0-rc1"
     app.Authors = []cli.Author{
         cli.Author{
             Name:  "David Rugendyke",
@@ -65,8 +65,13 @@ func main() {
         },
         cli.StringFlag{
             Name:  "projectId, i",
-            Usage: "Infura `project ID` to use for connection",
+            Usage: "Infura project ID or Pocket App ID to use for connection; for Pocket load balancers, prefix with \"lb/\"",
             Value: "",
+        },
+        cli.StringFlag{
+            Name:  "providerType, t",
+            Usage: "Eth 1.0 provider type if not using `URL`: Infura or Pocket",
+            Value: "infura",
         },
     }
 
@@ -79,22 +84,26 @@ func main() {
 
         // HTTP server
         go func() {
-            proxyServer := proxy.NewHttpProxyServer(c.GlobalString("httpPort"), c.GlobalString("httpProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
+            proxyServer := proxy.NewHttpProxyServer(c.GlobalString("httpPort"), c.GlobalString("httpProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"), c.GlobalString("providerType"))
             proxyServer.Start()
             wg.Done()
         }()
     
         // Websocket server
         go func() {
-            proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("wsProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
-            proxyServer.Start()
+            if c.GlobalString("wsProviderUrl") != "" {
+                proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("wsProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
+                proxyServer.Start()
+            } else {
+                log.Println("No websocket URL provided, running in HTTP-only mode.")
+            }
             wg.Done()
         }()
 
         // Wait for both servers to stop
         wg.Wait()
-		return nil
-		
+        return nil
+        
     }
 
     // Run application
