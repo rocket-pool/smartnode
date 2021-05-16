@@ -1,17 +1,16 @@
 package main
 
 import (
-    "fmt"
-    "os"
+	"fmt"
+	"os"
 
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/rocketpool/api"
-    "github.com/rocket-pool/smartnode/rocketpool/node"
-    "github.com/rocket-pool/smartnode/rocketpool/watchtower"
-    apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/rocketpool/api"
+	"github.com/rocket-pool/smartnode/rocketpool/node"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
+	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
-
 
 // Run
 func main() {
@@ -22,18 +21,22 @@ func main() {
     // Set application info
     app.Name = "rocketpool"
     app.Usage = "Rocket Pool service"
-    app.Version = "1.0.0-beta.3"
+    app.Version = "1.0.0-rc1"
     app.Authors = []cli.Author{
-        cli.Author{
+        {
             Name:  "David Rugendyke",
             Email: "david@rocketpool.net",
         },
-        cli.Author{
+        {
             Name:  "Jake Pospischil",
             Email: "jake@rocketpool.net",
         },
+        {
+            Name:  "Joe Clapis",
+            Email: "joe@rocketpool.net",
+        },
     }
-    app.Copyright = "(c) 2020 Rocket Pool Pty Ltd"
+    app.Copyright = "(c) 2021 Rocket Pool Pty Ltd"
 
     // Set application flags
     app.Flags = []cli.Flag{

@@ -7,13 +7,13 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 
+	"github.com/blang/semver/v4"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/net"
@@ -296,14 +296,22 @@ func (c *Client) GetServiceVersion() (string, error) {
         return "", fmt.Errorf("Could not get Rocket Pool service version: %w", err)
     }
 
-    // Parse version number
-    versionNumberBytes := regexp.MustCompile("v?(\\d+\\.)*\\d+(\\-\\w+\\.\\d+)?").Find(versionBytes)
-    if versionNumberBytes == nil {
-        return "", errors.New("Could not parse Rocket Pool service version number.")
+    // Get the version string
+    outputString := string(versionBytes)
+    elements := strings.Fields(outputString) // Split on whitespace
+    if len(elements) < 1 {
+        return "", fmt.Errorf("Could not parse Rocket Pool service version number from output '%s'", outputString)
+    }
+    versionString := elements[len(elements) - 1]
+
+    // Make sure it's a semantic version
+    version, err := semver.Make(versionString)
+    if err != nil {
+        return "", fmt.Errorf("Could not parse Rocket Pool service version number from output '%s': %w", outputString, err)
     }
 
-    // Return
-    return string(versionNumberBytes), nil
+    // Return the parsed semantic version (extra safety)
+    return version.String(), nil
 
 }
 
