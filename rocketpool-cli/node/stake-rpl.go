@@ -126,8 +126,8 @@ func nodeStakeRpl(c *cli.Context) error {
 
         // Prompt for amount option
         amountOptions := []string{
-            fmt.Sprintf("The minimum minipool stake amount (%.6f RPL)?", math.RoundDown(eth.WeiToEth(minAmount), 6)),
-            fmt.Sprintf("The maximum effective minipool stake amount (%.6f RPL)?", math.RoundDown(eth.WeiToEth(maxAmount), 6)),
+            fmt.Sprintf("The minimum minipool stake amount (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount), 6)),
+            fmt.Sprintf("The maximum effective minipool stake amount (%.6f RPL)?", math.RoundUp(eth.WeiToEth(maxAmount), 6)),
             fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
             "A custom amount",
         }
