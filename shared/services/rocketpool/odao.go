@@ -40,6 +40,10 @@ func (c *Client) TNDAOMembers() (api.TNDAOMembersResponse, error) {
     if response.Error != "" {
         return api.TNDAOMembersResponse{}, fmt.Errorf("Could not get oracle DAO members: %s", response.Error)
     }
+    for i := 0; i < len(response.Members); i++ {
+        member := &response.Members[i]
+        if member.RPLBondAmount == nil { member.RPLBondAmount = big.NewInt(0) }
+    }
     return response, nil
 }
 

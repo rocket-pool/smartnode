@@ -24,7 +24,17 @@ func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
     if response.Error != "" {
         return api.MinipoolStatusResponse{}, fmt.Errorf("Could not get minipool status: %s", response.Error)
     }
-    for _, mp := range response.Minipools {
+    for i := 0; i < len(response.Minipools); i++ {
+        mp := &response.Minipools[i]
+        if mp.Node.DepositBalance == nil { mp.Node.DepositBalance = big.NewInt(0) }
+        if mp.Node.RefundBalance == nil { mp.Node.RefundBalance = big.NewInt(0) }
+        if mp.User.DepositBalance == nil { mp.User.DepositBalance = big.NewInt(0) }
+        if mp.Staking.StartBalance == nil { mp.Staking.StartBalance = big.NewInt(0) }
+        if mp.Staking.EndBalance == nil { mp.Staking.EndBalance = big.NewInt(0) }
+        if mp.Balances.ETH == nil { mp.Balances.ETH = big.NewInt(0) }
+        if mp.Balances.RPL == nil { mp.Balances.RPL = big.NewInt(0) }
+        if mp.Balances.RETH == nil { mp.Balances.RETH = big.NewInt(0) }
+        if mp.Balances.FixedSupplyRPL == nil { mp.Balances.FixedSupplyRPL = big.NewInt(0) }
         if mp.Validator.Balance == nil { mp.Validator.Balance = big.NewInt(0) }
         if mp.Validator.NodeBalance == nil { mp.Validator.NodeBalance = big.NewInt(0) }
     }
