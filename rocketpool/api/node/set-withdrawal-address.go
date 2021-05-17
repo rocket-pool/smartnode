@@ -11,6 +11,42 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
+func canSetWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodeWithdrawalAddressResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.CanSetNodeWithdrawalAddressResponse{}
+
+    // Get transactor
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
+        return nil, err
+    }
+
+    // Get the node's account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
+    // Check withdrawal address setting
+    gasInfo, err := node.EstimateSetWithdrawalAddressGas(rp, nodeAccount.Address, withdrawalAddress, confirm, opts)
+    if err != nil {
+        return nil, err
+    }
+    response.GasInfo = gasInfo
+
+    // Return response
+    response.CanSet = true
+    return &response, nil
+}
+
 
 func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.SetNodeWithdrawalAddressResponse, error) {
 

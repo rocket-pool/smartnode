@@ -1,21 +1,21 @@
 package prysm
 
 import (
-    "bytes"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "io/ioutil"
-    "os"
-    "path/filepath"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
-    "github.com/google/uuid"
-    eth2types "github.com/wealdtech/go-eth2-types/v2"
-    eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	"github.com/google/uuid"
+	rpkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
+	"github.com/rocket-pool/smartnode/shared/services/passwords"
 )
-
 
 // Config
 const (
@@ -24,6 +24,7 @@ const (
     AccountsDir = "accounts"
     KeystoreFileName = "all-accounts.keystore.json"
     ConfigFileName = "keymanageropts.json"
+    KeystorePasswordFileName = "secret"
     DirMode = 0700
     FileMode = 0600
 
@@ -95,11 +96,13 @@ func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPa
         return fmt.Errorf("Could not encode validator account store: %w", err)
     }
 
-    // Get wallet password
-    password, err := ks.pm.GetPassword()
+    // Get the keystore account password
+    passwordFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystorePasswordFileName)
+    passwordBytes, err := ioutil.ReadFile(passwordFilePath)
     if err != nil {
-        return fmt.Errorf("Could not get wallet password: %w", err)
+        return fmt.Errorf("Error reading account password file: %w", err)
     }
+    password := string(passwordBytes)
 
     // Encrypt account store
     asEncrypted, err := ks.encryptor.Encrypt(asBytes, password)
@@ -167,6 +170,38 @@ func (ks *Keystore) initialize() error {
         return nil
     }
 
+    // Create the random keystore password if it doesn't exist
+    var password string
+    passwordFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystorePasswordFileName)
+    _, err := os.Stat(passwordFilePath)
+    if os.IsNotExist(err) {
+        // Create a new password
+        password, err = rpkeystore.GenerateRandomPassword()
+        if err != nil {
+            return fmt.Errorf("Could not generate random password: %w", err)
+        }
+
+        // Encode it
+        passwordBytes := []byte(password)
+
+        // Write it
+        err := os.MkdirAll(filepath.Dir(passwordFilePath), DirMode)
+        if err != nil {
+            return fmt.Errorf("Error creating account password directory: %w", err)
+        }
+        err = ioutil.WriteFile(passwordFilePath, passwordBytes, FileMode)
+        if err != nil {
+            return fmt.Errorf("Error writing account password file: %w", err)
+        }
+    }
+
+    // Get the random keystore password
+    passwordBytes, err := ioutil.ReadFile(passwordFilePath)
+    if err != nil {
+        return fmt.Errorf("Error opening account password file: %w", err)
+    }
+    password = string(passwordBytes)
+
     // Read keystore file; initialize empty account store if it doesn't exist
     ksBytes, err := ioutil.ReadFile(filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystoreFileName))
     if err != nil {
@@ -178,12 +213,6 @@ func (ks *Keystore) initialize() error {
     keystore := &validatorKeystore{}
     if err = json.Unmarshal(ksBytes, keystore); err != nil {
         return fmt.Errorf("Could not decode validator keystore: %w", err)
-    }
-
-    // Get wallet password
-    password, err := ks.pm.GetPassword()
-    if err != nil {
-        return fmt.Errorf("Could not get wallet password: %w", err)
     }
 
     // Decrypt account store

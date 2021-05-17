@@ -9,11 +9,23 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+const colorReset string = "\033[0m"
+const colorYellow string = "\033[33m"
+
+
+// Print a warning about the gas estimate for operations that have multiple transactions
+func (rp *Client) PrintMultiTxWarning() {
+
+    fmt.Printf("%sNOTE: This operation requires multiple transactions.\n" +
+        "The actual gas cost may be higher than what is estimated here.\n%s",
+        colorYellow,
+        colorReset);
+
+}
+
+
 // Print estimated gas cost and any requested gas parameters
 func (rp *Client) PrintGasInfo(gasInfo rocketpool.GasInfo) {
-
-    colorReset := "\033[0m"
-    colorYellow := "\033[33m"
 
     // Print gas price, gas limit and total eth cost as estimated by the network
     gas := new(big.Int).SetUint64(gasInfo.EstGasLimit)

@@ -80,6 +80,16 @@ func nodeSwapRpl(c *cli.Context) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canSwap.GasInfo)
+    rp.PrintMultiTxWarning()
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Approve RPL for swapping
     response, err := rp.NodeSwapRplApprove(amountWei)
     if err != nil {

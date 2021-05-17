@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -81,8 +82,33 @@ func closeMinipools(c *cli.Context) error {
 
     }
 
+    // Get the total gas limit estimate
+    var totalGas uint64 = 0
+    var gasInfo rocketpoolapi.GasInfo
+    for _, minipool := range selectedMinipools {
+        canResponse, err := rp.CanCloseMinipool(minipool.Address)
+        if err != nil {
+            fmt.Printf("WARNING: Couldn't get gas price for close transaction (%s)", err)
+            break
+        } else {
+            gasInfo = canResponse.GasInfo
+            totalGas += canResponse.GasInfo.EstGasLimit
+        }
+    }
+    gasInfo.EstGasLimit = totalGas
+
+    // Display gas estimate
+    rp.PrintGasInfo(gasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to close %d minipools?", len(selectedMinipools)))) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Close minipools
     for _, minipool := range selectedMinipools {
+
         response, err := rp.CloseMinipool(minipool.Address)
         if err != nil {
             fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err)

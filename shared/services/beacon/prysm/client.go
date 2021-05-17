@@ -1,18 +1,17 @@
 package prysm
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 
-    "github.com/ethereum/go-ethereum/common"
-    pbtypes "github.com/gogo/protobuf/types"
-    pb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "google.golang.org/grpc"
+	"github.com/ethereum/go-ethereum/common"
+	pbtypes "github.com/gogo/protobuf/types"
+	pb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"google.golang.org/grpc"
 
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
-
 
 // Prysm client
 type Client struct {
@@ -72,6 +71,7 @@ func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
     // Return
     return beacon.SyncStatus{
         Syncing: syncStatus.Syncing,
+        Progress: -1, // Prysm doesn't support this yet
     }, nil
 
 }

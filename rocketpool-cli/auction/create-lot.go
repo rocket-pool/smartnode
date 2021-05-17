@@ -33,6 +33,15 @@ func createLot(c *cli.Context) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canCreate.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to create this lot?")) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Create lot
     response, err := rp.CreateLot()
     if err != nil {

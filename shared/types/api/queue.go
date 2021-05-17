@@ -1,9 +1,10 @@
 package api
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 
@@ -23,6 +24,7 @@ type CanProcessQueueResponse struct {
     AssignDepositsDisabled bool     `json:"assignDepositsDisabled"`
     NoMinipoolsAvailable bool       `json:"noMinipoolsAvailable"`
     InsufficientDepositBalance bool `json:"insufficientDepositBalance"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ProcessQueueResponse struct {
     Status string                   `json:"status"`

@@ -48,6 +48,19 @@ func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
         return err
     })
 
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := trustednode.EstimateLeaveGas(rp, opts.From, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
+        }
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err

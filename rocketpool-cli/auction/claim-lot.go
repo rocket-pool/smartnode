@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -86,6 +87,30 @@ func claimFromLot(c *cli.Context) error {
             selectedLots = []api.LotDetails{claimableLots[selected - 1]}
         }
 
+    }
+
+    // Get the total gas limit estimate
+    var totalGas uint64 = 0
+    var gasInfo rocketpoolapi.GasInfo
+    for _, lot := range selectedLots {
+        canResponse, err := rp.CanClaimFromLot(lot.Details.Index)
+        if err != nil {
+            fmt.Printf("WARNING: Couldn't get gas price for claim transaction (%s)", err)
+            break
+        } else {
+            gasInfo = canResponse.GasInfo
+            totalGas += canResponse.GasInfo.EstGasLimit
+        }
+    }
+    gasInfo.EstGasLimit = totalGas
+
+    // Display gas estimate
+    rp.PrintGasInfo(gasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to claim %d lots?", len(selectedLots)))) {
+        fmt.Println("Cancelled.")
+        return nil
     }
 
     // Claim RPL from lots

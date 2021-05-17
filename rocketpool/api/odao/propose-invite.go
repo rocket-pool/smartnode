@@ -13,7 +13,7 @@ import (
 )
 
 
-func canProposeInvite(c *cli.Context, memberAddress common.Address) (*api.CanProposeTNDAOInviteResponse, error) {
+func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberEmail string) (*api.CanProposeTNDAOInviteResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -46,6 +46,20 @@ func canProposeInvite(c *cli.Context, memberAddress common.Address) (*api.CanPro
         memberExists, err := trustednode.GetMemberExists(rp, memberAddress, nil)
         if err == nil {
             response.MemberAlreadyExists = memberExists
+        }
+        return err
+    })
+
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        message := fmt.Sprintf("invite %s (%s)", memberId, memberEmail)
+        gasInfo, err := trustednode.EstimateProposeInviteMemberGas(rp, message, memberAddress, memberId, memberEmail, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
         }
         return err
     })

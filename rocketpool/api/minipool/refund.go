@@ -46,6 +46,16 @@ func canRefundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Can
     }
     response.InsufficientRefundBalance = (refundBalance.Cmp(big.NewInt(0)) == 0)
 
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := mp.EstimateRefundGas(opts)
+    if err == nil {
+        response.GasInfo = gasInfo
+    }
+
     // Update & return response
     response.CanRefund = !response.InsufficientRefundBalance
     return &response, nil

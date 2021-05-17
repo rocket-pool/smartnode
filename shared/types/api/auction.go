@@ -1,11 +1,12 @@
 package api
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 
@@ -43,6 +44,7 @@ type CanCreateLotResponse struct {
     CanCreate bool                  `json:"canCreate"`
     InsufficientBalance bool        `json:"insufficientBalance"`
     CreateLotDisabled bool          `json:"createLotDisabled"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type CreateLotResponse struct {
     Status string                   `json:"status"`
@@ -60,6 +62,7 @@ type CanBidOnLotResponse struct {
     BiddingEnded bool               `json:"biddingEnded"`
     RPLExhausted bool               `json:"rplExhausted"`
     BidOnLotDisabled bool           `json:"bidOnLotDisabled"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type BidOnLotResponse struct {
     Status string                   `json:"status"`
@@ -75,6 +78,7 @@ type CanClaimFromLotResponse struct {
     DoesNotExist bool               `json:"doesNotExist"`
     NoBidFromAddress bool           `json:"noBidFromAddress"`
     NotCleared bool                 `json:"notCleared"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type ClaimFromLotResponse struct {
     Status string                   `json:"status"`
@@ -91,6 +95,7 @@ type CanRecoverRPLFromLotResponse struct {
     BiddingNotEnded bool            `json:"biddingNotEnded"`
     NoUnclaimedRPL bool             `json:"noUnclaimedRpl"`
     RPLAlreadyRecovered bool        `json:"rplAlreadyRecovered"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type RecoverRPLFromLotResponse struct {
     Status string                   `json:"status"`

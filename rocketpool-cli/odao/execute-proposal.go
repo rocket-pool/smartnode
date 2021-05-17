@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/dao"
+	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
@@ -85,6 +86,30 @@ func executeProposal(c *cli.Context) error {
             selectedProposals = []dao.ProposalDetails{executableProposals[selected - 1]}
         }
 
+    }
+
+    // Get the total gas limit estimate
+    var totalGas uint64 = 0
+    var gasInfo rocketpoolapi.GasInfo
+    for _, proposal := range selectedProposals {
+        canResponse, err := rp.CanExecuteTNDAOProposal(proposal.ID)
+        if err != nil {
+            fmt.Printf("WARNING: Couldn't get gas price for execute transaction (%s)", err)
+            break
+        } else {
+            gasInfo = canResponse.GasInfo
+            totalGas += canResponse.GasInfo.EstGasLimit
+        }
+    }
+    gasInfo.EstGasLimit = totalGas
+
+    // Display gas estimate
+    rp.PrintGasInfo(gasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to execute %d proposals?", len(selectedProposals)))) {
+        fmt.Println("Cancelled.")
+        return nil
     }
 
     // Execute proposals

@@ -35,6 +35,12 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
         return nil, err
     }
 
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+
     // Handle token type
     switch token {
         case "eth":
@@ -45,6 +51,11 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
                 return nil, err
             }
             response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
+            gasInfo, err := eth.EstimateSendTransactionGas(ec, nodeAccount.Address, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.GasInfo = gasInfo
 
         case "rpl":
 
@@ -54,6 +65,11 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
                 return nil, err
             }
             response.InsufficientBalance = (amountWei.Cmp(rplBalanceWei) > 0)
+            gasInfo, err := tokens.EstimateTransferRPLGas(rp, nodeAccount.Address, amountWei, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.GasInfo = gasInfo
 
         case "fsrpl":
 
@@ -63,6 +79,11 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
                 return nil, err
             }
             response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalanceWei) > 0)
+            gasInfo, err := tokens.EstimateTransferFixedSupplyRPLGas(rp, nodeAccount.Address, amountWei, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.GasInfo = gasInfo
 
         case "reth":
 
@@ -72,6 +93,11 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
                 return nil, err
             }
             response.InsufficientBalance = (amountWei.Cmp(rethBalanceWei) > 0)
+            gasInfo, err := tokens.EstimateTransferRETHGas(rp, nodeAccount.Address, amountWei, opts)
+            if err != nil {
+                return nil, err
+            }
+            response.GasInfo = gasInfo
 
     }
 

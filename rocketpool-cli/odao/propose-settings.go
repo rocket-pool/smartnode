@@ -19,7 +19,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSetting()
+    canPropose, err := rp.CanProposeTNDAOSettingMembersQuorum(quorumPercent)
     if err != nil {
         return err
     }
@@ -28,6 +28,15 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 
@@ -58,7 +67,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSetting()
+    canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(eth.EthToWei(bondAmountEth))
     if err != nil {
         return err
     }
@@ -67,6 +76,15 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 
@@ -97,7 +115,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSetting()
+    canPropose, err := rp.CanProposeTNDAOSettingMinipoolUnbondedMax(unbondedMinipoolMax)
     if err != nil {
         return err
     }
@@ -106,6 +124,15 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 
@@ -136,7 +163,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSetting()
+    canPropose, err := rp.CanProposeTNDAOSettingProposalCooldown(proposalCooldownBlocks)
     if err != nil {
         return err
     }
@@ -145,6 +172,15 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 
@@ -175,7 +211,7 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSetting()
+    canPropose, err := rp.CanProposeTNDAOSettingProposalVoteBlocks(proposalVoteBlocks)
     if err != nil {
         return err
     }
@@ -184,6 +220,15 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 
@@ -214,7 +259,7 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSetting()
+    canPropose, err := rp.CanProposeTNDAOSettingProposalVoteDelayBlocks(proposalDelayBlocks)
     if err != nil {
         return err
     }
@@ -223,6 +268,15 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 
@@ -253,7 +307,7 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSetting()
+    canPropose, err := rp.CanProposeTNDAOSettingProposalExecuteBlocks(proposalExecuteBlocks)
     if err != nil {
         return err
     }
@@ -262,6 +316,15 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 
@@ -292,7 +355,7 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSetting()
+    canPropose, err := rp.CanProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks)
     if err != nil {
         return err
     }
@@ -301,6 +364,15 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
         if canPropose.ProposalCooldownActive {
             fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
         }
+        return nil
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canPropose.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+        fmt.Println("Cancelled.")
         return nil
     }
 

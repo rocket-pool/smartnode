@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 )
 
@@ -23,6 +23,7 @@ type NodeStatusResponse struct {
     RplStake *big.Int                   `json:"rplStake"`
     EffectiveRplStake *big.Int          `json:"effectiveRplStake"`
     MinimumRplStake *big.Int            `json:"minimumRplStake"`
+    CollateralRatio float64             `json:"collateralRatio"`
     MinipoolLimit uint64                `json:"minipoolLimit"`
     MinipoolCounts struct {
         Total int                           `json:"total"`
@@ -44,6 +45,7 @@ type CanRegisterNodeResponse struct {
     CanRegister bool                    `json:"canRegister"`
     AlreadyRegistered bool              `json:"alreadyRegistered"`
     RegistrationDisabled bool           `json:"registrationDisabled"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type RegisterNodeResponse struct {
     Status string                       `json:"status"`
@@ -52,13 +54,24 @@ type RegisterNodeResponse struct {
 }
 
 
+type CanSetNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanSet bool                        ` json:"canSet"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+}
 type SetNodeWithdrawalAddressResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     TxHash common.Hash                  `json:"txHash"`
 }
 
-
+type CanSetNodeTimezoneResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanSet bool                         `json:"canSet"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+}
 type SetNodeTimezoneResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
@@ -71,6 +84,7 @@ type CanNodeSwapRplResponse struct {
     Error string                        `json:"error"`
     CanSwap bool                        `json:"canSwap"`
     InsufficientBalance bool            `json:"insufficientBalance"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeSwapRplApproveResponse struct {
     Status string                       `json:"status"`
@@ -89,6 +103,7 @@ type CanNodeStakeRplResponse struct {
     Error string                        `json:"error"`
     CanStake bool                       `json:"canStake"`
     InsufficientBalance bool            `json:"insufficientBalance"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeStakeRplApproveResponse struct {
     Status string                       `json:"status"`
@@ -109,6 +124,7 @@ type CanNodeWithdrawRplResponse struct {
     InsufficientBalance bool            `json:"insufficientBalance"`
     MinipoolsUndercollateralized bool   `json:"minipoolsUndercollateralized"`
     WithdrawalDelayActive bool          `json:"withdrawalDelayActive"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeWithdrawRplResponse struct {
     Status string                       `json:"status"`
@@ -145,6 +161,7 @@ type CanNodeSendResponse struct {
     Error string                        `json:"error"`
     CanSend bool                        `json:"canSend"`
     InsufficientBalance bool            `json:"insufficientBalance"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeSendResponse struct {
     Status string                       `json:"status"`
@@ -159,10 +176,20 @@ type CanNodeBurnResponse struct {
     CanBurn bool                        `json:"canBurn"`
     InsufficientBalance bool            `json:"insufficientBalance"`
     InsufficientCollateral bool         `json:"insufficientCollateral"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeBurnResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     TxHash common.Hash                  `json:"txHash"`
+}
+
+type NodeSyncProgressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    Eth1Progress float64                `json:"eth1Progress"`
+    Eth2Progress float64                `json:"eth2Progress"`
+    Eth1Synced bool                     `json:"eth1Synced"`
+    Eth2Synced bool                     `json:"eth2Synced"`
 }
 
