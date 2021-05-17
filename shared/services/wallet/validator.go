@@ -1,16 +1,15 @@
 package wallet
 
 import (
-    "bytes"
-    "errors"
-    "fmt"
-    "sync"
+	"bytes"
+	"errors"
+	"fmt"
+	"sync"
 
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    eth2types "github.com/wealdtech/go-eth2-types/v2"
-    eth2util "github.com/wealdtech/go-eth2-util"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	eth2util "github.com/wealdtech/go-eth2-util"
 )
-
 
 // Config
 const (
@@ -113,8 +112,9 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
     }
 
     // Update keystores
-    for name, ks := range w.keystores {
-        if err := ks.StoreValidatorKey(key, path); err != nil {
+    for name := range w.keystores {
+        // Update the keystore in the wallet - using an iterator variable only runs it on the local copy
+        if err := w.keystores[name].StoreValidatorKey(key, path); err != nil {
             return nil, fmt.Errorf("Could not store %s validator key: %w", name, err)
         }
     }
@@ -159,8 +159,9 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
     }
 
     // Update keystores
-    for name, ks := range w.keystores {
-        if err := ks.StoreValidatorKey(validatorKey, derivationPath); err != nil {
+    for name := range w.keystores {
+        // Update the keystore in the wallet - using an iterator variable only runs it on the local copy
+        if err := w.keystores[name].StoreValidatorKey(validatorKey, derivationPath); err != nil {
             return fmt.Errorf("Could not store %s validator key: %w", name, err)
         }
     }
