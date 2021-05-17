@@ -30,8 +30,8 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
         confirm = false
         fmt.Println("By default, this will put your new withdrawal address into a \"pending\" state.")
         fmt.Println("Rocket Pool will continue to use your old withdrawal address until you confirm that you own the new address via the Rocket Pool website.")
-        fmt.Println("You will need to use MetaMask with your new address to confirm it.")
-        fmt.Printf("%sIf you cannot use MetaMask, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.\n\n%s", colorYellow, colorReset)
+        fmt.Println("You will need to use a web3-compatible wallet (such as MetaMask) with your new address to confirm it.")
+        fmt.Printf("%sIf you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.\n\n%s", colorYellow, colorReset)
     } else {
         confirm = true
         fmt.Printf("%sYou have specified the \"--force\" option, so your new address will take effect immediately.\n", colorRed)
