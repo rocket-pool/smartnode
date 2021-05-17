@@ -1,16 +1,16 @@
 package network
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -73,8 +73,10 @@ func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
     var maxPerMinipoolRplStake big.Int
     tmp.Mul(minipoolUserAmount, eth.EthToWei(minPerMinipoolStake))
     minPerMinipoolRplStake.Quo(&tmp, rplPrice)
+    minPerMinipoolRplStake.Add(&minPerMinipoolRplStake, big.NewInt(1))
     tmp.Mul(minipoolUserAmount, eth.EthToWei(maxPerMinipoolStake))
     maxPerMinipoolRplStake.Quo(&tmp, rplPrice)
+    maxPerMinipoolRplStake.Add(&maxPerMinipoolRplStake, big.NewInt(1))
 
     // Update & return response
     response.RplPrice = rplPrice
