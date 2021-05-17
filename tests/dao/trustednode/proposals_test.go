@@ -29,6 +29,7 @@ func TestProposeInviteMember(t *testing.T) {
 
     // Set proposal cooldown
     if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
@@ -87,6 +88,7 @@ func TestProposeMemberLeave(t *testing.T) {
 
     // Set proposal cooldown
     if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
@@ -149,6 +151,7 @@ func TestProposeKickMember(t *testing.T) {
 
     // Set proposal cooldown
     if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
@@ -193,6 +196,7 @@ func TestProposeUpgradeContract(t *testing.T) {
 
     // Set proposal cooldown
     if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }

@@ -60,6 +60,7 @@ func TestProposeMembersSettings(t *testing.T) {
 
     // Set proposal cooldown
     if _, err := trustednode.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednode.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register trusted node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }

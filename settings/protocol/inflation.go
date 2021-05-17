@@ -34,23 +34,6 @@ func BootstrapInflationIntervalRate(rp *rocketpool.RocketPool, value float64, op
 }
 
 
-// RPL inflation interval time
-func GetInflationIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-    inflationSettingsContract, err := getInflationSettingsContract(rp)
-    if err != nil {
-        return 0, err
-    }
-    value := new(*big.Int)
-    if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalTime"); err != nil {
-        return 0, fmt.Errorf("Could not get inflation interval: %w", err)
-    }
-    return (*value).Uint64(), nil
-}
-func BootstrapInflationIntervalTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-    return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.time", big.NewInt(int64(value)), opts)
-}
-
-
 // RPL inflation start time
 func GetInflationStartTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     inflationSettingsContract, err := getInflationSettingsContract(rp)

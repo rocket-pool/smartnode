@@ -1,33 +1,33 @@
 package rewards
 
 import (
-	"context"
-	"math/big"
-	"testing"
+    "context"
+    "github.com/rocket-pool/rocketpool-go/rewards"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
+    "github.com/rocket-pool/rocketpool-go/tokens"
+    "math/big"
+    "testing"
 
-	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/tokens"
-
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
 func TestTrustedNodeRewards(t *testing.T) {
 
-    var secondsPerBlock uint64 = 12
-
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Constants
+    oneDay := uint64(24 * 60 * 60)
+    rewardInterval := oneDay
 
     // Register node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Set network parameters
-    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, 5 * secondsPerBlock, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := protocol.BootstrapInflationIntervalTime(rp, 5 * secondsPerBlock, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, rewardInterval, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check trusted node claims enabled status
     if claimsEnabled, err := rewards.GetTrustedNodeClaimsEnabled(rp, nil); err != nil {
@@ -43,9 +43,8 @@ func TestTrustedNodeRewards(t *testing.T) {
         t.Error("Incorrect initial trusted node claim possible status")
     }
 
-    // Mine blocks until trusted node claims are possible
-    if err := evm.MineBlocks(5); err != nil { t.Fatal(err) }
-    if err := evm.IncreaseTime(5 * secondsPerBlock); err != nil { t.Fatal(err) }
+    // Increase time until node claims are possible
+    if err := evm.IncreaseTime(rewardInterval); err != nil { t.Fatal(err) }
 
     // Get & check updated trusted node claim possible status
     if nodeClaimPossible, err := rewards.GetTrustedNodeClaimPossible(rp, trustedNodeAccount.Address, nil); err != nil {
@@ -71,13 +70,12 @@ func TestTrustedNodeRewards(t *testing.T) {
     // Start RPL inflation
     if header, err := rp.Client.HeaderByNumber(context.Background(), nil); err != nil {
         t.Fatal(err)
-    } else if _, err := protocol.BootstrapInflationStartTime(rp, (header.Number.Uint64() + 2) * secondsPerBlock, ownerAccount.GetTransactor()); err != nil {
+    } else if _, err := protocol.BootstrapInflationStartTime(rp, header.Time + oneDay, ownerAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Mine blocks until rewards are available
-    if err := evm.MineBlocks(10); err != nil { t.Fatal(err) }
-    if err := evm.IncreaseTime(10 * secondsPerBlock); err != nil { t.Fatal(err) }
+    if err := evm.IncreaseTime(oneDay + oneDay); err != nil { t.Fatal(err) }
 
     // Get & check updated trusted node claim rewards amount
     if rewardsAmount, err := rewards.GetTrustedNodeClaimRewardsAmount(rp, trustedNodeAccount.Address, nil); err != nil {

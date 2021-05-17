@@ -1,35 +1,34 @@
 package rewards
 
 import (
-	"context"
-	"math/big"
-	"testing"
-
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
-
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+    "context"
+    "github.com/rocket-pool/rocketpool-go/node"
+    "github.com/rocket-pool/rocketpool-go/rewards"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+    "github.com/rocket-pool/rocketpool-go/tokens"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
+    "math/big"
+    "testing"
 )
 
 
 func TestNodeRewards(t *testing.T) {
 
-    var secondsPerBlock uint64 = 12
-
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Constants
+    oneDay := uint64(24 * 60 * 60)
+    rewardInterval := oneDay
 
     // Register node
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Set network parameters
-    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, 5 * secondsPerBlock, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := protocol.BootstrapInflationIntervalTime(rp, 5 * secondsPerBlock, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, rewardInterval, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check node claims enabled status
     if claimsEnabled, err := rewards.GetNodeClaimsEnabled(rp, nil); err != nil {
@@ -45,9 +44,8 @@ func TestNodeRewards(t *testing.T) {
         t.Error("Incorrect initial node claim possible status")
     }
 
-    // Mine blocks until node claims are possible
-    if err := evm.MineBlocks(5); err != nil { t.Fatal(err) }
-    if err := evm.IncreaseTime(5 * secondsPerBlock); err != nil { t.Fatal(err) }
+    // Increase time until node claims are possible
+    if err := evm.IncreaseTime(rewardInterval); err != nil { t.Fatal(err) }
 
     // Get & check updated node claim possible status
     if nodeClaimPossible, err := rewards.GetNodeClaimPossible(rp, nodeAccount.Address, nil); err != nil {
@@ -83,13 +81,14 @@ func TestNodeRewards(t *testing.T) {
     // Start RPL inflation
     if header, err := rp.Client.HeaderByNumber(context.Background(), nil); err != nil {
         t.Fatal(err)
-    } else if _, err := protocol.BootstrapInflationStartTime(rp, (header.Number.Uint64() + 2) * secondsPerBlock, ownerAccount.GetTransactor()); err != nil {
+    } else if _, err := protocol.BootstrapInflationStartTime(rp, header.Time + oneDay, ownerAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Mine blocks until rewards are available
-    if err := evm.MineBlocks(10); err != nil { t.Fatal(err) }
-    if err := evm.IncreaseTime(10 * secondsPerBlock); err != nil { t.Fatal(err) }
+    if err := evm.IncreaseTime(oneDay + oneDay); err != nil {
+        t.Fatal(err)
+    }
 
     // Get & check updated node claim rewards amount
     if rewardsAmount, err := rewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil); err != nil {

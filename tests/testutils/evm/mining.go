@@ -33,6 +33,7 @@ func IncreaseTime(time uint64) error {
 
     // Make RPC calls
     if err := client.Call(nil, "evm_increaseTime", time); err != nil { return err }
+    if err := MineBlocks(1); err != nil { return err }
 
     // Return
     return nil
