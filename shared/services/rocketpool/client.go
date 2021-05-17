@@ -1,25 +1,24 @@
 package rocketpool
 
 import (
-    "bufio"
-    "errors"
-    "fmt"
-    "io"
-    "io/ioutil"
-    "os"
-    "regexp"
-    "strings"
-    osUser "os/user"
+	"bufio"
+	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	osUser "os/user"
+	"strings"
 
-    "github.com/fatih/color"
-    "github.com/urfave/cli"
-    "golang.org/x/crypto/ssh"
-    kh "golang.org/x/crypto/ssh/knownhosts"
+	"github.com/fatih/color"
+	"github.com/urfave/cli"
+	"golang.org/x/crypto/ssh"
+	kh "golang.org/x/crypto/ssh/knownhosts"
 
-    "github.com/blang/semver/v4"
-    "github.com/mitchellh/go-homedir"
-    "github.com/rocket-pool/smartnode/shared/services/config"
-    "github.com/rocket-pool/smartnode/shared/utils/net"
+	"github.com/blang/semver/v4"
+	"github.com/mitchellh/go-homedir"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/utils/net"
 )
 
 // Config
