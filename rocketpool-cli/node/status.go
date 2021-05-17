@@ -62,6 +62,10 @@ func getStatus(c *cli.Context) error {
             math.RoundDown(eth.WeiToEth(status.RplStake), 6),
             math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6),
             status.MinipoolLimit)
+        fmt.Printf(
+            "This is currently a %.2f%% collateral ratio.\n",
+            status.CollateralRatio * 100,
+        )
 
         // Minipool details
         if status.MinipoolCounts.Total > 0 {

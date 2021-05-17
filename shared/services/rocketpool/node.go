@@ -39,8 +39,8 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 
 
 // Check whether the node can be registered
-func (c *Client) CanRegisterNode() (api.CanRegisterNodeResponse, error) {
-    responseBytes, err := c.callAPI("node can-register")
+func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-register \"%s\"", timezoneLocation))
     if err != nil {
         return api.CanRegisterNodeResponse{}, fmt.Errorf("Could not get can register node status: %w", err)
     }
@@ -72,9 +72,26 @@ func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse
 }
 
 
+// Checks if the node's withdrawal address can be set
+func (c *Client) CanSetNodeWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.CanSetNodeWithdrawalAddressResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-withdrawal-address %s %s", withdrawalAddress.Hex(), confirm))
+    if err != nil {
+        return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node withdrawal address: %w", err)
+    }
+    var response api.CanSetNodeWithdrawalAddressResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can set node withdrawal address response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node withdrawal address: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Set the node's withdrawal address
-func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address) (api.SetNodeWithdrawalAddressResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node set-withdrawal-address %s", withdrawalAddress.Hex()))
+func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.SetNodeWithdrawalAddressResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node set-withdrawal-address %s %s", withdrawalAddress.Hex(), confirm))
     if err != nil {
         return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
     }
@@ -84,6 +101,23 @@ func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address) (api
     }
     if response.Error != "" {
         return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not set node withdrawal address: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Checks if the node's timezone location can be set
+func (c *Client) CanSetNodeTimezone(timezoneLocation string) (api.CanSetNodeTimezoneResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-timezone \"%s\"", timezoneLocation))
+    if err != nil {
+        return api.CanSetNodeTimezoneResponse{}, fmt.Errorf("Could not get can set node timezone: %w", err)
+    }
+    var response api.CanSetNodeTimezoneResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanSetNodeTimezoneResponse{}, fmt.Errorf("Could not decode can set node timezone response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanSetNodeTimezoneResponse{}, fmt.Errorf("Could not get can set node timezone: %s", response.Error)
     }
     return response, nil
 }
@@ -358,6 +392,23 @@ func (c *Client) NodeBurn(amountWei *big.Int, token string) (api.NodeBurnRespons
     }
     if response.Error != "" {
         return api.NodeBurnResponse{}, fmt.Errorf("Could not burn tokens owned by node: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Get node sync progress
+func (c *Client) NodeSync() (api.NodeSyncProgressResponse, error) {
+    responseBytes, err := c.callAPI("node sync")
+    if err != nil {
+        return api.NodeSyncProgressResponse{}, fmt.Errorf("Could not get node sync: %w", err)
+    }
+    var response api.NodeSyncProgressResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeSyncProgressResponse{}, fmt.Errorf("Could not decode node sync response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeSyncProgressResponse{}, fmt.Errorf("Could not get node sync: %s", response.Error)
     }
     return response, nil
 }

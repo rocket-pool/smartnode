@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
@@ -44,6 +45,7 @@ type CanRefundMinipoolResponse struct {
     Error string                    `json:"error"`
     CanRefund bool                  `json:"canRefund"`
     InsufficientRefundBalance bool  `json:"insufficientRefundBalance"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type RefundMinipoolResponse struct {
     Status string                   `json:"status"`
@@ -57,6 +59,7 @@ type CanDissolveMinipoolResponse struct {
     Error string                    `json:"error"`
     CanDissolve bool                `json:"canDissolve"`
     InvalidStatus bool              `json:"invalidStatus"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type DissolveMinipoolResponse struct {
     Status string                   `json:"status"`
@@ -82,6 +85,7 @@ type CanWithdrawMinipoolResponse struct {
     Error string                    `json:"error"`
     CanWithdraw bool                `json:"canWithdraw"`
     InvalidStatus bool              `json:"invalidStatus"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type WithdrawMinipoolResponse struct {
     Status string                   `json:"status"`
@@ -95,6 +99,7 @@ type CanCloseMinipoolResponse struct {
     Error string                    `json:"error"`
     CanClose bool                   `json:"canClose"`
     InvalidStatus bool              `json:"invalidStatus"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type CloseMinipoolResponse struct {
     Status string                   `json:"status"`

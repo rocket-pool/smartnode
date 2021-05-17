@@ -36,6 +36,15 @@ func processQueue(c *cli.Context) error {
         return nil
     }
 
+    // Display gas estimate
+    rp.PrintGasInfo(canProcess.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Do you accept this gas fee?")) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
     // Process deposit queue
     response, err := rp.ProcessQueue()
     if err != nil {

@@ -45,6 +45,16 @@ func canDissolveMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     }
     response.InvalidStatus = !(status == types.Initialized || status == types.Prelaunch)
 
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := mp.EstimateDissolveGas(opts)
+    if err == nil {
+        response.GasInfo = gasInfo
+    }
+
     // Update & return response
     response.CanDissolve = !response.InvalidStatus
     return &response, nil

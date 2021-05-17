@@ -3,22 +3,17 @@ package odao
 import (
 	"math/big"
 
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
-func canProposeSetting(c *cli.Context) (*api.CanProposeTNDAOSettingResponse, error) {
-
-    // Get services
-    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
-    w, err := services.GetWallet(c)
-    if err != nil { return nil, err }
-    rp, err := services.GetRocketPool(c)
-    if err != nil { return nil, err }
+func canProposeSetting(c *cli.Context, w *wallet.Wallet, rp *rocketpool.RocketPool) (*api.CanProposeTNDAOSettingResponse, error) {
 
     // Response
     response := api.CanProposeTNDAOSettingResponse{}
@@ -39,6 +34,36 @@ func canProposeSetting(c *cli.Context) (*api.CanProposeTNDAOSettingResponse, err
     // Update & return response
     response.CanPropose = !response.ProposalCooldownActive
     return &response, nil
+
+}
+
+
+func canProposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.CanProposeTNDAOSettingResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    response, err := canProposeSetting(c, w, rp)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := trustednode.EstimateProposeQuorumGas(rp, quorum, opts)
+    if err != nil {
+        return nil, err
+    }
+
+    response.GasInfo = gasInfo
+    return response, nil
 
 }
 
@@ -75,6 +100,36 @@ func proposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.ProposeTN
 }
 
 
+func canProposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.CanProposeTNDAOSettingResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    response, err := canProposeSetting(c, w, rp)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := trustednode.EstimateProposeRPLBondGas(rp, bondAmountWei, opts)
+    if err != nil {
+        return nil, err
+    }
+
+    response.GasInfo = gasInfo
+    return response, nil
+
+}
+
+
 func proposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.ProposeTNDAOSettingMembersRplBondResponse, error) {
 
     // Get services
@@ -103,6 +158,36 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.
 
     // Return response
     return &response, nil
+
+}
+
+
+func canProposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    response, err := canProposeSetting(c, w, rp)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := trustednode.EstimateProposeMinipoolUnbondedMaxGas(rp, unbondedMinipoolMax, opts)
+    if err != nil {
+        return nil, err
+    }
+
+    response.GasInfo = gasInfo
+    return response, nil
 
 }
 
@@ -139,6 +224,36 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 }
 
 
+func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    response, err := canProposeSetting(c, w, rp)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := trustednode.EstimateProposeProposalCooldownGas(rp, proposalCooldownBlocks, opts)
+    if err != nil {
+        return nil, err
+    }
+
+    response.GasInfo = gasInfo
+    return response, nil
+
+}
+
+
 func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint64) (*api.ProposeTNDAOSettingProposalCooldownResponse, error) {
 
     // Get services
@@ -167,6 +282,36 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
 
     // Return response
     return &response, nil
+
+}
+
+
+func canProposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    response, err := canProposeSetting(c, w, rp)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := trustednode.EstimateProposeProposalVoteBlocksGas(rp, proposalVoteBlocks, opts)
+    if err != nil {
+        return nil, err
+    }
+
+    response.GasInfo = gasInfo
+    return response, nil
 
 }
 
@@ -203,6 +348,36 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
 }
 
 
+func canProposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    response, err := canProposeSetting(c, w, rp)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := trustednode.EstimateProposeProposalVoteDelayBlocksGas(rp, proposalDelayBlocks, opts)
+    if err != nil {
+        return nil, err
+    }
+
+    response.GasInfo = gasInfo
+    return response, nil
+
+}
+
+
 func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks uint64) (*api.ProposeTNDAOSettingProposalVoteDelayBlocksResponse, error) {
 
     // Get services
@@ -235,6 +410,36 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
 }
 
 
+func canProposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    response, err := canProposeSetting(c, w, rp)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := trustednode.EstimateProposeProposalExecuteBlocksGas(rp, proposalExecuteBlocks, opts)
+    if err != nil {
+        return nil, err
+    }
+
+    response.GasInfo = gasInfo
+    return response, nil
+
+}
+
+
 func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks uint64) (*api.ProposeTNDAOSettingProposalExecuteBlocksResponse, error) {
 
     // Get services
@@ -263,6 +468,36 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
 
     // Return response
     return &response, nil
+
+}
+
+
+func canProposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    response, err := canProposeSetting(c, w, rp)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := trustednode.EstimateProposeProposalActionBlocksGas(rp, proposalActionBlocks, opts)
+    if err != nil {
+        return nil, err
+    }
+
+    response.GasInfo = gasInfo
+    return response, nil
 
 }
 

@@ -66,8 +66,8 @@ func (c *Client) TNDAOProposals() (api.TNDAOProposalsResponse, error) {
 
 
 // Check whether the node can propose inviting a new member
-func (c *Client) CanProposeInviteToTNDAO(memberAddress common.Address) (api.CanProposeTNDAOInviteResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-invite %s", memberAddress.Hex()))
+func (c *Client) CanProposeInviteToTNDAO(memberAddress common.Address, memberId, memberEmail string) (api.CanProposeTNDAOInviteResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-invite %s \"%s\" \"%s\"", memberAddress.Hex(), memberId, memberEmail))
     if err != nil {
         return api.CanProposeTNDAOInviteResponse{}, fmt.Errorf("Could not get can propose oracle DAO invite status: %w", err)
     }
@@ -134,8 +134,8 @@ func (c *Client) ProposeLeaveTNDAO() (api.ProposeTNDAOLeaveResponse, error) {
 
 
 // Check whether the node can propose replacing its position with a new member
-func (c *Client) CanProposeReplaceTNDAOMember(memberAddress common.Address) (api.CanProposeTNDAOReplaceResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-replace %s", memberAddress.Hex()))
+func (c *Client) CanProposeReplaceTNDAOMember(memberAddress common.Address, memberId, memberEmail string) (api.CanProposeTNDAOReplaceResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-replace %s \"%s\" \"%s\"", memberAddress.Hex(), memberId, memberEmail))
     if err != nil {
         return api.CanProposeTNDAOReplaceResponse{}, fmt.Errorf("Could not get can propose replacing oracle DAO member status: %w", err)
     }
@@ -434,6 +434,118 @@ func (c *Client) CanProposeTNDAOSetting() (api.CanProposeTNDAOSettingResponse, e
     }
     if response.Error != "" {
         return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting status: %s", response.Error)
+    }
+    return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingMembersQuorum(quorum float64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-members-quorum %f", quorum))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting members.quorum: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting members.quorum response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting members.quorum: %s", response.Error)
+    }
+    return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingMembersRplBond(bondAmountWei *big.Int) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-members-rplbond %s", bondAmountWei.String()))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting members.rplbond: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting members.rplbond response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting members.rplbond: %s", response.Error)
+    }
+    return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingMinipoolUnbondedMax(unbondedMinipoolMax uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-members-minipool-unbonded-max %d", unbondedMinipoolMax))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting members.minipool.unbonded.max: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting members.minipool.unbonded.max response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting members.minipool.unbonded.max: %s", response.Error)
+    }
+    return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingProposalCooldown(proposalCooldownBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-cooldown %d", proposalCooldownBlocks))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.cooldown: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.cooldown response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.cooldown: %s", response.Error)
+    }
+    return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingProposalVoteBlocks(proposalVoteBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-vote-blocks %d", proposalVoteBlocks))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.blocks: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.vote.blocks response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.blocks: %s", response.Error)
+    }
+    return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingProposalVoteDelayBlocks(proposalDelayBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-vote-delay-blocks %d", proposalDelayBlocks))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.delay.blocks: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.vote.delay.blocks response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.delay.blocks: %s", response.Error)
+    }
+    return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingProposalExecuteBlocks(proposalExecuteBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-execute-blocks %d", proposalExecuteBlocks))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.execute.blocks: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.execute.blocks response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.execute.blocks: %s", response.Error)
+    }
+    return response, nil
+}
+func (c *Client) CanProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-action-blocks %d", proposalActionBlocks))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.action.blocks: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.action.blocks response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.action.blocks: %s", response.Error)
     }
     return response, nil
 }

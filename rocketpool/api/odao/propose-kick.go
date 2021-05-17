@@ -53,6 +53,28 @@ func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei 
         return err
     })
 
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        memberId, err := trustednode.GetMemberID(rp, memberAddress, nil)
+        if err != nil {
+            return err
+        }
+        memberEmail, err := trustednode.GetMemberEmail(rp, memberAddress, nil)
+        if err != nil {
+            return err
+        }
+        message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberEmail, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
+        gasInfo, err := trustednode.EstimateProposeKickMemberGas(rp, message, memberAddress, fineAmountWei, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
+        }
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err

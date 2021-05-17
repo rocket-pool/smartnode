@@ -66,6 +66,23 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
         return nil
     })
 
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        switch token {
+        case "reth":
+            gasInfo, err := tokens.EstimateBurnRETHGas(rp, amountWei, opts)
+            if err == nil {
+                response.GasInfo = gasInfo
+            }
+            return err
+        }
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err

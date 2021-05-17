@@ -17,8 +17,16 @@ func registerNode(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
+    // Prompt for timezone location
+    var timezoneLocation string
+    if c.String("timezone") != "" {
+        timezoneLocation = c.String("timezone")
+    } else {
+        timezoneLocation = promptTimezone()
+    }
+
     // Check node can be registered
-    canRegister, err := rp.CanRegisterNode()
+    canRegister, err := rp.CanRegisterNode(timezoneLocation)
     if err != nil {
         return err
     }
@@ -33,12 +41,13 @@ func registerNode(c *cli.Context) error {
         return nil
     }
 
-    // Prompt for timezone location
-    var timezoneLocation string
-    if c.String("timezone") != "" {
-        timezoneLocation = c.String("timezone")
-    } else {
-        timezoneLocation = promptTimezone()
+    // Display gas estimate
+    rp.PrintGasInfo(canRegister.GasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to register this node?")) {
+        fmt.Println("Cancelled.")
+        return nil
     }
 
     // Register node

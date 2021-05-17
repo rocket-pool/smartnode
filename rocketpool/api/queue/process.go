@@ -19,6 +19,8 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -50,6 +52,19 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
     wg.Go(func() error {
         var err error
         depositPoolBalance, err = deposit.GetBalance(rp, nil)
+        return err
+    })
+
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := deposit.EstimateAssignDepositsGas(rp, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
+        }
         return err
     })
 

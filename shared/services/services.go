@@ -20,7 +20,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
-	rpcli "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
@@ -131,15 +130,6 @@ func GetOneInchOracle(c *cli.Context) (*contracts.OneInchOracle, error) {
 
 func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
     cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    return getBeaconClient(cfg)
-}
-
-
-func GetBeaconClientFromCLI(rp *rpcli.Client) (beacon.Client, error) {
-    cfg, err := rp.LoadMergedConfig()
     if err != nil {
         return nil, err
     }

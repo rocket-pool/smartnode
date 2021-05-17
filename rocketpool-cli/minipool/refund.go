@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -79,6 +80,30 @@ func refundMinipools(c *cli.Context) error {
             }
         }
 
+    }
+
+    // Get the total gas limit estimate
+    var totalGas uint64 = 0
+    var gasInfo rocketpoolapi.GasInfo
+    for _, minipool := range selectedMinipools {
+        canResponse, err := rp.CanRefundMinipool(minipool.Address)
+        if err != nil {
+            fmt.Printf("WARNING: Couldn't get gas price for refund transaction (%s)", err)
+            break
+        } else {
+            gasInfo = canResponse.GasInfo
+            totalGas += canResponse.GasInfo.EstGasLimit
+        }
+    }
+    gasInfo.EstGasLimit = totalGas
+
+    // Display gas estimate
+    rp.PrintGasInfo(gasInfo)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to refund %d minipools?", len(selectedMinipools)))) {
+        fmt.Println("Cancelled.")
+        return nil
     }
 
     // Refund minipools

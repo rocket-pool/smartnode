@@ -32,12 +32,34 @@ func canNodeSwapRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeSwapRplResp
         return nil, err
     }
 
+    // Get RPL contract address
+    rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+    if err != nil {
+        return nil, err
+    }
+
     // Check node fixed-supply RPL balance
     fixedSupplyRplBalance, err := tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
     if err != nil {
         return nil, err
     }
     response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalance) > 0)
+
+    // Get gas estimates
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
+        return nil, err
+    }
+    approveGasInfo, err := tokens.EstimateApproveFixedSupplyRPLGas(rp, *rocketTokenRPLAddress, amountWei, opts)
+    if err != nil {
+        return nil, err
+    }
+    /*swapGasInfo, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
+    if err != nil {
+        return nil, err
+    }*/
+    response.GasInfo = approveGasInfo
+    //response.GasInfo.EstGasLimit += swapGasInfo.EstGasLimit
 
     // Update & return response
     response.CanSwap = !response.InsufficientBalance

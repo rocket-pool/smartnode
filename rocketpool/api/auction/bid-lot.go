@@ -18,6 +18,8 @@ func canBidOnLot(c *cli.Context, lotIndex uint64) (*api.CanBidOnLotResponse, err
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -59,6 +61,19 @@ func canBidOnLot(c *cli.Context, lotIndex uint64) (*api.CanBidOnLotResponse, err
         bidOnLotEnabled, err := protocol.GetBidOnLotEnabled(rp, nil)
         if err == nil {
             response.BidOnLotDisabled = !bidOnLotEnabled
+        }
+        return err
+    })
+
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := auction.EstimatePlaceBidGas(rp, lotIndex, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
         }
         return err
     })

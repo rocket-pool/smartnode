@@ -1,25 +1,24 @@
 package lighthouse
 
 import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "net/http"
-    "strconv"
-    "strings"
-    "time"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/types"
-    eth2types "github.com/wealdtech/go-eth2-types/v2"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/types"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
-    "github.com/rocket-pool/smartnode/shared/utils/eth2"
-    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
-
 
 // Config
 const (
@@ -72,9 +71,13 @@ func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
         return beacon.SyncStatus{}, err
     }    
 
+    // Calculate the progress
+    progress := float64(syncStatus.Data.HeadSlot) / float64(syncStatus.Data.HeadSlot + syncStatus.Data.SyncDistance)
+
     // Return response
     return beacon.SyncStatus{
         Syncing: syncStatus.Data.IsSyncing,
+        Progress: progress,
     }, nil
 
 }

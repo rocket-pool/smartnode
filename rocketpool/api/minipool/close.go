@@ -45,6 +45,16 @@ func canCloseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanC
     }
     response.InvalidStatus = (status != types.Dissolved)
 
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := mp.EstimateCloseGas(opts)
+    if err == nil {
+        response.GasInfo = gasInfo
+    }
+
     // Update & return response
     response.CanClose = !response.InvalidStatus
     return &response, nil

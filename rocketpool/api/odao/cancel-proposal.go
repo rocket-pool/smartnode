@@ -60,6 +60,19 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOPr
         return err
     })
 
+    // Get gas estimate
+    wg.Go(func() error {
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil { 
+            return err 
+        }
+        gasInfo, err := trustednode.EstimateCancelProposalGas(rp, proposalId, opts)
+        if err == nil {
+            response.GasInfo = gasInfo
+        }
+        return err
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err

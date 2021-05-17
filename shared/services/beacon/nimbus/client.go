@@ -1,24 +1,24 @@
 package nimbus
 
 import (
-    "fmt"
-    "strconv"
-    "time"
+	"fmt"
+	"strconv"
+	"time"
 
-    "github.com/ethereum/go-ethereum/common"
-    rpc "github.com/ethereum/go-ethereum/rpc"
-    "github.com/rocket-pool/rocketpool-go/types"
-    eth2types "github.com/wealdtech/go-eth2-types/v2"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	rpc "github.com/ethereum/go-ethereum/rpc"
+	"github.com/rocket-pool/rocketpool-go/types"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
-    "github.com/rocket-pool/smartnode/shared/utils/eth2"
-    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
 const (
-    RequestSyncStatusMethod          = "getSyncing"
+    RequestSyncStatusMethod          = "get_v1_node_syncing"
     RequestEth2ConfigMethod          = "get_v1_config_spec"
     RequestGenesisMethod             = "get_v1_beacon_genesis"
     RequestFinalityCheckpointsMethod = "get_v1_beacon_states_finality_checkpoints"
@@ -66,9 +66,13 @@ func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
         return beacon.SyncStatus{}, err
     }
 
+    // Calculate the progress
+    progress := float64(syncStatus.HeadSlot) / float64(syncStatus.HeadSlot + syncStatus.SyncDistance)
+
     // Return response
     return beacon.SyncStatus{
-        Syncing: syncStatus,
+        Syncing: syncStatus.IsSyncing,
+        Progress: progress,
     }, nil
 
 }
@@ -288,13 +292,13 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 }
 
 // Get sync status
-func (c *Client) getSyncStatus() (bool, error) {
-    var syncStatus bool
-    if err := c.client.Call(&syncStatus, RequestSyncStatusMethod); err != nil {
+func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
+    var syncStatusResponse SyncStatusResponse
+    if err := c.client.Call(&syncStatusResponse, RequestSyncStatusMethod); err != nil {
         message := c.getErrorString(err)
-        return false, fmt.Errorf("Could not get node sync status: %s", message)
+        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %s", message)
     }
-    return syncStatus, nil
+    return syncStatusResponse, nil
 }
 
 // Get the eth2 config

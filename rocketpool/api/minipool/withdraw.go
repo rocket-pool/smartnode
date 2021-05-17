@@ -45,6 +45,16 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     }
     response.InvalidStatus = (status != types.Withdrawable)
 
+    // Get gas estimate
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil { 
+        return nil, err 
+    }
+    gasInfo, err := mp.EstimateWithdrawGas(opts)
+    if err == nil {
+        response.GasInfo = gasInfo
+    }
+
     // Update & return response
     response.CanWithdraw = !response.InvalidStatus
     return &response, nil
