@@ -509,6 +509,16 @@ func GetLotAddressBidAmount(rp *rocketpool.RocketPool, lotIndex uint64, bidder c
 }
 
 
+// Estimate the gas of CreateLot
+func EstimateCreateLotGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketAuctionManager, err := getRocketAuctionManager(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketAuctionManager.GetTransactionGasInfo(opts, "createLot")
+}
+
+
 // Create a new lot
 func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
@@ -527,6 +537,16 @@ func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (uint64, comm
 }
 
 
+// Estimate the gas of PlaceBid
+func EstimatePlaceBidGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketAuctionManager, err := getRocketAuctionManager(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketAuctionManager.GetTransactionGasInfo(opts, "placeBid", big.NewInt(int64(lotIndex)))
+}
+
+
 // Place a bid on a lot
 func PlaceBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (common.Hash, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
@@ -541,6 +561,16 @@ func PlaceBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpt
 }
 
 
+// Estimate the gas of ClaimBid
+func EstimateClaimBidGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketAuctionManager, err := getRocketAuctionManager(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketAuctionManager.GetTransactionGasInfo(opts, "claimBid", big.NewInt(int64(lotIndex)))
+}
+
+
 // Claim RPL from a lot that was bid on
 func ClaimBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (common.Hash, error) {
     rocketAuctionManager, err := getRocketAuctionManager(rp)
@@ -552,6 +582,16 @@ func ClaimBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpt
         return common.Hash{}, fmt.Errorf("Could not claim bid from lot %d: %w", lotIndex, err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of RecoverUnclaimedRPL
+func EstimateRecoverUnclaimedRPLGas(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketAuctionManager, err := getRocketAuctionManager(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketAuctionManager.GetTransactionGasInfo(opts, "recoverUnclaimedRPL", big.NewInt(int64(lotIndex)))
 }
 
 

@@ -41,6 +41,9 @@ func BootstrapProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bi
 func ProposeProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownSettingPath), ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
 }
+func EstimateProposeProposalCooldownGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", CooldownSettingPath), ProposalsSettingsContractName, CooldownSettingPath, big.NewInt(int64(value)), opts)
+}
 
 
 // The period a proposal can be voted on for in blocks
@@ -60,6 +63,9 @@ func BootstrapProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *
 }
 func ProposeProposalVoteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteBlocksSettingPath), ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
+}
+func EstimateProposeProposalVoteBlocksGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteBlocksSettingPath), ProposalsSettingsContractName, VoteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 
@@ -81,6 +87,9 @@ func BootstrapProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, o
 func ProposeProposalVoteDelayBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", VoteDelayBlocksSettingPath), ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
+func EstimateProposeProposalVoteDelayBlocksGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteDelayBlocksSettingPath), ProposalsSettingsContractName, VoteDelayBlocksSettingPath, big.NewInt(int64(value)), opts)
+}
 
 
 // The period during which a passed proposal can be executed in blocks
@@ -101,6 +110,9 @@ func BootstrapProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opt
 func ProposeProposalExecuteBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ExecuteBlocksSettingPath), ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
+func EstimateProposeProposalExecuteBlocksGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ExecuteBlocksSettingPath), ProposalsSettingsContractName, ExecuteBlocksSettingPath, big.NewInt(int64(value)), opts)
+}
 
 
 // The period during which an action can be performed on an executed proposal in blocks
@@ -120,6 +132,9 @@ func BootstrapProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts
 }
 func ProposeProposalActionBlocks(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", ActionBlocksSettingPath), ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
+}
+func EstimateProposeProposalActionBlocksGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ActionBlocksSettingPath), ProposalsSettingsContractName, ActionBlocksSettingPath, big.NewInt(int64(value)), opts)
 }
 
 

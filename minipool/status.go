@@ -26,6 +26,16 @@ func GetMinipoolNodeRewardAmount(rp *rocketpool.RocketPool, nodeFee float64, use
 }
 
 
+// Estimate the gas of SubmitMinipoolWithdrawable
+func EstimateSubmitMinipoolWithdrawableGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, stakingStartBalance, stakingEndBalance *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketMinipoolStatus.GetTransactionGasInfo(opts, "submitMinipoolWithdrawable", minipoolAddress, stakingStartBalance, stakingEndBalance)
+}
+
+
 // Submit a minipool withdrawable event
 func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, stakingStartBalance, stakingEndBalance *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketMinipoolStatus, err := getRocketMinipoolStatus(rp)

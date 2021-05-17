@@ -53,6 +53,12 @@ func getClaimRewardsAmount(claimsContract *rocketpool.Contract, claimsName strin
 }
 
 
+// Estimate the gas of claim
+func estimateClaimGas(claimsContract *rocketpool.Contract, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return claimsContract.GetTransactionGasInfo(opts, "claim")
+}
+
+
 // Claim rewards
 func claim(claimsContract *rocketpool.Contract, claimsName string, opts *bind.TransactOpts) (common.Hash, error) {
     hash, err := claimsContract.Transact(opts, "claim")

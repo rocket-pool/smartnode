@@ -1,12 +1,12 @@
 package protocol
 
 import (
-    "testing"
+	"testing"
 
-    protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
-    protocolsettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
+	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
+	protocolsettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )
 
 
@@ -26,10 +26,10 @@ func TestRewardsSettings(t *testing.T) {
         } else if value != claimerPerc {
             t.Errorf("Incorrect rewards claimer percent %f", value)
         }
-        if value, err := protocolsettings.GetRewardsClaimerPercBlockUpdated(rp, "rocketClaimNode", nil); err != nil {
+        if value, err := protocolsettings.GetRewardsClaimerPercTimeUpdated(rp, "rocketClaimNode", nil); err != nil {
             t.Error(err)
         } else if value == 0 {
-            t.Errorf("Incorrect rewards claimer percent block updated %d", value)
+            t.Errorf("Incorrect rewards claimer percent time updated %d", value)
         }
         if value, err := protocolsettings.GetRewardsClaimersPercTotal(rp, nil); err != nil {
             t.Error(err)
@@ -38,14 +38,14 @@ func TestRewardsSettings(t *testing.T) {
         }
     }
 
-    // Set & get rewards claim interval blocks
-    var rewardsClaimIntervalBlocks uint64 = 1
-    if _, err := protocolsettings.BootstrapRewardsClaimIntervalBlocks(rp, rewardsClaimIntervalBlocks, ownerAccount.GetTransactor()); err != nil {
+    // Set & get rewards claim interval time
+    var rewardsClaimIntervalTime uint64 = 1
+    if _, err := protocolsettings.BootstrapRewardsClaimIntervalTime(rp, rewardsClaimIntervalTime, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if value, err := protocolsettings.GetRewardsClaimIntervalBlocks(rp, nil); err != nil {
+    } else if value, err := protocolsettings.GetRewardsClaimIntervalTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != rewardsClaimIntervalBlocks {
-        t.Error("Incorrect rewards claim interval blocks value")
+    } else if value != rewardsClaimIntervalTime {
+        t.Error("Incorrect rewards claim interval time value")
     }
 
 }

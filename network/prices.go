@@ -39,6 +39,16 @@ func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, erro
 }
 
 
+// Estimate the gas of Deposit
+func EstimateDepositGas(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketNetworkPrices, err := getRocketNetworkPrices(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketNetworkPrices.GetTransactionGasInfo(opts, "submitPrices", big.NewInt(int64(block)), rplPrice)
+}
+
+
 // Submit network prices for an epoch
 func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNetworkPrices, err := getRocketNetworkPrices(rp)

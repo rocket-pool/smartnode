@@ -1,18 +1,18 @@
 package node
 
 import (
-    "math/big"
-    "testing"
+	"math/big"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
 )
 
 
@@ -65,10 +65,10 @@ func TestStakeRPL(t *testing.T) {
     } else if nodeMinimumRplStake.Cmp(big.NewInt(0)) != 0 {
         t.Errorf("Incorrect initial node minimum RPL stake %s", nodeMinimumRplStake.String())
     }
-    if nodeRplStakedBlock, err := node.GetNodeRPLStakedBlock(rp, nodeAccount.Address, nil); err != nil {
+    if nodeRplStakedTime, err := node.GetNodeRPLStakedTime(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
-    } else if nodeRplStakedBlock != 0 {
-        t.Errorf("Incorrect initial node RPL staked block %d", nodeRplStakedBlock)
+    } else if nodeRplStakedTime != 0 {
+        t.Errorf("Incorrect initial node RPL staked time %d", nodeRplStakedTime)
     }
     if nodeMinipoolLimit, err := node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
@@ -107,10 +107,10 @@ func TestStakeRPL(t *testing.T) {
     } else if nodeMinimumRplStake.Cmp(big.NewInt(0)) != 0 {
         t.Errorf("Incorrect updated node minimum RPL stake 1 %s", nodeMinimumRplStake.String())
     }
-    if nodeRplStakedBlock, err := node.GetNodeRPLStakedBlock(rp, nodeAccount.Address, nil); err != nil {
+    if nodeRplStakedTime, err := node.GetNodeRPLStakedTime(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
-    } else if nodeRplStakedBlock == 0 {
-        t.Errorf("Incorrect updated node RPL staked block 1 %d", nodeRplStakedBlock)
+    } else if nodeRplStakedTime == 0 {
+        t.Errorf("Incorrect updated node RPL staked time 1 %d", nodeRplStakedTime)
     }
     if nodeMinipoolLimit, err := node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
@@ -161,9 +161,9 @@ func TestWithdrawRPL(t *testing.T) {
     if err := nodeutils.StakeRPL(rp, ownerAccount, nodeAccount, rplAmount); err != nil { t.Fatal(err) }
 
     // Get & set rewards claim interval
-    rewardsClaimIntervalBlocks, err := protocol.GetRewardsClaimIntervalBlocks(rp, nil)
+    rewardsClaimIntervalTime, err := protocol.GetRewardsClaimIntervalTime(rp, nil)
     if err != nil { t.Fatal(err) }
-    if _, err := protocol.BootstrapRewardsClaimIntervalBlocks(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Check initial staking details
     if totalRplStake, err := node.GetTotalRPLStake(rp, nil); err != nil {
@@ -195,7 +195,7 @@ func TestWithdrawRPL(t *testing.T) {
     }
 
     // Reset rewards claim interval
-    if _, err := protocol.BootstrapRewardsClaimIntervalBlocks(rp, rewardsClaimIntervalBlocks, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, rewardsClaimIntervalTime, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
 }
 

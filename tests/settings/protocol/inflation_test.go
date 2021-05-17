@@ -1,15 +1,17 @@
 package protocol
 
 import (
-    "testing"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )
 
 
 func TestInflationSettings(t *testing.T) {
+
+    var secondsPerBlock uint64 = 12
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
@@ -25,24 +27,24 @@ func TestInflationSettings(t *testing.T) {
         t.Error("Incorrect inflation interval rate value")
     }
 
-    // Set & get inflation interval blocks
-    var inflationIntervalBlocks uint64 = 1
-    if _, err := protocol.BootstrapInflationIntervalBlocks(rp, inflationIntervalBlocks, ownerAccount.GetTransactor()); err != nil {
+    // Set & get inflation interval time
+    var inflationIntervalTime uint64 = 1 * secondsPerBlock
+    if _, err := protocol.BootstrapInflationIntervalTime(rp, inflationIntervalTime, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if value, err := protocol.GetInflationIntervalBlocks(rp, nil); err != nil {
+    } else if value, err := protocol.GetInflationIntervalTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != inflationIntervalBlocks {
-        t.Error("Incorrect inflation interval blocks value")
+    } else if value != inflationIntervalTime {
+        t.Error("Incorrect inflation interval time value")
     }
 
     // Set & get inflation start block
-    var inflationStartBlock uint64 = 1000000
-    if _, err := protocol.BootstrapInflationStartBlock(rp, inflationStartBlock, ownerAccount.GetTransactor()); err != nil {
+    var inflationStartTime uint64 = 1000000 * secondsPerBlock
+    if _, err := protocol.BootstrapInflationStartTime(rp, inflationStartTime, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if value, err := protocol.GetInflationStartBlock(rp, nil); err != nil {
+    } else if value, err := protocol.GetInflationStartTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != inflationStartBlock {
-        t.Error("Incorrect inflation start block value")
+    } else if value != inflationStartTime {
+        t.Error("Incorrect inflation start time value")
     }
 
 }

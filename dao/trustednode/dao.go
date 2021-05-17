@@ -3,6 +3,7 @@ package trustednode
 import (
 	"fmt"
 	"math/big"
+	"net/mail"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -357,6 +358,16 @@ func GetMemberIsChallenged(rp *rocketpool.RocketPool, memberAddress common.Addre
 }
 
 
+// Estimate the gas of BootstrapBool
+func EstimateBootstrapBoolGas(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapSettingBool", contractName, settingPath, value)
+}
+
+
 // Bootstrap a bool setting
 func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
@@ -368,6 +379,16 @@ func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, 
         return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of BootstrapUint
+func EstimateBootstrapUintGas(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapSettingUint", contractName, settingPath, value)
 }
 
 
@@ -385,17 +406,49 @@ func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
 }
 
 
+// Estimate the gas of BootstrapMember
+func EstimateBootstrapMemberGas(rp *rocketpool.RocketPool, id, email string, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    address, err := mail.ParseAddress(email)
+    if err != nil {
+        return rocketpool.GasInfo{}, err 
+    }
+    return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapMember", id, address.Address, nodeAddress)
+}
+
+
 // Bootstrap a DAO member
 func BootstrapMember(rp *rocketpool.RocketPool, id, email string, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return common.Hash{}, err
     }
-    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, email, nodeAddress)
+    address, err := mail.ParseAddress(email)
+    if err != nil {
+        return common.Hash{}, err
+    }
+    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, address.Address, nodeAddress)
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node member %s: %w", id, err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of BootstrapUpgrade
+func EstimateBootstrapUpgradeGas(rp *rocketpool.RocketPool, upgradeType, contractName, contractAbi string, contractAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    compressedAbi, err := rocketpool.EncodeAbiStr(contractAbi)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
+    if err != nil {
+        return rocketpool.GasInfo{}, err
+    }
+    return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
 }
 
 

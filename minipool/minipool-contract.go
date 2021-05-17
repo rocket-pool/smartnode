@@ -347,6 +347,12 @@ func (mp *Minipool) GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, 
 }
 
 
+// Estimate the gas of Refund
+func (mp *Minipool) EstimateRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "refund")
+}
+
+
 // Refund node ETH from the minipool
 func (mp *Minipool) Refund(opts *bind.TransactOpts) (common.Hash, error) {
     hash, err := mp.Contract.Transact(opts, "refund")
@@ -357,16 +363,28 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 
+// Estimate the gas of Payout
+func (mp *Minipool) EstimatePayoutGas(confirm bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "payout", confirm)
+}
+
+
 // Payout withdrawn ETH
 func (mp *Minipool) Payout(confirm bool, opts *bind.TransactOpts) (common.Hash, error) {
     if !confirm {
         return common.Hash{}, fmt.Errorf("Could not payout minipool %s: confirmation flag must be set to true", mp.Address.Hex())
     }
-    hash, err := mp.Contract.Transact(opts, "payout", true)
+    hash, err := mp.Contract.Transact(opts, "payout", confirm)
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not payout minipool %s: %w", mp.Address.Hex(), err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of Stake
+func (mp *Minipool) EstimateStakeGas(validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)
 }
 
 
@@ -380,6 +398,12 @@ func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSign
 }
 
 
+// Estimate the gas of Withdraw
+func (mp *Minipool) EstimateWithdrawGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "withdraw")
+}
+
+
 // Withdraw node balances & rewards from the withdrawable minipool and close it
 func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (common.Hash, error) {
     hash, err := mp.Contract.Transact(opts, "withdraw")
@@ -390,6 +414,12 @@ func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 
+// Estimate the gas of Dissolve
+func (mp *Minipool) EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "dissolve")
+}
+
+
 // Dissolve the initialized or prelaunch minipool
 func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (common.Hash, error) {
     hash, err := mp.Contract.Transact(opts, "dissolve")
@@ -397,6 +427,12 @@ func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (common.Hash, error) {
         return common.Hash{}, fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of Close
+func (mp *Minipool) EstimateCloseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "close")
 }
 
 
