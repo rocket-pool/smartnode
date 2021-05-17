@@ -85,6 +85,10 @@ ______           _        _    ______           _
             Usage: "Smart node SSH key passphrase `file`",
         },
         cli.StringFlag{
+            Name:  "known-hosts, n",
+            Usage: "Smart node SSH known_hosts `file` (default: current user's ~/.ssh/known_hosts)",
+        },
+        cli.StringFlag{
             Name:  "gasPrice, g",
             Usage: "Desired gas price in gwei",
         },
