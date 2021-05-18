@@ -42,6 +42,19 @@ func (c *Client) AuctionLots() (api.AuctionLotsResponse, error) {
     if response.Error != "" {
         return api.AuctionLotsResponse{}, fmt.Errorf("Could not get auction lots: %s", response.Error)
     }
+    for i := 0; i < len(response.Lots); i++ {
+        details := &response.Lots[i].Details
+        if details.StartPrice == nil { details.StartPrice = big.NewInt(0) }
+        if details.ReservePrice == nil { details.ReservePrice = big.NewInt(0) }
+        if details.PriceAtCurrentBlock == nil { details.PriceAtCurrentBlock = big.NewInt(0) }
+        if details.PriceByTotalBids == nil { details.PriceByTotalBids = big.NewInt(0) }
+        if details.CurrentPrice == nil { details.CurrentPrice = big.NewInt(0) }
+        if details.TotalRPLAmount == nil { details.TotalRPLAmount = big.NewInt(0) }
+        if details.ClaimedRPLAmount == nil { details.ClaimedRPLAmount = big.NewInt(0) }
+        if details.RemainingRPLAmount == nil { details.RemainingRPLAmount = big.NewInt(0) }
+        if details.TotalBidAmount == nil { details.TotalBidAmount = big.NewInt(0) }
+        if details.AddressBidAmount == nil { details.AddressBidAmount = big.NewInt(0) }
+    }
     return response, nil
 }
 

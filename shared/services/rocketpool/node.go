@@ -26,6 +26,14 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
     if response.RplStake == nil { response.RplStake = big.NewInt(0) }
     if response.EffectiveRplStake == nil { response.EffectiveRplStake = big.NewInt(0) }
     if response.MinimumRplStake == nil { response.MinimumRplStake = big.NewInt(0) }
+    if response.AccountBalances.ETH == nil {response.AccountBalances.ETH = big.NewInt(0)}
+    if response.AccountBalances.RPL == nil {response.AccountBalances.RPL = big.NewInt(0)}
+    if response.AccountBalances.RETH == nil {response.AccountBalances.RETH = big.NewInt(0)}
+    if response.AccountBalances.FixedSupplyRPL == nil {response.AccountBalances.FixedSupplyRPL = big.NewInt(0)}
+    if response.WithdrawalBalances.ETH == nil {response.WithdrawalBalances.ETH = big.NewInt(0)}
+    if response.WithdrawalBalances.RPL == nil {response.WithdrawalBalances.RPL = big.NewInt(0)}
+    if response.WithdrawalBalances.RETH == nil {response.WithdrawalBalances.RETH = big.NewInt(0)}
+    if response.WithdrawalBalances.FixedSupplyRPL == nil {response.WithdrawalBalances.FixedSupplyRPL = big.NewInt(0)}
     return response, nil
 }
 
@@ -281,6 +289,8 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int) (api.CanNodeDepositResponse,
     if response.Error != "" {
         return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %s", response.Error)
     }
+    if response.GasInfo.ReqGasPrice == nil { response.GasInfo.ReqGasPrice = big.NewInt(0) }
+    if response.GasInfo.EstGasPrice == nil { response.GasInfo.EstGasPrice = big.NewInt(0) }
     return response, nil
 }
 

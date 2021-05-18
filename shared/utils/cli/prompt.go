@@ -1,14 +1,13 @@
 package cli
 
 import (
-    "bufio"
-    "fmt"
-    "os"
-    "regexp"
-    "strconv"
-    "strings"
+	"bufio"
+	"fmt"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
 )
-
 
 // Prompt for user input
 func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
@@ -48,7 +47,7 @@ func Select(initialPrompt string, options []string) (int, string) {
 
     // Get expected response format
     optionNumbers := []string{}
-    for i, _ := range options {
+    for i := range options {
         optionNumbers = append(optionNumbers, strconv.Itoa(i + 1))
     }
     expectedFormat := fmt.Sprintf("^(%s)$", strings.Join(optionNumbers, "|"))

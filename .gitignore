@@ -10,3 +10,4 @@ Dockerfile
 /rocketpool-cli/rocketpool-cli
 /rocketpool-pow-proxy/rocketpool-pow-proxy
 .idea
+/.vscode

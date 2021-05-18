@@ -62,7 +62,7 @@ func initWallet(c *cli.Context) error {
     }
 
     // Clear terminal output
-    term.Clear()
+    _ = term.Clear()
 
     // Log & return
     fmt.Println("The node wallet was successfully initialized.")

@@ -7,13 +7,15 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"regexp"
+	osUser "os/user"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
+	kh "golang.org/x/crypto/ssh/knownhosts"
 
+	"github.com/blang/semver/v4"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/net"
@@ -51,14 +53,15 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
                      c.GlobalString("host"), 
                      c.GlobalString("user"), 
                      c.GlobalString("key"), 
-                     c.GlobalString("passphrase"), 
-                     c.GlobalString("gasPrice"), 
+                     c.GlobalString("passphrase"),
+                     c.GlobalString("known-hosts"),
+                     c.GlobalString("gasPrice"),
                      c.GlobalString("gasLimit"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, gasPrice, gasLimit string) (*Client, error) {
+func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, knownhostsFile, gasPrice, gasLimit string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -98,11 +101,26 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePat
             return nil, fmt.Errorf("Could not parse SSH private key at %s: %w", keyPath, err)
         }
 
+        // Prepare the server host key callback function
+        if knownhostsFile == "" {
+            // Default to using the current users known_hosts file if one wasn't provided
+            usr, err := osUser.Current()
+            if err != nil {
+                return nil, fmt.Errorf("Could not get current user: %w", err)
+            }
+            knownhostsFile = fmt.Sprintf("%s/.ssh/known_hosts", usr.HomeDir)
+        }
+
+        hostKeyCallback, err := kh.New(knownhostsFile)
+        if err != nil {
+            return nil, fmt.Errorf("Could not create hostKeyCallback function: %w", err)
+        }
+
         // Initialise client
         sshClient, err = ssh.Dial("tcp", net.DefaultPort(hostAddress, "22"), &ssh.ClientConfig{
             User: user,
             Auth: []ssh.AuthMethod{ssh.PublicKeys(key)},
-            HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+            HostKeyCallback: hostKeyCallback,
         })
         if err != nil {
             return nil, fmt.Errorf("Could not connect to %s as %s: %w", hostAddress, user, err)
@@ -202,7 +220,7 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
         for scanner.Scan() {
             errMessage = scanner.Text()
             if verbose {
-                c.Println(scanner.Text())
+                _, _ = c.Println(scanner.Text())
             }
         }
     })()
@@ -296,14 +314,22 @@ func (c *Client) GetServiceVersion() (string, error) {
         return "", fmt.Errorf("Could not get Rocket Pool service version: %w", err)
     }
 
-    // Parse version number
-    versionNumberBytes := regexp.MustCompile("v?(\\d+\\.)*\\d+(\\-\\w+\\.\\d+)?").Find(versionBytes)
-    if versionNumberBytes == nil {
-        return "", errors.New("Could not parse Rocket Pool service version number.")
+    // Get the version string
+    outputString := string(versionBytes)
+    elements := strings.Fields(outputString) // Split on whitespace
+    if len(elements) < 1 {
+        return "", fmt.Errorf("Could not parse Rocket Pool service version number from output '%s'", outputString)
+    }
+    versionString := elements[len(elements) - 1]
+
+    // Make sure it's a semantic version
+    version, err := semver.Make(versionString)
+    if err != nil {
+        return "", fmt.Errorf("Could not parse Rocket Pool service version number from output '%s': %w", outputString, err)
     }
 
-    // Return
-    return string(versionNumberBytes), nil
+    // Return the parsed semantic version (extra safety)
+    return version.String(), nil
 
 }
 
@@ -328,8 +354,12 @@ func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
     if err != nil {
         return err
     }
-    if err := ioutil.WriteFile(path, configBytes, 0); err != nil {
-        return fmt.Errorf("Could not write Rocket Pool config to %q: %w", path, err)
+    expandedPath, err := homedir.Expand(path)
+    if err != nil {
+        return err
+    }
+    if err := ioutil.WriteFile(expandedPath, configBytes, 0); err != nil {
+        return fmt.Errorf("Could not write Rocket Pool config to %q: %w", expandedPath, err)
     }
     return nil
 }

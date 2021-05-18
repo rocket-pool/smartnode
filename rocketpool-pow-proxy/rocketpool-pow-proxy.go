@@ -21,15 +21,15 @@ func main() {
     app.Usage = "Rocket Pool Eth 1.0 proxy server"
     app.Version = "1.0.0-rc1"
     app.Authors = []cli.Author{
-        cli.Author{
+        {
             Name:  "David Rugendyke",
             Email: "david@rocketpool.net",
         },
-        cli.Author{
+        {
             Name:  "Jake Pospischil",
             Email: "jake@rocketpool.net",
         },
-        cli.Author{
+        {
             Name:  "Joe Clapis",
             Email: "joe@rocketpool.net",
         },
