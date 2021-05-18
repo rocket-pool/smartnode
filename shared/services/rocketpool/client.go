@@ -399,7 +399,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         }
     }
     if !isCompatible {
-        return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 client [%s]. Please run 'rocketpool service config' and select compatible clients.", eth2Client.ID, eth1Client.ID)
+        return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 client [%s]. Please run 'rocketpool service config' and select compatible clients.", eth2Client.Name, eth1Client.Name)
     }
 
     // Set environment variables from config
