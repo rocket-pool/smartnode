@@ -3,6 +3,7 @@ module github.com/rocket-pool/smartnode
 go 1.13
 
 require (
+	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/blang/semver/v4 v4.0.0
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
@@ -14,6 +15,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/google/uuid v1.1.5
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/imdario/mergo v0.3.9
 	github.com/minio/highwayhash v1.0.1 // indirect
@@ -36,4 +38,3 @@ require (
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.3.0
 )
-
