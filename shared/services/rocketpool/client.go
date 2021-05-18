@@ -220,7 +220,7 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
         for scanner.Scan() {
             errMessage = scanner.Text()
             if verbose {
-                c.Println(scanner.Text())
+                _, _ = c.Println(scanner.Text())
             }
         }
     })()

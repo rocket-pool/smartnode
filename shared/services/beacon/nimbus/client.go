@@ -48,8 +48,9 @@ func NewClient(providerAddress string) (*Client, error) {
 }
 
 // Close the client connection
-func (c *Client) Close() {
+func (c *Client) Close() error {
     c.client.Close()
+    return nil
 }
 
 // Get the beacon client type

@@ -48,8 +48,8 @@ func NewClient(providerAddress string) (*Client, error) {
 
 
 // Close the client connection
-func (c *Client) Close() {
-    c.conn.Close()
+func (c *Client) Close() error {
+    return c.conn.Close()
 }
 
 

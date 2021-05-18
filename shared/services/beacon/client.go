@@ -70,6 +70,6 @@ type Client interface {
     GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error)
     GetDomainData(domainType []byte, epoch uint64) ([]byte, error)
     ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
-    Close()
+    Close() error
 }
 
