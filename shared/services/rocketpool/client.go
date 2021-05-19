@@ -380,11 +380,26 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     }
 
     // Check config
-    if cfg.GetSelectedEth1Client() == nil {
+    eth1Client := cfg.GetSelectedEth1Client()
+    eth2Client := cfg.GetSelectedEth2Client()
+    if eth1Client == nil {
         return "", errors.New("No Eth 1.0 client selected. Please run 'rocketpool service config' and try again.")
     }
-    if cfg.GetSelectedEth2Client() == nil {
+    if eth2Client == nil {
         return "", errors.New("No Eth 2.0 client selected. Please run 'rocketpool service config' and try again.")
+    }
+
+    // Make sure the selected eth2 is compatible with the selected eth1
+    isCompatible := false 
+    compatibleEth2ClientIds := strings.Split(eth1Client.CompatibleEth2Clients, ";")
+    for _, id := range compatibleEth2ClientIds {
+        if id == eth2Client.ID {
+            isCompatible = true
+            break
+        }
+    }
+    if !isCompatible {
+        return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 client [%s]. Please run 'rocketpool service config' and select compatible clients.", eth2Client.Name, eth1Client.Name)
     }
 
     // Set environment variables from config

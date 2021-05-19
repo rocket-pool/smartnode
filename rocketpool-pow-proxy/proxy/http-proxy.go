@@ -1,16 +1,17 @@
 package proxy
 
 import (
-    "errors"
-    "fmt"
-    "io"
-    "log"
-    "net/http"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
 )
-
 
 // Config
 const InfuraURL = "https://%s.infura.io/v3/%s"
+const PocketURL = "https://%s.gateway.pokt.network/v1/%s"
 
 
 // Proxy server
@@ -21,11 +22,16 @@ type HttpProxyServer struct {
 
 
 // Create new proxy server
-func NewHttpProxyServer(port string, providerUrl string, network string, projectId string) *HttpProxyServer {
+func NewHttpProxyServer(port string, providerUrl string, network string, projectId string, providerType string) *HttpProxyServer {
 
     // Default provider to Infura
-    if providerUrl == "" {
+    if providerUrl == "" && providerType == "infura" {
         providerUrl = fmt.Sprintf(InfuraURL, network, projectId)
+    } else if providerUrl == "" && providerType == "pocket" {
+        providerUrl = fmt.Sprintf(PocketURL, network, projectId)
+    } else {
+        fmt.Printf("Unknown provider %s", providerType)
+        os.Exit(1)
     }
 
     // Create and return proxy server
