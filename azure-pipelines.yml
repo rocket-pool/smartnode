@@ -12,6 +12,7 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
+steps:
 - task: DownloadSecureFile@1
   name: githubPEM
   displayName: 'Download Github PEM'
