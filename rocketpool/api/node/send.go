@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 
@@ -127,6 +129,12 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
+    }
+
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
     }
 
     // Handle token type

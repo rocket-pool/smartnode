@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 
@@ -87,9 +89,15 @@ func approveRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveRes
     }
 
     // Approve RPL allowance
-    if opts, err := w.GetNodeAccountTransactor(); err != nil {
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
         return nil, err
-    } else if hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts); err != nil {
+    }
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+    }
+    if hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts); err != nil {
         return nil, err
     } else {
         response.ApproveTxHash = hash
@@ -120,9 +128,15 @@ func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.
     response := api.NodeStakeRplStakeResponse{}
     
     // Stake RPL
-    if opts, err := w.GetNodeAccountTransactor(); err != nil {
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
         return nil, err
-    } else if hash, err := node.StakeRPL(rp, amountWei, opts); err != nil {
+    }
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+    }
+    if hash, err := node.StakeRPL(rp, amountWei, opts); err != nil {
         return nil, err
     } else {
         response.StakeTxHash = hash

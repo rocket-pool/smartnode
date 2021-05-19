@@ -1,20 +1,19 @@
 package node
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/rewards"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/config"
-    "github.com/rocket-pool/smartnode/shared/services/wallet"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
-
 
 // Claim RPL rewards task
 type claimRplRewards struct {

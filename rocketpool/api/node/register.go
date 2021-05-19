@@ -1,6 +1,8 @@
 package node
 
 import (
+	"fmt"
+
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/urfave/cli"
@@ -8,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 
@@ -92,6 +95,12 @@ func registerNode(c *cli.Context, timezoneLocation string) (*api.RegisterNodeRes
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
+    }
+
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
     }
 
     // Register node

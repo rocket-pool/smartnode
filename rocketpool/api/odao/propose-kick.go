@@ -12,6 +12,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -125,6 +126,12 @@ func proposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *bi
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
+    }
+
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
     }
 
     // Submit proposal

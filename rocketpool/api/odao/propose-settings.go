@@ -1,6 +1,7 @@
 package odao
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -10,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 
@@ -86,6 +88,12 @@ func proposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.ProposeTN
         return nil, err
     }
 
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+    }
+
     // Submit proposal
     proposalId, hash, err := trustednode.ProposeQuorum(rp, quorum, opts)
     if err != nil {
@@ -146,6 +154,12 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
+    }
+
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
     }
 
     // Submit proposal
@@ -210,6 +224,12 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
         return nil, err
     }
 
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+    }
+
     // Submit proposal
     proposalId, hash, err := trustednode.ProposeMinipoolUnbondedMax(rp, unbondedMinipoolMax, opts)
     if err != nil {
@@ -270,6 +290,12 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
+    }
+
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
     }
 
     // Submit proposal
@@ -334,6 +360,12 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
         return nil, err
     }
 
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+    }
+
     // Submit proposal
     proposalId, hash, err := trustednode.ProposeProposalVoteBlocks(rp, proposalVoteBlocks, opts)
     if err != nil {
@@ -394,6 +426,12 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
+    }
+
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
     }
 
     // Submit proposal
@@ -458,6 +496,12 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
         return nil, err
     }
 
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+    }
+
     // Submit proposal
     proposalId, hash, err := trustednode.ProposeProposalExecuteBlocks(rp, proposalExecuteBlocks, opts)
     if err != nil {
@@ -518,6 +562,12 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
         return nil, err
+    }
+
+    // Override the last pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
     }
 
     // Submit proposal
