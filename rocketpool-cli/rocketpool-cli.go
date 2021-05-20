@@ -96,6 +96,10 @@ ______           _        _    ______           _
             Name:  "gasLimit, l",
             Usage: "Desired gas limit",
         },
+        cli.Uint64Flag{
+            Name: "nonce, n",
+            Usage: "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
+        },
     }
 
     // Register commands

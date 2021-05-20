@@ -10,21 +10,38 @@ import (
 	"github.com/urfave/cli"
 )
 
-// Sets the nonce of the provided transaction options to the latest nonce if requested 
+// Sets the nonce of the provided transaction options to the latest nonce if requested
 func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
 
-    if c.GlobalBool("override-nonce") {
+    customNonce := c.GlobalUint64("override-nonce")
+    if customNonce != 0 {
+        // Do a sanity check to make sure the provided nonce is for a pending transaction
+        // otherwise the user is burning gas for no reason
         ec, err := services.GetEthClient(c)
         if err != nil {
             return fmt.Errorf("Could not retrieve ETH1 client: %w", err)
         }
-        // Get the latest nonce
-        lastNonce, err := ec.NonceAt(context.Background(), opts.From, nil)
+
+        // Make sure it's not higher than the next available nonce
+        nextNonce, err := ec.PendingNonceAt(context.Background(), opts.From)
+        if err != nil {
+            return fmt.Errorf("Could not get next available nonce: %w", err)
+        }
+        if customNonce > nextNonce {
+            return fmt.Errorf("Can't use nonce %d because it's greater than the next available nonce (%d).", customNonce, nextNonce)
+        }
+
+        // Make sure the nonce hasn't already been mined
+        latestMinedNonce, err := ec.NonceAt(context.Background(), opts.From, nil)
         if err != nil {
             return fmt.Errorf("Could not get latest nonce: %w", err)
         }
-        // Set the nonce of this TX to the same as the previous one
-        opts.Nonce = new(big.Int).SetUint64(lastNonce)
+        if customNonce <= latestMinedNonce {
+            return fmt.Errorf("Can't use nonce %d because it has already been mined.", customNonce)
+        }
+
+        // It points to a pending transaction, so this is a valid thing to do
+        opts.Nonce = new(big.Int).SetUint64(customNonce)
     }
     return nil
 

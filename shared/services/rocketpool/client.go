@@ -42,6 +42,7 @@ type Client struct {
     daemonPath string
     gasPrice string
     gasLimit string
+    customNonce uint64
     client *ssh.Client
 }
 
@@ -56,12 +57,13 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
                      c.GlobalString("passphrase"),
                      c.GlobalString("known-hosts"),
                      c.GlobalString("gasPrice"),
-                     c.GlobalString("gasLimit"))
+                     c.GlobalString("gasLimit"),
+                     c.GlobalUint64("nonce"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, knownhostsFile, gasPrice, gasLimit string) (*Client, error) {
+func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, knownhostsFile, gasPrice, gasLimit string, customNonce uint64) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -134,6 +136,7 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePat
         daemonPath: os.ExpandEnv(daemonPath),
         gasPrice: gasPrice,
         gasLimit: gasLimit,
+        customNonce: customNonce,
         client: sshClient,
     }, nil
 
@@ -334,6 +337,13 @@ func (c *Client) GetServiceVersion() (string, error) {
 }
 
 
+// Increments the custom nonce parameter.
+// This is used for calls that involve multiple transactions, so they don't all have the same nonce.
+func (c *Client) IncrementCustomNonce() {
+    c.customNonce += 1
+}
+
+
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
     expandedPath, err := homedir.Expand(path)
@@ -468,9 +478,9 @@ func (c *Client) callAPI(args string) ([]byte, error) {
         if err != nil {
             return []byte{}, err
         }
-        cmd = fmt.Sprintf("docker exec %q %q %s api %s", containerName, APIBinPath, c.getGasOpts(), args)
+        cmd = fmt.Sprintf("docker exec %q %q %s %s api %s", containerName, APIBinPath, c.getGasOpts(), c.getCustomNonce(), args)
     } else {
-        cmd = fmt.Sprintf("%s --config %q --settings %q %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), c.getGasOpts(), args)
+        cmd = fmt.Sprintf("%s --config %q --settings %q %s %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), c.getGasOpts(), c.getCustomNonce(), args)
     }
     return c.readOutput(cmd)
 }
@@ -499,6 +509,16 @@ func (c *Client) getGasOpts() string {
         opts += fmt.Sprintf("--gasLimit %q ", c.gasLimit)
     }
     return opts
+}
+
+
+func (c *Client) getCustomNonce() string {
+    // Set the custom nonce
+    nonce := ""
+    if c.customNonce != 0 {
+        nonce = fmt.Sprintf("--nonce %d", c.customNonce)
+    }
+    return nonce
 }
 
 

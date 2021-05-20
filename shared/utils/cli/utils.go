@@ -7,6 +7,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
+const colorReset string = "\033[0m"
+const colorYellow string = "\033[33m"
+
+
 // Print a TX's details to the console.
 func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
 
@@ -22,6 +26,17 @@ func PrintTransactionHashNoCancel(rp *rocketpool.Client, hash common.Hash) {
     finalMessage := "Waiting for the transaction to be mined... **DO NOT EXIT!** This transaction is one of several that must be completed.\n\n"
     printTransactionHashImpl(rp, hash, finalMessage)
     
+}
+
+
+// Print a warning to the console if the user set a custom nonce, but this operation involves multiple transactions
+func PrintMultiTransactionNonceWarning() {
+
+    fmt.Printf("%sNOTE: You have specified the `nonce` flag to indicate a custom nonce for this transaction.\n" +
+        "However, this operation requires multiple transactions.\n" +
+        "Rocket Pool will use your custom value as a basis, and increment it for each additional transaction.\n" +
+        "If you have multiple pending transactions, this MAY OVERRIDE more than the one that you specified.%s\n\n", colorYellow, colorReset)
+
 }
 
 

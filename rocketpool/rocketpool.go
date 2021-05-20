@@ -90,9 +90,9 @@ func main() {
             Name:  "gasLimit, l",
             Usage: "Desired gas limit",
         },
-        cli.BoolFlag{
-            Name: "override-nonce, n",
-            Usage: "Use this flag to use the previous transaction's nonce for a new transaction",
+        cli.Uint64Flag{
+            Name: "nonce, n",
+            Usage: "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
         },
     }
 
