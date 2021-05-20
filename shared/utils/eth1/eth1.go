@@ -13,7 +13,7 @@ import (
 // Sets the nonce of the provided transaction options to the latest nonce if requested
 func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
 
-    customNonce := c.GlobalUint64("override-nonce")
+    customNonce := c.GlobalUint64("nonce")
     if customNonce != 0 {
         // Do a sanity check to make sure the provided nonce is for a pending transaction
         // otherwise the user is burning gas for no reason
