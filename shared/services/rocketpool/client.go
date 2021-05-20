@@ -391,11 +391,15 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Make sure the selected eth2 is compatible with the selected eth1
     isCompatible := false 
-    compatibleEth2ClientIds := strings.Split(eth1Client.CompatibleEth2Clients, ";")
-    for _, id := range compatibleEth2ClientIds {
-        if id == eth2Client.ID {
-            isCompatible = true
-            break
+    if eth1Client.CompatibleEth2Clients == "" {
+        isCompatible = true
+    } else {
+        compatibleEth2ClientIds := strings.Split(eth1Client.CompatibleEth2Clients, ";")
+        for _, id := range compatibleEth2ClientIds {
+            if id == eth2Client.ID {
+                isCompatible = true
+                break
+            }
         }
     }
     if !isCompatible {
