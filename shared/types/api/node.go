@@ -103,6 +103,7 @@ type CanNodeStakeRplResponse struct {
     Error string                        `json:"error"`
     CanStake bool                       `json:"canStake"`
     InsufficientBalance bool            `json:"insufficientBalance"`
+    InConsensus bool                    `json:"inConsensus"`
     GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeStakeRplApproveResponse struct {
@@ -124,6 +125,7 @@ type CanNodeWithdrawRplResponse struct {
     InsufficientBalance bool            `json:"insufficientBalance"`
     MinipoolsUndercollateralized bool   `json:"minipoolsUndercollateralized"`
     WithdrawalDelayActive bool          `json:"withdrawalDelayActive"`
+    InConsensus bool                    `json:"inConsensus"`
     GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeWithdrawRplResponse struct {
@@ -142,6 +144,7 @@ type CanNodeDepositResponse struct {
     InvalidAmount bool                  `json:"invalidAmount"`
     UnbondedMinipoolsAtMax bool         `json:"unbondedMinipoolsAtMax"`
     DepositDisabled bool                `json:"depositDisabled"`
+    InConsensus bool                    `json:"inConsensus"`
     GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeDepositResponse struct {

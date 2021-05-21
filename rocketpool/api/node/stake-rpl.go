@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils"
@@ -45,6 +46,13 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
     }
     response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
 
+    // Check network consensus
+    inConsensus, err := network.InConsensus(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    response.InConsensus = inConsensus
+
     // Get gas estimates
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
@@ -62,7 +70,7 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
     //response.GasInfo.EstGasLimit += stakeGasInfo.EstGasLimit
 
     // Update & return response
-    response.CanStake = !response.InsufficientBalance
+    response.CanStake = !(response.InsufficientBalance || !response.InConsensus)
     return &response, nil
 
 }

@@ -1,30 +1,30 @@
 package watchtower
 
 import (
-    "context"
-    "fmt"
-    "math/big"
+	"context"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/crypto"
-    "github.com/ethereum/go-ethereum/ethclient"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/config"
-    "github.com/rocket-pool/smartnode/shared/services/contracts"
-    "github.com/rocket-pool/smartnode/shared/services/wallet"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/contracts"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
-
 
 // Submit RPL price task
 type submitRplPrice struct {
@@ -135,11 +135,18 @@ func (t *submitRplPrice) run() error {
         return err
     }
 
+    // Calculate the total effective RPL stake on the network
+    zero := new(big.Int).SetUint64(0)
+    effectiveRplState, err := node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil)
+    if err != nil {
+        return fmt.Errorf("Error getting total effective RPL stake: %w", err)
+    }
+
     // Log
     t.log.Printlnf("RPL price: %.6f ETH", math.RoundDown(eth.WeiToEth(rplPrice), 6))
 
     // Submit RPL price
-    if err := t.submitRplPrice(blockNumber ,rplPrice); err != nil {
+    if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplState); err != nil {
         return fmt.Errorf("Could not submit RPL price: %w", err)
     }
 
@@ -250,8 +257,8 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 }
 
 
-// Submit RPL price
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) error {
+// Submit RPL price and total effective RPL stake
+func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveRplStake *big.Int) error {
 
     // Log
     t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
@@ -263,7 +270,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) e
     }
 
     // Submit RPL price
-    if _, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, opts); err != nil {
+    if _, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts); err != nil {
         return err
     }
 

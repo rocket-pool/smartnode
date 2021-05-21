@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -93,6 +94,14 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
         return err
     })
 
+    // Get consensus status
+    wg1.Go(func() error {
+        var err error
+        inConsensus, err := network.InConsensus(rp, nil)
+        response.InConsensus = inConsensus
+        return err
+    })
+
     // Get gas estimate
     wg1.Go(func() error {
         opts, err := w.GetNodeAccountTransactor()
@@ -147,7 +156,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
     }
 
     // Update & return response
-    response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.UnbondedMinipoolsAtMax || response.DepositDisabled)
+    response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.UnbondedMinipoolsAtMax || response.DepositDisabled || !response.InConsensus)
     return &response, nil
 
 }

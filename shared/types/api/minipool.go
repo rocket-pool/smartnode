@@ -99,6 +99,7 @@ type CanCloseMinipoolResponse struct {
     Error string                    `json:"error"`
     CanClose bool                   `json:"canClose"`
     InvalidStatus bool              `json:"invalidStatus"`
+    InConsensus bool                `json:"inConsensus"`
     GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type CloseMinipoolResponse struct {
