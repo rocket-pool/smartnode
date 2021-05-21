@@ -1,18 +1,18 @@
 package auction
 
 import (
-    "math/big"
-    "testing"
+	"math/big"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/auction"
-    "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/auction"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    auctionutils "github.com/rocket-pool/rocketpool-go/tests/testutils/auction"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	auctionutils "github.com/rocket-pool/rocketpool-go/tests/testutils/auction"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
@@ -98,7 +98,7 @@ func TestLotDetails(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Set network parameters
-    if _, err := network.SubmitPrices(rp, 1, eth.EthToWei(1), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := network.SubmitPrices(rp, 1, eth.EthToWei(1), eth.EthToWei(24), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotStartingPriceRatio(rp, 1.0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotReservePriceRatio(rp, 0.5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotMaximumEthValue(rp, eth.EthToWei(10), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }

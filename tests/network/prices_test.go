@@ -1,13 +1,13 @@
 package network
 
 import (
-    "testing"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
@@ -23,7 +23,8 @@ func TestSubmitPrices(t *testing.T) {
     // Submit prices
     var pricesBlock uint64 = 100
     rplPrice := eth.EthToWei(1000)
-    if _, err := network.SubmitPrices(rp, pricesBlock, rplPrice, trustedNodeAccount.GetTransactor()); err != nil {
+    effectiveRplStake := eth.EthToWei(24000)
+    if _, err := network.SubmitPrices(rp, pricesBlock, rplPrice, effectiveRplStake, trustedNodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
