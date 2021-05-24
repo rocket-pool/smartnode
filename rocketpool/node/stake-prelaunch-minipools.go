@@ -1,30 +1,33 @@
 package node
 
 import (
-    "context"
-    "errors"
-    "fmt"
-    "os"
-    "os/exec"
-    "time"
+	"context"
+	"errors"
+	"fmt"
+	"math/big"
+	"os"
+	"os/exec"
+	"time"
 
-    "github.com/docker/docker/api/types"
-    "github.com/docker/docker/client"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
-    "github.com/rocket-pool/smartnode/shared/services/config"
-    "github.com/rocket-pool/smartnode/shared/services/wallet"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
-    "github.com/rocket-pool/smartnode/shared/utils/validator"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
-
 
 // Settings
 const ValidatorContainerSuffix = "_validator"
@@ -208,13 +211,60 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Conf
         return err
     }
 
-    // Stake minipool
-    if _, err := mp.Stake(
-        rptypes.BytesToValidatorPubkey(depositData.PublicKey),
-        rptypes.BytesToValidatorSignature(depositData.Signature),
+    pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
+    signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+
+    // Get the gas estimates
+    gasInfo, err := mp.EstimateStakeGas(
+        pubKey,
+        signature,
         depositDataRoot,
         opts,
-    ); err != nil {
+    )
+    if err != nil {
+        return fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
+    }
+    gasPrice := gasInfo.ReqGasPrice
+    if gasPrice == nil {
+        gasPrice = gasInfo.EstGasPrice
+    }
+    
+    // Print the total TX cost
+    var gas *big.Int 
+    if gasInfo.ReqGasLimit != 0 {
+        gas = new(big.Int).SetUint64(gasInfo.ReqGasLimit)
+    } else {
+        gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
+    }
+    totalGasWei := new(big.Int).Mul(gasPrice, gas)
+    t.log.Printf("Staking the minipool will use a gas price of %.6f Gwei, for a total of %.6f ETH.",
+        eth.WeiToGwei(gasPrice),
+        math.RoundDown(eth.WeiToEth(totalGasWei), 6))
+
+    // Stake minipool
+    hash, err := mp.Stake(
+        pubKey,
+        signature,
+        depositDataRoot,
+        opts,
+    )
+    if err != nil {
+        return err
+    }
+
+    // Print TX info
+    txWatchUrl := t.cfg.Smartnode.TxWatchUrl
+    hashString := hash.String()
+
+    t.log.Printf("Transaction has been submitted with hash %s.\n", hashString)
+    if txWatchUrl != "" {
+        t.log.Printf("You may follow its progress by visiting:\n")
+        t.log.Printf("%s/%s\n\n", txWatchUrl, hashString)
+    }
+    t.log.Println("Waiting for the transaction to be mined...")
+
+    // Wait for the TX to be mined
+    if _, err = utils.WaitForTransaction(t.rp.Client, hash); err != nil {
         return err
     }
 

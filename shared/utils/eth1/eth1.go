@@ -36,7 +36,7 @@ func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
         if err != nil {
             return fmt.Errorf("Could not get latest nonce: %w", err)
         }
-        if customNonce <= latestMinedNonce {
+        if customNonce < latestMinedNonce {
             return fmt.Errorf("Can't use nonce %d because it has already been mined.", customNonce)
         }
 
