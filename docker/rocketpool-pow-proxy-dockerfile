@@ -13,7 +13,7 @@ ADD ./go.sum /src/go.sum
 
 # Compile & install
 WORKDIR /src
-RUN go install ./rocketpool-pow-proxy
+RUN CGO_ENABLED=0 go install ./rocketpool-pow-proxy
 
 
 ###
@@ -21,11 +21,12 @@ RUN go install ./rocketpool-pow-proxy
 ###
 
 
-# Start from ubuntu image
-FROM ubuntu:20.10
+# Start from Alpine image
+FROM alpine:latest
 
-# Install OS dependencies
-RUN apt-get update && apt-get install -y ca-certificates
+# Add an unprivileged user
+RUN addgroup -S rp_proxy && adduser -S rp_proxy -G rp_proxy
+USER rp_proxy
 
 # Copy binary
 COPY --from=builder /go/bin/rocketpool-pow-proxy /go/bin/rocketpool-pow-proxy

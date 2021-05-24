@@ -25,12 +25,12 @@ type HttpProxyServer struct {
 func NewHttpProxyServer(port string, providerUrl string, network string, projectId string, providerType string) *HttpProxyServer {
 
     // Default provider to Infura
-    if providerUrl == "" && providerType == "infura" {
+    if providerType == "infura" {
         providerUrl = fmt.Sprintf(InfuraURL, network, projectId)
-    } else if providerUrl == "" && providerType == "pocket" {
+    } else if providerType == "pocket" {
         providerUrl = fmt.Sprintf(PocketURL, network, projectId)
-    } else {
-        fmt.Printf("Unknown provider %s", providerType)
+    } else if providerUrl == "" {
+        fmt.Printf("Unknown provider [%s] and no providerUrl was provided, exiting.\n", providerType)
         os.Exit(1)
     }
 
