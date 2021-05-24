@@ -95,7 +95,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
             fmt.Println("The withdrawal delay period has not passed.")
         }
         if !canWithdraw.InConsensus {
-            fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.")
+            fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
         }
         return nil
     }

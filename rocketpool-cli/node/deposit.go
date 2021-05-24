@@ -85,7 +85,7 @@ func nodeDeposit(c *cli.Context) error {
             fmt.Println("Node deposits are currently disabled.")
         }
         if !canDeposit.InConsensus {
-            fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.")
+            fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
         }
         return nil
     }

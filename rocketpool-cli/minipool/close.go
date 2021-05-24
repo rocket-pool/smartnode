@@ -109,6 +109,22 @@ func closeMinipools(c *cli.Context) error {
     // Close minipools
     for _, minipool := range selectedMinipools {
 
+        canResponse, err := rp.CanCloseMinipool(minipool.Address)
+        if err != nil {
+            fmt.Printf("Could not check closing status for minipool %s: %s.\n", minipool.Address.Hex(), err)
+            continue
+        }
+        if !canResponse.CanClose {
+            fmt.Printf("Cannot close minipool %s:\n", minipool.Address.Hex())
+            if canResponse.InvalidStatus {
+                fmt.Println("The minipool is not in a closeable state.")
+            }
+            if !canResponse.InConsensus {
+                fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
+            }
+            continue
+        }
+
         response, err := rp.CloseMinipool(minipool.Address)
         if err != nil {
             fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err)
