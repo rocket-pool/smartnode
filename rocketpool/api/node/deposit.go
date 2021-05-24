@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 
@@ -171,6 +173,12 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
         return nil, err
     }
     opts.Value = amountWei
+
+    // Override the provided pending TX if requested 
+    err = eth1.CheckForNonceOverride(c, opts)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+    }
 
     // Deposit
     hash, err := node.Deposit(rp, minNodeFee, opts)
