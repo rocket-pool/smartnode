@@ -413,3 +413,37 @@ func (c *Client) NodeSync() (api.NodeSyncProgressResponse, error) {
     return response, nil
 }
 
+
+// Check whether the node has RPL rewards available to claim
+func (c *Client) CanNodeClaimRpl() (api.CanNodeClaimRplResponse, error) {
+    responseBytes, err := c.callAPI("node can-claim-rpl-rewards")
+    if err != nil {
+        return api.CanNodeClaimRplResponse{}, fmt.Errorf("Could not get can node claim rpl rewards status: %w", err)
+    }
+    var response api.CanNodeClaimRplResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanNodeClaimRplResponse{}, fmt.Errorf("Could not decode can node claim rpl rewards response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanNodeClaimRplResponse{}, fmt.Errorf("Could not get can node claim rpl rewards status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Claim available RPL rewards
+func (c *Client) NodeClaimRpl() (api.NodeClaimRplResponse, error) {
+    responseBytes, err := c.callAPI("node claim-rpl-rewards")
+    if err != nil {
+        return api.NodeClaimRplResponse{}, fmt.Errorf("Could not claim rpl rewards: %w", err)
+    }
+    var response api.NodeClaimRplResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeClaimRplResponse{}, fmt.Errorf("Could not decode node claim rpl rewards response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeClaimRplResponse{}, fmt.Errorf("Could not claim rpl rewards: %s", response.Error)
+    }
+    return response, nil
+}
+
