@@ -31,6 +31,7 @@ type RocketPoolConfig struct {
         ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
         GasPrice string                 `yaml:"gasPrice,omitempty"`
         GasLimit string                 `yaml:"gasLimit,omitempty"`
+        RplClaimGasThreshold string     `yaml:"rplClaimGasThreshold,omitempty"`
         TxWatchUrl string               `yaml:"txWatchUrl,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
