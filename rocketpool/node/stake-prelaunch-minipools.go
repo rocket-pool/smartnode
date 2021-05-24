@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
 	"os"
 	"os/exec"
 	"time"
@@ -15,8 +14,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -24,8 +21,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -224,22 +221,9 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Conf
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
     }
-    gasPrice := gasInfo.ReqGasPrice
-    if gasPrice == nil {
-        gasPrice = gasInfo.EstGasPrice
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+        return nil
     }
-    
-    // Print the total TX cost
-    var gas *big.Int 
-    if gasInfo.ReqGasLimit != 0 {
-        gas = new(big.Int).SetUint64(gasInfo.ReqGasLimit)
-    } else {
-        gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
-    }
-    totalGasWei := new(big.Int).Mul(gasPrice, gas)
-    t.log.Printf("Staking the minipool will use a gas price of %.6f Gwei, for a total of %.6f ETH.",
-        eth.WeiToGwei(gasPrice),
-        math.RoundDown(eth.WeiToEth(totalGasWei), 6))
 
     // Stake minipool
     hash, err := mp.Stake(
@@ -252,19 +236,9 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Conf
         return err
     }
 
-    // Print TX info
-    txWatchUrl := t.cfg.Smartnode.TxWatchUrl
-    hashString := hash.String()
-
-    t.log.Printf("Transaction has been submitted with hash %s.\n", hashString)
-    if txWatchUrl != "" {
-        t.log.Printf("You may follow its progress by visiting:\n")
-        t.log.Printf("%s/%s\n\n", txWatchUrl, hashString)
-    }
-    t.log.Println("Waiting for the transaction to be mined...")
-
-    // Wait for the TX to be mined
-    if _, err = utils.WaitForTransaction(t.rp.Client, hash); err != nil {
+    // Print TX info and wait for it to be mined
+    err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+    if err != nil {
         return err
     }
 

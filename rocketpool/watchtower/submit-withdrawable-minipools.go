@@ -18,7 +18,9 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -32,6 +34,7 @@ const MinipoolWithdrawableDetailsBatchSize = 20
 type submitWithdrawableMinipools struct {
     c *cli.Context
     log log.ColorLogger
+    cfg config.RocketPoolConfig
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     bc beacon.Client
@@ -51,6 +54,8 @@ type minipoolWithdrawableDetails struct {
 func newSubmitWithdrawableMinipools(c *cli.Context, logger log.ColorLogger) (*submitWithdrawableMinipools, error) {
 
     // Get services
+    cfg, err := services.GetConfig(c)
+    if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
@@ -62,6 +67,7 @@ func newSubmitWithdrawableMinipools(c *cli.Context, logger log.ColorLogger) (*su
     return &submitWithdrawableMinipools{
         c: c,
         log: logger,
+        cfg: cfg,
         w: w,
         rp: rp,
         bc: bc,
@@ -354,8 +360,24 @@ func (t *submitWithdrawableMinipools) submitWithdrawableMinipool(details minipoo
         return err
     }
 
+    // Get the gas estimates
+    gasInfo, err := minipool.EstimateSubmitMinipoolWithdrawableGas(t.rp, details.Address, details.StartBalance, details.EndBalance, opts)
+    if err != nil {
+        return fmt.Errorf("Could not estimate the gas required to submit minipool withdrawable status: %w", err)
+    }
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+        return nil
+    }
+
     // Dissolve
-    if _, err := minipool.SubmitMinipoolWithdrawable(t.rp, details.Address, details.StartBalance, details.EndBalance, opts); err != nil {
+    hash, err := minipool.SubmitMinipoolWithdrawable(t.rp, details.Address, details.StartBalance, details.EndBalance, opts)
+    if err != nil {
+        return err
+    }
+
+    // Print TX info and wait for it to be mined
+    err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+    if err != nil {
         return err
     }
 

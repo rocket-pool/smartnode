@@ -7,13 +7,13 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -102,35 +102,14 @@ func (t *claimRplRewards) run() error {
         return err
     }
 
-    // Get the gas estimates
+    // Get the gas estimates and check the gas threshold
     gasInfo, err := rewards.EstimateClaimNodeRewardsGas(t.rp, opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
     }
-
-    // Check against the threshold if gas isn't explicitly set
-    gasPrice := gasInfo.ReqGasPrice
-    if gasPrice == nil {
-        gasPrice = gasInfo.EstGasPrice
-        gasThreshold := new(big.Int).SetUint64(t.gasThreshold * uint64(eth.WeiPerGwei))
-        if gasPrice.Cmp(gasThreshold) != -1 {
-            t.log.Printf("Current network gas price is %.6f Gwei, which is not lower than the set threshold of %.6f Gwei. " + 
-                "Not claiming RPL.\n", eth.WeiToGwei(gasInfo.EstGasPrice), eth.WeiToGwei(gasThreshold))
-            return nil
-        } 
+    if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log) {
+        return nil
     }
-    
-    // Print the total TX cost
-    var gas *big.Int 
-    if gasInfo.ReqGasLimit != 0 {
-        gas = new(big.Int).SetUint64(gasInfo.ReqGasLimit)
-    } else {
-        gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
-    }
-    totalGasWei := new(big.Int).Mul(gasPrice, gas)
-    t.log.Printf("Claiming RPL will use a gas price of %.6f Gwei, for a total of %.6f ETH.",
-        eth.WeiToGwei(gasPrice),
-        math.RoundDown(eth.WeiToEth(totalGasWei), 6))
 
     // Claim rewards
     hash, err := rewards.ClaimNodeRewards(t.rp, opts)
@@ -138,17 +117,9 @@ func (t *claimRplRewards) run() error {
         return err
     }
 
-    txWatchUrl := t.cfg.Smartnode.TxWatchUrl
-    hashString := hash.String()
-
-    t.log.Printf("Transaction has been submitted with hash %s.\n", hashString)
-    if txWatchUrl != "" {
-        t.log.Printf("You may follow its progress by visiting:\n")
-        t.log.Printf("%s/%s\n\n", txWatchUrl, hashString)
-    }
-    t.log.Println("Waiting for the transaction to be mined...")
-
-    if _, err = utils.WaitForTransaction(t.rp.Client, hash); err != nil {
+    // Print TX info and wait for it to be mined
+    err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+    if err != nil {
         return err
     }
 

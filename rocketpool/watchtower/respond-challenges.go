@@ -1,16 +1,18 @@
 package watchtower
 
 import (
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/urfave/cli"
+	"fmt"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/config"
-    "github.com/rocket-pool/smartnode/shared/services/wallet"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/urfave/cli"
+
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
-
 
 // Respond to challenges task
 type respondChallenges struct {
@@ -89,8 +91,24 @@ func (t *respondChallenges) run() error {
         return err
     }
 
+    // Get the gas estimates
+    gasInfo, err := trustednode.EstimateDecideChallengeGas(t.rp, nodeAccount.Address, opts)
+    if err != nil {
+        return fmt.Errorf("Could not estimate the gas required to respond to the challenge: %w", err)
+    }
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+        return nil
+    }
+
     // Respond to challenge
-    if _, err := trustednode.DecideChallenge(t.rp, nodeAccount.Address, opts); err != nil {
+    hash, err := trustednode.DecideChallenge(t.rp, nodeAccount.Address, opts)
+    if err != nil {
+        return err
+    }
+
+    // Print TX info and wait for it to be mined
+    err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+    if err != nil {
         return err
     }
 

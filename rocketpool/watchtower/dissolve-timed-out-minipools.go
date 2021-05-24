@@ -1,24 +1,25 @@
 package watchtower
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/ethclient"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/wallet"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
-
 
 // Settings
 const MinipoolStatusBatchSize = 20
@@ -28,6 +29,7 @@ const MinipoolStatusBatchSize = 20
 type dissolveTimedOutMinipools struct {
     c *cli.Context
     log log.ColorLogger
+    cfg config.RocketPoolConfig
     w *wallet.Wallet
     ec *ethclient.Client
     rp *rocketpool.RocketPool
@@ -38,6 +40,8 @@ type dissolveTimedOutMinipools struct {
 func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*dissolveTimedOutMinipools, error) {
 
     // Get services
+    cfg, err := services.GetConfig(c)
+    if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
@@ -49,6 +53,7 @@ func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*diss
     return &dissolveTimedOutMinipools{
         c: c,
         log: logger,
+        cfg: cfg,
         w: w,
         ec: ec,
         rp: rp,
@@ -210,8 +215,24 @@ func (t *dissolveTimedOutMinipools) dissolveMinipool(mp *minipool.Minipool) erro
         return err
     }
 
+    // Get the gas estimates
+    gasInfo, err := mp.EstimateDissolveGas(opts)
+    if err != nil {
+        return fmt.Errorf("Could not estimate the gas required to dissolve the minipool: %w", err)
+    }
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+        return nil
+    }
+
     // Dissolve
-    if _, err := mp.Dissolve(opts); err != nil {
+    hash, err := mp.Dissolve(opts)
+    if err != nil {
+        return err
+    }
+
+    // Print TX info and wait for it to be mined
+    err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+    if err != nil {
         return err
     }
 
