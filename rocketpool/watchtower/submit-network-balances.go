@@ -1,35 +1,36 @@
 package watchtower
 
 import (
-    "context"
-    "fmt"
-    "math/big"
+	"context"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/crypto"
-    "github.com/ethereum/go-ethereum/ethclient"
-    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/deposit"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
-    "github.com/rocket-pool/smartnode/shared/services/wallet"
-    "github.com/rocket-pool/smartnode/shared/utils/eth2"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
-    "github.com/rocket-pool/smartnode/shared/utils/rp"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
-
 
 // Settings
 const MinipoolBalanceDetailsBatchSize = 20
@@ -39,6 +40,7 @@ const MinipoolBalanceDetailsBatchSize = 20
 type submitNetworkBalances struct {
     c *cli.Context
     log log.ColorLogger
+    cfg config.RocketPoolConfig
     w *wallet.Wallet
     ec *ethclient.Client
     rp *rocketpool.RocketPool
@@ -65,6 +67,8 @@ type minipoolBalanceDetails struct {
 func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNetworkBalances, error) {
 
     // Get services
+    cfg, err := services.GetConfig(c)
+    if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     ec, err := services.GetEthClient(c)
@@ -78,6 +82,7 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNe
     return &submitNetworkBalances{
         c: c,
         log: logger,
+        cfg: cfg,
         w: w,
         ec: ec,
         rp: rp,
@@ -542,8 +547,24 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
         return err
     }
 
+    // Get the gas estimates
+    gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+    if err != nil {
+        return fmt.Errorf("Could not estimate the gas required to submit network balances: %w", err)
+    }
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+        return nil
+    }
+
     // Submit balances
-    if _, err := network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts); err != nil {
+    hash, err := network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+    if err != nil {
+        return err
+    }
+
+    // Print TX info and wait for it to be mined
+    err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+    if err != nil {
         return err
     }
 

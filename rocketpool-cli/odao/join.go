@@ -26,6 +26,11 @@ func join(c *cli.Context) error {
         return err
     }
 
+    // If a custom nonce is set, print the multi-transaction warning
+    if c.GlobalUint64("nonce") != 0 {
+        cliutils.PrintMultiTransactionNonceWarning()
+    }
+
     // Check for fixed-supply RPL balance
     if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 
@@ -39,7 +44,12 @@ func join(c *cli.Context) error {
             }
             hash := response.ApproveTxHash
             fmt.Printf("Approving old RPL for swap...\n")
-            cliutils.PrintTransactionHash(rp, hash)
+            cliutils.PrintTransactionHashNoCancel(rp, hash)
+
+            // If a custom nonce is set, increment it for the next transaction
+            if c.GlobalUint64("nonce") != 0 {
+                rp.IncrementCustomNonce()
+            }
             
             // Swap RPL
             swapResponse, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL, hash)
@@ -50,6 +60,11 @@ func join(c *cli.Context) error {
             cliutils.PrintTransactionHash(rp, swapResponse.SwapTxHash)
             if _, err = rp.WaitForTransaction(swapResponse.SwapTxHash); err != nil {
                 return err
+            }
+
+            // If a custom nonce is set, increment it for the next transaction
+            if c.GlobalUint64("nonce") != 0 {
+                rp.IncrementCustomNonce()
             }
 
             // log
@@ -97,6 +112,11 @@ func join(c *cli.Context) error {
     hash := response.ApproveTxHash
     fmt.Printf("Approving RPL for joining the Oracle DAO...\n")
     cliutils.PrintTransactionHashNoCancel(rp, hash)
+
+    // If a custom nonce is set, increment it for the next transaction
+    if c.GlobalUint64("nonce") != 0 {
+        rp.IncrementCustomNonce()
+    }
 
     // Join the ODAO
     joinResponse, err := rp.JoinTNDAO(hash)

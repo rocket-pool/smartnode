@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -269,8 +270,24 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
         return err
     }
 
+    // Get the gas estimates
+    gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)
+    if err != nil {
+        return fmt.Errorf("Could not estimate the gas required to dissolve the minipool: %w", err)
+    }
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+        return nil
+    }
+
     // Submit RPL price
-    if _, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts); err != nil {
+    hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)
+    if err != nil {
+        return err
+    }
+
+    // Print TX info and wait for it to be mined
+    err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+    if err != nil {
         return err
     }
 

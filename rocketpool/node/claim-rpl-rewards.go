@@ -1,20 +1,22 @@
 package node
 
 import (
-    "math/big"
+	"fmt"
+	"math/big"
+	"strconv"
 
-    "github.com/rocket-pool/rocketpool-go/rewards"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/services/config"
-    "github.com/rocket-pool/smartnode/shared/services/wallet"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
-
 
 // Claim RPL rewards task
 type claimRplRewards struct {
@@ -23,6 +25,7 @@ type claimRplRewards struct {
     cfg config.RocketPoolConfig
     w *wallet.Wallet
     rp *rocketpool.RocketPool
+    gasThreshold uint64
 }
 
 
@@ -37,6 +40,15 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
+    // Check if auto-claiming is disabled
+    gasThreshold, err := strconv.ParseUint(cfg.Smartnode.RplClaimGasThreshold, 10, 0)
+    if err != nil {
+        return nil, fmt.Errorf("Error parsing RPL claim gas threshold: %w", err)
+    }
+    if gasThreshold == 0 {
+        logger.Println("RPL claim gas threshold is set to 0, automatic claims will be disabled.")
+    }
+
     // Return task
     return &claimRplRewards{
         c: c,
@@ -44,6 +56,7 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
         cfg: cfg,
         w: w,
         rp: rp,
+        gasThreshold: gasThreshold,
     }, nil
 
 }
@@ -51,6 +64,11 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 
 // Claim RPL rewards
 func (t *claimRplRewards) run() error {
+
+    // Check to see if autoclaim is disabled
+    if t.gasThreshold == 0 {
+        return nil;
+    }
 
     // Wait for eth client to sync
     if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -84,8 +102,24 @@ func (t *claimRplRewards) run() error {
         return err
     }
 
+    // Get the gas estimates and check the gas threshold
+    gasInfo, err := rewards.EstimateClaimNodeRewardsGas(t.rp, opts)
+    if err != nil {
+        return fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
+    }
+    if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log) {
+        return nil
+    }
+
     // Claim rewards
-    if _, err := rewards.ClaimNodeRewards(t.rp, opts); err != nil {
+    hash, err := rewards.ClaimNodeRewards(t.rp, opts)
+    if err != nil {
+        return err
+    }
+
+    // Print TX info and wait for it to be mined
+    err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+    if err != nil {
         return err
     }
 

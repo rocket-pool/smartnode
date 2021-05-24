@@ -191,6 +191,28 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "claim-rpl",
+                Aliases:   []string{"c"},
+                Usage:     "Claim available RPL rewards for the current checkpoint",
+                UsageText: "rocketpool node claim-rpl [options]",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm RPL claim",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return nodeClaimRpl(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "withdraw-rpl",
                 Aliases:   []string{"i"},
                 Usage:     "Withdraw RPL staked against the node",

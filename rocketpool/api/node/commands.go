@@ -449,6 +449,37 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "can-claim-rpl-rewards",
+                Usage:     "Check whether the node has RPL rewards available to claim",
+                UsageText: "rocketpool api node can-claim-rpl-rewards",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canNodeClaimRpl(c))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "claim-rpl-rewards",
+                Usage:     "Claim available RPL rewards",
+                UsageText: "rocketpool api node claim-rpl-rewards",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(nodeClaimRpl(c))
+                    return nil
+
+                },
+            },
+
         },
     })
 }

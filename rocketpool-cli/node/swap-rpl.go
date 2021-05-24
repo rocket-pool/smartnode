@@ -21,6 +21,11 @@ func nodeSwapRpl(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
+    // If a custom nonce is set, print the multi-transaction warning
+    if c.GlobalUint64("nonce") != 0 {
+        cliutils.PrintMultiTransactionNonceWarning()
+    }
+
     // Get swap amount
     var amountWei *big.Int
     if c.String("amount") == "all" {
@@ -98,6 +103,11 @@ func nodeSwapRpl(c *cli.Context) error {
     hash := response.ApproveTxHash
     fmt.Printf("Approving old RPL for swap...\n")
     cliutils.PrintTransactionHashNoCancel(rp, hash)
+
+    // If a custom nonce is set, increment it for the next transaction
+    if c.GlobalUint64("nonce") != 0 {
+        rp.IncrementCustomNonce()
+    }
     
     // Swap RPL
     swapResponse, err := rp.NodeSwapRpl(amountWei, hash)

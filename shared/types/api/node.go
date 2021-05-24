@@ -196,3 +196,16 @@ type NodeSyncProgressResponse struct {
     Eth2Synced bool                     `json:"eth2Synced"`
 }
 
+
+type CanNodeClaimRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    RplAmount *big.Int                  `json:"rplAmount"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+}
+type NodeClaimRplResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
+}
+

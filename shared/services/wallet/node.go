@@ -1,16 +1,15 @@
 package wallet
 
 import (
-    "crypto/ecdsa"
-    "errors"
-    "fmt"
+	"crypto/ecdsa"
+	"errors"
+	"fmt"
 
-    "github.com/btcsuite/btcutil/hdkeychain"
-    "github.com/ethereum/go-ethereum/accounts"
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/crypto"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/crypto"
 )
-
 
 // Config
 const NodeKeyPath = "m/44'/60'/0'/0/%d"
