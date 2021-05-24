@@ -50,12 +50,12 @@ func main() {
         },
         cli.StringFlag{
             Name:  "httpProviderUrl, u",
-            Usage: "External Eth 1.0 provider HTTP `URL`, including the remote port (defaults to Infura)",
+            Usage: "External Eth 1.0 provider HTTP `URL`, including the remote port (ignored if 'providerType' is used)",
             Value: "",
         },
         cli.StringFlag{
             Name:  "wsProviderUrl, r",
-            Usage: "External Eth 1.0 provider Websocket `URL`, including the remote port (defaults to Infura)",
+            Usage: "External Eth 1.0 provider Websocket `URL`, including the remote port (ignored if 'providerType' is used)",
             Value: "",
         },
         cli.StringFlag{
@@ -91,7 +91,7 @@ func main() {
     
         // Websocket server
         go func() {
-            if c.GlobalString("wsProviderUrl") != "" {
+            if c.GlobalString("providerType") == "infura" || c.GlobalString("wsProviderUrl") != "" {
                 proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("wsProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
                 proxyServer.Start()
             } else {
