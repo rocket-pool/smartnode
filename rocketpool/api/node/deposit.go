@@ -174,7 +174,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     }
     opts.Value = amountWei
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)

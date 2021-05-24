@@ -131,7 +131,7 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)

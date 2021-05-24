@@ -89,7 +89,7 @@ func refundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Refund
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)

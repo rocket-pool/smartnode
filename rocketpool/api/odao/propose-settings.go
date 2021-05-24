@@ -88,7 +88,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.ProposeTN
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
@@ -156,7 +156,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
@@ -224,7 +224,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
@@ -292,7 +292,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
@@ -360,7 +360,7 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
@@ -428,7 +428,7 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
@@ -496,7 +496,7 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
@@ -564,7 +564,7 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
         return nil, err
     }
 
-    // Override the last pending TX if requested 
+    // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
