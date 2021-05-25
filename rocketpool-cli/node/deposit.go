@@ -98,6 +98,9 @@ func nodeDeposit(c *cli.Context) error {
 
     // Check deposit can be made
     canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee)
+    if err != nil {
+        return err
+    }
     if !canDeposit.CanDeposit {
         fmt.Println("Cannot make node deposit:")
         if canDeposit.InsufficientBalance {
@@ -116,9 +119,6 @@ func nodeDeposit(c *cli.Context) error {
             fmt.Println("Node deposits are currently disabled.")
         }
         return nil
-    }
-    if err != nil {
-        return err
     }
 
     // Check to see if eth2 is synced
