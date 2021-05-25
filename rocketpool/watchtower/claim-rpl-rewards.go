@@ -26,7 +26,7 @@ type claimRplRewards struct {
     cfg config.RocketPoolConfig
     w *wallet.Wallet
     rp *rocketpool.RocketPool
-    gasThreshold uint64
+    gasThreshold float64
 }
 
 
@@ -42,7 +42,7 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
     if err != nil { return nil, err }
     
     // Check if auto-claiming is disabled
-    gasThreshold, err := strconv.ParseUint(cfg.Smartnode.RplClaimGasThreshold, 10, 0)
+    gasThreshold, err := strconv.ParseFloat(cfg.Smartnode.RplClaimGasThreshold, 0)
     if err != nil {
         return nil, fmt.Errorf("Error parsing RPL claim gas threshold: %w", err)
     }

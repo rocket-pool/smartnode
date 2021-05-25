@@ -15,7 +15,7 @@ import (
 )
 
 // Print the gas price and cost of a TX
-func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThreshold uint64, logger log.ColorLogger) (bool) {
+func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThreshold float64, logger log.ColorLogger) (bool) {
 
     // Use the requested gas price if provided
     gasPrice := gasInfo.ReqGasPrice
@@ -25,9 +25,10 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 
     // Check the gas threshold if requested
     if checkThreshold {
-        gasThreshold := new(big.Int).SetUint64(gasThreshold * uint64(eth.WeiPerGwei))
+        gasThresholdGwei := math.RoundUp(gasThreshold * eth.WeiPerGwei, 0)
+        gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdGwei))
         if gasPrice.Cmp(gasThreshold) != -1 {
-            logger.Printlnf("Current network gas price is %.6f Gwei, which is not lower than the set threshold of %.6f Gwei. " + 
+            logger.Printlnf("Current network gas price is %.6f Gwei, which is higher than the set threshold of %.6f Gwei. " + 
                 "Aborting the transaction.", eth.WeiToGwei(gasInfo.EstGasPrice), eth.WeiToGwei(gasThreshold))
             return false
         } 

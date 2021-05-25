@@ -289,8 +289,6 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64) (api.CanNode
     if response.Error != "" {
         return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %s", response.Error)
     }
-    if response.GasInfo.ReqGasPrice == nil { response.GasInfo.ReqGasPrice = big.NewInt(0) }
-    if response.GasInfo.EstGasPrice == nil { response.GasInfo.EstGasPrice = big.NewInt(0) }
     return response, nil
 }
 
