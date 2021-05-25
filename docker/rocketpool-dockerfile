@@ -4,7 +4,7 @@
 
 
 # Start from golang image
-FROM golang:latest AS builder
+FROM golang:alpine AS builder
 
 # Copy source files
 ADD ./rocketpool /src/rocketpool
@@ -14,6 +14,8 @@ ADD ./go.sum /src/go.sum
 
 # Compile & install
 WORKDIR /src
+RUN apk add --no-cache build-base linux-headers git
+RUN git clone https://github.com/rocket-pool/rocketpool-go.git /rocketpool-go
 RUN go install ./rocketpool
 
 
@@ -22,11 +24,11 @@ RUN go install ./rocketpool
 ###
 
 
-# Start from ubuntu image
-FROM ubuntu:20.10
+# Start from Alpine image
+FROM alpine:latest
 
-# Install OS dependencies
-RUN apt-get update && apt-get install -y ca-certificates
+# Add C libraries
+RUN apk add --no-cache libgcc libstdc++
 
 # Copy binary
 COPY --from=builder /go/bin/rocketpool /go/bin/rocketpool
