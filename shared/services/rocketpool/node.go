@@ -40,7 +40,7 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 
 // Check whether the node can be registered
 func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node can-register \"%s\"", timezoneLocation))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-register %s", timezoneLocation))
     if err != nil {
         return api.CanRegisterNodeResponse{}, fmt.Errorf("Could not get can register node status: %w", err)
     }
@@ -57,7 +57,7 @@ func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeRe
 
 // Register the node
 func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node register \"%s\"", timezoneLocation))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node register %s", timezoneLocation))
     if err != nil {
         return api.RegisterNodeResponse{}, fmt.Errorf("Could not register node: %w", err)
     }
@@ -108,7 +108,7 @@ func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address, conf
 
 // Checks if the node's timezone location can be set
 func (c *Client) CanSetNodeTimezone(timezoneLocation string) (api.CanSetNodeTimezoneResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-timezone \"%s\"", timezoneLocation))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-timezone %s", timezoneLocation))
     if err != nil {
         return api.CanSetNodeTimezoneResponse{}, fmt.Errorf("Could not get can set node timezone: %w", err)
     }
@@ -125,7 +125,7 @@ func (c *Client) CanSetNodeTimezone(timezoneLocation string) (api.CanSetNodeTime
 
 // Set the node's timezone location
 func (c *Client) SetNodeTimezone(timezoneLocation string) (api.SetNodeTimezoneResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node set-timezone \"%s\"", timezoneLocation))
+    responseBytes, err := c.callAPI(fmt.Sprintf("node set-timezone %s", timezoneLocation))
     if err != nil {
         return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not set node timezone: %w", err)
     }

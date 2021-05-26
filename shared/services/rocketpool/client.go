@@ -460,7 +460,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     if err != nil {
         return "", err
     }
-    composeFileFlags[0] = fmt.Sprintf("-f \"%s/%s\"", expandedConfigPath, ComposeFile)
+    composeFileFlags[0] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, ComposeFile))))
     for fi, composeFile := range composeFiles {
         expandedFile, err := homedir.Expand(composeFile)
         if err != nil {
