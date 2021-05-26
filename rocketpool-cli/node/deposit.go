@@ -62,34 +62,6 @@ func nodeDeposit(c *cli.Context) error {
     }
     amountWei := eth.EthToWei(amount)
 
-    // Check deposit can be made
-    canDeposit, err := rp.CanNodeDeposit(amountWei)
-    if err != nil {
-        return err
-    }
-    if !canDeposit.CanDeposit {
-        fmt.Println("Cannot make node deposit:")
-        if canDeposit.InsufficientBalance {
-            fmt.Println("The node's ETH balance is insufficient.")
-        }
-        if canDeposit.InsufficientRplStake {
-            fmt.Println("The node has not staked enough RPL to collateralize a new minipool.")
-        }
-        if canDeposit.InvalidAmount {
-            fmt.Println("The deposit amount is invalid.")
-        }
-        if canDeposit.UnbondedMinipoolsAtMax {
-            fmt.Println("The node cannot create any more unbonded minipools.")
-        }
-        if canDeposit.DepositDisabled {
-            fmt.Println("Node deposits are currently disabled.")
-        }
-        if !canDeposit.InConsensus {
-            fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
-        }
-        return nil
-    }
-
     // Get network node fees
     nodeFees, err := rp.NodeFee()
     if err != nil {
@@ -122,6 +94,34 @@ func nodeDeposit(c *cli.Context) error {
         // Prompt for min node fee
         minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)
 
+    }
+
+    // Check deposit can be made
+    canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee)
+    if err != nil {
+        return err
+    }
+    if !canDeposit.CanDeposit {
+        fmt.Println("Cannot make node deposit:")
+        if canDeposit.InsufficientBalance {
+            fmt.Println("The node's ETH balance is insufficient.")
+        }
+        if canDeposit.InsufficientRplStake {
+            fmt.Println("The node has not staked enough RPL to collateralize a new minipool.")
+        }
+        if canDeposit.InvalidAmount {
+            fmt.Println("The deposit amount is invalid.")
+        }
+        if canDeposit.UnbondedMinipoolsAtMax {
+            fmt.Println("The node cannot create any more unbonded minipools.")
+        }
+        if canDeposit.DepositDisabled {
+            fmt.Println("Node deposits are currently disabled.")
+        }
+        if !canDeposit.InConsensus {
+            fmt.Println("The RPL price and total effective staked RPL of the network are still being voted on by the Oracle DAO.\nPlease try again in a few minutes.")
+        }
+        return nil
     }
 
     // Check to see if eth2 is synced

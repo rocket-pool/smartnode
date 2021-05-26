@@ -277,8 +277,8 @@ func (c *Client) NodeWithdrawRpl(amountWei *big.Int) (api.NodeWithdrawRplRespons
 
 
 // Check whether the node can make a deposit
-func (c *Client) CanNodeDeposit(amountWei *big.Int) (api.CanNodeDepositResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s", amountWei.String()))
+func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64) (api.CanNodeDepositResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f", amountWei.String(), minFee))
     if err != nil {
         return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %w", err)
     }
@@ -289,8 +289,6 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int) (api.CanNodeDepositResponse,
     if response.Error != "" {
         return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %s", response.Error)
     }
-    if response.GasInfo.ReqGasPrice == nil { response.GasInfo.ReqGasPrice = big.NewInt(0) }
-    if response.GasInfo.EstGasPrice == nil { response.GasInfo.EstGasPrice = big.NewInt(0) }
     return response, nil
 }
 

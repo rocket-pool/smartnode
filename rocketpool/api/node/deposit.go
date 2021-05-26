@@ -30,7 +30,7 @@ type minipoolCreated struct {
 }
 
 
-func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResponse, error) {
+func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.CanNodeDepositResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -111,7 +111,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int) (*api.CanNodeDepositResp
             return err 
         }
         opts.Value = amountWei
-        gasInfo, err := node.EstimateDepositGas(rp, 0.05, opts)
+        gasInfo, err := node.EstimateDepositGas(rp, minNodeFee, opts)
         if err == nil {
             response.GasInfo = gasInfo
         }

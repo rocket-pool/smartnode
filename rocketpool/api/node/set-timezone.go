@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	_ "time/tzdata"
 
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/urfave/cli"
@@ -30,9 +31,10 @@ func canSetTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.CanSe
         return nil, err 
     }
     gasInfo, err := node.EstimateSetTimezoneLocationGas(rp, timezoneLocation, opts)
-    if err == nil {
-        response.GasInfo = gasInfo
+    if err != nil {
+        return nil, err
     }
+    response.GasInfo = gasInfo
     response.CanSet = true
     return &response, nil
     

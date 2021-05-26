@@ -15,7 +15,7 @@ import (
 )
 
 // Print the gas price and cost of a TX
-func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThreshold uint64, logger log.ColorLogger) (bool) {
+func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThreshold float64, logger log.ColorLogger) (bool) {
 
     // Use the requested gas price if provided
     gasPrice := gasInfo.ReqGasPrice
@@ -25,10 +25,11 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 
     // Check the gas threshold if requested
     if checkThreshold {
-        gasThreshold := new(big.Int).SetUint64(gasThreshold * uint64(eth.WeiPerGwei))
+        gasThresholdGwei := math.RoundUp(gasThreshold * eth.WeiPerGwei, 0)
+        gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdGwei))
         if gasPrice.Cmp(gasThreshold) != -1 {
-            logger.Printf("Current network gas price is %.6f Gwei, which is not lower than the set threshold of %.6f Gwei. " + 
-                "Aborting the transaction.\n", eth.WeiToGwei(gasInfo.EstGasPrice), eth.WeiToGwei(gasThreshold))
+            logger.Printlnf("Current network gas price is %.6f Gwei, which is higher than the set threshold of %.6f Gwei. " + 
+                "Aborting the transaction.", eth.WeiToGwei(gasInfo.EstGasPrice), eth.WeiToGwei(gasThreshold))
             return false
         } 
     } else {
@@ -43,7 +44,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
         gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
     }
     totalGasWei := new(big.Int).Mul(gasPrice, gas)
-    logger.Printf("This transaction will use a gas price of %.6f Gwei, for a total of %.6f ETH.",
+    logger.Printlnf("This transaction will use a gas price of %.6f Gwei, for a total of %.6f ETH.",
         eth.WeiToGwei(gasPrice),
         math.RoundDown(eth.WeiToEth(totalGasWei), 6))
         
@@ -57,10 +58,10 @@ func PrintAndWaitForTransaction(config config.RocketPoolConfig, hash common.Hash
     txWatchUrl := config.Smartnode.TxWatchUrl
     hashString := hash.String()
 
-    logger.Printf("Transaction has been submitted with hash %s.\n", hashString)
+    logger.Printlnf("Transaction has been submitted with hash %s.", hashString)
     if txWatchUrl != "" {
-        logger.Printf("You may follow its progress by visiting:\n")
-        logger.Printf("%s/%s\n\n", txWatchUrl, hashString)
+        logger.Printlnf("You may follow its progress by visiting:")
+        logger.Printlnf("%s/%s\n", txWatchUrl, hashString)
     }
     logger.Println("Waiting for the transaction to be mined...")
 
