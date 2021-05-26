@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	kh "golang.org/x/crypto/ssh/knownhosts"
 
+	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -189,8 +190,8 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
 
     // Get installation script flags
     flags := []string{
-        "-n", fmt.Sprintf("%q", network),
-        "-v", fmt.Sprintf("%q", version),
+        "-n", fmt.Sprintf("%s", shellescape.Quote(network)),
+        "-v", fmt.Sprintf("%s", shellescape.Quote(version)),
     }
     if noDeps {
         flags = append(flags, "-d")
@@ -274,9 +275,9 @@ func (c *Client) PrintServiceStatus(composeFiles []string) error {
 func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
     sanitizedStrings := make([]string, len(serviceNames))
     for i, serviceName := range serviceNames {
-        sanitizedStrings[i] = fmt.Sprintf("%q", serviceName)
+        sanitizedStrings[i] = fmt.Sprintf("%s", shellescape.Quote(serviceName))
     }
-    cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %q %s", tail, strings.Join(sanitizedStrings, " ")))
+    cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
     if err != nil { return err }
     return c.printOutput(cmd)
 }
@@ -308,9 +309,9 @@ func (c *Client) GetServiceVersion() (string, error) {
         if err != nil {
             return "", err
         }
-        cmd = fmt.Sprintf("docker exec %q %q --version", containerName, APIBinPath)
+        cmd = fmt.Sprintf("docker exec %s %s --version", shellescape.Quote(containerName), shellescape.Quote(APIBinPath))
     } else {
-        cmd = fmt.Sprintf("%q --version", c.daemonPath)
+        cmd = fmt.Sprintf("%s --version", shellescape.Quote(c.daemonPath))
     }
     versionBytes, err := c.readOutput(cmd)
     if err != nil {
@@ -352,7 +353,7 @@ func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
     }
     configBytes, err := ioutil.ReadFile(expandedPath)
     if err != nil {
-        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %q: %w", path, err)
+        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at s: %w", shellescape.Quote(path), err)
     }
     return config.Parse(configBytes)
 }
@@ -369,7 +370,7 @@ func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
         return err
     }
     if err := ioutil.WriteFile(expandedPath, configBytes, 0); err != nil {
-        return fmt.Errorf("Could not write Rocket Pool config to %q: %w", expandedPath, err)
+        return fmt.Errorf("Could not write Rocket Pool config to %s: %w", shellescape.Quote(expandedPath), err)
     }
     return nil
 }
@@ -418,26 +419,26 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Set environment variables from config
     env := []string{
-        fmt.Sprintf("COMPOSE_PROJECT_NAME=%q",    cfg.Smartnode.ProjectName),
-        fmt.Sprintf("ROCKET_POOL_VERSION=%q",     cfg.Smartnode.GraffitiVersion),
-        fmt.Sprintf("SMARTNODE_IMAGE=%q",         cfg.Smartnode.Image),
-        fmt.Sprintf("ETH1_CLIENT=%q",             cfg.GetSelectedEth1Client().ID),
-        fmt.Sprintf("ETH1_IMAGE=%q",              cfg.GetSelectedEth1Client().Image),
-        fmt.Sprintf("ETH2_CLIENT=%q",             cfg.GetSelectedEth2Client().ID),
-        fmt.Sprintf("ETH2_IMAGE=%q",              cfg.GetSelectedEth2Client().GetBeaconImage()),
-        fmt.Sprintf("VALIDATOR_CLIENT=%q",        cfg.GetSelectedEth2Client().ID),
-        fmt.Sprintf("VALIDATOR_IMAGE=%q",         cfg.GetSelectedEth2Client().GetValidatorImage()),
-        fmt.Sprintf("ETH1_PROVIDER=%q",           cfg.Chains.Eth1.Provider),
-        fmt.Sprintf("ETH1_WS_PROVIDER=%q",        cfg.Chains.Eth1.WsProvider),
-        fmt.Sprintf("ETH2_PROVIDER=%q",           cfg.Chains.Eth2.Provider),
+        fmt.Sprintf("COMPOSE_PROJECT_NAME=%s",    shellescape.Quote(cfg.Smartnode.ProjectName)),
+        fmt.Sprintf("ROCKET_POOL_VERSION=%s",     shellescape.Quote(cfg.Smartnode.GraffitiVersion)),
+        fmt.Sprintf("SMARTNODE_IMAGE=%s",         shellescape.Quote(cfg.Smartnode.Image)),
+        fmt.Sprintf("ETH1_CLIENT=%s",             shellescape.Quote(cfg.GetSelectedEth1Client().ID)),
+        fmt.Sprintf("ETH1_IMAGE=%s",              shellescape.Quote(cfg.GetSelectedEth1Client().Image)),
+        fmt.Sprintf("ETH2_CLIENT=%s",             shellescape.Quote(cfg.GetSelectedEth2Client().ID)),
+        fmt.Sprintf("ETH2_IMAGE=%s",              shellescape.Quote(cfg.GetSelectedEth2Client().GetBeaconImage())),
+        fmt.Sprintf("VALIDATOR_CLIENT=%s",        shellescape.Quote(cfg.GetSelectedEth2Client().ID)),
+        fmt.Sprintf("VALIDATOR_IMAGE=%s",         shellescape.Quote(cfg.GetSelectedEth2Client().GetValidatorImage())),
+        fmt.Sprintf("ETH1_PROVIDER=%s",           shellescape.Quote(cfg.Chains.Eth1.Provider)),
+        fmt.Sprintf("ETH1_WS_PROVIDER=%s",        shellescape.Quote(cfg.Chains.Eth1.WsProvider)),
+        fmt.Sprintf("ETH2_PROVIDER=%s",           shellescape.Quote(cfg.Chains.Eth2.Provider)),
     }
     paramsSet := map[string]bool{}
     for _, param := range cfg.Chains.Eth1.Client.Params {
-        env = append(env, fmt.Sprintf("%s=%q", param.Env, param.Value))
+        env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
         paramsSet[param.Env] = true
     }
     for _, param := range cfg.Chains.Eth2.Client.Params {
-        env = append(env, fmt.Sprintf("%s=%q", param.Env, param.Value))
+        env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
         paramsSet[param.Env] = true
     }
 
@@ -445,12 +446,12 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     for _, param := range cfg.GetSelectedEth1Client().Params {
         if _, ok := paramsSet[param.Env]; ok { continue }
         if param.Default == "" { continue }
-        env = append(env, fmt.Sprintf("%s=%q", param.Env, param.Default))
+        env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
     }
     for _, param := range cfg.GetSelectedEth2Client().Params {
         if _, ok := paramsSet[param.Env]; ok { continue }
         if param.Default == "" { continue }
-        env = append(env, fmt.Sprintf("%s=%q", param.Env, param.Default))
+        env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
     }
 
     // Set compose file flags
@@ -465,26 +466,41 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         if err != nil {
             return "", err
         }
-        composeFileFlags[fi + 1] = fmt.Sprintf("-f %q", expandedFile)
+        composeFileFlags[fi + 1] = fmt.Sprintf("-f %s", shellescape.Quote(expandedFile))
     }
 
     // Return command
-    return fmt.Sprintf("%s docker-compose --project-directory %q %s %s", strings.Join(env, " "), expandedConfigPath, strings.Join(composeFileFlags, " "), args), nil
+    return fmt.Sprintf("%s docker-compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
 
 }
 
 
 // Call the Rocket Pool API
 func (c *Client) callAPI(args string) ([]byte, error) {
+    // Sanitize arguments
+    var sanitizedArgs []string
+    for _, arg := range strings.Fields(args) {
+        sanitizedArg := shellescape.Quote(arg)
+        sanitizedArgs = append(sanitizedArgs, sanitizedArg)
+    }
+    args = strings.Join(sanitizedArgs, " ")
+
+    // Run the command
     var cmd string
     if c.daemonPath == "" {
         containerName, err := c.getAPIContainerName()
         if err != nil {
             return []byte{}, err
         }
-        cmd = fmt.Sprintf("docker exec %q %q %s %s api %s", containerName, APIBinPath, c.getGasOpts(), c.getCustomNonce(), args)
+        cmd = fmt.Sprintf("docker exec %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), c.getGasOpts(), c.getCustomNonce(), args)
     } else {
-        cmd = fmt.Sprintf("%s --config %q --settings %q %s %s api %s", c.daemonPath, fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile), fmt.Sprintf("%s/%s", c.configPath, UserConfigFile), c.getGasOpts(), c.getCustomNonce(), args)
+        cmd = fmt.Sprintf("%s --config %s --settings %s %s %s api %s", 
+            c.daemonPath, 
+            shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile)), 
+            shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, UserConfigFile)),
+            c.getGasOpts(),
+            c.getCustomNonce(),
+            args)
     }
     return c.readOutput(cmd)
 }
@@ -507,10 +523,10 @@ func (c *Client) getAPIContainerName() (string, error) {
 func (c *Client) getGasOpts() string {
     var opts string
     if c.gasPrice != "" {
-        opts += fmt.Sprintf("--gasPrice %q ", c.gasPrice)
+        opts += fmt.Sprintf("--gasPrice %s ", shellescape.Quote(c.gasPrice))
     }
     if c.gasLimit != "" {
-        opts += fmt.Sprintf("--gasLimit %q ", c.gasLimit)
+        opts += fmt.Sprintf("--gasLimit %s ", shellescape.Quote(c.gasLimit))
     }
     return opts
 }
