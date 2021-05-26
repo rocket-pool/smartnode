@@ -138,7 +138,7 @@ func (t *submitRplPrice) run() error {
 
     // Calculate the total effective RPL stake on the network
     zero := new(big.Int).SetUint64(0)
-    effectiveRplState, err := node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil)
+    effectiveRplStake, err := node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil)
     if err != nil {
         return fmt.Errorf("Error getting total effective RPL stake: %w", err)
     }
@@ -147,7 +147,7 @@ func (t *submitRplPrice) run() error {
     t.log.Printlnf("RPL price: %.6f ETH", math.RoundDown(eth.WeiToEth(rplPrice), 6))
 
     // Submit RPL price
-    if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplState); err != nil {
+    if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake); err != nil {
         return fmt.Errorf("Could not submit RPL price: %w", err)
     }
 
