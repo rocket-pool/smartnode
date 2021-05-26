@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -300,6 +301,10 @@ func EstimateSetTimezoneLocationGas(rp *rocketpool.RocketPool, timezoneLocation 
     if err != nil {
         return rocketpool.GasInfo{}, err
     }
+    _, err = time.LoadLocation(timezoneLocation)
+    if err != nil {
+        return rocketpool.GasInfo{}, fmt.Errorf("Could not parse timezone [%s]: %w", timezoneLocation, err)
+    }
     return rocketNodeManager.GetTransactionGasInfo(opts, "setTimezoneLocation", timezoneLocation)
 }
 
@@ -309,6 +314,10 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return common.Hash{}, err
+    }
+    _, err = time.LoadLocation(timezoneLocation)
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not parse timezone [%s]: %w", timezoneLocation, err)
     }
     hash, err := rocketNodeManager.Transact(opts, "setTimezoneLocation", timezoneLocation)
     if err != nil {
