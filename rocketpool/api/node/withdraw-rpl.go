@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/urfave/cli"
@@ -81,6 +82,13 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
         return err
     })
 
+    // Check network consensus
+    inConsensus, err := network.InConsensus(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    response.InConsensus = inConsensus
+
     // Get gas estimate
     wg.Go(func() error {
         opts, err := w.GetNodeAccountTransactor()
@@ -107,7 +115,7 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
     response.WithdrawalDelayActive = ((currentTime - rplStakedTime) < withdrawalDelay)
 
     // Update & return response
-    response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive)
+    response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive || !response.InConsensus)
     return &response, nil
 
 }

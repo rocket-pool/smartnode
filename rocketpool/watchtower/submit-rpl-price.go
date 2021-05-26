@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -135,11 +136,18 @@ func (t *submitRplPrice) run() error {
         return err
     }
 
+    // Calculate the total effective RPL stake on the network
+    zero := new(big.Int).SetUint64(0)
+    effectiveRplStake, err := node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil)
+    if err != nil {
+        return fmt.Errorf("Error getting total effective RPL stake: %w", err)
+    }
+
     // Log
     t.log.Printlnf("RPL price: %.6f ETH", math.RoundDown(eth.WeiToEth(rplPrice), 6))
 
     // Submit RPL price
-    if err := t.submitRplPrice(blockNumber ,rplPrice); err != nil {
+    if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake); err != nil {
         return fmt.Errorf("Could not submit RPL price: %w", err)
     }
 
@@ -250,8 +258,8 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 }
 
 
-// Submit RPL price
-func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) error {
+// Submit RPL price and total effective RPL stake
+func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveRplStake *big.Int) error {
 
     // Log
     t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
@@ -263,7 +271,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) e
     }
 
     // Get the gas estimates
-    gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts)
+    gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to dissolve the minipool: %w", err)
     }
@@ -272,7 +280,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice *big.Int) e
     }
 
     // Submit RPL price
-    hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, opts)
+    hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)
     if err != nil {
         return err
     }

@@ -14,8 +14,7 @@ ADD ./go.sum /src/go.sum
 
 # Compile & install
 WORKDIR /src
-RUN apk add --no-cache build-base linux-headers git
-RUN git clone https://github.com/rocket-pool/rocketpool-go.git /rocketpool-go
+RUN apk add --no-cache build-base linux-headers
 RUN go install ./rocketpool
 
 

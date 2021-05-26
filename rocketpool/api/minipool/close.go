@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
@@ -48,6 +49,13 @@ func canCloseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanC
     }
     response.InvalidStatus = (status != types.Dissolved)
 
+    // Check consensus status
+    inConsensus, err := network.InConsensus(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    response.InConsensus = inConsensus
+
     // Get gas estimate
     opts, err := w.GetNodeAccountTransactor()
     if err != nil { 
@@ -59,7 +67,7 @@ func canCloseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanC
     }
 
     // Update & return response
-    response.CanClose = !response.InvalidStatus
+    response.CanClose = !(response.InvalidStatus || !response.InConsensus)
     return &response, nil
 
 }
