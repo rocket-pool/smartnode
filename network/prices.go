@@ -40,26 +40,40 @@ func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, erro
 
 
 // Estimate the gas of SubmitPrices
-func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, effectiveRplStake *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     rocketNetworkPrices, err := getRocketNetworkPrices(rp)
     if err != nil {
         return rocketpool.GasInfo{}, err
     }
-    return rocketNetworkPrices.GetTransactionGasInfo(opts, "submitPrices", big.NewInt(int64(block)), rplPrice)
+    return rocketNetworkPrices.GetTransactionGasInfo(opts, "submitPrices", big.NewInt(int64(block)), rplPrice, effectiveRplStake)
 }
 
 
-// Submit network prices for an epoch
-func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+// Submit network prices and total effective RPL stake for an epoch
+func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice, effectiveRplStake *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     rocketNetworkPrices, err := getRocketNetworkPrices(rp)
     if err != nil {
         return common.Hash{}, err
     }
-    hash, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), rplPrice)
+    hash, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), rplPrice, effectiveRplStake)
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not submit network prices: %w", err)
     }
     return hash, nil
+}
+
+
+// Check if the network is currently in consensus about the RPL price, or if it is still reaching consensus
+func InConsensus(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+    rocketNetworkPrices, err := getRocketNetworkPrices(rp)
+    if err != nil {
+        return false, err
+    }
+    isInConsensus := new(bool)
+    if err := rocketNetworkPrices.Call(opts, isInConsensus, "inConsensus"); err != nil {
+        return false, fmt.Errorf("Could not get consensus status: %w", err)
+    }
+    return *isInConsensus, nil
 }
 
 

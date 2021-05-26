@@ -157,6 +157,20 @@ func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Trans
 }
 
 
+// Calculate total effective RPL stake
+func CalculateTotalEffectiveRPLStake(rp *rocketpool.RocketPool, offset, limit, rplPrice *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+    rocketNodeStaking, err := getRocketNodeStaking(rp)
+    if err != nil {
+        return nil, err
+    }
+    totalEffectiveRplStake := new(*big.Int)
+    if err := rocketNodeStaking.Call(opts, totalEffectiveRplStake, "calculateTotalEffectiveRPLStake", offset, limit, rplPrice); err != nil {
+        return nil, fmt.Errorf("Could not get total effective RPL stake: %w", err)
+    }
+    return *totalEffectiveRplStake, nil
+}
+
+
 // Get contracts
 var rocketNodeStakingLock sync.Mutex
 func getRocketNodeStaking(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
