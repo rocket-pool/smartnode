@@ -28,7 +28,7 @@ steps:
       git remote add github https://x-access-token:$TOKEN@github.com/rocket-pool/$REPO_NAME
       git fetch github
       git push github HEAD:$(Build.SourceBranch) --verbose
-      git push github HEAD:$(Build.SourceBranch) --tags -f --verbose
+      git push github HEAD:$(Build.SourceBranch) --tags --verbose
   displayName: 'Push to Github'
   env:
     GITHUB_PEM_PATH: $(githubPEM.secureFilePath)
