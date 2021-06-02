@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
+    "log"
+    "os"
 	osUser "os/user"
 	"strings"
 
@@ -146,7 +147,7 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePat
 // Close client remote connection
 func (c *Client) Close() {
     if c.client != nil {
-        c.client.Close()
+        _ = c.client.Close()
     }
 }
 
@@ -199,7 +200,9 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
     // Initialize installation command
     cmd, err := c.newCommand(fmt.Sprintf("%s %s | sh -s -- %s", downloader, InstallerURL, strings.Join(flags, " ")))
     if err != nil { return err }
-    defer cmd.Close()
+    defer func() {
+        _ = cmd.Close()
+    }()
 
     // Get command output pipes
     cmdOut, err := cmd.StdoutPipe()
@@ -553,15 +556,27 @@ func (c *Client) printOutput(cmdText string) error {
     // Initialize command
     cmd, err := c.newCommand(cmdText)
     if err != nil { return err }
-    defer cmd.Close()
+    defer func() {
+        _ = cmd.Close()
+    }()
 
     // Copy command output to stdout & stderr
     cmdOut, err := cmd.StdoutPipe()
     if err != nil { return err }
     cmdErr, err := cmd.StderrPipe()
     if err != nil { return err }
-    go io.Copy(os.Stdout, cmdOut)
-    go io.Copy(os.Stderr, cmdErr)
+    go func() {
+        _, err := io.Copy(os.Stdout, cmdOut)
+        if err != nil {
+        	log.Printf("Error piping stdout: %v", err)
+        }
+    }()
+    go func() {
+        _, err := io.Copy(os.Stderr, cmdErr)
+        if err != nil {
+            log.Printf("Error piping stderr: %v", err)
+        }
+    }()
 
     // Run command
     return cmd.Run()
@@ -577,7 +592,9 @@ func (c *Client) readOutput(cmdText string) ([]byte, error) {
     if err != nil {
         return []byte{}, err
     }
-    defer cmd.Close()
+    defer func() {
+        _ = cmd.Close()
+    }()
 
     // Run command and return output
     return cmd.Output()

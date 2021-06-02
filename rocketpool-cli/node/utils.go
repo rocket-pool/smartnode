@@ -30,10 +30,11 @@ func promptTimezone() string {
 
     // Prompt for auto-detect
     if cliutils.Confirm("Would you like to detect your timezone automatically?") {
-
         // Detect using FreeGeoIP
         if resp, err := http.Get(FreeGeoIPURL); err == nil {
-            defer resp.Body.Close()
+            defer func() {
+                _ = resp.Body.Close()
+            }()
             if body, err := ioutil.ReadAll(resp.Body); err == nil {
                 message := new(freeGeoIPResponse)
                 if err := json.Unmarshal(body, message); err == nil {

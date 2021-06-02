@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+    "log"
 	"os"
 	"sync"
 
@@ -85,7 +85,11 @@ func main() {
         // HTTP server
         go func() {
             proxyServer := proxy.NewHttpProxyServer(c.GlobalString("httpPort"), c.GlobalString("httpProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"), c.GlobalString("providerType"))
-            proxyServer.Start()
+            err := proxyServer.Start()
+            if err != nil {
+                log.Fatalf("Could not start HTTP proxy server %v", err)
+                return
+            }
             wg.Done()
         }()
     
@@ -93,7 +97,11 @@ func main() {
         go func() {
             if c.GlobalString("providerType") == "infura" || c.GlobalString("wsProviderUrl") != "" {
                 proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("wsProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
-                proxyServer.Start()
+                err := proxyServer.Start()
+                if err != nil {
+                    log.Fatalf("Could not start websocket proxy server %v", err)
+                    return
+                }
             } else {
                 log.Println("No websocket URL provided, running in HTTP-only mode.")
             }

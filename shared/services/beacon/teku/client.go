@@ -479,7 +479,9 @@ func (c *Client) getRequest(requestPath string) ([]byte, int, error) {
     if err != nil {
         return []byte{}, 0, err
     }
-    defer response.Body.Close()
+    defer func() {
+        _ = response.Body.Close()
+    }()
 
     // Get response
     body, err := ioutil.ReadAll(response.Body)
@@ -507,7 +509,9 @@ func (c *Client) postRequest(requestPath string, requestBody interface{}) ([]byt
     if err != nil {
         return []byte{}, 0, err
     }
-    defer response.Body.Close()
+    defer func() {
+        _ = response.Body.Close()
+    }()
 
     // Get response
     body, err := ioutil.ReadAll(response.Body)
