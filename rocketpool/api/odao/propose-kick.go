@@ -64,11 +64,11 @@ func canProposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei 
         if err != nil {
             return err
         }
-        memberEmail, err := trustednode.GetMemberEmail(rp, memberAddress, nil)
+        memberUrl, err := trustednode.GetMemberUrl(rp, memberAddress, nil)
         if err != nil {
             return err
         }
-        message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberEmail, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
+        message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberUrl, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
         gasInfo, err := trustednode.EstimateProposeKickMemberGas(rp, message, memberAddress, fineAmountWei, opts)
         if err == nil {
             response.GasInfo = gasInfo
@@ -103,7 +103,7 @@ func proposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *bi
     // Data
     var wg errgroup.Group
     var memberId string
-    var memberEmail string
+    var memberUrl string
 
     // Get member details
     wg.Go(func() error {
@@ -113,7 +113,7 @@ func proposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *bi
     })
     wg.Go(func() error {
         var err error
-        memberEmail, err = trustednode.GetMemberEmail(rp, memberAddress, nil)
+        memberUrl, err = trustednode.GetMemberUrl(rp, memberAddress, nil)
         return err
     })
 
@@ -135,7 +135,7 @@ func proposeKick(c *cli.Context, memberAddress common.Address, fineAmountWei *bi
     }
 
     // Submit proposal
-    message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberEmail, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
+    message := fmt.Sprintf("kick %s (%s) with %.6f RPL fine", memberId, memberUrl, math.RoundDown(eth.WeiToEth(fineAmountWei), 6))
     proposalId, hash, err := trustednode.ProposeKickMember(rp, message, memberAddress, fineAmountWei, opts)
     if err != nil {
         return nil, err

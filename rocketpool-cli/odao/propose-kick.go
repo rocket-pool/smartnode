@@ -51,7 +51,7 @@ func proposeKick(c *cli.Context) error {
         // Prompt for member selection
         options := make([]string, len(members.Members))
         for mi, member := range members.Members {
-            options[mi] = fmt.Sprintf("%s (email: %s, node: %s)", member.ID, member.Email, member.Address)
+            options[mi] = fmt.Sprintf("%s (URL: %s, node: %s)", member.ID, member.Url, member.Address)
         }
         selected, _ := cliutils.Select("Please select a member to propose kicking:", options)
         selectedMember = members.Members[selected]
