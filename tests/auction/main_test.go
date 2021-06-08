@@ -1,17 +1,17 @@
 package auction
 
 import (
-    "log"
-    "os"
-    "testing"
+	"log"
+	"os"
+	"testing"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-    "github.com/rocket-pool/rocketpool-go/tests"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	"github.com/rocket-pool/rocketpool-go/tests"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 )
 
 
@@ -20,7 +20,9 @@ var (
     rp *rocketpool.RocketPool
 
     ownerAccount *accounts.Account
-    trustedNodeAccount *accounts.Account
+    trustedNodeAccount1 *accounts.Account
+    trustedNodeAccount2 *accounts.Account
+    trustedNodeAccount3 *accounts.Account
     userAccount1 *accounts.Account
     userAccount2 *accounts.Account
 )
@@ -40,7 +42,11 @@ func TestMain(m *testing.M) {
     // Initialize accounts
     ownerAccount, err = accounts.GetAccount(0)
     if err != nil { log.Fatal(err) }
-    trustedNodeAccount, err = accounts.GetAccount(1)
+    trustedNodeAccount1, err = accounts.GetAccount(1)
+    if err != nil { log.Fatal(err) }
+    trustedNodeAccount2, err = accounts.GetAccount(2)
+    if err != nil { log.Fatal(err) }
+    trustedNodeAccount3, err = accounts.GetAccount(3)
     if err != nil { log.Fatal(err) }
     userAccount1, err = accounts.GetAccount(8)
     if err != nil { log.Fatal(err) }

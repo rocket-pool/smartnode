@@ -1,21 +1,20 @@
 package auction
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/rocket-pool/rocketpool-go/deposit"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
-    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
-
 // Create an amount of slashed RPL in the auction contract
-func CreateSlashedRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trustedNodeAccount *accounts.Account, userAccount *accounts.Account) error {
+func CreateSlashedRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trustedNodeAccount, trustedNodeAccount2 *accounts.Account, userAccount *accounts.Account) error {
 
     // Stake a large amount of RPL against the node
     if err := nodeutils.StakeRPL(rp, ownerAccount, trustedNodeAccount, eth.EthToWei(1000000)); err != nil { return err }
@@ -34,6 +33,7 @@ func CreateSlashedRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account,
 
     // Mark minipool as withdrawable with zero end balance
     if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), big.NewInt(0), trustedNodeAccount.GetTransactor()); err != nil { return err }
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), big.NewInt(0), trustedNodeAccount2.GetTransactor()); err != nil { return err }
 
     // Return
     return nil
