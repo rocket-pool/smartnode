@@ -1,19 +1,19 @@
 package trustednode
 
 import (
-    "bytes"
-    "math/big"
-    "testing"
+	"bytes"
+	"math/big"
+	"testing"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/node"
-    trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/node"
+	trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
@@ -42,12 +42,16 @@ func TestMemberDetails(t *testing.T) {
 
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount2.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount3.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Bootstrap trusted node DAO member
     memberId := "coolguy"
     memberEmail := "coolguy@rocketpool.net"
     if _, err := trustednodedao.BootstrapMember(rp, memberId, memberEmail, trustedNodeAccount1.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.BootstrapMember(rp, memberId, memberEmail, trustedNodeAccount2.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.BootstrapMember(rp, memberId, memberEmail, trustedNodeAccount3.Address, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get RPL bond amount
     rplBondAmount, err := trustednodesettings.GetRPLBond(rp, nil)
@@ -55,7 +59,15 @@ func TestMemberDetails(t *testing.T) {
 
     // Mint trusted node RPL bond & join trusted node DAO
     if err := nodeutils.MintTrustedNodeBond(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+    if err := nodeutils.MintTrustedNodeBond(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
+    if err := nodeutils.MintTrustedNodeBond(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
     if _, err := trustednodedao.Join(rp, trustedNodeAccount1.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+    if _, err := trustednodedao.Join(rp, trustedNodeAccount2.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+    if _, err := trustednodedao.Join(rp, trustedNodeAccount3.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
@@ -68,7 +80,7 @@ func TestMemberDetails(t *testing.T) {
     // Get & check updated member details
     if members, err := trustednodedao.GetMembers(rp, nil); err != nil {
         t.Error(err)
-    } else if len(members) != 1 {
+    } else if len(members) != 3 {
         t.Error("Incorrect updated trusted node DAO member count")
     } else {
         member := members[0]
@@ -81,8 +93,8 @@ func TestMemberDetails(t *testing.T) {
         if member.ID != memberId {
             t.Errorf("Incorrect member ID %s", member.ID)
         }
-        if member.Email != memberEmail {
-            t.Errorf("Incorrect member email %s", member.Email)
+        if member.Url != memberEmail {
+            t.Errorf("Incorrect member email %s", member.Url)
         }
         if member.JoinedBlock == 0 {
             t.Errorf("Incorrect member joined block %d", member.JoinedBlock)

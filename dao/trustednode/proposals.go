@@ -3,7 +3,6 @@ package trustednode
 import (
 	"fmt"
 	"math/big"
-	"net/mail"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -11,19 +10,17 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/strings"
 )
 
 // Estimate the gas of ProposeInviteMember
-func EstimateProposeInviteMemberGas(rp *rocketpool.RocketPool, message string, newMemberAddress common.Address, newMemberId, newMemberEmail string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeInviteMemberGas(rp *rocketpool.RocketPool, message string, newMemberAddress common.Address, newMemberId, newMemberUrl string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
     if err != nil {
         return rocketpool.GasInfo{}, err
     }
-    emailAddress, err := mail.ParseAddress(newMemberEmail)
-    if err != nil {
-        return rocketpool.GasInfo{}, err 
-    }
-    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalInvite", newMemberId, emailAddress.Address, newMemberAddress)
+    newMemberUrl = strings.Sanitize(newMemberUrl)
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalInvite", newMemberId, newMemberUrl, newMemberAddress)
     if err != nil {
         return rocketpool.GasInfo{}, fmt.Errorf("Could not encode invite member proposal payload: %w", err)
     }
@@ -32,16 +29,13 @@ func EstimateProposeInviteMemberGas(rp *rocketpool.RocketPool, message string, n
 
 
 // Submit a proposal to invite a new member to the trusted node DAO
-func ProposeInviteMember(rp *rocketpool.RocketPool, message string, newMemberAddress common.Address, newMemberId, newMemberEmail string, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeInviteMember(rp *rocketpool.RocketPool, message string, newMemberAddress common.Address, newMemberId, newMemberUrl string, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
     if err != nil {
         return 0, common.Hash{}, err
     }
-    emailAddress, err := mail.ParseAddress(newMemberEmail)
-    if err != nil {
-        return 0, common.Hash{}, err 
-    }
-    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalInvite", newMemberId, emailAddress.Address, newMemberAddress)
+    newMemberUrl = strings.Sanitize(newMemberUrl)
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalInvite", newMemberId, newMemberUrl, newMemberAddress)
     if err != nil {
         return 0, common.Hash{}, fmt.Errorf("Could not encode invite member proposal payload: %w", err)
     }
@@ -78,16 +72,13 @@ func ProposeMemberLeave(rp *rocketpool.RocketPool, message string, memberAddress
 
 
 // Estimate the gas of ProposeReplaceMember
-func EstimateProposeReplaceMemberGas(rp *rocketpool.RocketPool, message string, memberAddress, newMemberAddress common.Address, newMemberId, newMemberEmail string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeReplaceMemberGas(rp *rocketpool.RocketPool, message string, memberAddress, newMemberAddress common.Address, newMemberId, newMemberUrl string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
     if err != nil {
         return rocketpool.GasInfo{}, err
     }
-    emailAddress, err := mail.ParseAddress(newMemberEmail)
-    if err != nil {
-        return rocketpool.GasInfo{}, err 
-    }
-    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalReplace", memberAddress, newMemberId, emailAddress.Address, newMemberAddress)
+    newMemberUrl = strings.Sanitize(newMemberUrl)
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalReplace", memberAddress, newMemberId, newMemberUrl, newMemberAddress)
     if err != nil {
         return rocketpool.GasInfo{}, fmt.Errorf("Could not encode replace member proposal payload: %w", err)
     }
@@ -96,16 +87,13 @@ func EstimateProposeReplaceMemberGas(rp *rocketpool.RocketPool, message string, 
 
 
 // Submit a proposal to replace a member in the trusted node DAO
-func ProposeReplaceMember(rp *rocketpool.RocketPool, message string, memberAddress, newMemberAddress common.Address, newMemberId, newMemberEmail string, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeReplaceMember(rp *rocketpool.RocketPool, message string, memberAddress, newMemberAddress common.Address, newMemberId, newMemberUrl string, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
     if err != nil {
         return 0, common.Hash{}, err
     }
-    emailAddress, err := mail.ParseAddress(newMemberEmail)
-    if err != nil {
-        return 0, common.Hash{}, err 
-    }
-    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalReplace", memberAddress, newMemberId, emailAddress.Address, newMemberAddress)
+    newMemberUrl = strings.Sanitize(newMemberUrl)
+    payload, err := rocketDAONodeTrustedProposals.ABI.Pack("proposalReplace", memberAddress, newMemberId, newMemberUrl, newMemberAddress)
     if err != nil {
         return 0, common.Hash{}, fmt.Errorf("Could not encode replace member proposal payload: %w", err)
     }

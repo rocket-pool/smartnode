@@ -23,7 +23,9 @@ func TestAuctionDetails(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Register node
-    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
 
     // Get & check initial RPL balances
     totalBalance1, err := auction.GetTotalRPLBalance(rp, nil)
@@ -43,7 +45,7 @@ func TestAuctionDetails(t *testing.T) {
     }
 
     // Mint slashed RPL to auction contract
-    if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount, userAccount1); err != nil {
+    if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount1, trustedNodeAccount2, userAccount1); err != nil {
         t.Fatal(err)
     }
 
@@ -95,17 +97,19 @@ func TestLotDetails(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Register node
-    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
 
     // Set network parameters
-    if _, err := network.SubmitPrices(rp, 1, eth.EthToWei(1), eth.EthToWei(24), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := network.SubmitPrices(rp, 1, eth.EthToWei(1), eth.EthToWei(24), trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotStartingPriceRatio(rp, 1.0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotReservePriceRatio(rp, 0.5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotMaximumEthValue(rp, eth.EthToWei(10), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotDuration(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Mint slashed RPL to auction contract
-    if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount, userAccount1); err != nil { t.Fatal(err) }
+    if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount1, trustedNodeAccount2, userAccount1); err != nil { t.Fatal(err) }
 
     // Get & check initial lot details
     if lots, err := auction.GetLots(rp, nil); err != nil {

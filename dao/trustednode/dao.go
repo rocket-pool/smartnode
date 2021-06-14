@@ -3,7 +3,6 @@ package trustednode
 import (
 	"fmt"
 	"math/big"
-	"net/mail"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,7 +25,7 @@ type MemberDetails struct {
     Address common.Address          `json:"address"`
     Exists bool                     `json:"exists"`
     ID string                       `json:"id"`
-    Email string                    `json:"email"`
+    Url string                      `json:"url"`
     JoinedBlock uint64              `json:"joinedBlock"`
     LastProposalBlock uint64        `json:"lastProposalBlock"`
     RPLBondAmount *big.Int          `json:"rplBondAmount"`
@@ -122,7 +121,7 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
     var wg errgroup.Group
     var exists bool
     var id string
-    var email string
+    var url string
     var joinedBlock uint64
     var lastProposalBlock uint64
     var rplBondAmount *big.Int
@@ -141,7 +140,7 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
     })
     wg.Go(func() error {
         var err error
-        email, err = GetMemberEmail(rp, memberAddress, opts)
+        url, err = GetMemberUrl(rp, memberAddress, opts)
         return err
     })
     wg.Go(func() error {
@@ -175,7 +174,7 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
         Address: memberAddress,
         Exists: exists,
         ID: id,
-        Email: email,
+        Url: url,
         JoinedBlock: joinedBlock,
         LastProposalBlock: lastProposalBlock,
         RPLBondAmount: rplBondAmount,
@@ -250,16 +249,16 @@ func GetMemberID(rp *rocketpool.RocketPool, memberAddress common.Address, opts *
     }
     return strings.Sanitize(*id), nil
 }
-func GetMemberEmail(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, error) {
+func GetMemberUrl(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (string, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return "", err
     }
-    email := new(string)
-    if err := rocketDAONodeTrusted.Call(opts, email, "getMemberEmail", memberAddress); err != nil {
-        return "", fmt.Errorf("Could not get trusted node DAO member %s email: %w", memberAddress.Hex(), err)
+    url := new(string)
+    if err := rocketDAONodeTrusted.Call(opts, url, "getMemberUrl", memberAddress); err != nil {
+        return "", fmt.Errorf("Could not get trusted node DAO member %s URL: %w", memberAddress.Hex(), err)
     }
-    return strings.Sanitize(*email), nil
+    return strings.Sanitize(*url), nil
 }
 func GetMemberJoinedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
@@ -407,30 +406,24 @@ func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
 
 
 // Estimate the gas of BootstrapMember
-func EstimateBootstrapMemberGas(rp *rocketpool.RocketPool, id, email string, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateBootstrapMemberGas(rp *rocketpool.RocketPool, id, url string, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return rocketpool.GasInfo{}, err
     }
-    address, err := mail.ParseAddress(email)
-    if err != nil {
-        return rocketpool.GasInfo{}, err 
-    }
-    return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapMember", id, address.Address, nodeAddress)
+    url = strings.Sanitize(url)
+    return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapMember", id, url, nodeAddress)
 }
 
 
 // Bootstrap a DAO member
-func BootstrapMember(rp *rocketpool.RocketPool, id, email string, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+func BootstrapMember(rp *rocketpool.RocketPool, id, url string, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return common.Hash{}, err
     }
-    address, err := mail.ParseAddress(email)
-    if err != nil {
-        return common.Hash{}, err
-    }
-    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, address.Address, nodeAddress)
+    url = strings.Sanitize(url)
+    hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, url, nodeAddress)
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node member %s: %w", id, err)
     }

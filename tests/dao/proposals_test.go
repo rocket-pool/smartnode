@@ -1,18 +1,18 @@
 package dao
 
 import (
-    "bytes"
-    "fmt"
-    "testing"
+	"bytes"
+	"fmt"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/dao"
-    trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/node"
-    trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/node"
+	trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
@@ -31,7 +31,9 @@ func TestProposalDetails(t *testing.T) {
 
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
 
     // Get & check initial proposal details
     if proposals, err := dao.GetProposals(rp, nil); err != nil {
@@ -39,7 +41,7 @@ func TestProposalDetails(t *testing.T) {
     } else if len(proposals) != 0 {
         t.Error("Incorrect initial proposal count")
     }
-    if proposals, err := dao.GetProposalsWithMember(rp, trustedNodeAccount.Address, nil); err != nil {
+    if proposals, err := dao.GetProposalsWithMember(rp, trustedNodeAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if len(proposals) != 0 {
         t.Error("Incorrect initial proposal count")
@@ -49,7 +51,7 @@ func TestProposalDetails(t *testing.T) {
     } else if len(daoProposals) != 0 {
         t.Error("Incorrect initial DAO proposal count")
     }
-    if daoProposals, err := dao.GetDAOProposalsWithMember(rp, proposalDaoName, trustedNodeAccount.Address, nil); err != nil {
+    if daoProposals, err := dao.GetDAOProposalsWithMember(rp, proposalDaoName, trustedNodeAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if len(daoProposals) != 0 {
         t.Error("Incorrect initial DAO proposal count")
@@ -60,7 +62,7 @@ func TestProposalDetails(t *testing.T) {
     proposalMemberAddress := nodeAccount.Address
     proposalMemberId := "coolguy"
     proposalMemberEmail := "coolguy@rocketpool.net"
-    proposalId, _, err := trustednodedao.ProposeInviteMember(rp, proposalMessage, proposalMemberAddress, proposalMemberId, proposalMemberEmail, trustedNodeAccount.GetTransactor())
+    proposalId, _, err := trustednodedao.ProposeInviteMember(rp, proposalMessage, proposalMemberAddress, proposalMemberId, proposalMemberEmail, trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
 
     // Mine blocks until proposal voting delay has passed
@@ -69,13 +71,14 @@ func TestProposalDetails(t *testing.T) {
     if err := evm.MineBlocks(int(voteDelayBlocks)); err != nil { t.Fatal(err) }
 
     // Vote on & execute proposal
-    if _, err := trustednodedao.VoteOnProposal(rp, proposalId, true, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := trustednodedao.ExecuteProposal(rp, proposalId, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.VoteOnProposal(rp, proposalId, true, trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.VoteOnProposal(rp, proposalId, true, trustedNodeAccount2.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.ExecuteProposal(rp, proposalId, trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Submit invite member proposal & cancel it
-    cancelledProposalId, _, err := trustednodedao.ProposeInviteMember(rp, "cancel this", nodeAccount.Address, "cancel", "cancel@rocketpool.net", trustedNodeAccount.GetTransactor())
+    cancelledProposalId, _, err := trustednodedao.ProposeInviteMember(rp, "cancel this", nodeAccount.Address, "cancel", "cancel@rocketpool.net", trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
-    if _, err := trustednodedao.CancelProposal(rp, cancelledProposalId, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodedao.CancelProposal(rp, cancelledProposalId, trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check updated proposal details
     if proposals, err := dao.GetProposals(rp, nil); err != nil {
@@ -85,7 +88,7 @@ func TestProposalDetails(t *testing.T) {
     } else if proposals[0].ID != proposalId || proposals[1].ID != cancelledProposalId {
         t.Error("Incorrect proposal indexes")
     }
-    if proposals, err := dao.GetProposalsWithMember(rp, trustedNodeAccount.Address, nil); err != nil {
+    if proposals, err := dao.GetProposalsWithMember(rp, trustedNodeAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if len(proposals) != 2 {
         t.Error("Incorrect updated proposal count")
@@ -99,7 +102,7 @@ func TestProposalDetails(t *testing.T) {
         if proposal.DAO != proposalDaoName {
             t.Errorf("Incorrect proposal DAO %s", proposal.DAO)
         }
-        if !bytes.Equal(proposal.ProposerAddress.Bytes(), trustedNodeAccount.Address.Bytes()) {
+        if !bytes.Equal(proposal.ProposerAddress.Bytes(), trustedNodeAccount1.Address.Bytes()) {
             t.Errorf("Incorrect proposal proposer address %s", proposal.ProposerAddress.Hex())
         }
         if proposal.Message != proposalMessage {
@@ -120,7 +123,7 @@ func TestProposalDetails(t *testing.T) {
         if proposal.VotesRequired == 0.0 {
             t.Errorf("Incorrect proposal required votes %f", proposal.VotesRequired)
         }
-        if proposal.VotesFor != 1.0 {
+        if proposal.VotesFor != 2.0 {
             t.Errorf("Incorrect proposal votes for %f", proposal.VotesFor)
         }
         if proposal.VotesAgainst != 0.0 {
@@ -162,7 +165,7 @@ func TestProposalDetails(t *testing.T) {
     } else if daoProposals[0].ID != proposalId || daoProposals[1].ID != cancelledProposalId {
         t.Error("Incorrect DAO proposal indexes")
     }
-    if daoProposals, err := dao.GetDAOProposalsWithMember(rp, proposalDaoName, trustedNodeAccount.Address, nil); err != nil {
+    if daoProposals, err := dao.GetDAOProposalsWithMember(rp, proposalDaoName, trustedNodeAccount1.Address, nil); err != nil {
         t.Error(err)
     } else if len(daoProposals) != 2 {
         t.Error("Incorrect updated DAO proposal count")

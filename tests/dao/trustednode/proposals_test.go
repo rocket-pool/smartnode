@@ -1,23 +1,23 @@
 package trustednode
 
 import (
-    "bytes"
-    "fmt"
-    "testing"
+	"bytes"
+	"fmt"
+	"testing"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/dao"
-    trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
-    trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/dao"
+	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
-    daoutils "github.com/rocket-pool/rocketpool-go/tests/testutils/dao"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	daoutils "github.com/rocket-pool/rocketpool-go/tests/testutils/dao"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 
@@ -34,6 +34,8 @@ func TestProposeInviteMember(t *testing.T) {
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
 
     // Submit, pass & execute invite member proposal
     proposalMemberAddress := nodeAccount.Address
@@ -41,7 +43,7 @@ func TestProposeInviteMember(t *testing.T) {
     proposalMemberEmail := "coolguy@rocketpool.net"
     proposalId, _, err := trustednodedao.ProposeInviteMember(rp, "invite coolguy", proposalMemberAddress, proposalMemberId, proposalMemberEmail, trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
-    if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1}); err != nil { t.Fatal(err) }
+    if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil { t.Fatal(err) }
 
     // Get & check initial member exists status
     if exists, err := trustednodedao.GetMemberExists(rp, nodeAccount.Address, nil); err != nil {
@@ -156,6 +158,7 @@ func TestProposeKickMember(t *testing.T) {
     // Register nodes
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
 
     // Get & check initial member exists status
     if exists, err := trustednodedao.GetMemberExists(rp, trustedNodeAccount2.Address, nil); err != nil {
@@ -200,6 +203,8 @@ func TestProposeUpgradeContract(t *testing.T) {
 
     // Register node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
 
     // Submit, pass & execute upgrade contract proposal
     proposalUpgradeType := "upgradeContract"
