@@ -64,11 +64,11 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
         if err != nil { 
             return err 
         }
-        nodeMemberEmail, err := trustednode.GetMemberEmail(rp, nodeAccount.Address, nil)
+        nodeMemberUrl, err := trustednode.GetMemberUrl(rp, nodeAccount.Address, nil)
         if err != nil { 
             return err 
         }
-        message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberEmail)
+        message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberUrl)
         gasInfo, err := trustednode.EstimateProposeMemberLeaveGas(rp, message, nodeAccount.Address, opts)
         if err == nil {
             response.GasInfo = gasInfo
@@ -109,7 +109,7 @@ func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
     // Data
     var wg errgroup.Group
     var nodeMemberId string
-    var nodeMemberEmail string
+    var nodeMemberUrl string
 
     // Get node member details
     wg.Go(func() error {
@@ -119,7 +119,7 @@ func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
     })
     wg.Go(func() error {
         var err error
-        nodeMemberEmail, err = trustednode.GetMemberEmail(rp, nodeAccount.Address, nil)
+        nodeMemberUrl, err = trustednode.GetMemberUrl(rp, nodeAccount.Address, nil)
         return err
     })
 
@@ -141,7 +141,7 @@ func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
     }
 
     // Submit proposal
-    message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberEmail)
+    message := fmt.Sprintf("%s (%s) leaves", nodeMemberId, nodeMemberUrl)
     proposalId, hash, err := trustednode.ProposeMemberLeave(rp, message, nodeAccount.Address, opts)
     if err != nil {
         return nil, err
