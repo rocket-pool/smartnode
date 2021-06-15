@@ -59,18 +59,22 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     eth2Connection, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
         log.Println(fmt.Errorf("Error upgrading websocket: %w", err))
-        fmt.Fprintln(w, fmt.Errorf("Error upgrading websocket: %w", err))
+        _, _ = fmt.Fprintln(w, fmt.Errorf("Error upgrading websocket: %w", err))
 		return
 	}
-	defer eth2Connection.Close()
+	defer func() {
+		_ = eth2Connection.Close()
+	}()
 
     // Connect to Infura
     infuraConnection, _, err := websocket.DefaultDialer.Dial(p.ProviderUrl, nil)
     if err != nil {
         log.Println(fmt.Errorf("Error connecting to remote websocket: %w", err))
-        fmt.Fprintln(w, fmt.Errorf("Error connecting to remote websocket: %w", err))
+        _, _ = fmt.Fprintln(w, fmt.Errorf("Error connecting to remote websocket: %w", err))
 	}
-	defer infuraConnection.Close()
+	defer func() {
+		_ =  infuraConnection.Close()
+	}()
 
     // Wait groups for the proxy loops
     wg := new(sync.WaitGroup)
@@ -83,14 +87,14 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
             mt, message, err := eth2Connection.ReadMessage()
 		    if err != nil {
                 log.Println(fmt.Errorf("Error reading from eth2: %w", err))
-                fmt.Fprintln(w, fmt.Errorf("Error reading from eth2: %w", err))
+                _, _ = fmt.Fprintln(w, fmt.Errorf("Error reading from eth2: %w", err))
 			    break
 		    }
 
             // Send it to the remote server
             if err = infuraConnection.WriteMessage(mt, message); err != nil {
                 log.Println(fmt.Errorf("Error writing to remote websocket: %w", err))
-                fmt.Fprintln(w, fmt.Errorf("Error writing to remote websocket: %w", err))
+                _, _ = fmt.Fprintln(w, fmt.Errorf("Error writing to remote websocket: %w", err))
 			    break
 		    }
         }
@@ -105,14 +109,14 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
             mt, message, err := infuraConnection.ReadMessage()
 		    if err != nil {
                 log.Println(fmt.Errorf("Error reading from remote websocket: %w", err))
-                fmt.Fprintln(w, fmt.Errorf("Error reading from remote websocket: %w", err))
+                _, _ = fmt.Fprintln(w, fmt.Errorf("Error reading from remote websocket: %w", err))
 			    break
 		    }
 
             // Send it to eth2
             if err = eth2Connection.WriteMessage(mt, message); err != nil {
                 log.Println(fmt.Errorf("Error writing to eth2: %w", err))
-                fmt.Fprintln(w, fmt.Errorf("Error writing to eth2: %w", err))
+                _, _ = fmt.Fprintln(w, fmt.Errorf("Error writing to eth2: %w", err))
 			    break
 		    }
         }

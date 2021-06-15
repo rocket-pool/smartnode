@@ -1,13 +1,13 @@
 package odao
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "github.com/urfave/cli"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 
@@ -35,7 +35,7 @@ func getMembers(c *cli.Context) error {
         fmt.Printf("--------------------\n")
         fmt.Printf("\n")
         fmt.Printf("Member ID:            %s\n", member.ID)
-        fmt.Printf("Email address:        %s\n", member.Email)
+        fmt.Printf("URL:                  %s\n", member.Url)
         fmt.Printf("Node address:         %s\n", member.Address.Hex())
         fmt.Printf("Joined at block:      %d\n", member.JoinedBlock)
         fmt.Printf("Last proposal block:  %d\n", member.LastProposalBlock)

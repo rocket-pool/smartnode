@@ -65,7 +65,7 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     contentTypes, ok := r.Header["Content-Type"]
     if !ok || len(contentTypes) == 0 {
         log.Println(errors.New("Request Content-Type header not specified"))
-        fmt.Fprintln(w, errors.New("Request Content-Type header not specified"))
+        _,_ = fmt.Fprintln(w, errors.New("Request Content-Type header not specified"))
         return
     }
 
@@ -73,10 +73,12 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     response, err := http.Post(p.ProviderUrl, contentTypes[0], r.Body)
     if err != nil {
         log.Println(fmt.Errorf("Error forwarding request to remote server: %w", err))
-        fmt.Fprintln(w, fmt.Errorf("Error forwarding request to remote server: %w", err))
+        _, _ = fmt.Fprintln(w, fmt.Errorf("Error forwarding request to remote server: %w", err))
         return
     }
-    defer response.Body.Close()
+    defer func() {
+        _ =response.Body.Close()
+    }()
 
     // Set response writer header
     w.Header().Set("Content-Type", "application/json")
@@ -85,7 +87,7 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     _, err = io.Copy(w, response.Body)
     if err != nil {
         log.Println(fmt.Errorf("Error reading response from remote server: %w", err))
-        fmt.Fprintln(w, fmt.Errorf("Error reading response from remote server: %w", err))
+        _, _ =fmt.Fprintln(w, fmt.Errorf("Error reading response from remote server: %w", err))
         return
     }
 
