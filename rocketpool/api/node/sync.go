@@ -12,10 +12,6 @@ import (
 
 func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
 
-    // Get services
-    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
-    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-
     // Response
     response := api.NodeSyncProgressResponse{}
 

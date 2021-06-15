@@ -1,12 +1,11 @@
 package rocketpool
 
 import (
-    "encoding/json"
-    "fmt"
+	"encoding/json"
+	"fmt"
 
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
 
 // Get wallet status
 func (c *Client) WalletStatus() (api.WalletStatusResponse, error) {
@@ -27,7 +26,7 @@ func (c *Client) WalletStatus() (api.WalletStatusResponse, error) {
 
 // Set wallet password
 func (c *Client) SetPassword(password string) (api.SetPasswordResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-password \"%s\"", password))
+    responseBytes, err := c.callAPI("wallet set-password", password)
     if err != nil {
         return api.SetPasswordResponse{}, fmt.Errorf("Could not set wallet password: %w", err)
     }
@@ -61,7 +60,7 @@ func (c *Client) InitWallet() (api.InitWalletResponse, error) {
 
 // Recover wallet
 func (c *Client) RecoverWallet(mnemonic string) (api.RecoverWalletResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("wallet recover \"%s\"", mnemonic))
+    responseBytes, err := c.callAPI("wallet recover", mnemonic)
     if err != nil {
         return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %w", err)
     }

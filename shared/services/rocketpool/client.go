@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-    "log"
-    "os"
+	"log"
+	"os"
 	osUser "os/user"
 	"strings"
 
@@ -356,7 +356,7 @@ func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
     }
     configBytes, err := ioutil.ReadFile(expandedPath)
     if err != nil {
-        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at s: %w", shellescape.Quote(path), err)
+        return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %s: %w", shellescape.Quote(path), err)
     }
     return config.Parse(configBytes)
 }
@@ -479,7 +479,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 
 // Call the Rocket Pool API
-func (c *Client) callAPI(args string) ([]byte, error) {
+func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
     // Sanitize arguments
     var sanitizedArgs []string
     for _, arg := range strings.Fields(args) {
@@ -487,6 +487,12 @@ func (c *Client) callAPI(args string) ([]byte, error) {
         sanitizedArgs = append(sanitizedArgs, sanitizedArg)
     }
     args = strings.Join(sanitizedArgs, " ")
+    if len(otherArgs) > 0 {
+        for _, arg := range otherArgs {
+            sanitizedArg := shellescape.Quote(arg)
+            args += fmt.Sprintf(" %s", sanitizedArg)
+        }
+    }
 
     // Run the command
     var cmd string
