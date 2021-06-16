@@ -77,6 +77,20 @@ func InConsensus(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
 }
 
 
+// Returns the latest block number that oracles should be reporting prices for
+func GetLatestReportableBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketNetworkPrices, err := getRocketNetworkPrices(rp)
+    if err != nil {
+        return nil, err
+    }
+    latestReportableBlock := new(*big.Int)
+    if err := rocketNetworkPrices.Call(opts, latestReportableBlock, "getLatestReportableBlock"); err != nil {
+        return nil, fmt.Errorf("Could not get latest reportable block: %w", err)
+    }
+    return *latestReportableBlock, nil
+}
+
+
 // Get contracts
 var rocketNetworkPricesLock sync.Mutex
 func getRocketNetworkPrices(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
