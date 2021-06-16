@@ -78,7 +78,7 @@ func InConsensus(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
 
 
 // Returns the latest block number that oracles should be reporting prices for
-func GetLatestReportableBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
     rocketNetworkPrices, err := getRocketNetworkPrices(rp)
     if err != nil {
         return nil, err
