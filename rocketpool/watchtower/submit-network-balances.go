@@ -184,34 +184,16 @@ func (t *submitNetworkBalances) run() error {
 // Get the latest block number to report balances for
 func (t *submitNetworkBalances) getLatestReportableBlock() (uint64, error) {
 
-    // Data
-    var wg errgroup.Group
-    var currentBlock uint64
-    var submitBalancesFrequency uint64
-
-    // Get current block
-    wg.Go(func() error {
-        header, err := t.ec.HeaderByNumber(context.Background(), nil)
-        if err == nil {
-            currentBlock = header.Number.Uint64()
-        }
-        return err
-    })
-
-    // Get balance submission frequency
-    wg.Go(func() error {
-        var err error
-        submitBalancesFrequency, err = protocol.GetSubmitBalancesFrequency(t.rp, nil)
-        return err
-    })
-
-    // Wait for data
-    if err := wg.Wait(); err != nil {
+    // Require mainnet eth client synced
+    if err := services.RequireMainnetEthClientSynced(t.c); err != nil {
         return 0, err
     }
 
-    // Calculate and return
-    return (currentBlock / submitBalancesFrequency) * submitBalancesFrequency, nil
+    latestBlock, err := network.GetLatestReportableBalancesBlock(t.rp, nil)
+    if err != nil {
+        return 0, fmt.Errorf("Error getting latest reportable block: %w", err)
+    }
+    return latestBlock.Uint64(), nil
 
 }
 

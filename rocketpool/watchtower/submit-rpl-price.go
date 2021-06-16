@@ -164,7 +164,7 @@ func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
         return 0, err
     }
 
-    latestBlock, err := network.GetLatestReportableBlock(t.rp, nil)
+    latestBlock, err := network.GetLatestReportablePricesBlock(t.rp, nil)
     if err != nil {
         return 0, fmt.Errorf("Error getting latest reportable block: %w", err)
     }
