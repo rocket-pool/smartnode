@@ -186,7 +186,7 @@ func nodeStakeRpl(c *cli.Context) error {
     rp.PrintMultiTxWarning()
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? Staked RPL can only be withdrawn after a delay.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach over 150%% collateral!", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
         fmt.Println("Cancelled.")
         return nil
     }
