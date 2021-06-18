@@ -135,8 +135,12 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     if err != nil {
         return nil, err
     }
-    response.CollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(response.MinipoolCounts.Total) * 16.0)
-
+    if response.MinipoolCounts.Total > 0 {
+        response.CollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(response.MinipoolCounts.Total) * 16.0)
+    } else {
+        response.CollateralRatio = -1
+    }
+    
     // Return response
     return &response, nil
 
