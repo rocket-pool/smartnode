@@ -21,7 +21,7 @@ func main() {
     // Set application info
     app.Name = "rocketpool"
     app.Usage = "Rocket Pool service"
-    app.Version = "1.0.0-rc1"
+    app.Version = "1.0.0-rc3"
     app.Authors = []cli.Author{
         {
             Name:  "David Rugendyke",
