@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -66,6 +67,7 @@ func (w *Wallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
     transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, w.chainID)
     transactor.GasPrice = w.gasPrice
     transactor.GasLimit = w.gasLimit
+    transactor.Context = context.Background()
     return transactor, err
 
 }
