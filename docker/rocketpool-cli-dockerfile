@@ -1,0 +1,47 @@
+###
+# Builder
+###
+
+
+# Start from golang image
+FROM golang:latest AS builder
+
+# Copy source files
+ADD ./rocketpool-cli /src/rocketpool-cli
+ADD ./rocketpool /src/rocketpool
+ADD ./shared /src/shared
+ADD ./go.mod /src/go.mod
+ADD ./go.sum /src/go.sum
+
+# Compile & install RP Service
+
+WORKDIR /src
+RUN go install ./rocketpool
+
+# Compile RP CLI
+WORKDIR /src/rocketpool-cli
+RUN go build rocketpool-cli.go
+
+
+###
+# Process
+###
+
+
+# Start from ubuntu image
+FROM ubuntu:20.04
+
+# Install OS dependencies
+RUN apt-get update && apt-get install -y ca-certificates
+
+# Copy RP service binary
+COPY --from=builder /go/bin/rocketpool /usr/local/bin/rocketpoold
+
+# Copy RP CLI binary
+COPY --from=builder /src/rocketpool-cli/rocketpool-cli /usr/local/bin/rocketpool
+
+# Create handy alias
+RUN echo "alias rp='/usr/local/bin/rocketpool --allow-root --daemon-path /usr/local/bin/rocketpoold --config-path /.rocketpool'" >> /root/.bashrc
+
+# Container entry point
+ENTRYPOINT ["/usr/local/bin/rocketpool", "--allow-root", "--daemon-path", "/usr/local/bin/rocketpoold"]
