@@ -63,6 +63,10 @@ func main() {
             Usage: "RPL token contract `address`",
         },
         cli.StringFlag{
+            Name:  "rplFaucetAddress, f",
+            Usage: "Rocket Pool RPL token faucet `address`",
+        },
+        cli.StringFlag{
             Name:  "password, p",
             Usage: "Rocket Pool wallet password file absolute `path`",
         },

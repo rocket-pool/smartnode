@@ -40,6 +40,7 @@ var (
     mainnetEthClient *ethclient.Client
     rocketPool *rocketpool.RocketPool
     oneInchOracle *contracts.OneInchOracle
+    rplFaucet *contracts.RPLFaucet
     beaconClient beacon.Client
     docker *client.Client
 
@@ -50,6 +51,7 @@ var (
     initMainnetEthClient sync.Once
     initRocketPool sync.Once
     initOneInchOracle sync.Once
+    initRplFaucet sync.Once
     initBeaconClient sync.Once
     initDocker sync.Once
 )
@@ -125,6 +127,19 @@ func GetOneInchOracle(c *cli.Context) (*contracts.OneInchOracle, error) {
         return nil, err
     }
     return getOneInchOracle(cfg, mnec)
+}
+
+
+func GetRplFaucet(c *cli.Context) (*contracts.RPLFaucet, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    ec, err := getEthClient(cfg)
+    if err != nil {
+        return nil, err
+    }
+    return getRplFaucet(cfg, ec)
 }
 
 
@@ -221,6 +236,15 @@ func getOneInchOracle(cfg config.RocketPoolConfig, client *ethclient.Client) (*c
         oneInchOracle, err = contracts.NewOneInchOracle(common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), client)
     })
     return oneInchOracle, err
+}
+
+
+func getRplFaucet(cfg config.RocketPoolConfig, client *ethclient.Client) (*contracts.RPLFaucet, error) {
+    var err error
+    initRplFaucet.Do(func() {
+        rplFaucet, err = contracts.NewRPLFaucet(common.HexToAddress(cfg.Rocketpool.RPLFaucetAddress), client)
+    })
+    return rplFaucet, err
 }
 
 

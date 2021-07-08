@@ -20,6 +20,7 @@ type RocketPoolConfig struct {
         StorageAddress string           `yaml:"storageAddress,omitempty"`
         OneInchOracleAddress string     `yaml:"oneInchOracleAddress,omitempty"`
         RplTokenAddress string          `yaml:"rplTokenAddress,omitempty"`
+        RPLFaucetAddress string         `yaml:"rplFaucetAddress,omitempty"`
     }                                   `yaml:"rocketpool,omitempty"`
     Smartnode struct {
         ProjectName string              `yaml:"projectName,omitempty"`
@@ -231,6 +232,7 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     config.Rocketpool.StorageAddress = c.GlobalString("storageAddress")
     config.Rocketpool.OneInchOracleAddress = c.GlobalString("oneInchOracleAddress")
     config.Rocketpool.RplTokenAddress = c.GlobalString("rplTokenAddress")
+    config.Rocketpool.RPLFaucetAddress = c.GlobalString("rplFaucetAddress")
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
