@@ -1,15 +1,14 @@
 package rocketpool
 
 import (
-    "encoding/json"
-    "fmt"
-    "math/big"
+	"encoding/json"
+	"fmt"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
 
 // Get minipool status
 func (c *Client) MinipoolStatus() (api.MinipoolStatusResponse, error) {
@@ -145,34 +144,34 @@ func (c *Client) ExitMinipool(address common.Address) (api.ExitMinipoolResponse,
 
 
 // Check whether a minipool can be withdrawn
-func (c *Client) CanWithdrawMinipool(address common.Address) (api.CanWithdrawMinipoolResponse, error) {
+func (c *Client) CanWithdrawMinipool(address common.Address) (api.CanProcessWithdrawalResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-withdraw %s", address.Hex()))
     if err != nil {
-        return api.CanWithdrawMinipoolResponse{}, fmt.Errorf("Could not get can withdraw minipool status: %w", err)
+        return api.CanProcessWithdrawalResponse{}, fmt.Errorf("Could not get can withdraw minipool status: %w", err)
     }
-    var response api.CanWithdrawMinipoolResponse
+    var response api.CanProcessWithdrawalResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.CanWithdrawMinipoolResponse{}, fmt.Errorf("Could not decode can withdraw minipool response: %w", err)
+        return api.CanProcessWithdrawalResponse{}, fmt.Errorf("Could not decode can withdraw minipool response: %w", err)
     }
     if response.Error != "" {
-        return api.CanWithdrawMinipoolResponse{}, fmt.Errorf("Could not get can withdraw minipool status: %s", response.Error)
+        return api.CanProcessWithdrawalResponse{}, fmt.Errorf("Could not get can withdraw minipool status: %s", response.Error)
     }
     return response, nil
 }
 
 
 // Withdraw a minipool
-func (c *Client) WithdrawMinipool(address common.Address) (api.WithdrawMinipoolResponse, error) {
+func (c *Client) WithdrawMinipool(address common.Address) (api.ProcessWithdrawalResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("minipool withdraw %s", address.Hex()))
     if err != nil {
-        return api.WithdrawMinipoolResponse{}, fmt.Errorf("Could not withdraw minipool: %w", err)
+        return api.ProcessWithdrawalResponse{}, fmt.Errorf("Could not withdraw minipool: %w", err)
     }
-    var response api.WithdrawMinipoolResponse
+    var response api.ProcessWithdrawalResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.WithdrawMinipoolResponse{}, fmt.Errorf("Could not decode withdraw minipool response: %w", err)
+        return api.ProcessWithdrawalResponse{}, fmt.Errorf("Could not decode withdraw minipool response: %w", err)
     }
     if response.Error != "" {
-        return api.WithdrawMinipoolResponse{}, fmt.Errorf("Could not withdraw minipool: %s", response.Error)
+        return api.ProcessWithdrawalResponse{}, fmt.Errorf("Could not withdraw minipool: %s", response.Error)
     }
     return response, nil
 }

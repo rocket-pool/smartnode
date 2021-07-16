@@ -66,6 +66,34 @@ type SetNodeWithdrawalAddressResponse struct {
     TxHash common.Hash                  `json:"txHash"`
 }
 
+
+type CanConfirmNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanConfirm bool                     `json:"canConfirm"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+}
+type ConfirmNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
+}
+
+
+type GetNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    Address common.Address              `json:"address"`
+}
+
+
+type GetNodePendingWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    Address common.Address              `json:"address"`
+}
+
+
 type CanSetNodeTimezoneResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
