@@ -18,6 +18,16 @@ func GetNodeWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Addr
 }
 
 
+// Get a node's pending withdrawal address
+func GetNodePendingWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
+    withdrawalAddress := new(common.Address)
+    if err := rp.RocketStorageContract.Call(opts, withdrawalAddress, "getNodePendingWithdrawalAddress", nodeAddress); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get node %s pending withdrawal address: %w", nodeAddress.Hex(), err)
+    }
+    return *withdrawalAddress, nil
+}
+
+
 // Estimate the gas of SetWithdrawalAddress
 func EstimateSetWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     return rp.RocketStorageContract.GetTransactionGasInfo(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)

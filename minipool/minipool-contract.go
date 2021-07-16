@@ -411,22 +411,6 @@ func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSign
 }
 
 
-// Estimate the gas of Withdraw
-func (mp *Minipool) EstimateWithdrawGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    return mp.Contract.GetTransactionGasInfo(opts, "withdraw")
-}
-
-
-// Withdraw node balances & rewards from the withdrawable minipool and close it
-func (mp *Minipool) Withdraw(opts *bind.TransactOpts) (common.Hash, error) {
-    hash, err := mp.Contract.Transact(opts, "withdraw")
-    if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not withdraw from minipool %s: %w", mp.Address.Hex(), err)
-    }
-    return hash, nil
-}
-
-
 // Estimate the gas of Dissolve
 func (mp *Minipool) EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     return mp.Contract.GetTransactionGasInfo(opts, "dissolve")
