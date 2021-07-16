@@ -102,7 +102,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, conf
 }
 
 
-func canConfirmWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.CanConfirmNodeWithdrawalAddressResponse, error) {
+func canConfirmWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) (*api.CanConfirmNodeWithdrawalAddressResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -145,7 +145,7 @@ func canConfirmWithdrawalAddress(c *cli.Context, withdrawalAddress common.Addres
 }
 
 
-func confirmWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.ConfirmNodeWithdrawalAddressResponse, error) {
+func confirmWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) (*api.ConfirmNodeWithdrawalAddressResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }

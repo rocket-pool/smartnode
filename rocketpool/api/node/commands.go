@@ -128,6 +128,41 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "can-confirm-withdrawal-address",
+                Usage:     "Checks if the node can confirm its withdrawal address",
+                UsageText: "rocketpool api node can-confirm-withdrawal-address address",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    withdrawalAddress, err := cliutils.ValidateAddress("withdrawal address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canConfirmWithdrawalAddress(c, withdrawalAddress))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "confirm-withdrawal-address",
+                Usage:     "Confirms the node's withdrawal address if it was set back to the node address",
+                UsageText: "rocketpool api node confirm-withdrawal-address address",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    withdrawalAddress, err := cliutils.ValidateAddress("withdrawal address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(confirmWithdrawalAddress(c, withdrawalAddress))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
                 Name:      "can-set-timezone",
                 Usage:     "Checks if the node can set its timezone location",
                 UsageText: "rocketpool api node can-set-timezone timezone-location",
