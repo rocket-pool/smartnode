@@ -32,8 +32,8 @@ func CreateSlashedRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account,
     if err := minipoolutils.StakeMinipool(rp, mp, trustedNodeAccount); err != nil { return err }
 
     // Mark minipool as withdrawable with zero end balance
-    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), big.NewInt(0), trustedNodeAccount.GetTransactor()); err != nil { return err }
-    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), big.NewInt(0), trustedNodeAccount2.GetTransactor()); err != nil { return err }
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil { return err }
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount2.GetTransactor()); err != nil { return err }
 
     // Return
     return nil

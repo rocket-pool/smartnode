@@ -1,17 +1,17 @@
 package minipool
 
 import (
-    "bytes"
-    "testing"
+	"bytes"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
 )
 
 
@@ -52,7 +52,7 @@ func TestMinipoolDetails(t *testing.T) {
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
 
     // Mark minipool as withdrawable
-    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, minipoolDepositAmount, minipoolWithdrawalAmount, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get minipool validator pubkey
     validatorPubkey, err := validator.GetValidatorPubkey()

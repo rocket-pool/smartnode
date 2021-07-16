@@ -1,22 +1,22 @@
 package minipool
 
 import (
-    "bytes"
-    "encoding/hex"
-    "testing"
+	"bytes"
+	"encoding/hex"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/deposit"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
 )
 
 
@@ -47,7 +47,7 @@ func TestDetails(t *testing.T) {
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
 
     // Set minipool withdrawable status
-    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(34), eth.EthToWei(36), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check minipool details
     if status, err := mp.GetStatusDetails(nil); err != nil {
@@ -283,6 +283,13 @@ func TestClose(t *testing.T) {
 }
 
 
+func TestDestroy(t *testing.T) {
+
+    // TODO
+
+}
+
+
 func TestWithdrawValidatorBalance(t *testing.T) {
 
     // State snapshotting
@@ -307,7 +314,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
 
     // Set minipool withdrawable status
-    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, eth.EthToWei(32), eth.EthToWei(32), trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get initial token contract ETH balances
     rethContractBalance1, err := tokens.GetRETHContractETHBalance(rp, nil)
@@ -322,14 +329,14 @@ func TestWithdrawValidatorBalance(t *testing.T) {
         t.Fatal(err)
     }
 
-    // Get node balances before payout
+    // Get node balances before withdrawal
     nodeBalance1, err := tokens.GetBalances(rp, nodeAccount.Address, nil)
     if err != nil {
         t.Fatal(err)
     }
 
-    // Call payout method
-    if _, err := mp.Payout(true, nodeAccount.GetTransactor()); err != nil {
+    // Call ProcessWithdrawal method
+    if _, err := mp.ProcessWithdrawal(nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
@@ -358,6 +365,148 @@ func TestWithdrawValidatorBalance(t *testing.T) {
     } else if rethCollateralRate != 1 {
         t.Errorf("Incorrect rETH collateral rate %f", rethCollateralRate)
     }
+
+    // Confirm the minipool still exists
+    if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+        t.Error(err)
+    } else if !exists {
+        t.Error("Minipool no longer exists but it should")
+    }
+
+}
+
+
+func TestWithdrawValidatorBalanceAndDestroy(t *testing.T) {
+
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
+
+    // Register nodes
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    if err != nil { t.Fatal(err) }
+
+    // Make user deposit
+    userDepositAmount := eth.EthToWei(16)
+    userDepositOpts := userAccount.GetTransactor()
+    userDepositOpts.Value = userDepositAmount
+    if _, err := deposit.Deposit(rp, userDepositOpts); err != nil { t.Fatal(err) }
+
+    // Stake minipool
+    if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
+
+    // Set minipool withdrawable status
+    if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
+    // Get initial token contract ETH balances
+    rethContractBalance1, err := tokens.GetRETHContractETHBalance(rp, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    // Withdraw minipool validator balance
+    opts := swcAccount.GetTransactor()
+    opts.Value = eth.EthToWei(32)
+    if _, err := mp.Contract.Transfer(opts); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get node balances before withdrawal
+    nodeBalance1, err := tokens.GetBalances(rp, nodeAccount.Address, nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    // Call ProcessWithdrawalAndDestroy method
+    if _, err := mp.ProcessWithdrawalAndDestroy(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get & check updated node ETH balances
+    if nodeBalance2, err := tokens.GetBalances(rp, nodeAccount.Address, nil); err != nil {
+        t.Fatal(err)
+    } else if nodeBalance2.ETH.Cmp(nodeBalance1.ETH) != 1 {
+        t.Error("node ETH balance did not increase after processing withdrawal")
+    }
+
+    // Get & check updated token contract ETH balances
+    if rethContractBalance2, err := tokens.GetRETHContractETHBalance(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if rethContractBalance2.Cmp(rethContractBalance1) != 1 {
+        t.Error("rETH contract ETH balance did not increase after processing withdrawal")
+    }
+
+    // Get & check rETH collateral amount & rate
+    if rethTotalCollateral, err := tokens.GetRETHTotalCollateral(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if rethTotalCollateral.Cmp(userDepositAmount) != 0 {
+        t.Errorf("Incorrect rETH total collateral amount %s", rethTotalCollateral.String())
+    }
+    if rethCollateralRate, err := tokens.GetRETHCollateralRate(rp, nil); err != nil {
+        t.Fatal(err)
+    } else if rethCollateralRate != 1 {
+        t.Errorf("Incorrect rETH collateral rate %f", rethCollateralRate)
+    }
+
+    // Confirm the minipool still exists
+    if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+        t.Error(err)
+    } else if exists {
+        t.Error("Minipool still exists but it shouldn't")
+    }
+
+}
+
+
+func TestDelegateUpgrade(t *testing.T) {
+
+    // TODO
+
+}
+
+
+func TestDelegateRollback(t *testing.T) {
+
+    // TODO
+
+}
+
+
+func TestSetUseLatestDelegate(t *testing.T) {
+
+    // TODO
+
+}
+
+
+func TestGetUseLatestDelegate(t *testing.T) {
+
+    // TODO
+
+}
+
+
+func TestGetDelegate(t *testing.T) {
+
+    // TODO
+
+}
+
+
+func TestGetPreviousDelegate(t *testing.T) {
+
+    // TODO
+
+}
+
+
+func TestGetEffectiveDelegate(t *testing.T) {
+
+    // TODO
 
 }
 

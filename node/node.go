@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/storage"
 	"github.com/rocket-pool/rocketpool-go/utils/strings"
 )
 
@@ -128,7 +129,7 @@ func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts 
     })
     wg.Go(func() error {
         var err error
-        withdrawalAddress, err = GetNodeWithdrawalAddress(rp, nodeAddress, opts)
+        withdrawalAddress, err = storage.GetNodeWithdrawalAddress(rp, nodeAddress, opts)
         return err
     })
     wg.Go(func() error {
@@ -195,20 +196,6 @@ func GetNodeExists(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *
 }
 
 
-// Get a node's withdrawal address
-func GetNodeWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return common.Address{}, err
-    }
-    withdrawalAddress := new(common.Address)
-    if err := rocketNodeManager.Call(opts, withdrawalAddress, "getNodeWithdrawalAddress", nodeAddress); err != nil {
-        return common.Address{}, fmt.Errorf("Could not get node %s withdrawal address: %w", nodeAddress.Hex(), err)
-    }
-    return *withdrawalAddress, nil
-}
-
-
 // Get a node's timezone location
 func GetNodeTimezoneLocation(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (string, error) {
     rocketNodeManager, err := getRocketNodeManager(rp)
@@ -242,54 +229,6 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
     hash, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not register node: %w", err)
-    }
-    return hash, nil
-}
-
-
-// Estimate the gas of SetWithdrawalAddress
-func EstimateSetWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return rocketpool.GasInfo{}, err
-    }
-    return rocketNodeManager.GetTransactionGasInfo(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
-}
-
-
-// Set a node's withdrawal address
-func SetWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (common.Hash, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return common.Hash{}, err
-    }
-    hash, err := rocketNodeManager.Transact(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
-    if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
-    }
-    return hash, nil
-}
-
-
-// Estimate the gas of ConfirmWithdrawalAddress
-func EstimateConfirmWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return rocketpool.GasInfo{}, err
-    }
-    return rocketNodeManager.GetTransactionGasInfo(opts, "confirmWithdrawalAddress", nodeAddress)
-}
-
-
-// Set a node's withdrawal address
-func ConfirmWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-    rocketNodeManager, err := getRocketNodeManager(rp)
-    if err != nil {
-        return common.Hash{}, err
-    }
-    hash, err := rocketNodeManager.Transact(opts, "confirmWithdrawalAddress", nodeAddress)
-    if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
     }
     return hash, nil
 }

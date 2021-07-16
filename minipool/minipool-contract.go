@@ -363,20 +363,33 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 
-// Estimate the gas of Payout
-func (mp *Minipool) EstimatePayoutGas(confirm bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    return mp.Contract.GetTransactionGasInfo(opts, "payout", confirm)
+// Estimate the gas of ProcessWithdrawal
+func (mp *Minipool) EstimateProcessWithdrawalGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "processWithdrawal")
 }
 
 
-// Payout withdrawn ETH
-func (mp *Minipool) Payout(confirm bool, opts *bind.TransactOpts) (common.Hash, error) {
-    if !confirm {
-        return common.Hash{}, fmt.Errorf("Could not payout minipool %s: confirmation flag must be set to true", mp.Address.Hex())
-    }
-    hash, err := mp.Contract.Transact(opts, "payout", confirm)
+// Process an ETH withdrawal
+func (mp *Minipool) ProcessWithdrawal(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "processWithdrawal")
     if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not payout minipool %s: %w", mp.Address.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not process withdrawal for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return hash, nil
+}
+
+
+// Estimate the gas of ProcessWithdrawalAndDestroy
+func (mp *Minipool) EstimateProcessWithdrawalAndDestroyGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "processWithdrawal")
+}
+
+
+// Process an ETH withdrawal and destroy the minipool
+func (mp *Minipool) ProcessWithdrawalAndDestroy(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "processWithdrawalAndDestroy")
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not process withdrawal for and destroy minipool %s: %w", mp.Address.Hex(), err)
     }
     return hash, nil
 }
@@ -443,6 +456,110 @@ func (mp *Minipool) Close(opts *bind.TransactOpts) (common.Hash, error) {
         return common.Hash{}, fmt.Errorf("Could not close minipool %s: %w", mp.Address.Hex(), err)
     }
     return hash, nil
+}
+
+
+// Estimate the gas of Destroy
+func (mp *Minipool) EstimateDestroyGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "destroy")
+}
+
+
+// Destroy a minipool to get the RPL stake back
+func (mp *Minipool) Destroy(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "destroy")
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not destroy minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return hash, nil
+}
+
+
+// Estimate the gas of DelegateUpgrade
+func (mp *Minipool) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "delegateUpgrade")
+}
+
+
+// Upgrade this minipool to the latest network delegate contract
+func (mp *Minipool) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "delegateUpgrade")
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not upgrade delegate for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return hash, nil
+}
+
+
+// Estimate the gas of DelegateRollback
+func (mp *Minipool) EstimateDelegateRollbackGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "delegateRollback")
+}
+
+
+// Rollback to previous delegate contract
+func (mp *Minipool) DelegateRollback(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "delegateRollback")
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not rollback delegate for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return hash, nil
+}
+
+
+// Estimate the gas of SetUseLatestDelegate
+func (mp *Minipool) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "setUseLatestDelegate", setting)
+}
+
+
+// If set to true, will automatically use the latest delegate contract
+func (mp *Minipool) SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "setUseLatestDelegate", setting)
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not set use latest delegate for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return hash, nil
+}
+
+
+// Getter for useLatestDelegate setting
+func (mp *Minipool) GetUseLatestDelegate(opts *bind.CallOpts) (bool, error) {
+    setting := new(bool)
+    if err := mp.Contract.Call(opts, setting, "getUseLatestDelegate"); err != nil {
+        return false, fmt.Errorf("Could not get use latest delegate for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return *setting, nil
+}
+
+
+// Returns the address of the minipool's stored delegate
+func (mp *Minipool) GetDelegate(opts *bind.CallOpts) (common.Address, error) {
+    address := new(common.Address)
+    if err := mp.Contract.Call(opts, address, "getDelegate"); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get delegate for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return *address, nil
+}
+
+
+// Returns the address of the minipool's previous delegate (or address(0) if not set)
+func (mp *Minipool) GetPreviousDelegate(opts *bind.CallOpts) (common.Address, error) {
+    address := new(common.Address)
+    if err := mp.Contract.Call(opts, address, "getPreviousDelegate"); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get previous delegate for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return *address, nil
+}
+
+
+// Returns the delegate which will be used when calling this minipool taking into account useLatestDelegate setting
+func (mp *Minipool) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error) {
+    address := new(common.Address)
+    if err := mp.Contract.Call(opts, address, "getEffectiveDelegate"); err != nil {
+        return common.Address{}, fmt.Errorf("Could not get effective delegate for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return *address, nil
 }
 
 

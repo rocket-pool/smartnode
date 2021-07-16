@@ -2,6 +2,7 @@ package rocketpool
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,14 +37,15 @@ type cachedContract struct {
 
 // Rocket Pool contract manager
 type RocketPool struct {
-    Client          *ethclient.Client
-    RocketStorage   *contracts.RocketStorage
-    addresses       map[string]cachedAddress
-    abis            map[string]cachedABI
-    contracts       map[string]cachedContract
-    addressesLock   sync.RWMutex
-    abisLock        sync.RWMutex
-    contractsLock   sync.RWMutex
+    Client                  *ethclient.Client
+    RocketStorage           *contracts.RocketStorage
+    RocketStorageContract   *Contract
+    addresses               map[string]cachedAddress
+    abis                    map[string]cachedABI
+    contracts               map[string]cachedContract
+    addressesLock           sync.RWMutex
+    abisLock                sync.RWMutex
+    contractsLock           sync.RWMutex
 }
 
 
@@ -56,10 +58,23 @@ func NewRocketPool(client *ethclient.Client, rocketStorageAddress common.Address
         return nil, fmt.Errorf("Could not initialize Rocket Pool storage contract: %w", err)
     }
 
+    // Create a Contract for it
+    rsAbi, err := abi.JSON(strings.NewReader(contracts.RocketStorageABI))
+	if err != nil {
+		return nil, err
+	}
+    contract := &Contract{
+        Contract: bind.NewBoundContract(rocketStorageAddress, rsAbi, client, client, client),
+        Address: &rocketStorageAddress,
+        ABI: &rsAbi,
+        Client: client,
+    }
+
     // Create and return
     return &RocketPool{
         Client: client,
         RocketStorage: rocketStorage,
+        RocketStorageContract: contract,
         addresses: make(map[string]cachedAddress),
         abis: make(map[string]cachedABI),
         contracts: make(map[string]cachedContract),

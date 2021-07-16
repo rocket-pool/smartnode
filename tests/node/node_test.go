@@ -1,14 +1,15 @@
 package node
 
 import (
-    "bytes"
-    "testing"
+	"bytes"
+	"testing"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/storage"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )
 
 
@@ -75,12 +76,12 @@ func TestSetWithdrawalAddress(t *testing.T) {
 
     // Set withdrawal address
     withdrawalAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
-    if _, err := node.SetWithdrawalAddress(rp, nodeAccount.Address, withdrawalAddress, true, nodeAccount.GetTransactor()); err != nil {
+    if _, err := storage.SetWithdrawalAddress(rp, nodeAccount.Address, withdrawalAddress, true, nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Get & check node withdrawal address
-    if nodeWithdrawalAddress, err := node.GetNodeWithdrawalAddress(rp, nodeAccount.Address, nil); err != nil {
+    if nodeWithdrawalAddress, err := storage.GetNodeWithdrawalAddress(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
     } else if !bytes.Equal(nodeWithdrawalAddress.Bytes(), withdrawalAddress.Bytes()) {
         t.Errorf("Incorrect node withdrawal address '%s'", nodeWithdrawalAddress.Hex())
@@ -102,17 +103,17 @@ func TestSetWithdrawalAddressConfirmation(t *testing.T) {
 
     // Set withdrawal address
     withdrawalAddress := withdrawalAccount.Address
-    if _, err := node.SetWithdrawalAddress(rp, nodeAccount.Address, withdrawalAddress, false, nodeAccount.GetTransactor()); err != nil {
+    if _, err := storage.SetWithdrawalAddress(rp, nodeAccount.Address, withdrawalAddress, false, nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Confirm withdrawal address
-    if _, err := node.ConfirmWithdrawalAddress(rp, nodeAccount.Address, withdrawalAccount.GetTransactor()); err != nil {
+    if _, err := storage.ConfirmWithdrawalAddress(rp, nodeAccount.Address, withdrawalAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
     // Get & check node withdrawal address
-    if nodeWithdrawalAddress, err := node.GetNodeWithdrawalAddress(rp, nodeAccount.Address, nil); err != nil {
+    if nodeWithdrawalAddress, err := storage.GetNodeWithdrawalAddress(rp, nodeAccount.Address, nil); err != nil {
         t.Error(err)
     } else if !bytes.Equal(nodeWithdrawalAddress.Bytes(), withdrawalAddress.Bytes()) {
         t.Errorf("Incorrect node withdrawal address '%s'", nodeWithdrawalAddress.Hex())
