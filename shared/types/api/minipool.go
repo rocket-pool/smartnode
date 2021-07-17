@@ -30,6 +30,10 @@ type MinipoolDetails struct {
     RefundAvailable bool                    `json:"refundAvailable"`
     WithdrawalAvailable bool                `json:"withdrawalAvailable"`
     CloseAvailable bool                     `json:"closeAvailable"`
+    UseLatestDelegate bool                  `json:"useLatestDelegate"`
+    Delegate common.Address                 `json:"delegate"`
+    PreviousDelegate common.Address         `json:"previousDelegate"`
+    EffectiveDelegate common.Address        `json:"effectiveDelegate"`
 }
 type ValidatorDetails struct {
     Exists bool                     `json:"exists"`

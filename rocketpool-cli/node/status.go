@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -39,20 +40,32 @@ func getStatus(c *cli.Context) error {
     // Registered node details
     if status.Registered {
 
+        // Node status
+        fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
+        if status.Trusted {
+            fmt.Println("The node is a member of the oracle DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
+        }
+        fmt.Println("")
+
         // Withdrawal address & balances
+        colorReset := "\033[0m"
+        colorYellow := "\033[33m"
         if !bytes.Equal(status.AccountAddress.Bytes(), status.WithdrawalAddress.Bytes()) {
             fmt.Printf(
                 "The node's withdrawal address %s has a balance of %.6f ETH and %.6f RPL.\n",
                 status.WithdrawalAddress.Hex(),
                 math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
                 math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6))
+        } else {
+            fmt.Println("")
+            fmt.Printf("%sThe node's withdrawal address has not been changed, so rewards and withdrawals will be sent to the node itself.\n", colorYellow)
+            fmt.Printf("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.\n%s", colorReset)
         }
         fmt.Println("")
-
-        // Node status
-        fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
-        if status.Trusted {
-            fmt.Println("The node is a member of the oracle DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
+        blankAddress := common.Address{}
+        if status.PendingWithdrawalAddress.Hex() != blankAddress.Hex() {
+            fmt.Printf("%sThe node's withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingWithdrawalAddress.Hex())
+            fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
         }
         fmt.Println("")
 

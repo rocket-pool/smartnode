@@ -172,6 +172,26 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
         details.Balances, err = tokens.GetBalances(rp, minipoolAddress, nil)
         return err
     })
+    wg.Go(func() error {
+        var err error
+        details.UseLatestDelegate, err = mp.GetUseLatestDelegate(nil)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        details.Delegate, err = mp.GetDelegate(nil)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        details.PreviousDelegate, err = mp.GetPreviousDelegate(nil)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        details.EffectiveDelegate, err = mp.GetEffectiveDelegate(nil)
+        return err
+    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {

@@ -394,9 +394,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "can-process-withdrawal-minipool",
+                Name:      "can-process-withdrawal",
                 Usage:     "Check if a withdrawal can be processed on the minipool",
-                UsageText: "rocketpool api minipool can-process-withdrawal-minipool minipool-address",
+                UsageText: "rocketpool api minipool can-process-withdrawal minipool-address",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -411,9 +411,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
-                Name:      "process-withdrawal-minipool",
+                Name:      "process-withdrawal",
                 Usage:     "Process a withdrawal on the minipool, distributing ETH to the node operator and the staking pool",
-                UsageText: "rocketpool api minipool process-withdrawal-minipool minipool-address",
+                UsageText: "rocketpool api minipool process-withdrawal minipool-address",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -429,9 +429,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "can-process-withdrawal-and-destroy-minipool",
+                Name:      "can-process-withdrawal-and-destroy",
                 Usage:     "Check if a withdrawal and destroy can be processed on the minipool",
-                UsageText: "rocketpool api minipool can-process-withdrawal-and-destroy-minipool minipool-address",
+                UsageText: "rocketpool api minipool can-process-withdrawal-and-destroy minipool-address",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -446,9 +446,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
-                Name:      "process-withdrawal-and-destroy-minipool",
+                Name:      "process-withdrawal-and-destroy",
                 Usage:     "Process a withdrawal on the minipool, distributing ETH to the node operator and the staking pool, then destroy it",
-                UsageText: "rocketpool api minipool process-withdrawal-and-destroy-minipool minipool-address",
+                UsageText: "rocketpool api minipool process-withdrawal-and-destroy minipool-address",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
