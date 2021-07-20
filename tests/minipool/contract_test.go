@@ -336,7 +336,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
     }
 
     // Call ProcessWithdrawal method
-    if _, err := mp.ProcessWithdrawal(nodeAccount.GetTransactor()); err != nil {
+    if _, err := mp.DistributeBalance(nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
@@ -421,8 +421,8 @@ func TestWithdrawValidatorBalanceAndDestroy(t *testing.T) {
         t.Fatal(err)
     }
 
-    // Call ProcessWithdrawalAndDestroy method
-    if _, err := mp.ProcessWithdrawalAndDestroy(nodeAccount.GetTransactor()); err != nil {
+    // Call DistributeBalanceAndDestroy method
+    if _, err := mp.DistributeBalanceAndDestroy(nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
