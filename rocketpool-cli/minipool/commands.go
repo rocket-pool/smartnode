@@ -147,61 +147,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "process-withdrawal",
-                Aliases:   []string{"w"},
-                Usage:     "Withdraw the ETH balance from the minipool to its owner and the rETH staking pool",
-                UsageText: "rocketpool minipool process-withdrawal [options] minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    return processWithdrawal(c, minipoolAddress)
-
-                },
-            },
-
-
-            cli.Command{
-                Name:      "destroy",
-                Aliases:   []string{"t"},
-                Usage:     "Destroy a minipool that has exited validation and been withdrawn from",
-                UsageText: "rocketpool minipool destroy [options] minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    return destroyMinipool(c, minipoolAddress)
-
-                },
-            },
-
-            cli.Command{
-                Name:      "process-withdrawal-and-destroy",
-                Aliases:   []string{"wd"},
-                Usage:     "Withdraw the ETH balance from the minipool to its owner and the rETH staking pool, and then destroy the pool",
-                UsageText: "rocketpool minipool process-withdrawal-and-destroy [options] minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    return processWithdrawalAndDestroy(c, minipoolAddress)
-
-                },
-            },
-
-            cli.Command{
                 Name:      "delegate-upgrade",
                 Aliases:   []string{"u"},
                 Usage:     "Upgrade a minipool's delegate contract to the latest version",
@@ -231,7 +176,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "delegate-rollback",
                 Aliases:   []string{"b"},
-                Usage:     "Rolls a minipool's delegate contract back to its previous version",
+                Usage:     "Roll a minipool's delegate contract back to its previous version",
                 UsageText: "rocketpool minipool delegate-rollback [options]",
                 Flags: []cli.Flag{
                     cli.StringFlag{
@@ -258,7 +203,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "set-use-latest-delegate",
                 Aliases:   []string{"l"},
-                Usage:     "Enable or disable auto-upgrading of a minipool's delegate contract to the latest version",
+                Usage:     "If enabled, the minipool will ignore its current delegate contract and always use whatever the latest delegate is",
                 UsageText: "rocketpool minipool set-use-latest-delegate [options] setting",
                 Flags: []cli.Flag{
                     cli.StringFlag{

@@ -284,7 +284,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             cli.Command{
                 Name:      "can-set-use-latest-delegate",
-                Usage:     "Check whether the automatic upgrading setting can be toggled for the minipool",
+                Usage:     "Check whether the 'always use latest delegate' toggle can be set",
                 UsageText: "rocketpool api minipool can-set-use-latest-delegate minipool-address setting",
                 Action: func(c *cli.Context) error {
 
@@ -303,7 +303,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
             cli.Command{
                 Name:      "set-use-latest-delegate",
-                Usage:     "Toggle automatic upgrading of minipool delegates to the latest version",
+                Usage:     "Set whether or not to ignore the minipool's current delegate, and always use the latest delegate instead",
                 UsageText: "rocketpool api minipool set-use-latest-delegate minipool-address setting",
                 Action: func(c *cli.Context) error {
 
@@ -323,7 +323,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             cli.Command{
                 Name:      "get-use-latest-delegate",
-                Usage:     "Gets the current setting of the automatic minipool delegate upgrade toggle",
+                Usage:     "Gets the current setting of the 'always use latest delegate' toggle",
                 UsageText: "rocketpool api minipool get-use-latest-delegate minipool-address",
                 Action: func(c *cli.Context) error {
 
@@ -388,76 +388,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(getEffectiveDelegate(c, minipoolAddress))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
-                Name:      "can-process-withdrawal",
-                Usage:     "Check if a withdrawal can be processed on the minipool",
-                UsageText: "rocketpool api minipool can-process-withdrawal minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canProcessWithdrawalMinipool(c, minipoolAddress))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "process-withdrawal",
-                Usage:     "Process a withdrawal on the minipool, distributing ETH to the node operator and the staking pool",
-                UsageText: "rocketpool api minipool process-withdrawal minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(processWithdrawalMinipool(c, minipoolAddress))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
-                Name:      "can-process-withdrawal-and-destroy",
-                Usage:     "Check if a withdrawal and destroy can be processed on the minipool",
-                UsageText: "rocketpool api minipool can-process-withdrawal-and-destroy minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canProcessWithdrawalAndDestroyMinipool(c, minipoolAddress))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "process-withdrawal-and-destroy",
-                Usage:     "Process a withdrawal on the minipool, distributing ETH to the node operator and the staking pool, then destroy it",
-                UsageText: "rocketpool api minipool process-withdrawal-and-destroy minipool-address",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(processWithdrawalAndDestroyMinipool(c, minipoolAddress))
                     return nil
 
                 },
