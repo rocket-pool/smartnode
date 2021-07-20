@@ -30,6 +30,10 @@ type MinipoolDetails struct {
     RefundAvailable bool                    `json:"refundAvailable"`
     WithdrawalAvailable bool                `json:"withdrawalAvailable"`
     CloseAvailable bool                     `json:"closeAvailable"`
+    UseLatestDelegate bool                  `json:"useLatestDelegate"`
+    Delegate common.Address                 `json:"delegate"`
+    PreviousDelegate common.Address         `json:"previousDelegate"`
+    EffectiveDelegate common.Address        `json:"effectiveDelegate"`
 }
 type ValidatorDetails struct {
     Exists bool                     `json:"exists"`
@@ -80,14 +84,28 @@ type ExitMinipoolResponse struct {
 }
 
 
-type CanWithdrawMinipoolResponse struct {
+type CanProcessWithdrawalResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanWithdraw bool                `json:"canWithdraw"`
     InvalidStatus bool              `json:"invalidStatus"`
     GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
-type WithdrawMinipoolResponse struct {
+type ProcessWithdrawalResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    TxHash common.Hash              `json:"txHash"`
+}
+
+
+type CanProcessWithdrawalAndDestroyResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    CanWithdraw bool                `json:"canWithdraw"`
+    InvalidStatus bool              `json:"invalidStatus"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
+}
+type ProcessWithdrawalAndDestroyResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     TxHash common.Hash              `json:"txHash"`
@@ -106,5 +124,81 @@ type CloseMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     TxHash common.Hash              `json:"txHash"`
+}
+
+
+type CanDestroyMinipoolResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
+}
+type DestroyMinipoolResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    TxHash common.Hash              `json:"txHash"`
+}
+
+
+type CanDelegateUpgradeResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
+}
+type DelegateUpgradeResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    TxHash common.Hash              `json:"txHash"`
+}
+
+
+type CanDelegateRollbackResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
+}
+type DelegateRollbackResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    TxHash common.Hash              `json:"txHash"`
+}
+
+
+type CanSetUseLatestDelegateResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
+}
+type SetUseLatestDelegateResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    TxHash common.Hash              `json:"txHash"`
+}
+
+
+type GetUseLatestDelegateResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Setting bool                    `json:"setting"`
+}
+
+
+type GetDelegateResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Address common.Address          `json:"address"`
+}
+
+
+type GetPreviousDelegateResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Address common.Address          `json:"address"`
+}
+
+
+type GetEffectiveDelegateResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Address common.Address          `json:"address"`
 }
 

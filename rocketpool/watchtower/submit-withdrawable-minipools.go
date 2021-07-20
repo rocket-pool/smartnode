@@ -361,7 +361,7 @@ func (t *submitWithdrawableMinipools) submitWithdrawableMinipool(details minipoo
     }
 
     // Get the gas estimates
-    gasInfo, err := minipool.EstimateSubmitMinipoolWithdrawableGas(t.rp, details.Address, details.StartBalance, details.EndBalance, opts)
+    gasInfo, err := minipool.EstimateSubmitMinipoolWithdrawableGas(t.rp, details.Address, opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to submit minipool withdrawable status: %w", err)
     }
@@ -370,7 +370,7 @@ func (t *submitWithdrawableMinipools) submitWithdrawableMinipool(details minipoo
     }
 
     // Dissolve
-    hash, err := minipool.SubmitMinipoolWithdrawable(t.rp, details.Address, details.StartBalance, details.EndBalance, opts)
+    hash, err := minipool.SubmitMinipoolWithdrawable(t.rp, details.Address, opts)
     if err != nil {
         return err
     }

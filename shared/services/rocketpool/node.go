@@ -107,6 +107,40 @@ func (c *Client) SetNodeWithdrawalAddress(withdrawalAddress common.Address, conf
 }
 
 
+// Checks if the node's withdrawal address can be confirmed
+func (c *Client) CanConfirmNodeWithdrawalAddress() (api.CanSetNodeWithdrawalAddressResponse, error) {
+    responseBytes, err := c.callAPI("node can-confirm-withdrawal-address")
+    if err != nil {
+        return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node withdrawal address: %w", err)
+    }
+    var response api.CanSetNodeWithdrawalAddressResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode can confirm node withdrawal address response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanSetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node withdrawal address: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Confirm the node's withdrawal address
+func (c *Client) ConfirmNodeWithdrawalAddress() (api.SetNodeWithdrawalAddressResponse, error) {
+    responseBytes, err := c.callAPI("node confirm-withdrawal-address")
+    if err != nil {
+        return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
+    }
+    var response api.SetNodeWithdrawalAddressResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not decode confirm node withdrawal address response: %w", err)
+    }
+    if response.Error != "" {
+        return api.SetNodeWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node withdrawal address: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Checks if the node's timezone location can be set
 func (c *Client) CanSetNodeTimezone(timezoneLocation string) (api.CanSetNodeTimezoneResponse, error) {
     responseBytes, err := c.callAPI("node can-set-timezone", timezoneLocation)

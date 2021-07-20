@@ -113,6 +113,16 @@ func getStatus(c *cli.Context) error {
             fmt.Printf("Withdrawal available: yes\n")
             }
 
+            // Delegate details
+            if minipool.UseLatestDelegate {
+            fmt.Printf("Auto upgrade:         yes\n", )
+            } else {
+            fmt.Printf("Auto upgrade:         no\n", )
+            }
+            fmt.Printf("Delegate address:     %s\n", minipool.Delegate.Hex())
+            fmt.Printf("Rollback delegate:    %s\n", minipool.PreviousDelegate.Hex())
+            fmt.Printf("Effective delegate:   %s\n", minipool.EffectiveDelegate.Hex())
+
             fmt.Printf("\n")
         }
 

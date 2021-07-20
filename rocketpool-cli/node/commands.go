@@ -102,6 +102,28 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "confirm-withdrawal-address",
+                Aliases:   []string{"f"},
+                Usage:     "Confirm the node's pending withdrawal address if it has been set back to the node's address itself",
+                UsageText: "rocketpool node confirm-withdrawal-address [options]",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm withdrawal address",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return confirmWithdrawalAddress(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "set-timezone",
                 Aliases:   []string{"t"},
                 Usage:     "Set the node's timezone location",

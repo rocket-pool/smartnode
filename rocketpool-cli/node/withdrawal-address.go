@@ -38,7 +38,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
         fmt.Printf("Please ensure that you have the correct address - you will not be able to change this once set!%s\n\n", colorReset)
     }
 
-    // Set node's withdrawal address
+    // Check if the withdrawal address can be set
     canResponse, err := rp.CanSetNodeWithdrawalAddress(withdrawalAddress, confirm)
     if err != nil {
         return err
@@ -94,6 +94,47 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 
     // Log & return
     fmt.Printf("The node's withdrawal address was successfully set to %s.\n", withdrawalAddress.Hex())
+    return nil
+
+}
+
+
+func confirmWithdrawalAddress(c *cli.Context) error {
+
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Check if the withdrawal address can be confirmed
+    canResponse, err := rp.CanConfirmNodeWithdrawalAddress()
+    if err != nil {
+        return err
+    }
+
+    // Display gas estimate
+    rp.PrintGasInfo(canResponse.GasInfo)
+
+    // Prompt for confirmation
+    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to confirm your node's address as the new withdrawal address?")) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
+    // Confirm node's withdrawal address
+    response, err := rp.ConfirmNodeWithdrawalAddress()
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("Confirming new withdrawal address...\n")
+    cliutils.PrintTransactionHash(rp, response.TxHash)
+    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+        return err
+    }
+
+    // Log & return
+    fmt.Printf("The node's withdrawal address was successfully set to the node address.\n")
     return nil
 
 }

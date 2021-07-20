@@ -55,6 +55,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
         if err == nil {
             response.Registered = details.Exists
             response.WithdrawalAddress = details.WithdrawalAddress
+            response.PendingWithdrawalAddress = details.PendingWithdrawalAddress
             response.TimezoneLocation = details.TimezoneLocation
         }
         return err

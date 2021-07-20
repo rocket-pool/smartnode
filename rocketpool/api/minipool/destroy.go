@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -14,7 +13,7 @@ import (
 )
 
 
-func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanWithdrawMinipoolResponse, error) {
+func canDestroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanDestroyMinipoolResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -24,7 +23,7 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
     if err != nil { return nil, err }
 
     // Response
-    response := api.CanWithdrawMinipoolResponse{}
+    response := api.CanDestroyMinipoolResponse{}
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
@@ -32,40 +31,23 @@ func canWithdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.C
         return nil, err
     }
 
-    // Validate minipool owner
-    nodeAccount, err := w.GetNodeAccount()
-    if err != nil {
-        return nil, err
-    }
-    if err := validateMinipoolOwner(mp, nodeAccount.Address); err != nil {
-        return nil, err
-    }
-
-    // Check minipool status
-    status, err := mp.GetStatus(nil)
-    if err != nil {
-        return nil, err
-    }
-    response.InvalidStatus = (status != types.Withdrawable)
-
     // Get gas estimate
     opts, err := w.GetNodeAccountTransactor()
     if err != nil { 
         return nil, err 
     }
-    gasInfo, err := mp.EstimateWithdrawGas(opts)
+    gasInfo, err := mp.EstimateDestroyGas(opts)
     if err == nil {
         response.GasInfo = gasInfo
     }
 
     // Update & return response
-    response.CanWithdraw = !response.InvalidStatus
     return &response, nil
 
 }
 
 
-func withdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.WithdrawMinipoolResponse, error) {
+func destroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.DestroyMinipoolResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -75,7 +57,7 @@ func withdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.With
     if err != nil { return nil, err }
 
     // Response
-    response := api.WithdrawMinipoolResponse{}
+    response := api.DestroyMinipoolResponse{}
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
@@ -95,8 +77,8 @@ func withdrawMinipool(c *cli.Context, minipoolAddress common.Address) (*api.With
         return nil, fmt.Errorf("Error checking for nonce override: %w", err)
     }
 
-    // Withdraw
-    hash, err := mp.Withdraw(opts)
+    // Close
+    hash, err := mp.Destroy(opts)
     if err != nil {
         return nil, err
     }

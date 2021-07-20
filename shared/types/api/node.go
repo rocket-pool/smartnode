@@ -11,20 +11,21 @@ import (
 
 
 type NodeStatusResponse struct {
-    Status string                       `json:"status"`
-    Error string                        `json:"error"`
-    AccountAddress common.Address       `json:"accountAddress"`
-    WithdrawalAddress common.Address    `json:"withdrawalAddress"`
-    Registered bool                     `json:"registered"`
-    Trusted bool                        `json:"trusted"`
-    TimezoneLocation string             `json:"timezoneLocation"`
-    AccountBalances tokens.Balances     `json:"accountBalances"`
-    WithdrawalBalances tokens.Balances  `json:"withdrawalBalances"`
-    RplStake *big.Int                   `json:"rplStake"`
-    EffectiveRplStake *big.Int          `json:"effectiveRplStake"`
-    MinimumRplStake *big.Int            `json:"minimumRplStake"`
-    CollateralRatio float64             `json:"collateralRatio"`
-    MinipoolLimit uint64                `json:"minipoolLimit"`
+    Status string                               `json:"status"`
+    Error string                                `json:"error"`
+    AccountAddress common.Address               `json:"accountAddress"`
+    WithdrawalAddress common.Address            `json:"withdrawalAddress"`
+    PendingWithdrawalAddress common.Address     `json:"pendingWithdrawalAddress"`
+    Registered bool                             `json:"registered"`
+    Trusted bool                                `json:"trusted"`
+    TimezoneLocation string                     `json:"timezoneLocation"`
+    AccountBalances tokens.Balances             `json:"accountBalances"`
+    WithdrawalBalances tokens.Balances          `json:"withdrawalBalances"`
+    RplStake *big.Int                           `json:"rplStake"`
+    EffectiveRplStake *big.Int                  `json:"effectiveRplStake"`
+    MinimumRplStake *big.Int                    `json:"minimumRplStake"`
+    CollateralRatio float64                     `json:"collateralRatio"`
+    MinipoolLimit uint64                        `json:"minipoolLimit"`
     MinipoolCounts struct {
         Total int                           `json:"total"`
         Initialized int                     `json:"initialized"`
@@ -65,6 +66,34 @@ type SetNodeWithdrawalAddressResponse struct {
     Error string                        `json:"error"`
     TxHash common.Hash                  `json:"txHash"`
 }
+
+
+type CanConfirmNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    CanConfirm bool                     `json:"canConfirm"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+}
+type ConfirmNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TxHash common.Hash                  `json:"txHash"`
+}
+
+
+type GetNodeWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    Address common.Address              `json:"address"`
+}
+
+
+type GetNodePendingWithdrawalAddressResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    Address common.Address              `json:"address"`
+}
+
 
 type CanSetNodeTimezoneResponse struct {
     Status string                       `json:"status"`
