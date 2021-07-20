@@ -1,14 +1,21 @@
 package faucet
 
 import (
-    "context"
-    "math/big"
+	"context"
+	"math/big"
+	"strings"
 
-    "github.com/urfave/cli"
-    "golang.org/x/sync/errgroup"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/contracts"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 
@@ -37,22 +44,26 @@ func canWithdrawRpl(c *cli.Context) (*api.CanFaucetWithdrawRplResponse, error) {
     var wg errgroup.Group
     var withdrawalFee *big.Int
     var nodeAccountBalance *big.Int
+    var balance *big.Int
+    var allowance *big.Int
 
     // Check faucet balance
     wg.Go(func() error {
-        balance, err := f.GetBalance(nil)
+        _balance, err := f.GetBalance(nil)
         if err == nil {
-            response.InsufficientFaucetBalance = (balance.Cmp(big.NewInt(0)) == 0)
+            response.InsufficientFaucetBalance = (_balance.Cmp(big.NewInt(0)) == 0)
         }
+        balance = _balance
         return err
     })
 
     // Check allowance
     wg.Go(func() error {
-        allowance, err := f.GetAllowanceFor(nil, nodeAccount.Address)
+        _allowance, err := f.GetAllowanceFor(nil, nodeAccount.Address)
         if err == nil {
-            response.InsufficientAllowance = (allowance.Cmp(big.NewInt(0)) == 0)
+            response.InsufficientAllowance = (_allowance.Cmp(big.NewInt(0)) == 0)
         }
+        allowance = _allowance
         return err
     })
 
@@ -80,6 +91,29 @@ func canWithdrawRpl(c *cli.Context) (*api.CanFaucetWithdrawRplResponse, error) {
 
     // Update & return response
     response.CanWithdraw = !(response.InsufficientFaucetBalance || response.InsufficientAllowance || response.InsufficientNodeBalance)
+    
+    if response.CanWithdraw {
+        // Get the gas estimate
+        opts, err := w.GetNodeAccountTransactor()
+        if err != nil {
+            return nil, err
+        }
+        
+        // Get withdrawal amount
+        var amount *big.Int
+        if balance.Cmp(allowance) > 0 {
+            amount = allowance
+        } else {
+            amount = balance
+        }
+
+        gasInfo, err := estimateWithdrawGas(c, ec, f, opts, amount)
+        if err != nil {
+            return nil, err
+        }
+        response.GasInfo = gasInfo
+    }
+    
     return &response, nil
 
 }
@@ -161,6 +195,43 @@ func withdrawRpl(c *cli.Context) (*api.FaucetWithdrawRplResponse, error) {
 
     // Return response
     return &response, nil
+
+}
+
+
+func estimateWithdrawGas(c *cli.Context, client *ethclient.Client, faucet *contracts.RPLFaucet, opts *bind.TransactOpts, amount *big.Int) (rocketpool.GasInfo, error) {
+
+    // Set user option for gas price and gas limit
+    response := rocketpool.GasInfo {
+        ReqGasPrice: opts.GasPrice,
+        ReqGasLimit: opts.GasLimit,
+    }
+
+    // Get the faucet address
+    config, err := services.GetConfig(c)
+    if err != nil {
+        return response, err
+    }
+    faucetAddress := common.HexToAddress(config.Rocketpool.RPLFaucetAddress)
+
+    // Create a contract for the faucet
+    faucetAbi, err := abi.JSON(strings.NewReader(contracts.RPLFaucetABI))
+    if err != nil {
+        return response, err
+    }
+    contract := &rocketpool.Contract{
+        Contract: bind.NewBoundContract(faucetAddress, faucetAbi, client, client, client),
+        Address: &faucetAddress,
+        ABI: &faucetAbi,
+        Client: client,
+    }
+
+    // Get the gas info
+    gasInfo, err := contract.GetTransactionGasInfo(opts, "withdraw", amount)
+    if err != nil {
+        return response, err
+    }
+    return gasInfo, nil
 
 }
 

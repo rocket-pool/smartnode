@@ -1,12 +1,11 @@
 package rocketpool
 
 import (
-    "encoding/json"
-    "fmt"
+	"encoding/json"
+	"fmt"
 
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
 
 // Get faucet status
 func (c *Client) FaucetStatus() (api.FaucetStatusResponse, error) {

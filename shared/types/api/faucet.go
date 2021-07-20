@@ -1,9 +1,10 @@
 package api
 
 import (
-    "math/big"
+	"math/big"
 
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 
@@ -25,6 +26,7 @@ type CanFaucetWithdrawRplResponse struct {
     InsufficientFaucetBalance bool      `json:"insufficientFaucetBalance"`
     InsufficientAllowance bool          `json:"insufficientAllowance"`
     InsufficientNodeBalance bool        `json:"insufficientNodeBalance"`
+    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type FaucetWithdrawRplResponse struct {
     Status string                       `json:"status"`

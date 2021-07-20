@@ -1,18 +1,17 @@
 package faucet
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
     app.Commands = append(app.Commands, cli.Command{
         Name:      name,
         Aliases:   aliases,
-        Usage:     "Access the RPL faucet",
+        Usage:     "Access the legacy RPL faucet",
         Subcommands: []cli.Command{
 
             cli.Command{
@@ -34,7 +33,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             cli.Command{
                 Name:      "withdraw-rpl",
                 Aliases:   []string{"w"},
-                Usage:     "Withdraw RPL from the faucet",
+                Usage:     "Withdraw legacy RPL from the faucet",
                 UsageText: "rocketpool faucet withdraw-rpl",
                 Action: func(c *cli.Context) error {
 
