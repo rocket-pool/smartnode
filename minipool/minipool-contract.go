@@ -363,15 +363,18 @@ func (mp *Minipool) Refund(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 
-// Estimate the gas of ProcessWithdrawal
-func (mp *Minipool) EstimateProcessWithdrawalGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    return mp.Contract.GetTransactionGasInfo(opts, "processWithdrawal")
+// Estimate the gas of DistributeBalance
+func (mp *Minipool) EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "distributeBalance")
 }
 
 
-// Process an ETH withdrawal
-func (mp *Minipool) ProcessWithdrawal(opts *bind.TransactOpts) (common.Hash, error) {
-    hash, err := mp.Contract.Transact(opts, "processWithdrawal")
+// Distribute the minipool's ETH balance to the node operator and rETH staking pool.
+// !!! WARNING !!!
+// DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
+// and the balance has been deposited into the minipool!
+func (mp *Minipool) DistributeBalance(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "distributeBalance")
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not process withdrawal for minipool %s: %w", mp.Address.Hex(), err)
     }
@@ -379,15 +382,19 @@ func (mp *Minipool) ProcessWithdrawal(opts *bind.TransactOpts) (common.Hash, err
 }
 
 
-// Estimate the gas of ProcessWithdrawalAndDestroy
-func (mp *Minipool) EstimateProcessWithdrawalAndDestroyGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    return mp.Contract.GetTransactionGasInfo(opts, "processWithdrawal")
+// Estimate the gas of DistributeBalanceAndDestroy
+func (mp *Minipool) EstimateDistributeBalanceAndDestroyGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "distributeBalanceAndDestroy")
 }
 
 
-// Process an ETH withdrawal and destroy the minipool
-func (mp *Minipool) ProcessWithdrawalAndDestroy(opts *bind.TransactOpts) (common.Hash, error) {
-    hash, err := mp.Contract.Transact(opts, "processWithdrawalAndDestroy")
+// Distribute the minipool's ETH balance to the node operator and rETH staking pool,
+// then destroys the minipool.
+// !!! WARNING !!!
+// DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
+// and the balance has been deposited into the minipool!
+func (mp *Minipool) DistributeBalanceAndDestroy(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "distributeBalanceAndDestroy")
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not process withdrawal for and destroy minipool %s: %w", mp.Address.Hex(), err)
     }
