@@ -6,8 +6,14 @@ node_modules
 /rocketpool-cli/rocketpool-cli-darwin-amd64
 /rocketpool-cli/rocketpool-cli-linux-amd64
 /rocketpool-cli/rocketpool-cli-windows-amd64.exe
+/rocketpool-cli/rocketpool-cli-darwin-arm64
+/rocketpool-cli/rocketpool-cli-linux-arm64
 Dockerfile
 /rocketpool-cli/rocketpool-cli
 /rocketpool-pow-proxy/rocketpool-pow-proxy
 .idea
 /.vscode
+/rocketpool/rocketpool-daemon-darwin-amd64
+/rocketpool/rocketpool-daemon-linux-amd64
+/rocketpool/rocketpool-daemon-darwin-arm64
+/rocketpool/rocketpool-daemon-linux-arm64

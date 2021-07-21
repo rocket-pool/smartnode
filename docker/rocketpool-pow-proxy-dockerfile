@@ -11,6 +11,9 @@ ADD ./rocketpool-pow-proxy /src/rocketpool-pow-proxy
 ADD ./go.mod /src/go.mod
 ADD ./go.sum /src/go.sum
 
+# Update APKs
+RUN apk update
+
 # Compile & install
 WORKDIR /src
 RUN apk add --no-cache build-base
