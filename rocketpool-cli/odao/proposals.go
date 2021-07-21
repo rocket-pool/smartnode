@@ -61,21 +61,21 @@ func getProposals(c *cli.Context) error {
             fmt.Printf("Payload:              %s\n", proposal.PayloadStr)
             fmt.Printf("Payload (bytes):      %s\n", hex.EncodeToString(proposal.Payload))
             fmt.Printf("Proposed by:          %s\n", proposal.ProposerAddress.Hex())
-            fmt.Printf("Created at block:     %d\n", proposal.CreatedBlock)
+            fmt.Printf("Created time:         %d\n", proposal.CreatedTime)
 
             // Start block - pending proposals
             if proposal.State == types.Pending {
-            fmt.Printf("Starts at block:      %d\n", proposal.StartBlock)
+            fmt.Printf("Start time:           %d\n", proposal.StartTime)
             }
 
             // End block - active proposals
             if proposal.State == types.Active {
-            fmt.Printf("Ends at block:        %d\n", proposal.EndBlock)
+            fmt.Printf("Ends time:            %d\n", proposal.EndTime)
             }
 
             // Expiry block - succeeded proposals
             if proposal.State == types.Succeeded {
-            fmt.Printf("Expires at block:     %d\n", proposal.ExpiryBlock)
+            fmt.Printf("Expiry time:          %d\n", proposal.ExpiryTime)
             }
 
             // Vote details

@@ -49,11 +49,11 @@ func getProposalSettings(c* cli.Context) error {
     }
 
     // Log & return
-    fmt.Printf("Cooldown Between Proposals: %d Blocks\n", response.Cooldown)
-    fmt.Printf("Proposal Voting Window: %d Blocks\n", response.VoteBlocks)
-    fmt.Printf("Delay Before Voting on a Proposal is Allowed: %d Blocks\n", response.VoteDelayBlocks)
-    fmt.Printf("Window to Execute an Accepted Proposal: %d Blocks\n", response.ExecuteBlocks)
-    fmt.Printf("Window to Act on an Executed Proposal: %d Blocks\n", response.ActionBlocks)
+    fmt.Printf("Cooldown Between Proposals: %d Seconds\n", response.CooldownTime)
+    fmt.Printf("Proposal Voting Window: %d Seconds\n", response.VoteTime)
+    fmt.Printf("Delay Before Voting on a Proposal is Allowed: %d Seconds\n", response.VoteDelayTime)
+    fmt.Printf("Window to Execute an Accepted Proposal: %d Seconds\n", response.ExecuteTime)
+    fmt.Printf("Window to Act on an Executed Proposal: %d Seconds\n", response.ActionTime)
     return nil
 
 }

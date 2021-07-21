@@ -69,11 +69,11 @@ func voteOnProposal(c *cli.Context) error {
         options := make([]string, len(votableProposals))
         for pi, proposal := range votableProposals {
             options[pi] = fmt.Sprintf(
-                "proposal %d (message: '%s', payload: %s, end block: %d, votes required: %.2f, votes for: %.2f, votes against: %.2f)",
+                "proposal %d (message: '%s', payload: %s, end time: %d, votes required: %.2f, votes for: %.2f, votes against: %.2f)",
                 proposal.ID,
                 proposal.Message,
                 proposal.PayloadStr,
-                proposal.EndBlock,
+                proposal.EndTime,
                 proposal.VotesRequired,
                 proposal.VotesFor,
                 proposal.VotesAgainst)

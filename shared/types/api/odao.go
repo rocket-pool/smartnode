@@ -277,11 +277,11 @@ type GetTNDAOMemberSettingsResponse struct {
 }
 type GetTNDAOProposalSettingsResponse struct {
     Status string                   `json:"status"`
-    Error string                    `json:"error"`
-    Cooldown uint64                 `json:"cooldown"`
-    VoteBlocks uint64               `json:"voteBlocks"`
-    VoteDelayBlocks uint64          `json:"voteDelayBlocks"`
-    ExecuteBlocks uint64            `json:"executeBlocks"`
-    ActionBlocks uint64             `json:"actionBlocks"`
+    Error        string `json:"error"`
+    CooldownTime uint64 `json:"cooldown"`
+    VoteTime      uint64 `json:"voteBlocks"`
+    VoteDelayTime uint64 `json:"voteDelayBlocks"`
+    ExecuteTime uint64 `json:"executeBlocks"`
+    ActionTime  uint64 `json:"actionBlocks"`
 }
 
