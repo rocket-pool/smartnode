@@ -26,8 +26,8 @@ type MemberDetails struct {
     Exists bool                     `json:"exists"`
     ID string                       `json:"id"`
     Url string                      `json:"url"`
-    JoinedBlock uint64              `json:"joinedBlock"`
-    LastProposalBlock uint64        `json:"lastProposalBlock"`
+    JoinedTime uint64               `json:"joinedTime"`
+    LastProposalTime uint64         `json:"lastProposalTime"`
     RPLBondAmount *big.Int          `json:"rplBondAmount"`
     UnbondedValidatorCount uint64   `json:"unbondedValidatorCount"`
 }
@@ -122,8 +122,8 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
     var exists bool
     var id string
     var url string
-    var joinedBlock uint64
-    var lastProposalBlock uint64
+    var joinedTime uint64
+    var lastProposalTime uint64
     var rplBondAmount *big.Int
     var unbondedValidatorCount uint64
     
@@ -145,12 +145,12 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
     })
     wg.Go(func() error {
         var err error
-        joinedBlock, err = GetMemberJoinedBlock(rp, memberAddress, opts)
+        joinedTime, err = GetMemberJoinedTime(rp, memberAddress, opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        lastProposalBlock, err = GetMemberLastProposalBlock(rp, memberAddress, opts)
+        lastProposalTime, err = GetMemberLastProposalTime(rp, memberAddress, opts)
         return err
     })
     wg.Go(func() error {
@@ -171,13 +171,13 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
 
     // Return
     return MemberDetails{
-        Address: memberAddress,
-        Exists: exists,
-        ID: id,
-        Url: url,
-        JoinedBlock: joinedBlock,
-        LastProposalBlock: lastProposalBlock,
-        RPLBondAmount: rplBondAmount,
+        Address:                memberAddress,
+        Exists:                 exists,
+        ID:                     id,
+        Url:                    url,
+        JoinedTime:            joinedTime,
+        LastProposalTime:      lastProposalTime,
+        RPLBondAmount:          rplBondAmount,
         UnbondedValidatorCount: unbondedValidatorCount,
     }, nil
 
@@ -260,27 +260,27 @@ func GetMemberUrl(rp *rocketpool.RocketPool, memberAddress common.Address, opts 
     }
     return strings.Sanitize(*url), nil
 }
-func GetMemberJoinedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+func GetMemberJoinedTime(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return 0, err
     }
-    joinedBlock := new(*big.Int)
-    if err := rocketDAONodeTrusted.Call(opts, joinedBlock, "getMemberJoinedBlock", memberAddress); err != nil {
-        return 0, fmt.Errorf("Could not get trusted node DAO member %s joined block: %w", memberAddress.Hex(), err)
+    joinedTime := new(*big.Int)
+    if err := rocketDAONodeTrusted.Call(opts, joinedTime, "getMemberJoinedTime", memberAddress); err != nil {
+        return 0, fmt.Errorf("Could not get trusted node DAO member %s joined time: %w", memberAddress.Hex(), err)
     }
-    return (*joinedBlock).Uint64(), nil
+    return (*joinedTime).Uint64(), nil
 }
-func GetMemberLastProposalBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+func GetMemberLastProposalTime(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return 0, err
     }
-    lastProposalBlock := new(*big.Int)
-    if err := rocketDAONodeTrusted.Call(opts, lastProposalBlock, "getMemberLastProposalBlock", memberAddress); err != nil {
-        return 0, fmt.Errorf("Could not get trusted node DAO member %s last proposal block: %w", memberAddress.Hex(), err)
+    lastProposalTime := new(*big.Int)
+    if err := rocketDAONodeTrusted.Call(opts, lastProposalTime, "getMemberLastProposalTime", memberAddress); err != nil {
+        return 0, fmt.Errorf("Could not get trusted node DAO member %s last proposal time: %w", memberAddress.Hex(), err)
     }
-    return (*lastProposalBlock).Uint64(), nil
+    return (*lastProposalTime).Uint64(), nil
 }
 func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
@@ -306,26 +306,26 @@ func GetMemberUnbondedValidatorCount(rp *rocketpool.RocketPool, memberAddress co
 }
 
 
-// Get the block that a proposal for a member was executed at
-func GetMemberInviteProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-    return GetMemberProposalExecutedBlock(rp, "invited", memberAddress, opts)
+// Get the time that a proposal for a member was executed at
+func GetMemberInviteProposalExecutedTime(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+    return GetMemberProposalExecutedTime(rp, "invited", memberAddress, opts)
 }
-func GetMemberLeaveProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-    return GetMemberProposalExecutedBlock(rp, "leave", memberAddress, opts)
+func GetMemberLeaveProposalExecutedTime(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+    return GetMemberProposalExecutedTime(rp, "leave", memberAddress, opts)
 }
-func GetMemberReplaceProposalExecutedBlock(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-    return GetMemberProposalExecutedBlock(rp, "replace", memberAddress, opts)
+func GetMemberReplaceProposalExecutedTime(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+    return GetMemberProposalExecutedTime(rp, "replace", memberAddress, opts)
 }
-func GetMemberProposalExecutedBlock(rp *rocketpool.RocketPool, proposalType string, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+func GetMemberProposalExecutedTime(rp *rocketpool.RocketPool, proposalType string, memberAddress common.Address, opts *bind.CallOpts) (uint64, error) {
     rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp)
     if err != nil {
         return 0, err
     }
-    proposalExecutedBlock := new(*big.Int)
-    if err := rocketDAONodeTrusted.Call(opts, proposalExecutedBlock, "getMemberProposalExecutedBlock", proposalType, memberAddress); err != nil {
-        return 0, fmt.Errorf("Could not get trusted node DAO %s proposal executed block for member %s: %w", proposalType, memberAddress.Hex(), err)
+    proposalExecutedTime := new(*big.Int)
+    if err := rocketDAONodeTrusted.Call(opts, proposalExecutedTime, "getMemberProposalExecutedTime", proposalType, memberAddress); err != nil {
+        return 0, fmt.Errorf("Could not get trusted node DAO %s proposal executed time for member %s: %w", proposalType, memberAddress.Hex(), err)
     }
-    return (*proposalExecutedBlock).Uint64(), nil
+    return (*proposalExecutedTime).Uint64(), nil
 }
 
 

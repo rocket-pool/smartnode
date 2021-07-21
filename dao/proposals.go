@@ -29,10 +29,10 @@ type ProposalDetails struct {
     DAO string                      `json:"dao"`
     ProposerAddress common.Address  `json:"proposerAddress"`
     Message string                  `json:"message"`
-    CreatedBlock uint64             `json:"createdBlock"`
-    StartBlock uint64               `json:"startBlock"`
-    EndBlock uint64                 `json:"endBlock"`
-    ExpiryBlock uint64              `json:"expiryBlock"`
+    CreatedTime uint64              `json:"createdTime"`
+    StartTime uint64                `json:"startTime"`
+    EndTime uint64                  `json:"endTime"`
+    ExpiryTime uint64               `json:"expiryTime"`
     VotesRequired float64           `json:"votesRequired"`
     VotesFor float64                `json:"votesFor"`
     VotesAgainst float64            `json:"votesAgainst"`
@@ -260,10 +260,10 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     var dao string
     var proposerAddress common.Address
     var message string
-    var createdBlock uint64
-    var startBlock uint64
-    var endBlock uint64
-    var expiryBlock uint64
+    var createdTime uint64
+    var startTime uint64
+    var endTime uint64
+    var expiryTime uint64
     var votesRequired float64
     var votesFor float64
     var votesAgainst float64
@@ -290,22 +290,22 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     })
     wg.Go(func() error {
         var err error
-        createdBlock, err = GetProposalCreatedBlock(rp, proposalId, opts)
+        createdTime, err = GetProposalCreatedTime(rp, proposalId, opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        startBlock, err = GetProposalStartBlock(rp, proposalId, opts)
+        startTime, err = GetProposalStartTime(rp, proposalId, opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        endBlock, err = GetProposalEndBlock(rp, proposalId, opts)
+        endTime, err = GetProposalEndTime(rp, proposalId, opts)
         return err
     })
     wg.Go(func() error {
         var err error
-        expiryBlock, err = GetProposalExpiryBlock(rp, proposalId, opts)
+        expiryTime, err = GetProposalExpiryTime(rp, proposalId, opts)
         return err
     })
     wg.Go(func() error {
@@ -357,22 +357,22 @@ func GetProposalDetails(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 
     // Return
     return ProposalDetails{
-        ID: proposalId,
-        DAO: dao,
+        ID:              proposalId,
+        DAO:             dao,
         ProposerAddress: proposerAddress,
-        Message: message,
-        CreatedBlock: createdBlock,
-        StartBlock: startBlock,
-        EndBlock: endBlock,
-        ExpiryBlock: expiryBlock,
-        VotesRequired: votesRequired,
-        VotesFor: votesFor,
-        VotesAgainst: votesAgainst,
-        IsCancelled: isCancelled,
-        IsExecuted: isExecuted,
-        Payload: payload,
-        PayloadStr: payloadStr,
-        State: state,
+        Message:         message,
+        CreatedTime:     createdTime,
+        StartTime:       startTime,
+        EndTime:         endTime,
+        ExpiryTime:      expiryTime,
+        VotesRequired:   votesRequired,
+        VotesFor:        votesFor,
+        VotesAgainst:    votesAgainst,
+        IsCancelled:     isCancelled,
+        IsExecuted:      isExecuted,
+        Payload:         payload,
+        PayloadStr:      payloadStr,
+        State:           state,
     }, nil
 
 }
@@ -465,49 +465,49 @@ func GetProposalMessage(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
     }
     return strings.Sanitize(*message), nil
 }
-func GetProposalCreatedBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+func GetProposalCreatedTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
     if err != nil {
         return 0, err
     }
-    createdBlock := new(*big.Int)
-    if err := rocketDAOProposal.Call(opts, createdBlock, "getCreated", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d created block: %w", proposalId, err)
+    createdTime := new(*big.Int)
+    if err := rocketDAOProposal.Call(opts, createdTime, "getCreated", big.NewInt(int64(proposalId))); err != nil {
+        return 0, fmt.Errorf("Could not get proposal %d created time: %w", proposalId, err)
     }
-    return (*createdBlock).Uint64(), nil
+    return (*createdTime).Uint64(), nil
 }
-func GetProposalStartBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+func GetProposalStartTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
     if err != nil {
         return 0, err
     }
-    startBlock := new(*big.Int)
-    if err := rocketDAOProposal.Call(opts, startBlock, "getStart", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d start block: %w", proposalId, err)
+    startTime := new(*big.Int)
+    if err := rocketDAOProposal.Call(opts, startTime, "getStart", big.NewInt(int64(proposalId))); err != nil {
+        return 0, fmt.Errorf("Could not get proposal %d start time: %w", proposalId, err)
     }
-    return (*startBlock).Uint64(), nil
+    return (*startTime).Uint64(), nil
 }
-func GetProposalEndBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+func GetProposalEndTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
     if err != nil {
         return 0, err
     }
-    endBlock := new(*big.Int)
-    if err := rocketDAOProposal.Call(opts, endBlock, "getEnd", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d end block: %w", proposalId, err)
+    endTime := new(*big.Int)
+    if err := rocketDAOProposal.Call(opts, endTime, "getEnd", big.NewInt(int64(proposalId))); err != nil {
+        return 0, fmt.Errorf("Could not get proposal %d end time: %w", proposalId, err)
     }
-    return (*endBlock).Uint64(), nil
+    return (*endTime).Uint64(), nil
 }
-func GetProposalExpiryBlock(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
+func GetProposalExpiryTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (uint64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)
     if err != nil {
         return 0, err
     }
-    expiryBlock := new(*big.Int)
-    if err := rocketDAOProposal.Call(opts, expiryBlock, "getExpires", big.NewInt(int64(proposalId))); err != nil {
-        return 0, fmt.Errorf("Could not get proposal %d expiry block: %w", proposalId, err)
+    expiryTime := new(*big.Int)
+    if err := rocketDAOProposal.Call(opts, expiryTime, "getExpires", big.NewInt(int64(proposalId))); err != nil {
+        return 0, fmt.Errorf("Could not get proposal %d expiry time: %w", proposalId, err)
     }
-    return (*expiryBlock).Uint64(), nil
+    return (*expiryTime).Uint64(), nil
 }
 func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.CallOpts) (float64, error) {
     rocketDAOProposal, err := getRocketDAOProposal(rp)

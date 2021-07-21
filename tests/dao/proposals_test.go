@@ -27,7 +27,7 @@ func TestProposalDetails(t *testing.T) {
 
     // Set proposal cooldown
     if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayTime(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
@@ -65,10 +65,10 @@ func TestProposalDetails(t *testing.T) {
     proposalId, _, err := trustednodedao.ProposeInviteMember(rp, proposalMessage, proposalMemberAddress, proposalMemberId, proposalMemberEmail, trustedNodeAccount1.GetTransactor())
     if err != nil { t.Fatal(err) }
 
-    // Mine blocks until proposal voting delay has passed
-    voteDelayBlocks, err := trustednodesettings.GetProposalVoteDelayBlocks(rp, nil)
+    // Increase time until proposal voting delay has passed
+    voteDelayTime, err := trustednodesettings.GetProposalVoteDelayTime(rp, nil)
     if err != nil { t.Fatal(err) }
-    if err := evm.MineBlocks(int(voteDelayBlocks)); err != nil { t.Fatal(err) }
+    if err := evm.IncreaseTime(int(voteDelayTime)); err != nil { t.Fatal(err) }
 
     // Vote on & execute proposal
     if _, err := trustednodedao.VoteOnProposal(rp, proposalId, true, trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
