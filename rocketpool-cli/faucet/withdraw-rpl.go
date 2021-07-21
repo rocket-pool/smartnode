@@ -53,7 +53,7 @@ func withdrawRpl(c *cli.Context) error {
         return err
     }
 
-    fmt.Printf("Setting timezone...\n")
+    fmt.Printf("Withdrawing legacy RPL...\n")
     cliutils.PrintTransactionHash(rp, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
