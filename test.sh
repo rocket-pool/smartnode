@@ -22,7 +22,7 @@ fi
 
 # Rocket Pool settings
 rp_repo_url="https://github.com/rocket-pool/rocketpool.git"
-rp_repo_branch="rp3.0-updates"
+rp_repo_branch="master"
 
 # Dependencies
 rp_dependencies=(
