@@ -98,6 +98,7 @@ func canWithdrawRpl(c *cli.Context) (*api.CanFaucetWithdrawRplResponse, error) {
         if err != nil {
             return nil, err
         }
+        opts.Value = withdrawalFee
         
         // Get withdrawal amount
         var amount *big.Int
