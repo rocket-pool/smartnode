@@ -35,6 +35,9 @@ func CreateSlashedRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account,
     if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil { return err }
     if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount2.GetTransactor()); err != nil { return err }
 
+    // Distribute balance and destroy pool to send slashed RPL to auction contract
+    if _, err := mp.DistributeBalanceAndDestroy(trustedNodeAccount.GetTransactor()); err != nil { return err }
+
     // Return
     return nil
 

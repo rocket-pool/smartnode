@@ -23,6 +23,9 @@ func TestMemberDetails(t *testing.T) {
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
+    // Disable min commission rate for unbonded pools
+    if _, err := trustednodesettings.BootstrapMinipoolUnbondedMinFee(rp, uint64(0), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Get & check minimum member count
     if minMemberCount, err := trustednodedao.GetMinimumMemberCount(rp, nil); err != nil {
         t.Error(err)
@@ -38,7 +41,7 @@ func TestMemberDetails(t *testing.T) {
     }
 
     // Set proposal cooldown
-    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalCooldownTime(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
@@ -96,11 +99,11 @@ func TestMemberDetails(t *testing.T) {
         if member.Url != memberEmail {
             t.Errorf("Incorrect member email %s", member.Url)
         }
-        if member.JoinedBlock == 0 {
-            t.Errorf("Incorrect member joined block %d", member.JoinedBlock)
+        if member.JoinedTime == 0 {
+            t.Errorf("Incorrect member joined time %d", member.JoinedTime)
         }
-        if member.LastProposalBlock == 0 {
-            t.Errorf("Incorrect member last proposal block %d", member.LastProposalBlock)
+        if member.LastProposalTime == 0 {
+            t.Errorf("Incorrect member last proposal time %d", member.LastProposalTime)
         }
         if member.RPLBondAmount.Cmp(rplBondAmount) != 0 {
             t.Errorf("Incorrect member RPL bond amount %s", member.RPLBondAmount.String())

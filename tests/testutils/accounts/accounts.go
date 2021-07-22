@@ -1,6 +1,7 @@
 package accounts
 
 import (
+    "context"
     "crypto/ecdsa"
     "encoding/hex"
 
@@ -41,6 +42,8 @@ func GetAccount(index uint8) (*Account, error) {
 
 // Get a transactor for an account
 func (a *Account) GetTransactor() *bind.TransactOpts {
-    return bind.NewKeyedTransactor(a.PrivateKey)
+    opts := bind.NewKeyedTransactor(a.PrivateKey)
+    opts.Context = context.Background()
+    return opts
 }
 

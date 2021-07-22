@@ -175,8 +175,8 @@ func GetMemberDetails(rp *rocketpool.RocketPool, memberAddress common.Address, o
         Exists:                 exists,
         ID:                     id,
         Url:                    url,
-        JoinedTime:            joinedTime,
-        LastProposalTime:      lastProposalTime,
+        JoinedTime:             joinedTime,
+        LastProposalTime:       lastProposalTime,
         RPLBondAmount:          rplBondAmount,
         UnbondedValidatorCount: unbondedValidatorCount,
     }, nil

@@ -16,11 +16,11 @@ import (
 func PassAndExecuteProposal(rp *rocketpool.RocketPool, proposalId uint64, trustedNodeAccounts []*accounts.Account) error {
 
     // Get proposal voting delay
-    voteDelayBlocks, err := trustednodesettings.GetProposalVoteDelayBlocks(rp, nil)
+    voteDelayTime, err := trustednodesettings.GetProposalVoteDelayTime(rp, nil)
     if err != nil { return err }
 
-    // Mine blocks until proposal voting delay has passed
-    if err := evm.MineBlocks(int(voteDelayBlocks)); err != nil { return err }
+    // Increase time until proposal voting delay has passed
+    if err := evm.IncreaseTime(int(voteDelayTime)); err != nil { return err }
 
     // Vote on proposal until passed
     for _, account := range trustedNodeAccounts {

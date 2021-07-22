@@ -24,24 +24,24 @@ const (
 
 
 // The cooldown period a member must wait after making a proposal before making another in seconds
-func GetProposalCooldown(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetProposalCooldownTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
     proposalsSettingsContract, err := getProposalsSettingsContract(rp)
     if err != nil {
         return 0, err
     }
     value := new(*big.Int)
-    if err := proposalsSettingsContract.Call(opts, value, "getCooldown"); err != nil {
+    if err := proposalsSettingsContract.Call(opts, value, "getCooldownTime"); err != nil {
         return 0, fmt.Errorf("Could not get proposal cooldown period: %w", err)
     }
     return (*value).Uint64(), nil
 }
-func BootstrapProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
+func BootstrapProposalCooldownTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
     return trustednodedao.BootstrapUint(rp, ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(int64(value)), opts)
 }
-func ProposeProposalCooldown(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeProposalCooldownTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
     return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(int64(value)), opts)
 }
-func EstimateProposeProposalCooldownGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeProposalCooldownTimeGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", CooldownTimeSettingPath), ProposalsSettingsContractName, CooldownTimeSettingPath, big.NewInt(int64(value)), opts)
 }
 

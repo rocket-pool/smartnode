@@ -1,7 +1,8 @@
 package auction
 
 import (
-	"math/big"
+    "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+    "math/big"
 	"testing"
 
 	"github.com/rocket-pool/rocketpool-go/auction"
@@ -26,6 +27,9 @@ func TestAuctionDetails(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
+
+    // Disable min commission rate for unbonded pools
+    if _, err := trustednode.BootstrapMinipoolUnbondedMinFee(rp, uint64(0), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check initial RPL balances
     totalBalance1, err := auction.GetTotalRPLBalance(rp, nil)
@@ -101,8 +105,12 @@ func TestLotDetails(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount2); err != nil { t.Fatal(err) }
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount3); err != nil { t.Fatal(err) }
 
+    // Disable min commission rate for unbonded pools
+    if _, err := trustednode.BootstrapMinipoolUnbondedMinFee(rp, uint64(0), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+
     // Set network parameters
     if _, err := network.SubmitPrices(rp, 1, eth.EthToWei(1), eth.EthToWei(24), trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := network.SubmitPrices(rp, 1, eth.EthToWei(1), eth.EthToWei(24), trustedNodeAccount2.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotStartingPriceRatio(rp, 1.0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotReservePriceRatio(rp, 0.5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := protocol.BootstrapLotMaximumEthValue(rp, eth.EthToWei(10), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }

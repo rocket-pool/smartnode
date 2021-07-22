@@ -26,7 +26,7 @@ func TestProposalDetails(t *testing.T) {
     proposalDaoName := "rocketDAONodeTrustedProposals"
 
     // Set proposal cooldown
-    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalCooldownTime(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if _, err := trustednodesettings.BootstrapProposalVoteDelayTime(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
@@ -108,17 +108,17 @@ func TestProposalDetails(t *testing.T) {
         if proposal.Message != proposalMessage {
             t.Errorf("Incorrect proposal message %s", proposal.Message)
         }
-        if proposal.CreatedBlock == 0 {
-            t.Errorf("Incorrect proposal created block %d", proposal.CreatedBlock)
+        if proposal.CreatedTime == 0 {
+            t.Errorf("Incorrect proposal created time %d", proposal.CreatedTime)
         }
-        if proposal.StartBlock <= proposal.CreatedBlock {
-            t.Errorf("Incorrect proposal start block %d", proposal.StartBlock)
+        if proposal.StartTime <= proposal.CreatedTime {
+            t.Errorf("Incorrect proposal start time %d", proposal.StartTime)
         }
-        if proposal.EndBlock <= proposal.StartBlock {
-            t.Errorf("Incorrect proposal end block %d", proposal.EndBlock)
+        if proposal.EndTime <= proposal.StartTime {
+            t.Errorf("Incorrect proposal end time %d", proposal.EndTime)
         }
-        if proposal.ExpiryBlock <= proposal.EndBlock {
-            t.Errorf("Incorrect proposal expiry block %d", proposal.ExpiryBlock)
+        if proposal.ExpiryTime <= proposal.EndTime {
+            t.Errorf("Incorrect proposal expiry time %d", proposal.ExpiryTime)
         }
         if proposal.VotesRequired == 0.0 {
             t.Errorf("Incorrect proposal required votes %f", proposal.VotesRequired)

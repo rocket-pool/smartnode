@@ -66,16 +66,6 @@ func TestNetworkSettings(t *testing.T) {
         t.Error("Incorrect network price submission frequency value")
     }
 
-    // Set & get process withdrawals enabled
-    processWithdrawalsEnabled := false
-    if _, err := protocol.BootstrapProcessWithdrawalsEnabled(rp, processWithdrawalsEnabled, ownerAccount.GetTransactor()); err != nil {
-        t.Error(err)
-    } else if value, err := protocol.GetProcessWithdrawalsEnabled(rp, nil); err != nil {
-        t.Error(err)
-    } else if value != processWithdrawalsEnabled {
-        t.Error("Incorrect process withdrawals enabled value")
-    }
-
     // Set & get minimum node fee
     minimumNodeFee := 0.80
     if _, err := protocol.BootstrapMinimumNodeFee(rp, minimumNodeFee, ownerAccount.GetTransactor()); err != nil {

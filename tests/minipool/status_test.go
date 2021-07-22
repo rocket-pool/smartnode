@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"github.com/rocket-pool/rocketpool-go/types"
 	"testing"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -11,21 +12,6 @@ import (
 	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
 	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
-
-
-func TestMinipoolNodeRewardAmount(t *testing.T) {
-
-    // Get & check node reward amount
-    // Node reward amount = (node balance) + (rewards * node balance / start balance) + (rewards * user balance / start balance * node fee)
-    //                    = (40 - 16) +      (48 - 40) * (40 - 16) / 40 +               (48 - 40) * 16 / 40 * 0.5
-    //                    = 30.4
-    if rewardAmount, err := minipool.GetMinipoolNodeRewardAmount(rp, 0.5, eth.EthToWei(16), eth.EthToWei(40), eth.EthToWei(48), nil); err != nil {
-        t.Error(err)
-    } else if rewardAmount.Cmp(eth.EthToWei(30.4)) != 0 {
-        t.Errorf("Incorrect minipool node reward amount %s", rewardAmount.String())
-    }
-
-}
 
 
 func TestSubmitMinipoolWithdrawable(t *testing.T) {
@@ -44,11 +30,11 @@ func TestSubmitMinipoolWithdrawable(t *testing.T) {
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
 
     // Get & check initial minipool withdrawable status
-    if withdrawable, err := minipool.GetMinipoolWithdrawable(rp, mp.Address, nil); err != nil {
-        t.Error(err)
-    } else if withdrawable {
-        t.Error("Incorrect initial minipool withdrawable status")
-    }
+    if status, err := mp.GetStatus(nil); err != nil {
+    	t.Error(err)
+	} else if status == types.Withdrawable {
+		t.Error("Incorrect initial minipool withdrawable status")
+	}
 
     // Submit minipool withdrawable status
     if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil {
@@ -56,10 +42,10 @@ func TestSubmitMinipoolWithdrawable(t *testing.T) {
     }
 
     // Get & check updated minipool withdrawable status
-    if withdrawable, err := minipool.GetMinipoolWithdrawable(rp, mp.Address, nil); err != nil {
-        t.Error(err)
-    } else if !withdrawable {
-        t.Error("Incorrect updated minipool withdrawable status")
+	if status, err := mp.GetStatus(nil); err != nil {
+		t.Error(err)
+	} else if status != types.Withdrawable {
+		t.Error("Incorrect updated minipool withdrawable status")
     }
 
 }
