@@ -219,85 +219,75 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             cli.Command{
                                 Name:       "proposal-cooldown",
                                 Aliases:    []string{"c"},
-                                Usage:      "Propose updating the proposal.cooldown setting",
+                                Usage:      "Propose updating the proposal.cooldown.time setting - format is e.g. 1h30m45s",
                                 UsageText:  "rocketpool odao propose setting proposal-cooldown value",
                                 Action: func(c *cli.Context) error {
 
                                     // Validate args
                                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                                    proposalCooldownBlocks, err := cliutils.ValidateUint("proposal cooldown period", c.Args().Get(0))
-                                    if err != nil { return err }
 
                                     // Run
-                                    return proposeSettingProposalCooldown(c, proposalCooldownBlocks)
+                                    return proposeSettingProposalCooldown(c, c.Args().Get(0))
 
                                 },
                             },
                             cli.Command{
-                                Name:       "proposal-vote-blocks",
+                                Name:       "proposal-vote-timespan",
                                 Aliases:    []string{"v"},
-                                Usage:      "Propose updating the proposal.vote.blocks setting",
-                                UsageText:  "rocketpool odao propose setting proposal-vote-blocks value",
+                                Usage:      "Propose updating the proposal.vote.time setting - format is e.g. 1h30m45s",
+                                UsageText:  "rocketpool odao propose setting proposal-vote-timespan value",
                                 Action: func(c *cli.Context) error {
 
                                     // Validate args
                                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                                    proposalVoteBlocks, err := cliutils.ValidateUint("proposal voting period", c.Args().Get(0))
-                                    if err != nil { return err }
 
                                     // Run
-                                    return proposeSettingProposalVoteBlocks(c, proposalVoteBlocks)
+                                    return proposeSettingProposalVoteTimespan(c, c.Args().Get(0))
 
                                 },
                             },
                             cli.Command{
-                                Name:       "proposal-vote-delay-blocks",
+                                Name:       "proposal-vote-delay-timespan",
                                 Aliases:    []string{"d"},
-                                Usage:      "Propose updating the proposal.vote.delay.blocks setting",
-                                UsageText:  "rocketpool odao propose setting proposal-vote-delay-blocks value",
+                                Usage:      "Propose updating the proposal.vote.delay.time setting - format is e.g. 1h30m45s",
+                                UsageText:  "rocketpool odao propose setting proposal-vote-delay-timespan value",
                                 Action: func(c *cli.Context) error {
 
                                     // Validate args
                                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                                    proposalDelayBlocks, err := cliutils.ValidateUint("proposal delay period", c.Args().Get(0))
-                                    if err != nil { return err }
 
                                     // Run
-                                    return proposeSettingProposalVoteDelayBlocks(c, proposalDelayBlocks)
+                                    return proposeSettingProposalVoteDelayTimespan(c, c.Args().Get(0))
 
                                 },
                             },
                             cli.Command{
-                                Name:       "proposal-execute-blocks",
+                                Name:       "proposal-execute-timespan",
                                 Aliases:    []string{"x"},
-                                Usage:      "Propose updating the proposal.execute.blocks setting",
-                                UsageText:  "rocketpool odao propose setting proposal-execute-blocks value",
+                                Usage:      "Propose updating the proposal.execute.time setting - format is e.g. 1h30m45s",
+                                UsageText:  "rocketpool odao propose setting proposal-execute-timespan value",
                                 Action: func(c *cli.Context) error {
 
                                     // Validate args
                                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                                    proposalExecuteBlocks, err := cliutils.ValidateUint("proposal execution period", c.Args().Get(0))
-                                    if err != nil { return err }
 
                                     // Run
-                                    return proposeSettingProposalExecuteBlocks(c, proposalExecuteBlocks)
+                                    return proposeSettingProposalExecuteTimespan(c, c.Args().Get(0))
 
                                 },
                             },
                             cli.Command{
-                                Name:       "proposal-action-blocks",
+                                Name:       "proposal-action-timespan",
                                 Aliases:    []string{"a"},
-                                Usage:      "Propose updating the proposal.action.blocks setting",
-                                UsageText:  "rocketpool odao propose setting proposal-action-blocks value",
+                                Usage:      "Propose updating the proposal.action.time setting - format is e.g. 1h30m45s",
+                                UsageText:  "rocketpool odao propose setting proposal-action-timespan value",
                                 Action: func(c *cli.Context) error {
 
                                     // Validate args
                                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                                    proposalActionBlocks, err := cliutils.ValidateUint("proposal action period", c.Args().Get(0))
-                                    if err != nil { return err }
 
                                     // Run
-                                    return proposeSettingProposalActionBlocks(c, proposalActionBlocks)
+                                    return proposeSettingProposalActionTimespan(c, c.Args().Get(0))
 
                                 },
                             },

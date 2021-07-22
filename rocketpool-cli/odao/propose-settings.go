@@ -2,6 +2,7 @@ package odao
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -155,15 +156,22 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 }
 
 
-func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint64) error {
+func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan string) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
+    // Parse the timespan
+    timespan, err := time.ParseDuration(proposalCooldownTimespan)
+    if err != nil {
+        return fmt.Errorf("Error parsing time: %w\n", err)
+    }
+    seconds := uint64(timespan.Seconds())
+
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSettingProposalCooldown(proposalCooldownBlocks)
+    canPropose, err := rp.CanProposeTNDAOSettingProposalCooldown(seconds)
     if err != nil {
         return err
     }
@@ -185,7 +193,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
     }
 
     // Submit proposal
-    response, err := rp.ProposeTNDAOSettingProposalCooldown(proposalCooldownBlocks)
+    response, err := rp.ProposeTNDAOSettingProposalCooldown(seconds)
     if err != nil {
         return err
     }
@@ -203,15 +211,22 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
 }
 
 
-func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64) error {
+func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan string) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
+    // Parse the timespan
+    timespan, err := time.ParseDuration(proposalVoteTimespan)
+    if err != nil {
+        return fmt.Errorf("Error parsing time: %w\n", err)
+    }
+    seconds := uint64(timespan.Seconds())
+
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSettingProposalVoteBlocks(proposalVoteBlocks)
+    canPropose, err := rp.CanProposeTNDAOSettingProposalVoteTimespan(seconds)
     if err != nil {
         return err
     }
@@ -233,7 +248,7 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
     }
 
     // Submit proposal
-    response, err := rp.ProposeTNDAOSettingProposalVoteBlocks(proposalVoteBlocks)
+    response, err := rp.ProposeTNDAOSettingProposalVoteTimespan(seconds)
     if err != nil {
         return err
     }
@@ -245,21 +260,28 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
     }
 
     // Log & return
-    fmt.Printf("Successfully submitted a proposal.vote.blocks setting update proposal with ID %d.\n", response.ProposalId)
+    fmt.Printf("Successfully submitted a proposal.vote.time setting update proposal with ID %d.\n", response.ProposalId)
     return nil
 
 }
 
 
-func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks uint64) error {
+func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimespan string) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
+    // Parse the timespan
+    timespan, err := time.ParseDuration(proposalDelayTimespan)
+    if err != nil {
+        return fmt.Errorf("Error parsing time: %w\n", err)
+    }
+    seconds := uint64(timespan.Seconds())
+
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSettingProposalVoteDelayBlocks(proposalDelayBlocks)
+    canPropose, err := rp.CanProposeTNDAOSettingProposalVoteDelayTimespan(seconds)
     if err != nil {
         return err
     }
@@ -281,7 +303,7 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
     }
 
     // Submit proposal
-    response, err := rp.ProposeTNDAOSettingProposalVoteDelayBlocks(proposalDelayBlocks)
+    response, err := rp.ProposeTNDAOSettingProposalVoteDelayTimespan(seconds)
     if err != nil {
         return err
     }
@@ -293,21 +315,28 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
     }
 
     // Log & return
-    fmt.Printf("Successfully submitted a proposal.vote.delay.blocks setting update proposal with ID %d.\n", response.ProposalId)
+    fmt.Printf("Successfully submitted a proposal.vote.delay.time setting update proposal with ID %d.\n", response.ProposalId)
     return nil
 
 }
 
 
-func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks uint64) error {
+func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimespan string) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
+    // Parse the timespan
+    timespan, err := time.ParseDuration(proposalExecuteTimespan)
+    if err != nil {
+        return fmt.Errorf("Error parsing time: %w\n", err)
+    }
+    seconds := uint64(timespan.Seconds())
+
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSettingProposalExecuteBlocks(proposalExecuteBlocks)
+    canPropose, err := rp.CanProposeTNDAOSettingProposalExecuteTimespan(seconds)
     if err != nil {
         return err
     }
@@ -329,7 +358,7 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
     }
 
     // Submit proposal
-    response, err := rp.ProposeTNDAOSettingProposalExecuteBlocks(proposalExecuteBlocks)
+    response, err := rp.ProposeTNDAOSettingProposalExecuteTimespan(seconds)
     if err != nil {
         return err
     }
@@ -341,21 +370,28 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
     }
 
     // Log & return
-    fmt.Printf("Successfully submitted a proposal.execute.blocks setting update proposal with ID %d.\n", response.ProposalId)
+    fmt.Printf("Successfully submitted a proposal.execute.time setting update proposal with ID %d.\n", response.ProposalId)
     return nil
 
 }
 
 
-func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uint64) error {
+func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan string) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
+    // Parse the timespan
+    timespan, err := time.ParseDuration(proposalActionTimespan)
+    if err != nil {
+        return fmt.Errorf("Error parsing time: %w\n", err)
+    }
+    seconds := uint64(timespan.Seconds())
+
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks)
+    canPropose, err := rp.CanProposeTNDAOSettingProposalActionTimespan(seconds)
     if err != nil {
         return err
     }
@@ -377,7 +413,7 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     }
 
     // Submit proposal
-    response, err := rp.ProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks)
+    response, err := rp.ProposeTNDAOSettingProposalActionTimespan(seconds)
     if err != nil {
         return err
     }
@@ -389,7 +425,7 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     }
 
     // Log & return
-    fmt.Printf("Successfully submitted a proposal.action.blocks setting update proposal with ID %d.\n", response.ProposalId)
+    fmt.Printf("Successfully submitted a proposal.action.time setting update proposal with ID %d.\n", response.ProposalId)
     return nil
 
 }

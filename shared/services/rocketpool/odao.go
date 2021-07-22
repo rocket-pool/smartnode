@@ -479,73 +479,73 @@ func (c *Client) CanProposeTNDAOSettingMinipoolUnbondedMax(unbondedMinipoolMax u
     }
     return response, nil
 }
-func (c *Client) CanProposeTNDAOSettingProposalCooldown(proposalCooldownBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-cooldown %d", proposalCooldownBlocks))
+func (c *Client) CanProposeTNDAOSettingProposalCooldown(proposalCooldownTimespan uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-cooldown %d", proposalCooldownTimespan))
     if err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.cooldown: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.cooldown.time: %w", err)
     }
     var response api.CanProposeTNDAOSettingResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.cooldown response: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.cooldown.time response: %w", err)
     }
     if response.Error != "" {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.cooldown: %s", response.Error)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.cooldown.time: %s", response.Error)
     }
     return response, nil
 }
-func (c *Client) CanProposeTNDAOSettingProposalVoteTimespan(proposalVoteBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-vote-blocks %d", proposalVoteBlocks))
+func (c *Client) CanProposeTNDAOSettingProposalVoteTimespan(proposalVoteTimespan uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-vote-timespan %d", proposalVoteTimespan))
     if err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.blocks: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.time: %w", err)
     }
     var response api.CanProposeTNDAOSettingResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.vote.blocks response: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.vote.time response: %w", err)
     }
     if response.Error != "" {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.blocks: %s", response.Error)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.time: %s", response.Error)
     }
     return response, nil
 }
-func (c *Client) CanProposeTNDAOSettingProposalVoteDelayBlocks(proposalDelayBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-vote-delay-blocks %d", proposalDelayBlocks))
+func (c *Client) CanProposeTNDAOSettingProposalVoteDelayTimespan(proposalDelayTimespan uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-vote-delay-timespan %d", proposalDelayTimespan))
     if err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.delay.blocks: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.delay.time: %w", err)
     }
     var response api.CanProposeTNDAOSettingResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.vote.delay.blocks response: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.vote.delay.time response: %w", err)
     }
     if response.Error != "" {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.delay.blocks: %s", response.Error)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.vote.delay.time: %s", response.Error)
     }
     return response, nil
 }
-func (c *Client) CanProposeTNDAOSettingProposalExecuteBlocks(proposalExecuteBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-execute-blocks %d", proposalExecuteBlocks))
+func (c *Client) CanProposeTNDAOSettingProposalExecuteTimespan(proposalExecuteTimespan uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-execute-timespan %d", proposalExecuteTimespan))
     if err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.execute.blocks: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.execute.time: %w", err)
     }
     var response api.CanProposeTNDAOSettingResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.execute.blocks response: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.execute.time response: %w", err)
     }
     if response.Error != "" {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.execute.blocks: %s", response.Error)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.execute.time: %s", response.Error)
     }
     return response, nil
 }
-func (c *Client) CanProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks uint64) (api.CanProposeTNDAOSettingResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-action-blocks %d", proposalActionBlocks))
+func (c *Client) CanProposeTNDAOSettingProposalActionTimespan(proposalActionTimespan uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-proposal-action-timespan %d", proposalActionTimespan))
     if err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.action.blocks: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.action.time: %w", err)
     }
     var response api.CanProposeTNDAOSettingResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.action.blocks response: %w", err)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting proposal.action.time response: %w", err)
     }
     if response.Error != "" {
-        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.action.blocks: %s", response.Error)
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting proposal.action.time: %s", response.Error)
     }
     return response, nil
 }
@@ -636,32 +636,31 @@ func (c *Client) ProposeTNDAOSettingProposalVoteDelayTimespan(proposalDelayTimes
     }
     return response, nil
 }
-// TODO: HERE
-func (c *Client) ProposeTNDAOSettingProposalExecuteBlocks(proposalExecuteBlocks uint64) (api.ProposeTNDAOSettingProposalExecuteTimespanResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-execute-blocks %d", proposalExecuteBlocks))
+func (c *Client) ProposeTNDAOSettingProposalExecuteTimespan(proposalExecuteTimespan uint64) (api.ProposeTNDAOSettingProposalExecuteTimespanResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-execute-timespan %d", proposalExecuteTimespan))
     if err != nil {
-        return api.ProposeTNDAOSettingProposalExecuteTimespanResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.execute.blocks: %w", err)
+        return api.ProposeTNDAOSettingProposalExecuteTimespanResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.execute.time: %w", err)
     }
     var response api.ProposeTNDAOSettingProposalExecuteTimespanResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.ProposeTNDAOSettingProposalExecuteTimespanResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.execute.blocks response: %w", err)
+        return api.ProposeTNDAOSettingProposalExecuteTimespanResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.execute.time response: %w", err)
     }
     if response.Error != "" {
-        return api.ProposeTNDAOSettingProposalExecuteTimespanResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.execute.blocks: %s", response.Error)
+        return api.ProposeTNDAOSettingProposalExecuteTimespanResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.execute.time: %s", response.Error)
     }
     return response, nil
 }
-func (c *Client) ProposeTNDAOSettingProposalActionBlocks(proposalActionBlocks uint64) (api.ProposeTNDAOSettingProposalActionTimespanResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-action-blocks %d", proposalActionBlocks))
+func (c *Client) ProposeTNDAOSettingProposalActionTimespan(proposalActionTimespan uint64) (api.ProposeTNDAOSettingProposalActionTimespanResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-proposal-action-timespan %d", proposalActionTimespan))
     if err != nil {
-        return api.ProposeTNDAOSettingProposalActionTimespanResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.action.blocks: %w", err)
+        return api.ProposeTNDAOSettingProposalActionTimespanResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.action.time: %w", err)
     }
     var response api.ProposeTNDAOSettingProposalActionTimespanResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.ProposeTNDAOSettingProposalActionTimespanResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.action.blocks response: %w", err)
+        return api.ProposeTNDAOSettingProposalActionTimespanResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting proposal.action.time response: %w", err)
     }
     if response.Error != "" {
-        return api.ProposeTNDAOSettingProposalActionTimespanResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.action.blocks: %s", response.Error)
+        return api.ProposeTNDAOSettingProposalActionTimespanResponse{}, fmt.Errorf("Could not propose oracle DAO setting proposal.action.time: %s", response.Error)
     }
     return response, nil
 }
