@@ -1,11 +1,10 @@
 package service
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
@@ -42,7 +41,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     cli.StringFlag{
                         Name:  "network, n",
                         Usage: "The Eth 2.0 network to run Rocket Pool on",
-                        Value: "pyrmont",
+                        Value: "prater",
                     },
                     cli.StringFlag{
                         Name:  "version, v",
