@@ -25,7 +25,7 @@ func MineBlocks(numBlocks int) error {
 
 
 // Fast forward to some number of seconds
-func IncreaseTime(time uint64) error {
+func IncreaseTime(time int) error {
 
     // Initialize RPC client
     client, err := rpc.Dial(tests.Eth1ProviderAddress)

@@ -116,12 +116,12 @@ func TestMintInflationRPL(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Constants
-    oneDay := uint64(24 * 60 * 60)
+    oneDay := 24 * 60 * 60
 
     // Start RPL inflation
     if _, err := protocol.BootstrapInflationStartTime(rp, uint64(time.Now().Unix() + 3600), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
-    // Mine blocks until rewards are available
+    // Increase time until rewards are available
     if err := evm.IncreaseTime(3600 + oneDay); err != nil { t.Fatal(err) }
 
     // Get initial total supply

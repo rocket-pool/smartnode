@@ -25,10 +25,6 @@ type MinipoolDetails struct {
     Address common.Address              `json:"address"`
     Exists bool                         `json:"exists"`
     Pubkey rptypes.ValidatorPubkey      `json:"pubkey"`
-    WithdrawalTotalBalance *big.Int     `json:"withdrawalTotalBalance"`
-    WithdrawalNodeBalance *big.Int      `json:"withdrawalNodeBalance"`
-    Withdrawable bool                   `json:"withdrawable"`
-    WithdrawalProcessed bool            `json:"withdrawalProcessed"`
 }
 
 
@@ -221,10 +217,6 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
     var wg errgroup.Group
     var exists bool
     var pubkey rptypes.ValidatorPubkey
-    var withdrawalTotalBalance *big.Int
-    var withdrawalNodeBalance *big.Int
-    var withdrawable bool
-    var withdrawalProcessed bool
 
     // Load data
     wg.Go(func() error {
@@ -235,26 +227,6 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
     wg.Go(func() error {
         var err error
         pubkey, err = GetMinipoolPubkey(rp, minipoolAddress, opts)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        withdrawalTotalBalance, err = GetMinipoolWithdrawalTotalBalance(rp, minipoolAddress, opts)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        withdrawalNodeBalance, err = GetMinipoolWithdrawalNodeBalance(rp, minipoolAddress, opts)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        withdrawable, err = GetMinipoolWithdrawable(rp, minipoolAddress, opts)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        withdrawalProcessed, err = GetMinipoolWithdrawalProcessed(rp, minipoolAddress, opts)
         return err
     })
 
@@ -268,10 +240,6 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
         Address: minipoolAddress,
         Exists: exists,
         Pubkey: pubkey,
-        WithdrawalTotalBalance: withdrawalTotalBalance,
-        WithdrawalNodeBalance: withdrawalNodeBalance,
-        Withdrawable: withdrawable,
-        WithdrawalProcessed: withdrawalProcessed,
     }, nil
 
 }
@@ -400,62 +368,6 @@ func GetMinipoolPubkey(rp *rocketpool.RocketPool, minipoolAddress common.Address
         return rptypes.ValidatorPubkey{}, fmt.Errorf("Could not get minipool %s pubkey: %w", minipoolAddress.Hex(), err)
     }
     return *pubkey, nil
-}
-
-
-// Get a minipool's total balance at withdrawal
-func GetMinipoolWithdrawalTotalBalance(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
-    if err != nil {
-        return nil, err
-    }
-    balance := new(*big.Int)
-    if err := rocketMinipoolManager.Call(opts, balance, "getMinipoolWithdrawalTotalBalance", minipoolAddress); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %s withdrawal total balance: %w", minipoolAddress.Hex(), err)
-    }
-    return *balance, nil
-}
-
-
-// Get a minipool's node balance at withdrawal
-func GetMinipoolWithdrawalNodeBalance(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
-    if err != nil {
-        return nil, err
-    }
-    balance := new(*big.Int)
-    if err := rocketMinipoolManager.Call(opts, balance, "getMinipoolWithdrawalNodeBalance", minipoolAddress); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %s withdrawal node balance: %w", minipoolAddress.Hex(), err)
-    }
-    return *balance, nil
-}
-
-
-// Check whether a minipool is withdrawable
-func GetMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (bool, error) {
-    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
-    if err != nil {
-        return false, err
-    }
-    withdrawable := new(bool)
-    if err := rocketMinipoolManager.Call(opts, withdrawable, "getMinipoolWithdrawable", minipoolAddress); err != nil {
-        return false, fmt.Errorf("Could not get minipool %s withdrawable status: %w", minipoolAddress.Hex(), err)
-    }
-    return *withdrawable, nil
-}
-
-
-// Check whether a minipool's validator withdrawal has been processed
-func GetMinipoolWithdrawalProcessed(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (bool, error) {
-    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
-    if err != nil {
-        return false, err
-    }
-    processed := new(bool)
-    if err := rocketMinipoolManager.Call(opts, processed, "getMinipoolWithdrawalProcessed", minipoolAddress); err != nil {
-        return false, fmt.Errorf("Could not get minipool %s withdrawal processed status: %w", minipoolAddress.Hex(), err)
-    }
-    return *processed, nil
 }
 
 

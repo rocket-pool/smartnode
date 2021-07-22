@@ -28,8 +28,8 @@ func TestProposeInviteMember(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Set proposal cooldown
-    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalCooldownTime(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayTime(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
@@ -73,10 +73,10 @@ func TestProposeInviteMember(t *testing.T) {
     }
 
     // Get & check member invite executed block
-    if inviteExecutedBlock, err := trustednodedao.GetMemberInviteProposalExecutedBlock(rp, proposalMemberAddress, nil); err != nil {
+    if inviteExecutedTime, err := trustednodedao.GetMemberInviteProposalExecutedTime(rp, proposalMemberAddress, nil); err != nil {
         t.Error(err)
-    } else if inviteExecutedBlock == 0 {
-        t.Errorf("Incorrect member invite proposal executed block %d", inviteExecutedBlock)
+    } else if inviteExecutedTime == 0 {
+        t.Errorf("Incorrect member invite proposal executed time %d", inviteExecutedTime)
     }
 
 }
@@ -89,8 +89,8 @@ func TestProposeMemberLeave(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Set proposal cooldown
-    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalCooldownTime(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayTime(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
@@ -136,7 +136,7 @@ func TestProposeMemberLeave(t *testing.T) {
     }
 
     // Get & check member leave executed block
-    if leaveExecutedBlock, err := trustednodedao.GetMemberLeaveProposalExecutedBlock(rp, proposalMemberAddress, nil); err != nil {
+    if leaveExecutedBlock, err := trustednodedao.GetMemberLeaveProposalExecutedTime(rp, proposalMemberAddress, nil); err != nil {
         t.Error(err)
     } else if leaveExecutedBlock == 0 {
         t.Errorf("Incorrect member leave proposal executed block %d", leaveExecutedBlock)
@@ -152,8 +152,8 @@ func TestProposeKickMember(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Set proposal cooldown
-    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalCooldownTime(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayTime(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register nodes
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
@@ -198,8 +198,8 @@ func TestProposeUpgradeContract(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Set proposal cooldown
-    if _, err := trustednodesettings.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := trustednodesettings.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalCooldownTime(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednodesettings.BootstrapProposalVoteDelayTime(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }

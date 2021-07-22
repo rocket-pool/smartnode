@@ -21,14 +21,14 @@ func TestNodeRewards(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Constants
-    oneDay := uint64(24 * 60 * 60)
+    oneDay := 24 * 60 * 60
     rewardInterval := oneDay
 
     // Register node
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Set network parameters
-    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, rewardInterval, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := protocol.BootstrapRewardsClaimIntervalTime(rp, uint64(rewardInterval), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check node claims enabled status
     if claimsEnabled, err := rewards.GetNodeClaimsEnabled(rp, nil); err != nil {
@@ -81,11 +81,11 @@ func TestNodeRewards(t *testing.T) {
     // Start RPL inflation
     if header, err := rp.Client.HeaderByNumber(context.Background(), nil); err != nil {
         t.Fatal(err)
-    } else if _, err := protocol.BootstrapInflationStartTime(rp, header.Time + oneDay, ownerAccount.GetTransactor()); err != nil {
+    } else if _, err := protocol.BootstrapInflationStartTime(rp, header.Time + uint64(oneDay), ownerAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
-    // Mine blocks until rewards are available
+    // Increase time until rewards are available
     if err := evm.IncreaseTime(oneDay + oneDay); err != nil {
         t.Fatal(err)
     }

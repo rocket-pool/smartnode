@@ -102,23 +102,6 @@ func BootstrapSubmitPricesFrequency(rp *rocketpool.RocketPool, value uint64, opt
 }
 
 
-// Processing validator withdrawals currently enabled
-func GetProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-    networkSettingsContract, err := getNetworkSettingsContract(rp)
-    if err != nil {
-        return false, err
-    }
-    value := new(bool)
-    if err := networkSettingsContract.Call(opts, value, "getProcessWithdrawalsEnabled"); err != nil {
-        return false, fmt.Errorf("Could not get processing withdrawals enabled status: %w", err)
-    }
-    return *value, nil
-}
-func BootstrapProcessWithdrawalsEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-    return protocoldao.BootstrapBool(rp, NetworkSettingsContractName, "network.process.withdrawals.enabled", value, opts)
-}
-
-
 // Minimum node commission rate
 func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
     networkSettingsContract, err := getNetworkSettingsContract(rp)

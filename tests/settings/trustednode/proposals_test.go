@@ -20,52 +20,52 @@ func TestBootstrapProposalsSettings(t *testing.T) {
 
     // Set & get cooldown
     var cooldown uint64 = 1
-    if _, err := trustednode.BootstrapProposalCooldown(rp, cooldown, ownerAccount.GetTransactor()); err != nil {
+    if _, err := trustednode.BootstrapProposalCooldownTime(rp, cooldown, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalCooldown(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalCooldownTime(rp, nil); err != nil {
         t.Error(err)
     } else if value != cooldown {
         t.Error("Incorrect cooldown value")
     }
 
-    // Set & get vote blocks
-    var voteBlocks uint64 = 10
-    if _, err := trustednode.BootstrapProposalVoteBlocks(rp, voteBlocks, ownerAccount.GetTransactor()); err != nil {
+    // Set & get vote time
+    var voteTime uint64 = 10
+    if _, err := trustednode.BootstrapProposalVoteTime(rp, voteTime, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalVoteBlocks(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalVoteTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != voteBlocks {
-        t.Error("Incorrect vote blocks value")
+    } else if value != voteTime {
+        t.Error("Incorrect vote time value")
     }
 
-    // Set & get execute blocks
-    var executeBlocks uint64 = 10
-    if _, err := trustednode.BootstrapProposalExecuteBlocks(rp, executeBlocks, ownerAccount.GetTransactor()); err != nil {
+    // Set & get execute time
+    var executeTime uint64 = 10
+    if _, err := trustednode.BootstrapProposalExecuteTime(rp, executeTime, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalExecuteBlocks(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalExecuteTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != executeBlocks {
-        t.Error("Incorrect execute blocks value")
+    } else if value != executeTime {
+        t.Error("Incorrect execute time value")
     }
 
-    // Set & get action blocks
-    var actionBlocks uint64 = 10
-    if _, err := trustednode.BootstrapProposalActionBlocks(rp, actionBlocks, ownerAccount.GetTransactor()); err != nil {
+    // Set & get action time
+    var actionTime uint64 = 10
+    if _, err := trustednode.BootstrapProposalActionTime(rp, actionTime, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalActionBlocks(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalActionTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != actionBlocks {
-        t.Error("Incorrect action blocks value")
+    } else if value != actionTime {
+        t.Error("Incorrect action time value")
     }
 
-    // Set & get vote delay blocks
-    var voteDelayBlocks uint64 = 1000
-    if _, err := trustednode.BootstrapProposalVoteDelayBlocks(rp, voteDelayBlocks, ownerAccount.GetTransactor()); err != nil {
+    // Set & get vote delay time
+    var voteDelayTime uint64 = 1000
+    if _, err := trustednode.BootstrapProposalVoteDelayTime(rp, voteDelayTime, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalVoteDelayBlocks(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalVoteDelayTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != voteDelayBlocks {
-        t.Error("Incorrect vote delay blocks value")
+    } else if value != voteDelayTime {
+        t.Error("Incorrect vote delay time value")
     }
 
 }
@@ -78,8 +78,8 @@ func TestProposeProposalsSettings(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Set proposal cooldown
-    if _, err := trustednode.BootstrapProposalCooldown(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
-    if _, err := trustednode.BootstrapProposalVoteDelayBlocks(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednode.BootstrapProposalCooldownTime(rp, 0, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if _, err := trustednode.BootstrapProposalVoteDelayTime(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Register trusted node
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount1); err != nil { t.Fatal(err) }
@@ -88,62 +88,62 @@ func TestProposeProposalsSettings(t *testing.T) {
 
     // Set & get cooldown
     var cooldown uint64 = 1
-    if proposalId, _, err := trustednode.ProposeProposalCooldown(rp, cooldown, trustedNodeAccount1.GetTransactor()); err != nil {
+    if proposalId, _, err := trustednode.ProposeProposalCooldownTime(rp, cooldown, trustedNodeAccount1.GetTransactor()); err != nil {
         t.Error(err)
     } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalCooldown(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalCooldownTime(rp, nil); err != nil {
         t.Error(err)
     } else if value != cooldown {
         t.Error("Incorrect cooldown value")
     }
 
-    // Set & get vote blocks
-    var voteBlocks uint64 = 10
-    if proposalId, _, err := trustednode.ProposeProposalVoteBlocks(rp, voteBlocks, trustedNodeAccount1.GetTransactor()); err != nil {
+    // Set & get vote time
+    var voteTime uint64 = 10
+    if proposalId, _, err := trustednode.ProposeProposalVoteTime(rp, voteTime, trustedNodeAccount1.GetTransactor()); err != nil {
         t.Error(err)
     } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalVoteBlocks(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalVoteTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != voteBlocks {
-        t.Error("Incorrect vote blocks value")
+    } else if value != voteTime {
+        t.Error("Incorrect vote time value")
     }
 
-    // Set & get execute blocks
-    var executeBlocks uint64 = 10
-    if proposalId, _, err := trustednode.ProposeProposalExecuteBlocks(rp, executeBlocks, trustedNodeAccount1.GetTransactor()); err != nil {
+    // Set & get execute time
+    var executeTime uint64 = 10
+    if proposalId, _, err := trustednode.ProposeProposalExecuteTime(rp, executeTime, trustedNodeAccount1.GetTransactor()); err != nil {
         t.Error(err)
     } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalExecuteBlocks(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalExecuteTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != executeBlocks {
-        t.Error("Incorrect execute blocks value")
+    } else if value != executeTime {
+        t.Error("Incorrect execute time value")
     }
 
-    // Set & get action blocks
-    var actionBlocks uint64 = 10
-    if proposalId, _, err := trustednode.ProposeProposalActionBlocks(rp, actionBlocks, trustedNodeAccount1.GetTransactor()); err != nil {
+    // Set & get action time
+    var actionTime uint64 = 10
+    if proposalId, _, err := trustednode.ProposeProposalActionTime(rp, actionTime, trustedNodeAccount1.GetTransactor()); err != nil {
         t.Error(err)
     } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalActionBlocks(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalActionTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != actionBlocks {
-        t.Error("Incorrect action blocks value")
+    } else if value != actionTime {
+        t.Error("Incorrect action time value")
     }
 
-    // Set & get vote delay blocks
-    var voteDelayBlocks uint64 = 1000
-    if proposalId, _, err := trustednode.ProposeProposalVoteDelayBlocks(rp, voteDelayBlocks, trustedNodeAccount1.GetTransactor()); err != nil {
+    // Set & get vote delay time
+    var voteDelayTime uint64 = 1000
+    if proposalId, _, err := trustednode.ProposeProposalVoteDelayTime(rp, voteDelayTime, trustedNodeAccount1.GetTransactor()); err != nil {
         t.Error(err)
     } else if err := daoutils.PassAndExecuteProposal(rp, proposalId, []*accounts.Account{trustedNodeAccount1, trustedNodeAccount2}); err != nil {
         t.Error(err)
-    } else if value, err := trustednode.GetProposalVoteDelayBlocks(rp, nil); err != nil {
+    } else if value, err := trustednode.GetProposalVoteDelayTime(rp, nil); err != nil {
         t.Error(err)
-    } else if value != voteDelayBlocks {
-        t.Error("Incorrect vote delay blocks value")
+    } else if value != voteDelayTime {
+        t.Error("Incorrect vote delay time value")
     }
 
 }

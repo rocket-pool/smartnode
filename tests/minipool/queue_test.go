@@ -1,6 +1,7 @@
 package minipool
 
 import (
+    trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
     "testing"
 
     "github.com/rocket-pool/rocketpool-go/minipool"
@@ -22,6 +23,9 @@ func TestQueueLengths(t *testing.T) {
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+
+    // Disable min commission rate for unbonded pools
+    if _, err := trustednodesettings.BootstrapMinipoolUnbondedMinFee(rp, uint64(0), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check queue lengths
     if queueLengths, err := minipool.GetQueueLengths(rp, nil); err != nil {
@@ -116,6 +120,9 @@ func TestQueueCapacity(t *testing.T) {
     // Register nodes
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
+
+    // Disable min commission rate for unbonded pools
+    if _, err := trustednodesettings.BootstrapMinipoolUnbondedMinFee(rp, uint64(0), ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get & check queue capacity
     if queueCapacity, err := minipool.GetQueueCapacity(rp, nil); err != nil {

@@ -33,10 +33,6 @@ type UserDetails struct {
     DepositAssigned bool            `json:"depositAssigned"`
     DepositAssignedTime time.Time   `json:"depositAssignedTime"`
 }
-type StakingDetails struct {
-    StartBalance *big.Int           `json:"startBalance"`
-    EndBalance *big.Int             `json:"endBalance"`
-}
 
 
 // Minipool contract
@@ -286,54 +282,6 @@ func (mp *Minipool) GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, 
         return time.Unix(0, 0), fmt.Errorf("Could not get minipool %s user deposit assigned time: %w", mp.Address.Hex(), err)
     }
     return time.Unix((*depositAssignedTime).Int64(), 0), nil
-}
-
-
-// Get staking details
-func (mp *Minipool) GetStakingDetails(opts *bind.CallOpts) (StakingDetails, error) {
-
-    // Data
-    var wg errgroup.Group
-    var startBalance *big.Int
-    var endBalance *big.Int
-
-    // Load data
-    wg.Go(func() error {
-        var err error
-        startBalance, err = mp.GetStakingStartBalance(opts)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        endBalance, err = mp.GetStakingEndBalance(opts)
-        return err
-    })
-
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return StakingDetails{}, err
-    }
-
-    // Return
-    return StakingDetails{
-        StartBalance: startBalance,
-        EndBalance: endBalance,
-    }, nil
-
-}
-func (mp *Minipool) GetStakingStartBalance(opts *bind.CallOpts) (*big.Int, error) {
-    stakingStartBalance := new(*big.Int)
-    if err := mp.Contract.Call(opts, stakingStartBalance, "getStakingStartBalance"); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %s staking start balance: %w", mp.Address.Hex(), err)
-    }
-    return *stakingStartBalance, nil
-}
-func (mp *Minipool) GetStakingEndBalance(opts *bind.CallOpts) (*big.Int, error) {
-    stakingEndBalance := new(*big.Int)
-    if err := mp.Contract.Call(opts, stakingEndBalance, "getStakingEndBalance"); err != nil {
-        return nil, fmt.Errorf("Could not get minipool %s staking end balance: %w", mp.Address.Hex(), err)
-    }
-    return *stakingEndBalance, nil
 }
 
 

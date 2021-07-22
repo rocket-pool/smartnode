@@ -2,7 +2,8 @@ package minipool
 
 import (
 	"bytes"
-	"testing"
+    "github.com/rocket-pool/rocketpool-go/types"
+    "testing"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -44,7 +45,6 @@ func TestMinipoolDetails(t *testing.T) {
 
     // Minipool deposit/withdrawal amounts
     minipoolDepositAmount := eth.EthToWei(32)
-    minipoolWithdrawalAmount := eth.EthToWei(34)
 
     // Create & stake minipool
     mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, minipoolDepositAmount)
@@ -74,17 +74,13 @@ func TestMinipoolDetails(t *testing.T) {
         if !bytes.Equal(mpDetails.Pubkey.Bytes(), validatorPubkey.Bytes()) {
             t.Errorf("Incorrect minipool validator pubkey %s", mpDetails.Pubkey.Hex())
         }
-        if mpDetails.WithdrawalTotalBalance.Cmp(minipoolWithdrawalAmount) != 0 {
-            t.Errorf("Incorrect minipool withdrawal total balance %s", mpDetails.WithdrawalTotalBalance.String())
-        }
-        if mpDetails.WithdrawalNodeBalance.Cmp(minipoolWithdrawalAmount) != 0 {
-            t.Errorf("Incorrect minipool withdrawal node balance %s", mpDetails.WithdrawalNodeBalance.String())
-        }
-        if !mpDetails.Withdrawable {
+    }
+    // Check status
+    if status, err := mp.GetStatus(nil); err != nil {
+        t.Error(err)
+    } else {
+        if status != types.Withdrawable {
             t.Error("Incorrect minipool withdrawable status")
-        }
-        if mpDetails.WithdrawalProcessed {
-            t.Error("Incorrect minipool withdrawal processed status")
         }
     }
     if nodeMinipools, err := minipool.GetNodeMinipools(rp, nodeAccount.Address, nil); err != nil {

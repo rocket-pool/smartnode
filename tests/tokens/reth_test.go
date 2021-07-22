@@ -57,6 +57,9 @@ func TestTransferRETH(t *testing.T) {
     rethAmount := eth.EthToWei(100)
     if err := rethutils.MintRETH(rp, userAccount1, rethAmount); err != nil { t.Fatal(err) }
 
+    // Mine pre-requisite 5760 blocks before being able to transfer
+    if err := evm.MineBlocks(5760); err != nil { t.Fatal(err) }
+
     // Transfer rETH
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
     sendAmount := eth.EthToWei(50)
@@ -96,6 +99,9 @@ func TestTransferFromRETH(t *testing.T) {
     } else if allowance.Cmp(sendAmount) != 0 {
         t.Errorf("Incorrect rETH spender allowance %s", allowance.String())
     }
+
+    // Mine pre-requisite 5760 blocks before being able to transfer
+    if err := evm.MineBlocks(5760); err != nil { t.Fatal(err) }
 
     // Transfer rETH from account
     toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
@@ -166,6 +172,9 @@ func TestBurnRETH(t *testing.T) {
     if err != nil {
         t.Fatal(err)
     }
+
+    // Mine pre-requisite 5760 blocks before being able to burn
+    if err := evm.MineBlocks(5760); err != nil { t.Fatal(err) }
 
     // Burn rETH
     burnAmount := eth.EthToWei(50)

@@ -19,6 +19,7 @@ const (
     QuorumSettingPath = "members.quorum"
     RPLBondSettingPath = "members.rplbond"
     MinipoolUnbondedMaxSettingPath = "members.minipool.unbonded.max"
+    MinipoolUnbondedMinFeeSettingPath = "members.minipool.unbonded.min.fee"
     ChallengeCooldownSettingPath = "members.challenge.cooldown"
     ChallengeWindowSettingPath = "members.challenge.window"
     ChallengeCostSettingPath = "members.challenge.cost"
@@ -91,6 +92,30 @@ func ProposeMinipoolUnbondedMax(rp *rocketpool.RocketPool, value uint64, opts *b
 }
 func EstimateProposeMinipoolUnbondedMaxGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolUnbondedMaxSettingPath), MembersSettingsContractName, MinipoolUnbondedMaxSettingPath, big.NewInt(int64(value)), opts)
+}
+
+
+
+// The minimum commission rate before unbonded minipools are allowed
+func GetMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+    membersSettingsContract, err := getMembersSettingsContract(rp)
+    if err != nil {
+        return 0, err
+    }
+    value := new(*big.Int)
+    if err := membersSettingsContract.Call(opts, value, "getMinipoolUnbondedMinFee"); err != nil {
+        return 0, fmt.Errorf("Could not get member unbonded minipool minimum fee: %w", err)
+    }
+    return (*value).Uint64(), nil
+}
+func BootstrapMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
+    return trustednodedao.BootstrapUint(rp, MembersSettingsContractName, MinipoolUnbondedMinFeeSettingPath, big.NewInt(int64(value)), opts)
+}
+func ProposeMinipoolUnbondedMinFee(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+    return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolUnbondedMinFeeSettingPath), MembersSettingsContractName, MinipoolUnbondedMinFeeSettingPath, big.NewInt(int64(value)), opts)
+}
+func EstimateProposeMinipoolUnbondedMinFeeGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolUnbondedMinFeeSettingPath), MembersSettingsContractName, MinipoolUnbondedMinFeeSettingPath, big.NewInt(int64(value)), opts)
 }
 
 

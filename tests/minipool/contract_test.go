@@ -100,16 +100,6 @@ func TestDetails(t *testing.T) {
             t.Errorf("Incorrect minipool user deposit assigned time %v", user.DepositAssignedTime)
         }
     }
-    if staking, err := mp.GetStakingDetails(nil); err != nil {
-        t.Error(err)
-    } else {
-        if staking.StartBalance.Cmp(eth.EthToWei(34)) != 0 {
-            t.Errorf("Incorrect minipool staking start balance %s", staking.StartBalance.String())
-        }
-        if staking.EndBalance.Cmp(eth.EthToWei(36)) != 0 {
-            t.Errorf("Incorrect minipool staking end balance %s", staking.EndBalance.String())
-        }
-    }
     if withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil); err != nil {
         t.Error(err)
     } else {
