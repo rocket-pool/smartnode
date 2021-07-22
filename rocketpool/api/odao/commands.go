@@ -517,140 +517,140 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "can-propose-proposal-vote-blocks",
-                Usage:     "Check whether the node can propose the proposal.vote.blocks setting",
-                UsageText: "rocketpool api odao can-propose-proposal-vote-blocks value",
+                Name:      "can-propose-proposal-vote-timespan",
+                Usage:     "Check whether the node can propose the proposal.vote.time setting",
+                UsageText: "rocketpool api odao can-propose-proposal-vote-timespan value",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalVoteBlocks, err := cliutils.ValidateUint("proposal voting period", c.Args().Get(0))
+                    proposalVoteTimespan, err := cliutils.ValidateUint("proposal voting period", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canProposeSettingProposalVoteBlocks(c, proposalVoteBlocks))
+                    api.PrintResponse(canProposeSettingProposalVoteTimespan(c, proposalVoteTimespan))
                     return nil
 
                 },
             },
             cli.Command{
-                Name:      "propose-proposal-vote-blocks",
-                Usage:     "Propose updating the proposal.vote.blocks setting",
-                UsageText: "rocketpool api odao propose-proposal-vote-blocks value",
+                Name:      "propose-proposal-vote-timespan",
+                Usage:     "Propose updating the proposal.vote.time setting",
+                UsageText: "rocketpool api odao propose-proposal-vote-timespan value",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalVoteBlocks, err := cliutils.ValidateUint("proposal voting period", c.Args().Get(0))
+                    proposalVoteTimespan, err := cliutils.ValidateUint("proposal voting period", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(proposeSettingProposalVoteBlocks(c, proposalVoteBlocks))
-                    return nil
-
-                },
-            },
-
-            cli.Command{
-                Name:      "can-propose-proposal-vote-delay-blocks",
-                Usage:     "Check whether the node can propose the proposal.vote.delay.blocks setting",
-                UsageText: "rocketpool api odao can-propose-proposal-vote-delay-blocks value",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalDelayBlocks, err := cliutils.ValidateUint("proposal delay period", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(canProposeSettingProposalVoteDelayBlocks(c, proposalDelayBlocks))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "propose-proposal-vote-delay-blocks",
-                Usage:     "Propose updating the proposal.vote.delay.blocks setting",
-                UsageText: "rocketpool api odao propose-proposal-vote-delay-blocks value",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalDelayBlocks, err := cliutils.ValidateUint("proposal delay period", c.Args().Get(0))
-                    if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(proposeSettingProposalVoteDelayBlocks(c, proposalDelayBlocks))
+                    api.PrintResponse(proposeSettingProposalVoteTimespan(c, proposalVoteTimespan))
                     return nil
 
                 },
             },
 
             cli.Command{
-                Name:      "can-propose-proposal-execute-blocks",
-                Usage:     "Check whether the node can propose the proposal.execute.blocks setting",
-                UsageText: "rocketpool api odao can-propose-proposal-execute-blocks value",
+                Name:      "can-propose-proposal-vote-delay-timespan",
+                Usage:     "Check whether the node can propose the proposal.vote.delay.time setting",
+                UsageText: "rocketpool api odao can-propose-proposal-vote-delay-timespan value",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalExecuteBlocks, err := cliutils.ValidateUint("proposal execution period", c.Args().Get(0))
+                    proposalDelayTimespan, err := cliutils.ValidateUint("proposal delay period", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canProposeSettingProposalExecuteBlocks(c, proposalExecuteBlocks))
+                    api.PrintResponse(canProposeSettingProposalVoteDelayTimespan(c, proposalDelayTimespan))
                     return nil
 
                 },
             },
             cli.Command{
-                Name:      "propose-proposal-execute-blocks",
-                Usage:     "Propose updating the proposal.execute.blocks setting",
-                UsageText: "rocketpool api odao propose-proposal-execute-blocks value",
+                Name:      "propose-proposal-vote-delay-timespan",
+                Usage:     "Propose updating the proposal.vote.delay.time setting",
+                UsageText: "rocketpool api odao propose-proposal-vote-delay-timespan value",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalExecuteBlocks, err := cliutils.ValidateUint("proposal execution period", c.Args().Get(0))
+                    proposalDelayTimespan, err := cliutils.ValidateUint("proposal delay period", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(proposeSettingProposalExecuteBlocks(c, proposalExecuteBlocks))
+                    api.PrintResponse(proposeSettingProposalVoteDelayTimespan(c, proposalDelayTimespan))
                     return nil
 
                 },
             },
 
             cli.Command{
-                Name:      "can-propose-proposal-action-blocks",
-                Usage:     "Check whether the node can propose the proposal.action.blocks setting",
-                UsageText: "rocketpool api odao can-propose-proposal-action-blocks value",
+                Name:      "can-propose-proposal-execute-timespan",
+                Usage:     "Check whether the node can propose the proposal.execute.time setting",
+                UsageText: "rocketpool api odao can-propose-proposal-execute-timespan value",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalActionBlocks, err := cliutils.ValidateUint("proposal action period", c.Args().Get(0))
+                    proposalExecuteTimespan, err := cliutils.ValidateUint("proposal execution period", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canProposeSettingProposalActionBlocks(c, proposalActionBlocks))
+                    api.PrintResponse(canProposeSettingProposalExecuteTimespan(c, proposalExecuteTimespan))
                     return nil
 
                 },
             },
             cli.Command{
-                Name:      "propose-proposal-action-blocks",
-                Usage:     "Propose updating the proposal.action.blocks setting",
-                UsageText: "rocketpool api odao propose-proposal-action-blocks value",
+                Name:      "propose-proposal-execute-timespan",
+                Usage:     "Propose updating the proposal.execute.time setting",
+                UsageText: "rocketpool api odao propose-proposal-execute-timespan value",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    proposalActionBlocks, err := cliutils.ValidateUint("proposal action period", c.Args().Get(0))
+                    proposalExecuteTimespan, err := cliutils.ValidateUint("proposal execution period", c.Args().Get(0))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(proposeSettingProposalActionBlocks(c, proposalActionBlocks))
+                    api.PrintResponse(proposeSettingProposalExecuteTimespan(c, proposalExecuteTimespan))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "can-propose-proposal-action-timespan",
+                Usage:     "Check whether the node can propose the proposal.action.time setting",
+                UsageText: "rocketpool api odao can-propose-proposal-action-timespan value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    proposalActionTimespan, err := cliutils.ValidateUint("proposal action period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canProposeSettingProposalActionTimespan(c, proposalActionTimespan))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-proposal-action-timespan",
+                Usage:     "Propose updating the proposal.action.time setting",
+                UsageText: "rocketpool api odao propose-proposal-action-timespan value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    proposalActionTimespan, err := cliutils.ValidateUint("proposal action period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingProposalActionTimespan(c, proposalActionTimespan))
                     return nil
 
                 },

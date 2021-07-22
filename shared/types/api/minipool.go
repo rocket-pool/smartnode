@@ -24,7 +24,6 @@ type MinipoolDetails struct {
     DepositType types.MinipoolDeposit       `json:"depositType"`
     Node minipool.NodeDetails               `json:"node"`
     User minipool.UserDetails               `json:"user"`
-    Staking minipool.StakingDetails         `json:"staking"`
     Balances tokens.Balances                `json:"balances"`
     Validator ValidatorDetails              `json:"validator"`
     RefundAvailable bool                    `json:"refundAvailable"`

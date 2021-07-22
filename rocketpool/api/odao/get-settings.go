@@ -73,36 +73,36 @@ func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse,
     // Response
     response := api.GetTNDAOProposalSettingsResponse{}
 
-    cooldown, err := trustednode.GetProposalCooldown(rp, nil)
+    cooldown, err := trustednode.GetProposalCooldownTime(rp, nil)
     if(err != nil) {
         return nil, fmt.Errorf("Error getting proposal cooldown: %w", err)
     }
 
-    voteBlocks, err := trustednode.GetProposalVoteBlocks(rp, nil)
+    voteTime, err := trustednode.GetProposalVoteTime(rp, nil)
     if(err != nil) {
-        return nil, fmt.Errorf("Error getting proposal vote blocks: %w", err)
+        return nil, fmt.Errorf("Error getting proposal vote time: %w", err)
     }
 
-    voteDelayBlocks, err := trustednode.GetProposalVoteDelayBlocks(rp, nil)
+    voteDelayTime, err := trustednode.GetProposalVoteDelayTime(rp, nil)
     if(err != nil) {
-        return nil, fmt.Errorf("Error getting proposal vote delay blocks: %w", err)
+        return nil, fmt.Errorf("Error getting proposal vote delay time: %w", err)
     }
 
-    executeBlocks, err := trustednode.GetProposalExecuteBlocks(rp, nil)
+    executeTime, err := trustednode.GetProposalExecuteTime(rp, nil)
     if(err != nil) {
-        return nil, fmt.Errorf("Error getting proposal execute blocks: %w", err)
+        return nil, fmt.Errorf("Error getting proposal execute time: %w", err)
     }
 
-    actionBlocks, err := trustednode.GetProposalActionBlocks(rp, nil)
+    actionTime, err := trustednode.GetProposalActionTime(rp, nil)
     if(err != nil) {
-        return nil, fmt.Errorf("Error getting proposal action blocks: %w", err)
+        return nil, fmt.Errorf("Error getting proposal action time: %w", err)
     }
 
     response.Cooldown = cooldown
-    response.VoteBlocks = voteBlocks
-    response.VoteDelayBlocks = voteDelayBlocks
-    response.ExecuteBlocks = executeBlocks
-    response.ActionBlocks = actionBlocks
+    response.VoteTime = voteTime
+    response.VoteDelayTime = voteDelayTime
+    response.ExecuteTime = executeTime
+    response.ActionTime = actionTime
     
     // Return response
     return &response, nil

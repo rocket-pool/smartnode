@@ -1,7 +1,7 @@
 package odao
 
 import (
-	"context"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao"
@@ -21,30 +21,20 @@ func getProposalCooldownActive(rp *rocketpool.RocketPool, nodeAddress common.Add
 
     // Data
     var wg errgroup.Group
-    var currentBlock uint64
-    var lastProposalBlock uint64
+    var lastProposalTime uint64
     var proposalCooldown uint64
 
-    // Get current block
-    wg.Go(func() error {
-        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
-        if err == nil {
-            currentBlock = header.Number.Uint64()
-        }
-        return err
-    })
-
-    // Get last proposal block
+    // Get last proposal time
     wg.Go(func() error {
         var err error
-        lastProposalBlock, err = tndao.GetMemberLastProposalBlock(rp, nodeAddress, nil)
+        lastProposalTime, err = tndao.GetMemberLastProposalTime(rp, nodeAddress, nil)
         return err
     })
 
     // Get proposal cooldown
     wg.Go(func() error {
         var err error
-        proposalCooldown, err = tnsettings.GetProposalCooldown(rp, nil)
+        proposalCooldown, err = tnsettings.GetProposalCooldownTime(rp, nil)
         return err
     })
 
@@ -54,7 +44,7 @@ func getProposalCooldownActive(rp *rocketpool.RocketPool, nodeAddress common.Add
     }
 
     // Return
-    return ((currentBlock - lastProposalBlock) < proposalCooldown), nil
+    return ((uint64(time.Now().Unix()) - lastProposalTime) < proposalCooldown), nil
 
 }
 
@@ -64,30 +54,20 @@ func getProposalIsActionable(rp *rocketpool.RocketPool, nodeAddress common.Addre
 
     // Data
     var wg errgroup.Group
-    var currentBlock uint64
-    var proposalExecutedBlock uint64
-    var actionBlocks uint64
+    var proposalExecutedTime uint64
+    var actionTime uint64
 
-    // Get current block
+    // Get proposal executed time
     wg.Go(func() error {
-        header, err := rp.Client.HeaderByNumber(context.Background(), nil)
-        if err == nil {
-            currentBlock = header.Number.Uint64()
-        }
+        var err error
+        proposalExecutedTime, err = tndao.GetMemberProposalExecutedTime(rp, proposalType, nodeAddress, nil)
         return err
     })
 
-    // Get proposal executed block
+    // Get action window
     wg.Go(func() error {
         var err error
-        proposalExecutedBlock, err = tndao.GetMemberProposalExecutedBlock(rp, proposalType, nodeAddress, nil)
-        return err
-    })
-
-    // Get action window in blocks
-    wg.Go(func() error {
-        var err error
-        actionBlocks, err = tnsettings.GetProposalActionBlocks(rp, nil)
+        actionTime, err = tnsettings.GetProposalActionTime(rp, nil)
         return err
     })
 
@@ -97,7 +77,7 @@ func getProposalIsActionable(rp *rocketpool.RocketPool, nodeAddress common.Addre
     }
 
     // Return
-    return (currentBlock < (proposalExecutedBlock + actionBlocks)), nil
+    return (uint64(time.Now().Unix()) < (proposalExecutedTime + actionTime)), nil
 
 }
 

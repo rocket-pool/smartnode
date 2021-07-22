@@ -35,8 +35,8 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
 
     // Data
     var wg errgroup.Group
-    var memberJoinedBlock uint64
-    var proposalCreatedBlock uint64
+    var memberJoinedTime uint64
+    var proposalCreatedTime uint64
 
     // Check proposal exists
     wg.Go(func() error {
@@ -65,17 +65,17 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
         return err
     })
 
-    // Get member joined block
+    // Get member joined time
     wg.Go(func() error {
         var err error
-        memberJoinedBlock, err = trustednode.GetMemberJoinedBlock(rp, nodeAccount.Address, nil)
+        memberJoinedTime, err = trustednode.GetMemberJoinedTime(rp, nodeAccount.Address, nil)
         return err
     })
 
-    // Get proposal created block
+    // Get proposal created time
     wg.Go(func() error {
         var err error
-        proposalCreatedBlock, err = dao.GetProposalCreatedBlock(rp, proposalId, nil)
+        proposalCreatedTime, err = dao.GetProposalCreatedTime(rp, proposalId, nil)
         return err
     })
 
@@ -98,7 +98,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.CanVoteOnTNDAOPr
     }
 
     // Check data
-    response.JoinedAfterCreated = (memberJoinedBlock >= proposalCreatedBlock)
+    response.JoinedAfterCreated = (memberJoinedTime >= proposalCreatedTime)
 
     // Update & return response
     response.CanVote = !(response.DoesNotExist || response.InvalidState || response.JoinedAfterCreated || response.AlreadyVoted)

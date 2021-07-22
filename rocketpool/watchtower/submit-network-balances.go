@@ -415,7 +415,6 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     var nodeDepositBalance *big.Int
     var userDepositBalance *big.Int
     var userDepositTime uint64
-    var withdrawalProcessed bool
 
     // Load data
     wg.Go(func() error {
@@ -445,19 +444,14 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         }
         return err
     })
-    wg.Go(func() error {
-        var err error
-        withdrawalProcessed, err = minipool.GetMinipoolWithdrawalProcessed(t.rp, minipoolAddress, opts)
-        return err
-    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
         return minipoolBalanceDetails{}, err
     }
 
-    // No balance if no user deposit assigned or withdrawal has been processed
-    if userDepositBalance.Cmp(big.NewInt(0)) == 0 || withdrawalProcessed {
+    // No balance if no user deposit assigned
+    if userDepositBalance.Cmp(big.NewInt(0)) == 0 {
         return minipoolBalanceDetails{
             UserBalance: big.NewInt(0),
         }, nil

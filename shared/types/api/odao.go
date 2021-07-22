@@ -239,25 +239,25 @@ type ProposeTNDAOSettingProposalCooldownResponse struct {
     ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
-type ProposeTNDAOSettingProposalVoteBlocksResponse struct {
+type ProposeTNDAOSettingProposalVoteTimespanResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
-type ProposeTNDAOSettingProposalVoteDelayBlocksResponse struct {
+type ProposeTNDAOSettingProposalVoteDelayTimespanResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
-type ProposeTNDAOSettingProposalExecuteBlocksResponse struct {
+type ProposeTNDAOSettingProposalExecuteTimespanResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
-type ProposeTNDAOSettingProposalActionBlocksResponse struct {
+type ProposeTNDAOSettingProposalActionTimespanResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     ProposalId uint64               `json:"proposalId"`
@@ -279,9 +279,9 @@ type GetTNDAOProposalSettingsResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     Cooldown uint64                 `json:"cooldown"`
-    VoteBlocks uint64               `json:"voteBlocks"`
-    VoteDelayBlocks uint64          `json:"voteDelayBlocks"`
-    ExecuteBlocks uint64            `json:"executeBlocks"`
-    ActionBlocks uint64             `json:"actionBlocks"`
+    VoteTime uint64                 `json:"voteTime"`
+    VoteDelayTime uint64            `json:"voteDelayTime"`
+    ExecuteTime uint64              `json:"executeTime"`
+    ActionTime uint64               `json:"actionTime"`
 }
 

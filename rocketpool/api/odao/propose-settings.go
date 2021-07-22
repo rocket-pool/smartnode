@@ -244,7 +244,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 }
 
 
-func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -263,7 +263,7 @@ func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks ui
     if err != nil { 
         return nil, err 
     }
-    gasInfo, err := trustednode.EstimateProposeProposalCooldownGas(rp, proposalCooldownBlocks, opts)
+    gasInfo, err := trustednode.EstimateProposeProposalCooldownTimeGas(rp, proposalCooldownTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -274,7 +274,7 @@ func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks ui
 }
 
 
-func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint64) (*api.ProposeTNDAOSettingProposalCooldownResponse, error) {
+func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan uint64) (*api.ProposeTNDAOSettingProposalCooldownResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -299,7 +299,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
     }
 
     // Submit proposal
-    proposalId, hash, err := trustednode.ProposeProposalCooldown(rp, proposalCooldownBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalCooldownTime(rp, proposalCooldownTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -312,7 +312,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownBlocks uint6
 }
 
 
-func canProposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -331,7 +331,7 @@ func canProposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint
     if err != nil { 
         return nil, err 
     }
-    gasInfo, err := trustednode.EstimateProposeProposalVoteBlocksGas(rp, proposalVoteBlocks, opts)
+    gasInfo, err := trustednode.EstimateProposeProposalVoteTimeGas(rp, proposalVoteTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -342,7 +342,7 @@ func canProposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint
 }
 
 
-func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64) (*api.ProposeTNDAOSettingProposalVoteBlocksResponse, error) {
+func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan uint64) (*api.ProposeTNDAOSettingProposalVoteTimespanResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -352,7 +352,7 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
     if err != nil { return nil, err }
 
     // Response
-    response := api.ProposeTNDAOSettingProposalVoteBlocksResponse{}
+    response := api.ProposeTNDAOSettingProposalVoteTimespanResponse{}
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
@@ -367,7 +367,7 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
     }
 
     // Submit proposal
-    proposalId, hash, err := trustednode.ProposeProposalVoteBlocks(rp, proposalVoteBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalVoteTime(rp, proposalVoteTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -380,7 +380,7 @@ func proposeSettingProposalVoteBlocks(c *cli.Context, proposalVoteBlocks uint64)
 }
 
 
-func canProposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -399,7 +399,7 @@ func canProposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlock
     if err != nil { 
         return nil, err 
     }
-    gasInfo, err := trustednode.EstimateProposeProposalVoteDelayBlocksGas(rp, proposalDelayBlocks, opts)
+    gasInfo, err := trustednode.EstimateProposeProposalVoteDelayTimeGas(rp, proposalDelayTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -410,7 +410,7 @@ func canProposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlock
 }
 
 
-func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks uint64) (*api.ProposeTNDAOSettingProposalVoteDelayBlocksResponse, error) {
+func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimespan uint64) (*api.ProposeTNDAOSettingProposalVoteDelayTimespanResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -420,7 +420,7 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
     if err != nil { return nil, err }
 
     // Response
-    response := api.ProposeTNDAOSettingProposalVoteDelayBlocksResponse{}
+    response := api.ProposeTNDAOSettingProposalVoteDelayTimespanResponse{}
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
@@ -435,7 +435,7 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
     }
 
     // Submit proposal
-    proposalId, hash, err := trustednode.ProposeProposalVoteDelayBlocks(rp, proposalDelayBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalVoteDelayTime(rp, proposalDelayTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -448,7 +448,7 @@ func proposeSettingProposalVoteDelayBlocks(c *cli.Context, proposalDelayBlocks u
 }
 
 
-func canProposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -467,7 +467,7 @@ func canProposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlock
     if err != nil { 
         return nil, err 
     }
-    gasInfo, err := trustednode.EstimateProposeProposalExecuteBlocksGas(rp, proposalExecuteBlocks, opts)
+    gasInfo, err := trustednode.EstimateProposeProposalExecuteTimeGas(rp, proposalExecuteTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -478,7 +478,7 @@ func canProposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlock
 }
 
 
-func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks uint64) (*api.ProposeTNDAOSettingProposalExecuteBlocksResponse, error) {
+func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimespan uint64) (*api.ProposeTNDAOSettingProposalExecuteTimespanResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -488,7 +488,7 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
     if err != nil { return nil, err }
 
     // Response
-    response := api.ProposeTNDAOSettingProposalExecuteBlocksResponse{}
+    response := api.ProposeTNDAOSettingProposalExecuteTimespanResponse{}
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
@@ -503,7 +503,7 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
     }
 
     // Submit proposal
-    proposalId, hash, err := trustednode.ProposeProposalExecuteBlocks(rp, proposalExecuteBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalExecuteTime(rp, proposalExecuteTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -516,7 +516,7 @@ func proposeSettingProposalExecuteBlocks(c *cli.Context, proposalExecuteBlocks u
 }
 
 
-func canProposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -535,7 +535,7 @@ func canProposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks 
     if err != nil { 
         return nil, err 
     }
-    gasInfo, err := trustednode.EstimateProposeProposalActionBlocksGas(rp, proposalActionBlocks, opts)
+    gasInfo, err := trustednode.EstimateProposeProposalActionTimeGas(rp, proposalActionTimespan, opts)
     if err != nil {
         return nil, err
     }
@@ -546,7 +546,7 @@ func canProposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks 
 }
 
 
-func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uint64) (*api.ProposeTNDAOSettingProposalActionBlocksResponse, error) {
+func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan uint64) (*api.ProposeTNDAOSettingProposalActionTimespanResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -556,7 +556,7 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     if err != nil { return nil, err }
 
     // Response
-    response := api.ProposeTNDAOSettingProposalActionBlocksResponse{}
+    response := api.ProposeTNDAOSettingProposalActionTimespanResponse{}
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
@@ -571,7 +571,7 @@ func proposeSettingProposalActionBlocks(c *cli.Context, proposalActionBlocks uin
     }
 
     // Submit proposal
-    proposalId, hash, err := trustednode.ProposeProposalActionBlocks(rp, proposalActionBlocks, opts)
+    proposalId, hash, err := trustednode.ProposeProposalActionTime(rp, proposalActionTimespan, opts)
     if err != nil {
         return nil, err
     }

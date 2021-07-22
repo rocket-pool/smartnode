@@ -164,11 +164,6 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
     })
     wg.Go(func() error {
         var err error
-        details.Staking, err = mp.GetStakingDetails(nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
         details.Balances, err = tokens.GetBalances(rp, minipoolAddress, nil)
         return err
     })

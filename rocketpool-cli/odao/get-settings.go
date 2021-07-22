@@ -2,6 +2,7 @@ package odao
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/urfave/cli"
 
@@ -49,11 +50,11 @@ func getProposalSettings(c* cli.Context) error {
     }
 
     // Log & return
-    fmt.Printf("Cooldown Between Proposals: %d Blocks\n", response.Cooldown)
-    fmt.Printf("Proposal Voting Window: %d Blocks\n", response.VoteBlocks)
-    fmt.Printf("Delay Before Voting on a Proposal is Allowed: %d Blocks\n", response.VoteDelayBlocks)
-    fmt.Printf("Window to Execute an Accepted Proposal: %d Blocks\n", response.ExecuteBlocks)
-    fmt.Printf("Window to Act on an Executed Proposal: %d Blocks\n", response.ActionBlocks)
+    fmt.Printf("Cooldown Between Proposals: %s\n", time.Duration(response.Cooldown * 1000000000))
+    fmt.Printf("Proposal Voting Window: %s\n", time.Duration(response.VoteTime * 1000000000))
+    fmt.Printf("Delay Before Voting on a Proposal is Allowed: %s\n", time.Duration(response.VoteDelayTime * 1000000000))
+    fmt.Printf("Window to Execute an Accepted Proposal: %s\n", time.Duration(response.ExecuteTime * 1000000000))
+    fmt.Printf("Window to Act on an Executed Proposal: %s\n", time.Duration(response.ActionTime * 1000000000))
     return nil
 
 }

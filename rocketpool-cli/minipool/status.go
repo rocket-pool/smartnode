@@ -109,7 +109,6 @@ func getStatus(c *cli.Context) error {
 
             // Withdrawal details - withdrawable minipools
             if minipool.Status.Status == types.Withdrawable {
-            fmt.Printf("Final balance:        %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Staking.EndBalance), 6))
             fmt.Printf("Withdrawal available: yes\n")
             }
 
