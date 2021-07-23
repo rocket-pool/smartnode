@@ -3,10 +3,12 @@ package watchtower
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
@@ -24,7 +26,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
+	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 // Submit RPL price task
@@ -144,7 +146,7 @@ func (t *submitRplPrice) run() error {
     }
 
     // Log
-    t.log.Printlnf("RPL price: %.6f ETH", math.RoundDown(eth.WeiToEth(rplPrice), 6))
+    t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
     // Submit RPL price
     if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake); err != nil {
@@ -165,6 +167,7 @@ func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
         return 0, err
     }
 
+    /*
     // Data
     var wg errgroup.Group
     var currentMainnetBlock uint64
@@ -193,16 +196,75 @@ func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
     
     // Calculate and return
     return (currentMainnetBlock / submitPricesFrequency) * submitPricesFrequency, nil
+    */
 
-    // TEMP - THIS NEEDS TO BE ENABLED FOR MAINNET
-    /*
     latestBlock, err := network.GetLatestReportablePricesBlock(t.rp, nil)
     if err != nil {
         return 0, fmt.Errorf("Error getting latest reportable block: %w", err)
     }
-    return latestBlock.Uint64(), nil
-    */
+    //return latestBlock.Uint64(), nil
+    
+    block, err := t.rp.Client.BlockByNumber(context.Background(), latestBlock)
+    if err != nil {
+        return 0, err
+    }
+    
+    closestMainnetBlock, err := t.findClosestMainnetBlock(block)
+    if err != nil {
+        return 0, err
+    }
 
+    return closestMainnetBlock, nil
+}
+
+
+// Performs a binary search to find the block on mainnet that has the closest timestamp
+func (t *submitRplPrice) findClosestMainnetBlock(testnetBlock *types.Block) (uint64, error) {
+
+    // Get the timestamp of the target block on the testnet, and the latest block on mainnet
+    testnetTime := float64(testnetBlock.Time())
+    latestMainnetBlock, err := t.mnec.BlockByNumber(context.Background(), nil)
+    if err != nil {
+        return 0, nil
+    }
+
+    // Start at the halfway point
+    candidateBlockNumber := big.NewInt(0).Div(latestMainnetBlock.Number(), big.NewInt(2))
+    candidateBlock, err := t.mnec.BlockByNumber(context.Background(), candidateBlockNumber)
+    if err != nil {
+        return 0, nil
+    }
+    previousBlock := candidateBlock
+    pivotSize := candidateBlock.NumberU64()
+    minimumDistance := +math.Inf(1)
+
+    for {
+        // Check if the previous guess was better than this one, return it if true
+        candidateTime := float64(candidateBlock.Time())
+        delta := testnetTime - candidateTime
+        distance := math.Abs(delta)
+        if distance > minimumDistance {
+            return previousBlock.NumberU64(), nil
+        }
+
+        // Set the best option to the current candidate
+        minimumDistance = distance
+        previousBlock = candidateBlock
+
+        // Iterate over the correct half, setting the pivot to the halfway point of that half
+        pivotSize /= 2
+        if delta > 0 {
+            // Go left
+            candidateBlockNumber = big.NewInt(0).Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
+        } else {
+            // Go right
+            candidateBlockNumber = big.NewInt(0).Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
+        }
+        candidateBlock, err = t.mnec.BlockByNumber(context.Background(), candidateBlockNumber)
+        if err != nil {
+            return 0, nil
+        }
+    }
 }
 
 
@@ -256,7 +318,7 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
     }
 
     // Get RPL price
-    rplPrice, err := t.oio.GetRate(opts, rplAddress, common.Address{})
+    rplPrice, err := t.oio.GetRateToEth(opts, rplAddress, true)
     if err != nil {
         return nil, fmt.Errorf("Could not get RPL price at block %d: %w", blockNumber, err)
     }
