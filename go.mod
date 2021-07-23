@@ -15,7 +15,7 @@ require (
 	github.com/docker/docker v1.4.2-0.20180625184442-8e610b2b55bf
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.10.4
+	github.com/ethereum/go-ethereum v1.10.6
 	github.com/fatih/color v1.7.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/google/uuid v1.1.5
@@ -27,7 +27,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
-	github.com/rocket-pool/rocketpool-go v1.0.0-rc3.0.20210722074419-f373c34486c9
+	github.com/rocket-pool/rocketpool-go v1.0.0-rc3.0.20210723050709-f92b87cd53e6
 	github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	github.com/urfave/cli v1.22.4
