@@ -1,6 +1,7 @@
 package watchtower
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -164,11 +165,43 @@ func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
         return 0, err
     }
 
+    // Data
+    var wg errgroup.Group
+    var currentMainnetBlock uint64
+    var submitPricesFrequency uint64
+
+    // Get current mainnet block
+    wg.Go(func() error {
+        header, err := t.mnec.HeaderByNumber(context.Background(), nil)
+        if err == nil {
+            currentMainnetBlock = header.Number.Uint64()
+        }
+        return err
+    })
+
+    // Get price submission frequency
+    wg.Go(func() error {
+        var err error
+        submitPricesFrequency, err = protocol.GetSubmitPricesFrequency(t.rp, nil)
+        return err
+    })
+
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return 0, err
+    }
+    
+    // Calculate and return
+    return (currentMainnetBlock / submitPricesFrequency) * submitPricesFrequency, nil
+
+    // TEMP - THIS NEEDS TO BE ENABLED FOR MAINNET
+    /*
     latestBlock, err := network.GetLatestReportablePricesBlock(t.rp, nil)
     if err != nil {
         return 0, fmt.Errorf("Error getting latest reportable block: %w", err)
     }
     return latestBlock.Uint64(), nil
+    */
 
 }
 
