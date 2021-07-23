@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
-	github.com/ethereum/go-ethereum v1.10.4
+	github.com/ethereum/go-ethereum v1.10.6
 	github.com/ferranbt/fastssz v0.0.0-20210120143747-11b9eff30ea9 // indirect
 	github.com/minio/highwayhash v1.0.1 // indirect
 	github.com/protolambda/zssz v0.1.5 // indirect
