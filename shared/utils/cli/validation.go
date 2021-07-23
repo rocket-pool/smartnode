@@ -18,7 +18,6 @@ import (
 // Config
 const (
     MinDAOMemberIDLength = 3
-    MinDAOMemberEmailLength = 6
 )
 
 
@@ -233,18 +232,6 @@ func ValidateDAOMemberID(name, value string) (string, error) {
         return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, val, MinDAOMemberIDLength)
     }
     return val, nil
-}
-
-
-// Validate a DAO member email
-func ValidateDAOMemberEmail(name, value string) (string, error) {
-    if len(value) < MinDAOMemberEmailLength {
-        return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, MinDAOMemberEmailLength)
-    }
-    if !regexp.MustCompile("^\\S+@\\S+(\\.\\S+)+$").MatchString(value) {
-        return "", fmt.Errorf("Invalid %s '%s' - must be a valid email address", name, value)
-    }
-    return value, nil
 }
 
 

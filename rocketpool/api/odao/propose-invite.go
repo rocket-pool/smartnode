@@ -14,7 +14,7 @@ import (
 )
 
 
-func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberEmail string) (*api.CanProposeTNDAOInviteResponse, error) {
+func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) (*api.CanProposeTNDAOInviteResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -57,8 +57,8 @@ func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, me
         if err != nil { 
             return err 
         }
-        message := fmt.Sprintf("invite %s (%s)", memberId, memberEmail)
-        gasInfo, err := trustednode.EstimateProposeInviteMemberGas(rp, message, memberAddress, memberId, memberEmail, opts)
+        message := fmt.Sprintf("invite %s (%s)", memberId, memberUrl)
+        gasInfo, err := trustednode.EstimateProposeInviteMemberGas(rp, message, memberAddress, memberId, memberUrl, opts)
         if err == nil {
             response.GasInfo = gasInfo
         }
@@ -77,7 +77,7 @@ func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, me
 }
 
 
-func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberEmail string) (*api.ProposeTNDAOInviteResponse, error) {
+func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) (*api.ProposeTNDAOInviteResponse, error) {
 
     // Get services
     if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
@@ -102,8 +102,8 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
     }
 
     // Submit proposal
-    message := fmt.Sprintf("invite %s (%s)", memberId, memberEmail)
-    proposalId, hash, err := trustednode.ProposeInviteMember(rp, message, memberAddress, memberId, memberEmail, opts)
+    message := fmt.Sprintf("invite %s (%s)", memberId, memberUrl)
+    proposalId, hash, err := trustednode.ProposeInviteMember(rp, message, memberAddress, memberId, memberUrl, opts)
     if err != nil {
         return nil, err
     }

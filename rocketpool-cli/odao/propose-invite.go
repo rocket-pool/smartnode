@@ -11,7 +11,7 @@ import (
 )
 
 
-func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberEmail string) error {
+func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
@@ -19,7 +19,7 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeInviteToTNDAO(memberAddress, memberId, memberEmail)
+    canPropose, err := rp.CanProposeInviteToTNDAO(memberAddress, memberId, memberUrl)
     if err != nil {
         return err
     }
@@ -44,7 +44,7 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
     }
 
     // Submit proposal
-    response, err := rp.ProposeInviteToTNDAO(memberAddress, memberId, memberEmail)
+    response, err := rp.ProposeInviteToTNDAO(memberAddress, memberId, memberUrl)
     if err != nil {
         return err
     }
