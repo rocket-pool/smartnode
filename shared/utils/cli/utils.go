@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -63,3 +64,12 @@ func printTransactionHashImpl(rp *rocketpool.Client, hash common.Hash, finalMess
     
 }
 
+
+// Convert a Unix datetime to a string, or `---` if it's zero
+func GetDateTimeString(dateTime uint64) string {
+    timeString := time.Unix(int64(dateTime), 0).Format(time.RFC822)
+    if dateTime == 0 {
+        timeString = "---"
+    }
+    return timeString
+}

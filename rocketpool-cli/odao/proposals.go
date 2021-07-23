@@ -3,13 +3,13 @@ package odao
 import (
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -62,21 +62,21 @@ func getProposals(c *cli.Context) error {
             fmt.Printf("Payload:              %s\n", proposal.PayloadStr)
             fmt.Printf("Payload (bytes):      %s\n", hex.EncodeToString(proposal.Payload))
             fmt.Printf("Proposed by:          %s\n", proposal.ProposerAddress.Hex())
-            fmt.Printf("Created at:           %s\n", time.Unix(int64(proposal.CreatedTime), 0).Format(time.RFC822))
+            fmt.Printf("Created at:           %s\n", cliutils.GetDateTimeString(proposal.CreatedTime))
 
             // Start block - pending proposals
             if proposal.State == types.Pending {
-            fmt.Printf("Starts at:            %s\n", time.Unix(int64(proposal.StartTime), 0).Format(time.RFC822))
+            fmt.Printf("Starts at:            %s\n", cliutils.GetDateTimeString(proposal.StartTime))
             }
 
             // End block - active proposals
             if proposal.State == types.Active {
-            fmt.Printf("Ends at:              %s\n", time.Unix(int64(proposal.EndTime), 0).Format(time.RFC822))
+            fmt.Printf("Ends at:              %s\n", cliutils.GetDateTimeString(proposal.EndTime))
             }
 
             // Expiry block - succeeded proposals
             if proposal.State == types.Succeeded {
-            fmt.Printf("Expires at:           %s\n", time.Unix(int64(proposal.ExpiryTime), 0).Format(time.RFC822))
+            fmt.Printf("Expires at:           %s\n", cliutils.GetDateTimeString(proposal.ExpiryTime))
             }
 
             // Vote details

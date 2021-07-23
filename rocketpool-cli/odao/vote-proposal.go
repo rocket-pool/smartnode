@@ -3,7 +3,6 @@ package odao
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/rocket-pool/rocketpool-go/dao"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -74,7 +73,7 @@ func voteOnProposal(c *cli.Context) error {
                 proposal.ID,
                 proposal.Message,
                 proposal.PayloadStr,
-                time.Unix(int64(proposal.EndTime), 0).Format(time.RFC822),
+                cliutils.GetDateTimeString(proposal.EndTime),
                 proposal.VotesRequired,
                 proposal.VotesFor,
                 proposal.VotesAgainst)

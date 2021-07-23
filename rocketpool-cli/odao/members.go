@@ -2,12 +2,12 @@ package odao
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -38,8 +38,8 @@ func getMembers(c *cli.Context) error {
         fmt.Printf("Member ID:            %s\n", member.ID)
         fmt.Printf("URL:                  %s\n", member.Url)
         fmt.Printf("Node address:         %s\n", member.Address.Hex())
-        fmt.Printf("Joined at:            %s\n", time.Unix(int64(member.JoinedTime), 0).Format(time.RFC822))
-        fmt.Printf("Last proposal:        %s\n", time.Unix(int64(member.LastProposalTime), 0).Format(time.RFC822))
+        fmt.Printf("Joined at:            %s\n", cliutils.GetDateTimeString(member.JoinedTime))
+        fmt.Printf("Last proposal:        %s\n", cliutils.GetDateTimeString(member.LastProposalTime))
         fmt.Printf("RPL bond amount:      %.6f\n", math.RoundDown(eth.WeiToEth(member.RPLBondAmount), 6))
         fmt.Printf("Unbonded minipools:   %d\n", member.UnbondedValidatorCount)
         fmt.Printf("\n")
