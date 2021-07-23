@@ -330,6 +330,11 @@ func TestWithdrawValidatorBalance(t *testing.T) {
         t.Fatal(err)
     }
 
+    // Call refund method to withdraw node's balance
+    if _, err := mp.Refund(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
     // Get & check updated node ETH balances
     if nodeBalance2, err := tokens.GetBalances(rp, nodeAccount.Address, nil); err != nil {
         t.Fatal(err)
