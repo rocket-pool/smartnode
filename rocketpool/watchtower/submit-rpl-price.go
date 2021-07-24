@@ -234,32 +234,41 @@ func (t *submitRplPrice) findClosestMainnetBlock(testnetBlock *types.Block) (uin
     if err != nil {
         return 0, nil
     }
-    previousBlock := candidateBlock
+    bestBlock := candidateBlock
     pivotSize := candidateBlock.NumberU64()
     minimumDistance := +math.Inf(1)
 
     for {
-        // Check if the previous guess was better than this one, return it if true
+        // Get the distance from the candidate block to the target time
         candidateTime := float64(candidateBlock.Time())
         delta := testnetTime - candidateTime
         distance := math.Abs(delta)
-        if distance > minimumDistance {
-            return previousBlock.NumberU64(), nil
+
+        // If it's better, replace the best candidate with it
+        if distance < minimumDistance {
+            minimumDistance = distance
+            bestBlock = candidateBlock
+        } else if pivotSize == 1 {
+            // If the pivot is down to size 1 and we didn't find anything better
+            // after another iteration, this is the best block!
+            return bestBlock.NumberU64(), nil
         }
 
-        // Set the best option to the current candidate
-        minimumDistance = distance
-        previousBlock = candidateBlock
-
-        // Iterate over the correct half, setting the pivot to the halfway point of that half
-        pivotSize /= 2
-        if delta > 0 {
+        // Iterate over the correct half, setting the pivot to the halfway point of that half (rounded up)
+        pivotSize = uint64(math.Ceil(float64(pivotSize) / 2))
+        if delta < 0 {
             // Go left
             candidateBlockNumber = big.NewInt(0).Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
         } else {
             // Go right
             candidateBlockNumber = big.NewInt(0).Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
         }
+
+        // Clamp the new candidate to the latest block
+        if candidateBlockNumber.Uint64() > (latestMainnetBlock.NumberU64() - 1) {
+            candidateBlockNumber.SetUint64(latestMainnetBlock.NumberU64() - 1)
+        }
+        
         candidateBlock, err = t.mnec.BlockByNumber(context.Background(), candidateBlockNumber)
         if err != nil {
             return 0, nil
