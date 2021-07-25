@@ -51,6 +51,10 @@ ______           _        _    ______           _
             Name:  "Joe Clapis",
             Email: "joe@rocketpool.net",
         },
+        {
+            Name:  "Kane Wallmann",
+            Email: "kane@rocketpool.net",
+        },
     }
     app.Copyright = "(c) 2021 Rocket Pool Pty Ltd"
 

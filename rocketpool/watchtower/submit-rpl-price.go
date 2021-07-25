@@ -1,14 +1,11 @@
 package watchtower
 
 import (
-	"context"
 	"fmt"
-	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
@@ -167,113 +164,11 @@ func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
         return 0, err
     }
 
-    /*
-    // Data
-    var wg errgroup.Group
-    var currentMainnetBlock uint64
-    var submitPricesFrequency uint64
-
-    // Get current mainnet block
-    wg.Go(func() error {
-        header, err := t.mnec.HeaderByNumber(context.Background(), nil)
-        if err == nil {
-            currentMainnetBlock = header.Number.Uint64()
-        }
-        return err
-    })
-
-    // Get price submission frequency
-    wg.Go(func() error {
-        var err error
-        submitPricesFrequency, err = protocol.GetSubmitPricesFrequency(t.rp, nil)
-        return err
-    })
-
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return 0, err
-    }
-    
-    // Calculate and return
-    return (currentMainnetBlock / submitPricesFrequency) * submitPricesFrequency, nil
-    */
-
     latestBlock, err := network.GetLatestReportablePricesBlock(t.rp, nil)
     if err != nil {
         return 0, fmt.Errorf("Error getting latest reportable block: %w", err)
     }
-    //return latestBlock.Uint64(), nil
-    
-    block, err := t.rp.Client.BlockByNumber(context.Background(), latestBlock)
-    if err != nil {
-        return 0, err
-    }
-    
-    closestMainnetBlock, err := t.findClosestMainnetBlock(block)
-    if err != nil {
-        return 0, err
-    }
-
-    return closestMainnetBlock, nil
-}
-
-
-// Performs a binary search to find the block on mainnet that has the closest timestamp
-func (t *submitRplPrice) findClosestMainnetBlock(testnetBlock *types.Block) (uint64, error) {
-
-    // Get the timestamp of the target block on the testnet, and the latest block on mainnet
-    testnetTime := float64(testnetBlock.Time())
-    latestMainnetBlock, err := t.mnec.BlockByNumber(context.Background(), nil)
-    if err != nil {
-        return 0, nil
-    }
-
-    // Start at the halfway point
-    candidateBlockNumber := big.NewInt(0).Div(latestMainnetBlock.Number(), big.NewInt(2))
-    candidateBlock, err := t.mnec.BlockByNumber(context.Background(), candidateBlockNumber)
-    if err != nil {
-        return 0, nil
-    }
-    bestBlock := candidateBlock
-    pivotSize := candidateBlock.NumberU64()
-    minimumDistance := +math.Inf(1)
-
-    for {
-        // Get the distance from the candidate block to the target time
-        candidateTime := float64(candidateBlock.Time())
-        delta := testnetTime - candidateTime
-        distance := math.Abs(delta)
-
-        // If it's better, replace the best candidate with it
-        if distance < minimumDistance {
-            minimumDistance = distance
-            bestBlock = candidateBlock
-        } else if pivotSize == 1 {
-            // If the pivot is down to size 1 and we didn't find anything better
-            // after another iteration, this is the best block!
-            return bestBlock.NumberU64(), nil
-        }
-
-        // Iterate over the correct half, setting the pivot to the halfway point of that half (rounded up)
-        pivotSize = uint64(math.Ceil(float64(pivotSize) / 2))
-        if delta < 0 {
-            // Go left
-            candidateBlockNumber = big.NewInt(0).Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
-        } else {
-            // Go right
-            candidateBlockNumber = big.NewInt(0).Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
-        }
-
-        // Clamp the new candidate to the latest block
-        if candidateBlockNumber.Uint64() > (latestMainnetBlock.NumberU64() - 1) {
-            candidateBlockNumber.SetUint64(latestMainnetBlock.NumberU64() - 1)
-        }
-        
-        candidateBlock, err = t.mnec.BlockByNumber(context.Background(), candidateBlockNumber)
-        if err != nil {
-            return 0, nil
-        }
-    }
+    return latestBlock.Uint64(), nil
 }
 
 
@@ -353,7 +248,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
     // Get the gas estimates
     gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)
     if err != nil {
-        return fmt.Errorf("Could not estimate the gas required to dissolve the minipool: %w", err)
+        return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
     }
     if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
         return nil
