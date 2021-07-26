@@ -9,6 +9,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -114,13 +115,13 @@ func getStatus(c *cli.Context) error {
 
             // Delegate details
             if minipool.UseLatestDelegate {
-            fmt.Printf("Auto upgrade:         yes\n", )
+            fmt.Printf("Use latest delegate:  yes\n", )
             } else {
-            fmt.Printf("Auto upgrade:         no\n", )
+            fmt.Printf("Use latest delegate:  no\n", )
             }
-            fmt.Printf("Delegate address:     %s\n", minipool.Delegate.Hex())
-            fmt.Printf("Rollback delegate:    %s\n", minipool.PreviousDelegate.Hex())
-            fmt.Printf("Effective delegate:   %s\n", minipool.EffectiveDelegate.Hex())
+            fmt.Printf("Delegate address:     %s\n", cliutils.GetPrettyAddress(minipool.Delegate))
+            fmt.Printf("Rollback delegate:    %s\n", cliutils.GetPrettyAddress(minipool.PreviousDelegate))
+            fmt.Printf("Effective delegate:   %s\n", cliutils.GetPrettyAddress(minipool.EffectiveDelegate))
 
             fmt.Printf("\n")
         }

@@ -73,3 +73,13 @@ func GetDateTimeString(dateTime uint64) string {
     }
     return timeString
 }
+
+
+// Gets the hex string of an address, or "none" if it was the 0x0 address
+func GetPrettyAddress(address common.Address) string {
+    addressString := address.Hex()
+    if addressString == "0x0000000000000000000000000000000000000000" {
+        return "<none>"
+    }
+    return addressString
+}
