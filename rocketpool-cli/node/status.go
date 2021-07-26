@@ -57,7 +57,6 @@ func getStatus(c *cli.Context) error {
                 math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
                 math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6))
         } else {
-            fmt.Println("")
             fmt.Printf("%sThe node's withdrawal address has not been changed, so rewards and withdrawals will be sent to the node itself.\n", colorYellow)
             fmt.Printf("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.\n%s", colorReset)
         }
@@ -66,8 +65,8 @@ func getStatus(c *cli.Context) error {
         if status.PendingWithdrawalAddress.Hex() != blankAddress.Hex() {
             fmt.Printf("%sThe node's withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingWithdrawalAddress.Hex())
             fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
+            fmt.Println("")
         }
-        fmt.Println("")
 
         // RPL stake details
         fmt.Printf(
