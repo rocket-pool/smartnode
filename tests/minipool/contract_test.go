@@ -1,22 +1,24 @@
 package minipool
 
 import (
-	"bytes"
-	"encoding/hex"
-	"testing"
+    "bytes"
+    "encoding/hex"
+    "github.com/ethereum/go-ethereum/common"
+    trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    "testing"
 
-	"github.com/rocket-pool/rocketpool-go/deposit"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/tokens"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+    "github.com/rocket-pool/rocketpool-go/deposit"
+    "github.com/rocket-pool/rocketpool-go/minipool"
+    "github.com/rocket-pool/rocketpool-go/network"
+    "github.com/rocket-pool/rocketpool-go/node"
+    "github.com/rocket-pool/rocketpool-go/tokens"
+    rptypes "github.com/rocket-pool/rocketpool-go/types"
+    "github.com/rocket-pool/rocketpool-go/utils/eth"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
 )
 
 
@@ -457,51 +459,115 @@ func TestWithdrawValidatorBalanceAndDestroy(t *testing.T) {
 }
 
 
-func TestDelegateUpgrade(t *testing.T) {
+func TestDelegateUpgradeAndRollback(t *testing.T) {
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
-    // TODO
+    // Register nodes
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    if err != nil { t.Fatal(err) }
+
+    // Get original delegate contract
+    originalDelegate, err := mp.GetEffectiveDelegate(nil)
+    if err != nil { t.Fatal(err) }
+
+    newDelegate := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    newAbi := "[{\"name\":\"foo\",\"type\":\"function\",\"inputs\":[],\"outputs\":[]}]"
+
+    // Upgrade the network delegate contract
+    _, err = trustednodedao.BootstrapUpgrade(rp, "upgradeContract", "rocketMinipoolDelegate", newAbi, newDelegate, ownerAccount.GetTransactor())
+    if err != nil { t.Fatal(err) }
+
+    // Get new effective delegate
+    effectiveDelegate, err := mp.GetEffectiveDelegate(nil)
+    if err != nil { t.Fatal(err) }
+
+    // Check
+    if effectiveDelegate != originalDelegate {
+        t.Errorf("Effective delegate %s did not match original delegate %s", effectiveDelegate.Hex(), originalDelegate.Hex())
+    }
+
+    // Call upgrade
+    if _, err := mp.DelegateUpgrade(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Check effective delegate
+    if effectiveDelegate, err = mp.GetEffectiveDelegate(nil); err != nil {
+    	t.Fatal(err)
+    } else if effectiveDelegate != newDelegate {
+        t.Errorf("Effective delegate %s did not match new delegate %s", effectiveDelegate.Hex(), newDelegate.Hex())
+    }
+
+    // Check previous delegate
+    if previousDelegate, err := mp.GetPreviousDelegate(nil); err != nil {
+        t.Fatal(err)
+    } else if previousDelegate != originalDelegate {
+        t.Errorf("Previous delegate %s did not match original delegate %s", previousDelegate.Hex(), originalDelegate.Hex())
+    }
+
+    // Check current delegate
+    if currentDelegate, err := mp.GetDelegate(nil); err != nil {
+        t.Fatal(err)
+    } else if currentDelegate != newDelegate {
+        t.Errorf("Current delegate %s did not match new delegate %s", currentDelegate.Hex(), newDelegate.Hex())
+    }
+
+    // Rollback
+    if _, err := mp.DelegateRollback(nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get new effective delegate
+    if effectiveDelegate, err = mp.GetEffectiveDelegate(nil); err != nil {
+    	t.Fatal(err)
+    } else if effectiveDelegate != originalDelegate {
+        t.Errorf("Effective delegate %s did not match original delegate %s", effectiveDelegate.Hex(), newDelegate.Hex())
+    }
 }
 
+func TestUseLatestDelegate(t *testing.T) {
+    // State snapshotting
+    if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
+    t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
-func TestDelegateRollback(t *testing.T) {
+    // Register nodes
+    if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
+    if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
-    // TODO
+    // Create minipool
+    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    if err != nil { t.Fatal(err) }
 
+    // New delegate params
+    newDelegate := common.HexToAddress("0x1111111111111111111111111111111111111111")
+    newAbi := "[{\"name\":\"foo\",\"type\":\"function\",\"inputs\":[],\"outputs\":[]}]"
+
+    // Upgrade the network delegate contract
+    _, err = trustednodedao.BootstrapUpgrade(rp, "upgradeContract", "rocketMinipoolDelegate", newAbi, newDelegate, ownerAccount.GetTransactor())
+    if err != nil { t.Fatal(err) }
+
+    // Set use latest delegate
+    if _, err = mp.SetUseLatestDelegate(true, nodeAccount.GetTransactor()); err != nil {
+        t.Fatal(err)
+    }
+
+    // Get use latest delegate
+    if useLatest, err := mp.GetUseLatestDelegate(nil); err != nil {
+        t.Fatal(err)
+    } else if !useLatest {
+    	t.Error("GetUseLatestDelegate returned false after being set")
+    }
+
+    // Check effective delegate
+    if effectiveDelegate, err := mp.GetEffectiveDelegate(nil); err != nil {
+        t.Fatal(err)
+    } else if effectiveDelegate != newDelegate {
+        t.Errorf("Effective delegate %s did not match new delegate %s", effectiveDelegate.Hex(), newDelegate.Hex())
+    }
 }
-
-
-func TestSetUseLatestDelegate(t *testing.T) {
-
-    // TODO
-
-}
-
-
-func TestGetUseLatestDelegate(t *testing.T) {
-
-    // TODO
-
-}
-
-
-func TestGetDelegate(t *testing.T) {
-
-    // TODO
-
-}
-
-
-func TestGetPreviousDelegate(t *testing.T) {
-
-    // TODO
-
-}
-
-
-func TestGetEffectiveDelegate(t *testing.T) {
-
-    // TODO
-
-}
-
