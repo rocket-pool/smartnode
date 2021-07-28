@@ -513,11 +513,11 @@ func (mp *Minipool) CalculateNodePortion(balance *big.Int, opts *bind.CallOpts) 
 
 // Given a validator balance, calculates how much belongs to rETH users taking into consideration rewards and penalties
 func (mp *Minipool) CalculateUserPortion(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
-    nodeAmount := new(*big.Int)
-    if err := mp.Contract.Call(opts, nodeAmount, "calculateUserPortion", balance); err != nil {
+    userAmount := new(*big.Int)
+    if err := mp.Contract.Call(opts, userAmount, "calculateUserPortion", balance); err != nil {
         return nil, fmt.Errorf("Could not get minipool user portion: %w", err)
     }
-    return *nodeAmount, nil
+    return *userAmount, nil
 }
 
 
