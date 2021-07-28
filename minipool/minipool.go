@@ -28,6 +28,16 @@ type MinipoolDetails struct {
 }
 
 
+// The counts of minipools per status
+type MinipoolCountsPerStatus struct {
+    Initialized *big.Int      `abi:"initializedCount"`
+    Prelaunch *big.Int        `abi:"prelaunchCount"`
+    Staking *big.Int          `abi:"stakingCount"`
+    Withdrawable *big.Int     `abi:"withdrawableCount"`
+    Dissolved *big.Int        `abi:"dissolvedCount"`
+}
+
+
 // Get all minipool details
 func GetMinipools(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]MinipoolDetails, error) {
     minipoolAddresses, err := GetMinipoolAddresses(rp, opts)
@@ -256,6 +266,20 @@ func GetMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
         return 0, fmt.Errorf("Could not get minipool count: %w", err)
     }
     return (*minipoolCount).Uint64(), nil
+}
+
+
+// Get the minipool count by status
+func GetMinipoolCountPerStatus(rp *rocketpool.RocketPool, offset, limit uint64, opts *bind.CallOpts) (MinipoolCountsPerStatus, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return MinipoolCountsPerStatus{}, err
+    }
+    minipoolCounts := new(MinipoolCountsPerStatus)
+    if err := rocketMinipoolManager.Call(opts, minipoolCounts, "getMinipoolCountPerStatus", big.NewInt(int64(offset)), big.NewInt(int64(limit))); err != nil {
+        return MinipoolCountsPerStatus{}, fmt.Errorf("Could not get minipool counts: %w", err)
+    }
+    return *minipoolCounts, nil
 }
 
 
