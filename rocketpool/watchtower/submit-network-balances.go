@@ -467,14 +467,12 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         startEpoch = blockEpoch
     }
 
-    // Get node balance at block
+    // Get user balance at block
     blockBalance := eth.GweiToWei(float64(validator.Balance))
-    nodeBalance, err := mp.CalculateNodePortion(blockBalance, opts)
+    userBalance, err := mp.CalculateUserPortion(blockBalance, opts)
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
-    userBalance := big.NewInt(0)
-    userBalance.Sub(blockBalance, nodeBalance)
 
     // Return
     return minipoolBalanceDetails{
