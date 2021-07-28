@@ -166,7 +166,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             cli.Command{
                                 Name:       "members-quorum",
                                 Aliases:    []string{"q"},
-                                Usage:      "Propose updating the members.quorum setting",
+                                Usage:      "Propose updating the members.quorum setting - takes a percent, from 0 to 100",
                                 UsageText:  "rocketpool odao propose setting members-quorum value",
                                 Action: func(c *cli.Context) error {
 
@@ -183,7 +183,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             cli.Command{
                                 Name:       "members-rplbond",
                                 Aliases:    []string{"b"},
-                                Usage:      "Propose updating the members.rplbond setting",
+                                Usage:      "Propose updating the members.rplbond setting - takes an RPL amount (e.g. 5000)",
                                 UsageText:  "rocketpool odao propose setting members-rplbond value",
                                 Action: func(c *cli.Context) error {
 
@@ -200,7 +200,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                             cli.Command{
                                 Name:       "members-minipool-unbonded-max",
                                 Aliases:    []string{"u"},
-                                Usage:      "Propose updating the members.minipool.unbonded.max setting",
+                                Usage:      "Propose updating the members.minipool.unbonded.max setting - takes a number (e.g 100)",
                                 UsageText:  "rocketpool odao propose setting members-minipool-unbonded-max value",
                                 Action: func(c *cli.Context) error {
 

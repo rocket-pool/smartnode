@@ -20,7 +20,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
     defer rp.Close()
 
     // Check if proposal can be made
-    canPropose, err := rp.CanProposeTNDAOSettingMembersQuorum(quorumPercent)
+    canPropose, err := rp.CanProposeTNDAOSettingMembersQuorum(quorumPercent / 100)
     if err != nil {
         return err
     }
