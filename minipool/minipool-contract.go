@@ -502,6 +502,25 @@ func (mp *Minipool) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, e
 }
 
 
+// Given a validator balance, calculates how much belongs to the node taking into consideration rewards and penalties
+func (mp *Minipool) CalculateNodePortion(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+    nodeAmount := new(*big.Int)
+    if err := mp.Contract.Call(opts, nodeAmount, "calculateNodePortion", balance); err != nil {
+        return nil, fmt.Errorf("Could not get minipool node portion: %w", err)
+    }
+    return *nodeAmount, nil
+}
+
+// Given a validator balance, calculates how much belongs to rETH users taking into consideration rewards and penalties
+func (mp *Minipool) CalculateUserPortion(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+    nodeAmount := new(*big.Int)
+    if err := mp.Contract.Call(opts, nodeAmount, "calculateUserPortion", balance); err != nil {
+        return nil, fmt.Errorf("Could not get minipool user portion: %w", err)
+    }
+    return *nodeAmount, nil
+}
+
+
 // Get a minipool contract
 var rocketMinipoolLock sync.Mutex
 func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Address) (*rocketpool.Contract, error) {
@@ -509,4 +528,5 @@ func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Addre
     defer rocketMinipoolLock.Unlock()
     return rp.MakeContract("rocketMinipool", minipoolAddress)
 }
+
 
