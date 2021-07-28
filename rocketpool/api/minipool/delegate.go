@@ -31,6 +31,13 @@ func canDelegateUpgrade(c *cli.Context, minipoolAddress common.Address) (*api.Ca
         return nil, err
     }
 
+    // Get latest delegate address
+    latestDelegateAddress, err := rp.GetAddress("rocketMinipoolDelegate")
+    if err != nil {
+        return nil, err
+    }
+    response.LatestDelegateAddress = *latestDelegateAddress
+
     // Get gas estimate
     opts, err := w.GetNodeAccountTransactor()
     if err != nil { 
@@ -107,6 +114,12 @@ func canDelegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.C
     if err != nil {
         return nil, err
     }
+
+    rollbackAddress, err := mp.GetPreviousDelegate(nil)
+    if err != nil {
+        return nil, err
+    }
+    response.RollbackAddress = rollbackAddress
 
     // Get gas estimate
     opts, err := w.GetNodeAccountTransactor()

@@ -66,9 +66,10 @@ func delegateUpgradeMinipools(c *cli.Context) error {
     for _, minipool := range selectedMinipools {
         canResponse, err := rp.CanDelegateUpgradeMinipool(minipool)
         if err != nil {
-            fmt.Printf("WARNING: Couldn't get gas price for upgrade transaction (%s)", err)
+            fmt.Printf("WARNING: Couldn't get gas price for upgrade transaction (%s)\n", err)
             break
         } else {
+            fmt.Printf("Minipool %s will upgrade to delegate contract %s.\n", minipool.Hex(), canResponse.LatestDelegateAddress.Hex())
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit
         }
@@ -164,6 +165,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
             fmt.Printf("WARNING: Couldn't get gas price for rollback transaction (%s)", err)
             break
         } else {
+            fmt.Printf("Minipool %s will roll back to delegate contract %s.\n", minipool.Hex(), canResponse.RollbackAddress.Hex())
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit
         }

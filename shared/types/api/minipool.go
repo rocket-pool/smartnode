@@ -139,9 +139,10 @@ type DestroyMinipoolResponse struct {
 
 
 type CanDelegateUpgradeResponse struct {
-    Status string                   `json:"status"`
-    Error string                    `json:"error"`
-    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
+    Status string                           `json:"status"`
+    Error string                            `json:"error"`
+    LatestDelegateAddress common.Address    `json:"latestDelegateAddress"`
+    GasInfo rocketpool.GasInfo              `json:"gasInfo"`
 }
 type DelegateUpgradeResponse struct {
     Status string                   `json:"status"`
@@ -153,6 +154,7 @@ type DelegateUpgradeResponse struct {
 type CanDelegateRollbackResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
+    RollbackAddress common.Address  `json:"rollbackAddress"`
     GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type DelegateRollbackResponse struct {
