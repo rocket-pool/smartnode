@@ -149,6 +149,19 @@ func ValidatePositiveWeiAmount(name, value string) (*big.Int, error) {
 }
 
 
+// Validate a positive or zero wei amount
+func ValidatePositiveOrZeroWeiAmount(name, value string) (*big.Int, error) {
+    val, err := ValidateWeiAmount(name, value)
+    if err != nil {
+        return nil, err
+    }
+    if val.Cmp(big.NewInt(0)) < 0 {
+        return nil, fmt.Errorf("Invalid %s '%s' - must be greater or equal to 0", name, value)
+    }
+    return val, nil
+}
+
+
 // Validate a deposit amount in wei
 func ValidateDepositWeiAmount(name, value string) (*big.Int, error) {
     val, err := ValidateWeiAmount(name, value)

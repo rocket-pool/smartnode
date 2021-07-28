@@ -148,7 +148,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
                     memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
                     if err != nil { return err }
-                    fineAmountWei, err := cliutils.ValidatePositiveWeiAmount("fine amount", c.Args().Get(1))
+                    fineAmountWei, err := cliutils.ValidatePositiveOrZeroWeiAmount("fine amount", c.Args().Get(1))
                     if err != nil { return err }
 
                     // Run
@@ -168,7 +168,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
                     memberAddress, err := cliutils.ValidateAddress("member address", c.Args().Get(0))
                     if err != nil { return err }
-                    fineAmountWei, err := cliutils.ValidatePositiveWeiAmount("fine amount", c.Args().Get(1))
+                    fineAmountWei, err := cliutils.ValidatePositiveOrZeroWeiAmount("fine amount", c.Args().Get(1))
                     if err != nil { return err }
 
                     // Run
