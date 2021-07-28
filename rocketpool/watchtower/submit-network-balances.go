@@ -469,7 +469,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 
     // Get user balance at block
     blockBalance := eth.GweiToWei(float64(validator.Balance))
-    userBalance, err := mp.CalculateUserPortion(blockBalance, opts)
+    userBalance, err := mp.CalculateUserShare(blockBalance, opts)
     if err != nil {
         return minipoolBalanceDetails{}, err
     }

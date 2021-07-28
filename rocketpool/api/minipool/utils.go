@@ -256,7 +256,7 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
 
     // Get expected node balance
     blockBalance := eth.GweiToWei(float64(validator.Balance))
-    nodeBalance, err := mp.CalculateNodePortion(blockBalance, nil)
+    nodeBalance, err := mp.CalculateNodeShare(blockBalance, nil)
     if err != nil {
         return api.ValidatorDetails{}, err
     }
