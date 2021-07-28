@@ -503,18 +503,18 @@ func (mp *Minipool) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, e
 
 
 // Given a validator balance, calculates how much belongs to the node taking into consideration rewards and penalties
-func (mp *Minipool) CalculateNodePortion(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+func (mp *Minipool) CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
     nodeAmount := new(*big.Int)
-    if err := mp.Contract.Call(opts, nodeAmount, "calculateNodePortion", balance); err != nil {
+    if err := mp.Contract.Call(opts, nodeAmount, "calculateNodeShare", balance); err != nil {
         return nil, fmt.Errorf("Could not get minipool node portion: %w", err)
     }
     return *nodeAmount, nil
 }
 
 // Given a validator balance, calculates how much belongs to rETH users taking into consideration rewards and penalties
-func (mp *Minipool) CalculateUserPortion(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+func (mp *Minipool) CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
     userAmount := new(*big.Int)
-    if err := mp.Contract.Call(opts, userAmount, "calculateUserPortion", balance); err != nil {
+    if err := mp.Contract.Call(opts, userAmount, "calculateUserShare", balance); err != nil {
         return nil, fmt.Errorf("Could not get minipool user portion: %w", err)
     }
     return *userAmount, nil
