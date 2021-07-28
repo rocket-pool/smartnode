@@ -24,6 +24,7 @@ type NodeStatusResponse struct {
     RplStake *big.Int                           `json:"rplStake"`
     EffectiveRplStake *big.Int                  `json:"effectiveRplStake"`
     MinimumRplStake *big.Int                    `json:"minimumRplStake"`
+    MaximumRplStake *big.Int                    `json:"maximumRplStake"`
     CollateralRatio float64                     `json:"collateralRatio"`
     MinipoolLimit uint64                        `json:"minipoolLimit"`
     MinipoolCounts struct {

@@ -411,8 +411,6 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     // Data
     var wg errgroup.Group
     var status types.MinipoolStatus
-    var nodeFee float64
-    var nodeDepositBalance *big.Int
     var userDepositBalance *big.Int
     var userDepositTime uint64
 
@@ -420,16 +418,6 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     wg.Go(func() error {
         var err error
         status, err = mp.GetStatus(opts)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        nodeFee, err = mp.GetNodeFee(opts)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        nodeDepositBalance, err = mp.GetNodeDepositBalance(opts)
         return err
     })
     wg.Go(func() error {
@@ -479,17 +467,9 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         startEpoch = blockEpoch
     }
 
-    // Get validator activation balance
-    activationBalanceWei := new(big.Int)
-    activationBalanceWei.Add(nodeDepositBalance, userDepositBalance)
-    activationBalance := eth.WeiToGwei(activationBalanceWei)
-
-    // Calculate approximate validator balance at start epoch & validator balance at block
-    startBalance := eth.GweiToWei(activationBalance + (float64(validator.Balance) - activationBalance) * float64(startEpoch - validator.ActivationEpoch) / float64(blockEpoch - validator.ActivationEpoch))
+    // Get node balance at block
     blockBalance := eth.GweiToWei(float64(validator.Balance))
-
-    // Get node & user balance at block
-    nodeBalance, err := minipool.GetMinipoolNodeRewardAmount(t.rp, nodeFee, userDepositBalance, startBalance, blockBalance, opts)
+    nodeBalance, err := mp.CalculateNodePortion(blockBalance, opts)
     if err != nil {
         return minipoolBalanceDetails{}, err
     }

@@ -216,6 +216,12 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 // Get a minipool's validator details
 func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.MinipoolDetails, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, currentEpoch uint64) (api.ValidatorDetails, error) {
 
+    // Create minipool
+    mp, err := minipool.NewMinipool(rp, minipoolDetails.Address)
+    if err != nil {
+        return api.ValidatorDetails{}, err
+    }
+
     // Validator details
     details := api.ValidatorDetails{}
 
@@ -248,16 +254,9 @@ func getMinipoolValidatorDetails(rp *rocketpool.RocketPool, minipoolDetails api.
         startEpoch = currentEpoch
     }
 
-    // Get validator activation balance
-    activationBalanceWei := new(big.Int)
-    activationBalanceWei.Add(minipoolDetails.Node.DepositBalance, minipoolDetails.User.DepositBalance)
-    activationBalance := eth.WeiToGwei(activationBalanceWei)
-
-    // Calculate approximate validator balance at start epoch
-    startBalance := eth.GweiToWei(activationBalance + (float64(validator.Balance) - activationBalance) * float64(startEpoch - validator.ActivationEpoch) / float64(currentEpoch - validator.ActivationEpoch))
-
     // Get expected node balance
-    nodeBalance, err := minipool.GetMinipoolNodeRewardAmount(rp, minipoolDetails.Node.Fee, minipoolDetails.User.DepositBalance, startBalance, details.Balance, nil)
+    blockBalance := eth.GweiToWei(float64(validator.Balance))
+    nodeBalance, err := mp.CalculateNodePortion(blockBalance, nil)
     if err != nil {
         return api.ValidatorDetails{}, err
     }

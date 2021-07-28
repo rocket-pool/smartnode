@@ -86,6 +86,11 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     })
     wg.Go(func() error {
         var err error
+        response.MaximumRplStake, err = node.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
         response.MinipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
         return err
     })
