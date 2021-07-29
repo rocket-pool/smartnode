@@ -208,7 +208,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Flags: []cli.Flag{
                     cli.StringFlag{
                         Name:  "minipool, m",
-                        Usage: "The minipool/s to rollback (address or 'all')",
+                        Usage: "The minipool/s to configure the use-latest setting on (address or 'all')",
                     },
                 },
                 Action: func(c *cli.Context) error {
