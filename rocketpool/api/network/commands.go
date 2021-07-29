@@ -1,12 +1,11 @@
 package network
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/utils/api"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
@@ -45,6 +44,44 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(getRplPrice(c))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "challenge",
+                Aliases:   []string{"c"},
+                Usage:     "Get the current network RPL price in ETH",
+                UsageText: "rocketpool api network rpl-price",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(challenge(c, address))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "decide",
+                Aliases:   []string{"d"},
+                Usage:     "Get the current network RPL price in ETH",
+                UsageText: "rocketpool api network rpl-price",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(decide(c, address))
                     return nil
 
                 },

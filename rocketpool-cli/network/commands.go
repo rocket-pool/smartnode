@@ -1,11 +1,10 @@
 package network
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
@@ -43,6 +42,42 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                     // Run
                     return getRplPrice(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "challenge",
+                Aliases:   []string{"c"},
+                Usage:     "Get the current network RPL price in ETH",
+                UsageText: "rocketpool api network rpl-price",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    return challenge(c, address)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "decide",
+                Aliases:   []string{"d"},
+                Usage:     "Get the current network RPL price in ETH",
+                UsageText: "rocketpool api network rpl-price",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    return decide(c, address)
 
                 },
             },

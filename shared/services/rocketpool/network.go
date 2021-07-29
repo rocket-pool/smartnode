@@ -1,13 +1,13 @@
 package rocketpool
 
 import (
-    "encoding/json"
-    "fmt"
-    "math/big"
+	"encoding/json"
+	"fmt"
+	"math/big"
 
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
 
 // Get network node fee
 func (c *Client) NodeFee() (api.NodeFeeResponse, error) {
@@ -42,6 +42,40 @@ func (c *Client) RplPrice() (api.RplPriceResponse, error) {
     if response.RplPrice == nil { response.RplPrice = big.NewInt(0) }
     if response.MinPerMinipoolRplStake == nil { response.MinPerMinipoolRplStake = big.NewInt(0) }
     if response.MaxPerMinipoolRplStake == nil { response.MaxPerMinipoolRplStake = big.NewInt(0) }
+    return response, nil
+}
+
+
+// Get network node fee
+func (c *Client) Challenge(address common.Address) (api.SetNodeTimezoneResponse, error) {
+    responseBytes, err := c.callAPI("network challenge", address.Hex())
+    if err != nil {
+        return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not challenge: %w", err)
+    }
+    var response api.SetNodeTimezoneResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not decode challenge response: %w", err)
+    }
+    if response.Error != "" {
+        return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not challenge: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Get network node fee
+func (c *Client) Decide(address common.Address) (api.SetNodeTimezoneResponse, error) {
+    responseBytes, err := c.callAPI("network decide", address.Hex())
+    if err != nil {
+        return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not decide: %w", err)
+    }
+    var response api.SetNodeTimezoneResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not decode decide response: %w", err)
+    }
+    if response.Error != "" {
+        return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not decide: %s", response.Error)
+    }
     return response, nil
 }
 
