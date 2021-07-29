@@ -1,13 +1,12 @@
 package rocketpool
 
 import (
-    "encoding/json"
-    "fmt"
-    "math/big"
+	"encoding/json"
+	"fmt"
+	"math/big"
 
-    "github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
-
 
 // Get RPL auction status
 func (c *Client) AuctionStatus() (api.AuctionStatusResponse, error) {
@@ -94,8 +93,8 @@ func (c *Client) CreateLot() (api.CreateLotResponse, error) {
 
 
 // Check whether the node can bid on a lot
-func (c *Client) CanBidOnLot(lotIndex uint64) (api.CanBidOnLotResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("auction can-bid-lot %d", lotIndex))
+func (c *Client) CanBidOnLot(lotIndex uint64, amountWei *big.Int) (api.CanBidOnLotResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("auction can-bid-lot %d %s", lotIndex, amountWei.String()))
     if err != nil {
         return api.CanBidOnLotResponse{}, fmt.Errorf("Could not get can bid on lot status: %w", err)
     }

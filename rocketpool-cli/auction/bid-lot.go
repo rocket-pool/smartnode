@@ -123,7 +123,7 @@ func bidOnLot(c *cli.Context) error {
     }
 
     // Check lot can be bid on
-    canBid, err := rp.CanBidOnLot(selectedLot.Details.Index)
+    canBid, err := rp.CanBidOnLot(selectedLot.Details.Index, amountWei)
     if err != nil {
         return err
     }

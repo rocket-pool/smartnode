@@ -84,16 +84,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "can-bid-lot",
                 Usage:     "Check whether the node can bid on a lot",
-                UsageText: "rocketpool api auction can-bid-lot lot-id",
+                UsageText: "rocketpool api auction can-bid-lot lot-id amount",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
                     lotIndex, err := cliutils.ValidateUint("lot ID", c.Args().Get(0))
+                    if err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("bid amount", c.Args().Get(1))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canBidOnLot(c, lotIndex))
+                    api.PrintResponse(canBidOnLot(c, lotIndex, amountWei))
                     return nil
 
                 },

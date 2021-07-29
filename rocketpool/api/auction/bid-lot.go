@@ -15,7 +15,7 @@ import (
 )
 
 
-func canBidOnLot(c *cli.Context, lotIndex uint64) (*api.CanBidOnLotResponse, error) {
+func canBidOnLot(c *cli.Context, lotIndex uint64, amountWei *big.Int) (*api.CanBidOnLotResponse, error) {
 
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
@@ -73,6 +73,7 @@ func canBidOnLot(c *cli.Context, lotIndex uint64) (*api.CanBidOnLotResponse, err
         if err != nil { 
             return err 
         }
+        opts.Value = amountWei
         gasInfo, err := auction.EstimatePlaceBidGas(rp, lotIndex, opts)
         if err == nil {
             response.GasInfo = gasInfo
