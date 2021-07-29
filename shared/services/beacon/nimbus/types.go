@@ -59,10 +59,10 @@ type Validator struct {
         WithdrawalCredentials      byteArray `json:"withdrawal_credentials"`
         EffectiveBalance           uint64    `json:"effective_balance"`
         Slashed                    bool      `json:"slashed"`
-        ActivationEligibilityEpoch uint64    `json:"activation_eligibility_epoch"`
-        ActivationEpoch            int64     `json:"activation_epoch"`   // Nimbus uses -1 for FAR_FUTURE_EPOCH so this has to be a signed int
-        ExitEpoch                  int64     `json:"exit_epoch"`         // Same here
-        WithdrawableEpoch          int64     `json:"withdrawable_epoch"` // Same here
+        ActivationEligibilityEpoch int64     `json:"activation_eligibility_epoch"`  // Nimbus uses -1 for FAR_FUTURE_EPOCH so this has to be a signed int
+        ActivationEpoch            int64     `json:"activation_epoch"`              // Same here
+        ExitEpoch                  int64     `json:"exit_epoch"`                    // Same here
+        WithdrawableEpoch          int64     `json:"withdrawable_epoch"`            // Same here
     } `json:"validator"`
 }
 
