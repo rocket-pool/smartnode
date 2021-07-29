@@ -330,21 +330,21 @@ func (mp *Minipool) DistributeBalance(opts *bind.TransactOpts) (common.Hash, err
 }
 
 
-// Estimate the gas of DistributeBalanceAndDestroy
-func (mp *Minipool) EstimateDistributeBalanceAndDestroyGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    return mp.Contract.GetTransactionGasInfo(opts, "distributeBalanceAndDestroy")
+// Estimate the gas of DistributeBalanceAndFinalise
+func (mp *Minipool) EstimateDistributeBalanceAndFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "distributeBalanceAndFinalise")
 }
 
 
 // Distribute the minipool's ETH balance to the node operator and rETH staking pool,
-// then destroys the minipool.
+// then finalises the minipool
 // !!! WARNING !!!
 // DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
 // and the balance has been deposited into the minipool!
-func (mp *Minipool) DistributeBalanceAndDestroy(opts *bind.TransactOpts) (common.Hash, error) {
-    hash, err := mp.Contract.Transact(opts, "distributeBalanceAndDestroy")
+func (mp *Minipool) DistributeBalanceAndFinalise(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "distributeBalanceAndFinalise")
     if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not process withdrawal for and destroy minipool %s: %w", mp.Address.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not process withdrawal for and finalise minipool %s: %w", mp.Address.Hex(), err)
     }
     return hash, nil
 }
@@ -398,17 +398,17 @@ func (mp *Minipool) Close(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 
-// Estimate the gas of Destroy
-func (mp *Minipool) EstimateDestroyGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    return mp.Contract.GetTransactionGasInfo(opts, "destroy")
+// Estimate the gas of Finalise
+func (mp *Minipool) EstimateFinaliseGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "finalise")
 }
 
 
-// Destroy a minipool to get the RPL stake back
-func (mp *Minipool) Destroy(opts *bind.TransactOpts) (common.Hash, error) {
-    hash, err := mp.Contract.Transact(opts, "destroy")
+// Finalise a minipool to get the RPL stake back
+func (mp *Minipool) Finalise(opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "finalise")
     if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not destroy minipool %s: %w", mp.Address.Hex(), err)
+        return common.Hash{}, fmt.Errorf("Could not finalise minipool %s: %w", mp.Address.Hex(), err)
     }
     return hash, nil
 }

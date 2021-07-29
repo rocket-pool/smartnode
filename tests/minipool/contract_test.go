@@ -275,7 +275,7 @@ func TestClose(t *testing.T) {
 }
 
 
-func TestDestroy(t *testing.T) {
+func TestFinalise(t *testing.T) {
 
     // TODO
 
@@ -373,7 +373,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
 }
 
 
-func TestWithdrawValidatorBalanceAndDestroy(t *testing.T) {
+func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
 
     // State snapshotting
     if err := evm.TakeSnapshot(); err != nil { t.Fatal(err) }
@@ -418,8 +418,8 @@ func TestWithdrawValidatorBalanceAndDestroy(t *testing.T) {
         t.Fatal(err)
     }
 
-    // Call DistributeBalanceAndDestroy method
-    if _, err := mp.DistributeBalanceAndDestroy(nodeAccount.GetTransactor()); err != nil {
+    // Call DistributeBalanceAndFinalise method
+    if _, err := mp.DistributeBalanceAndFinalise(nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
