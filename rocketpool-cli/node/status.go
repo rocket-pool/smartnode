@@ -114,7 +114,7 @@ func getStatus(c *cli.Context) error {
             if status.MinipoolCounts.CloseAvailable > 0 {
                 fmt.Printf("* %d dissolved minipool(s) can be closed!\n", status.MinipoolCounts.CloseAvailable)
             }
-            if status.MinipoolCounts.CloseAvailable > 0 {
+            if status.MinipoolCounts.Finalised > 0 {
                 fmt.Printf("* %d minipool(s) are finalized and no longer active.\n", status.MinipoolCounts.Finalised)
             }
 
