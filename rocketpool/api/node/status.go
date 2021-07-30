@@ -101,24 +101,25 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
         if err == nil {
             response.MinipoolCounts.Total = len(details)
             for _, mpDetails := range details {
-                switch mpDetails.Status {
-                    case types.Initialized:  response.MinipoolCounts.Initialized++
-                    case types.Prelaunch:    response.MinipoolCounts.Prelaunch++
-                    case types.Staking:      response.MinipoolCounts.Staking++
-                    case types.Withdrawable: response.MinipoolCounts.Withdrawable++
-                    case types.Dissolved:    response.MinipoolCounts.Dissolved++
-                }
-                if mpDetails.RefundAvailable {
-                    response.MinipoolCounts.RefundAvailable++
-                }
-                if mpDetails.WithdrawalAvailable {
-                    response.MinipoolCounts.WithdrawalAvailable++
-                }
-                if mpDetails.CloseAvailable {
-                    response.MinipoolCounts.CloseAvailable++
-                }
                 if mpDetails.Finalised {
                     response.MinipoolCounts.Finalised++
+                } else {
+                    switch mpDetails.Status {
+                        case types.Initialized:  response.MinipoolCounts.Initialized++
+                        case types.Prelaunch:    response.MinipoolCounts.Prelaunch++
+                        case types.Staking:      response.MinipoolCounts.Staking++
+                        case types.Withdrawable: response.MinipoolCounts.Withdrawable++
+                        case types.Dissolved:    response.MinipoolCounts.Dissolved++
+                    }
+                    if mpDetails.RefundAvailable {
+                        response.MinipoolCounts.RefundAvailable++
+                    }
+                    if mpDetails.WithdrawalAvailable {
+                        response.MinipoolCounts.WithdrawalAvailable++
+                    }
+                    if mpDetails.CloseAvailable {
+                        response.MinipoolCounts.CloseAvailable++
+                    }
                 }
             }
         }
