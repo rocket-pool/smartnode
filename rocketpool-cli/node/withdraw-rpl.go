@@ -57,23 +57,27 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
         // Get maximum withdrawable amount
         var maxAmount big.Int
-        if status.RplStake.Cmp(status.MinimumRplStake) > 0 {
-            maxAmount.Sub(status.RplStake, status.MinimumRplStake)
-        }
-
-        // Prompt for maximum amount
-        if cliutils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
-            amountWei = &maxAmount
-        } else {
-
-            // Prompt for custom amount
-            inputAmount := cliutils.Prompt("Please enter an amount of staked RPL to withdraw:", "^\\d+(\\.\\d+)?$", "Invalid amount")
-            withdrawalAmount, err := strconv.ParseFloat(inputAmount, 64)
-            if err != nil {
-                return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
+        maxAmount.Sub(status.RplStake, status.MaximumRplStake)
+        if maxAmount.Sign() == 1 {
+            // Prompt for maximum amount
+            if cliutils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
+                amountWei = &maxAmount
+            } else {
+    
+                // Prompt for custom amount
+                inputAmount := cliutils.Prompt("Please enter an amount of staked RPL to withdraw:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+                withdrawalAmount, err := strconv.ParseFloat(inputAmount, 64)
+                if err != nil {
+                    return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
+                }
+                amountWei = eth.EthToWei(withdrawalAmount)
+    
             }
-            amountWei = eth.EthToWei(withdrawalAmount)
-
+        } else {
+            fmt.Printf("Cannot withdraw staked RPL - you have %.6f RPL staked, but are not allowed to withdraw below %.6f RPL (150%% collateral).\n", 
+                math.RoundDown(eth.WeiToEth(status.RplStake), 6), 
+                math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+            return nil
         }
 
     }
