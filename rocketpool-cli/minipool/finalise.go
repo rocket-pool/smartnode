@@ -11,15 +11,15 @@ import (
 )
 
 
-func destroyMinipool(c *cli.Context, minipoolAddress common.Address) error {
+func finaliseMinipool(c *cli.Context, minipoolAddress common.Address) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
 
-    // Check if the minipool can be destroyed
-    canResponse, err := rp.CanDestroyMinipool(minipoolAddress)
+    // Check if the minipool can be finalised
+    canResponse, err := rp.CanFinaliseMinipool(minipoolAddress)
     if err != nil {
         return err
     }
@@ -28,25 +28,25 @@ func destroyMinipool(c *cli.Context, minipoolAddress common.Address) error {
     rp.PrintGasInfo(canResponse.GasInfo)
 
     // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to destroy minipool %s?", minipoolAddress.Hex()))) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to finalize minipool %s?", minipoolAddress.Hex()))) {
         fmt.Println("Cancelled.")
         return nil
     }
 
-    // Destroy the minipool
-    response, err := rp.DestroyMinipool(minipoolAddress)
+    // Finalise the minipool
+    response, err := rp.FinaliseMinipool(minipoolAddress)
     if err != nil {
         return err
     }
 
-    fmt.Printf("Destroying minipool %s...\n", minipoolAddress)
+    fmt.Printf("Finalizing minipool %s...\n", minipoolAddress)
     cliutils.PrintTransactionHash(rp, response.TxHash)
     if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
         return err
     }
 
     // Log & return
-    fmt.Printf("Successfully destroyed the minipool.\n")
+    fmt.Printf("Successfully finalized the minipool.\n")
     return nil
 
 }

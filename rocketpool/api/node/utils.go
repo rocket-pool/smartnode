@@ -21,6 +21,7 @@ type minipoolCountDetails struct {
     RefundAvailable bool
     WithdrawalAvailable bool
     CloseAvailable bool
+    Finalised bool
 }
 
 
@@ -98,6 +99,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     var wg errgroup.Group
     var status types.MinipoolStatus
     var refundBalance *big.Int
+    var finalised bool
 
     // Load data
     wg.Go(func() error {
@@ -108,6 +110,11 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
     wg.Go(func() error {
         var err error
         refundBalance, err = mp.GetNodeRefundBalance(nil)
+        return err
+    })
+    wg.Go(func() error {
+        var err error
+        finalised, err = mp.GetFinalised(nil)
         return err
     })
 
@@ -122,6 +129,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
         RefundAvailable: (refundBalance.Cmp(big.NewInt(0)) > 0),
         WithdrawalAvailable: (status == types.Withdrawable),
         CloseAvailable: (status == types.Dissolved),
+        Finalised: finalised,
     }, nil
 
 }

@@ -175,35 +175,35 @@ func (c *Client) CloseMinipool(address common.Address) (api.CloseMinipoolRespons
 }
 
 
-// Check whether a minipool can be destroyed
-func (c *Client) CanDestroyMinipool(address common.Address) (api.CanDestroyMinipoolResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-destroy %s", address.Hex()))
+// Check whether a minipool can be finalised
+func (c *Client) CanFinaliseMinipool(address common.Address) (api.CanFinaliseMinipoolResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-finalise %s", address.Hex()))
     if err != nil {
-        return api.CanDestroyMinipoolResponse{}, fmt.Errorf("Could not get can destroy minipool status: %w", err)
+        return api.CanFinaliseMinipoolResponse{}, fmt.Errorf("Could not get can finalise minipool status: %w", err)
     }
-    var response api.CanDestroyMinipoolResponse
+    var response api.CanFinaliseMinipoolResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.CanDestroyMinipoolResponse{}, fmt.Errorf("Could not decode can destroy minipool response: %w", err)
+        return api.CanFinaliseMinipoolResponse{}, fmt.Errorf("Could not decode can finalise minipool response: %w", err)
     }
     if response.Error != "" {
-        return api.CanDestroyMinipoolResponse{}, fmt.Errorf("Could not get can destroy minipool status: %s", response.Error)
+        return api.CanFinaliseMinipoolResponse{}, fmt.Errorf("Could not get can finalise minipool status: %s", response.Error)
     }
     return response, nil
 }
 
 
-// Destroy a minipool
-func (c *Client) DestroyMinipool(address common.Address) (api.DestroyMinipoolResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("minipool destroy %s", address.Hex()))
+// Finalise a minipool
+func (c *Client) FinaliseMinipool(address common.Address) (api.FinaliseMinipoolResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("minipool finalise %s", address.Hex()))
     if err != nil {
-        return api.DestroyMinipoolResponse{}, fmt.Errorf("Could not destroy minipool: %w", err)
+        return api.FinaliseMinipoolResponse{}, fmt.Errorf("Could not finalise minipool: %w", err)
     }
-    var response api.DestroyMinipoolResponse
+    var response api.FinaliseMinipoolResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.DestroyMinipoolResponse{}, fmt.Errorf("Could not decode destroy minipool response: %w", err)
+        return api.FinaliseMinipoolResponse{}, fmt.Errorf("Could not decode finalise minipool response: %w", err)
     }
     if response.Error != "" {
-        return api.DestroyMinipoolResponse{}, fmt.Errorf("Could not destroy minipool: %s", response.Error)
+        return api.FinaliseMinipoolResponse{}, fmt.Errorf("Could not finalise minipool: %s", response.Error)
     }
     return response, nil
 }

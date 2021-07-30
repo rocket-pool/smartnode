@@ -13,7 +13,7 @@ import (
 )
 
 
-func canDestroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanDestroyMinipoolResponse, error) {
+func canFinaliseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanFinaliseMinipoolResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -23,7 +23,7 @@ func canDestroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Ca
     if err != nil { return nil, err }
 
     // Response
-    response := api.CanDestroyMinipoolResponse{}
+    response := api.CanFinaliseMinipoolResponse{}
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
@@ -36,7 +36,7 @@ func canDestroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Ca
     if err != nil { 
         return nil, err 
     }
-    gasInfo, err := mp.EstimateDestroyGas(opts)
+    gasInfo, err := mp.EstimateFinaliseGas(opts)
     if err == nil {
         response.GasInfo = gasInfo
     }
@@ -47,7 +47,7 @@ func canDestroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Ca
 }
 
 
-func destroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.DestroyMinipoolResponse, error) {
+func finaliseMinipool(c *cli.Context, minipoolAddress common.Address) (*api.FinaliseMinipoolResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -57,7 +57,7 @@ func destroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Destr
     if err != nil { return nil, err }
 
     // Response
-    response := api.DestroyMinipoolResponse{}
+    response := api.FinaliseMinipoolResponse{}
 
     // Create minipool
     mp, err := minipool.NewMinipool(rp, minipoolAddress)
@@ -78,7 +78,7 @@ func destroyMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Destr
     }
 
     // Close
-    hash, err := mp.Destroy(opts)
+    hash, err := mp.Finalise(opts)
     if err != nil {
         return nil, err
     }

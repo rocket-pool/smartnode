@@ -117,6 +117,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
                 if mpDetails.CloseAvailable {
                     response.MinipoolCounts.CloseAvailable++
                 }
+                if mpDetails.Finalised {
+                    response.MinipoolCounts.Finalised++
+                }
             }
         }
         return err
@@ -141,8 +144,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
     if err != nil {
         return nil, err
     }
-    if response.MinipoolCounts.Total > 0 {
-        response.CollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(response.MinipoolCounts.Total) * 16.0)
+    activeMinipools := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
+    if activeMinipools > 0 {
+        response.CollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools) * 16.0)
     } else {
         response.CollateralRatio = -1
     }

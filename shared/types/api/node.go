@@ -37,7 +37,8 @@ type NodeStatusResponse struct {
         RefundAvailable int                 `json:"refundAvailable"`
         WithdrawalAvailable int             `json:"withdrawalAvailable"`
         CloseAvailable int                  `json:"closeAvailable"`
-    }                                   `json:"minipoolCounts"`
+        Finalised int                       `json:"finalised"`
+    }                                           `json:"minipoolCounts"`
 }
 
 

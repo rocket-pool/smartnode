@@ -33,24 +33,29 @@ func getStatus(c *cli.Context) error {
     refundableMinipools := []api.MinipoolDetails{}
     withdrawableMinipools := []api.MinipoolDetails{}
     closeableMinipools := []api.MinipoolDetails{}
+    finalisedMinipools := []api.MinipoolDetails{}
     for _, minipool := range status.Minipools {
 
-        // Add to status list
-        statusName := minipool.Status.Status.String()
-        if _, ok := statusMinipools[statusName]; !ok {
-            statusMinipools[statusName] = []api.MinipoolDetails{}
-        }
-        statusMinipools[statusName] = append(statusMinipools[statusName], minipool)
+        if !minipool.Finalised {
+            // Add to status list
+            statusName := minipool.Status.Status.String()
+            if _, ok := statusMinipools[statusName]; !ok {
+                statusMinipools[statusName] = []api.MinipoolDetails{}
+            }
+            statusMinipools[statusName] = append(statusMinipools[statusName], minipool)
 
-        // Add to actionable lists
-        if minipool.RefundAvailable {
-            refundableMinipools = append(refundableMinipools, minipool)
-        }
-        if minipool.WithdrawalAvailable {
-            withdrawableMinipools = append(withdrawableMinipools, minipool)
-        }
-        if minipool.CloseAvailable {
-            closeableMinipools = append(closeableMinipools, minipool)
+            // Add to actionable lists
+            if minipool.RefundAvailable {
+                refundableMinipools = append(refundableMinipools, minipool)
+            }
+            if minipool.WithdrawalAvailable {
+                withdrawableMinipools = append(withdrawableMinipools, minipool)
+            }
+            if minipool.CloseAvailable {
+                closeableMinipools = append(closeableMinipools, minipool)
+            }
+        } else {
+            finalisedMinipools = append(finalisedMinipools, minipool)
         }
 
     }
@@ -72,62 +77,22 @@ func getStatus(c *cli.Context) error {
 
         // Minipools
         for _, minipool := range minipools {
-            fmt.Printf("--------------------\n")
-            fmt.Printf("\n")
-
-            // Main details
-            fmt.Printf("Address:              %s\n", minipool.Address.Hex())
-            fmt.Printf("Status updated:       %s\n", minipool.Status.StatusTime.Format(TimeFormat))
-            fmt.Printf("Node fee:             %f%%\n", minipool.Node.Fee * 100)
-            fmt.Printf("Node deposit:         %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
-
-            // RP ETH deposit details - prelaunch & staking minipools
-            if minipool.Status.Status == types.Prelaunch || minipool.Status.Status == types.Staking {
-                if minipool.User.DepositAssigned {
-            fmt.Printf("RP ETH assigned:      %s\n", minipool.User.DepositAssignedTime.Format(TimeFormat))
-            fmt.Printf("RP deposit:           %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.User.DepositBalance), 6))
-                } else {
-            fmt.Printf("RP ETH assigned:      no\n")
-                }
-            }
-
-            // Validator details - staking minipools
-            if minipool.Status.Status == types.Staking {
-            fmt.Printf("Validator pubkey:     %s\n", hex.AddPrefix(minipool.ValidatorPubkey.Hex()))
-            fmt.Printf("Validator index:      %d\n", minipool.Validator.Index)
-                if minipool.Validator.Exists {
-                    if minipool.Validator.Active {
-            fmt.Printf("Validator active:     yes\n")
-                    } else {
-            fmt.Printf("Validator active:     no\n")
-                    }
-            fmt.Printf("Validator balance:    %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.Balance), 6))
-            fmt.Printf("Expected rewards:     %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.NodeBalance), 6))
-                } else {
-            fmt.Printf("Validator seen:       no\n")
-                }
-            }
-
-            // Withdrawal details - withdrawable minipools
-            if minipool.Status.Status == types.Withdrawable {
-            fmt.Printf("Withdrawal available: yes\n")
-            }
-
-            // Delegate details
-            if minipool.UseLatestDelegate {
-            fmt.Printf("Use latest delegate:  yes\n", )
-            } else {
-            fmt.Printf("Use latest delegate:  no\n", )
-            }
-            fmt.Printf("Delegate address:     %s\n", cliutils.GetPrettyAddress(minipool.Delegate))
-            fmt.Printf("Rollback delegate:    %s\n", cliutils.GetPrettyAddress(minipool.PreviousDelegate))
-            fmt.Printf("Effective delegate:   %s\n", cliutils.GetPrettyAddress(minipool.EffectiveDelegate))
-
-            fmt.Printf("\n")
+            printMinipoolDetails(minipool)
         }
 
         fmt.Println("")
     }
+
+    // Handle finalized minipools
+    fmt.Printf("%d finalized minipool(s):\n", len(finalisedMinipools))
+    fmt.Println("")
+
+    // Minipools
+    for _, minipool := range finalisedMinipools {
+        printMinipoolDetails(minipool)
+    }
+
+    fmt.Println("")
 
     // Print actionable minipool details
     if len(refundableMinipools) > 0 {
@@ -147,6 +112,64 @@ func getStatus(c *cli.Context) error {
 
     // Return
     return nil
+
+}
+
+
+func printMinipoolDetails(minipool api.MinipoolDetails) () {
+
+    fmt.Printf("--------------------\n")
+    fmt.Printf("\n")
+
+    // Main details
+    fmt.Printf("Address:              %s\n", minipool.Address.Hex())
+    fmt.Printf("Status updated:       %s\n", minipool.Status.StatusTime.Format(TimeFormat))
+    fmt.Printf("Node fee:             %f%%\n", minipool.Node.Fee * 100)
+    fmt.Printf("Node deposit:         %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
+
+    // RP ETH deposit details - prelaunch & staking minipools
+    if minipool.Status.Status == types.Prelaunch || minipool.Status.Status == types.Staking {
+        if minipool.User.DepositAssigned {
+    fmt.Printf("RP ETH assigned:      %s\n", minipool.User.DepositAssignedTime.Format(TimeFormat))
+    fmt.Printf("RP deposit:           %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.User.DepositBalance), 6))
+        } else {
+    fmt.Printf("RP ETH assigned:      no\n")
+        }
+    }
+
+    // Validator details - staking minipools
+    if minipool.Status.Status == types.Staking {
+    fmt.Printf("Validator pubkey:     %s\n", hex.AddPrefix(minipool.ValidatorPubkey.Hex()))
+    fmt.Printf("Validator index:      %d\n", minipool.Validator.Index)
+        if minipool.Validator.Exists {
+            if minipool.Validator.Active {
+    fmt.Printf("Validator active:     yes\n")
+            } else {
+    fmt.Printf("Validator active:     no\n")
+            }
+    fmt.Printf("Validator balance:    %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.Balance), 6))
+    fmt.Printf("Expected rewards:     %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Validator.NodeBalance), 6))
+        } else {
+    fmt.Printf("Validator seen:       no\n")
+        }
+    }
+
+    // Withdrawal details - withdrawable minipools
+    if minipool.Status.Status == types.Withdrawable {
+    fmt.Printf("Withdrawal available: yes\n")
+    }
+
+    // Delegate details
+    if minipool.UseLatestDelegate {
+    fmt.Printf("Use latest delegate:  yes\n", )
+    } else {
+    fmt.Printf("Use latest delegate:  no\n", )
+    }
+    fmt.Printf("Delegate address:     %s\n", cliutils.GetPrettyAddress(minipool.Delegate))
+    fmt.Printf("Rollback delegate:    %s\n", cliutils.GetPrettyAddress(minipool.PreviousDelegate))
+    fmt.Printf("Effective delegate:   %s\n", cliutils.GetPrettyAddress(minipool.EffectiveDelegate))
+
+    fmt.Printf("\n")
 
 }
 
