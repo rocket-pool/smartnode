@@ -269,6 +269,34 @@ func GetMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 }
 
 
+// Get the number of finalised minipools in the network
+func GetFinalisedMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return 0, err
+    }
+    minipoolCount := new(*big.Int)
+    if err := rocketMinipoolManager.Call(opts, minipoolCount, "getFinalisedMinipoolCount"); err != nil {
+        return 0, fmt.Errorf("Could not get finalised minipool count: %w", err)
+    }
+    return (*minipoolCount).Uint64(), nil
+}
+
+
+// Get the number of active minipools in the network
+func GetActiveMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return 0, err
+    }
+    minipoolCount := new(*big.Int)
+    if err := rocketMinipoolManager.Call(opts, minipoolCount, "getActiveMinipoolCount"); err != nil {
+        return 0, fmt.Errorf("Could not get finalised minipool count: %w", err)
+    }
+    return (*minipoolCount).Uint64(), nil
+}
+
+
 // Get the minipool count by status
 func GetMinipoolCountPerStatus(rp *rocketpool.RocketPool, offset, limit uint64, opts *bind.CallOpts) (MinipoolCountsPerStatus, error) {
     rocketMinipoolManager, err := getRocketMinipoolManager(rp)
@@ -305,6 +333,34 @@ func GetNodeMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address,
     }
     minipoolCount := new(*big.Int)
     if err := rocketMinipoolManager.Call(opts, minipoolCount, "getNodeMinipoolCount", nodeAddress); err != nil {
+        return 0, fmt.Errorf("Could not get node %s minipool count: %w", nodeAddress.Hex(), err)
+    }
+    return (*minipoolCount).Uint64(), nil
+}
+
+
+// Get the number of minipools owned by a node that are not finalised
+func GetNodeActiveMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return 0, err
+    }
+    minipoolCount := new(*big.Int)
+    if err := rocketMinipoolManager.Call(opts, minipoolCount, "getNodeActiveMinipoolCount", nodeAddress); err != nil {
+        return 0, fmt.Errorf("Could not get node %s minipool count: %w", nodeAddress.Hex(), err)
+    }
+    return (*minipoolCount).Uint64(), nil
+}
+
+
+// Get the number of minipools owned by a node that are finalised
+func GetNodeFinalisedMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return 0, err
+    }
+    minipoolCount := new(*big.Int)
+    if err := rocketMinipoolManager.Call(opts, minipoolCount, "getNodeFinalisedMinipoolCount", nodeAddress); err != nil {
         return 0, fmt.Errorf("Could not get node %s minipool count: %w", nodeAddress.Hex(), err)
     }
     return (*minipoolCount).Uint64(), nil
