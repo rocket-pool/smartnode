@@ -473,6 +473,26 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
+    nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
+    if err != nil {
+        return minipoolBalanceDetails{}, err
+    }
+
+    // Log debug details
+    finalised, err := mp.GetFinalised(opts)
+    if err != nil {
+        return minipoolBalanceDetails{}, err
+    }
+    t.log.Printlnf("%s %s %d %d %d %d %s %t", 
+        minipoolAddress.Hex(),
+        validator.Pubkey.Hex(),
+        blockBalance.Uint64(),
+        blockEpoch,
+        nodeBalance.Uint64(),
+        userBalance.Uint64(),
+        types.MinipoolStatuses[status],
+        finalised,
+    )
 
     // Return
     return minipoolBalanceDetails{
