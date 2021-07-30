@@ -29,6 +29,7 @@ type MinipoolDetails struct {
     RefundAvailable bool                    `json:"refundAvailable"`
     WithdrawalAvailable bool                `json:"withdrawalAvailable"`
     CloseAvailable bool                     `json:"closeAvailable"`
+    Finalised bool                          `json:"finalised"`
     UseLatestDelegate bool                  `json:"useLatestDelegate"`
     Delegate common.Address                 `json:"delegate"`
     PreviousDelegate common.Address         `json:"previousDelegate"`
@@ -97,14 +98,14 @@ type ProcessWithdrawalResponse struct {
 }
 
 
-type CanProcessWithdrawalAndDestroyResponse struct {
+type CanProcessWithdrawalAndFinaliseResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     CanWithdraw bool                `json:"canWithdraw"`
     InvalidStatus bool              `json:"invalidStatus"`
     GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
-type ProcessWithdrawalAndDestroyResponse struct {
+type ProcessWithdrawalAndFinaliseResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     TxHash common.Hash              `json:"txHash"`
@@ -126,12 +127,12 @@ type CloseMinipoolResponse struct {
 }
 
 
-type CanDestroyMinipoolResponse struct {
+type CanFinaliseMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
-type DestroyMinipoolResponse struct {
+type FinaliseMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     TxHash common.Hash              `json:"txHash"`

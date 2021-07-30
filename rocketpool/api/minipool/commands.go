@@ -177,9 +177,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
-                Name:      "can-destroy",
-                Usage:     "Check whether the minipool can be destroyed",
-                UsageText: "rocketpool api minipool can-destroy minipool-address",
+                Name:      "can-finalize",
+                Usage:     "Check whether the minipool can be finalized",
+                UsageText: "rocketpool api minipool can-finalize minipool-address",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -188,16 +188,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canDestroyMinipool(c, minipoolAddress))
+                    api.PrintResponse(canFinaliseMinipool(c, minipoolAddress))
                     return nil
 
                 },
             },
             cli.Command{
-                Name:      "destroy",
-                Aliases:   []string{"t"},
-                Usage:     "Destroy a minipool after it has been withdrawn from, returning its RPL stake",
-                UsageText: "rocketpool api minipool destroy minipool-address",
+                Name:      "finalize",
+                Aliases:   []string{"f"},
+                Usage:     "Finalize a minipool after it has been withdrawn from, returning its RPL stake",
+                UsageText: "rocketpool api minipool finalize minipool-address",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -206,7 +206,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(destroyMinipool(c, minipoolAddress))
+                    api.PrintResponse(finaliseMinipool(c, minipoolAddress))
                     return nil
 
                 },

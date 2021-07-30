@@ -187,6 +187,11 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
         details.EffectiveDelegate, err = mp.GetEffectiveDelegate(nil)
         return err
     })
+    wg.Go(func() error {
+        var err error
+        details.Finalised, err = mp.GetFinalised(nil)
+        return err
+    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
