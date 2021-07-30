@@ -121,6 +121,13 @@ func (mp *Minipool) GetStatusTime(opts *bind.CallOpts) (time.Time, error) {
     }
     return time.Unix((*statusTime).Int64(), 0), nil
 }
+func (mp *Minipool) GetFinalised(opts *bind.CallOpts) (bool, error) {
+    finalised := new(bool)
+    if err := mp.Contract.Call(opts, finalised, "getFinalised"); err != nil {
+        return false, fmt.Errorf("Could not get minipool %s finalised: %w", mp.Address.Hex(), err)
+    }
+    return *finalised, nil
+}
 
 
 // Get deposit type
