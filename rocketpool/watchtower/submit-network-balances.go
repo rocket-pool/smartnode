@@ -483,13 +483,13 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
-    t.log.Printlnf("%s %s %d %d %d %d %s %t", 
+    t.log.Printlnf("%s %s %s %d %s %s %s %t",
         minipoolAddress.Hex(),
         validator.Pubkey.Hex(),
-        blockBalance.Uint64(),
+        blockBalance.String(),
         blockEpoch,
-        nodeBalance.Uint64(),
-        userBalance.Uint64(),
+        nodeBalance.String(),
+        userBalance.String(),
         types.MinipoolStatuses[status],
         finalised,
     )
