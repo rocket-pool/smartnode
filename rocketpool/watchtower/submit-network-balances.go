@@ -473,6 +473,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
+    /*
     nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
     if err != nil {
         return minipoolBalanceDetails{}, err
@@ -493,7 +494,8 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
         types.MinipoolStatuses[status],
         finalised,
     )
-
+    */
+    
     // Return
     return minipoolBalanceDetails{
         IsStaking: (validator.ExitEpoch > blockEpoch),
