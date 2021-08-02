@@ -1,19 +1,20 @@
 package watchtower
 
 import (
-    "net/http"
-    "time"
+	"math/rand"
+	"net/http"
+	"time"
 
-    "github.com/fatih/color"
-    "github.com/urfave/cli"
+	"github.com/fatih/color"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
-
 // Config
-var tasksInterval, _ = time.ParseDuration("5m")
+var minTasksInterval, _ = time.ParseDuration("4m")
+var maxTasksInterval, _ = time.ParseDuration("6m")
 var taskCooldown, _ = time.ParseDuration("10s")
 const (
     MaxConcurrentEth1Requests = 200
@@ -70,8 +71,16 @@ func run(c *cli.Context) error {
     // Initialize error logger
     errorLog := log.NewColorLogger(ErrorColor)
 
+    intervalDelta := maxTasksInterval - minTasksInterval
+    secondsDelta := intervalDelta.Seconds()
+
     // Run task loop
     for {
+
+        // Randomize the next interval
+        randomSeconds := rand.Intn(int(secondsDelta))
+        interval := time.Duration(randomSeconds) * time.Second + minTasksInterval
+
         if err := respondChallenges.run(); err != nil {
             errorLog.Println(err)
         }
@@ -99,7 +108,7 @@ func run(c *cli.Context) error {
         if err := processWithdrawals.run(); err != nil {
             errorLog.Println(err)
         }
-        time.Sleep(tasksInterval)
+        time.Sleep(interval)
     }
 
 }
