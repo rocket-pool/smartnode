@@ -164,14 +164,14 @@ func nodeDeposit(c *cli.Context) error {
     // Log and wait for the minipool address
     fmt.Printf("Creating minipool...\n")
     cliutils.PrintTransactionHash(rp, response.TxHash)
-    minipoolResponse, err := rp.GetMinipoolAddress(response.TxHash)
+    _, err = rp.GetMinipoolAddress(response.TxHash)
     if err != nil {
         return err
     }
 
     // Log & return
     fmt.Printf("The node deposit of %.6f ETH was made successfully.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
-    fmt.Printf("A new minipool was created at %s.\n", minipoolResponse.MinipoolAddress.Hex())
+    fmt.Println("Please run 'rocketpool minipool status' to see the details of your new minipool.")
     return nil
 
 }
