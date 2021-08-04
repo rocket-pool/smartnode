@@ -7,6 +7,7 @@
 FROM golang:alpine AS builder
 
 # Copy source files
+ADD ./shared /src/shared
 ADD ./rocketpool-pow-proxy /src/rocketpool-pow-proxy
 ADD ./go.mod /src/go.mod
 ADD ./go.sum /src/go.sum
