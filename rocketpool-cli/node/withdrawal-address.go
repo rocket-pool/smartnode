@@ -93,7 +93,12 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
     }
 
     // Log & return
-    fmt.Printf("The node's withdrawal address was successfully set to %s.\n", withdrawalAddress.Hex())
+    if !c.Bool("force") {
+        fmt.Printf("The node's withdrawal address update to %s is now pending.\n" +
+            "To confirm it, please visit the Rocket Pool website (https://testnet.rocketpool.net/withdrawal).", withdrawalAddress.Hex())
+    } else {
+        fmt.Printf("The node's withdrawal address was successfully set to %s.\n", withdrawalAddress.Hex())
+    }
     return nil
 
 }
