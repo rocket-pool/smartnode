@@ -20,7 +20,7 @@ func createLot(c *cli.Context) error {
     // Check lot can be created
     canCreate, err := rp.CanCreateLot()
     if err != nil {
-        return err
+        return fmt.Errorf("Error checking if creating lot is possible: %w", err)
     }
     if !canCreate.CanCreate {
         fmt.Println("Cannot create lot:")

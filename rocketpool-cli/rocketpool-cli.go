@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Run
@@ -131,7 +132,7 @@ ______           _        _    ______           _
     // Run application
     fmt.Println("")
     if err := app.Run(os.Args); err != nil {
-        fmt.Println(err)
+        cliutils.PrettyPrintError(err)
     }
     fmt.Println("")
 

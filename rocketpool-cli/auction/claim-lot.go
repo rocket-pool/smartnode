@@ -95,8 +95,7 @@ func claimFromLot(c *cli.Context) error {
     for _, lot := range selectedLots {
         canResponse, err := rp.CanClaimFromLot(lot.Details.Index)
         if err != nil {
-            fmt.Printf("WARNING: Couldn't get gas price for claim transaction (%s)", err)
-            break
+            return fmt.Errorf("Error checking if claiming lot %d is possible: %w", lot.Details.Index, err)
         } else {
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit

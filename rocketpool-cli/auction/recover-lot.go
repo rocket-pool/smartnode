@@ -95,8 +95,7 @@ func recoverRplFromLot(c *cli.Context) error {
     for _, lot := range selectedLots {
         canResponse, err := rp.CanRecoverUnclaimedRPLFromLot(lot.Details.Index)
         if err != nil {
-            fmt.Printf("WARNING: Couldn't get gas price for recover transaction (%s)", err)
-            break
+            return fmt.Errorf("Error checking if recovering lot %d is possible: %w", lot.Details.Index, err)
         } else {
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit

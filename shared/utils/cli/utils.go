@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -83,3 +84,31 @@ func GetPrettyAddress(address common.Address) string {
     }
     return addressString
 }
+
+
+// Temporary table for replacing revert messages with more useful versions until we can refactor
+var errorMap = map[string]string {
+    "Could not get can node deposit status: Minipool count after deposit exceeds limit based on node RPL stake":
+    "Cannot create a new minipool: you do not have enough RPL staked to create another minipool.",
+}
+
+// Prints an error in a prettier format, removing the "stack trace" if it represents
+// a contract revert message
+func PrettyPrintError(err error) {
+    errorMessage := err.Error()
+    prettyErr := errorMessage
+    if strings.Contains(errorMessage, "execution reverted:") {
+		elements := strings.Split(errorMessage, ":")
+        firstMessage := strings.TrimSpace(elements[0])
+        secondMessage := strings.TrimSpace(elements[len(elements)-1])
+		prettyErr = fmt.Sprintf("%s: %s", firstMessage, secondMessage)
+
+        // Look for the message in the above error table and replace if appropriate
+        replacementMessage, exists := errorMap[prettyErr]
+        if exists {
+            prettyErr = replacementMessage
+        }
+	}
+	fmt.Println(prettyErr)
+}
+

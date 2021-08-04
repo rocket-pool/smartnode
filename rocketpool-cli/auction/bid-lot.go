@@ -125,7 +125,7 @@ func bidOnLot(c *cli.Context) error {
     // Check lot can be bid on
     canBid, err := rp.CanBidOnLot(selectedLot.Details.Index, amountWei)
     if err != nil {
-        return err
+        return fmt.Errorf("Error checking if bidding on lot %d is possible: %w", selectedLot.Details.Index, err)
     }
     if !canBid.CanBid {
         fmt.Println("Cannot bid on lot:")
