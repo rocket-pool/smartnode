@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api"
 	"github.com/rocket-pool/smartnode/rocketpool/node"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
+	"github.com/rocket-pool/smartnode/shared"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -21,7 +22,7 @@ func main() {
     // Set application info
     app.Name = "rocketpool"
     app.Usage = "Rocket Pool service"
-    app.Version = "1.0.0-rc4"
+    app.Version = shared.RocketPoolVersion
     app.Authors = []cli.Author{
         {
             Name:  "David Rugendyke",

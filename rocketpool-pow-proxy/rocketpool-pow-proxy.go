@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-pow-proxy/proxy"
+	"github.com/rocket-pool/smartnode/shared"
 )
 
 // Run
@@ -19,7 +20,7 @@ func main() {
     // Set application info
     app.Name = "rocketpool-pow-proxy"
     app.Usage = "Rocket Pool Eth 1.0 proxy server"
-    app.Version = "1.0.0-rc3"
+    app.Version = shared.RocketPoolVersion
     app.Authors = []cli.Author{
         {
             Name:  "David Rugendyke",

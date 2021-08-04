@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
+	"github.com/rocket-pool/smartnode/shared"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -38,7 +39,7 @@ ______           _        _    ______           _
     // Set application info
     app.Name = "rocketpool"
     app.Usage = "Rocket Pool CLI"
-    app.Version = "1.0.0-rc4"
+    app.Version = shared.RocketPoolVersion
     app.Authors = []cli.Author{
         {
             Name:  "David Rugendyke",
