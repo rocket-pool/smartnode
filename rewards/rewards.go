@@ -3,8 +3,9 @@ package rewards
 import (
 	"fmt"
 	"math/big"
+    "sync"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -68,3 +69,10 @@ func claim(claimsContract *rocketpool.Contract, claimsName string, opts *bind.Tr
     return hash, nil
 }
 
+// Get contracts
+var rocketRewardsPoolLock sync.Mutex
+func getRocketRewardsPool(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+    rocketRewardsPoolLock.Lock()
+    defer rocketRewardsPoolLock.Unlock()
+    return rp.GetContract("rocketRewardsPool")
+}

@@ -1,13 +1,15 @@
 package rewards
 
 import (
-	"math/big"
-	"sync"
+    "context"
+    "github.com/ethereum/go-ethereum"
+    "math/big"
+    "sync"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 // Get whether trusted node reward claims are enabled
@@ -69,6 +71,44 @@ func ClaimTrustedNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts)
     return claim(rocketClaimTrustedNode, "trusted node", opts)
 }
 
+
+// Filters through token claim events and sums the total amount claimed by claimerAddress
+func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address) (*big.Int, error) {
+    // Get contracts
+    rocketRewardsPool, err := getRocketRewardsPool(rp)
+    if err != nil {
+        return nil, err
+    }
+    rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+    if err != nil {
+        return nil, err
+    }
+    // Construct a filter query for relevant logs
+    addressFilter := []common.Address{*rocketRewardsPool.Address}
+    // RPLTokensClaimed(address clamingContract, address clainingAddress, uint256 amount, uint256 time)
+    topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID}, {rocketClaimTrustedNode.Address.Hash()}, {claimerAddress.Hash()}}
+    logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
+        Addresses: addressFilter,
+        Topics: topicFilter,
+    })
+    if err != nil {
+        return nil, err
+    }
+    // Iterate over the logs and sum the amount
+    sum := big.NewInt(0)
+    for _, log := range logs {
+        values := make(map[string]interface{})
+        // Decode the event
+        if rocketRewardsPool.ABI.Events["RPLTokensClaimed"].Inputs.UnpackIntoMap(values, log.Data) != nil {
+            return nil, err
+        }
+        // Add the amount argument to our sum
+        amount := values["amount"].(*big.Int)
+        sum.Add(sum, amount)
+    }
+    // Return the result
+    return sum, nil
+}
 
 // Get contracts
 var rocketClaimTrustedNodeLock sync.Mutex
