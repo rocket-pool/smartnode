@@ -34,7 +34,7 @@ const (
     RequestValidatorsPath          = "/eth/v1/beacon/states/%s/validators"
     RequestVoluntaryExitPath       = "/eth/v1/beacon/pool/voluntary_exits"
 
-    MaxRequestValidatorsCount = 600
+    MaxRequestValidatorsCount = 80
 )
 
 // Teku client

@@ -331,26 +331,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
-            cli.Command{
-                Name:      "burn",
-                Aliases:   []string{"b"},
-                Usage:     "Burn tokens for ETH",
-                UsageText: "rocketpool node burn amount token",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
-                    amount, err := cliutils.ValidatePositiveEthAmount("burn amount", c.Args().Get(0))
-                    if err != nil { return err }
-                    token, err := cliutils.ValidateBurnableTokenType("token type", c.Args().Get(1))
-                    if err != nil { return err }
-
-                    // Run
-                    return nodeBurn(c, amount, token)
-
-                },
-            },
-
         },
     })
 }
