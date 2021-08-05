@@ -32,6 +32,13 @@ type NodeDetails struct {
 }
 
 
+// Count of nodes belonging to a timezone
+type TimezoneCount struct {
+    Timezone string     `abi:"timezone"`
+    Count *big.Int      `abi:"count"`
+}
+
+
 // Get all node details
 func GetNodes(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NodeDetails, error) {
 
@@ -173,6 +180,20 @@ func GetNodeCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error
         return 0, fmt.Errorf("Could not get node count: %w", err)
     }
     return (*nodeCount).Uint64(), nil
+}
+
+
+// Get a breakdown of the number of nodes per timezone
+func GetNodeCountPerTimezone(rp *rocketpool.RocketPool, offset, limit *big.Int, opts *bind.CallOpts) ([]TimezoneCount, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
+    if err != nil {
+        return []TimezoneCount{}, err
+    }
+    timezoneCounts := new([]TimezoneCount)
+    if err := rocketNodeManager.Call(opts, timezoneCounts, "getNodeCountPerTimezone", offset, limit); err != nil {
+        return []TimezoneCount{}, fmt.Errorf("Could not get node count: %w", err)
+    }
+    return *timezoneCounts, nil
 }
 
 
