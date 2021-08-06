@@ -27,7 +27,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
-	github.com/rocket-pool/rocketpool-go v1.0.0-rc4
+	github.com/rocket-pool/rocketpool-go v1.0.0-rc4.0.20210806062717-75ad8ecf821e
 	github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	github.com/urfave/cli v1.22.4
@@ -40,3 +40,5 @@ require (
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.3.0
 )
+
+replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go

@@ -2,6 +2,7 @@ package api
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -240,3 +241,14 @@ type NodeClaimRplResponse struct {
     TxHash common.Hash                  `json:"txHash"`
 }
 
+type NodeRewardsResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TimeToCheckpoint time.Duration      `json:"periodStarted"`
+    Trusted bool                        `json:"trusted"`
+    EstimatedRewards float64            `json:"estimatedRewards"`
+    CumulativeRewards float64           `json:"cumulativeRewards"`
+    EstimatedTrustedRewards float64     `json:"estimatedTrustedRewards"`
+    CumulativeTrustedRewards float64    `json:"cumulativeTrustedRewards"`
+    TxHash common.Hash                  `json:"txHash"`
+}
