@@ -189,7 +189,7 @@ func Load(c *cli.Context) (RocketPoolConfig, error) {
     if err != nil {
         return RocketPoolConfig{}, err
     }
-    userConfig, err := loadFile(os.ExpandEnv(c.GlobalString("settings")), false)
+    userConfig, err := loadFile(os.ExpandEnv(c.GlobalString("settings")), true)
     if err != nil {
         return RocketPoolConfig{}, err
     }
