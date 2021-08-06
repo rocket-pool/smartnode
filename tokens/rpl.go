@@ -158,6 +158,20 @@ func SwapFixedSupplyRPLForRPL(rp *rocketpool.RocketPool, amount *big.Int, opts *
 }
 
 
+// Get the RPL inflation interval rate
+func GetRPLInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    rocketTokenRPL, err := getRocketTokenRPL(rp)
+    if err != nil {
+        return nil, err
+    }
+    rate := new(*big.Int)
+    if err := rocketTokenRPL.Call(opts, rate, "getInflationIntervalRate"); err != nil {
+        return nil, fmt.Errorf("Could not get RPL inflation interval rate: %w", err)
+    }
+    return *rate, nil
+}
+
+
 //
 // Contracts
 //

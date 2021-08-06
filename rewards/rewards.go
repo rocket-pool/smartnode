@@ -3,9 +3,10 @@ package rewards
 import (
 	"fmt"
 	"math/big"
-    "sync"
+	"sync"
+	"time"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -68,6 +69,63 @@ func claim(claimsContract *rocketpool.Contract, claimsName string, opts *bind.Tr
     }
     return hash, nil
 }
+
+
+// Get the timestamp that the current rewards interval started
+func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Time, error) {
+    rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+	    return time.Time{}, err
+    }
+    unixTime := new(*big.Int)
+    if err := rocketRewardsPool.Call(opts, unixTime, "getClaimIntervalTimeStart"); err != nil {
+        return time.Time{}, fmt.Errorf("Could not get claim interval time start: %w", err)
+    }
+    return time.Unix(int64((*unixTime).Uint64()), 0), nil
+}
+
+
+// Get the number of seconds in a claim interval
+func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+    rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+	    return 0, err
+    }
+    unixTime := new(*big.Int)
+    if err := rocketRewardsPool.Call(opts, unixTime, "getClaimIntervalTime"); err != nil {
+        return 0, fmt.Errorf("Could not get claim interval time: %w", err)
+    }
+    return time.Duration((*unixTime).Int64()) * time.Second, nil
+}
+
+
+// Get the percent of checkpoint rewards that goes to node operators
+func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+	    return 0, err
+    }
+    perc := new(*big.Int)
+    if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimNode"); err != nil {
+        return 0, fmt.Errorf("Could not get node operator rewards percent: %w", err)
+    }
+    return eth.WeiToEth(*perc), nil
+}
+
+
+// Get the percent of checkpoint rewards that goes to ODAO members
+func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+    rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+	    return 0, err
+    }
+    perc := new(*big.Int)
+    if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimTrustedNode"); err != nil {
+        return 0, fmt.Errorf("Could not get trusted node operator rewards percent: %w", err)
+    }
+    return eth.WeiToEth(*perc), nil
+}
+
 
 // Get contracts
 var rocketRewardsPoolLock sync.Mutex
