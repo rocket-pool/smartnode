@@ -480,3 +480,20 @@ func (c *Client) NodeClaimRpl() (api.NodeClaimRplResponse, error) {
     return response, nil
 }
 
+
+// Get node RPL rewards status
+func (c *Client) NodeRewards() (api.NodeRewardsResponse, error) {
+    responseBytes, err := c.callAPI("node rewards")
+    if err != nil {
+        return api.NodeRewardsResponse{}, fmt.Errorf("Could not get node rewards: %w", err)
+    }
+    var response api.NodeRewardsResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeRewardsResponse{}, fmt.Errorf("Could not decode node rewards response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeRewardsResponse{}, fmt.Errorf("Could not get node rewards: %s", response.Error)
+    }
+    return response, nil
+}
+

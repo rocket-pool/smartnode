@@ -37,8 +37,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         return nil, err
     }
 
-    rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address)
-
     var periodStart time.Time
     var rewardsInterval time.Duration
     var effectiveStake *big.Int
@@ -169,7 +167,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     response.TimeToCheckpoint = time.Now().Sub(periodStart.Add(rewardsInterval))
 
     // Calculate the estimated rewards
-    rewardsIntervalDays := rewardsInterval.Seconds() / 60*60*24
+    rewardsIntervalDays := rewardsInterval.Seconds() / (60*60*24)
     inflationPerDay := eth.WeiToEth(inflationInterval)
     totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
 

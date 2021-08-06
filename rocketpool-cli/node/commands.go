@@ -74,6 +74,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "rewards",
+                Aliases:   []string{"e"},
+                Usage:     "Get the time and your expected RPL rewards of the next checkpoint",
+                UsageText: "rocketpool node rewards",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return getRewards(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "set-withdrawal-address",
                 Aliases:   []string{"w"},
                 Usage:     "Set the node's withdrawal address",
