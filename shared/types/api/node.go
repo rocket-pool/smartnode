@@ -244,7 +244,8 @@ type NodeClaimRplResponse struct {
 type NodeRewardsResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
-    TimeToCheckpoint time.Duration      `json:"periodStarted"`
+    RewardsInterval time.Duration       `json:"rewardsInterval"`
+    LastCheckpoint time.Time            `json:"lastCheckpoint"`
     Trusted bool                        `json:"trusted"`
     EstimatedRewards float64            `json:"estimatedRewards"`
     CumulativeRewards float64           `json:"cumulativeRewards"`

@@ -24,9 +24,9 @@ func getRewards(c *cli.Context) error {
         return err
     }
 
-    nextRewardsTime := time.Now().Add(rewards.TimeToCheckpoint)
+    nextRewardsTime := rewards.LastCheckpoint.Add(rewards.RewardsInterval)
     nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
-    timeToCheckpointString := rewards.TimeToCheckpoint.String()
+    timeToCheckpointString := nextRewardsTime.Sub(time.Now()).String()
 
     fmt.Printf("Next rewards checkpoint is schedule for %s (%s from now).\n", nextRewardsTimeString, timeToCheckpointString)
     fmt.Printf("You will receive an estimated %f RPL in rewards from your RPL stake (this may change based on network activity).\n", rewards.EstimatedRewards)

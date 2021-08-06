@@ -3,7 +3,6 @@ package node
 import (
 	"math"
 	"math/big"
-	"time"
 
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -37,8 +36,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         return nil, err
     }
 
-    var periodStart time.Time
-    var rewardsInterval time.Duration
     var effectiveStake *big.Int
     var totalEffectiveStake *big.Int
     var totalRplSupply *big.Int
@@ -79,20 +76,20 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
     // Get the start of the rewards checkpoint
     wg.Go(func() error {
-        periodStart, err = rewards.GetClaimIntervalTimeStart(rp, nil)
-        if err != nil {
-            return err
+        lastCheckpoint, err := rewards.GetClaimIntervalTimeStart(rp, nil)
+        if err == nil {
+            response.LastCheckpoint = lastCheckpoint
         }
-        return nil
+        return err
     })
 
     // Get the rewards checkpoint interval
     wg.Go(func() error {
-        rewardsInterval, err = rewards.GetClaimIntervalTime(rp, nil)
-        if err != nil {
-            return err
+        rewardsInterval, err := rewards.GetClaimIntervalTime(rp, nil)
+        if err == nil {
+            response.RewardsInterval = rewardsInterval
         }
-        return nil
+        return err
     })
 
     // Get the node's effective stake
@@ -162,12 +159,9 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     if err := wg.Wait(); err != nil {
         return nil, err
     }
-
-    // Set the time until the next rewards checkpoint
-    response.TimeToCheckpoint = time.Now().Sub(periodStart.Add(rewardsInterval))
-
+    
     // Calculate the estimated rewards
-    rewardsIntervalDays := rewardsInterval.Seconds() / (60*60*24)
+    rewardsIntervalDays := response.RewardsInterval.Seconds() / (60*60*24)
     inflationPerDay := eth.WeiToEth(inflationInterval)
     totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
 

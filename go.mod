@@ -41,4 +41,4 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 )
 
-replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+// replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
