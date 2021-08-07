@@ -16,7 +16,7 @@ func getStats(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Get node fee
+    // Get network stats
     response, err := rp.NetworkStats()
     if err != nil {
         return err

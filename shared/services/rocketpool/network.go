@@ -61,3 +61,20 @@ func (c *Client) NetworkStats() (api.NetworkStatsResponse, error) {
     return response, nil
 }
 
+
+// Get the timezone map
+func (c *Client) TimezoneMap() (api.NetworkTimezonesResponse, error) {
+    responseBytes, err := c.callAPI("network timezone-map")
+    if err != nil {
+        return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not get network timezone map: %w", err)
+    }
+    var response api.NetworkTimezonesResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not decode network timezone map response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NetworkTimezonesResponse{}, fmt.Errorf("Could not get network timezone map: %s", response.Error)
+    }
+    return response, nil
+}
+

@@ -31,6 +31,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "timezone-map",
+                Aliases:   []string{"t"},
+                Usage:     "Shows a table of the timezones that node operators belong to",
+                UsageText: "rocketpool network timezone-map",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return getTimezones(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "node-fee",
                 Aliases:   []string{"f"},
                 Usage:     "Get the current network node commission rate",

@@ -45,3 +45,12 @@ type NetworkStatsResponse struct {
     EffectiveRplStaked float64          `json:"effectiveRplStaked"`
     RethPrice float64                   `json:"rethPrice"`
 }
+
+
+type NetworkTimezonesResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    TimezoneCounts map[string]uint64    `json:"timezoneCounts"`
+    TimezoneTotal uint64                `json:"timezoneTotal"`
+    NodeTotal uint64                    `json:"nodeTotal"`
+}

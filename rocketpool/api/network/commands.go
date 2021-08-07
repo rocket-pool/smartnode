@@ -51,7 +51,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
             cli.Command{
                 Name:      "stats",
-                Aliases:   []string{"p"},
+                Aliases:   []string{"s"},
                 Usage:     "Get stats about the Rocket Pool network and its tokens",
                 UsageText: "rocketpool api network stats",
                 Action: func(c *cli.Context) error {
@@ -61,6 +61,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(getStats(c))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
+                Name:      "timezone-map",
+                Aliases:   []string{"t"},
+                Usage:     "Get the table of node operators by timezone",
+                UsageText: "rocketpool api network stats",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getTimezones(c))
                     return nil
 
                 },
