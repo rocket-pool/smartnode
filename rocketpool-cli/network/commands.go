@@ -1,11 +1,10 @@
 package network
 
 import (
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
@@ -14,6 +13,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
         Aliases:   aliases,
         Usage:     "Manage Rocket Pool network parameters",
         Subcommands: []cli.Command{
+
+            cli.Command{
+                Name:      "stats",
+                Aliases:   []string{"s"},
+                Usage:     "Get stats about the Rocket Pool network and its tokens",
+                UsageText: "rocketpool network stats",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    return getStats(c)
+
+                },
+            },
 
             cli.Command{
                 Name:      "node-fee",
