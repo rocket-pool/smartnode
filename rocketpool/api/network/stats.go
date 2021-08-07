@@ -134,7 +134,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
     wg.Go(func() error {
         rethPrice, err := tokens.GetRETHExchangeRate(rp, nil)
         if err == nil {
-            response.RplPrice = rethPrice
+            response.RethPrice = rethPrice
         }
         return err
     })
