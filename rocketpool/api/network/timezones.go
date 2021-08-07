@@ -21,6 +21,7 @@ func getTimezones(c *cli.Context) (*api.NetworkTimezonesResponse, error) {
 
     // Response
     response := api.NetworkTimezonesResponse{}
+    response.TimezoneCounts = map[string]uint64{}
 
     zero := big.NewInt(0)
     timezoneCounts, err := node.GetNodeCountPerTimezone(rp, zero, zero, nil)
