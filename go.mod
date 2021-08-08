@@ -32,7 +32,7 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.5
-	github.com/wealdtech/go-eth2-types/v2 v2.5.5
+	github.com/wealdtech/go-eth2-types/v2 v2.5.3
 	github.com/wealdtech/go-eth2-util v1.6.4
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.5
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
