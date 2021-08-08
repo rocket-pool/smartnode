@@ -1,16 +1,16 @@
 package node
 
 import (
-    "net/http"
-    "time"
+	"net/http"
+	"sync"
+	"time"
 
-    "github.com/fatih/color"
-    "github.com/urfave/cli"
+	"github.com/fatih/color"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services"
-    "github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
-
 
 // Config
 var tasksInterval, _ = time.ParseDuration("5m")
@@ -20,6 +20,7 @@ const (
 
     ClaimRplRewardsColor = color.FgGreen
     StakePrelaunchMinipoolsColor = color.FgBlue
+    MetricsColor = color.FgHiYellow
     ErrorColor = color.FgRed
 )
 
@@ -54,18 +55,38 @@ func run(c *cli.Context) error {
 
     // Initialize error logger
     errorLog := log.NewColorLogger(ErrorColor)
+        
+    // Wait group to handle the various threads
+    wg := new(sync.WaitGroup)
+    wg.Add(2)
 
     // Run task loop
-    for {
-        if err := claimRplRewards.run(); err != nil {
+    go func() {
+        for {
+            if err := claimRplRewards.run(); err != nil {
+                errorLog.Println(err)
+            }
+            time.Sleep(taskCooldown)
+            if err := stakePrelaunchMinipools.run(); err != nil {
+                errorLog.Println(err)
+            }
+            time.Sleep(tasksInterval)
+        }
+        wg.Done()
+    }()
+
+    // Run metrics loop
+    go func() {
+        err := runMetricsServer(c, log.NewColorLogger(MetricsColor))
+        if err != nil {
             errorLog.Println(err)
         }
-        time.Sleep(taskCooldown)
-        if err := stakePrelaunchMinipools.run(); err != nil {
-            errorLog.Println(err)
-        }
-        time.Sleep(tasksInterval)
-    }
+        wg.Done()
+    }()
+    
+    // Wait for both threads to stop
+    wg.Wait()
+    return nil
 
 }
 
