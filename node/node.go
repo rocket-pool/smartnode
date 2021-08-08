@@ -1,11 +1,13 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
@@ -300,6 +302,41 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
         return common.Hash{}, fmt.Errorf("Could not set node timezone location: %w", err)
     }
     return hash, nil
+}
+
+
+// Get the time when a node was first registered
+func GetNodeRegistrationTime(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
+    rocketNodeManager, err := getRocketNodeManager(rp)
+    if err != nil {
+        return time.Time{}, err
+    }
+
+    // Construct a filter query for RocketNodeManager.NodeRegistered(address nodeAddress, uint256 time)
+    addressFilter := []common.Address{*rocketNodeManager.Address}
+    topicFilter := [][]common.Hash{{rocketNodeManager.ABI.Events["NodeRegistered"].ID}, {nodeAddress.Hash()}}
+    logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
+        Addresses: addressFilter,
+        Topics: topicFilter,
+    })
+    if err != nil {
+        return time.Time{}, err
+    }
+
+    // If this address hasn't been registered, return nothing
+    if len(logs) == 0 {
+        return time.Time{}, nil
+    }
+    
+    // Get the node registration time
+    values := make(map[string]interface{})
+    err = rocketNodeManager.ABI.Events["NodeRegistered"].Inputs.UnpackIntoMap(values, logs[0].Data)
+    if err != nil {
+        return time.Time{}, err
+    }
+    unixTime := values["time"].(*big.Int)
+    time := time.Unix(unixTime.Int64(), 0)
+    return time, nil
 }
 
 
