@@ -47,6 +47,15 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     // Sync
     var wg errgroup.Group
 
+    // Get the node registration time
+    wg.Go(func() error {
+        time, err := node.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.NodeRegistrationTime = time
+        }
+        return err
+    })
+
     // Get node trusted status
     wg.Go(func() error {
         trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
