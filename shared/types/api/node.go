@@ -242,15 +242,20 @@ type NodeClaimRplResponse struct {
 }
 
 type NodeRewardsResponse struct {
-    Status string                       `json:"status"`
-    Error string                        `json:"error"`
-    NodeRegistrationTime time.Time      `json:"nodeRegistrationTime"`
-    RewardsInterval time.Duration       `json:"rewardsInterval"`
-    LastCheckpoint time.Time            `json:"lastCheckpoint"`
-    Trusted bool                        `json:"trusted"`
-    EstimatedRewards float64            `json:"estimatedRewards"`
-    CumulativeRewards float64           `json:"cumulativeRewards"`
-    EstimatedTrustedRewards float64     `json:"estimatedTrustedRewards"`
-    CumulativeTrustedRewards float64    `json:"cumulativeTrustedRewards"`
-    TxHash common.Hash                  `json:"txHash"`
+    Status string                           `json:"status"`
+    Error string                            `json:"error"`
+    NodeRegistrationTime time.Time          `json:"nodeRegistrationTime"`
+    TrustedNodeRegistrationTime time.Time   `json:"trustedNodeRegistrationTime"`
+    RewardsInterval time.Duration           `json:"rewardsInterval"`
+    LastCheckpoint time.Time                `json:"lastCheckpoint"`
+    Trusted bool                            `json:"trusted"`
+    Registered bool                         `json:"registered"`
+    EffectiveRplStake float64               `json:"effectiveRplStake"`
+    TotalRplStake float64                   `json:"totalRplStake"`
+    TrustedRplBond float64                  `json:"trustedRplBond"`
+    EstimatedRewards float64                `json:"estimatedRewards"`
+    CumulativeRewards float64               `json:"cumulativeRewards"`
+    EstimatedTrustedRewards float64         `json:"estimatedTrustedRewards"`
+    CumulativeTrustedRewards float64        `json:"cumulativeTrustedRewards"`
+    TxHash common.Hash                      `json:"txHash"`
 }

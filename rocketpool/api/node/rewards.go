@@ -36,7 +36,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         return nil, err
     }
 
-    var effectiveStake *big.Int
     var totalEffectiveStake *big.Int
     var totalRplSupply *big.Int
     var inflationInterval *big.Int
@@ -47,11 +46,29 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     // Sync
     var wg errgroup.Group
 
+    // Check if the node is registered or not
+    wg.Go(func() error {
+        exists, err := node.GetNodeExists(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.Registered = exists
+        }
+        return err
+    })
+
     // Get the node registration time
     wg.Go(func() error {
-        time, err := node.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
+        time, err := rewards.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
         if err == nil {
             response.NodeRegistrationTime = time
+        }
+        return err
+    })
+
+    // Get the node registration time
+    wg.Go(func() error {
+        time, err := rewards.GetTrustedNodeRegistrationTime(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.TrustedNodeRegistrationTime = time
         }
         return err
     })
@@ -103,11 +120,29 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
     // Get the node's effective stake
     wg.Go(func() error {
-        effectiveStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-        if err != nil {
-            return err
+        effectiveStake, err := node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.EffectiveRplStake = eth.WeiToEth(effectiveStake)
         }
-        return nil
+        return err
+    })
+
+    // Get the node's total stake
+    wg.Go(func() error {
+        stake, err := node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.TotalRplStake = eth.WeiToEth(stake)
+        }
+        return err
+    })
+
+    // Get the node's oDAO RPL stake
+    wg.Go(func() error {
+        bond, err := trustednode.GetMemberRPLBondAmount(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.TrustedRplBond = eth.WeiToEth(bond)
+        }
+        return err
     })
 
     // Get the total network effective stake
@@ -175,7 +210,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
 
     if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
-        response.EstimatedRewards = eth.WeiToEth(effectiveStake) / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
+        response.EstimatedRewards = response.EffectiveRplStake / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
     }
 
     if response.Trusted {

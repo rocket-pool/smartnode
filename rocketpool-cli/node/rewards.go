@@ -24,33 +24,37 @@ func getRewards(c *cli.Context) error {
         return err
     }
 
-    defaultTime := time.Time{}
-    if rewards.NodeRegistrationTime == defaultTime {
-        fmt.Printf("This node is not currently registered (could not find a registration event for this node).\n")
+    if !rewards.Registered {
+        fmt.Printf("This node is not currently registered.\n")
         return nil;
     }
 
     nextRewardsTime := rewards.LastCheckpoint.Add(rewards.RewardsInterval)
     nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
-    timeToCheckpointString := nextRewardsTime.Sub(time.Now()).Round(time.Second).String()
-    timeSinceRegistration := time.Now().Sub(rewards.NodeRegistrationTime)
+    timeToCheckpointString := time.Until(nextRewardsTime).Round(time.Second).String()
+    timeSinceRegistration := time.Since(rewards.NodeRegistrationTime)
     docsUrl := "https://docs.rocketpool.net/guides/node/rewards.html#claiming-rpl-rewards"
 
-    rplApy := rewards.CumulativeRewards / timeSinceRegistration.Hours() * (24*365) // Assume 365 days in a year, 24 hours per day
-    rplTrustedApy := rewards.CumulativeTrustedRewards / timeSinceRegistration.Hours() * (24*365)
+    // Assume 365 days in a year, 24 hours per day
+    rplPerYear := (rewards.CumulativeRewards + rewards.EstimatedRewards) / timeSinceRegistration.Hours() * (24*365) 
+    rplApy := rplPerYear / rewards.EffectiveRplStake * 100;
 
     fmt.Printf("The current rewards cycle started on %s.\n", cliutils.GetDateTimeString(uint64(rewards.LastCheckpoint.Unix())))
     fmt.Printf("It will end on %s (%s from now).\n\n", nextRewardsTimeString, timeToCheckpointString)
     
     fmt.Printf("Your estimated RPL staking rewards for this cycle: %f RPL (this may change based on network activity).\n", rewards.EstimatedRewards)
     fmt.Printf("Your node has received %f RPL staking rewards in total.\n", rewards.CumulativeRewards)
-    fmt.Printf("Based on your current effective stake, this is approximately %f APY.", rplApy)
+    fmt.Printf("Based on your current effective stake, this is approximately %.2f APY.\n", rplApy)
 
     if rewards.Trusted {
+        trustedTimeSinceRegistration := time.Since(rewards.TrustedNodeRegistrationTime)
+        rplTrustedPerYear := (rewards.CumulativeTrustedRewards + rewards.EstimatedTrustedRewards) / trustedTimeSinceRegistration.Hours() * (24*365) 
+        rplTrustedApy := rplTrustedPerYear / rewards.TrustedRplBond * 100;
+
         fmt.Println()
         fmt.Printf("You will receive an estimated %f RPL in rewards for Oracle DAO duties (this may change based on network activity).\n", rewards.EstimatedTrustedRewards)
         fmt.Printf("Your node has received %f RPL Oracle DAO rewards in total.\n", rewards.CumulativeTrustedRewards)
-        fmt.Printf("Based on your current effective stake, this is approximately %f APY.", rplTrustedApy)
+        fmt.Printf("Based on your current effective stake, this is approximately %.2f APY.\n", rplTrustedApy)
     }
 
     fmt.Println()
