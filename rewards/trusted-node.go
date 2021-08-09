@@ -1,15 +1,17 @@
 package rewards
 
 import (
-    "context"
-    "github.com/ethereum/go-ethereum"
-    "math/big"
-    "sync"
+	"context"
+	"math/big"
+	"sync"
+	"time"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 // Get whether trusted node reward claims are enabled
@@ -108,6 +110,12 @@ func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddre
     }
     // Return the result
     return sum, nil
+}
+
+
+// Get the time that the user registered as a claimer
+func GetTrustedNodeRegistrationTime(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
+    return getClaimingContractUserRegisteredTime(rp, "rocketClaimTrustedNode", claimerAddress, opts)
 }
 
 // Get contracts

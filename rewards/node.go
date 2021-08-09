@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 
@@ -108,6 +109,12 @@ func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress comm
     }
     // Return the result
     return sum, nil
+}
+
+
+// Get the time that the user registered as a claimer
+func GetNodeRegistrationTime(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
+    return getClaimingContractUserRegisteredTime(rp, "rocketClaimNode", claimerAddress, opts)
 }
 
 // Get contracts
