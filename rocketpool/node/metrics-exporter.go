@@ -18,12 +18,19 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     // Get services
     cfg, err := services.GetConfig(c)
     if err != nil { return err }
+    w, err := services.GetWallet(c)
+    if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
 
     // Return if metrics are disabled
     if !cfg.Smartnode.EnableMetrics {
         return nil;
+    }
+    
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return fmt.Errorf("Error getting node account: %w", err)
     }
 
     // Create the collectors
@@ -32,6 +39,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     supplyCollector := collectors.NewSupplyCollector(rp)
     rplCollector := collectors.NewRplCollector(rp)
     odaoCollector := collectors.NewOdaoCollector(rp)
+    nodeCollector := collectors.NewNodeCollector(rp, nodeAccount.Address)
 
     // Set up Prometheus
     registry := prometheus.NewRegistry()
@@ -40,6 +48,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     registry.MustRegister(supplyCollector)
     registry.MustRegister(rplCollector)
     registry.MustRegister(odaoCollector)
+    registry.MustRegister(nodeCollector)
     handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
     // Start the HTTP server
@@ -58,8 +67,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     })
     err = http.ListenAndServe(fmt.Sprintf("%s:%s", cfg.Smartnode.NodeAddress, cfg.Smartnode.NodePort), nil)
     if err != nil {
-        wrappedError := fmt.Errorf("Error running HTTP server: %w", err)
-        return wrappedError
+        return fmt.Errorf("Error running HTTP server: %w", err)
     }
 
     return nil
