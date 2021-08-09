@@ -22,6 +22,8 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     if err != nil { return err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return err }
+    bc, err := services.GetBeaconClient(c)
+    if err != nil { return err }
 
     // Return if metrics are disabled
     if !cfg.Smartnode.EnableMetrics {
@@ -39,7 +41,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     supplyCollector := collectors.NewSupplyCollector(rp)
     rplCollector := collectors.NewRplCollector(rp)
     odaoCollector := collectors.NewOdaoCollector(rp)
-    nodeCollector := collectors.NewNodeCollector(rp, nodeAccount.Address)
+    nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address)
 
     // Set up Prometheus
     registry := prometheus.NewRegistry()
