@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -94,7 +95,8 @@ func (t *claimRplRewards) run() error {
     }
 
     // Log
-    t.log.Printlnf("%.6f RPL is available to claim...", math.RoundDown(eth.WeiToEth(rewardsAmountWei), 6))
+    rewardsAmount := math.RoundDown(eth.WeiToEth(rewardsAmountWei), 6)
+    t.log.Printlnf("%.6f RPL is available to claim...", rewardsAmount)
 
     // Get transactor
     opts, err := t.w.GetNodeAccountTransactor()
@@ -111,6 +113,31 @@ func (t *claimRplRewards) run() error {
         return nil
     }
 
+    // Check if it's worth more than the gas to claim it
+    rplPriceWei, err := network.GetRPLPrice(t.rp, nil)
+    if err != nil {
+        return err
+    }
+    rewardsInEth := eth.WeiToEth(rplPriceWei) * rewardsAmount
+    gasPrice := gasInfo.ReqGasPrice
+    if gasPrice == nil {
+        gasPrice = gasInfo.EstGasPrice
+    }
+    var gas *big.Int 
+    if gasInfo.ReqGasLimit != 0 {
+        gas = new(big.Int).SetUint64(gasInfo.ReqGasLimit)
+    } else {
+        gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
+    }
+    totalGasWei := new(big.Int).Mul(gasPrice, gas)
+    totalEthCost := math.RoundDown(eth.WeiToEth(totalGasWei), 6)
+    
+    if totalEthCost >= rewardsInEth {
+        t.log.Printlnf("Transaction would cost %f ETH in gas but only provide %f ETH worth of RPL. Ignoring until gas is cheaper.",
+            totalEthCost, rewardsInEth)
+        return nil
+    }
+
     // Claim rewards
     hash, err := rewards.ClaimNodeRewards(t.rp, opts)
     if err != nil {
@@ -124,7 +151,7 @@ func (t *claimRplRewards) run() error {
     }
 
     // Log & return
-    t.log.Printlnf("Successfully claimed %.6f RPL in rewards.", math.RoundDown(eth.WeiToEth(rewardsAmountWei), 6))
+    t.log.Printlnf("Successfully claimed %.6f RPL in rewards.", rewardsAmount)
     return nil
 
 }
