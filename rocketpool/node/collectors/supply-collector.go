@@ -2,7 +2,6 @@ package collectors
 
 import (
 	"log"
-	"math/big"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -27,9 +26,6 @@ type SupplyCollector struct {
 
 	// The number of active (non-finalized) Rocket Pool minipools
 	activeMinipools	*prometheus.Desc
-
-	// The breakdown of nodes by their registered timezone
-	nodeTimezones 	*prometheus.Desc
 
 	// The Rocket Pool contract manager
 	rp 				*rocketpool.RocketPool
@@ -60,10 +56,6 @@ func NewSupplyCollector(rp *rocketpool.RocketPool) *SupplyCollector {
 			"The number of active (non-finalized) Rocket Pool minipools",
 			nil, nil,
 		),
-		nodeTimezones: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_timezones"),
-			"The breakdown of nodes by their registered timezone",
-			[]string{"timezone"}, nil,
-		),
 		rp: rp,
 	}
 }
@@ -76,7 +68,6 @@ func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.minipoolCount
 	channel <- collector.totalMinipools
 	channel <- collector.activeMinipools
-	channel <- collector.nodeTimezones
 }
 
 
@@ -147,16 +138,5 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
 	channel <- prometheus.MustNewConstMetric(
 		collector.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
-
-	zero := big.NewInt(0)
-	timezoneCounts, err := node.GetNodeCountPerTimezone(collector.rp, zero, zero, nil)
-	if err != nil {
-        log.Printf("Error getting timezone counts: %s", err)
-	} else {
-		for _, timezoneCount := range timezoneCounts {
-			channel <- prometheus.MustNewConstMetric(
-				collector.nodeTimezones, prometheus.GaugeValue, float64(timezoneCount.Count.Uint64()), timezoneCount.Timezone)
-		}
-	}
 
 }

@@ -44,7 +44,7 @@ func getRewards(c *cli.Context) error {
     
     fmt.Printf("Your estimated RPL staking rewards for this cycle: %f RPL (this may change based on network activity).\n", rewards.EstimatedRewards)
     fmt.Printf("Your node has received %f RPL staking rewards in total.\n", rewards.CumulativeRewards)
-    fmt.Printf("Based on your current effective stake, this is approximately %.2f APY.\n", rplApy)
+    fmt.Printf("Based on your current effective stake of %f RPL, this is approximately %.2f%% APY.\n", rewards.EffectiveRplStake, rplApy)
 
     if rewards.Trusted {
         trustedTimeSinceRegistration := time.Since(rewards.TrustedNodeRegistrationTime)
@@ -54,7 +54,7 @@ func getRewards(c *cli.Context) error {
         fmt.Println()
         fmt.Printf("You will receive an estimated %f RPL in rewards for Oracle DAO duties (this may change based on network activity).\n", rewards.EstimatedTrustedRewards)
         fmt.Printf("Your node has received %f RPL Oracle DAO rewards in total.\n", rewards.CumulativeTrustedRewards)
-        fmt.Printf("Based on your current effective stake, this is approximately %.2f APY.\n", rplTrustedApy)
+        fmt.Printf("Based on your bond of %f RPL, this is approximately %.2f%% APY.\n", rewards.TrustedRplBond, rplTrustedApy)
     }
 
     fmt.Println()
