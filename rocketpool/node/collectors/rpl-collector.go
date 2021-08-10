@@ -26,7 +26,7 @@ type RplCollector struct {
 	totalEffectiveStaked    *prometheus.Desc
 
 	// The date and time of the next RPL rewards checkpoint
-	checkpointTime    *prometheus.Desc
+	checkpointTime   		*prometheus.Desc
 
 	// The Rocket Pool contract manager
     rp 						*rocketpool.RocketPool

@@ -1,6 +1,7 @@
 package collectors
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -8,6 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"golang.org/x/sync/errgroup"
 )
 
 // Represents the collector for the Supply metrics
@@ -74,50 +76,71 @@ func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
 // Collect the latest metric values and pass them to Prometheus
 func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
  
-	// Get total number of Rocket Pool nodes
-	nodeCountUint, err := node.GetNodeCount(collector.rp, nil)
-    nodeCount := float64(nodeCountUint)
-	if err != nil {
-		log.Printf("Error getting total number of Rocket Pool nodes: %s", err)
-		nodeCount = -1
-	}
-    channel <- prometheus.MustNewConstMetric(
-		collector.nodeCount, prometheus.GaugeValue, nodeCount)
-	
-	// Get the current commission rate for new minipools
-	nodeFee, err := network.GetNodeFee(collector.rp, nil)
-	if err != nil {
-		log.Printf("Error getting current commission rate for new minipools: %s", err)
-		nodeFee = -1
-	}
-    channel <- prometheus.MustNewConstMetric(
-		collector.nodeFee, prometheus.GaugeValue, nodeFee)
-	
-    // Get the total number of Rocket Pool minipools
-    minipoolCounts, err := minipool.GetMinipoolCountPerStatus(collector.rp, 0, 0, nil)
+    // Sync
+    var wg errgroup.Group
+    nodeCount := float64(-1)
+	nodeFee := float64(-1)
 	initializedCount := float64(-1)
 	prelaunchCount := float64(-1)
 	stakingCount := float64(-1)
 	withdrawableCount := float64(-1)
 	dissolvedCount := float64(-1)
 	finalizedCount := float64(-1)
-    if err != nil {
-        log.Printf("Error getting total number of Rocket Pool minipools: %s", err)
-    } else {
-		initializedCount = float64(minipoolCounts.Initialized.Uint64())
-		prelaunchCount = float64(minipoolCounts.Prelaunch.Uint64())
-		stakingCount = float64(minipoolCounts.Staking.Uint64())
-		withdrawableCount = float64(minipoolCounts.Withdrawable.Uint64())
-		dissolvedCount = float64(minipoolCounts.Dissolved.Uint64())
-	}
-	finalizedCountUint, err := minipool.GetFinalisedMinipoolCount(collector.rp, nil)
-	if err != nil {
-        log.Printf("Error getting total number of finalized minipools: %s", err)
-	} else {
-		finalizedCount = float64(finalizedCountUint)
-		withdrawableCount -= finalizedCount
-	}
+	
+	// Get total number of Rocket Pool nodes
+    wg.Go(func() error {
+		nodeCountUint, err := node.GetNodeCount(collector.rp, nil)
+        if err != nil {
+            return fmt.Errorf("Error getting total number of Rocket Pool nodes: %w", err)
+        } else {
+            nodeCount = float64(nodeCountUint)
+        }
+        return nil
+    })
 
+	// Get the current node fee for new minipools
+    wg.Go(func() error {
+		_nodeFee, err := network.GetNodeFee(collector.rp, nil)
+        if err != nil {
+            return fmt.Errorf("Error getting current node fee for new minipools: %w", err)
+        } else {
+            nodeFee = _nodeFee
+        }
+        return nil
+    })
+
+    // Get the total number of Rocket Pool minipools
+    wg.Go(func() error {
+		minipoolCounts, err := minipool.GetMinipoolCountPerStatus(collector.rp, 0, 0, nil)
+		if err != nil {
+            return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
+		} else {
+			initializedCount = float64(minipoolCounts.Initialized.Uint64())
+			prelaunchCount = float64(minipoolCounts.Prelaunch.Uint64())
+			stakingCount = float64(minipoolCounts.Staking.Uint64())
+			withdrawableCount = float64(minipoolCounts.Withdrawable.Uint64())
+			dissolvedCount = float64(minipoolCounts.Dissolved.Uint64())
+		}
+		finalizedCountUint, err := minipool.GetFinalisedMinipoolCount(collector.rp, nil)
+		if err != nil {
+            return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
+		} else {
+			finalizedCount = float64(finalizedCountUint)
+			withdrawableCount -= finalizedCount
+		}
+        return nil
+    })
+	
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        log.Printf("%s\n", err.Error())
+        return
+    }
+
+    channel <- prometheus.MustNewConstMetric(
+		collector.nodeCount, prometheus.GaugeValue, nodeCount)
+	channel <- prometheus.MustNewConstMetric(
+		collector.nodeFee, prometheus.GaugeValue, nodeFee)
     channel <- prometheus.MustNewConstMetric(
         collector.minipoolCount, prometheus.GaugeValue, initializedCount, "initialized")
 	channel <- prometheus.MustNewConstMetric(
