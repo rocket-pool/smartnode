@@ -2,11 +2,13 @@ package collectors
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"golang.org/x/sync/errgroup"
 )
 
 // Represents the collector for the ODAO metrics
@@ -65,44 +67,60 @@ func (collector *OdaoCollector) Describe(channel chan<- *prometheus.Desc) {
 // Collect the latest metric values and pass them to Prometheus
 func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
  
+    // Sync
+    var wg errgroup.Group
+    blockNumberFloat := float64(-1)
+	pricesBlockFloat := float64(-1)
+	effectiveRplStakeBlockFloat := float64(-1)
+	latestReportableBlockFloat := float64(-1) 
+	
 	// Get the latest block reported by the ETH1 client
-    blockNumber, err := collector.rp.Client.BlockNumber(context.Background())
-    blockNumberFloat := float64(blockNumber)
-    if err != nil {
-		log.Printf("Error getting latest ETH1 block: %s", err)
-		blockNumberFloat = -1
-    }
-    channel <- prometheus.MustNewConstMetric(
-		collector.currentEth1Block, prometheus.GaugeValue, blockNumberFloat)
+    wg.Go(func() error {
+		blockNumber, err := collector.rp.Client.BlockNumber(context.Background())
+        if err != nil {
+            return fmt.Errorf("Error getting latest ETH1 block: %w", err)
+        } else {
+            blockNumberFloat = float64(blockNumber)
+        }
+        return nil
+    })
 	
 	// Get ETH1 block that was used when reporting the latest prices
-	pricesBlock, err := network.GetPricesBlock(collector.rp, nil)
-	pricesBlockFloat := float64(pricesBlock)
-	if err != nil {
-		log.Printf("Error getting ETH1 prices block: %s", err)
-		pricesBlockFloat = -1
-	}
-    channel <- prometheus.MustNewConstMetric(
-		collector.pricesBlock, prometheus.GaugeValue, pricesBlockFloat)
-
-	// Get the ETH1 block where the Effective RPL Stake was last updated
-	effectiveRplStakeBlock, err := network.GetPricesBlock(collector.rp, nil)
-	effectiveRplStakeBlockFloat := float64(effectiveRplStakeBlock)
-	if err != nil {
-		log.Printf("Error getting ETH1 effective RPL stake block: %s", err)
-		effectiveRplStakeBlockFloat = -1
-	}
-    channel <- prometheus.MustNewConstMetric(
-		collector.effectiveRplStakeBlock, prometheus.GaugeValue, effectiveRplStakeBlockFloat)
-
+    wg.Go(func() error {
+		pricesBlock, err := network.GetPricesBlock(collector.rp, nil)
+        if err != nil {
+            return fmt.Errorf("Error getting ETH1 prices block: %w", err)
+        } else {
+            pricesBlockFloat = float64(pricesBlock)
+            effectiveRplStakeBlockFloat = float64(pricesBlock)
+        }
+        return nil
+    })
+	
     // Get the latest ETH1 block where network prices were reportable by the ODAO
-    latestReportableBlock, err := network.GetLatestReportablePricesBlock(collector.rp, nil)
-    latestReportableBlockFloat := float64(-1) 
-    if err != nil {
-        log.Printf("Error getting ETH1 latest reportable block: %s", err)
-    } else {
-        latestReportableBlockFloat = float64(latestReportableBlock.Uint64())
+    wg.Go(func() error {
+		latestReportableBlock, err := network.GetLatestReportablePricesBlock(collector.rp, nil)
+        if err != nil {
+            return fmt.Errorf("Error getting ETH1 latest reportable block: %w", err)
+        } else {
+            latestReportableBlockFloat = float64(latestReportableBlock.Uint64())
+        }
+        return nil
+    })
+	
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        log.Printf("%s\n", err.Error())
+        return
     }
+
+    channel <- prometheus.MustNewConstMetric(
+		collector.currentEth1Block, prometheus.GaugeValue, blockNumberFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.pricesBlock, prometheus.GaugeValue, pricesBlockFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.effectiveRplStakeBlock, prometheus.GaugeValue, effectiveRplStakeBlockFloat)
     channel <- prometheus.MustNewConstMetric(
         collector.latestReportableBlock, prometheus.GaugeValue, latestReportableBlockFloat)
+		
 }
