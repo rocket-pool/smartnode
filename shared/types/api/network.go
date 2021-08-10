@@ -32,7 +32,7 @@ type NetworkStatsResponse struct {
     DepositPoolBalance float64          `json:"depositPoolBalance"`
     MinipoolCapacity float64            `json:"minipoolCapacity"`
     StakerUtilization float64           `json:"stakerUtilization"`
-    CommissionRate float64              `json:"commissionRate"`
+    NodeFee float64                     `json:"nodeFee"`
     NodeCount uint64                    `json:"nodeCount"`
     InitializedMinipoolCount uint64     `json:"initializedMinipoolCount"`
     PrelaunchMinipoolCount uint64       `json:"prelaunchMinipoolCount"`

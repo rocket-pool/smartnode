@@ -55,20 +55,11 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
         return err
     })
 
-    // Get commission rate
+    // Get node fee
     wg.Go(func() error {
         nodeFee, err := network.GetNodeFee(rp, nil)
         if err == nil {
-            response.CommissionRate = nodeFee
-        }
-        return err
-    })
-
-    // Get commission rate
-    wg.Go(func() error {
-        nodeFee, err := network.GetNodeFee(rp, nil)
-        if err == nil {
-            response.CommissionRate = nodeFee
+            response.NodeFee = nodeFee
         }
         return err
     })
@@ -121,7 +112,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
         return err
     })
 
-    // Get total RPL staked
+    // Get total effective RPL staked
     wg.Go(func() error {
         effectiveStaked, err := node.GetTotalEffectiveRPLStake(rp, nil)
         if err == nil {
