@@ -308,6 +308,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     // Wait for data
     if err := wg.Wait(); err != nil {
         log.Printf("%s\n", err.Error())
+        return
     }
 
     // Calculate the estimated rewards
