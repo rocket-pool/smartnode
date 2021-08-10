@@ -35,7 +35,7 @@ func getStats(c *cli.Context) error {
     fmt.Printf("Staking Pool ETH Used:   %f%%\n\n", response.StakerUtilization * 100)
 
     fmt.Println("============== Nodes ==============")
-    fmt.Printf("Current Commission Rate: %f%%\n", response.CommissionRate * 100)
+    fmt.Printf("Current Commission Rate: %f%%\n", response.NodeFee * 100)
     fmt.Printf("Node Count:              %d\n", response.NodeCount)
     fmt.Printf("Active Minipools:        %d\n", activeMinipools)
     fmt.Printf("    Initialized:         %d\n", response.InitializedMinipoolCount)
