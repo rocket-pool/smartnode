@@ -52,8 +52,8 @@ type NodeCollector struct {
 	// The expected RPL rewards for the node at the next rewards checkpoint
 	expectedRplRewards   	*prometheus.Desc
 
-    // The estimated APY of RPL for the node
-    rplApy                  *prometheus.Desc
+    // The estimated APR of RPL for the node from the next rewards checkpoint
+    rplApr                  *prometheus.Desc
 
     // The token balances of your node wallet
     balances                *prometheus.Desc
@@ -99,8 +99,8 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"The expected RPL rewards for the node at the next rewards checkpoint",
 			nil, nil,
 		),
-		rplApy: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_apy"),
-			"The estimated APY of RPL for the node",
+		rplApr: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_apr"),
+			"The estimated APR of RPL for the node from the next rewards checkpoint",
 			nil, nil,
 		),
 		balances: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "balance"),
@@ -128,7 +128,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.effectiveStakedRpl
 	channel <- collector.cumulativeRplRewards
 	channel <- collector.expectedRplRewards
-	channel <- collector.rplApy
+	channel <- collector.rplApr
 	channel <- collector.balances
 	channel <- collector.depositedEth
 	channel <- collector.beaconShare
@@ -148,7 +148,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     var totalRplSupply *big.Int
     var totalEffectiveStake *big.Int
     var nodeOperatorRewardsPercent float64
-    var nodeRegistrationTime time.Time
     ethBalance := float64(-1)
     oldRplBalance := float64(-1)
     newRplBalance := float64(-1)
@@ -242,16 +241,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
         return nil
     })
 
-    // Get the node registration time
-    wg.Go(func() error {
-        _nodeRegistrationTime, err := rewards.GetNodeRegistrationTime(collector.rp, collector.nodeAddress, nil)
-        if err != nil {
-            return fmt.Errorf("Error getting node registration time: %w", err)
-        }
-        nodeRegistrationTime = _nodeRegistrationTime
-        return nil
-    })
-
     // Get the node balances
     wg.Go(func() error {
         balances, err := tokens.GetBalances(collector.rp, collector.nodeAddress, nil)
@@ -320,10 +309,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
         estimatedRewards = effectiveStakedRpl / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
     }
 
-    // Calculate the RPL APY
-    timeSinceRegistration := time.Since(nodeRegistrationTime)
-    rplPerYear := (cumulativeRewards + estimatedRewards) / timeSinceRegistration.Hours() * (24*365) 
-    rplApy := rplPerYear / effectiveStakedRpl * 100;
+    // Calculate the RPL APR
+    rplApr := estimatedRewards / stakedRpl / rewardsInterval.Hours() * (24*365) * 100
 
     // Calculate the collateral ratio
     if activeMinipoolCount > 0 {
@@ -355,7 +342,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     channel <- prometheus.MustNewConstMetric(
         collector.expectedRplRewards, prometheus.GaugeValue, estimatedRewards)
     channel <- prometheus.MustNewConstMetric(
-        collector.rplApy, prometheus.GaugeValue, rplApy)
+        collector.rplApr, prometheus.GaugeValue, rplApr)
     channel <- prometheus.MustNewConstMetric(
         collector.balances, prometheus.GaugeValue, ethBalance, "ETH")
     channel <- prometheus.MustNewConstMetric(
