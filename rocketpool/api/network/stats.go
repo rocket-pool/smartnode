@@ -150,7 +150,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
                         response.StakingMinipoolCount +
                         response.WithdrawableMinipoolCount +
                         response.DissolvedMinipoolCount
-    tvl := float64(activeMinipools) * 32 + response.DepositPoolBalance + response.MinipoolCapacity
+    tvl := float64(activeMinipools) * 32 + response.DepositPoolBalance + response.MinipoolCapacity + (response.TotalRplStaked * response.RplPrice)
     response.TotalValueLocked = tvl
 
     // Return response
