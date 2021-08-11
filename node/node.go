@@ -262,6 +262,10 @@ func EstimateRegisterNodeGas(rp *rocketpool.RocketPool, timezoneLocation string,
     if err != nil {
         return rocketpool.GasInfo{}, err
     }
+    _, err = time.LoadLocation(timezoneLocation)
+    if err != nil {
+        return rocketpool.GasInfo{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
+    }
     return rocketNodeManager.GetTransactionGasInfo(opts, "registerNode", timezoneLocation)
 }
 
@@ -271,6 +275,10 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
     rocketNodeManager, err := getRocketNodeManager(rp)
     if err != nil {
         return common.Hash{}, err
+    }
+    _, err = time.LoadLocation(timezoneLocation)
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
     }
     hash, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
     if err != nil {
@@ -288,7 +296,7 @@ func EstimateSetTimezoneLocationGas(rp *rocketpool.RocketPool, timezoneLocation 
     }
     _, err = time.LoadLocation(timezoneLocation)
     if err != nil {
-        return rocketpool.GasInfo{}, fmt.Errorf("Could not parse timezone [%s]: %w", timezoneLocation, err)
+        return rocketpool.GasInfo{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
     }
     return rocketNodeManager.GetTransactionGasInfo(opts, "setTimezoneLocation", timezoneLocation)
 }
@@ -302,7 +310,7 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
     }
     _, err = time.LoadLocation(timezoneLocation)
     if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not parse timezone [%s]: %w", timezoneLocation, err)
+        return common.Hash{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
     }
     hash, err := rocketNodeManager.Transact(opts, "setTimezoneLocation", timezoneLocation)
     if err != nil {

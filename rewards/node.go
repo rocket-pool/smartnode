@@ -1,15 +1,17 @@
 package rewards
 
 import (
-    "context"
-    "github.com/ethereum/go-ethereum"
-    "math/big"
-    "sync"
+	"context"
+	"math/big"
+	"sync"
+	"time"
 
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
-    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 // Get whether node reward claims are enabled
@@ -84,7 +86,7 @@ func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress comm
     }
     // Construct a filter query for relevant logs
     addressFilter := []common.Address{*rocketRewardsPool.Address}
-    // RPLTokensClaimed(address clamingContract, address clainingAddress, uint256 amount, uint256 time)
+    // RPLTokensClaimed(address clamingContract, address claimingAddress, uint256 amount, uint256 time)
     topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID}, {rocketClaimNode.Address.Hash()}, {claimerAddress.Hash()}}
     logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
         Addresses: addressFilter,
@@ -107,6 +109,12 @@ func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress comm
     }
     // Return the result
     return sum, nil
+}
+
+
+// Get the time that the user registered as a claimer
+func GetNodeRegistrationTime(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
+    return getClaimingContractUserRegisteredTime(rp, "rocketClaimNode", claimerAddress, opts)
 }
 
 // Get contracts

@@ -55,6 +55,20 @@ func getClaimRewardsAmount(claimsContract *rocketpool.Contract, claimsName strin
 }
 
 
+// Get the time that the user registered as a claimer
+func getClaimingContractUserRegisteredTime(rp *rocketpool.RocketPool, claimsContract string, claimerAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
+    rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+	    return time.Time{}, err
+    }
+    claimTime := new(*big.Int)
+    if err := rocketRewardsPool.Call(opts, claimTime, "getClaimingContractUserRegisteredTime", claimsContract, claimerAddress); err != nil {
+        return time.Time{}, fmt.Errorf("Could not get claims registration time on contract %s for %s: %w", claimsContract, claimerAddress.Hex(), err)
+    }
+    return time.Unix((*claimTime).Int64(), 0), nil
+}
+
+
 // Estimate the gas of claim
 func estimateClaimGas(claimsContract *rocketpool.Contract, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     return claimsContract.GetTransactionGasInfo(opts, "claim")
