@@ -431,9 +431,15 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
         return minipoolBalanceDetails{}, err
     }
 
+    // Deal with pools that haven't received deposits yet so their balance is still 0
+    if nodeDepositBalance == nil {
+        nodeDepositBalance = big.NewInt(0)
+    }
+
     // Use node deposit balance if initialized or prelaunch
     if status == types.Initialized || status == types.Prelaunch {
         return minipoolBalanceDetails{
+            NodeDeposit: nodeDepositBalance,
             NodeBalance: nodeDepositBalance,
         }, nil
     }
@@ -441,6 +447,7 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
     // Use node deposit balance if validator not yet active on beacon chain at block
     if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
         return minipoolBalanceDetails{
+            NodeDeposit: nodeDepositBalance,
             NodeBalance: nodeDepositBalance,
         }, nil
     }

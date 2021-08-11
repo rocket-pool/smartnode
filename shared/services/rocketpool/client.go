@@ -202,7 +202,7 @@ func (c *Client) UpdatePrometheusConfiguration(settings []config.UserParam) erro
     }
     
     // Write the actual Prometheus config file
-    err = ioutil.WriteFile(prometheusConfigPath, contents, 0)
+    err = ioutil.WriteFile(prometheusConfigPath, contents, 0664)
     if err != nil {
         return fmt.Errorf("Could not write Prometheus config file to %s: %w", shellescape.Quote(prometheusConfigPath), err)
     }
@@ -489,6 +489,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
         paramsSet[param.Env] = true
     }
+    for _, setting := range cfg.Metrics.Settings {
+        env = append(env, fmt.Sprintf("%s=%s", setting.Env, shellescape.Quote(setting.Value)))
+        paramsSet[setting.Env] = true
+    }
 
     // Set default values from client config
     for _, param := range cfg.GetSelectedEth1Client().Params {
@@ -497,6 +501,11 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
     }
     for _, param := range cfg.GetSelectedEth2Client().Params {
+        if _, ok := paramsSet[param.Env]; ok { continue }
+        if param.Default == "" { continue }
+        env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
+    }
+    for _, param := range cfg.Metrics.Params {
         if _, ok := paramsSet[param.Env]; ok { continue }
         if param.Default == "" { continue }
         env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))

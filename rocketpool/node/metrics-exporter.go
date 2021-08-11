@@ -56,7 +56,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     // Start the HTTP server
     metricsAddress := c.GlobalString("metricsAddress")
     metricsPort := c.GlobalUint("metricsPort")
-    logger.Printlnf("Starting metrics exporter on %s:%s.", metricsAddress, metricsPort)
+    logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)
     metricsPath := "/metrics"
     http.Handle(metricsPath, handler)
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
