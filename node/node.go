@@ -370,8 +370,8 @@ func GetBalanceSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address
     return &timestamps, nil
 }
 
-// Returns the most recent block number that the number of trusted nodes changed
-func getLatestMemberCountChangedBlock(rp *rocketpool.RocketPool) (uint64, error) {
+// Returns the most recent block number that the number of trusted nodes changed since fromBlock
+func getLatestMemberCountChangedBlock(rp *rocketpool.RocketPool, fromBlock uint64) (uint64, error) {
     // Get contracts
     rocketDaoNodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
     if err != nil {
@@ -381,6 +381,7 @@ func getLatestMemberCountChangedBlock(rp *rocketpool.RocketPool) (uint64, error)
     addressFilter := []common.Address{*rocketDaoNodeTrustedActions.Address}
     topicFilter := [][]common.Hash{{rocketDaoNodeTrustedActions.ABI.Events["ActionJoined"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionLeave"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionKick"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionChallengeDecided"].ID}}
     logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
+        FromBlock: big.NewInt(int64(fromBlock)),
         Addresses: addressFilter,
         Topics: topicFilter,
     })
@@ -402,17 +403,11 @@ func getLatestMemberCountChangedBlock(rp *rocketpool.RocketPool) (uint64, error)
         	return log.BlockNumber, nil
         }
     }
-
-    return 0, nil
+    return fromBlock, nil
 }
 
 // Calculates the participation rate of every trusted node on price submission since the last block that member count changed
 func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*TrustedNodeParticipation, error) {
-    // Get the block of the most recent member join
-    latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp)
-    if err != nil {
-        return nil, err
-    }
     // Get the update frequency
     updatePricesFrequency, err := protocol.GetSubmitPricesFrequency(rp, opts)
     if err != nil {
@@ -424,6 +419,12 @@ func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, opts *bi
         return nil, err
     }
     currentBlockNumber := currentBlock.Number.Uint64()
+    // Get the block of the most recent member join (limiting to 200 intervals)
+    minBlock := (currentBlockNumber / updatePricesFrequency - 200) * updatePricesFrequency
+    latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp, minBlock)
+    if err != nil {
+        return nil, err
+    }
     // Get the number of current members
     memberCount, err := trustednode.GetMemberCount(rp, nil)
     if err != nil {
@@ -490,11 +491,6 @@ func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, opts *bi
 
 // Calculates the participation rate of every trusted node on balance submission since the last block that member count changed
 func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*TrustedNodeParticipation, error) {
-	// Get the block of the most recent member join
-    latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp)
-    if err != nil {
-        return nil, err
-    }
     // Get the update frequency
     updateBalancesFrequency, err := protocol.GetSubmitBalancesFrequency(rp, opts)
     if err != nil {
@@ -506,6 +502,12 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, opts *
         return nil, err
     }
     currentBlockNumber := currentBlock.Number.Uint64()
+    // Get the block of the most recent member join (limiting to 200 intervals)
+    minBlock := (currentBlockNumber / updateBalancesFrequency - 200) * updateBalancesFrequency
+    latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp, minBlock)
+    if err != nil {
+        return nil, err
+    }
     // Get the number of current members
     memberCount, err := trustednode.GetMemberCount(rp, nil)
     if err != nil {
