@@ -1,18 +1,24 @@
 package node
 
 import (
-	"fmt"
-	"math/big"
-	"sync"
-	"time"
+    "context"
+    "fmt"
+    "github.com/ethereum/go-ethereum"
+    "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+    "github.com/rocket-pool/rocketpool-go/settings/protocol"
+    "gonum.org/v1/gonum/mathext"
+    "math"
+    "math/big"
+    "sync"
+    "time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/sync/errgroup"
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
+    "golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/storage"
-	"github.com/rocket-pool/rocketpool-go/utils/strings"
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/storage"
+    "github.com/rocket-pool/rocketpool-go/utils/strings"
 )
 
 // Settings
@@ -36,6 +42,17 @@ type NodeDetails struct {
 type TimezoneCount struct {
     Timezone string     `abi:"timezone"`
     Count *big.Int      `abi:"count"`
+}
+
+// The results of the trusted node participation calculation
+type TrustedNodeParticipation struct {
+    StartBlock uint64
+    UpdateFrequency uint64
+    UpdateCount uint64
+    Probability float64
+    ExpectedSubmissions float64
+    ActualSubmissions map[common.Address]float64
+    Participation map[common.Address][]bool
 }
 
 
@@ -294,6 +311,256 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
     return hash, nil
 }
 
+// Filters through and counts price submissions by node
+func GetPriceSubmissionCount(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64) (uint64, error) {
+    // Get contracts
+    rocketNetworkPrices, err := getRocketNetworkPrices(rp)
+    if err != nil {
+        return 0, err
+    }
+    // Construct a filter query for relevant logs
+    addressFilter := []common.Address{*rocketNetworkPrices.Address}
+    topicFilter := [][]common.Hash{{rocketNetworkPrices.ABI.Events["PricesSubmitted"].ID}, {nodeAddress.Hash()}}
+    logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
+        Addresses: addressFilter,
+        Topics: topicFilter,
+        FromBlock: big.NewInt(int64(fromBlock)),
+    })
+    if err != nil {
+        return 0, err
+    }
+    return uint64(len(logs)), nil
+}
+
+// Returns an array of block numbers for submissions the given trusted node has submitted since fromBlock
+func GetBalanceSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64) (*[]uint64, error) {
+    // Get contracts
+    rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+    if err != nil {
+        return nil, err
+    }
+    // Construct a filter query for relevant logs
+    addressFilter := []common.Address{*rocketNetworkBalances.Address}
+    topicFilter := [][]common.Hash{{rocketNetworkBalances.ABI.Events["BalancesSubmitted"].ID}, {nodeAddress.Hash()}}
+    logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
+        Addresses: addressFilter,
+        Topics: topicFilter,
+        FromBlock: big.NewInt(int64(fromBlock)),
+    })
+    if err != nil {
+        return nil, err
+    }
+    timestamps := make([]uint64, len(logs))
+    for i, log := range logs {
+        values := make(map[string]interface{})
+        // Decode the event
+        if rocketNetworkBalances.ABI.Events["BalancesSubmitted"].Inputs.UnpackIntoMap(values, log.Data) != nil {
+            return nil, err
+        }
+        timestamps[i] = values["block"].(*big.Int).Uint64()
+    }
+    return &timestamps, nil
+}
+
+// Returns the most recent block number that the number of trusted nodes changed
+func getLatestMemberCountChangedBlock(rp *rocketpool.RocketPool) (uint64, error) {
+    // Get contracts
+    rocketDaoNodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+    if err != nil {
+        return 0, err
+    }
+    // Construct a filter query for relevant logs
+    addressFilter := []common.Address{*rocketDaoNodeTrustedActions.Address}
+    topicFilter := [][]common.Hash{{rocketDaoNodeTrustedActions.ABI.Events["ActionJoined"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionLeave"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionKick"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionChallengeDecided"].ID}}
+    logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
+        Addresses: addressFilter,
+        Topics: topicFilter,
+    })
+    if err != nil {
+        return 0, err
+    }
+    for i := range(logs) {
+        log := logs[len(logs) - i - 1]
+    	if log.Topics[0] == rocketDaoNodeTrustedActions.ABI.Events["ActionChallengeDecided"].ID {
+            values := make(map[string]interface{})
+            // Decode the event
+            if rocketDaoNodeTrustedActions.ABI.Events["ActionChallengeDecided"].Inputs.UnpackIntoMap(values, log.Data) != nil {
+                return 0, err
+            }
+            if values["success"].(bool) {
+                return log.BlockNumber, nil
+            }
+        } else {
+        	return log.BlockNumber, nil
+        }
+    }
+
+    return 0, nil
+}
+
+// Calculates the participation rate of every trusted node on price submission since the last block that member count changed
+func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*TrustedNodeParticipation, error) {
+    // Get the block of the most recent member join
+    latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp)
+    if err != nil {
+        return nil, err
+    }
+    // Get the update frequency
+    updatePricesFrequency, err := protocol.GetSubmitPricesFrequency(rp, opts)
+    if err != nil {
+        return nil, err
+    }
+    // Get the current block
+    currentBlock, err := rp.Client.HeaderByNumber(context.Background(), nil)
+    if err != nil {
+        return nil, err
+    }
+    currentBlockNumber := currentBlock.Number.Uint64()
+    // Get the number of current members
+    memberCount, err := trustednode.GetMemberCount(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    // Start block is the first interval after the latest join
+    startBlock := (latestMemberCountChangedBlock / updatePricesFrequency + 1) * updatePricesFrequency
+    // The number of members that have to submit each interval
+    consensus := math.Floor(float64(memberCount) / 2 + 1)
+    // The number of intervals passed
+    intervalsPassed := (currentBlockNumber - startBlock) / updatePricesFrequency + 1
+    // How many submissions would we expect per member given a random submission
+    expected := float64(intervalsPassed) * consensus / float64(memberCount)
+    // Get trusted members
+    members, err := trustednode.GetMembers(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    // Construct the epoch map
+    participationTable := make(map[common.Address][]bool)
+    // Iterate members and sum chi-square
+    submissions := make(map[common.Address]float64)
+    chi := float64(0)
+    for _, member := range(members) {
+        participationTable[member.Address] = make([]bool, intervalsPassed)
+        actual := 0
+        if (intervalsPassed > 0) {
+            blocks, err := GetBalanceSubmissions(rp, member.Address, startBlock)
+            actual = len(*blocks)
+            if err != nil {
+                return nil, err
+            }
+            delta := float64(actual) - expected
+            chi += (delta * delta) / expected
+            // Add to participation table
+            for _, block := range *blocks {
+                // Ignore out of step updates
+                if block % updatePricesFrequency == 0 {
+                    index := block / updatePricesFrequency - startBlock / updatePricesFrequency
+                    participationTable[member.Address][index] = true
+                }
+            }
+        }
+        // Save actual submission
+        submissions[member.Address] = float64(actual)
+    }
+    // Calculate inverse cumulative density function with members-1 DoF
+    probability := float64(1)
+    if (intervalsPassed > 0){
+        probability = 1 - mathext.GammaIncReg(float64(len(members) - 1) / 2, chi/2)
+    }
+    // Construct return value
+    participation := TrustedNodeParticipation{
+        Probability:         probability,
+        ExpectedSubmissions: expected,
+        ActualSubmissions:   submissions,
+        StartBlock:          startBlock,
+        UpdateFrequency:     updatePricesFrequency,
+        UpdateCount:         intervalsPassed,
+        Participation:       participationTable,
+    }
+    return &participation, nil
+}
+
+// Calculates the participation rate of every trusted node on balance submission since the last block that member count changed
+func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*TrustedNodeParticipation, error) {
+	// Get the block of the most recent member join
+    latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp)
+    if err != nil {
+        return nil, err
+    }
+    // Get the update frequency
+    updateBalancesFrequency, err := protocol.GetSubmitBalancesFrequency(rp, opts)
+    if err != nil {
+        return nil, err
+    }
+    // Get the current block
+    currentBlock, err := rp.Client.HeaderByNumber(context.Background(), nil)
+    if err != nil {
+        return nil, err
+    }
+    currentBlockNumber := currentBlock.Number.Uint64()
+    // Get the number of current members
+    memberCount, err := trustednode.GetMemberCount(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    // Start block is the first interval after the latest join
+    startBlock := (latestMemberCountChangedBlock / updateBalancesFrequency + 1) * updateBalancesFrequency
+    // The number of members that have to submit each interval
+    consensus := math.Floor(float64(memberCount) / 2 + 1)
+    // The number of intervals passed
+    intervalsPassed := (currentBlockNumber - startBlock) / updateBalancesFrequency + 1
+    // How many submissions would we expect per member given a random submission
+    expected := float64(intervalsPassed) * consensus / float64(memberCount)
+    // Get trusted members
+    members, err := trustednode.GetMembers(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    // Construct the epoch map
+    participationTable := make(map[common.Address][]bool)
+    // Iterate members and sum chi-square
+    submissions := make(map[common.Address]float64)
+    chi := float64(0)
+    for _, member := range(members) {
+        participationTable[member.Address] = make([]bool, intervalsPassed)
+        actual := 0
+        if (intervalsPassed > 0) {
+            blocks, err := GetBalanceSubmissions(rp, member.Address, startBlock)
+            actual = len(*blocks)
+            if err != nil {
+                return nil, err
+            }
+            delta := float64(actual) - expected
+            chi += (delta * delta) / expected
+            // Add to participation table
+            for _, block := range *blocks {
+            	// Ignore out of step updates
+                if block % updateBalancesFrequency == 0 {
+                	index := block / updateBalancesFrequency - startBlock / updateBalancesFrequency
+                    participationTable[member.Address][index] = true
+                }
+            }
+        }
+        // Save actual submission
+        submissions[member.Address] = float64(actual)
+    }
+    // Calculate inverse cumulative density function with members-1 DoF
+    probability := float64(1)
+    if (intervalsPassed > 0){
+        probability = 1 - mathext.GammaIncReg(float64(len(members) - 1) / 2, chi/2)
+    }
+    // Construct return value
+    participation := TrustedNodeParticipation{
+    	Probability:         probability,
+    	ExpectedSubmissions: expected,
+    	ActualSubmissions:   submissions,
+    	StartBlock:          startBlock,
+    	UpdateFrequency:     updateBalancesFrequency,
+    	UpdateCount:         intervalsPassed,
+    	Participation:       participationTable,
+    }
+    return &participation, nil
+}
 
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
@@ -303,3 +570,23 @@ func getRocketNodeManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, erro
     return rp.GetContract("rocketNodeManager")
 }
 
+var rocketNetworkPricesLock sync.Mutex
+func getRocketNetworkPrices(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+    rocketNetworkPricesLock.Lock()
+    defer rocketNetworkPricesLock.Unlock()
+    return rp.GetContract("rocketNetworkPrices")
+}
+
+var rocketNetworkBalancesLock sync.Mutex
+func getRocketNetworkBalances(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+    rocketNetworkBalancesLock.Lock()
+    defer rocketNetworkBalancesLock.Unlock()
+    return rp.GetContract("rocketNetworkBalances")
+}
+
+var rocketDAONodeTrustedActionsLock sync.Mutex
+func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+    rocketDAONodeTrustedActionsLock.Lock()
+    defer rocketDAONodeTrustedActionsLock.Unlock()
+    return rp.GetContract("rocketDAONodeTrustedActions")
+}
