@@ -11,6 +11,7 @@ import (
 	osUser "os/user"
 	"strings"
 
+	"github.com/a8m/envsubst"
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
@@ -30,6 +31,9 @@ const (
     GlobalConfigFile = "config.yml"
     UserConfigFile = "settings.yml"
     ComposeFile = "docker-compose.yml"
+    MetricsComposeFile = "docker-compose-metrics.yml"
+    PrometheusTemplate = "prometheus.tmpl"
+    PrometheusFile = "prometheus.yml"
 
     APIContainerSuffix = "_api"
     APIBinPath = "/go/bin/rocketpool"
@@ -167,6 +171,44 @@ func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
     return c.saveConfig(cfg, fmt.Sprintf("%s/%s", c.configPath, UserConfigFile))
 }
 
+// Load the Prometheus template, do an environment variable substitution, and save it
+func (c *Client) UpdatePrometheusConfiguration(settings []config.UserParam) error {
+    prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusTemplate))
+    if err != nil {
+        return fmt.Errorf("Error expanding Prometheus template path: %w", err)
+    }
+    
+    prometheusConfigPath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusFile))
+    if err != nil {
+        return fmt.Errorf("Error expanding Prometheus config file path: %w", err)
+    }
+
+    // Set the environment variables defined in the user settings for metrics
+    oldValues := map[string]string{}
+    for _, setting := range settings {
+        oldValues[setting.Env] = os.Getenv(setting.Env)
+        os.Setenv(setting.Env, setting.Value)
+    }
+
+    // Read and substitute the template
+    contents, err := envsubst.ReadFile(prometheusTemplatePath)
+    if err != nil {
+        return fmt.Errorf("Error reading and substituting Prometheus configuration template: %w", err)
+    }
+
+    // Unset the env vars
+    for name, value := range oldValues {
+        os.Setenv(name, value)
+    }
+    
+    // Write the actual Prometheus config file
+    err = ioutil.WriteFile(prometheusConfigPath, contents, 0)
+    if err != nil {
+        return fmt.Errorf("Could not write Prometheus config file to %s: %w", shellescape.Quote(prometheusConfigPath), err)
+    }
+
+    return nil
+}
 
 // Load the merged global & user config
 func (c *Client) LoadMergedConfig() (config.RocketPoolConfig, error) {
@@ -435,6 +477,9 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         fmt.Sprintf("ETH1_WS_PROVIDER=%s",        shellescape.Quote(cfg.Chains.Eth1.WsProvider)),
         fmt.Sprintf("ETH2_PROVIDER=%s",           shellescape.Quote(cfg.Chains.Eth2.Provider)),
     }
+    if cfg.Metrics.Enabled {
+        env = append(env, "ENABLE_METRICS=1")
+    }
     paramsSet := map[string]bool{}
     for _, param := range cfg.Chains.Eth1.Client.Params {
         env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
@@ -463,7 +508,16 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     if err != nil {
         return "", err
     }
+
+    // Add the default docker-compose.yml
     composeFileFlags[0] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, ComposeFile))))
+    
+    // Add docker-compose-metrics.yml if metrics are enabled
+    if cfg.Metrics.Enabled {
+        composeFileFlags = append(composeFileFlags, "")
+        composeFileFlags[1] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, MetricsComposeFile))))
+    }    
+    
     for fi, composeFile := range composeFiles {
         expandedFile, err := homedir.Expand(composeFile)
         if err != nil {

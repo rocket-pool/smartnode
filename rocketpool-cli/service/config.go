@@ -49,6 +49,11 @@ func configureService(c *cli.Context) error {
         return err
     }
 
+    // Configure metrics
+    if err := configureMetrics(&(globalConfig.Metrics), &(userConfig.Metrics)); err != nil {
+        return err
+    }
+
     // Save user config
     if err := rp.SaveUserConfig(userConfig); err != nil {
         return err
@@ -58,6 +63,109 @@ func configureService(c *cli.Context) error {
     fmt.Println("Done! Run 'rocketpool service start' to apply new configuration settings.")
     return nil
 
+}
+
+
+func configureMetrics(globalMetrics, userMetrics *config.Metrics) error {
+
+    // Prompt for enabling status
+    enabled := cliutils.Confirm("Would you like to enable Rocket Pool's metrics dashboard?")
+    userMetrics.Enabled = enabled
+
+    // Prompt for params
+    params := []config.UserParam{}
+    if enabled {
+        for _, param := range globalMetrics.Params {
+
+            // Get expected param format
+            var expectedFormat string
+            if param.Regex != "" {
+                expectedFormat = param.Regex
+            } else if param.Required {
+                expectedFormat = "^.+$"
+            } else {
+                expectedFormat = "^.*$"
+            }
+
+            // Get param label
+            paramText := param.Name
+            if !param.Required {
+                blankText := "none"
+                if param.BlankText != "" {
+                    blankText = param.BlankText
+                }
+                paramText += fmt.Sprintf(" (leave blank for %s)", blankText)
+            }
+            if param.Desc != "" {
+                paramText += fmt.Sprintf("\n(%s)", param.Desc)
+            }
+
+            // Prompt for value
+            var value string
+            for {
+                value = cliutils.Prompt(fmt.Sprintf("Please enter the %s", paramText), expectedFormat, fmt.Sprintf("Invalid %s", param.Name))
+                isValid := true
+
+                // Allow blanks for optional params
+                if !param.Required && value == "" {
+                    value = param.Default
+                    break
+                }
+
+                // Type checking
+                switch param.Type {
+                    case "uint":
+                        if _, err := strconv.ParseUint(value, 0, 0); err != nil {
+                            fmt.Printf("'%s' is not a valid value for %s, try again.\n", value, param.Name)
+                            isValid = false
+                        }
+                    case "uint16":
+                        if _, err := strconv.ParseUint(value, 0, 16); err != nil {
+                            fmt.Printf("'%s' is not a valid value for %s, try again.\n", value, param.Name)
+                            isValid = false
+                        }
+                }
+
+                // Continue if input is valid
+                if isValid { break }
+
+            }
+
+            // Add param
+            params = append(params, config.UserParam{
+                Env: param.Env,
+                Value: value,
+            })
+
+        }
+    }
+
+    // Set unselected client params to blank strings to prevent docker-compose warnings
+    for _, param := range globalMetrics.Params {
+
+        // Cancel if param already set in selected client
+        paramSet := false
+        for _, userParam := range params {
+            if param.Env == userParam.Env {
+                paramSet = true
+                break
+            }
+        }
+        if paramSet { continue }
+
+        // Add param
+        params = append(params, config.UserParam{
+            Env: param.Env,
+            Value: "",
+        })
+
+    }
+
+    // Set config params
+    userMetrics.Settings = params
+
+    // Return
+    return nil
 }
 
 

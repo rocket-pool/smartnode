@@ -1,14 +1,13 @@
 package service
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Install the Rocket Pool service
 func installService(c *cli.Context) error {
@@ -75,6 +74,19 @@ func startService(c *cli.Context) error {
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
+
+    // Update the Prometheus template with the assigned ports
+    userConfig, err := rp.LoadUserConfig()
+    if err != nil {
+        return fmt.Errorf("Error loading user settings: %w", err)
+    }
+    metricsEnabled := userConfig.Metrics.Enabled
+    if metricsEnabled {
+        err := rp.UpdatePrometheusConfiguration(userConfig.Metrics.Settings)
+        if err != nil {
+            return err
+        }
+    }
 
     // Start service
     return rp.StartService(getComposeFiles(c))

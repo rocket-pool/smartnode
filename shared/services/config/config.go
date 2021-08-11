@@ -34,14 +34,12 @@ type RocketPoolConfig struct {
         GasLimit string                 `yaml:"gasLimit,omitempty"`
         RplClaimGasThreshold string     `yaml:"rplClaimGasThreshold,omitempty"`
         TxWatchUrl string               `yaml:"txWatchUrl,omitempty"`
-        EnableMetrics bool              `yaml:"enableMetrics,omitempty"`
-        NodeAddress string              `yaml:"nodeAddress,omitempty"`
-        NodePort string                 `yaml:"nodePort,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
         Eth1 Chain                      `yaml:"eth1,omitempty"`
         Eth2 Chain                      `yaml:"eth2,omitempty"`
     }                                   `yaml:"chains,omitempty"`
+    Metrics Metrics                     `yaml:"metrics,omitempty"`
 }
 type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
@@ -79,6 +77,11 @@ type ClientParam struct {
 type UserParam struct {
     Env string                          `yaml:"env,omitempty"`
     Value string                        `yaml:"value"`
+}
+type Metrics struct {
+    Enabled bool                        `yaml:"enabled,omitempty"`
+    Params []ClientParam                `yaml:"params,omitempty"`
+    Settings []UserParam                `yaml:"settings,omitempty"`
 }
 
 
@@ -140,6 +143,9 @@ func Parse(bytes []byte) (RocketPoolConfig, error) {
     if err := ValidateDefaults(config.Chains.Eth2, "eth2"); err != nil {
         return RocketPoolConfig{}, err
     }
+    if err := ValidateMetricDefaults(config.Metrics.Params); err != nil {
+        return RocketPoolConfig{}, err
+    }
 
     return config, nil
 }
@@ -165,6 +171,31 @@ func ValidateDefaults(Chain Chain, ChainName string) error {
                         "is a %s but has a default value of '%s' which failed parsing: %w",
                         param.Name, ChainName, option.Name, param.Type, param.Default, err)
                 }
+            }
+        }
+    }
+    return nil
+}
+
+
+// Make sure the default parameter values for the metrics section can be parsed into the parameter types
+func ValidateMetricDefaults(Params []ClientParam) error {
+    for _, param := range Params {
+        if param.Default != "" {
+            var err error
+            switch param.Type {
+                case "", "string":
+                    continue
+                case "uint":
+                    _, err = strconv.ParseUint(param.Default, 0, 0)
+                case "uint16":
+                    _, err = strconv.ParseUint(param.Default, 0, 16)
+            }
+            if err != nil {
+                return fmt.Errorf("Could not parse config - " +
+                    "parameter '%s' in metrics " +
+                    "is a %s but has a default value of '%s' which failed parsing: %w",
+                    param.Name, param.Type, param.Default, err)
             }
         }
     }

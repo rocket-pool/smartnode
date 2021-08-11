@@ -26,7 +26,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     if err != nil { return err }
 
     // Return if metrics are disabled
-    if !cfg.Smartnode.EnableMetrics {
+    if !cfg.Metrics.Enabled {
         return nil;
     }
     
@@ -54,7 +54,9 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
     // Start the HTTP server
-    logger.Printlnf("Starting metrics exporter on %s:%s.", cfg.Smartnode.NodeAddress, cfg.Smartnode.NodePort)
+    metricsAddress := c.GlobalString("metricsAddress")
+    metricsPort := c.GlobalUint("metricsPort")
+    logger.Printlnf("Starting metrics exporter on %s:%s.", metricsAddress, metricsPort)
     metricsPath := "/metrics"
     http.Handle(metricsPath, handler)
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +69,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
             </html>`,
         ))
     })
-    err = http.ListenAndServe(fmt.Sprintf("%s:%s", cfg.Smartnode.NodeAddress, cfg.Smartnode.NodePort), nil)
+    err = http.ListenAndServe(fmt.Sprintf("%s:%d", metricsAddress, metricsPort), nil)
     if err != nil {
         return fmt.Errorf("Error running HTTP server: %w", err)
     }

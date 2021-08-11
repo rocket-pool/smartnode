@@ -103,6 +103,16 @@ func main() {
             Name: "nonce",
             Usage: "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
         },
+        cli.StringFlag{
+            Name:  "metricsAddress, m",
+            Usage: "Address to serve metrics on if enabled",
+            Value: "0.0.0.0",
+        },
+        cli.UintFlag{
+            Name:  "metricsPort, r",
+            Usage: "Port to serve metrics on if enabled",
+            Value: 8009,
+        },
     }
 
     // Register commands
