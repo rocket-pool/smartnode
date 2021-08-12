@@ -434,8 +434,12 @@ func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, opts *bi
     startBlock := (latestMemberCountChangedBlock / updatePricesFrequency + 1) * updatePricesFrequency
     // The number of members that have to submit each interval
     consensus := math.Floor(float64(memberCount) / 2 + 1)
-    // The number of intervals passed
-    intervalsPassed := (currentBlockNumber - startBlock) / updatePricesFrequency + 1
+    // Check if any intervals have passed
+    intervalsPassed := uint64(0)
+    if currentBlockNumber > startBlock {
+        // The number of intervals passed
+        intervalsPassed = (currentBlockNumber - startBlock) / updatePricesFrequency + 1
+    }
     // How many submissions would we expect per member given a random submission
     expected := float64(intervalsPassed) * consensus / float64(memberCount)
     // Get trusted members
@@ -517,8 +521,12 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, opts *
     startBlock := (latestMemberCountChangedBlock / updateBalancesFrequency + 1) * updateBalancesFrequency
     // The number of members that have to submit each interval
     consensus := math.Floor(float64(memberCount) / 2 + 1)
-    // The number of intervals passed
-    intervalsPassed := (currentBlockNumber - startBlock) / updateBalancesFrequency + 1
+    // Check if any intervals have passed
+    intervalsPassed := uint64(0)
+    if currentBlockNumber > startBlock {
+        // The number of intervals passed
+        intervalsPassed = (currentBlockNumber - startBlock) / updateBalancesFrequency + 1
+    }
     // How many submissions would we expect per member given a random submission
     expected := float64(intervalsPassed) * consensus / float64(memberCount)
     // Get trusted members
