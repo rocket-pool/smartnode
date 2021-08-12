@@ -64,15 +64,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         return err
     })
 
-    // Get the node registration time
-    wg.Go(func() error {
-        time, err := rewards.GetTrustedNodeRegistrationTime(rp, nodeAccount.Address, nil)
-        if err == nil {
-            response.TrustedNodeRegistrationTime = time
-        }
-        return err
-    })
-
     // Get node trusted status
     wg.Go(func() error {
         trusted, err := trustednode.GetMemberExists(rp, nodeAccount.Address, nil)
@@ -87,15 +78,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         rewards, err := rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address)
         if err == nil {
             response.CumulativeRewards = eth.WeiToEth(rewards)
-        }
-        return err
-    })
-
-    // Get cumulative ODAO rewards
-    wg.Go(func() error {
-        rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address)
-        if err == nil {
-            response.CumulativeTrustedRewards = eth.WeiToEth(rewards)
         }
         return err
     })
@@ -136,15 +118,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         return err
     })
 
-    // Get the node's oDAO RPL stake
-    wg.Go(func() error {
-        bond, err := trustednode.GetMemberRPLBondAmount(rp, nodeAccount.Address, nil)
-        if err == nil {
-            response.TrustedRplBond = eth.WeiToEth(bond)
-        }
-        return err
-    })
-
     // Get the total network effective stake
     wg.Go(func() error {
         totalEffectiveStake, err = node.GetTotalEffectiveRPLStake(rp, nil)
@@ -172,27 +145,9 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         return nil
     })
 
-    // Get the ODAO member count
-    wg.Go(func() error {
-        odaoSize, err = trustednode.GetMemberCount(rp, nil)
-        if err != nil {
-            return err
-        }
-        return nil
-    })
-
     // Get the node operator rewards percent
     wg.Go(func() error {
         nodeOperatorRewardsPercent, err = rewards.GetNodeOperatorRewardsPercent(rp, nil)
-        if err != nil {
-            return err
-        }
-        return nil
-    })
-
-    // Get the trusted node operator rewards percent
-    wg.Go(func() error {
-        trustedNodeOperatorRewardsPercent, err = rewards.GetTrustedNodeOperatorRewardsPercent(rp, nil)
         if err != nil {
             return err
         }
@@ -204,15 +159,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         unclaimedRewardsWei, err := rewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
         if err == nil {
             response.UnclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
-        }
-        return err
-    })
-
-    // Check if rewards are currently available from the previous checkpoint for the ODAO
-    wg.Go(func() error {
-        unclaimedRewardsWei, err := rewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
-        if err == nil {
-            response.UnclaimedTrustedRewards = eth.WeiToEth(unclaimedRewardsWei)
         }
         return err
     })
@@ -233,7 +179,70 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     }
 
     if response.Trusted {
+        
+        var wg2 errgroup.Group
+
+        // Get the node registration time
+        wg2.Go(func() error {
+            time, err := rewards.GetTrustedNodeRegistrationTime(rp, nodeAccount.Address, nil)
+            if err == nil {
+                response.TrustedNodeRegistrationTime = time
+            }
+            return err
+        })
+
+        // Get cumulative ODAO rewards
+        wg2.Go(func() error {
+            rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address)
+            if err == nil {
+                response.CumulativeTrustedRewards = eth.WeiToEth(rewards)
+            }
+            return err
+        })
+
+        // Get the ODAO member count
+        wg2.Go(func() error {
+            odaoSize, err = trustednode.GetMemberCount(rp, nil)
+            if err != nil {
+                return err
+            }
+            return nil
+        })
+
+        // Get the trusted node operator rewards percent
+        wg2.Go(func() error {
+            trustedNodeOperatorRewardsPercent, err = rewards.GetTrustedNodeOperatorRewardsPercent(rp, nil)
+            if err != nil {
+                return err
+            }
+            return nil
+        })
+
+        // Get the node's oDAO RPL stake
+        wg2.Go(func() error {
+            bond, err := trustednode.GetMemberRPLBondAmount(rp, nodeAccount.Address, nil)
+            if err == nil {
+                response.TrustedRplBond = eth.WeiToEth(bond)
+            }
+            return err
+        })
+
+        // Check if rewards are currently available from the previous checkpoint for the ODAO
+        wg2.Go(func() error {
+            unclaimedRewardsWei, err := rewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
+            if err == nil {
+                response.UnclaimedTrustedRewards = eth.WeiToEth(unclaimedRewardsWei)
+            }
+            return err
+        })
+
+        // Wait for data
+        if err := wg2.Wait(); err != nil {
+            return nil, err
+        }
+
         response.EstimatedTrustedRewards = totalRplAtNextCheckpoint * trustedNodeOperatorRewardsPercent / float64(odaoSize)
+    
     }
 
     // Return response
