@@ -49,7 +49,7 @@ func getRewards(c *cli.Context) error {
     }
     if rewards.UnclaimedTrustedRewards > 0 {
         fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle's Oracle DAO duties. If you don't claim them before the above date, you will lose them!%s\n", 
-            colorYellow, rewards.UnclaimedRewards, colorReset)
+            colorYellow, rewards.UnclaimedTrustedRewards, colorReset)
     }
 
     fmt.Println()
