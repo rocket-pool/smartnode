@@ -29,6 +29,9 @@ func getRewards(c *cli.Context) error {
         return nil;
     }
 
+    colorReset := "\033[0m"
+    colorYellow := "\033[33m"
+
     nextRewardsTime := rewards.LastCheckpoint.Add(rewards.RewardsInterval)
     nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
     timeToCheckpointString := time.Until(nextRewardsTime).Round(time.Second).String()
@@ -38,8 +41,18 @@ func getRewards(c *cli.Context) error {
     rplApr := rewards.EstimatedRewards / rewards.TotalRplStake / rewards.RewardsInterval.Hours() * (24*365) * 100
 
     fmt.Printf("The current rewards cycle started on %s.\n", cliutils.GetDateTimeString(uint64(rewards.LastCheckpoint.Unix())))
-    fmt.Printf("It will end on %s (%s from now).\n\n", nextRewardsTimeString, timeToCheckpointString)
+    fmt.Printf("It will end on %s (%s from now).\n", nextRewardsTimeString, timeToCheckpointString)
     
+    if rewards.UnclaimedRewards > 0 {
+        fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle. If you don't claim them before the above date, you will lose them!%s\n", 
+            colorYellow, rewards.UnclaimedRewards, colorReset)
+    }
+    if rewards.UnclaimedTrustedRewards > 0 {
+        fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle's Oracle DAO duties. If you don't claim them before the above date, you will lose them!%s\n", 
+            colorYellow, rewards.UnclaimedRewards, colorReset)
+    }
+
+    fmt.Println()
     fmt.Printf("Your estimated RPL staking rewards for this cycle: %f RPL (this may change based on network activity).\n", rewards.EstimatedRewards)
     fmt.Printf("Based on your current total stake of %f RPL, this is approximately %.2f%% APR.\n", rewards.TotalRplStake, rplApr)
     fmt.Printf("Your node has received %f RPL staking rewards in total.\n", rewards.CumulativeRewards)

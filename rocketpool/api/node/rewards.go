@@ -199,6 +199,25 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         return nil
     })
 
+    // Check if rewards are currently available from the previous checkpoint
+    wg.Go(func() error {
+        unclaimedRewardsWei, err := rewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.UnclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
+        }
+        return err
+    })
+
+    // Check if rewards are currently available from the previous checkpoint for the ODAO
+    wg.Go(func() error {
+        unclaimedRewardsWei, err := rewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
+        if err == nil {
+            response.UnclaimedTrustedRewards = eth.WeiToEth(unclaimedRewardsWei)
+        }
+        return err
+    })
+
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err
