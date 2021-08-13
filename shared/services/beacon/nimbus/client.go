@@ -38,7 +38,7 @@ type Client struct {
 func NewClient(providerAddress string) (*Client, error) {
 
     // Start the RPC connection
-    client, err := rpc.DialHTTP("http://" + providerAddress)
+    client, err := rpc.DialHTTP(providerAddress)
     if err != nil {
         return nil, fmt.Errorf("Could not connect to Nimbus RPC server: %s", err)
     }

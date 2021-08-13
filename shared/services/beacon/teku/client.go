@@ -22,8 +22,7 @@ import (
 
 // Config
 const (
-    RequestUrlFormat   = "%s://%s%s"
-    RequestProtocol    = "http"
+    RequestUrlFormat   = "%s%s"
     RequestContentType = "application/json"
 
     RequestSyncStatusPath          = "/eth/v1/node/syncing"
@@ -475,7 +474,7 @@ func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
 func (c *Client) getRequest(requestPath string) ([]byte, int, error) {
 
     // Send request
-    response, err := http.Get(fmt.Sprintf(RequestUrlFormat, RequestProtocol, c.providerAddress, requestPath))
+    response, err := http.Get(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath))
     if err != nil {
         return []byte{}, 0, err
     }
@@ -505,7 +504,7 @@ func (c *Client) postRequest(requestPath string, requestBody interface{}) ([]byt
     requestBodyReader := bytes.NewReader(requestBodyBytes)
 
     // Send request
-    response, err := http.Post(fmt.Sprintf(RequestUrlFormat, RequestProtocol, c.providerAddress, requestPath), RequestContentType, requestBodyReader)
+    response, err := http.Post(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), RequestContentType, requestBodyReader)
     if err != nil {
         return []byte{}, 0, err
     }

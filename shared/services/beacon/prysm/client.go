@@ -3,6 +3,7 @@ package prysm
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	pbtypes "github.com/gogo/protobuf/types"
@@ -25,7 +26,11 @@ type Client struct {
 // Create new prysm client
 func NewClient(providerAddress string) (*Client, error) {
 
-    // Initialize gRPC connection
+    // Initialize gRPC connection - remove the prefix if present (e.g. HTTP or HTTPS)
+    elements := strings.Split(providerAddress, "://")
+    if len(elements) > 1 {
+		providerAddress = elements[len(elements)-1]
+	}
     conn, err := grpc.Dial(providerAddress, grpc.WithInsecure(), grpc.WithBlock())
     if err != nil {
         return nil, fmt.Errorf("Could not connect to gRPC server: %w", err)
