@@ -479,6 +479,8 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     }
     if cfg.Metrics.Enabled {
         env = append(env, "ENABLE_METRICS=1")
+    } else {
+        env = append(env, "ENABLE_METRICS=0")
     }
     paramsSet := map[string]bool{}
     for _, param := range cfg.Chains.Eth1.Client.Params {
