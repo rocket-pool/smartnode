@@ -60,7 +60,11 @@ func configureService(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Println("Done! Run 'rocketpool service start' to apply new configuration settings.")
+    fmt.Println("Done!\n")
+    colorReset := "\033[0m"
+    colorYellow := "\033[33m"
+    fmt.Printf("%sNOTE:\n", colorYellow)
+    fmt.Printf("Please run 'rocketpool service stop' and 'rocketpool service start' to apply any changes you made.%s\n", colorReset)
     return nil
 
 }
