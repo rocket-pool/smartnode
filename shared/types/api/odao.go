@@ -44,6 +44,12 @@ type TNDAOProposalsResponse struct {
     Proposals []dao.ProposalDetails `json:"proposals"`
 }
 
+type TNDAOProposalResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    Proposals dao.ProposalDetails   `json:"proposal"`
+}
+
 
 type CanProposeTNDAOInviteResponse struct {
     Status string                   `json:"status"`

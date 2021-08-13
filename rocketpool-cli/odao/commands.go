@@ -307,13 +307,41 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Aliases:   []string{"l"},
                         Usage:     "List the oracle DAO proposals",
                         UsageText: "rocketpool odao proposals list",
+                        Flags: []cli.Flag{
+                            cli.StringFlag{
+                                Name:  "states, s",
+                                Usage: "Comma separated list of states to filter ('pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', or 'expired')",
+                                Value: "",
+                            },
+                        },
                         Action: func(c *cli.Context) error {
 
                             // Validate args
                             if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                             // Run
-                            return getProposals(c)
+                            return getProposals(c, c.String("states"))
+
+                        },
+                    },
+
+                    cli.Command{
+                        Name:      "details",
+                        Aliases:   []string{"d"},
+                        Usage:     "View proposal details",
+                        UsageText: "rocketpool odao proposals details proposal-id",
+                        Action: func(c *cli.Context) error {
+
+                            // Validate args
+                            var err error
+                            if err = cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                            id, err := cliutils.ValidateUint("proposal-id", c.Args().Get(0))
+                            if err != nil {
+                                return err
+                            }
+
+                            // Run
+                            return getProposal(c, id)
 
                         },
                     },

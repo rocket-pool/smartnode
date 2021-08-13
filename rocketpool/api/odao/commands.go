@@ -67,6 +67,28 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "proposal-details",
+                Aliases:   []string{"d"},
+                Usage:     "Get details of a proposal",
+                UsageText: "rocketpool api odao proposal-details proposal-id",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    var err error
+                    if err = cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    id, err := cliutils.ValidateUint("proposal-id", c.Args().Get(0))
+                    if err != nil{
+                        return err
+                    }
+
+                    // Run
+                    api.PrintResponse(getProposal(c, id))
+                    return nil
+
+                },
+            },
+
+            cli.Command{
                 Name:      "can-propose-invite",
                 Usage:     "Check whether the node can propose inviting a new member",
                 UsageText: "rocketpool api odao can-propose-invite member-address member-id member-url",

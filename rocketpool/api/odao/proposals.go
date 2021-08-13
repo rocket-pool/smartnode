@@ -33,7 +33,40 @@ func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
     if err != nil {
         return nil, err
     }
+
     response.Proposals = proposals
+
+    // Return response
+    return &response, nil
+
+}
+
+func getProposal(c *cli.Context, id uint64) (*api.TNDAOProposalResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.TNDAOProposalResponse{}
+
+    // Get node account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
+    // Get proposals
+    proposal, err := dao.GetProposalDetailsWithMember(rp, id, nodeAccount.Address, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    response.Proposals = proposal
 
     // Return response
     return &response, nil
