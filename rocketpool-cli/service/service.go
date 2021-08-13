@@ -39,15 +39,18 @@ func installService(c *cli.Context) error {
     if err != nil { return err }
 
     // Print success message & return
+    colorReset := "\033[0m"
+    colorYellow := "\033[33m"
     fmt.Println("")
     fmt.Printf("The Rocket Pool service was successfully installed %s!\n", location)
     if c.GlobalString("host") == "" {
         fmt.Println("")
-        fmt.Println("Please start a new shell session to apply updated user permissions.")
-        fmt.Println("(To start a new shell session, log out and back in.)")
+        fmt.Printf("%sNOTE:\nIf this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
+        fmt.Println("This is necessary for your user account to have permissions to use Docker.")
+        fmt.Printf("If you have installed Rocket Pool previously and are just upgrading, you can safely ignore this message.%s\n", colorReset)
         fmt.Println("")
     }
-    fmt.Println("Run 'rocketpool service config' to configure the service before starting it.")
+    fmt.Println("Please run 'rocketpool service config' to configure the service before starting it.")
     return nil
 
 }
