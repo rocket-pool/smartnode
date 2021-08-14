@@ -26,7 +26,7 @@ import (
 
 // Config
 const (
-    InstallerURL = "https://github.com/rocket-pool/smartnode-install/releases/latest/download/install.sh"
+    InstallerURL = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
 
     GlobalConfigFile = "config.yml"
     UserConfigFile = "settings.yml"
@@ -241,7 +241,7 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
     }
 
     // Initialize installation command
-    cmd, err := c.newCommand(fmt.Sprintf("%s %s | sh -s -- %s", downloader, InstallerURL, strings.Join(flags, " ")))
+    cmd, err := c.newCommand(fmt.Sprintf("%s %s | sh -s -- %s", downloader, fmt.Sprintf(InstallerURL, version), strings.Join(flags, " ")))
     if err != nil { return err }
     defer func() {
         _ = cmd.Close()
