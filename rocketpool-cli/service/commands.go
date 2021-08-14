@@ -1,8 +1,11 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -46,7 +49,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     cli.StringFlag{
                         Name:  "version, v",
                         Usage: "The smart node package version to install",
-                        Value: "latest",
+                        Value: fmt.Sprintf("v%s", shared.RocketPoolVersion),
                     },
                 },
                 Action: func(c *cli.Context) error {
