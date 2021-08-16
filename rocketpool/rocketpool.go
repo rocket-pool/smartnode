@@ -111,7 +111,7 @@ func main() {
         cli.UintFlag{
             Name:  "metricsPort, r",
             Usage: "Port to serve metrics on if enabled",
-            Value: 8009,
+            Value: 9102,
         },
     }
 

@@ -59,6 +59,9 @@ type NodeCollector struct {
     // The token balances of your node wallet
     balances                *prometheus.Desc
 
+    // The number of active minipools owned by the node
+    activeMinipoolCount           *prometheus.Desc
+
     // The amount of ETH this node deposited into minipools
     depositedEth            *prometheus.Desc
 
@@ -114,6 +117,10 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			"How much ETH is in this node wallet",
 			[]string{"Token"}, nil,
 		),
+		activeMinipoolCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_minipool_count"),
+			"The number of active minipools owned by the node",
+			nil, nil,
+		),
 		depositedEth: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "deposited_eth"),
 			"The amount of ETH this node deposited into minipools",
 			nil, nil,
@@ -145,6 +152,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.expectedRplRewards
 	channel <- collector.rplApr
 	channel <- collector.balances
+	channel <- collector.activeMinipoolCount
 	channel <- collector.depositedEth
 	channel <- collector.beaconShare
 	channel <- collector.unclaimedRewards
@@ -168,7 +176,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     oldRplBalance := float64(-1)
     newRplBalance := float64(-1)
     rethBalance := float64(-1)
-    var activeMinipoolCount uint64
+    var activeMinipoolCount float64
     var rplPrice float64
     collateralRatio := float64(-1)
     var addresses []common.Address
@@ -277,7 +285,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
         if err != nil {
             return fmt.Errorf("Error getting node active minipool count: %w", err)
         }
-        activeMinipoolCount = _activeMinipoolCount
+        activeMinipoolCount = float64(_activeMinipoolCount)
         return nil
     })
 
@@ -341,7 +349,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
     // Calculate the collateral ratio
     if activeMinipoolCount > 0 {
-        collateralRatio = rplPrice * stakedRpl / (float64(activeMinipoolCount) * 16.0)
+        collateralRatio = rplPrice * stakedRpl / (activeMinipoolCount * 16.0)
     }
 
     // Calculate the total deposits and corresponding beacon chain balance share
@@ -380,6 +388,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
         collector.balances, prometheus.GaugeValue, newRplBalance, "New RPL")
     channel <- prometheus.MustNewConstMetric(
         collector.balances, prometheus.GaugeValue, rethBalance, "rETH")
+    channel <- prometheus.MustNewConstMetric(
+        collector.activeMinipoolCount, prometheus.GaugeValue, activeMinipoolCount)
     channel <- prometheus.MustNewConstMetric(
         collector.depositedEth, prometheus.GaugeValue, totalDepositBalance)
     channel <- prometheus.MustNewConstMetric(
@@ -446,6 +456,7 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
     var wg errgroup.Group
     var status types.MinipoolStatus
     var nodeDepositBalance *big.Int
+    var finalized bool
 
     // Load data
     wg.Go(func() error {
@@ -458,6 +469,11 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
         nodeDepositBalance, err = mp.GetNodeDepositBalance(opts)
         return err
     })
+    wg.Go(func() error {
+        var err error
+        finalized, err = mp.GetFinalised(opts)
+        return err
+    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
@@ -467,6 +483,15 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
     // Deal with pools that haven't received deposits yet so their balance is still 0
     if nodeDepositBalance == nil {
         nodeDepositBalance = big.NewInt(0)
+    }
+
+    // Ignore finalized minipools
+    if finalized {
+        return minipoolBalanceDetails{
+            NodeDeposit: big.NewInt(0),
+            NodeBalance: big.NewInt(0),
+            TotalBalance: big.NewInt(0),
+        }, nil
     }
 
     // Use node deposit balance if initialized or prelaunch
