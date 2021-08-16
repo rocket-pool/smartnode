@@ -118,6 +118,16 @@ func ValidateTokenType(name, value string) (string, error) {
 }
 
 
+// Validate a proposal type
+func ValidateProposalType(name, value string) (string, error) {
+    val := strings.ToLower(value)
+    if !(val == "pending" || val == "active" || val == "succeeded" || val == "executed" || val == "cancelled" || val == "defeated" || val == "expired" || val == "all") {
+        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', 'expired', and 'all'", name, value)
+    }
+    return val, nil
+}
+
+
 //
 // Command specific types
 //

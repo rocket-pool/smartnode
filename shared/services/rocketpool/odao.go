@@ -65,6 +65,23 @@ func (c *Client) TNDAOProposals() (api.TNDAOProposalsResponse, error) {
 }
 
 
+// Get a single oracle DAO proposal
+func (c *Client) TNDAOProposal(id uint64) (api.TNDAOProposalResponse, error) {
+    responseBytes, err := c.callAPI("odao proposal-details", string(id))
+    if err != nil {
+        return api.TNDAOProposalResponse{}, fmt.Errorf("Could not get oracle DAO proposal: %w", err)
+    }
+    var response api.TNDAOProposalResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.TNDAOProposalResponse{}, fmt.Errorf("Could not decode oracle DAO proposal response: %w", err)
+    }
+    if response.Error != "" {
+        return api.TNDAOProposalResponse{}, fmt.Errorf("Could not get oracle DAO proposal: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Check whether the node can propose inviting a new member
 func (c *Client) CanProposeInviteToTNDAO(memberAddress common.Address, memberId, memberUrl string) (api.CanProposeTNDAOInviteResponse, error) {
     responseBytes, err := c.callAPI("odao can-propose-invite", memberAddress.Hex(), memberId, memberUrl)

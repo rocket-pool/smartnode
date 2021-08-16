@@ -78,6 +78,10 @@ func main() {
             Usage: "Eth 1.0 provider type if not using `URL`: Infura or Pocket",
             Value: "infura",
         },
+        cli.BoolFlag{
+            Name:  "verbose, V",
+            Usage: "Enables logging of all incoming and outgoing proxied data",
+        },
     }
 
     // Set application action
@@ -89,7 +93,7 @@ func main() {
 
         // HTTP server
         go func() {
-            proxyServer := proxy.NewHttpProxyServer(c.GlobalString("httpPort"), c.GlobalString("httpProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"), c.GlobalString("providerType"))
+            proxyServer := proxy.NewHttpProxyServer(c.GlobalString("httpPort"), c.GlobalString("httpProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"), c.GlobalString("providerType"), c.GlobalBool("verbose"))
             err := proxyServer.Start()
             if err != nil {
                 log.Fatalf("Could not start HTTP proxy server %v", err)
@@ -101,7 +105,7 @@ func main() {
         // Websocket server
         go func() {
             if c.GlobalString("providerType") == "infura" || c.GlobalString("wsProviderUrl") != "" {
-                proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("wsProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"))
+                proxyServer := proxy.NewWsProxyServer(c.GlobalString("wsPort"), c.GlobalString("wsProviderUrl"), c.GlobalString("network"), c.GlobalString("projectId"), c.GlobalBool("verbose"))
                 err := proxyServer.Start()
                 if err != nil {
                     log.Fatalf("Could not start websocket proxy server %v", err)

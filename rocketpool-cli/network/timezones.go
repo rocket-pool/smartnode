@@ -29,7 +29,7 @@ func getTimezones(c *cli.Context) error {
     for timezoneName := range response.TimezoneCounts {
         if timezoneName != "Other" {
             timezoneNames = append(timezoneNames, timezoneName)
-            nameLength := len(timezoneName)
+            nameLength := len(timezoneName) + 2
             if nameLength > maxNameLength {
                 maxNameLength = nameLength
             }

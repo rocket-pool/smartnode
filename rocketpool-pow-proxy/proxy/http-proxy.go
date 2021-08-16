@@ -1,12 +1,14 @@
 package proxy
 
 import (
-	"errors"
+    "bytes"
+    "errors"
 	"fmt"
-	"io"
+    "io"
 	"log"
 	"net/http"
 	"os"
+    "strings"
 )
 
 // Config
@@ -18,11 +20,12 @@ const PocketURL = "https://%s.gateway.pokt.network/v1/%s"
 type HttpProxyServer struct {
     Port string
     ProviderUrl string
+    Verbose bool
 }
 
 
 // Create new proxy server
-func NewHttpProxyServer(port string, providerUrl string, network string, projectId string, providerType string) *HttpProxyServer {
+func NewHttpProxyServer(port string, providerUrl string, network string, projectId string, providerType string, verbose bool) *HttpProxyServer {
 
     // Default provider to Infura
     if providerType == "infura" {
@@ -38,6 +41,7 @@ func NewHttpProxyServer(port string, providerUrl string, network string, project
     return &HttpProxyServer{
         Port: port,
         ProviderUrl: providerUrl,
+        Verbose: verbose,
     }
 
 }
@@ -54,6 +58,16 @@ func (p *HttpProxyServer) Start() error {
 
 }
 
+func printReader(r io.Reader, prefix string) (io.Reader, error) {
+    buf := new(bytes.Buffer)
+    _, err := buf.ReadFrom(r)
+    if err != nil {
+        return nil, err
+    }
+    s := buf.String()
+    fmt.Printf("%s%s\n", prefix, s)
+    return strings.NewReader(s), nil
+}
 
 // Handle request / serve response
 func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -69,8 +83,22 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Log request if in verbose mode
+    var reader io.Reader
+    if p.Verbose {
+        var err error
+        reader, err = printReader(r.Body, "< ")
+        if err != nil {
+            log.Println(fmt.Errorf("Error forwarding request to remote server: %w", err))
+            _, _ = fmt.Fprintln(w, fmt.Errorf("Error forwarding request to remote server: %w", err))
+            return
+        }
+    } else {
+        reader = r.Body
+    }
+
     // Forward request to provider
-    response, err := http.Post(p.ProviderUrl, contentTypes[0], r.Body)
+    response, err := http.Post(p.ProviderUrl, contentTypes[0], reader)
     if err != nil {
         log.Println(fmt.Errorf("Error forwarding request to remote server: %w", err))
         _, _ = fmt.Fprintln(w, fmt.Errorf("Error forwarding request to remote server: %w", err))
@@ -83,8 +111,21 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     // Set response writer header
     w.Header().Set("Content-Type", "application/json")
 
+    // Log response if in verbose mode
+    if p.Verbose {
+        var err error
+        reader, err = printReader(response.Body, "> ")
+        if err != nil {
+            log.Println(fmt.Errorf("Error reading response from remote server: %w", err))
+            _, _ =fmt.Fprintln(w, fmt.Errorf("Error reading response from remote server: %w", err))
+            return
+        }
+    } else {
+        reader = r.Body
+    }
+
     // Copy provider response body to response writer
-    _, err = io.Copy(w, response.Body)
+    _, err = io.Copy(w, reader)
     if err != nil {
         log.Println(fmt.Errorf("Error reading response from remote server: %w", err))
         _, _ =fmt.Fprintln(w, fmt.Errorf("Error reading response from remote server: %w", err))

@@ -17,11 +17,12 @@ const InfuraWsURL = "wss://%s.infura.io/ws/v3/%s"
 type WsProxyServer struct {
     Port string
     ProviderUrl string
+    Verbose bool
 }
 
 
 // Create new proxy server
-func NewWsProxyServer(port string, providerUrl string, network string, projectId string) *WsProxyServer {
+func NewWsProxyServer(port string, providerUrl string, network string, projectId string, verbose bool) *WsProxyServer {
 
     // Default provider to Infura
     if providerUrl == "" {
@@ -32,6 +33,7 @@ func NewWsProxyServer(port string, providerUrl string, network string, projectId
     return &WsProxyServer{
         Port: port,
         ProviderUrl: providerUrl,
+        Verbose: verbose,
     }
 
 }
@@ -91,6 +93,11 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			    break
 		    }
 
+		    // Log it if in verbose mode
+		    if p.Verbose {
+		    	fmt.Printf("< %d %s\n", mt, message)
+			}
+
             // Send it to the remote server
             if err = infuraConnection.WriteMessage(mt, message); err != nil {
                 log.Println(fmt.Errorf("Error writing to remote websocket: %w", err))
@@ -113,7 +120,12 @@ func (p *WsProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			    break
 		    }
 
-            // Send it to eth2
+			// Log it if in verbose mode
+			if p.Verbose {
+				fmt.Printf("> %d %s\n", mt, message)
+			}
+
+			// Send it to eth2
             if err = eth2Connection.WriteMessage(mt, message); err != nil {
                 log.Println(fmt.Errorf("Error writing to eth2: %w", err))
                 _, _ = fmt.Fprintln(w, fmt.Errorf("Error writing to eth2: %w", err))
