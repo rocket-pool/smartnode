@@ -32,6 +32,7 @@ type minipoolBalanceDetails struct {
     IsStaking bool
     NodeDeposit *big.Int
     NodeBalance *big.Int
+    TotalBalance *big.Int
 }
 
 
@@ -63,6 +64,12 @@ type NodeCollector struct {
 
     // The node's total share of its minipool's beacon chain balances 
     beaconShare             *prometheus.Desc
+
+    // The total balances of all this node's validators on the beacon chain
+    beaconBalance           *prometheus.Desc
+
+    // The RPL rewards from the last period that have not been claimed yet
+    unclaimedRewards        *prometheus.Desc
 
 	// The Rocket Pool contract manager
 	rp 					    *rocketpool.RocketPool
@@ -112,8 +119,16 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 			nil, nil,
 		),
 		beaconShare: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "beacon_share"),
-			"The node's total share of its minipool's beacon chain balances ",
+			"The node's total share of its minipool's beacon chain balances",
 			nil, nil,
+		),
+		beaconBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "beacon_balance"),
+			"The total balances of all this node's validators on the beacon chain",
+			nil, nil,
+        ),
+        unclaimedRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "unclaimed_rewards"),
+            "The RPL rewards from the last period that have not been claimed yet",
+            nil, nil,
 		),
 		rp: rp,
         bc: bc,
@@ -132,6 +147,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.balances
 	channel <- collector.depositedEth
 	channel <- collector.beaconShare
+	channel <- collector.unclaimedRewards
 }
 
 
@@ -157,6 +173,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     collateralRatio := float64(-1)
     var addresses []common.Address
     var beaconHead beacon.BeaconHead
+    unclaimedRewards := float64(-1)
 
     // Get the total staked RPL
     wg.Go(func() error {
@@ -294,6 +311,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
         return nil
     })
 
+    // Get the RPL price
+    wg.Go(func() error {
+        unclaimedRewardsWei, err := rewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil)
+        if err != nil {
+            return fmt.Errorf("Error getting RPL price: %w", err)
+        }
+        unclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
+        return nil
+    })
+
     // Wait for data
     if err := wg.Wait(); err != nil {
         log.Printf("%s\n", err.Error())
@@ -325,9 +352,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     }
     totalDepositBalance := float64(0)
     totalNodeShare := float64(0)
+    totalBeaconBalance := float64(0)
     for _, minipool := range minipoolDetails {
         totalDepositBalance += eth.WeiToEth(minipool.NodeDeposit)
         totalNodeShare += eth.WeiToEth(minipool.NodeBalance)
+        totalBeaconBalance += eth.WeiToEth(minipool.TotalBalance)
     }
 
     // Update all the metrics
@@ -355,7 +384,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
         collector.depositedEth, prometheus.GaugeValue, totalDepositBalance)
     channel <- prometheus.MustNewConstMetric(
         collector.beaconShare, prometheus.GaugeValue, totalNodeShare)
-
+    channel <- prometheus.MustNewConstMetric(
+        collector.beaconBalance, prometheus.GaugeValue, totalBeaconBalance)
+    channel <- prometheus.MustNewConstMetric(
+        collector.unclaimedRewards, prometheus.GaugeValue, unclaimedRewards)
 }
 
 
@@ -408,6 +440,7 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
     if err != nil {
         return minipoolBalanceDetails{}, err
     }
+    blockBalance := eth.GweiToWei(float64(validator.Balance))
 
     // Data
     var wg errgroup.Group
@@ -441,6 +474,7 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
         return minipoolBalanceDetails{
             NodeDeposit: nodeDepositBalance,
             NodeBalance: nodeDepositBalance,
+            TotalBalance: blockBalance,
         }, nil
     }
 
@@ -449,11 +483,11 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
         return minipoolBalanceDetails{
             NodeDeposit: nodeDepositBalance,
             NodeBalance: nodeDepositBalance,
+            TotalBalance: blockBalance,
         }, nil
     }
 
     // Get node balance at block
-    blockBalance := eth.GweiToWei(float64(validator.Balance))
     nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
     if err != nil {
         return minipoolBalanceDetails{}, err
@@ -464,6 +498,7 @@ func (collector *NodeCollector) getMinipoolBalanceDetails(minipoolAddress common
         IsStaking: (validator.ExitEpoch > blockEpoch),
         NodeDeposit: nodeDepositBalance,
         NodeBalance: nodeBalance,
+        TotalBalance: blockBalance,
     }, nil
 
 }

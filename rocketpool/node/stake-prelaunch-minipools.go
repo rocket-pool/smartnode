@@ -112,6 +112,7 @@ func (t *stakePrelaunchMinipools) run() error {
     for _, mp := range minipools {
         if err := t.stakeMinipool(mp, eth2Config); err != nil {
             t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
+            return err
         }
     }
 
