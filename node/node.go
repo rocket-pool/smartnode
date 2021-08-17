@@ -419,8 +419,8 @@ func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, opts *bi
         return nil, err
     }
     currentBlockNumber := currentBlock.Number.Uint64()
-    // Get the block of the most recent member join (limiting to 200 intervals)
-    minBlock := (currentBlockNumber / updatePricesFrequency - 200) * updatePricesFrequency
+    // Get the block of the most recent member join (limiting to 50 intervals)
+    minBlock := (currentBlockNumber / updatePricesFrequency - 50) * updatePricesFrequency
     latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp, minBlock)
     if err != nil {
         return nil, err
@@ -506,8 +506,8 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, opts *
         return nil, err
     }
     currentBlockNumber := currentBlock.Number.Uint64()
-    // Get the block of the most recent member join (limiting to 200 intervals)
-    minBlock := (currentBlockNumber / updateBalancesFrequency - 200) * updateBalancesFrequency
+    // Get the block of the most recent member join (limiting to 50 intervals)
+    minBlock := (currentBlockNumber / updateBalancesFrequency - 50) * updateBalancesFrequency
     latestMemberCountChangedBlock, err := getLatestMemberCountChangedBlock(rp, minBlock)
     if err != nil {
         return nil, err
