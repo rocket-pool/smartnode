@@ -457,10 +457,10 @@ func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, opts *bi
         actual := 0
         if (intervalsPassed > 0) {
             blocks, err := GetBalanceSubmissions(rp, member.Address, startBlock)
-            actual = len(*blocks)
             if err != nil {
                 return nil, err
             }
+            actual = len(*blocks)
             delta := float64(actual) - expected
             chi += (delta * delta) / expected
             // Add to participation table
@@ -544,10 +544,10 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, opts *
         actual := 0
         if (intervalsPassed > 0) {
             blocks, err := GetBalanceSubmissions(rp, member.Address, startBlock)
-            actual = len(*blocks)
             if err != nil {
                 return nil, err
             }
+            actual = len(*blocks)
             delta := float64(actual) - expected
             chi += (delta * delta) / expected
             // Add to participation table
