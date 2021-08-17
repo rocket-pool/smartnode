@@ -2,7 +2,8 @@ package node
 
 import (
 	"fmt"
-	"math/big"
+    "github.com/rocket-pool/smartnode/shared/types/api"
+    "math/big"
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -181,9 +182,19 @@ func nodeStakeRpl(c *cli.Context) error {
         return nil
     }
 
+    // Check allownace
+    allowance, err := rp.GetNodeStakeRplAllowance()
+    if err != nil {
+        return err
+    }
+
     // Display gas estimate
     rp.PrintGasInfo(canStake.GasInfo)
-    rp.PrintMultiTxWarning()
+
+    if allowance.Allowance.Cmp(amountWei) < 0 {
+        // Display multi tx warning
+        rp.PrintMultiTxWarning()
+    }
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach over 150%% collateral!", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
@@ -191,25 +202,39 @@ func nodeStakeRpl(c *cli.Context) error {
         return nil
     }
 
-    // Approve RPL for staking
-    response, err := rp.NodeStakeRplApprove(amountWei)
-    if err != nil {
-        return err
-    }
-    hash := response.ApproveTxHash
-    fmt.Printf("Approving RPL for staking...\n")
-    cliutils.PrintTransactionHashNoCancel(rp, hash)
+    var stakeResponse api.NodeStakeRplStakeResponse
+    if allowance.Allowance.Cmp(amountWei) < 0 {
+        // Calculate max uint256 value
+        maxApproval := big.NewInt(2)
+        maxApproval = maxApproval.Exp(maxApproval, big.NewInt(256), nil)
+        maxApproval = maxApproval.Sub(maxApproval, big.NewInt(1))
+        // Approve RPL for staking
+        response, err := rp.NodeStakeRplApprove(maxApproval)
+        if err != nil {
+            return err
+        }
+        hash := response.ApproveTxHash
+        fmt.Printf("Approving RPL for staking (only required on first stake)...\n")
+        cliutils.PrintTransactionHashNoCancel(rp, hash)
 
-    // If a custom nonce is set, increment it for the next transaction
-    if c.GlobalUint64("nonce") != 0 {
-        rp.IncrementCustomNonce()
+        // If a custom nonce is set, increment it for the next transaction
+        if c.GlobalUint64("nonce") != 0 {
+            rp.IncrementCustomNonce()
+        }
+
+        // Stake RPL
+        stakeResponse, err = rp.NodeWaitAndStakeRpl(amountWei, hash)
+        if err != nil {
+            return err
+        }
+    } else {
+        // Stake RPL
+        stakeResponse, err = rp.NodeStakeRpl(amountWei)
+        if err != nil {
+            return err
+        }
     }
 
-    // Stake RPL
-    stakeResponse, err := rp.NodeStakeRpl(amountWei, hash)
-    if err != nil {
-        return err
-    }
     fmt.Printf("Staking RPL...\n")
     cliutils.PrintTransactionHash(rp, stakeResponse.StakeTxHash)
     if _, err = rp.WaitForTransaction(stakeResponse.StakeTxHash); err != nil {

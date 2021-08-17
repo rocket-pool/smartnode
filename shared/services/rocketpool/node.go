@@ -260,9 +260,9 @@ func (c *Client) NodeStakeRplApprove(amountWei *big.Int) (api.NodeStakeRplApprov
 }
 
 
-// Stake RPL against the node
-func (c *Client) NodeStakeRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeStakeRplStakeResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl %s %s", amountWei.String(), approvalTxHash.String()))
+// Stake RPL against the node waiting for approvalTxHash to be mined first
+func (c *Client) NodeWaitAndStakeRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeStakeRplStakeResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-stake-rpl %s %s", amountWei.String(), approvalTxHash.String()))
     if err != nil {
         return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
     }
@@ -272,6 +272,39 @@ func (c *Client) NodeStakeRpl(amountWei *big.Int, approvalTxHash common.Hash) (a
     }
     if response.Error != "" {
         return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Stake RPL against the node
+func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplStakeResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl %s", amountWei.String()))
+    if err != nil {
+        return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
+    }
+    var response api.NodeStakeRplStakeResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not decode stake node RPL response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %s", response.Error)
+    }
+    return response, nil
+}
+
+// Get a node's RPL allowance for the staking contract
+func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl-allowance"))
+    if err != nil {
+        return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node state RPL allowance: %w", err)
+    }
+    var response api.NodeStakeRplAllowanceResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not decode node stake RPL allowance response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node stake RPL allowance: %s", response.Error)
     }
     return response, nil
 }

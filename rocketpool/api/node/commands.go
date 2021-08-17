@@ -286,9 +286,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
-                Name:      "stake-rpl",
+                Name:      "wait-and-stake-rpl",
                 Aliases:   []string{"k2"},
-                Usage:     "Stake RPL against the node",
+                Usage:     "Stake RPL against the node waiting for tx-hash to be mined first",
                 UsageText: "rocketpool api node stake-rpl amount tx-hash",
                 Action: func(c *cli.Context) error {
 
@@ -301,6 +301,39 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(waitForApprovalAndStakeRpl(c, amountWei, hash))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "stake-rpl-allowance",
+                Usage:     "Get the node's RPL allowance for the staking contract",
+                UsageText: "rocketpool api node stake-allowance-rpl",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(allowanceRpl(c))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "stake-rpl",
+                Aliases:   []string{"k3"},
+                Usage:     "Stake RPL against the node",
+                UsageText: "rocketpool api node stake-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("stake amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(stakeRpl(c, amountWei))
                     return nil
 
                 },

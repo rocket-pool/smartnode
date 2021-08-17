@@ -77,6 +77,40 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 
 }
 
+func allowanceRpl(c *cli.Context) (*api.NodeStakeRplAllowanceResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.NodeStakeRplAllowanceResponse{}
+
+    // Get staking contract address
+    rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking")
+    if err != nil {
+        return nil, err
+    }
+
+    // Get node account
+    account, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
+    // Get node's RPL allowance
+    allowance, err := tokens.GetRPLAllowance(rp, account.Address, *rocketNodeStakingAddress, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    response.Allowance = allowance
+
+    return &response, nil
+}
 
 func approveRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveResponse, error) {
 
@@ -121,8 +155,6 @@ func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
-    w, err := services.GetWallet(c)
-    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
     
@@ -132,9 +164,24 @@ func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.
         return nil, err
     }
 
+    // Perform the stake
+    return stakeRpl(c, amountWei)
+
+}
+
+
+func stakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplStakeResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
     // Response
     response := api.NodeStakeRplStakeResponse{}
-    
+
     // Stake RPL
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {
@@ -154,4 +201,3 @@ func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.
     return &response, nil
 
 }
-
