@@ -148,6 +148,11 @@ type NodeStakeRplStakeResponse struct {
     Error string                        `json:"error"`
     StakeTxHash common.Hash             `json:"stakeTxHash"`
 }
+type NodeStakeRplAllowanceResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    Allowance *big.Int                  `json:"allowance"`
+}
 
 
 type CanNodeWithdrawRplResponse struct {
