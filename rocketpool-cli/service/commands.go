@@ -228,6 +228,37 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "install-update-tracker",
+                Aliases:   []string{"d"},
+                Usage:     "Install the update tracker that provides the available system update count to the metrics dashboard",
+                UsageText: "rocketpool service install-update-tracker [options]",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "yes, y",
+                        Usage: "Automatically confirm service installation",
+                    },
+                    cli.BoolFlag{
+                        Name:  "verbose, r",
+                        Usage: "Print installation script command output",
+                    },
+                    cli.StringFlag{
+                        Name:  "version, v",
+                        Usage: "The update tracker package version to install",
+                        Value: fmt.Sprintf("v%s", shared.RocketPoolVersion),
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return installUpdateTracker(c)
+
+                },
+            },
+
         },
     })
 }

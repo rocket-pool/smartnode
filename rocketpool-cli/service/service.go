@@ -56,6 +56,49 @@ func installService(c *cli.Context) error {
 }
 
 
+// Install the Rocket Pool update tracker for the metrics dashboard
+func installUpdateTracker(c *cli.Context) error {
+
+    // Get install location
+    var location string
+    if c.GlobalString("host") == "" {
+        location = "locally"
+    } else {
+        location = fmt.Sprintf("at %s", c.GlobalString("host"))
+    }
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(
+        "This will add the ability to display any available Operating System updates or new Rocket Pool versions on the metrics dashboard. " +
+        "Are you sure you want to install the update tracker?")) {
+            fmt.Println("Cancelled.")
+            return nil
+    }
+
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Install service
+    err = rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
+    if err != nil { return err }
+
+    // Print success message & return
+    colorReset := "\033[0m"
+    colorYellow := "\033[33m"
+    fmt.Println("")
+    fmt.Printf("The Rocket Pool update tracker service was successfully installed %s!\n", location)
+    if c.GlobalString("host") == "" {
+        fmt.Println("")
+        fmt.Printf("%sNOTE:\nPlease run 'docker restart rocketpool_exporter' to enable update tracking on the metrics dashboard.%s\n", colorYellow, colorReset)
+        fmt.Println("")
+    }
+    return nil
+
+}
+
+
 // View the Rocket Pool service status
 func serviceStatus(c *cli.Context) error {
 

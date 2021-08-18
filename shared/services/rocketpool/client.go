@@ -27,6 +27,7 @@ import (
 // Config
 const (
     InstallerURL = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
+    UpdateTrackerURL = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install-update-tracker.sh"
 
     GlobalConfigFile = "config.yml"
     UserConfigFile = "settings.yml"
@@ -278,6 +279,62 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
     err = cmd.Run()
     if err != nil {
         return fmt.Errorf("Could not install Rocket Pool service: %s", errMessage)
+    }
+    return nil
+
+}
+
+
+// Install the update tracker
+func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
+
+    // Get installation script downloader type
+    downloader, err := c.getDownloader()
+    if err != nil { return err }
+
+    // Get installation script flags
+    flags := []string{
+        "-v", fmt.Sprintf("%s", shellescape.Quote(version)),
+    }
+
+    // Initialize installation command
+    cmd, err := c.newCommand(fmt.Sprintf("%s %s | sh -s -- %s", downloader, fmt.Sprintf(UpdateTrackerURL, version), strings.Join(flags, " ")))
+    if err != nil { return err }
+    defer func() {
+        _ = cmd.Close()
+    }()
+
+    // Get command output pipes
+    cmdOut, err := cmd.StdoutPipe()
+    if err != nil { return err }
+    cmdErr, err := cmd.StderrPipe()
+    if err != nil { return err }
+
+    // Print progress from stdout
+    go (func() {
+        scanner := bufio.NewScanner(cmdOut)
+        for scanner.Scan() {
+            fmt.Println(scanner.Text())
+        }
+    })()
+
+    // Read command & error output from stderr; render in verbose mode
+    var errMessage string
+    go (func() {
+        c := color.New(DebugColor)
+        scanner := bufio.NewScanner(cmdErr)
+        for scanner.Scan() {
+            errMessage = scanner.Text()
+            if verbose {
+                _, _ = c.Println(scanner.Text())
+            }
+        }
+    })()
+
+    // Run command and return error output
+    err = cmd.Run()
+    if err != nil {
+        return fmt.Errorf("Could not install Rocket Pool update tracker: %s", errMessage)
     }
     return nil
 
