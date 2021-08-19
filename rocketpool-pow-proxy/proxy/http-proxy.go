@@ -121,7 +121,7 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
             return
         }
     } else {
-        reader = r.Body
+        reader = response.Body
     }
 
     // Copy provider response body to response writer
