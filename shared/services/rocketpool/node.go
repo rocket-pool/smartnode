@@ -297,7 +297,7 @@ func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplStakeResponse
 func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl-allowance"))
     if err != nil {
-        return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node state RPL allowance: %w", err)
+        return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node stake RPL allowance: %w", err)
     }
     var response api.NodeStakeRplAllowanceResponse
     if err := json.Unmarshal(responseBytes, &response); err != nil {
