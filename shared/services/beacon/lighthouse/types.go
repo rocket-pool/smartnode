@@ -1,13 +1,13 @@
 package lighthouse
 
 import (
-    "encoding/hex"
-    "encoding/json"
-    "strconv"
+	"encoding/hex"
+	"encoding/json"
+	"strconv"
 
-    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+	"github.com/ethereum/go-ethereum/common"
+	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
-
 
 // Request types
 type VoluntaryExitRequest struct {
@@ -32,6 +32,12 @@ type Eth2ConfigResponse struct {
     Data struct {
         SecondsPerSlot uinteger             `json:"SECONDS_PER_SLOT"`
         SlotsPerEpoch uinteger              `json:"SLOTS_PER_EPOCH"`
+    }                                   `json:"data"`
+}
+type Eth2DepositContractResponse struct {
+    Data struct {
+        ChainID uinteger                    `json:"chain_id"`
+        Address common.Address              `json:"address"`
     }                                   `json:"data"`
 }
 type GenesisResponse struct {

@@ -25,13 +25,14 @@ const (
     RequestUrlFormat   = "%s%s"
     RequestContentType = "application/json"
 
-    RequestSyncStatusPath          = "/eth/v1/node/syncing"
-    RequestEth2ConfigPath          = "/eth/v1/config/spec"
-    RequestGenesisPath             = "/eth/v1/beacon/genesis"
-    RequestFinalityCheckpointsPath = "/eth/v1/beacon/states/%s/finality_checkpoints"
-    RequestForkPath                = "/eth/v1/beacon/states/%s/fork"
-    RequestValidatorsPath          = "/eth/v1/beacon/states/%s/validators"
-    RequestVoluntaryExitPath       = "/eth/v1/beacon/pool/voluntary_exits"
+    RequestSyncStatusPath               = "/eth/v1/node/syncing"
+    RequestEth2ConfigPath               = "/eth/v1/config/spec"
+    RequestEth2DepositContractMethod    = "/eth/v1/config/deposit_contract"
+    RequestGenesisPath                  = "/eth/v1/beacon/genesis"
+    RequestFinalityCheckpointsPath      = "/eth/v1/beacon/states/%s/finality_checkpoints"
+    RequestForkPath                     = "/eth/v1/beacon/states/%s/fork"
+    RequestValidatorsPath               = "/eth/v1/beacon/states/%s/validators"
+    RequestVoluntaryExitPath            = "/eth/v1/beacon/pool/voluntary_exits"
 
     MaxRequestValidatorsCount = 600
 )
@@ -115,6 +116,22 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
         SecondsPerEpoch:       uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
     }, nil
 
+}
+
+// Get the eth2 deposit contract info
+func (c *Client) GetEth2DepositContract() (beacon.Eth2DepositContract, error) {
+
+    // Get the deposit contract
+    depositContract, err := c.getEth2DepositContract()
+    if err != nil {
+        return beacon.Eth2DepositContract{}, err
+    }
+
+    // Return response
+    return beacon.Eth2DepositContract{
+        ChainID: uint64(depositContract.Data.ChainID),
+        Address: depositContract.Data.Address,
+    }, nil
 }
 
 // Get the beacon head
@@ -345,6 +362,21 @@ func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
         return Eth2ConfigResponse{}, fmt.Errorf("Could not decode eth2 config: %w", err)
     }
     return eth2Config, nil
+}
+
+// Get the eth2 deposit contract info
+func (c *Client) getEth2DepositContract() (Eth2DepositContractResponse, error) {
+    responseBody, status, err := c.getRequest(RequestEth2DepositContractMethod)
+    if err != nil {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: %w", err)
+    } else if status != http.StatusOK {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var eth2DepositContract Eth2DepositContractResponse
+    if err := json.Unmarshal(responseBody, &eth2DepositContract); err != nil {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not decode eth2 deposit contract: %w", err)
+    }
+    return eth2DepositContract, nil
 }
 
 // Get genesis information

@@ -120,6 +120,30 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 }
 
 
+// Get the eth2 deposit contract info
+func (c *Client) GetEth2DepositContract() (beacon.Eth2DepositContract, error) {
+
+    // Get beacon config
+    config, err := c.bc.GetBeaconConfig(context.Background(), &pbtypes.Empty{})
+    if err != nil {
+        return beacon.Eth2DepositContract{}, fmt.Errorf("Could not get beacon chain config: %w", err)
+    }
+    cfg := config.GetConfig()
+    
+    // Get config settings
+    chainID, err := getConfigUint(cfg, "DepositChainID")
+    if err != nil { return beacon.Eth2DepositContract{}, err }
+    address, err := getConfigString(cfg, "DepositContractAddress")
+    if err != nil { return beacon.Eth2DepositContract{}, err }
+
+    // Return response
+    return beacon.Eth2DepositContract{
+        ChainID: uint64(chainID),
+        Address: common.HexToAddress(address),
+    }, nil
+}
+
+
 // Get the beacon head
 func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 

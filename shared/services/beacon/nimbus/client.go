@@ -20,6 +20,7 @@ import (
 const (
     RequestSyncStatusMethod          = "get_v1_node_syncing"
     RequestEth2ConfigMethod          = "get_v1_config_spec"
+    RequestEth2DepositContractMethod = "get_v1_config_deposit_contract"
     RequestGenesisMethod             = "get_v1_beacon_genesis"
     RequestFinalityCheckpointsMethod = "get_v1_beacon_states_finality_checkpoints"
     RequestForkMethod                = "get_v1_beacon_states_fork"
@@ -115,6 +116,24 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
     }, nil
 
 }
+
+
+// Get the eth2 deposit contract info
+func (c *Client) GetEth2DepositContract() (beacon.Eth2DepositContract, error) {
+
+    // Get the deposit contract
+    depositContract, err := c.getEth2DepositContract()
+    if err != nil {
+        return beacon.Eth2DepositContract{}, err
+    }
+
+    // Return response
+    return beacon.Eth2DepositContract{
+        ChainID: uint64(depositContract.ChainID),
+        Address: depositContract.Address,
+    }, nil
+}
+
 
 // Get the beacon head
 func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
@@ -310,6 +329,16 @@ func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
         return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %s", message)
     }
     return eth2Config, nil
+}
+
+// Get the eth2 deposit contract info
+func (c *Client) getEth2DepositContract() (Eth2DepositContractResponse, error) {
+    var eth2DepositContract Eth2DepositContractResponse
+    if err := c.client.Call(&eth2DepositContract, RequestEth2DepositContractMethod); err != nil {
+        message := c.getErrorString(err)
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: %s", message)
+    }
+    return eth2DepositContract, nil
 }
 
 // Get genesis information

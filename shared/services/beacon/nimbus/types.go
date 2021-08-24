@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/common"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -27,6 +28,10 @@ type SyncStatusResponse struct {
 type Eth2ConfigResponse struct {
     SecondsPerSlot uinteger `json:"SECONDS_PER_SLOT"`
     SlotsPerEpoch  uinteger `json:"SLOTS_PER_EPOCH"`
+}
+type Eth2DepositContractResponse struct {
+    ChainID uinteger            `json:"chain_id"`
+    Address common.Address      `json:"address"`
 }
 type GenesisResponse struct {
     GenesisTime           uint64    `json:"genesis_time"`

@@ -23,6 +23,10 @@ type Eth2Config struct {
     GenesisTime uint64
     SecondsPerEpoch uint64
 }
+type Eth2DepositContract struct {
+    ChainID uint64
+    Address common.Address
+}
 type BeaconHead struct {
     Epoch uint64
     FinalizedEpoch uint64
@@ -64,6 +68,7 @@ type Client interface {
     GetClientType() (BeaconClientType)
     GetSyncStatus() (SyncStatus, error)
     GetEth2Config() (Eth2Config, error)
+    GetEth2DepositContract() (Eth2DepositContract, error)
     GetBeaconHead() (BeaconHead, error)
     GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
     GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
