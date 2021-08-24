@@ -176,6 +176,20 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     // Response
     response := api.NodeDepositResponse{}
 
+    // Make sure ETH2 is on the correct chain
+    depositContractInfo, err := getDepositContractInfo(c)
+    if err != nil {
+        return nil, err
+    }
+    if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+       depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+            return nil, fmt.Errorf("Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
+                            depositContractInfo.RPDepositContract.Hex(),
+                            depositContractInfo.RPNetwork,
+                            depositContractInfo.BeaconDepositContract.Hex(),
+                            depositContractInfo.BeaconNetwork)
+    }
+
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
     if err != nil {

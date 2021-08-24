@@ -23,6 +23,21 @@ func nodeDeposit(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
+    // Make sure ETH2 is on the correct chain
+    depositContractInfo, err := rp.DepositContractInfo()
+    if err != nil {
+        return err
+    }
+    if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+       depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+        cliutils.PrintDepositMismatchError(
+            depositContractInfo.RPNetwork,
+            depositContractInfo.BeaconNetwork,
+            depositContractInfo.RPDepositContract,
+            depositContractInfo.BeaconDepositContract)
+        return nil
+    }
+
     // Get deposit amount
     var amount float64
     if c.String("amount") != "" {

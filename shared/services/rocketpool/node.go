@@ -530,3 +530,20 @@ func (c *Client) NodeRewards() (api.NodeRewardsResponse, error) {
     return response, nil
 }
 
+
+// Get the deposit contract info for Rocket Pool and the Beacon Client
+func (c *Client) DepositContractInfo() (api.DepositContractInfoResponse, error) {
+    responseBytes, err := c.callAPI("node deposit-contract-info")
+    if err != nil {
+        return api.DepositContractInfoResponse{}, fmt.Errorf("Could not get deposit contract info: %w", err)
+    }
+    var response api.DepositContractInfoResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.DepositContractInfoResponse{}, fmt.Errorf("Could not decode deposit contract info response: %w", err)
+    }
+    if response.Error != "" {
+        return api.DepositContractInfoResponse{}, fmt.Errorf("Could not get deposit contract info: %s", response.Error)
+    }
+    return response, nil
+}
+

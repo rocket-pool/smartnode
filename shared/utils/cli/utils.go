@@ -11,6 +11,7 @@ import (
 
 const colorReset string = "\033[0m"
 const colorYellow string = "\033[33m"
+const colorRed string = "\033[31m"
 
 
 // Print a TX's details to the console.
@@ -112,3 +113,18 @@ func PrettyPrintError(err error) {
 	fmt.Println(prettyErr)
 }
 
+
+// Prints an error message when the Beacon client is not using the deposit contract address that Rocket Pool expects
+func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress, beaconDepositAddress common.Address) {
+    fmt.Printf("%s***ALERT***\n", colorRed)
+    fmt.Println("YOUR BEACON CLIENT IS NOT SYNCED TO THE SAME NETWORK THAT ROCKET POOL IS USING!")
+    fmt.Println("This is likely because your ETH2 client is using the wrong configuration.")
+    fmt.Println("For the safety of your funds, Rocket Pool will not let you deposit your ETH until this is resolved.")
+    fmt.Println()
+    fmt.Println("To fix it, please run 'rocketpool service install -d' to get the latest configuration, then 'rocketpool service stop' and 'rocketpool service start' to reconfigure your Docker images.")
+    fmt.Println("If you are using Hybrid or Native mode, please correct the network flags in your ETH2 launch script.")
+    fmt.Println()
+    fmt.Println("Details:")
+    fmt.Printf("\tRocket Pool expects deposit contract %s on chain %d.\n", rpDepositAddress.Hex(), rpNetwork)
+    fmt.Printf("\tYour Beacon client is using deposit contract %s on chain %d.%s\n", beaconDepositAddress.Hex(), beaconNetwork, colorReset)
+}

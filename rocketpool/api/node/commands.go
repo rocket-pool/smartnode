@@ -562,6 +562,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "deposit-contract-info",
+                Usage:     "Get information about the deposit contract specified by Rocket Pool and the Beacon Chain client",
+                UsageText: "rocketpool api node deposit-contract-info",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getDepositContractInfo(c))
+                    return nil
+
+                },
+            },
+
         },
     })
 }

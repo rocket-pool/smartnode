@@ -6,6 +6,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -15,6 +16,21 @@ func getSyncProgress(c *cli.Context) error {
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
+
+    // Make sure ETH2 is on the correct chain
+    depositContractInfo, err := rp.DepositContractInfo()
+    if err != nil {
+        return err
+    }
+    if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+       depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+        cliutils.PrintDepositMismatchError(
+            depositContractInfo.RPNetwork,
+            depositContractInfo.BeaconNetwork,
+            depositContractInfo.RPDepositContract,
+            depositContractInfo.BeaconDepositContract)
+        return nil
+    }
 
     // Get node status
     status, err := rp.NodeSync()

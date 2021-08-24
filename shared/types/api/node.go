@@ -266,3 +266,12 @@ type NodeRewardsResponse struct {
     UnclaimedTrustedRewards float64         `json:"unclaimedTrustedRewards"`
     TxHash common.Hash                      `json:"txHash"`
 }
+
+type DepositContractInfoResponse struct {
+    Status string                           `json:"status"`
+    Error string                            `json:"error"`
+    RPDepositContract common.Address        `json:"rpDepositContract"`
+    RPNetwork uint64                        `json:"rpNetwork"`
+    BeaconDepositContract common.Address    `json:"beaconDepositContract"`
+    BeaconNetwork uint64                    `json:"beaconNetwork"`
+}
