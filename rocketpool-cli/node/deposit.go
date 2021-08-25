@@ -36,6 +36,8 @@ func nodeDeposit(c *cli.Context) error {
             depositContractInfo.RPDepositContract,
             depositContractInfo.BeaconDepositContract)
         return nil
+    } else {
+        fmt.Println("Your eth2 client is on the correct network.\n")
     }
 
     // Get deposit amount
