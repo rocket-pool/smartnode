@@ -1,14 +1,18 @@
 package proxy
 
 import (
-    "bytes"
-    "errors"
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
-    "io"
+	"io"
+	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"os"
-    "strings"
+	"strings"
+	"time"
 )
 
 // Config
@@ -21,8 +25,19 @@ type HttpProxyServer struct {
     Port string
     ProviderUrl string
     Verbose bool
+    ProviderType string
 }
 
+// Infura rate limit error
+type InfuraRateLimitError struct {
+    Error struct {
+        Code int                    `json:"code"`
+        Message string              `json:"message"`
+        Data struct {
+            BackoffSeconds float64  `json:"backoff_seconds"`
+        }   `json:"data"`
+    }   `json:"error"`
+}
 
 // Create new proxy server
 func NewHttpProxyServer(port string, providerUrl string, network string, projectId string, providerType string, verbose bool) *HttpProxyServer {
@@ -42,6 +57,7 @@ func NewHttpProxyServer(port string, providerUrl string, network string, project
         Port: port,
         ProviderUrl: providerUrl,
         Verbose: verbose,
+        ProviderType: providerType,
     }
 
 }
@@ -107,6 +123,33 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     defer func() {
         _ =response.Body.Close()
     }()
+
+    // If using Infura, check for a rate limit error
+    if p.ProviderType == "infura" && response.StatusCode == 429 {
+        
+        // Get the body of the response
+        body, err := ioutil.ReadAll(response.Body)
+        if err != nil {
+            log.Println(fmt.Errorf("Received a 429 from Infura but failed getting the body: %w", err))
+            _, _ =fmt.Fprintln(w, fmt.Errorf("Received a 429 from Infura but failed getting the body: %w", err))
+            return
+        }
+
+        // Unmarshal it into an object
+        var infuraError InfuraRateLimitError
+        err = json.Unmarshal(body, &infuraError)
+        if err != nil {
+            log.Println(fmt.Errorf("Received a 429 from Infura but failed deserializing: %w", err))
+            _, _ =fmt.Fprintln(w, fmt.Errorf("Received a 429 from Infura but failed deserializing: %w", err))
+            return
+        }
+        
+        // Wait for the requested number of seconds, then try again
+        secondsToWait := int(math.Ceil(infuraError.Error.Data.BackoffSeconds))
+        time.Sleep(time.Duration(secondsToWait) * time.Second)
+        p.ServeHTTP(w, r)
+        return
+    }
 
     // Set response writer header
     w.Header().Set("Content-Type", "application/json")
