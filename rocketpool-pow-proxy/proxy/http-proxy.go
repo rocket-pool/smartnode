@@ -146,6 +146,7 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         
         // Wait for the requested number of seconds, then try again
         secondsToWait := int(math.Ceil(infuraError.Error.Data.BackoffSeconds))
+        log.Printf("Infura rate limit hit, waiting %d seconds...\n", secondsToWait)
         time.Sleep(time.Duration(secondsToWait) * time.Second)
         p.ServeHTTP(w, r)
         return
