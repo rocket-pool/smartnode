@@ -36,6 +36,7 @@ type Contract struct {
 type GasInfo struct {
     EstGasPrice *big.Int            `json:"estGasPrice"`
     EstGasLimit uint64              `json:"estGasLimit"`
+    SafeGasLimit uint64             `json:"safeGasLimit"`
     ReqGasPrice *big.Int            `json:"reqGasPrice"`
     ReqGasLimit uint64              `json:"reqGasLimit"`
 }
@@ -65,11 +66,12 @@ func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string,
     }
 
     // Estimate gas limit
-    estGasLimit, err := c.estimateGasLimit(opts, input)
+    estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, input)
     if err != nil {
         return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas limit: %w", err)
     }
     response.EstGasLimit = estGasLimit
+    response.SafeGasLimit = safeGasLimit
 
     // Estimate gas price
     estGasPrice, err := c.Client.SuggestGasPrice(context.Background())
@@ -91,11 +93,11 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
         if err != nil {
             return common.Hash{}, fmt.Errorf("Could not encode input data: %w", err)
         }
-        gasLimit, err := c.estimateGasLimit(opts, input)
+        _, safeGasLimit, err := c.estimateGasLimit(opts, input)
         if err != nil {
             return common.Hash{}, err
         }
-        opts.GasLimit = gasLimit
+        opts.GasLimit = safeGasLimit
     }
 
     // Send transaction
@@ -119,11 +121,12 @@ func (c *Contract) GetTransferGasInfo(opts *bind.TransactOpts) (GasInfo, error) 
     }
 
     // Estimate gas limit
-    estGasLimit, err := c.estimateGasLimit(opts, []byte{})
+    estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, []byte{})
     if err != nil {
         return response, fmt.Errorf("Error getting transfer gas info: could not estimate gas limit: %w", err)
     }
     response.EstGasLimit = estGasLimit
+    response.SafeGasLimit = safeGasLimit
 
     // Estimate gas price
     estGasPrice, err := c.Client.SuggestGasPrice(context.Background())
@@ -141,11 +144,11 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (common.Hash, error) {
 
     // Estimate gas limit
     if opts.GasLimit == 0 {
-        gasLimit, err := c.estimateGasLimit(opts, []byte{})
+        _, safeGasLimit, err := c.estimateGasLimit(opts, []byte{})
         if err != nil {
             return common.Hash{}, err
         }
-        opts.GasLimit = gasLimit
+        opts.GasLimit = safeGasLimit
     }
 
     // Send transaction
@@ -159,8 +162,8 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 
-// Estimate the gas limit for a contract transaction
-func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint64, error) {
+// Estimate the expected and safe gas limits for a contract transaction
+func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint64, uint64, error) {
 
     // Estimate gas limit
     gasLimit, err := c.Client.EstimateGas(context.Background(), ethereum.CallMsg{
@@ -171,13 +174,14 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
         Data: input,
     })
     if err != nil {
-        return 0, fmt.Errorf("Could not estimate gas needed: %w", err)
+        return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", err)
     }
 
     // Pad and return gas limit
-    gasLimit = uint64(float64(gasLimit) * GasLimitMultiplier)
+    safeGasLimit := uint64(float64(gasLimit) * GasLimitMultiplier)
     if gasLimit > MaxGasLimit { gasLimit = MaxGasLimit }
-    return gasLimit, nil
+    if safeGasLimit > MaxGasLimit { safeGasLimit = MaxGasLimit }
+    return gasLimit, safeGasLimit, nil
 
 }
 
