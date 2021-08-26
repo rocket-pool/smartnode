@@ -90,6 +90,7 @@ func executeProposal(c *cli.Context) error {
 
     // Get the total gas limit estimate
     var totalGas uint64 = 0
+    var totalSafeGas uint64 = 0
     var gasInfo rocketpoolapi.GasInfo
     for _, proposal := range selectedProposals {
         canResponse, err := rp.CanExecuteTNDAOProposal(proposal.ID)
@@ -99,9 +100,11 @@ func executeProposal(c *cli.Context) error {
         } else {
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit
+            totalSafeGas += canResponse.GasInfo.SafeGasLimit
         }
     }
     gasInfo.EstGasLimit = totalGas
+    gasInfo.SafeGasLimit = totalSafeGas
 
     // Display gas estimate
     rp.PrintGasInfo(gasInfo)

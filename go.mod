@@ -16,11 +16,10 @@ require (
 	github.com/docker/docker v1.4.2-0.20180625184442-8e610b2b55bf
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.10.6
+	github.com/ethereum/go-ethereum v1.10.8
 	github.com/fatih/color v1.12.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/imdario/mergo v0.3.12
 	github.com/mitchellh/go-homedir v1.1.0
@@ -43,4 +42,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-// replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go

@@ -127,13 +127,13 @@ func (t *claimRplRewards) run() error {
     if gasInfo.ReqGasLimit != 0 {
         gas = new(big.Int).SetUint64(gasInfo.ReqGasLimit)
     } else {
-        gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
+        gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
     }
     totalGasWei := new(big.Int).Mul(gasPrice, gas)
     totalEthCost := math.RoundDown(eth.WeiToEth(totalGasWei), 6)
     
     if totalEthCost >= rewardsInEth {
-        t.log.Printlnf("Transaction would cost %f ETH in gas but only provide %f ETH worth of RPL. Ignoring until gas is cheaper.",
+        t.log.Printlnf("Transaction would cost up to %f ETH in gas but only provide %f ETH worth of RPL. Ignoring until gas is cheaper.",
             totalEthCost, rewardsInEth)
         return nil
     }

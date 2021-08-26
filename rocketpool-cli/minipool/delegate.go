@@ -62,6 +62,7 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 
     // Get the total gas limit estimate
     var totalGas uint64 = 0
+    var totalSafeGas uint64 = 0
     var gasInfo rocketpoolapi.GasInfo
     for _, minipool := range selectedMinipools {
         canResponse, err := rp.CanDelegateUpgradeMinipool(minipool)
@@ -72,9 +73,11 @@ func delegateUpgradeMinipools(c *cli.Context) error {
             fmt.Printf("Minipool %s will upgrade to delegate contract %s.\n", minipool.Hex(), canResponse.LatestDelegateAddress.Hex())
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit
+            totalSafeGas += canResponse.GasInfo.SafeGasLimit
         }
     }
     gasInfo.EstGasLimit = totalGas
+    gasInfo.SafeGasLimit = totalSafeGas
 
     // Display gas estimate
     rp.PrintGasInfo(gasInfo)
@@ -158,6 +161,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
 
     // Get the total gas limit estimate
     var totalGas uint64 = 0
+    var totalSafeGas uint64 = 0
     var gasInfo rocketpoolapi.GasInfo
     for _, minipool := range selectedMinipools {
         canResponse, err := rp.CanDelegateRollbackMinipool(minipool)
@@ -168,9 +172,11 @@ func delegateRollbackMinipools(c *cli.Context) error {
             fmt.Printf("Minipool %s will roll back to delegate contract %s.\n", minipool.Hex(), canResponse.RollbackAddress.Hex())
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit
+            totalSafeGas += canResponse.GasInfo.SafeGasLimit
         }
     }
     gasInfo.EstGasLimit = totalGas
+    gasInfo.SafeGasLimit = totalSafeGas
 
     // Display gas estimate
     rp.PrintGasInfo(gasInfo)
@@ -254,6 +260,7 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 
     // Get the total gas limit estimate
     var totalGas uint64 = 0
+    var totalSafeGas uint64 = 0
     var gasInfo rocketpoolapi.GasInfo
     for _, minipool := range selectedMinipools {
         canResponse, err := rp.CanSetUseLatestDelegateMinipool(minipool, setting)
@@ -263,9 +270,11 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
         } else {
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit
+            totalSafeGas += canResponse.GasInfo.SafeGasLimit
         }
     }
     gasInfo.EstGasLimit = totalGas
+    gasInfo.SafeGasLimit = totalSafeGas
 
     // Display gas estimate
     rp.PrintGasInfo(gasInfo)

@@ -29,6 +29,7 @@ func (rp *Client) PrintGasInfo(gasInfo rocketpool.GasInfo) {
 
     // Print gas price, gas limit and total eth cost as estimated by the network
     gas := new(big.Int).SetUint64(gasInfo.EstGasLimit)
+    safeGas := new(big.Int).SetUint64(gasInfo.SafeGasLimit)
     var gasPrice *big.Int
     if gasInfo.EstGasPrice != nil {
         gasPrice = gasInfo.EstGasPrice
@@ -36,11 +37,14 @@ func (rp *Client) PrintGasInfo(gasInfo rocketpool.GasInfo) {
         gasPrice = big.NewInt(0)
     }
     totalGasWei := new(big.Int).Mul(gasPrice, gas)
-    fmt.Printf("%sSuggested gas price: %.6f Gwei\nEstimated gas used: %d gas\nEstimated gas cost: %.6f ETH\n%s",
+    totalSafeGasWei := new(big.Int).Mul(gasPrice, safeGas)
+    fmt.Printf("%sSuggested gas price: %.6f Gwei\nEstimated gas used: %d to %d gas\nEstimated gas cost: %.6f to %.6f ETH\n%s",
                colorYellow, 
                eth.WeiToGwei(gasPrice), 
                gasInfo.EstGasLimit, 
+               gasInfo.SafeGasLimit,
                math.RoundDown(eth.WeiToEth(totalGasWei), 6),
+               math.RoundDown(eth.WeiToEth(totalSafeGasWei), 6),
                colorReset)
     
     // Print gas price, gas limit and max gas cost as requested by the user

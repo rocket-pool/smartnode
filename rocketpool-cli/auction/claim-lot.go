@@ -91,6 +91,7 @@ func claimFromLot(c *cli.Context) error {
 
     // Get the total gas limit estimate
     var totalGas uint64 = 0
+    var totalSafeGas uint64 = 0
     var gasInfo rocketpoolapi.GasInfo
     for _, lot := range selectedLots {
         canResponse, err := rp.CanClaimFromLot(lot.Details.Index)
@@ -99,9 +100,11 @@ func claimFromLot(c *cli.Context) error {
         } else {
             gasInfo = canResponse.GasInfo
             totalGas += canResponse.GasInfo.EstGasLimit
+            totalSafeGas += canResponse.GasInfo.SafeGasLimit
         }
     }
     gasInfo.EstGasLimit = totalGas
+    gasInfo.SafeGasLimit = totalSafeGas
 
     // Display gas estimate
     rp.PrintGasInfo(gasInfo)

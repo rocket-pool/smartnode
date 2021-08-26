@@ -38,15 +38,20 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
     
     // Print the total TX cost
     var gas *big.Int 
+    var safeGas *big.Int 
     if gasInfo.ReqGasLimit != 0 {
         gas = new(big.Int).SetUint64(gasInfo.ReqGasLimit)
+        safeGas = gas
     } else {
         gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
+        safeGas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
     }
     totalGasWei := new(big.Int).Mul(gasPrice, gas)
-    logger.Printlnf("This transaction will use a gas price of %.6f Gwei, for a total of %.6f ETH.",
+    totalSafeGasWei := new(big.Int).Mul(gasPrice, safeGas)
+    logger.Printlnf("This transaction will use a gas price of %.6f Gwei, for a total of %.6f to %.6f ETH.",
         eth.WeiToGwei(gasPrice),
-        math.RoundDown(eth.WeiToEth(totalGasWei), 6))
+        math.RoundDown(eth.WeiToEth(totalGasWei), 6),
+        math.RoundDown(eth.WeiToEth(totalSafeGasWei), 6))
         
     return true
 }
