@@ -207,6 +207,10 @@ func (c *Client) UpdatePrometheusConfiguration(settings []config.UserParam) erro
     if err != nil {
         return fmt.Errorf("Could not write Prometheus config file to %s: %w", shellescape.Quote(prometheusConfigPath), err)
     }
+    err = os.Chmod(prometheusConfigPath, 0664)
+    if err != nil {
+        return fmt.Errorf("Could not set Prometheus config file permissions: %w", shellescape.Quote(prometheusConfigPath), err)
+    }
 
     return nil
 }
