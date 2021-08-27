@@ -22,6 +22,8 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    if err := services.RequireEthClientSynced(c); err != nil { return nil, err }
+    if err := services.RequireBeaconClientSynced(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
