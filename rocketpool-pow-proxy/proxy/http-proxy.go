@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 // Config
 const InfuraURL = "https://%s.infura.io/v3/%s"
 const PocketURL = "https://%s.gateway.pokt.network/v1/%s"
+const HandleRequestRecursionLimit = 3
 
 
 // Proxy server
@@ -34,7 +34,9 @@ type InfuraRateLimitError struct {
         Code int                    `json:"code"`
         Message string              `json:"message"`
         Data struct {
-            BackoffSeconds float64  `json:"backoff_seconds"`
+            Rate struct {
+                BackoffSeconds float64  `json:"backoff_seconds"`
+            }   `json:"rate"`
         }   `json:"data"`
     }   `json:"error"`
 }
@@ -74,16 +76,6 @@ func (p *HttpProxyServer) Start() error {
 
 }
 
-func printReader(r io.Reader, prefix string) (io.Reader, error) {
-    buf := new(bytes.Buffer)
-    _, err := buf.ReadFrom(r)
-    if err != nil {
-        return nil, err
-    }
-    s := buf.String()
-    fmt.Printf("%s%s\n", prefix, s)
-    return strings.NewReader(s), nil
-}
 
 // Handle request / serve response
 func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -99,77 +91,34 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Log request if in verbose mode
-    var reader io.Reader
-    if p.Verbose {
-        var err error
-        reader, err = printReader(r.Body, "< ")
-        if err != nil {
-            log.Println(fmt.Errorf("Error forwarding request to remote server: %w", err))
-            _, _ = fmt.Fprintln(w, fmt.Errorf("Error forwarding request to remote server: %w", err))
-            return
-        }
-    } else {
-        reader = r.Body
-    }
-
-    // Forward request to provider
-    response, err := http.Post(p.ProviderUrl, contentTypes[0], reader)
+    // Get the request body as a string
+    requestBuffer := new(bytes.Buffer)
+    _, err := requestBuffer.ReadFrom(r.Body)
     if err != nil {
-        log.Println(fmt.Errorf("Error forwarding request to remote server: %w", err))
-        _, _ = fmt.Fprintln(w, fmt.Errorf("Error forwarding request to remote server: %w", err))
+        log.Println(fmt.Errorf("Error getting request body string: %w", err))
+        _, _ = fmt.Fprintln(w, fmt.Errorf("Error getting request body string: %w", err))
         return
     }
-    defer func() {
-        _ =response.Body.Close()
-    }()
+    requestBody := requestBuffer.String()
 
-    // If using Infura, check for a rate limit error
-    if p.ProviderType == "infura" && response.StatusCode == 429 {
-        
-        // Get the body of the response
-        body, err := ioutil.ReadAll(response.Body)
-        if err != nil {
-            log.Println(fmt.Errorf("Received a 429 from Infura but failed getting the body: %w", err))
-            _, _ =fmt.Fprintln(w, fmt.Errorf("Received a 429 from Infura but failed getting the body: %w", err))
-            return
-        }
+    // Log request if in verbose mode
+    if p.Verbose {
+        fmt.Printf("< %s\n", requestBody)
+    }
 
-        // Unmarshal it into an object
-        var infuraError InfuraRateLimitError
-        err = json.Unmarshal(body, &infuraError)
-        if err != nil {
-            log.Println(fmt.Errorf("Received a 429 from Infura but failed deserializing: %w", err))
-            _, _ =fmt.Fprintln(w, fmt.Errorf("Received a 429 from Infura but failed deserializing: %w", err))
-            return
-        }
-        
-        // Wait for the requested number of seconds, then try again
-        secondsToWait := int(math.Ceil(infuraError.Error.Data.BackoffSeconds))
-        log.Printf("Infura rate limit hit, waiting %d seconds...\n", secondsToWait)
-        time.Sleep(time.Duration(secondsToWait) * time.Second)
-        p.ServeHTTP(w, r)
+    // Handle the request
+    responseReader, err := p.handleRequest(contentTypes[0], requestBody, 0)
+    if err != nil {
+        log.Println(err.Error())
+        _, _ =fmt.Fprintln(w, err.Error())
         return
     }
 
     // Set response writer header
     w.Header().Set("Content-Type", "application/json")
 
-    // Log response if in verbose mode
-    if p.Verbose {
-        var err error
-        reader, err = printReader(response.Body, "> ")
-        if err != nil {
-            log.Println(fmt.Errorf("Error reading response from remote server: %w", err))
-            _, _ =fmt.Fprintln(w, fmt.Errorf("Error reading response from remote server: %w", err))
-            return
-        }
-    } else {
-        reader = response.Body
-    }
-
     // Copy provider response body to response writer
-    _, err = io.Copy(w, reader)
+    _, err = io.Copy(w, responseReader)
     if err != nil {
         log.Println(fmt.Errorf("Error reading response from remote server: %w", err))
         _, _ =fmt.Fprintln(w, fmt.Errorf("Error reading response from remote server: %w", err))
@@ -178,6 +127,60 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
     // Log success
     log.Printf("Response sent to %s successfully\n", r.RemoteAddr)
+}
+
+
+// Handle request / serve response
+func (p *HttpProxyServer) handleRequest(contentType, requestBody string, recursionCount int) (io.Reader, error) {
+
+    // Error out if we've tried too many times
+    if recursionCount >= HandleRequestRecursionLimit {
+        return nil, fmt.Errorf("Request hit the rate limit too many times.")
+    }
+
+    // Forward request to provider
+    var reader io.Reader
+    reader = strings.NewReader(requestBody)
+    response, err := http.Post(p.ProviderUrl, contentType, reader)
+    if err != nil {
+        return nil, fmt.Errorf("Error forwarding request to remote server: %w", err)
+    }
+    defer func() {
+        _ =response.Body.Close()
+    }()
+
+    // Get the response body as a string
+    responseBuffer := new(bytes.Buffer)
+    _, err = responseBuffer.ReadFrom(response.Body)
+    if err != nil {
+        return nil, fmt.Errorf("Error getting response body string: %w", err)
+    }
+    responseBody := responseBuffer.String()
+
+    // Log response if in verbose mode
+    if p.Verbose {
+        fmt.Printf("> %s\n", responseBody)
+    }
+    
+    // If using Infura, check for a rate limit error
+    if p.ProviderType == "infura" && response.StatusCode == 429 {
+        
+        // Unmarshal it into an object
+        var infuraError InfuraRateLimitError
+        err = json.Unmarshal(responseBuffer.Bytes(), &infuraError)
+        if err != nil {
+            return nil, fmt.Errorf("Received a 429 from Infura but failed deserializing: %w", err)
+        }
+        
+        // Wait for the requested number of seconds, then try again
+        secondsToWait := int(math.Ceil(infuraError.Error.Data.Rate.BackoffSeconds))
+        log.Printf("Infura rate limit hit, waiting %d seconds... (Attempt %d of %d)\n", secondsToWait, recursionCount + 1, HandleRequestRecursionLimit)
+        time.Sleep(time.Duration(secondsToWait) * time.Second)
+        return p.handleRequest(contentType, requestBody, recursionCount + 1)
+    }
+    
+    // Success, return the body
+    return strings.NewReader(responseBody), nil
 
 }
 
