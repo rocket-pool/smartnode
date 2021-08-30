@@ -38,6 +38,12 @@ func join(c *cli.Context) error {
         // Confirm swapping RPL
         if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
 
+            // Check RPL can be swapped
+            _, err := rp.CanNodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
+            if err != nil {
+                return err
+            }
+
             // Check allowance
             allowance, err := rp.GetNodeSwapRplAllowance()
             if err != nil {
