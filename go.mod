@@ -28,18 +28,16 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
-	github.com/rocket-pool/rocketpool-go v1.0.0-rc4.0.20210817062855-9ae52237d306
+	github.com/rocket-pool/rocketpool-go v1.0.0-rc4.0.20210830031232-074ad533113a
 	github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.5
 	github.com/wealdtech/go-eth2-types/v2 v2.5.3
 	github.com/wealdtech/go-eth2-util v1.6.4
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.5
-	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
-	google.golang.org/grpc v1.39.1
+	google.golang.org/grpc v1.40.0
 	gopkg.in/yaml.v2 v2.4.0
 )
-
-replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
