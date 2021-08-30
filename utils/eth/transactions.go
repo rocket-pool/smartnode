@@ -45,6 +45,7 @@ func EstimateSendTransactionGas(client *ethclient.Client, toAddress common.Addre
         return rocketpool.GasInfo{}, err
     }
     response.EstGasLimit = gasLimit
+    response.SafeGasLimit = gasLimit
 
     return response, err
 }
