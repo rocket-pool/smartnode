@@ -116,7 +116,8 @@ type CanNodeSwapRplResponse struct {
     Error string                        `json:"error"`
     CanSwap bool                        `json:"canSwap"`
     InsufficientBalance bool            `json:"insufficientBalance"`
-    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+    ApproveGasInfo rocketpool.GasInfo   `json:"approveGasInfo"`
+    SwapGasInfo rocketpool.GasInfo      `json:"swapGasInfo"`
 }
 type NodeSwapRplApproveResponse struct {
     Status string                       `json:"status"`
@@ -128,6 +129,11 @@ type NodeSwapRplSwapResponse struct {
     Error string                        `json:"error"`
     SwapTxHash common.Hash              `json:"swapTxHash"`
 }
+type NodeSwapRplAllowanceResponse struct {
+    Status string                       `json:"status"`
+    Error string                        `json:"error"`
+    Allowance *big.Int                  `json:"allowance"`
+}
 
 
 type CanNodeStakeRplResponse struct {
@@ -136,7 +142,8 @@ type CanNodeStakeRplResponse struct {
     CanStake bool                       `json:"canStake"`
     InsufficientBalance bool            `json:"insufficientBalance"`
     InConsensus bool                    `json:"inConsensus"`
-    GasInfo rocketpool.GasInfo          `json:"gasInfo"`
+    ApproveGasInfo rocketpool.GasInfo   `json:"approveGasInfo"`
+    StakeGasInfo rocketpool.GasInfo     `json:"stakeGasInfo"`
 }
 type NodeStakeRplApproveResponse struct {
     Status string                       `json:"status"`

@@ -56,17 +56,52 @@ func canNodeSwapRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeSwapRplResp
     if err != nil {
         return nil, err
     }
-    /*swapGasInfo, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
+    swapGasInfo, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
     if err != nil {
         return nil, err
-    }*/
-    response.GasInfo = approveGasInfo
-    //response.GasInfo.EstGasLimit += swapGasInfo.EstGasLimit
+    }
+    response.ApproveGasInfo = approveGasInfo
+    response.SwapGasInfo = swapGasInfo
 
     // Update & return response
     response.CanSwap = !response.InsufficientBalance
     return &response, nil
 
+}
+
+func allowanceFsRpl(c *cli.Context) (*api.NodeSwapRplAllowanceResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.NodeSwapRplAllowanceResponse{}
+
+    // Get new RPL contract address
+    rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+    if err != nil {
+        return nil, err
+    }
+
+    // Get node account
+    account, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
+    // Get node's FSRPL allowance
+    allowance, err := tokens.GetFixedSupplyRPLAllowance(rp, account.Address, *rocketTokenRPLAddress, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    response.Allowance = allowance
+
+    return &response, nil
 }
 
 
@@ -115,8 +150,6 @@ func waitForApprovalAndSwapFsRpl(c *cli.Context, amountWei *big.Int, hash common
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
-    w, err := services.GetWallet(c)
-    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
@@ -125,6 +158,19 @@ func waitForApprovalAndSwapFsRpl(c *cli.Context, amountWei *big.Int, hash common
     if err != nil {
         return nil, err
     }
+
+    return swapRpl(c, amountWei)
+
+}
+
+func swapRpl(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplSwapResponse, error) {
+    
+    // Get services
+    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
     
     // Response
     response := api.NodeSwapRplSwapResponse{}

@@ -209,9 +209,9 @@ func (c *Client) NodeSwapRplApprove(amountWei *big.Int) (api.NodeSwapRplApproveR
 }
 
 
-// Swap node's old RPL tokens for new RPL tokens
-func (c *Client) NodeSwapRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeSwapRplSwapResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl %s %s", amountWei.String(), approvalTxHash.String()))
+// Swap node's old RPL tokens for new RPL tokens, waiting for the approval to be mined first
+func (c *Client) NodeWaitAndSwapRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeSwapRplSwapResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-swap-rpl %s %s", amountWei.String(), approvalTxHash.String()))
     if err != nil {
         return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
     }
@@ -221,6 +221,39 @@ func (c *Client) NodeSwapRpl(amountWei *big.Int, approvalTxHash common.Hash) (ap
     }
     if response.Error != "" {
         return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Swap node's old RPL tokens for new RPL tokens
+func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplSwapResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl %s", amountWei.String()))
+    if err != nil {
+        return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
+    }
+    var response api.NodeSwapRplSwapResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not decode node swap RPL tokens response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %s", response.Error)
+    }
+    return response, nil
+}
+
+// Get a node's legacy RPL allowance for swapping on the new RPL contract
+func (c *Client) GetNodeSwapRplAllowance() (api.NodeSwapRplAllowanceResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl-allowance"))
+    if err != nil {
+        return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not get node swap RPL allowance: %w", err)
+    }
+    var response api.NodeSwapRplAllowanceResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not decode node swap RPL allowance response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not get node swap RPL allowance: %s", response.Error)
     }
     return response, nil
 }

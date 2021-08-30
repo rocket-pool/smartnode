@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -37,25 +38,46 @@ func join(c *cli.Context) error {
         // Confirm swapping RPL
         if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
 
-            // Approve RPL for swapping
-            response, err := rp.NodeSwapRplApprove(status.AccountBalances.FixedSupplyRPL)
+            // Check allowance
+            allowance, err := rp.GetNodeSwapRplAllowance()
             if err != nil {
                 return err
-            }
-            hash := response.ApproveTxHash
-            fmt.Printf("Approving old RPL for swap...\n")
-            cliutils.PrintTransactionHashNoCancel(rp, hash)
-
-            // If a custom nonce is set, increment it for the next transaction
-            if c.GlobalUint64("nonce") != 0 {
-                rp.IncrementCustomNonce()
             }
             
-            // Swap RPL
-            swapResponse, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL, hash)
-            if err != nil {
-                return err
+            var swapResponse api.NodeSwapRplSwapResponse
+            if allowance.Allowance.Cmp(status.AccountBalances.FixedSupplyRPL) < 0 {
+                // Calculate max uint256 value
+                maxApproval := big.NewInt(2)
+                maxApproval = maxApproval.Exp(maxApproval, big.NewInt(256), nil)
+                maxApproval = maxApproval.Sub(maxApproval, big.NewInt(1))
+        
+                // Approve RPL for swapping
+                response, err := rp.NodeSwapRplApprove(maxApproval)
+                if err != nil {
+                    return err
+                }
+                hash := response.ApproveTxHash
+                fmt.Printf("Approving old RPL for swap (only required on your first swap)...\n")
+                cliutils.PrintTransactionHashNoCancel(rp, hash)
+            
+                // If a custom nonce is set, increment it for the next transaction
+                if c.GlobalUint64("nonce") != 0 {
+                    rp.IncrementCustomNonce()
+                }
+                
+                // Swap RPL
+                swapResponse, err = rp.NodeWaitAndSwapRpl(status.AccountBalances.FixedSupplyRPL, hash)
+                if err != nil {
+                    return err
+                }
+            } else {
+                // Swap RPL
+                swapResponse, err = rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
+                if err != nil {
+                    return err
+                }
             }
+
             fmt.Printf("Swapping old RPL for new RPL...\n")
             cliutils.PrintTransactionHash(rp, swapResponse.SwapTxHash)
             if _, err = rp.WaitForTransaction(swapResponse.SwapTxHash); err != nil {

@@ -230,10 +230,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
-                Name:      "swap-rpl",
+                Name:      "wait-and-swap-rpl",
                 Aliases:   []string{"p2"},
-                Usage:     "Swap old RPL for new RPL",
-                UsageText: "rocketpool api node swap-rpl amount tx-hash",
+                Usage:     "Swap old RPL for new RPL, waiting for the approval TX hash to be mined first",
+                UsageText: "rocketpool api node wait-and-swap-rpl amount tx-hash",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -245,6 +245,39 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(waitForApprovalAndSwapFsRpl(c, amountWei, hash))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "swap-rpl-allowance",
+                Usage:     "Get the node's legacy RPL allowance for new RPL contract",
+                UsageText: "rocketpool api node swap-allowance-rpl",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(allowanceFsRpl(c))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "swap-rpl",
+                Aliases:   []string{"p3"},
+                Usage:     "Swap old RPL for new RPL",
+                UsageText: "rocketpool api node swap-rpl amount",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(swapRpl(c, amountWei))
                     return nil
 
                 },
@@ -288,8 +321,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "wait-and-stake-rpl",
                 Aliases:   []string{"k2"},
-                Usage:     "Stake RPL against the node waiting for tx-hash to be mined first",
-                UsageText: "rocketpool api node stake-rpl amount tx-hash",
+                Usage:     "Stake RPL against the node, waiting for approval tx-hash to be mined first",
+                UsageText: "rocketpool api node wait-and-stake-rpl amount tx-hash",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
