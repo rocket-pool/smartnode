@@ -35,11 +35,6 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
         return nil, err
     }
 
-    // Get staking contract address
-    rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking")
-    if err != nil {
-        return nil, err
-    }
 
     // Check RPL balance
     rplBalance, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
@@ -60,22 +55,50 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
     if err != nil {
         return nil, err
     }
-    approveGasInfo, err := tokens.EstimateApproveRPLGas(rp, *rocketNodeStakingAddress, amountWei, opts)
+    gasInfo, err := node.EstimateStakeGas(rp, amountWei, opts)
     if err != nil {
         return nil, err
     }
-    stakeGasInfo, err := node.EstimateStakeGas(rp, amountWei, opts)
-    if err != nil {
-        return nil, err
-    }
-    response.ApproveGasInfo = approveGasInfo
-    response.StakeGasInfo = stakeGasInfo
+    response.GasInfo = gasInfo
 
     // Update & return response
     response.CanStake = !(response.InsufficientBalance || !response.InConsensus)
     return &response, nil
 
 }
+
+
+func getStakeApprovalGas(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveGasResponse, error) {
+    // Get services
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.NodeStakeRplApproveGasResponse{}
+
+    // Get staking contract address
+    rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking")
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimates
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
+        return nil, err
+    }
+    gasInfo, err := tokens.EstimateApproveRPLGas(rp, *rocketNodeStakingAddress, amountWei, opts)
+    if err != nil {
+        return nil, err
+    }
+    response.GasInfo = gasInfo
+    return &response, nil
+}
+
 
 func allowanceRpl(c *cli.Context) (*api.NodeStakeRplAllowanceResponse, error) {
 

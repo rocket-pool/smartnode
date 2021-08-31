@@ -250,6 +250,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
             cli.Command{
+                Name:      "get-swap-rpl-approval-gas",
+                Usage:     "Estimate the gas cost of legacy RPL interaction approval",
+                UsageText: "rocketpool api node get-swap-rpl-approval-gas",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("approve amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getSwapApprovalGas(c, amountWei))
+                    return nil
+
+                },
+            },
+            cli.Command{
                 Name:      "swap-rpl-allowance",
                 Usage:     "Get the node's legacy RPL allowance for new RPL contract",
                 UsageText: "rocketpool api node swap-allowance-rpl",
@@ -334,6 +351,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(waitForApprovalAndStakeRpl(c, amountWei, hash))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "get-stake-rpl-approval-gas",
+                Usage:     "Estimate the gas cost of new RPL interaction approval",
+                UsageText: "rocketpool api node get-stake-rpl-approval-gas",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    amountWei, err := cliutils.ValidatePositiveWeiAmount("approve amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getStakeApprovalGas(c, amountWei))
                     return nil
 
                 },

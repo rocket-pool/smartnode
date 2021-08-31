@@ -8,7 +8,6 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -38,24 +37,38 @@ func join(c *cli.Context) error {
         // Confirm swapping RPL
         if (c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
 
-            // Check RPL can be swapped
-            _, err := rp.CanNodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
-            if err != nil {
-                return err
-            }
-
             // Check allowance
             allowance, err := rp.GetNodeSwapRplAllowance()
             if err != nil {
                 return err
             }
             
-            var swapResponse api.NodeSwapRplSwapResponse
             if allowance.Allowance.Cmp(status.AccountBalances.FixedSupplyRPL) < 0 {
+                fmt.Println("Before swapping legacy RPL for new RPL, you must first give the new RPL contract approval to interact with your legacy RPL.")
+                fmt.Println("This only needs to be done once for your node.")
+                
+                // If a custom nonce is set, print the multi-transaction warning
+                if c.GlobalUint64("nonce") != 0 {
+                    cliutils.PrintMultiTransactionNonceWarning()
+                }
+        
                 // Calculate max uint256 value
                 maxApproval := big.NewInt(2)
                 maxApproval = maxApproval.Exp(maxApproval, big.NewInt(256), nil)
                 maxApproval = maxApproval.Sub(maxApproval, big.NewInt(1))
+                
+                // Get approval gas
+                approvalGas, err := rp.NodeSwapRplApprovalGas(maxApproval)
+                if err != nil {
+                    return err
+                }
+                rp.PrintGasInfo(approvalGas.GasInfo)
+                
+                // Prompt for confirmation
+                if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Do you want to let the new RPL contract interact with your legacy RPL?"))) {
+                    fmt.Println("Cancelled.")
+                    return nil
+                }
         
                 // Approve RPL for swapping
                 response, err := rp.NodeSwapRplApprove(maxApproval)
@@ -63,25 +76,44 @@ func join(c *cli.Context) error {
                     return err
                 }
                 hash := response.ApproveTxHash
-                fmt.Printf("Approving old RPL for swap (only required on your first swap)...\n")
-                cliutils.PrintTransactionHashNoCancel(rp, hash)
-            
+                fmt.Printf("Approving legacy RPL for swapping)...\n")
+                cliutils.PrintTransactionHash(rp, hash)
+                if _, err = rp.WaitForTransaction(hash); err != nil {
+                    return err
+                }
+                fmt.Println("Successfully approved access to legacy RPL.")
+        
                 // If a custom nonce is set, increment it for the next transaction
                 if c.GlobalUint64("nonce") != 0 {
                     rp.IncrementCustomNonce()
                 }
-                
-                // Swap RPL
-                swapResponse, err = rp.NodeWaitAndSwapRpl(status.AccountBalances.FixedSupplyRPL, hash)
-                if err != nil {
-                    return err
+            }
+
+            // Check RPL can be swapped
+            canSwap, err := rp.CanNodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
+            if err != nil {
+                return err
+            }
+            if !canSwap.CanSwap {
+                fmt.Println("Cannot swap RPL:")
+                if canSwap.InsufficientBalance {
+                    fmt.Println("The node's old RPL balance is insufficient.")
                 }
-            } else {
-                // Swap RPL
-                swapResponse, err = rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
-                if err != nil {
-                    return err
-                }
+                return nil
+            }
+            fmt.Println("RPL Swap Gas Info:")
+            rp.PrintGasInfo(canSwap.GasInfo)
+
+            // Prompt for confirmation
+            if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
+                fmt.Println("Cancelled.")
+                return nil
+            }
+
+            // Swap RPL
+            swapResponse, err := rp.NodeSwapRpl(status.AccountBalances.FixedSupplyRPL)
+            if err != nil {
+                return err
             }
 
             fmt.Printf("Swapping old RPL for new RPL...\n")
@@ -90,17 +122,15 @@ func join(c *cli.Context) error {
                 return err
             }
 
+            // Log
+            fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+            fmt.Println("")
+
             // If a custom nonce is set, increment it for the next transaction
             if c.GlobalUint64("nonce") != 0 {
                 rp.IncrementCustomNonce()
             }
-
-            // log
-            fmt.Printf("Successfully swapped %.6f old RPL for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
-            fmt.Println("")
-
         }
-
     }
 
     // Check if node can join the oracle DAO

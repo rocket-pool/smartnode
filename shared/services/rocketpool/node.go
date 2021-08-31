@@ -192,6 +192,23 @@ func (c *Client) CanNodeSwapRpl(amountWei *big.Int) (api.CanNodeSwapRplResponse,
 }
 
 
+// Get the gas estimate for approving legacy RPL interaction
+func (c *Client) NodeSwapRplApprovalGas(amountWei *big.Int) (api.NodeSwapRplApproveGasResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node get-swap-rpl-approval-gas %s", amountWei.String()))
+    if err != nil {
+        return api.NodeSwapRplApproveGasResponse{}, fmt.Errorf("Could not get old RPL approval gas: %w", err)
+    }
+    var response api.NodeSwapRplApproveGasResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeSwapRplApproveGasResponse{}, fmt.Errorf("Could not decode node swap RPL approve gas response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeSwapRplApproveGasResponse{}, fmt.Errorf("Could not get old RPL approval gas: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Approves old RPL for a token swap
 func (c *Client) NodeSwapRplApprove(amountWei *big.Int) (api.NodeSwapRplApproveResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl-approve-rpl %s", amountWei.String()))
@@ -271,6 +288,23 @@ func (c *Client) CanNodeStakeRpl(amountWei *big.Int) (api.CanNodeStakeRplRespons
     }
     if response.Error != "" {
         return api.CanNodeStakeRplResponse{}, fmt.Errorf("Could not get can node stake RPL status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Get the gas estimate for approving new RPL interaction
+func (c *Client) NodeStakeRplApprovalGas(amountWei *big.Int) (api.NodeStakeRplApproveGasResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node get-stake-rpl-approval-gas %s", amountWei.String()))
+    if err != nil {
+        return api.NodeStakeRplApproveGasResponse{}, fmt.Errorf("Could not get new RPL approval gas: %w", err)
+    }
+    var response api.NodeStakeRplApproveGasResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.NodeStakeRplApproveGasResponse{}, fmt.Errorf("Could not decode node stake RPL approve gas response: %w", err)
+    }
+    if response.Error != "" {
+        return api.NodeStakeRplApproveGasResponse{}, fmt.Errorf("Could not get new RPL approval gas: %s", response.Error)
     }
     return response, nil
 }

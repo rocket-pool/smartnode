@@ -34,12 +34,6 @@ func canNodeSwapRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeSwapRplResp
         return nil, err
     }
 
-    // Get RPL contract address
-    rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
-    if err != nil {
-        return nil, err
-    }
-
     // Check node fixed-supply RPL balance
     fixedSupplyRplBalance, err := tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
     if err != nil {
@@ -52,22 +46,18 @@ func canNodeSwapRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeSwapRplResp
     if err != nil {
         return nil, err
     }
-    approveGasInfo, err := tokens.EstimateApproveFixedSupplyRPLGas(rp, *rocketTokenRPLAddress, amountWei, opts)
+    gasInfo, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
     if err != nil {
         return nil, err
     }
-    swapGasInfo, err := tokens.EstimateSwapFixedSupplyRPLForRPLGas(rp, amountWei, opts)
-    if err != nil {
-        return nil, err
-    }
-    response.ApproveGasInfo = approveGasInfo
-    response.SwapGasInfo = swapGasInfo
+    response.GasInfo = gasInfo
 
     // Update & return response
     response.CanSwap = !response.InsufficientBalance
     return &response, nil
 
 }
+
 
 func allowanceFsRpl(c *cli.Context) (*api.NodeSwapRplAllowanceResponse, error) {
 
@@ -101,6 +91,38 @@ func allowanceFsRpl(c *cli.Context) (*api.NodeSwapRplAllowanceResponse, error) {
 
     response.Allowance = allowance
 
+    return &response, nil
+}
+
+
+func getSwapApprovalGas(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplApproveGasResponse, error) {
+    // Get services
+    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    w, err := services.GetWallet(c)
+    if err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.NodeSwapRplApproveGasResponse{}
+
+    // Get RPL contract address
+    rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+    if err != nil {
+        return nil, err
+    }
+
+    // Get gas estimates
+    opts, err := w.GetNodeAccountTransactor()
+    if err != nil {
+        return nil, err
+    }
+    gasInfo, err := tokens.EstimateApproveFixedSupplyRPLGas(rp, *rocketTokenRPLAddress, amountWei, opts)
+    if err != nil {
+        return nil, err
+    }
+    response.GasInfo = gasInfo
     return &response, nil
 }
 
