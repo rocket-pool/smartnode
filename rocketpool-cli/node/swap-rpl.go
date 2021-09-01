@@ -106,7 +106,7 @@ func nodeSwapRpl(c *cli.Context) error {
             return err
         }
         hash := response.ApproveTxHash
-        fmt.Printf("Approving legacy RPL for swapping)...\n")
+        fmt.Printf("Approving legacy RPL for swapping...\n")
         cliutils.PrintTransactionHash(rp, hash)
         if _, err = rp.WaitForTransaction(hash); err != nil {
             return err
