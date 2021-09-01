@@ -5,8 +5,6 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/rocket-pool/smartnode/shared/types/api"
-
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -289,38 +287,10 @@ func nodeStakeRpl(c *cli.Context) error {
         return nil
     }
 
-    var stakeResponse api.NodeStakeRplStakeResponse
-    if allowance.Allowance.Cmp(amountWei) < 0 {
-        // Calculate max uint256 value
-        maxApproval := big.NewInt(2)
-        maxApproval = maxApproval.Exp(maxApproval, big.NewInt(256), nil)
-        maxApproval = maxApproval.Sub(maxApproval, big.NewInt(1))
-
-        // Approve RPL for staking
-        response, err := rp.NodeStakeRplApprove(maxApproval)
-        if err != nil {
-            return err
-        }
-        hash := response.ApproveTxHash
-        fmt.Printf("Approving RPL for staking (only required on your first stake)...\n")
-        cliutils.PrintTransactionHashNoCancel(rp, hash)
-
-        // If a custom nonce is set, increment it for the next transaction
-        if c.GlobalUint64("nonce") != 0 {
-            rp.IncrementCustomNonce()
-        }
-
-        // Stake RPL
-        stakeResponse, err = rp.NodeWaitAndStakeRpl(amountWei, hash)
-        if err != nil {
-            return err
-        }
-    } else {
-        // Stake RPL
-        stakeResponse, err = rp.NodeStakeRpl(amountWei)
-        if err != nil {
-            return err
-        }
+    // Stake RPL
+    stakeResponse, err := rp.NodeStakeRpl(amountWei)
+    if err != nil {
+        return err
     }
 
     fmt.Printf("Staking RPL...\n")
