@@ -249,7 +249,7 @@ func nodeStakeRpl(c *cli.Context) error {
             return err
         }
         hash := response.ApproveTxHash
-        fmt.Printf("Approving RPL for staking)...\n")
+        fmt.Printf("Approving RPL for staking...\n")
         cliutils.PrintTransactionHash(rp, hash)
         if _, err = rp.WaitForTransaction(hash); err != nil {
             return err
