@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/auction"
@@ -16,6 +19,8 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
@@ -110,8 +115,43 @@ ______           _        _    ______           _
     }
 
     // Register commands
-     auction.RegisterCommands(app, "auction",  []string{"a"})
-      faucet.RegisterCommands(app, "faucet",   []string{"f"})
+    auction.RegisterCommands(app, "auction",  []string{"a"})
+
+    // Get the config path from the arguments (or use the default)
+    configPath := "~/.rocketpool"
+    for index, arg := range os.Args {
+        if strings.HasPrefix(arg, "-c") || strings.HasPrefix(arg, "--config-path") {
+            if len(os.Args) - 1 == index {
+                fmt.Fprintf(os.Stderr, "Expected config path after %s but none was given.\n", arg)
+                os.Exit(1)
+            }
+            configPath = os.Args[index + 1]    
+        }
+    }
+    
+    // Get and parse the config file
+    configFile := fmt.Sprintf("%s/%s", configPath, rocketpool.GlobalConfigFile)
+    expandedPath, err := homedir.Expand(configFile)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Failed to get the global config file path: %s\n", err.Error())
+        os.Exit(1)
+    }
+    configBytes, err := ioutil.ReadFile(expandedPath)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Failed to load the global config file: %s\n", err.Error())
+        os.Exit(1)
+    }
+    cfg, err := config.Parse(configBytes)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Failed to parse the global config file: %s\n", err.Error())
+        os.Exit(1)
+    }
+
+    // Add the faucet if we're on a testnet and it has a contract address
+    if cfg.Rocketpool.RPLFaucetAddress != "" {
+        faucet.RegisterCommands(app, "faucet", []string{"f"})
+    }
+
     minipool.RegisterCommands(app, "minipool", []string{"m"})
      network.RegisterCommands(app, "network",  []string{"e"})
         node.RegisterCommands(app, "node",     []string{"n"})
