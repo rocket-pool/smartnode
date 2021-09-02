@@ -22,7 +22,12 @@ func getSyncProgress(c *cli.Context) error {
     if err != nil {
         return err
     }
-    if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+    if !depositContractInfo.SufficientSync {
+        colorReset := "\033[0m"
+        colorYellow := "\033[33m"
+        fmt.Printf("%sYour eth1 client hasn't synced enough to determine if your eth1 and eth2 clients are on the same network.\n", colorYellow)
+        fmt.Printf("To run this safety check, try again later when eth1 has made more sync progress.%s\n\n", colorReset)
+    } else if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
        depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
         cliutils.PrintDepositMismatchError(
             depositContractInfo.RPNetwork,

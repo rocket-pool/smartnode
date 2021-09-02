@@ -289,4 +289,5 @@ type DepositContractInfoResponse struct {
     RPNetwork uint64                        `json:"rpNetwork"`
     BeaconDepositContract common.Address    `json:"beaconDepositContract"`
     BeaconNetwork uint64                    `json:"beaconNetwork"`
+    SufficientSync bool                     `json:"sufficientSync"`
 }

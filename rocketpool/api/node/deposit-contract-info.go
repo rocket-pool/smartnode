@@ -15,12 +15,17 @@ func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, e
 
     // Get services
     if err := services.RequireNodeWallet(c); err != nil { return nil, err }
-    if err := services.RequireRocketStorage(c); err != nil { return nil, err }
+    if err := services.RequireRocketStorage(c); err != nil { 
+        response := api.DepositContractInfoResponse{}
+        response.SufficientSync = false
+        return &response, nil 
+    }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
 
     // Response
     response := api.DepositContractInfoResponse{}
+    response.SufficientSync = true
 
     // Get the ETH1 network ID that Rocket Pool is on
     config, err := services.GetConfig(c)
