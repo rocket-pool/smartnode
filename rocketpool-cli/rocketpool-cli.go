@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli"
@@ -120,7 +119,7 @@ ______           _        _    ______           _
     // Get the config path from the arguments (or use the default)
     configPath := "~/.rocketpool"
     for index, arg := range os.Args {
-        if strings.HasPrefix(arg, "-c") || strings.HasPrefix(arg, "--config-path") {
+        if arg == "-c" || arg == "--config-path" {
             if len(os.Args) - 1 == index {
                 fmt.Fprintf(os.Stderr, "Expected config path after %s but none was given.\n", arg)
                 os.Exit(1)
