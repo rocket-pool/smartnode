@@ -139,8 +139,7 @@ func (w *Wallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string,
     // Follow derivation path
     key := w.mk
     for i, n := range path {
-        // TODO: for mainnet, change this to Derive()
-        key, err = key.DeriveNonStandard(n)
+        key, err = key.Derive(n)
         if err == hdkeychain.ErrInvalidChild {
             return w.getNodeDerivedKey(index + 1)
         } else if err != nil {
