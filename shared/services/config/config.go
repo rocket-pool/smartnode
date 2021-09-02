@@ -44,7 +44,6 @@ type RocketPoolConfig struct {
 type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
     WsProvider string                   `yaml:"wsProvider,omitempty"`
-    MainnetProvider string              `yaml:"mainnetProvider,omitempty"`
     ChainID string                      `yaml:"chainID,omitempty"`
     Client struct {
         Options []ClientOption          `yaml:"options,omitempty"`

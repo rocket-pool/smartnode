@@ -184,8 +184,8 @@ func (t *submitNetworkBalances) run() error {
 // Get the latest block number to report balances for
 func (t *submitNetworkBalances) getLatestReportableBlock() (uint64, error) {
 
-    // Require mainnet eth client synced
-    if err := services.RequireMainnetEthClientSynced(t.c); err != nil {
+    // Require eth client synced
+    if err := services.RequireEthClientSynced(t.c); err != nil {
         return 0, err
     }
 

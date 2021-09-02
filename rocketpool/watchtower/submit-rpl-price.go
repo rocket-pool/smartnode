@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -32,7 +31,6 @@ type submitRplPrice struct {
     log log.ColorLogger
     cfg config.RocketPoolConfig
     w *wallet.Wallet
-    mnec *ethclient.Client
     rp *rocketpool.RocketPool
     oio *contracts.OneInchOracle
 }
@@ -46,8 +44,6 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
     if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    mnec, err := services.GetMainnetEthClient(c)
-    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
     oio, err := services.GetOneInchOracle(c)
@@ -59,7 +55,6 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
         log: logger,
         cfg: cfg,
         w: w,
-        mnec: mnec,
         rp: rp,
         oio: oio,
     }, nil
@@ -159,8 +154,8 @@ func (t *submitRplPrice) run() error {
 // Get the latest block number to report RPL price for
 func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
 
-    // Require mainnet eth client synced
-    if err := services.RequireMainnetEthClientSynced(t.c); err != nil {
+    // Require eth client synced
+    if err := services.RequireEthClientSynced(t.c); err != nil {
         return 0, err
     }
 

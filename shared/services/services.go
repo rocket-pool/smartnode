@@ -95,15 +95,6 @@ func GetEthClient(c *cli.Context) (*ethclient.Client, error) {
 }
 
 
-func GetMainnetEthClient(c *cli.Context) (*ethclient.Client, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    return getMainnetEthClient(cfg)
-}
-
-
 func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     cfg, err := getConfig(c)
     if err != nil {
@@ -122,11 +113,11 @@ func GetOneInchOracle(c *cli.Context) (*contracts.OneInchOracle, error) {
     if err != nil {
         return nil, err
     }
-    mnec, err := getMainnetEthClient(cfg)
+    ec, err := getEthClient(cfg)
     if err != nil {
         return nil, err
     }
-    return getOneInchOracle(cfg, mnec)
+    return getOneInchOracle(cfg, ec)
 }
 
 
@@ -209,15 +200,6 @@ func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
         ethClient, err = ethclient.Dial(cfg.Chains.Eth1.Provider)
     })
     return ethClient, err
-}
-
-
-func getMainnetEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
-    var err error
-    initMainnetEthClient.Do(func() {
-        mainnetEthClient, err = ethclient.Dial(cfg.Chains.Eth1.MainnetProvider)
-    })
-    return mainnetEthClient, err
 }
 
 
