@@ -66,7 +66,7 @@ func main() {
         cli.StringFlag{
             Name:  "network, n",
             Usage: "`Network` to connect to via Infura",
-            Value: "goerli",
+            Value: "mainnet",
         },
         cli.StringFlag{
             Name:  "projectId, i",
