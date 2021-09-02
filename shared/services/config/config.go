@@ -101,6 +101,16 @@ func (chain *Chain) GetSelectedClient() *ClientOption {
     return nil
 }
 
+// Get a client by it's ID
+func (chain *Chain) GetClientById(id string) *ClientOption {
+    for _, option := range chain.Client.Options {
+        if option.ID == id {
+            return &option
+        }
+    }
+    return nil
+}
+
 
 // Get the beacon & validator images for a client
 func (client *ClientOption) GetBeaconImage() string {
