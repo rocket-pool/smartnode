@@ -43,8 +43,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     },
                     cli.StringFlag{
                         Name:  "network, n",
-                        Usage: "The Eth 2.0 network to run Rocket Pool on",
-                        Value: "prater",
+                        Usage: "The Eth 2.0 network to run Rocket Pool on - use 'prater' for Rocket Pool's test network",
+                        Value: "mainnet",
                     },
                     cli.StringFlag{
                         Name:  "version, v",
