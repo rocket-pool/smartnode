@@ -14,7 +14,6 @@ import (
 func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, error) {
 
     // Get services
-    if err := services.RequireNodeWallet(c); err != nil { return nil, err }
     if err := services.RequireRocketStorage(c); err != nil { 
         response := api.DepositContractInfoResponse{}
         response.SufficientSync = false
