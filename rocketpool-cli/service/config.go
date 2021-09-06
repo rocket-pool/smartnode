@@ -184,11 +184,7 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
     // Check if there's an existing client choice
     reuseClient := false
     if userChain.Client.Selected != "" {
-        // Kind of a hacky way to get the pretty-print name of the client
-        oldValue := globalChain.Client.Selected
-        globalChain.Client.Selected = userChain.Client.Selected
-        client := globalChain.GetSelectedClient()
-        globalChain.Client.Selected = oldValue
+        client := globalChain.GetClientById(userChain.Client.Selected)
         if client != nil {
             reuseClient = cliutils.Confirm(fmt.Sprintf(
                 "Detected an existing %s client choice of %s.\nWould you like to continue using it to retain your sync progress?", chainName, client.Name))

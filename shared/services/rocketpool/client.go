@@ -574,8 +574,14 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
     }
 
+    // How many built-in compose files are we using
+    builtInFileCount := 1
+    if cfg.Metrics.Enabled {
+        builtInFileCount = 2
+    }
+
     // Set compose file flags
-    composeFileFlags := make([]string, len(composeFiles) + 1)
+    composeFileFlags := make([]string, len(composeFiles) + builtInFileCount)
     expandedConfigPath, err := homedir.Expand(c.configPath)
     if err != nil {
         return "", err
@@ -583,19 +589,18 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Add the default docker-compose.yml
     composeFileFlags[0] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, ComposeFile))))
-    
+
     // Add docker-compose-metrics.yml if metrics are enabled
     if cfg.Metrics.Enabled {
-        composeFileFlags = append(composeFileFlags, "")
         composeFileFlags[1] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, MetricsComposeFile))))
-    }    
-    
+    }
+
     for fi, composeFile := range composeFiles {
         expandedFile, err := homedir.Expand(composeFile)
         if err != nil {
             return "", err
         }
-        composeFileFlags[fi + 1] = fmt.Sprintf("-f %s", shellescape.Quote(expandedFile))
+        composeFileFlags[fi+builtInFileCount] = fmt.Sprintf("-f %s", shellescape.Quote(expandedFile))
     }
 
     // Return command
