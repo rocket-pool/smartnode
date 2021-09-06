@@ -107,6 +107,12 @@ func serviceStatus(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
+    // Print what network we're on the network
+    err = cliutils.PrintNetwork(rp)
+    if err != nil {
+        return err
+    }
+
     // Print service status
     return rp.PrintServiceStatus(getComposeFiles(c))
 

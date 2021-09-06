@@ -1,11 +1,12 @@
 package wallet
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/urfave/cli"
+	"github.com/urfave/cli"
 
-    "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -15,6 +16,12 @@ func getStatus(c *cli.Context) error {
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
+
+    // Print what network we're on the network
+    err = cliutils.PrintNetwork(rp)
+    if err != nil {
+        return err
+    }
 
     // Get wallet status
     status, err := rp.WalletStatus()

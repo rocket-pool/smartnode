@@ -17,6 +17,12 @@ func getSyncProgress(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
+    // Print what network we're on the network
+    err = cliutils.PrintNetwork(rp)
+    if err != nil {
+        return err
+    }
+
     // Make sure ETH2 is on the correct chain
     depositContractInfo, err := rp.DepositContractInfo()
     if err != nil {

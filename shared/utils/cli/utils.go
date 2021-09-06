@@ -10,8 +10,10 @@ import (
 )
 
 const colorReset string = "\033[0m"
-const colorYellow string = "\033[33m"
 const colorRed string = "\033[31m"
+const colorGreen string = "\033[32m"
+const colorYellow string = "\033[33m"
+const colorLightBlue string = "\033[36m"
 
 
 // Print a TX's details to the console.
@@ -129,4 +131,23 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
     fmt.Println("Details:")
     fmt.Printf("\tRocket Pool expects deposit contract %s on chain %d.\n", rpDepositAddress.Hex(), rpNetwork)
     fmt.Printf("\tYour Beacon client is using deposit contract %s on chain %d.%s\n", beaconDepositAddress.Hex(), beaconNetwork, colorReset)
+}
+
+
+// Prints what network you're currently on
+func PrintNetwork(rp *rocketpool.Client) error {
+    cfg, err := rp.LoadGlobalConfig()
+    if err != nil {
+        return fmt.Errorf("Error loading global config: %w", err)
+    }
+
+    if cfg.Chains.Eth1.ChainID == "5" {
+        fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", colorLightBlue, colorReset)
+    } else if cfg.Chains.Eth1.ChainID == "1" {
+        fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
+    } else {
+        fmt.Printf("%sYou are on an unexpected network with ID %s.%s\n\n", colorYellow, cfg.Chains.Eth1.ChainID, colorReset)
+    }
+
+    return nil
 }
