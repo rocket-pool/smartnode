@@ -107,7 +107,7 @@ func serviceStatus(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Print what network we're on the network
+    // Print what network we're on
     err = cliutils.PrintNetwork(rp)
     if err != nil {
         return err
@@ -221,6 +221,12 @@ func serviceVersion(c *cli.Context) error {
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
     defer rp.Close()
+
+    // Print what network we're on
+    err = cliutils.PrintNetwork(rp)
+    if err != nil {
+        return err
+    }
 
     // Get RP service version
     serviceVersion, err := rp.GetServiceVersion()

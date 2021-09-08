@@ -22,7 +22,7 @@ func getStatus(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
-    // Print what network we're on the network
+    // Print what network we're on
     err = cliutils.PrintNetwork(rp)
     if err != nil {
         return err
