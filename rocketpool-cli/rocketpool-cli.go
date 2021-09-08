@@ -135,20 +135,24 @@ ______           _        _    ______           _
         fmt.Fprintf(os.Stderr, "Failed to get the global config file path: %s\n", err.Error())
         os.Exit(1)
     }
-    configBytes, err := ioutil.ReadFile(expandedPath)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to load the global config file: %s\n", err.Error())
-        os.Exit(1)
-    }
-    cfg, err := config.Parse(configBytes)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to parse the global config file: %s\n", err.Error())
-        os.Exit(1)
-    }
-
-    // Add the faucet if we're on a testnet and it has a contract address
-    if cfg.Rocketpool.RPLFaucetAddress != "" {
-        faucet.RegisterCommands(app, "faucet", []string{"f"})
+    // Stop if the config file doesn't exist yet
+    _, err = os.Stat(expandedPath)
+    if !os.IsNotExist(err) {
+        configBytes, err := ioutil.ReadFile(expandedPath)
+        if err != nil {
+            fmt.Fprintf(os.Stderr, "Failed to load the global config file: %s\n", err.Error())
+            os.Exit(1)
+        }
+        cfg, err := config.Parse(configBytes)
+        if err != nil {
+            fmt.Fprintf(os.Stderr, "Failed to parse the global config file: %s\n", err.Error())
+            os.Exit(1)
+        }
+    
+        // Add the faucet if we're on a testnet and it has a contract address
+        if cfg.Rocketpool.RPLFaucetAddress != "" {
+            faucet.RegisterCommands(app, "faucet", []string{"f"})
+        }
     }
 
     minipool.RegisterCommands(app, "minipool", []string{"m"})
