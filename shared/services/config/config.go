@@ -59,7 +59,8 @@ type ClientOption struct {
     BeaconImage string                  `yaml:"beaconImage,omitempty"`
     ValidatorImage string               `yaml:"validatorImage,omitempty"`
     Link string                         `yaml:"link,omitempty"`
-    CompatibleEth2Clients string        `yaml:"compatibleEth2Clients"`
+    CompatibleEth2Clients string        `yaml:"compatibleEth2Clients,omitempty"`
+    EventLogInterval string             `yaml:"eventLogInterval,omitempty"`
     Params []ClientParam                `yaml:"params,omitempty"`
 }
 type ClientParam struct {

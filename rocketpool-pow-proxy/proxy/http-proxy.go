@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -26,6 +27,8 @@ type HttpProxyServer struct {
     ProviderUrl string
     Verbose bool
     ProviderType string
+    idLock sync.Mutex
+    id uint64
 }
 
 // Infura rate limit error
@@ -80,6 +83,11 @@ func (p *HttpProxyServer) Start() error {
 // Handle request / serve response
 func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
+    p.idLock.Lock()
+    messageId := p.id
+    p.id++
+    p.idLock.Unlock()
+
     // Log request
     log.Printf("New %s request received from %s\n", r.Method, r.RemoteAddr)
 
@@ -103,11 +111,11 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
     // Log request if in verbose mode
     if p.Verbose {
-        fmt.Printf("< %s\n", requestBody)
+        fmt.Printf("(< %d) %s\n", requestBody)
     }
 
     // Handle the request
-    responseReader, err := p.handleRequest(contentTypes[0], requestBody, 0)
+    responseReader, err := p.handleRequest(contentTypes[0], requestBody, messageId, 0)
     if err != nil {
         log.Println(err.Error())
         _, _ =fmt.Fprintln(w, err.Error())
@@ -131,7 +139,7 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 
 // Handle request / serve response
-func (p *HttpProxyServer) handleRequest(contentType, requestBody string, recursionCount int) (io.Reader, error) {
+func (p *HttpProxyServer) handleRequest(contentType, requestBody string, messageId uint64, recursionCount int) (io.Reader, error) {
 
     // Error out if we've tried too many times
     if recursionCount >= HandleRequestRecursionLimit {
@@ -159,7 +167,7 @@ func (p *HttpProxyServer) handleRequest(contentType, requestBody string, recursi
 
     // Log response if in verbose mode
     if p.Verbose {
-        fmt.Printf("> %s\n", responseBody)
+        fmt.Printf("(> %d) %s\n", messageId, responseBody)
     }
     
     // If using Infura, check for a rate limit error
@@ -176,7 +184,10 @@ func (p *HttpProxyServer) handleRequest(contentType, requestBody string, recursi
         secondsToWait := int(math.Ceil(infuraError.Error.Data.Rate.BackoffSeconds))
         log.Printf("Infura rate limit hit, waiting %d seconds... (Attempt %d of %d)\n", secondsToWait, recursionCount + 1, HandleRequestRecursionLimit)
         time.Sleep(time.Duration(secondsToWait) * time.Second)
-        return p.handleRequest(contentType, requestBody, recursionCount + 1)
+        return p.handleRequest(contentType, requestBody, messageId, recursionCount + 1)
+    } else if p.ProviderType == "pocket" && response.StatusCode == 502 {
+        log.Printf("Pocket returned a 502 gateway error, trying again... (Attempt %d of %d)\n", recursionCount + 1, HandleRequestRecursionLimit)
+        return p.handleRequest(contentType, requestBody, messageId, recursionCount + 1)
     }
     
     // Success, return the body

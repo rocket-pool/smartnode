@@ -79,3 +79,21 @@ func PrintAndWaitForTransaction(config config.RocketPoolConfig, hash common.Hash
     
 }
 
+
+// Gets the event log interval supported by the selected eth1 client 
+func GetEventLogInterval(cfg config.RocketPoolConfig) (*big.Int, error) {
+    
+    // Get event log interval
+    var eventLogInterval *big.Int = nil
+    eth1Client := cfg.GetSelectedEth1Client()
+    if eth1Client != nil && eth1Client.EventLogInterval != "" {
+        var success bool
+        eventLogInterval, success = big.NewInt(0).SetString(eth1Client.EventLogInterval, 0)
+        if !success {
+            return nil, fmt.Errorf("Cannot parse event log interval of [%s]", eth1Client.EventLogInterval)
+        }
+    }
+
+    return eventLogInterval, nil
+
+}

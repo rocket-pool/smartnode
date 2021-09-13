@@ -14,6 +14,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 
@@ -28,12 +29,20 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
+    cfg, err := services.GetConfig(c)
+    if err != nil { return nil, err }
 
     // Response
     response := api.NodeRewardsResponse{}
 
     // Get node account
     nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
+
+    // Get the event log interval
+    eventLogInterval, err := apiutils.GetEventLogInterval(cfg)
     if err != nil {
         return nil, err
     }
@@ -77,7 +86,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
     // Get cumulative rewards
     wg.Go(func() error {
-        rewards, err := rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address)
+        rewards, err := rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, eventLogInterval)
         if err == nil {
             response.CumulativeRewards = eth.WeiToEth(rewards)
         }
@@ -195,7 +204,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
         // Get cumulative ODAO rewards
         wg2.Go(func() error {
-            rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address)
+            rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, eventLogInterval)
             if err == nil {
                 response.CumulativeTrustedRewards = eth.WeiToEth(rewards)
             }

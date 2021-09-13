@@ -28,7 +28,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
-	github.com/rocket-pool/rocketpool-go v1.0.0-rc4.0.20210831022609-65563fe3c58e
+	github.com/rocket-pool/rocketpool-go v1.0.0-rc4.0.20210913025228-b961e75db0c9
 	github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.5

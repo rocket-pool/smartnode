@@ -2,6 +2,12 @@ package collectors
 
 import (
 	"fmt"
+	"log"
+	"math/big"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/dao"
@@ -12,11 +18,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"golang.org/x/sync/errgroup"
-	"log"
-	"strconv"
-	"sync"
-	"time"
 )
 
 // Represents the collector for the user's trusted node
@@ -52,10 +56,21 @@ type TrustedNodeCollector struct {
 	cacheTime             time.Time
 	balancesParticipation *node.TrustedNodeParticipation
 	pricesParticipation   *node.TrustedNodeParticipation
+
+    // The event log interval for the current eth1 client
+    eventLogInterval        *big.Int
 }
 
 // Create a new NodeCollector instance
-func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address) *TrustedNodeCollector {
+func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg config.RocketPoolConfig) *TrustedNodeCollector {
+	
+    // Get the event log interval
+    eventLogInterval, err := api.GetEventLogInterval(cfg)
+    if err != nil {
+        log.Printf("Error getting event log interval: %s\n", err.Error())
+        return nil
+    }
+	
 	subsystem := "trusted_node"
 	return &TrustedNodeCollector{
 		proposalCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposal_count"),
@@ -85,6 +100,7 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 		rp:          rp,
 		bc:          bc,
 		nodeAddress: nodeAddress,
+        eventLogInterval: eventLogInterval,
 	}
 }
 
@@ -145,7 +161,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 		// Get the balances participation data
 		wg.Go(func() error {
 			var err error
-			collector.balancesParticipation, err = node.CalculateTrustedNodeBalancesParticipation(collector.rp, nil)
+			collector.balancesParticipation, err = node.CalculateTrustedNodeBalancesParticipation(collector.rp, collector.eventLogInterval, nil)
 			if err != nil {
 				return fmt.Errorf("Error getting trusted node balances participation data: %w", err)
 			}
@@ -155,7 +171,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 		// Get the prices participation data
 		wg.Go(func() error {
 			var err error
-			collector.pricesParticipation, err = node.CalculateTrustedNodePricesParticipation(collector.rp, nil)
+			collector.pricesParticipation, err = node.CalculateTrustedNodePricesParticipation(collector.rp, collector.eventLogInterval, nil)
 			if err != nil {
 				return fmt.Errorf("Error getting trusted node prices participation data: %w", err)
 			}

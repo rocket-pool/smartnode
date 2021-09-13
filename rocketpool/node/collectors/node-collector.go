@@ -19,6 +19,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 	"golang.org/x/sync/errgroup"
 )
@@ -82,12 +84,23 @@ type NodeCollector struct {
 
     // The node's address
     nodeAddress             common.Address
+
+    // The event log interval for the current eth1 client
+    eventLogInterval        *big.Int
 }
 
 
 // Create a new NodeCollector instance
-func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address) *NodeCollector {
-	subsystem := "node"
+func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg config.RocketPoolConfig) *NodeCollector {
+	
+    // Get the event log interval
+    eventLogInterval, err := api.GetEventLogInterval(cfg)
+    if err != nil {
+        log.Printf("Error getting event log interval: %s\n", err.Error())
+        return nil
+    }
+    
+    subsystem := "node"
 	return &NodeCollector{
 		totalStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_staked_rpl"),
 			"The total amount of RPL staked on the node",
@@ -140,6 +153,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 		rp: rp,
         bc: bc,
         nodeAddress: nodeAddress,
+        eventLogInterval: eventLogInterval,
 	}
 }
 
@@ -161,7 +175,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
- 
+    
     // Sync
     var wg errgroup.Group
     stakedRpl := float64(-1)
@@ -207,7 +221,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
     // Get the cumulative RPL rewards
     wg.Go(func() error {
-        cumulativeRewardsWei, err := rewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress)
+        cumulativeRewardsWei, err := rewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval)
         if err != nil {
             return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
         } else {
