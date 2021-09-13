@@ -111,7 +111,7 @@ func (p *HttpProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
     // Log request if in verbose mode
     if p.Verbose {
-        fmt.Printf("(< %d) %s\n", requestBody)
+        fmt.Printf("(< %d) %s\n", messageId, requestBody)
     }
 
     // Handle the request
