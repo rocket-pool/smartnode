@@ -54,3 +54,74 @@ func FilterContractLogs(rp *rocketpool.RocketPool, contractName string, q Filter
 		Topics: q.Topics,
 	})
 }
+
+
+// Gets the logs for a particular log request, breaking the calls into batches if necessary
+func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFilter [][]common.Hash, intervalSize, fromBlock *big.Int) ([]types.Log, error) {
+	var logs []types.Log
+
+	// Get the block that Rocket Pool was deployed on as the lower bound if one wasn't specified
+	if fromBlock == nil {
+		var err error
+		deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
+		fromBlock, err = rp.RocketStorage.GetUint(nil, deployBlockHash)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if intervalSize == nil {
+		// Handle unlimited intervals with a single call
+		logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
+			Addresses: addressFilter,
+			Topics: topicFilter,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return logs, nil
+	} else {
+		// Get the latest block
+		latestBlockUint, err := rp.Client.BlockNumber(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		latestBlock := big.NewInt(0)
+		latestBlock.SetUint64(latestBlockUint)
+
+		// Set the start and end, clamping on the latest block
+		intervalSize.Sub(intervalSize, big.NewInt(1))
+		start := fromBlock
+		end := big.NewInt(0).Add(start, intervalSize)
+		if end.Cmp(latestBlock) == 1 {
+			end = latestBlock
+		}
+		for {
+			// Get the logs using the current interval
+			newLogs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
+				Addresses: addressFilter,
+				Topics: topicFilter,
+				FromBlock: start,
+				ToBlock: end,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			// Append the logs to the total list
+			logs = append(logs, newLogs...)
+
+			// Return once we've finished iterating
+			if end.Cmp(latestBlock) == 0 {
+				return logs, nil
+			}
+
+			// Update to the next interval (end+1 : that + interval - 1)
+			start.Add(end, big.NewInt(1))
+			end.Add(start, intervalSize)
+			if end.Cmp(latestBlock) == 1 {
+				end = latestBlock
+			}
+		}
+	}
+}
