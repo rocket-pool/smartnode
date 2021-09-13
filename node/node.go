@@ -320,12 +320,12 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
     return hash, nil
 }
 
-// Filters through and counts price submissions by node
-func GetPriceSubmissionCount(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (uint64, error) {
+// Returns an array of block numbers for prices submissions the given trusted node has submitted since fromBlock
+func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (*[]uint64, error) {
     // Get contracts
     rocketNetworkPrices, err := getRocketNetworkPrices(rp)
     if err != nil {
-        return 0, err
+        return nil, err
     }
     // Construct a filter query for relevant logs
     addressFilter := []common.Address{*rocketNetworkPrices.Address}
@@ -334,14 +334,22 @@ func GetPriceSubmissionCount(rp *rocketpool.RocketPool, nodeAddress common.Addre
     // Get the event logs
     logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)))
     if err != nil {
-        return 0, err
+        return nil, err
     }
-
-    return uint64(len(logs)), nil
+    timestamps := make([]uint64, len(logs))
+    for i, log := range logs {
+        values := make(map[string]interface{})
+        // Decode the event
+        if rocketNetworkPrices.ABI.Events["PricesSubmitted"].Inputs.UnpackIntoMap(values, log.Data) != nil {
+            return nil, err
+        }
+        timestamps[i] = values["block"].(*big.Int).Uint64()
+    }
+    return &timestamps, nil
 }
 
-// Returns an array of block numbers for submissions the given trusted node has submitted since fromBlock
-func GetBalanceSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (*[]uint64, error) {
+// Returns an array of block numbers for balances submissions the given trusted node has submitted since fromBlock
+func GetBalancesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (*[]uint64, error) {
     // Get contracts
     rocketNetworkBalances, err := getRocketNetworkBalances(rp)
     if err != nil {
@@ -454,7 +462,7 @@ func CalculateTrustedNodePricesParticipation(rp *rocketpool.RocketPool, interval
         participationTable[member.Address] = make([]bool, intervalsPassed)
         actual := 0
         if (intervalsPassed > 0) {
-            blocks, err := GetBalanceSubmissions(rp, member.Address, startBlock, intervalSize)
+            blocks, err := GetPricesSubmissions(rp, member.Address, startBlock, intervalSize)
             if err != nil {
                 return nil, err
             }
@@ -541,7 +549,7 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, interv
         participationTable[member.Address] = make([]bool, intervalsPassed)
         actual := 0
         if (intervalsPassed > 0) {
-            blocks, err := GetBalanceSubmissions(rp, member.Address, startBlock, intervalSize)
+            blocks, err := GetBalancesSubmissions(rp, member.Address, startBlock, intervalSize)
             if err != nil {
                 return nil, err
             }
