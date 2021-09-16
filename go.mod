@@ -6,8 +6,9 @@ require (
 	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/ethereum/go-ethereum v1.10.8
-	github.com/ferranbt/fastssz v0.0.0-20210817104241-ab271261c6d9 // indirect
+	github.com/ferranbt/fastssz v0.0.0-20210905181407-59cf6761a7d5 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
+	github.com/princjef/gomarkdoc v0.2.1
 	github.com/protolambda/zssz v0.1.5 // indirect
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7 // indirect
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
