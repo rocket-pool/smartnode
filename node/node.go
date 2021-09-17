@@ -332,7 +332,7 @@ func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address,
     topicFilter := [][]common.Hash{{rocketNetworkPrices.ABI.Events["PricesSubmitted"].ID}, {nodeAddress.Hash()}}
 
     // Get the event logs
-    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)))
+    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
     if err != nil {
         return nil, err
     }
@@ -360,7 +360,7 @@ func GetBalancesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Addres
     topicFilter := [][]common.Hash{{rocketNetworkBalances.ABI.Events["BalancesSubmitted"].ID}, {nodeAddress.Hash()}}
 
     // Get the event logs
-    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)))
+    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
     if err != nil {
         return nil, err
     }
@@ -389,7 +389,7 @@ func getLatestMemberCountChangedBlock(rp *rocketpool.RocketPool, fromBlock uint6
     topicFilter := [][]common.Hash{{rocketDaoNodeTrustedActions.ABI.Events["ActionJoined"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionLeave"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionKick"].ID, rocketDaoNodeTrustedActions.ABI.Events["ActionChallengeDecided"].ID}}
 
     // Get the event logs
-    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)))
+    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
     if err != nil {
         return 0, err
     }
