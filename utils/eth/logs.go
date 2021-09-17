@@ -75,6 +75,7 @@ func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFil
 		logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
 			Addresses: addressFilter,
 			Topics: topicFilter,
+			FromBlock: fromBlock,
 		})
 		if err != nil {
 			return nil, err
