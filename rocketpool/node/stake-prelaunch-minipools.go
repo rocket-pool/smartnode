@@ -225,7 +225,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Conf
         t.log.Println("Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.")
         t.log.Println("PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.")
         t.log.Println("***************");
-        return nil;
+        return fmt.Errorf("Duplicate pubkey detected");
     } else {
         t.log.Printlnf("Using validator pubkey %s, which is new to the Beacon Chain.", pubKey.Hex())
     }
