@@ -12,12 +12,11 @@ ADD ./rocketpool-pow-proxy /src/rocketpool-pow-proxy
 ADD ./go.mod /src/go.mod
 ADD ./go.sum /src/go.sum
 
-# Update APKs
-RUN apk update
-
 # Compile & install
 WORKDIR /src
+RUN apk update
 RUN apk add --no-cache build-base
+RUN apk upgrade
 RUN CGO_ENABLED=0 go install ./rocketpool-pow-proxy
 
 
@@ -26,8 +25,10 @@ RUN CGO_ENABLED=0 go install ./rocketpool-pow-proxy
 ###
 
 
-# Start from Alpine image
+# Start from Alpine image and get the latest updates
 FROM alpine:latest
+RUN apk update
+RUN apk upgrade
 
 # Add an unprivileged user
 RUN addgroup -S rp_proxy && adduser -S rp_proxy -G rp_proxy

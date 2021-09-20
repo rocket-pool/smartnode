@@ -12,12 +12,11 @@ ADD ./shared /src/shared
 ADD ./go.mod /src/go.mod
 ADD ./go.sum /src/go.sum
 
-# Update APKs
-RUN apk update
-
 # Compile & install
 WORKDIR /src
+RUN apk update
 RUN apk add --no-cache build-base linux-headers
+RUN apk upgrade
 RUN go install ./rocketpool
 
 
@@ -29,8 +28,10 @@ RUN go install ./rocketpool
 # Start from Alpine image
 FROM alpine:latest
 
-# Add C libraries
+# Add C libraries and updates
+RUN apk update
 RUN apk add --no-cache libgcc libstdc++
+RUN apk upgrade
 
 # Copy binary
 COPY --from=builder /go/bin/rocketpool /go/bin/rocketpool
