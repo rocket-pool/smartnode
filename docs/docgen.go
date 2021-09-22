@@ -37,6 +37,8 @@ func main() {
         "auction": "%s/../auction",
         "contracts": "%s/../contracts",
         "dao": "%s/../dao",
+        "dao-protocol": "%s/../dao/protocol",
+        "dao-trustednode": "%s/../dao/trustednode",
         "deposit": "%s/../deposit",
         "minipool": "%s/../minipool",
         "network": "%s/../network",
@@ -49,6 +51,8 @@ func main() {
         "tokens": "%s/../tokens",
         "types": "%s/../types",
         "utils": "%s/../utils",
+        "utils-eth": "%s/../utils/eth",
+        "utils-strings": "%s/../utils/strings",
     }
 
     // Build the documentation file for each package
