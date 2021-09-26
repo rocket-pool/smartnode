@@ -61,6 +61,7 @@ type ClientOption struct {
     Link string                         `yaml:"link,omitempty"`
     CompatibleEth2Clients string        `yaml:"compatibleEth2Clients,omitempty"`
     EventLogInterval string             `yaml:"eventLogInterval,omitempty"`
+    Supermajority bool                  `yaml:"supermajority,omitempty"`
     Params []ClientParam                `yaml:"params,omitempty"`
 }
 type ClientParam struct {

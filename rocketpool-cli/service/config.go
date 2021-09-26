@@ -33,7 +33,7 @@ func configureService(c *cli.Context) error {
     }
 
     // Configure eth1
-    if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false, []string{}); err != nil {
+    if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false, []string{}, true); err != nil {
         return err
     }
 
@@ -45,7 +45,7 @@ func configureService(c *cli.Context) error {
     }
 
     // Configure eth2
-    if err := configureChain(&(globalConfig.Chains.Eth2), &(userConfig.Chains.Eth2), "Eth 2.0", true, compatibleEth2Clients); err != nil {
+    if err := configureChain(&(globalConfig.Chains.Eth2), &(userConfig.Chains.Eth2), "Eth 2.0", true, compatibleEth2Clients, true); err != nil {
         return err
     }
 
@@ -174,7 +174,7 @@ func configureMetrics(globalMetrics, userMetrics *config.Metrics) error {
 
 
 // Configure a chain
-func configureChain(globalChain, userChain *config.Chain, chainName string, defaultRandomClient bool, compatibleClients []string) error {
+func configureChain(globalChain, userChain *config.Chain, chainName string, defaultRandomClient bool, compatibleClients []string, includeSupermajority bool) error {
 
     // Check client options
     if len(globalChain.Client.Options) == 0 {
@@ -186,9 +186,13 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
     if userChain.Client.Selected != "" {
         client := globalChain.GetClientById(userChain.Client.Selected)
         if client != nil {
-            reuseClient = cliutils.Confirm(fmt.Sprintf(
-                "Detected an existing %s client choice of %s.\nWould you like to continue using it to retain your sync progress?", chainName, client.Name))
-        
+            if client.Supermajority && !includeSupermajority {
+                // If supermajorities are excluded and they're already using one, ignore it.
+                reuseClient = false
+            } else {
+                reuseClient = cliutils.Confirm(fmt.Sprintf(
+                    "Detected an existing %s client choice of %s.\nWould you like to continue using it to retain your sync progress?", chainName, client.Name))
+            }
         }
     }
 
@@ -230,7 +234,18 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         var selected int
         if randomClient {
             rand.Seed(time.Now().UnixNano())
-            selected = rand.Intn(len(compatibleClientIndices))
+            for {
+                selected = rand.Intn(len(compatibleClientIndices))
+                // Don't pick supermajority clients if they're disabled
+                if !includeSupermajority {
+                    selectedIndex := compatibleClientIndices[selected]
+                    if !globalChain.Client.Options[selectedIndex].Supermajority {
+                        break
+                    }
+                } else {
+                    break
+                }
+            }
 
         } else {
             clientOptions := make([]string, len(compatibleClientIndices))
@@ -280,6 +295,17 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
     // Log
     fmt.Printf("%s %s client selected.\n", globalChain.GetSelectedClient().Name, chainName)
     fmt.Println("")
+
+    // Warn about supermajority clients
+    if globalChain.GetSelectedClient().Supermajority {
+        fmt.Println("NOTE: Due to client diversity imbalance, we recommend you select a client with lower representation.")
+        fmt.Println("Please visit https://docs.rocketpool.net/guides/node/eth-clients.html to learn more.")
+        fmt.Println()
+        useDifferent := cliutils.Confirm("Would you like to use a different client (recommended)?")
+        if useDifferent {
+            return configureChain(globalChain, userChain, chainName, defaultRandomClient, compatibleClients, false)
+        }
+    }
 
     // Prompt for params
     params := []config.UserParam{}
