@@ -47,6 +47,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Value: "mainnet",
                     },
                     cli.StringFlag{
+                        Name:  "path, p",
+                        Usage: "A custom path to install Rocket Pool to",
+                    },
+                    cli.StringFlag{
                         Name:  "version, v",
                         Usage: "The smart node package version to install",
                         Value: fmt.Sprintf("v%s", shared.RocketPoolVersion),

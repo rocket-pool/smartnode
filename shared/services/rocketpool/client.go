@@ -231,7 +231,7 @@ func (c *Client) LoadMergedConfig() (config.RocketPoolConfig, error) {
 
 
 // Install the Rocket Pool service
-func (c *Client) InstallService(verbose, noDeps bool, network, version string) error {
+func (c *Client) InstallService(verbose, noDeps bool, network, version, path string) error {
 
     // Get installation script downloader type
     downloader, err := c.getDownloader()
@@ -241,6 +241,9 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version string) e
     flags := []string{
         "-n", fmt.Sprintf("%s", shellescape.Quote(network)),
         "-v", fmt.Sprintf("%s", shellescape.Quote(version)),
+    }
+    if path != "" {
+        flags = append(flags, fmt.Sprintf("-p %s", shellescape.Quote(path)))
     }
     if noDeps {
         flags = append(flags, "-d")

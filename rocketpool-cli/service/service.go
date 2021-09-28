@@ -35,7 +35,7 @@ func installService(c *cli.Context) error {
     defer rp.Close()
 
     // Install service
-    err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("network"), c.String("version"))
+    err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("network"), c.String("version"), c.String("path"))
     if err != nil { return err }
 
     // Print success message & return
