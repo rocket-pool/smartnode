@@ -17,6 +17,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/ethereum/go-ethereum v1.10.8
 	github.com/fatih/color v1.12.0
+	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2

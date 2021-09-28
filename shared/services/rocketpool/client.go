@@ -19,6 +19,7 @@ import (
 
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
+	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/net"
@@ -523,6 +524,17 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 client [%s]. Please run 'rocketpool service config' and select compatible clients.", eth2Client.Name, eth1Client.Name)
     }
 
+    // Get the external IP address
+    var externalIP string
+    consensus := externalip.DefaultConsensus(nil, nil)
+    ip, err := consensus.ExternalIP()
+    if err != nil {
+        fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus, it may have trouble finding peers:")
+        fmt.Println(err.Error())
+    } else {
+        externalIP = ip.String()
+    }
+
     // Set environment variables from config
     env := []string{
         fmt.Sprintf("COMPOSE_PROJECT_NAME=%s",    shellescape.Quote(cfg.Smartnode.ProjectName)),
@@ -537,6 +549,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         fmt.Sprintf("ETH1_PROVIDER=%s",           shellescape.Quote(cfg.Chains.Eth1.Provider)),
         fmt.Sprintf("ETH1_WS_PROVIDER=%s",        shellescape.Quote(cfg.Chains.Eth1.WsProvider)),
         fmt.Sprintf("ETH2_PROVIDER=%s",           shellescape.Quote(cfg.Chains.Eth2.Provider)),
+        fmt.Sprintf("EXTERNAL_IP=%s",             shellescape.Quote(externalIP)),
     }
     if cfg.Metrics.Enabled {
         env = append(env, "ENABLE_METRICS=1")
