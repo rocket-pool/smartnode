@@ -30,7 +30,7 @@ type MinipoolDetails struct {
 
 // The counts of minipools per status
 type MinipoolCountsPerStatus struct {
-    Initialized *big.Int      `abi:"initializedCount"`
+    Initialized *big.Int      `abi:"initialisedCount"`
     Prelaunch *big.Int        `abi:"prelaunchCount"`
     Staking *big.Int          `abi:"stakingCount"`
     Withdrawable *big.Int     `abi:"withdrawableCount"`
