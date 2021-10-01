@@ -28,8 +28,8 @@ func nodeDeposit(c *cli.Context) error {
     if err != nil {
         return err
     }
-    if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
-       depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+//    if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+    if depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
         cliutils.PrintDepositMismatchError(
             depositContractInfo.RPNetwork,
             depositContractInfo.BeaconNetwork,
