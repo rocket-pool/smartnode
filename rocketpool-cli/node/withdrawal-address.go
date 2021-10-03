@@ -94,8 +94,18 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 
     // Log & return
     if !c.Bool("force") {
-        fmt.Printf("The node's withdrawal address update to %s is now pending.\n" +
-            "To confirm it, please visit the Rocket Pool website (https://testnet.rocketpool.net/withdrawal).", withdrawalAddress.Hex())
+        stakeUrl := ""
+        config, err := rp.LoadGlobalConfig()
+        if err == nil {
+            stakeUrl = config.Smartnode.StakeUrl
+        }
+        if stakeUrl != "" {
+            fmt.Printf("The node's withdrawal address update to %s is now pending.\n" +
+            "To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddress.Hex(), stakeUrl)
+        } else {
+            fmt.Printf("The node's withdrawal address update to %s is now pending.\n" +
+            "To confirm it, please visit the Rocket Pool website.", withdrawalAddress.Hex())
+        }
     } else {
         fmt.Printf("The node's withdrawal address was successfully set to %s.\n", withdrawalAddress.Hex())
     }

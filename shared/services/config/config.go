@@ -34,6 +34,7 @@ type RocketPoolConfig struct {
         GasLimit string                 `yaml:"gasLimit,omitempty"`
         RplClaimGasThreshold string     `yaml:"rplClaimGasThreshold,omitempty"`
         TxWatchUrl string               `yaml:"txWatchUrl,omitempty"`
+        StakeUrl string                 `yaml:"stakeUrl,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
         Eth1 Chain                      `yaml:"eth1,omitempty"`
