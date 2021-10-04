@@ -1,14 +1,13 @@
 package wallet
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/tyler-smith/go-bip39"
+	"github.com/tyler-smith/go-bip39"
 
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
-    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
-
 
 // Prompt for a wallet password
 func promptPassword() string {
@@ -16,7 +15,7 @@ func promptPassword() string {
         password := cliutils.PromptPassword(
             "Please enter a password to secure your wallet with:",
             fmt.Sprintf("^.{%d,}$", passwords.MinPasswordLength),
-            fmt.Sprintf("Your password must be at least %d characters long", passwords.MinPasswordLength),
+            fmt.Sprintf("Your password must be at least %d characters long. Please try again:", passwords.MinPasswordLength),
         )
         confirmation := cliutils.PromptPassword("Please confirm your password:", "^.*$", "")
         if password == confirmation {
