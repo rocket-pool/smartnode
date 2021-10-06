@@ -253,9 +253,8 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
     if err != nil {
         return nil, err
     }
-    //if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
-    //   depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
-    if depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+    if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+       depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
             return nil, fmt.Errorf("Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
                             depositContractInfo.RPDepositContract.Hex(),
                             depositContractInfo.RPNetwork,
