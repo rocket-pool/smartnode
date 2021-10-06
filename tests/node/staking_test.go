@@ -1,18 +1,18 @@
 package node
 
 import (
-    "math/big"
-    "testing"
+	"math/big"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
 )
 
 
@@ -119,9 +119,7 @@ func TestStakeRPL(t *testing.T) {
     }
 
     // Make node deposit to create minipool
-    opts := nodeAccount.GetTransactor()
-    opts.Value = eth.EthToWei(16)
-    if _, err := node.Deposit(rp, 0, opts); err != nil { t.Fatal(err) }
+    if _, _, err := nodeutils.Deposit(rp, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }    
 
     // Check updated staking details
     if totalEffectiveRplStake, err := node.GetTotalEffectiveRPLStake(rp, nil); err != nil {

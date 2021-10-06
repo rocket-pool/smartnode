@@ -2,16 +2,15 @@ package minipool
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
@@ -35,13 +34,11 @@ func CreateMinipool(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accoun
     if err != nil { return nil, err }
     if err := nodeutils.StakeRPL(rp, ownerAccount, nodeAccount, rplRequired); err != nil { return nil, err }
 
-    // Make node deposit
-    opts := nodeAccount.GetTransactor()
-    opts.Value = depositAmount
-    hash, err := node.Deposit(rp, 0, opts)
-    if err != nil { return nil, err }
-    txReceipt, err := utils.WaitForTransaction(rp.Client, hash)
-    if err != nil { return nil, err }
+    // Do the node deposit to generate the minipool
+    expectedMinipoolAddress, txReceipt, err := nodeutils.Deposit(rp, nodeAccount, depositAmount)
+    if err != nil {
+        return nil, fmt.Errorf("Could not do node deposit: %w", err)
+    }
 
     // Get minipool manager contract
     rocketMinipoolManager, err := rp.GetContract("rocketMinipoolManager")
@@ -53,6 +50,11 @@ func CreateMinipool(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accoun
         return nil, errors.New("Could not get minipool created event")
     }
     minipoolAddress := minipoolCreatedEvents[0].(minipoolCreated).Minipool
+
+    // Sanity check to verify the created minipool is at the expected address
+    if expectedMinipoolAddress != minipoolAddress {
+        return nil, errors.New(fmt.Sprintf("Expected minipool address %s but got %s", expectedMinipoolAddress.Hex(), minipoolAddress.Hex()))
+    }
 
     // Return minipool instance
     return minipool.NewMinipool(rp, minipoolAddress)

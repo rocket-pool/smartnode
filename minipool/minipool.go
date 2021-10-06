@@ -451,6 +451,20 @@ func GetMinipoolPubkey(rp *rocketpool.RocketPool, minipoolAddress common.Address
 }
 
 
+// Get the CreationCode binary for the RocketMinipool contract that will be created by node deposits
+func GetMinipoolBytecode(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]byte, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return []byte{}, err
+    }
+    bytecode := new([]byte)
+    if err := rocketMinipoolManager.Call(opts, bytecode, "getMinipoolBytecode"); err != nil {
+        return []byte{}, fmt.Errorf("Could not get minipool contract bytecode: %w", err)
+    }
+    return *bytecode, nil
+}
+
+
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
 func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
