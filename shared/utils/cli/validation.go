@@ -35,6 +35,16 @@ func ValidateArgCount(c *cli.Context, count int) error {
 }
 
 
+// Validate a big int
+func ValidateBigInt(name, value string) (*big.Int, error) {
+    val, success := big.NewInt(0).SetString(value, 0)
+    if !success {
+        return nil, fmt.Errorf("Invalid %s '%s'", name, value)
+    }
+    return val, nil
+}
+
+
 // Validate a boolean value
 func ValidateBool(name, value string) (bool, error) {
     val := strings.ToLower(value)

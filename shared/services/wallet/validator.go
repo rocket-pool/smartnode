@@ -125,6 +125,29 @@ func (w *Wallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 }
 
 
+// Returns the next validator key that will be generated without saving it
+func (w *Wallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
+
+    // Check wallet is initialized
+    if !w.IsInitialized() {
+        return nil, errors.New("Wallet is not initialized")
+    }
+
+    // Get account index
+    index := w.ws.NextAccount
+
+    // Get validator key
+    key, _, err := w.getValidatorPrivateKey(index)
+    if err != nil {
+        return nil, err
+    }
+
+    // Return validator key
+    return key, nil
+
+}
+
+
 // Recover a validator key by public key
 func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 

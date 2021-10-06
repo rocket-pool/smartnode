@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -20,6 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
 
@@ -30,7 +31,7 @@ type minipoolCreated struct {
 }
 
 
-func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.CanNodeDepositResponse, error) {
+func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int) (*api.CanNodeDepositResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
@@ -40,6 +41,14 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*ap
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
+    bc, err := services.GetBeaconClient(c)
+    if err != nil { return nil, err }
+
+    // Get eth2 config
+    eth2Config, err := bc.GetEth2Config()
+    if err != nil {
+        return nil, err
+    }
 
     // Response
     response := api.CanNodeDepositResponse{}
@@ -51,6 +60,15 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*ap
     nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return nil, err
+    }
+
+    // Adjust the salt
+    if salt.Cmp(big.NewInt(0)) == 0 {
+        nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
+        if err != nil {
+            return nil, err
+        }
+        salt.SetUint64(nonce)
     }
 
     // Data
@@ -111,7 +129,36 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*ap
             return err 
         }
         opts.Value = amountWei
-        gasInfo, err := node.EstimateDepositGas(rp, minNodeFee, opts)
+
+        // Get the deposit type
+        depositType, err := node.GetDepositType(rp, amountWei, nil)
+        if err != nil {
+            return err
+        }
+
+        // Get the next validator key
+        validatorKey, err := w.GetNextValidatorKey()
+        if err != nil {
+            return err
+        }
+
+        // Get the next minipool address and withdrawal credentials
+        minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+        if err != nil {
+            return err
+        }
+        withdrawalCredentials := utils.GetWithdrawalCredentials(minipoolAddress)
+
+        // Get validator deposit data and associated parameters
+        depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
+        if err != nil {
+            return err
+        }
+        pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
+        signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+
+        // Run the deposit gas estimator
+        gasInfo, err := node.EstimateDepositGas(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
         if err == nil {
             response.GasInfo = gasInfo
         }
@@ -164,17 +211,42 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*ap
 }
 
 
-func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.NodeDepositResponse, error) {
+func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int) (*api.NodeDepositResponse, error) {
 
     // Get services
     if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
+    bc, err := services.GetBeaconClient(c)
+    if err != nil { return nil, err }
+
+    // Get eth2 config
+    eth2Config, err := bc.GetEth2Config()
+    if err != nil {
+        return nil, err
+    }
+
+    // Get node account
+    nodeAccount, err := w.GetNodeAccount()
+    if err != nil {
+        return nil, err
+    }
 
     // Response
     response := api.NodeDepositResponse{}
+
+    // Adjust the salt
+    if salt.Cmp(big.NewInt(0)) == 0 {
+        nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
+        if err != nil {
+            return nil, err
+        }
+        salt.SetUint64(nonce)
+    }
 
     // Make sure ETH2 is on the correct chain
     depositContractInfo, err := getDepositContractInfo(c)
@@ -198,6 +270,33 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     }
     opts.Value = amountWei
 
+    // Get the deposit type
+    depositType, err := node.GetDepositType(rp, amountWei, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    // Create and save a new validator key
+    validatorKey, err := w.CreateValidatorKey()
+    if err != nil {
+        return nil, err
+    }
+
+    // Get the next minipool address and withdrawal credentials
+    minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+    if err != nil {
+        return nil, err
+    }
+    withdrawalCredentials := utils.GetWithdrawalCredentials(minipoolAddress)
+
+    // Get validator deposit data and associated parameters
+    depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
+    if err != nil {
+        return nil, err
+    }
+    pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
+    signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+
     // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
@@ -205,46 +304,12 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64) (*api.N
     }
 
     // Deposit
-    hash, err := node.Deposit(rp, minNodeFee, opts)
+    hash, err := node.Deposit(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
     if err != nil {
         return nil, err
     }
     response.TxHash = hash
-
-    // Return response
-    return &response, nil
-
-}
-
-
-func getMinipoolAddress(c *cli.Context, hash common.Hash) (*api.NodeDepositMinipoolResponse, error) {
-
-    // Get services
-    if err := services.RequireNodeRegistered(c); err != nil { return nil, err }
-    rp, err := services.GetRocketPool(c)
-    if err != nil { return nil, err }
-
-    // Wait for the deposit TX to successfully get mined
-    txReceipt, err := utils.WaitForTransaction(rp.Client, hash)
-    if err != nil {
-        return nil, err
-    }
-
-    // Response
-    response := api.NodeDepositMinipoolResponse{}
-    
-    // Get minipool manager contract
-    minipoolManager, err := rp.GetContract("rocketMinipoolManager")
-    if err != nil {
-        return nil, err
-    }
-
-    // Get created minipool address
-    minipoolCreatedEvents, err := minipoolManager.GetTransactionEvents(txReceipt, "MinipoolCreated", minipoolCreated{})
-    if err != nil || len(minipoolCreatedEvents) == 0 {
-        return nil, errors.New("Could not get minipool created event")
-    }
-    response.MinipoolAddress = minipoolCreatedEvents[0].(minipoolCreated).Minipool
+    response.MinipoolAddress = minipoolAddress
 
     // Return response
     return &response, nil

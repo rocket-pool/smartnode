@@ -445,18 +445,20 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
             cli.Command{
                 Name:      "can-deposit",
                 Usage:     "Check whether the node can make a deposit",
-                UsageText: "rocketpool api node can-deposit amount min-fee",
+                UsageText: "rocketpool api node can-deposit amount min-fee salt",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
                     amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
                     if err != nil { return err }
                     minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
                     if err != nil { return err }
+                    salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
+                    if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(canNodeDeposit(c, amountWei, minNodeFee))
+                    api.PrintResponse(canNodeDeposit(c, amountWei, minNodeFee, salt))
                     return nil
 
                 },
@@ -465,7 +467,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Name:      "deposit",
                 Aliases:   []string{"d"},
                 Usage:     "Make a deposit and create a minipool",
-                UsageText: "rocketpool api node deposit amount min-fee",
+                UsageText: "rocketpool api node deposit amount min-fee salt",
                 Action: func(c *cli.Context) error {
 
                     // Validate args
@@ -474,27 +476,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                     if err != nil { return err }
                     minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
                     if err != nil { return err }
-
-                    // Run
-                    api.PrintResponse(nodeDeposit(c, amountWei, minNodeFee))
-                    return nil
-
-                },
-            },
-            cli.Command{
-                Name:      "get-minipool-address",
-                Aliases:   []string{"m"},
-                Usage:     "Wait for a deposit to complete and get the resulting minipool address",
-                UsageText: "rocketpool api node get-minipool-address tx-hash",
-                Action: func(c *cli.Context) error {
-
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
-                    hash, err := cliutils.ValidateTxHash("tx-hash", c.Args().Get(0))
+                    salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
                     if err != nil { return err }
 
                     // Run
-                    api.PrintResponse(getMinipoolAddress(c, hash))
+                    api.PrintResponse(nodeDeposit(c, amountWei, minNodeFee, salt))
                     return nil
 
                 },

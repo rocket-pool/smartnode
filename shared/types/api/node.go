@@ -203,10 +203,6 @@ type NodeDepositResponse struct {
     Status string                       `json:"status"`
     Error string                        `json:"error"`
     TxHash common.Hash                  `json:"txHash"`
-}
-type NodeDepositMinipoolResponse struct {
-    Status string                       `json:"status"`
-    Error string                        `json:"error"`
     MinipoolAddress common.Address      `json:"minipoolAddress"`
 }
 

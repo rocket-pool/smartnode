@@ -299,6 +299,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Name:  "yes, y",
                         Usage: "Automatically confirm deposit",
                     },
+                    cli.StringFlag{
+                        Name:  "salt, l",
+                        Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
+                    },
                 },
                 Action: func(c *cli.Context) error {
 
@@ -311,6 +315,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     }
                     if c.String("max-slippage") != "" && c.String("max-slippage") != "auto" {
                         if _, err := cliutils.ValidatePercentage("maximum commission rate slippage", c.String("max-slippage")); err != nil { return err }
+                    }
+                    if c.String("salt") != "" {
+                        if _, err := cliutils.ValidateBigInt("salt", c.String("salt")); err != nil { return err }
                     }
 
                     // Run

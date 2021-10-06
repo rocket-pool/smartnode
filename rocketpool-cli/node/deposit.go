@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -113,8 +114,20 @@ func nodeDeposit(c *cli.Context) error {
 
     }
 
+    // Get minipool salt
+    var salt *big.Int
+    if c.String("salt") != "" {
+        var success bool
+        salt, success = big.NewInt(0).SetString(c.String("salt"), 0)
+        if !success {
+            return fmt.Errorf("Invalid minipool salt: %s")
+        }
+    } else {
+        salt = big.NewInt(0)
+    }
+
     // Check deposit can be made
-    canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee)
+    canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee, salt)
     if err != nil {
         return err
     }
@@ -173,7 +186,7 @@ func nodeDeposit(c *cli.Context) error {
     }
 
     // Make deposit
-    response, err := rp.NodeDeposit(amountWei, minNodeFee)
+    response, err := rp.NodeDeposit(amountWei, minNodeFee, salt)
     if err != nil {
         return err
     }
@@ -181,14 +194,14 @@ func nodeDeposit(c *cli.Context) error {
     // Log and wait for the minipool address
     fmt.Printf("Creating minipool...\n")
     cliutils.PrintTransactionHash(rp, response.TxHash)
-    _, err = rp.GetMinipoolAddress(response.TxHash)
+    _, err = rp.WaitForTransaction(response.TxHash)
     if err != nil {
         return err
     }
 
     // Log & return
     fmt.Printf("The node deposit of %.6f ETH was made successfully.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
-    fmt.Println("Please run 'rocketpool minipool status' to see the details of your new minipool.")
+    fmt.Printf("Your new minipool's address is %s.\n", response.MinipoolAddress)
     return nil
 
 }

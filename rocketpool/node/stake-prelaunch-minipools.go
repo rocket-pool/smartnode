@@ -191,8 +191,12 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Conf
         return err
     }
 
-    // Create new validator key
-    validatorKey, err := t.w.CreateValidatorKey()
+    // Get the validator key for the minipool
+    validatorPubkey, err := minipool.GetMinipoolPubkey(t.rp, mp.Address, nil)
+    if err != nil {
+        return err
+    }
+    validatorKey, err := t.w.GetValidatorKeyByPubkey(validatorPubkey)
     if err != nil {
         return err
     }

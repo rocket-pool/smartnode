@@ -412,8 +412,8 @@ func (c *Client) NodeWithdrawRpl(amountWei *big.Int) (api.NodeWithdrawRplRespons
 
 
 // Check whether the node can make a deposit
-func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64) (api.CanNodeDepositResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f", amountWei.String(), minFee))
+func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int) (api.CanNodeDepositResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s", amountWei.String(), minFee, salt.String()))
     if err != nil {
         return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %w", err)
     }
@@ -429,8 +429,8 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64) (api.CanNode
 
 
 // Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64) (api.NodeDepositResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f", amountWei.String(), minFee))
+func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int) (api.NodeDepositResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s", amountWei.String(), minFee, salt.String()))
     if err != nil {
         return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
     }
@@ -440,23 +440,6 @@ func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64) (api.NodeDeposi
     }
     if response.Error != "" {
         return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %s", response.Error)
-    }
-    return response, nil
-}
-
-
-// Get the minipool address for a new deposit
-func (c *Client) GetMinipoolAddress(txHash common.Hash) (api.NodeDepositMinipoolResponse, error) {
-    responseBytes, err := c.callAPI(fmt.Sprintf("node get-minipool-address %s", txHash.String()))
-    if err != nil {
-        return api.NodeDepositMinipoolResponse{}, fmt.Errorf("Could not get minipool address: %w", err)
-    }
-    var response api.NodeDepositMinipoolResponse
-    if err := json.Unmarshal(responseBytes, &response); err != nil {
-        return api.NodeDepositMinipoolResponse{}, fmt.Errorf("Could not decode minipool address response: %w", err)
-    }
-    if response.Error != "" {
-        return api.NodeDepositMinipoolResponse{}, fmt.Errorf("Could not get minipool address: %s", response.Error)
     }
     return response, nil
 }

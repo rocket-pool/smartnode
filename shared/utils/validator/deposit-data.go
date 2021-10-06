@@ -1,16 +1,15 @@
 package validator
 
 import (
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/prysmaticlabs/go-ssz"
-    eth2types "github.com/wealdtech/go-eth2-types/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/prysmaticlabs/go-ssz"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
-    "github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
-
 // Deposit settings
-const DepositAmount = 32000000000 // gwei
+const DepositAmount = 16000000000 // gwei
 
 
 // Deposit data
