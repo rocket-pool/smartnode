@@ -137,7 +137,7 @@ func (t *submitScrubMinipools) run() error {
 	// Submit minipools scrub status
 	for _, details := range minipools {
 		if err := t.submitScrubMinipool(details); err != nil {
-			t.log.Println(fmt.Errorf("Could not submit minipool %s scrub status: %w", details.Address.Hex(), err))
+			t.log.Println(fmt.Errorf("Could not scrub minipool %s: %w", details.Address.Hex(), err))
 		}
 	}
 
@@ -153,27 +153,11 @@ func (t *submitScrubMinipools) getNetworkMinipoolPrelaunchDetails(nodeAddress co
 	// Data
 	var wg1 errgroup.Group
 	var addresses []common.Address
-	var eth2Config beacon.Eth2Config
-	var beaconHead beacon.BeaconHead
 
 	// Get minipool addresses
 	wg1.Go(func() error {
 		var err error
 		addresses, err = minipool.GetMinipoolAddresses(t.rp, nil)
-		return err
-	})
-
-	// Get eth2 config
-	wg1.Go(func() error {
-		var err error
-		eth2Config, err = t.bc.GetEth2Config()
-		return err
-	})
-
-	// Get beacon head
-	wg1.Go(func() error {
-		var err error
-		beaconHead, err = t.bc.GetBeaconHead()
 		return err
 	})
 
@@ -206,8 +190,7 @@ func (t *submitScrubMinipools) getNetworkMinipoolPrelaunchDetails(nodeAddress co
 			mi := mi
 			wg.Go(func() error {
 				address := addresses[mi]
-				validator := validators[address]
-				mpDetails, err := t.getMinipoolPrelaunchDetails(nodeAddress, address, validator, eth2Config, beaconHead)
+				mpDetails, err := t.getMinipoolPrelaunchDetails(nodeAddress, address)
 				if err == nil { minipools[mi] = mpDetails }
 				return err
 			})
@@ -233,7 +216,7 @@ func (t *submitScrubMinipools) getNetworkMinipoolPrelaunchDetails(nodeAddress co
 
 
 // Get minipool prelaunch details
-func (t *submitScrubMinipools) getMinipoolPrelaunchDetails(nodeAddress common.Address, minipoolAddress common.Address, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, beaconHead beacon.BeaconHead) (minipoolPrelaunchDetails, error) {
+func (t *submitScrubMinipools) getMinipoolPrelaunchDetails(nodeAddress common.Address, minipoolAddress common.Address) (minipoolPrelaunchDetails, error) {
 
 	// Create minipool
 	mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
@@ -245,6 +228,12 @@ func (t *submitScrubMinipools) getMinipoolPrelaunchDetails(nodeAddress common.Ad
 	wg.Go(func() error {
 		var err error
 		status, err = mp.GetStatus(nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		withdrawalCredentials, err = mp.GetWithdrawalCredentials(nodeAddress)
 		return err
 	})
 
