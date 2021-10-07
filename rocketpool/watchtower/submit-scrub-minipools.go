@@ -3,7 +3,6 @@ package watchtower
 import (
 	"context"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -44,8 +43,9 @@ type submitScrubMinipools struct {
 // Prelaunch minipool info
 type minipoolPrelaunchDetails struct {
 	Address common.Address
-	WithdrawalCredentials []byte	`ssz-size:"32"`
-	validatorPubkey types.ValidatorPubkey
+	WithdrawalCredentials common.Hash
+	ValidatorPubkey types.ValidatorPubkey
+	Status types.MinipoolStatus
 }
 
 
@@ -95,17 +95,11 @@ func (t *submitScrubMinipools) run() error {
 	// Data
 	var wg errgroup.Group
 	var nodeTrusted bool
-	var submitScrubEnabled bool
 
 	// Get data
 	wg.Go(func() error {
 		var err error
 		nodeTrusted, err = trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		submitScrubEnabled, err = protocol.GetMinipoolSubmitScrubEnabled(t.rp, nil)
 		return err
 	})
 
@@ -114,8 +108,8 @@ func (t *submitScrubMinipools) run() error {
 		return err
 	}
 
-	// Check node trusted status & settings
-	if !(nodeTrusted && submitScrubEnabled) {
+	// Check node trusted status
+	if !(nodeTrusted) {
 		return nil
 	}
 
@@ -134,10 +128,10 @@ func (t *submitScrubMinipools) run() error {
 	// Log
 	t.log.Printlnf("%d minipool(s) are scrub worthy...", len(minipools))
 
-	// Submit minipools scrub status
-	for _, details := range minipools {
-		if err := t.submitScrubMinipool(details); err != nil {
-			t.log.Println(fmt.Errorf("Could not scrub minipool %s: %w", details.Address.Hex(), err))
+	// Submit vote to scrub minipools
+	for _, mp := range minipools {
+		if err := t.submitVoteScrubMinipool(mp); err != nil {
+			t.log.Println(fmt.Errorf("Could not scrub minipool %s: %w", mp.Address.Hex(), err))
 		}
 	}
 
@@ -204,7 +198,7 @@ func (t *submitScrubMinipools) getNetworkMinipoolPrelaunchDetails(nodeAddress co
 	// Filter by prelaunch status
 	prelaunchMinipools := []minipoolPrelaunchDetails{}
 	for _, details := range minipools {
-		if details.Prelaunch {
+		if details.Status == types.Prelaunch {
 			prelaunchMinipools = append(prelaunchMinipools, details)
 		}
 	}
@@ -224,6 +218,12 @@ func (t *submitScrubMinipools) getMinipoolPrelaunchDetails(nodeAddress common.Ad
 		return minipoolPrelaunchDetails{}, err
 	}
 
+	// Data
+	var wg errgroup.Group
+	var status types.MinipoolStatus
+	var withdrawalCredentials common.Hash
+	var validatorPubKey types.ValidatorPubkey
+
 	// Load data
 	wg.Go(func() error {
 		var err error
@@ -233,7 +233,13 @@ func (t *submitScrubMinipools) getMinipoolPrelaunchDetails(nodeAddress common.Ad
 
 	wg.Go(func() error {
 		var err error
-		withdrawalCredentials, err = mp.GetWithdrawalCredentials(nodeAddress)
+		withdrawalCredentials, err = mp.GetWithdrawalCredentials(nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		validatorPubkey, err = mp.GetMinipoolPubkey(minipoolAddress)
 		return err
 	})
 
@@ -248,7 +254,8 @@ func (t *submitScrubMinipools) getMinipoolPrelaunchDetails(nodeAddress common.Ad
 		return minipoolPrelaunchDetails{
 			Address: minipoolAddress,
 			WithdrawalCredentials: withdrawalCredentials,
-			validatorPubkey: validatorPubkey
+			ValidatorPubkey: validatorPubkey,
+			Status: status,
 		}, nil
 	}
 
@@ -257,10 +264,10 @@ func (t *submitScrubMinipools) getMinipoolPrelaunchDetails(nodeAddress common.Ad
 
 
 // Submit minipool scrub status
-func (t *submitScrubMinipools) submitScrubMinipool(details minipoolPrelauchDetails) error {
+func (t *submitScrubMinipools) submitVoteScrubMinipool(mp *minipool.Minipool) error {
 
 	// Log
-	t.log.Printlnf("Submitting minipool %s scrub status...", details.Address.Hex())
+	t.log.Printlnf("Voting to scrub minipool %s...", mp.Address.Hex())
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -269,16 +276,16 @@ func (t *submitScrubMinipools) submitScrubMinipool(details minipoolPrelauchDetai
 	}
 
 	// Get the gas estimates
-	gasInfo, err := minipool.EstimateSubmitMinipoolScrubGas(t.rp, details.Address, opts)
+	gasInfo, err := mp.EstimateVoteScrubGas(opts)
 	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit minipool scrub status: %w", err)
+		return fmt.Errorf("Could not estimate the gas required to voteScrub the minipool: %w", err)
 	}
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
 		return nil
 	}
 
-	// Scrub
-	hash, err := minipool.SubmitMinipoolScrub(t.rp, details.Address, opts)
+	// Dissolve
+	hash, err := mp.VoteScrub(opts)
 	if err != nil {
 		return err
 	}
@@ -290,7 +297,7 @@ func (t *submitScrubMinipools) submitScrubMinipool(details minipoolPrelauchDetai
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted minipool %s scrub status.", details.Address.Hex())
+	t.log.Printlnf("Successfully voted to scrub the minipool %s.", mp.Address.Hex())
 
 	// Return
 	return nil

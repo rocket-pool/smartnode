@@ -41,3 +41,5 @@ require (
 	google.golang.org/grpc v1.40.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
