@@ -1,17 +1,13 @@
 package watchtower
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -20,13 +16,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Settings
-const MinipoolPrelaunchDetailsBatchSize = 20
+const MinipoolPrelaunchStatusBatchSize = 20
 
 
 // Submit scrub minipools task
@@ -117,7 +111,7 @@ func (t *submitScrubMinipools) run() error {
 	t.log.Println("Checking for scrub worthy minipools...")
 
 	// Get minipool prelaunch details
-	minipools, err := t.getNetworkMinipoolPrelaunchDetails(nodeAccount.Address)
+	minipools, err := t.getPrelaunchMinipools()
 	if err != nil {
 		return err
 	}
@@ -141,8 +135,8 @@ func (t *submitScrubMinipools) run() error {
 }
 
 
-// Get all minipool prelaunch details
-func (t *submitScrubMinipools) getNetworkMinipoolPrelaunchDetails(nodeAddress common.Address) ([]minipoolPrelaunchDetails, error) {
+// Get all minipools in prelaunch status
+func (t *submitScrubMinipools) getPrelaunchMinipools() ([]*minipool.Minipool, error) {
 
 	// Data
 	var wg1 errgroup.Group
@@ -157,49 +151,53 @@ func (t *submitScrubMinipools) getNetworkMinipoolPrelaunchDetails(nodeAddress co
 
 	// Wait for data
 	if err := wg1.Wait(); err != nil {
-		return []minipoolPrelaunchDetails{}, err
+		return []*minipool.Minipool{}, err
 	}
 
-	// Get minipool validator statuses
-	validators, err := rp.GetMinipoolValidators(t.rp, t.bc, addresses, nil, nil)
-	if err != nil {
-		return []minipoolPrelaunchDetails{}, err
+	// Create minipool contracts
+	minipools := make([]*minipool.Minipool, len(addresses))
+	for mi, address := range addresses {
+		mp, err := minipool.NewMinipool(t.rp, address)
+		if err != nil {
+			return []*minipool.Minipool{}, err
+		}
+		minipools[mi] = mp
 	}
 
-	// Load details in batches
-	minipools := make([]minipoolPrelaunchDetails, len(addresses))
-	for bsi := 0; bsi < len(addresses); bsi += MinipoolPrelaunchDetailsBatchSize {
+	// Load minipool statuses in batches
+	statuses := make([]minipool.StatusDetails, len(minipools))
+	for bsi := 0; bsi < len(minipools); bsi += MinipoolPrelaunchStatusBatchSize {
 
 		// Get batch start & end index
 		msi := bsi
-		mei := bsi + MinipoolPrelaunchDetailsBatchSize
-		if mei > len(addresses) { mei = len(addresses) }
+		mei := bsi + MinipoolPrelaunchStatusBatchSize
+		if mei > len(minipools) { mei = len(minipools) }
 
 		// Log
-		//t.log.Printlnf("Checking minipools %d - %d of %d for prelaunch status...", msi + 1, mei, len(addresses))
+		//t.log.Printlnf("Checking minipools %d - %d of %d for prelaunch status...", msi + 1, mei, len(minipools))
 
-		// Load details
+		// Load statuses
 		var wg errgroup.Group
 		for mi := msi; mi < mei; mi++ {
 			mi := mi
 			wg.Go(func() error {
-				address := addresses[mi]
-				mpDetails, err := t.getMinipoolPrelaunchDetails(nodeAddress, address)
-				if err == nil { minipools[mi] = mpDetails }
+				mp := minipools[mi]
+				status, err := mp.GetStatusDetails(nil)
+				if err == nil { statuses[mi] = status }
 				return err
 			})
 		}
 		if err := wg.Wait(); err != nil {
-			return []minipoolPrelaunchDetails{}, err
+			return []*minipool.Minipool{}, err
 		}
 
 	}
 
-	// Filter by prelaunch status
-	prelaunchMinipools := []minipoolPrelaunchDetails{}
-	for _, details := range minipools {
-		if details.Status == types.Prelaunch {
-			prelaunchMinipools = append(prelaunchMinipools, details)
+	// Filter minipools by status
+	prelaunchMinipools := []*minipool.Minipool{}
+	for mi, mp := range minipools {
+		if statuses[mi].Status == types.Prelaunch {
+			prelaunchMinipools = append(prelaunchMinipools, mp)
 		}
 	}
 
@@ -207,61 +205,6 @@ func (t *submitScrubMinipools) getNetworkMinipoolPrelaunchDetails(nodeAddress co
 	return prelaunchMinipools, nil
 
 }
-
-
-// Get minipool prelaunch details
-func (t *submitScrubMinipools) getMinipoolPrelaunchDetails(nodeAddress common.Address, minipoolAddress common.Address) (minipoolPrelaunchDetails, error) {
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
-	if err != nil {
-		return minipoolPrelaunchDetails{}, err
-	}
-
-	// Data
-	var wg errgroup.Group
-	var status types.MinipoolStatus
-	var withdrawalCredentials common.Hash
-	var validatorPubKey types.ValidatorPubkey
-
-	// Load data
-	wg.Go(func() error {
-		var err error
-		status, err = mp.GetStatus(nil)
-		return err
-	})
-
-	wg.Go(func() error {
-		var err error
-		withdrawalCredentials, err = mp.GetWithdrawalCredentials(nil)
-		return err
-	})
-
-	wg.Go(func() error {
-		var err error
-		validatorPubkey, err = mp.GetMinipoolPubkey(minipoolAddress)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
-		return minipoolPrelaunchDetails{}, err
-	}
-
-	// Check minipool status
-	if status == types.Prelaunch {
-		// Return
-		return minipoolPrelaunchDetails{
-			Address: minipoolAddress,
-			WithdrawalCredentials: withdrawalCredentials,
-			ValidatorPubkey: validatorPubkey,
-			Status: status,
-		}, nil
-	}
-
-	return minipoolPrelaunchDetails{}, nil
-}
-
 
 // Submit minipool scrub status
 func (t *submitScrubMinipools) submitVoteScrubMinipool(mp *minipool.Minipool) error {
