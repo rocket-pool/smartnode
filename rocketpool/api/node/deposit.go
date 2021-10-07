@@ -296,6 +296,20 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
     pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
     signature := rptypes.BytesToValidatorSignature(depositData.Signature)
 
+    // Make sure a validator with this pubkey doesn't already exist
+    status, err := bc.GetValidatorStatus(pubKey, nil)
+    if err != nil {
+        return nil, fmt.Errorf("Error checking for existing validator status: %w\nYour funds have not been deposited for your own safety.", err)
+    }
+    if status.Exists {
+        return nil, fmt.Errorf("**** ALERT ****\n" +
+            "Your minipool %s has the following as a validator pubkey:\n\t%s\n" +
+            "This key is already in use by validator %d on the Beacon chain!\n"  +
+            "Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n" +
+            "PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.\n" +
+            "***************\n", minipoolAddress.Hex(), pubKey.Hex(), status.Index);
+    }
+
     // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
@@ -309,6 +323,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
     }
     response.TxHash = hash
     response.MinipoolAddress = minipoolAddress
+    response.ValidatorPubkey = pubKey
 
     // Return response
     return &response, nil

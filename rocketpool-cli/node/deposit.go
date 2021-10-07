@@ -202,6 +202,10 @@ func nodeDeposit(c *cli.Context) error {
     // Log & return
     fmt.Printf("The node deposit of %.6f ETH was made successfully.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
     fmt.Printf("Your new minipool's address is %s.\n", response.MinipoolAddress)
+    fmt.Printf("The validator pubkey is %s.\n\n", response.ValidatorPubkey.Hex())
+
+    fmt.Printf("This minipool will move from prelaunch to staking status after a 24 hour wait period.")
+
     return nil
 
 }

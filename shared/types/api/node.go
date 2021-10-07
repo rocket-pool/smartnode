@@ -8,6 +8,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
 
 
@@ -200,10 +201,11 @@ type CanNodeDepositResponse struct {
     GasInfo rocketpool.GasInfo          `json:"gasInfo"`
 }
 type NodeDepositResponse struct {
-    Status string                       `json:"status"`
-    Error string                        `json:"error"`
-    TxHash common.Hash                  `json:"txHash"`
-    MinipoolAddress common.Address      `json:"minipoolAddress"`
+    Status string                               `json:"status"`
+    Error string                                `json:"error"`
+    TxHash common.Hash                          `json:"txHash"`
+    MinipoolAddress common.Address              `json:"minipoolAddress"`
+    ValidatorPubkey rptypes.ValidatorPubkey     `json:"validatorPubkey"`
 }
 
 

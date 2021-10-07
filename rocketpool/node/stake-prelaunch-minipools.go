@@ -180,7 +180,7 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 
 
 // Stake a minipool
-func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Config beacon.Eth2Config) error {
+func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Config beacon.Eth2Config) error {
 
     // Log
     t.log.Printlnf("Staking minipool %s...", mp.Address.Hex())
@@ -215,24 +215,6 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool,  eth2Conf
 
     pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
     signature := rptypes.BytesToValidatorSignature(depositData.Signature)
-
-    // Make sure a validator with this pubkey doesn't already exist
-    status, err := t.bc.GetValidatorStatus(pubKey, nil)
-    if err != nil {
-        return fmt.Errorf("Error checking for existing validator status: %w", err)
-    }
-    if status.Exists {
-        t.log.Println("**** ALERT ****");
-        t.log.Printlnf("Your minipool %s has the following as a validator pubkey:", mp.Address.Hex())
-        t.log.Printlnf("\t%s", pubKey.Hex())
-        t.log.Printlnf("This key is already in use by validator %d on the Beacon chain!", status.Index)
-        t.log.Println("Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.")
-        t.log.Println("PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.")
-        t.log.Println("***************");
-        return fmt.Errorf("Duplicate pubkey detected");
-    } else {
-        t.log.Printlnf("Using validator pubkey %s, which is new to the Beacon Chain.", pubKey.Hex())
-    }
 
     // Get the gas estimates
     gasInfo, err := mp.EstimateStakeGas(
