@@ -110,22 +110,26 @@ func (t *submitScrubMinipools) run() error {
 	// Log
 	t.log.Println("Checking for scrub worthy minipools...")
 
-	// Get minipool prelaunch details
-	minipools, err := t.getPrelaunchMinipools()
+	// Get minipools in prelaunch status
+	prelaunchMinipools, err := t.getPrelaunchMinipools()
 	if err != nil {
 		return err
 	}
-	if len(minipools) == 0 {
+	if len(prelaunchMinipools) == 0 {
 		return nil
 	}
 
 	// Log
-	t.log.Printlnf("%d minipool(s) are scrub worthy...", len(minipools))
+	t.log.Printlnf("%d minipool(s) are in prelaunch status...", len(prelaunchMinipools))
 
 	// Submit vote to scrub minipools
-	for _, mp := range minipools {
-		if err := t.submitVoteScrubMinipool(mp); err != nil {
-			t.log.Println(fmt.Errorf("Could not scrub minipool %s: %w", mp.Address.Hex(), err))
+	for _, mp := range prelaunchMinipools {
+		if minipool.BeaconChainWithdrawalCredential != mp.Address {
+			if mp.GetScrubVoted(mp.Address) == false {
+				if err := t.submitVoteScrubMinipool(mp); err != nil {
+					t.log.Println(fmt.Errorf("Could not scrub minipool %s: %w", mp.Address.Hex(), err))
+				}
+			}
 		}
 	}
 
