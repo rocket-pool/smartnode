@@ -2,7 +2,6 @@ package trustednode
 
 import (
 	"bytes"
-	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +9,7 @@ import (
 	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
 	trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
@@ -78,7 +78,7 @@ func TestMemberDetails(t *testing.T) {
     if _, _, err := trustednodedao.ProposeMemberLeave(rp, "bye", trustedNodeAccount1.Address, trustedNodeAccount1.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create an unbonded minipool
-    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount1, big.NewInt(0)); err != nil { t.Fatal(err) }
+    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount1, eth.EthToWei(16)); err != nil { t.Fatal(err) }
 
     // Get & check updated member details
     if members, err := trustednodedao.GetMembers(rp, nil); err != nil {

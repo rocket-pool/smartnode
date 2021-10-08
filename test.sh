@@ -21,8 +21,8 @@ fi
 
 
 # Rocket Pool settings
-rp_repo_url="https://github.com/rocket-pool/rocketpool.git"
-rp_repo_branch="master"
+rp_repo_url="git@ssh.dev.azure.com:v3/rocket-pool/RocketPool/rocketpool"
+rp_repo_branch="minipool-approval"
 
 # Dependencies
 rp_dependencies=(

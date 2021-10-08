@@ -12,6 +12,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/tests"
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	"github.com/rocket-pool/rocketpool-go/tests/utils"
 )
 
 
@@ -52,6 +53,9 @@ func TestMain(m *testing.M) {
     if err != nil { log.Fatal(err) }
     userAccount2, err = accounts.GetAccount(9)
     if err != nil { log.Fatal(err) }
+    
+    // Do the bootstrap settings
+    utils.Stage4Bootstrap(rp, ownerAccount)
 
     // Run tests
     os.Exit(m.Run())

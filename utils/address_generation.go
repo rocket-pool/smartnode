@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -28,21 +29,29 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depo
     if len(minipoolBytecode) == 0 {
         minipoolBytecode, err = minipool.GetMinipoolBytecode(rp, nil)
         if err != nil {
-            return common.Address{}, err
+            return common.Address{}, fmt.Errorf("Error getting minipool bytecode: %w", err)
         }
     }
     
     // Create the hash of the minipool constructor call
-    packedConstructorArgs, err := minipoolAbi.Pack("", rp.RocketStorageContract.Address.Bytes(), nodeAddress.Bytes(), depositType)
+    depositTypeBytes := [32]byte{}
+    depositTypeBytes[0] = byte(depositType)
+    packedConstructorArgs, err := minipoolAbi.Pack("", rp.RocketStorageContract.Address, nodeAddress, depositType)
     if err != nil {
-        return common.Address{}, err
+        return common.Address{}, fmt.Errorf("Error creating minipool constructor args: %w", err)
     }
-    initData := append(minipoolBytecode, packedConstructorArgs...)
-    initHash := crypto.Keccak256(initData)
+
+    // Create a new salt by hashing the original and the node address
     saltBytes := [32]byte{}
     salt.FillBytes(saltBytes[:])
+    saltHash := crypto.Keccak256(nodeAddress[:], saltBytes[:])
+    nodeSalt := [32]byte{}
+    copy(nodeSalt[:], saltHash[0:32])
 
-    address := crypto.CreateAddress2(*rocketMinipoolManager.Address, saltBytes, initHash)
+    initData := append(minipoolBytecode, packedConstructorArgs...)
+    initHash := crypto.Keccak256(initData)
+
+    address := crypto.CreateAddress2(*rocketMinipoolManager.Address, nodeSalt, initHash)
     return address, nil
 
 }
