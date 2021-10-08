@@ -124,13 +124,14 @@ func (t *submitScrubMinipools) run() error {
 
 	// Submit vote to scrub minipools
 	for _, mp := range prelaunchMinipools {
-		if minipool.BeaconChainWithdrawalCredential != mp.Address {
-			if mp.GetScrubVoted(mp.Address) == false {
-				if err := t.submitVoteScrubMinipool(mp); err != nil {
-					t.log.Println(fmt.Errorf("Could not scrub minipool %s: %w", mp.Address.Hex(), err))
-				}
-			}
-		}
+		// TBD
+		//if minipool.BeaconChainWithdrawalCredential != mp.Address {
+		//	if mp.GetScrubVoted(mp.Address) == false {
+		//		if err := t.submitVoteScrubMinipool(mp); err != nil {
+		//			t.log.Println(fmt.Errorf("Could not scrub minipool %s: %w", mp.Address.Hex(), err))
+		//		}
+		//	}
+		//}
 	}
 
 	// Return
