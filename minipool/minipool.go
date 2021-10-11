@@ -133,6 +133,24 @@ func GetMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]com
 }
 
 
+// Get the addresses of all minipools in prelaunch status
+func GetPrelaunchMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.Address, error) {
+
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return []common.Address{}, err
+    }
+    offset := big.NewInt(0)
+    limit := big.NewInt(0)
+    addresses := new([]common.Address)
+    if err := rocketMinipoolManager.Call(opts, addresses, "getPrelaunchMinipools", offset, limit); err != nil {
+        return []common.Address{}, fmt.Errorf("Could not get prelaunch minipool addresses: %w", err)
+    }
+    return *addresses, nil
+
+}
+
+
 // Get a node's minipool addresses
 func GetNodeMinipoolAddresses(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) ([]common.Address, error) {
 
