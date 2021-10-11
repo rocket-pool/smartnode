@@ -26,6 +26,7 @@ const (
     RequestForkMethod                = "get_v1_beacon_states_fork"
     RequestValidatorsMethod          = "get_v1_beacon_states_stateId_validators"
     RequestVoluntaryExitMethod       = "post_v1_beacon_pool_voluntary_exits"
+    RequestBeaconBlockMethod         = "get_v1_beacon_blocks_blockId"
 
     MaxRequestValidatorsCount = 30
 )
@@ -311,6 +312,24 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
     })
 }
 
+// Get the ETH1 data for the target beacon block
+func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error) {
+
+    // Get sync status
+    block, err := c.getBeaconBlock(blockId)
+    if err != nil {
+        return beacon.Eth1Data{}, err
+    }
+
+    // Convert the response to the eth1 data struct
+    return beacon.Eth1Data{
+        DepositRoot: common.HexToHash(block.Message.Body.Eth1Data.DepositRoot),
+        DepositCount: block.Message.Body.Eth1Data.DepositCount,
+        BlockHash: common.HexToHash(block.Message.Body.Eth1Data.BlockHash),
+    }, nil
+
+}
+
 // Get sync status
 func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
     var syncStatusResponse SyncStatusResponse
@@ -436,6 +455,16 @@ func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
         return fmt.Errorf("Could not broadcast exit for validator at index %d: %s", request.Message.ValidatorIndex, message)
     }
     return nil
+}
+
+// Get the target beacon block
+func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, error) {
+    var beaconBlockResponse BeaconBlockResponse
+    if err := c.client.Call(&beaconBlockResponse, RequestBeaconBlockMethod); err != nil {
+        message := c.getErrorString(err)
+        return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block: %s", message)
+    }
+    return beaconBlockResponse, nil
 }
 
 // Format an error from Nimbus into a string

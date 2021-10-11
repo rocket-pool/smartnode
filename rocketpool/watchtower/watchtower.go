@@ -26,6 +26,7 @@ const (
     SubmitWithdrawableMinipoolsColor = color.FgBlue
     DissolveTimedOutMinipoolsColor = color.FgMagenta
     ProcessWithdrawalsColor = color.FgCyan
+    SubmitScrubMinipoolsColor = color.FgHiGreen
     ErrorColor = color.FgRed
 )
 
@@ -67,6 +68,8 @@ func run(c *cli.Context) error {
     if err != nil { return err }
     processWithdrawals, err := newProcessWithdrawals(c, log.NewColorLogger(ProcessWithdrawalsColor))
     if err != nil { return err }
+    submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor))
+    if err != nil { return err }
 
     // Initialize error logger
     errorLog := log.NewColorLogger(ErrorColor)
@@ -106,6 +109,14 @@ func run(c *cli.Context) error {
         }
         time.Sleep(taskCooldown)
         if err := processWithdrawals.run(); err != nil {
+            errorLog.Println(err)
+        }
+        time.Sleep(taskCooldown)
+        if err := processWithdrawals.run(); err != nil {
+            errorLog.Println(err)
+        }
+        time.Sleep(taskCooldown)
+        if err := submitScrubMinipools.run(); err != nil {
             errorLog.Println(err)
         }
         time.Sleep(interval)

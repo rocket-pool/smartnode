@@ -1,13 +1,17 @@
 package watchtower
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -21,6 +25,7 @@ import (
 
 // Settings
 const MinipoolPrelaunchStatusBatchSize = 20
+const BlockStartOffset = 100000
 
 
 // Submit scrub minipools task
@@ -30,6 +35,7 @@ type submitScrubMinipools struct {
 	cfg config.RocketPoolConfig
 	w *wallet.Wallet
 	rp *rocketpool.RocketPool
+	ec *ethclient.Client 
 	bc beacon.Client
 }
 
@@ -51,6 +57,8 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger) (*submitScr
 	if err != nil { return nil, err }
 	w, err := services.GetWallet(c)
 	if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
 	rp, err := services.GetRocketPool(c)
 	if err != nil { return nil, err }
 	bc, err := services.GetBeaconClient(c)
@@ -63,6 +71,7 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger) (*submitScr
 		cfg: cfg,
 		w: w,
 		rp: rp,
+		ec: ec,
 		bc: bc,
 	}, nil
 
@@ -111,19 +120,27 @@ func (t *submitScrubMinipools) run() error {
 	t.log.Println("Checking for scrub worthy minipools...")
 
 	// Get minipools in prelaunch status
-	prelaunchMinipools, err := t.getPrelaunchMinipools()
+	addresses, err := minipool.GetPrelaunchMinipoolAddresses(t.rp, nil)
 	if err != nil {
 		return err
 	}
-	if len(prelaunchMinipools) == 0 {
+	if len(addresses) == 0 {
 		return nil
 	}
+	t.log.Printlnf("%d minipool(s) are in prelaunch status...", len(addresses))
 
-	// Log
-	t.log.Printlnf("%d minipool(s) are in prelaunch status...", len(prelaunchMinipools))
+	// Get the starting eth1 block to search
+	startBlock, err := t.getDepositContractStartBlock()
+	if err != nil {
+		return err
+	}
 
 	// Submit vote to scrub minipools
-	for _, mp := range prelaunchMinipools {
+	for _, minipoolAddress := range addresses {
+
+		// This is what the withdrawal credentials *should be*
+		expectedCreds := utils.GetWithdrawalCredentials(minipoolAddress)
+		
 		// TBD
 		//if minipool.BeaconChainWithdrawalCredential != mp.Address {
 		//	if mp.GetScrubVoted(mp.Address) == false {
@@ -140,76 +157,53 @@ func (t *submitScrubMinipools) run() error {
 }
 
 
-// Get all minipools in prelaunch status
-func (t *submitScrubMinipools) getPrelaunchMinipools() ([]*minipool.Minipool, error) {
+// Get the eth1 block that matches the eth1 block last seen in the latest finalized Beacon block, minus the start offset
+func (t *submitScrubMinipools) getDepositContractStartBlock() (uint64, error) {
 
-	// Data
-	var wg1 errgroup.Group
-	var addresses []common.Address
-
-	// Get minipool addresses
-	wg1.Go(func() error {
-		var err error
-		addresses, err = minipool.GetMinipoolAddresses(t.rp, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg1.Wait(); err != nil {
-		return []*minipool.Minipool{}, err
+	data, err := t.bc.GetEth1DataForEth2Block("finalized")
+	if err != nil {
+		return 0, err
+	}
+	
+	eth1Block, err := t.ec.BlockByHash(context.Background(), data.BlockHash)
+	if err != nil {
+		return 0, err
 	}
 
-	// Create minipool contracts
-	minipools := make([]*minipool.Minipool, len(addresses))
-	for mi, address := range addresses {
-		mp, err := minipool.NewMinipool(t.rp, address)
-		if err != nil {
-			return []*minipool.Minipool{}, err
-		}
-		minipools[mi] = mp
+	targetBlockNumber := big.NewInt(0).Sub(eth1Block.Number(), big.NewInt(BlockStartOffset))
+	targetBlock, err := t.ec.BlockByNumber(context.Background(), targetBlockNumber)
+	if err != nil {
+		return 0, err
 	}
 
-	// Load minipool statuses in batches
-	statuses := make([]minipool.StatusDetails, len(minipools))
-	for bsi := 0; bsi < len(minipools); bsi += MinipoolPrelaunchStatusBatchSize {
-
-		// Get batch start & end index
-		msi := bsi
-		mei := bsi + MinipoolPrelaunchStatusBatchSize
-		if mei > len(minipools) { mei = len(minipools) }
-
-		// Log
-		//t.log.Printlnf("Checking minipools %d - %d of %d for prelaunch status...", msi + 1, mei, len(minipools))
-
-		// Load statuses
-		var wg errgroup.Group
-		for mi := msi; mi < mei; mi++ {
-			mi := mi
-			wg.Go(func() error {
-				mp := minipools[mi]
-				status, err := mp.GetStatusDetails(nil)
-				if err == nil { statuses[mi] = status }
-				return err
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return []*minipool.Minipool{}, err
-		}
-
-	}
-
-	// Filter minipools by status
-	prelaunchMinipools := []*minipool.Minipool{}
-	for mi, mp := range minipools {
-		if statuses[mi].Status == types.Prelaunch {
-			prelaunchMinipools = append(prelaunchMinipools, mp)
-		}
-	}
-
-	// Return
-	return prelaunchMinipools, nil
-
+	return targetBlock.NumberU64(), nil
 }
+
+
+// Get the official withdrawal address for a minipool according to the Beacon Chain
+func (t *submitScrubMinipools) getCanonicalMinipoolWithdrawalAddress(minipoolAddress common.Address, eth1StartBlock uint64) (common.Hash, error) {
+
+	// Get the validator pubkey
+	pubkey, err := minipool.GetMinipoolPubkey(t.rp, minipoolAddress, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	// Get the status of the validator on the Beacon chain
+	status, err := t.bc.GetValidatorStatus(pubkey, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	// Get the withdrawal credentials on Beacon if this validator exists
+	if status.Exists {
+		return status.WithdrawalCredentials, nil
+	} else {
+		// TODO: Walk the deposit contract and look for events
+	}
+	
+}
+
 
 // Submit minipool scrub status
 func (t *submitScrubMinipools) submitVoteScrubMinipool(mp *minipool.Minipool) error {

@@ -46,6 +46,11 @@ type ValidatorStatus struct {
     WithdrawableEpoch uint64
     Exists bool
 }
+type Eth1Data struct {
+    DepositRoot common.Hash
+    DepositCount uint64
+    BlockHash common.Hash
+}
 
 
 // Beacon client type
@@ -76,5 +81,6 @@ type Client interface {
     GetDomainData(domainType []byte, epoch uint64) ([]byte, error)
     ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
     Close() error
+    GetEth1DataForEth2Block(blockId string) (Eth1Data, error)
 }
 
