@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -30,8 +31,10 @@ func TestSubmitMinipoolWithdrawable(t *testing.T) {
     mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(32), 1)
     if err != nil { t.Fatal(err) }
 
-    // Delay for the time between depositing and staking (PLACEHOLDER)
-    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    // Delay for the time between depositing and staking
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil { t.Fatal(err) }
+    err = evm.IncreaseTime(int(scrubPeriod + 1))
     if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
     
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }

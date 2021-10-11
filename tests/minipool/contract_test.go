@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/utils"
 
 	"github.com/rocket-pool/rocketpool-go/deposit"
@@ -48,8 +49,10 @@ func TestDetails(t *testing.T) {
     depositOpts.Value = eth.EthToWei(16)
     if _, err := deposit.Deposit(rp, depositOpts); err != nil { t.Fatal(err) }
 
-    // Delay for the time between depositing and staking (PLACEHOLDER)
-    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    // Delay for the time between depositing and staking
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil { t.Fatal(err) }
+    err = evm.IncreaseTime(int(scrubPeriod + 1))
     if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
@@ -193,8 +196,10 @@ func TestStake(t *testing.T) {
         t.Errorf("Incorrect initial minipool status %s", status.String())
     }
 
-    // Delay for the time between depositing and staking (PLACEHOLDER)
-    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    // Delay for the time between depositing and staking
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil { t.Fatal(err) }
+    err = evm.IncreaseTime(int(scrubPeriod + 1))
     if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
@@ -322,8 +327,10 @@ func TestWithdrawValidatorBalance(t *testing.T) {
     userDepositOpts.Value = userDepositAmount
     if _, err := deposit.Deposit(rp, userDepositOpts); err != nil { t.Fatal(err) }
 
-    // Delay for the time between depositing and staking (PLACEHOLDER)
-    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    // Delay for the time between depositing and staking
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil { t.Fatal(err) }
+    err = evm.IncreaseTime(int(scrubPeriod + 1))
     if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
@@ -417,8 +424,10 @@ func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
     userDepositOpts.Value = userDepositAmount
     if _, err := deposit.Deposit(rp, userDepositOpts); err != nil { t.Fatal(err) }
 
-    // Delay for the time between depositing and staking (PLACEHOLDER)
-    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    // Delay for the time between depositing and staking
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil { t.Fatal(err) }
+    err = evm.IncreaseTime(int(scrubPeriod + 1))
     if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool

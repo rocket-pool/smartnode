@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
@@ -35,8 +36,10 @@ func CreateSlashedRPL(t *testing.T, rp *rocketpool.RocketPool, ownerAccount *acc
     opts.Value = eth.EthToWei(16)
     if _, err := deposit.Deposit(rp, opts); err != nil { return err }
 
-    // Delay for the time between depositing and staking (PLACEHOLDER)
-    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    // Delay for the time between depositing and staking
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil { return err }
+    err = evm.IncreaseTime(int(scrubPeriod + 1))
     if err != nil { return fmt.Errorf("Could not increase time: %w", err) }
 
     // Stake minipool

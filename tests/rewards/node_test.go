@@ -2,6 +2,7 @@ package rewards
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -72,9 +74,11 @@ func TestNodeRewards(t *testing.T) {
     opts.Value = eth.EthToWei(16)
     if _, err := deposit.Deposit(rp, opts); err != nil { t.Error(err) }
 
-    // Delay for the time between depositing and staking (PLACEHOLDER)
-    err = evm.IncreaseTime(24 * 60 * 60 + 1)
-    if err != nil { t.Errorf("Could not increase time: %s", err.Error()) }
+    // Delay for the time between depositing and staking
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil { t.Fatal(err) }
+    err = evm.IncreaseTime(int(scrubPeriod + 1))
+    if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Error(err) }

@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -132,8 +133,10 @@ func TestStakeRPL(t *testing.T) {
     depositOpts.Value = eth.EthToWei(16)
     if _, err := deposit.Deposit(rp, depositOpts); err != nil { t.Fatal(err) }
 
-    // Delay for the time between depositing and staking (PLACEHOLDER)
-    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    // Delay for the time between depositing and staking
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil { t.Fatal(err) }
+    err = evm.IncreaseTime(int(scrubPeriod + 1))
     if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
