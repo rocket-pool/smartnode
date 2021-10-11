@@ -73,6 +73,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:       "minipool-settings",
+                Aliases:    []string{"i"},
+                Usage:      "Get the oracle DAO settings related to minipools",
+                UsageText:  "rocketpool odao minipool-settings",
+                Action: func(c *cli.Context) error {
+
+                    // Run
+                    return getMinipoolSettings(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "propose",
                 Aliases:   []string{"p"},
                 Usage:     "Make an oracle DAO proposal",
@@ -286,6 +299,21 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                                     // Run
                                     return proposeSettingProposalActionTimespan(c, c.Args().Get(0))
+
+                                },
+                            },
+                            cli.Command{
+                                Name:       "scrub-period",
+                                Aliases:    []string{"s"},
+                                Usage:      "Propose updating the minipool.scrub.period setting - format is e.g. 1h30m45s",
+                                UsageText:  "rocketpool odao propose setting scrub-period value",
+                                Action: func(c *cli.Context) error {
+
+                                    // Validate args
+                                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+
+                                    // Run
+                                    return proposeSettingScrubPeriod(c, c.Args().Get(0))
 
                                 },
                             },

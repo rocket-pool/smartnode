@@ -108,3 +108,26 @@ func getProposalSettings(c *cli.Context) (*api.GetTNDAOProposalSettingsResponse,
     return &response, nil
 }
 
+
+func getMinipoolSettings(c *cli.Context) (*api.GetTNDAOMinipoolSettingsResponse, error) {
+
+    // Get services
+    if err := services.RequireNodeTrusted(c); err != nil { return nil, err }
+    rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+
+    // Response
+    response := api.GetTNDAOMinipoolSettingsResponse{}
+
+    scrubPeriod, err := trustednode.GetScrubPeriod(rp, nil)
+    if(err != nil) {
+        return nil, fmt.Errorf("Error getting scrub period: %w", err)
+    }
+    
+    response.ScrubPeriod = scrubPeriod
+
+    // Return response
+    return &response, nil
+
+}
+

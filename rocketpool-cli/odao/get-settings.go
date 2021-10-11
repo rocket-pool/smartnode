@@ -36,7 +36,7 @@ func getMemberSettings(c *cli.Context) error {
 }
 
 
-func getProposalSettings(c* cli.Context) error {
+func getProposalSettings(c *cli.Context) error {
 
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
@@ -55,6 +55,26 @@ func getProposalSettings(c* cli.Context) error {
     fmt.Printf("Delay Before Voting on a Proposal is Allowed: %s\n", time.Duration(response.VoteDelayTime * 1000000000))
     fmt.Printf("Window to Execute an Accepted Proposal: %s\n", time.Duration(response.ExecuteTime * 1000000000))
     fmt.Printf("Window to Act on an Executed Proposal: %s\n", time.Duration(response.ActionTime * 1000000000))
+    return nil
+
+}
+
+
+func getMinipoolSettings(c *cli.Context) error {
+
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Get oracle DAO proposal settings
+    response, err := rp.GetTNDAOMinipoolSettings()
+    if err != nil {
+        return err
+    }
+
+    // Log & return
+    fmt.Printf("Scrub Period: %s\n", time.Duration(response.ScrubPeriod * 1000000000))
     return nil
 
 }

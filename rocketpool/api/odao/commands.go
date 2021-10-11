@@ -673,6 +673,41 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                 },
             },
+
+            cli.Command{
+                Name:      "can-propose-scrub-period",
+                Usage:     "Check whether the node can propose the minipool.scrub.period setting",
+                UsageText: "rocketpool api odao can-propose-scrub-period value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    scrubPeriod, err := cliutils.ValidateUint("scrub period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(canProposeSettingScrubPeriod(c, scrubPeriod))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "propose-scrub-period",
+                Usage:     "Propose updating the minipool.scrub.period setting",
+                UsageText: "rocketpool api odao propose-scrub-period value",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    scrubPeriod, err := cliutils.ValidateUint("scrub period", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(proposeSettingScrubPeriod(c, scrubPeriod))
+                    return nil
+
+                },
+            },
             
             cli.Command{
                 Name:      "get-member-settings",
@@ -694,6 +729,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
                     // Run
                     api.PrintResponse(getProposalSettings(c))
+                    return nil
+
+                },
+            },
+            cli.Command{
+                Name:      "get-minipool-settings",
+                Usage:     "Get the ODAO settings related to minipools",
+                UsageText: "rocketpool api odao get-minipool-settings",
+                Action: func(c *cli.Context) error {
+
+                    // Run
+                    api.PrintResponse(getMinipoolSettings(c))
                     return nil
 
                 },

@@ -566,6 +566,20 @@ func (c *Client) CanProposeTNDAOSettingProposalActionTimespan(proposalActionTime
     }
     return response, nil
 }
+func (c *Client) CanProposeTNDAOSettingScrubPeriod(scrubPeriod uint64) (api.CanProposeTNDAOSettingResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao can-propose-scrub-period %d", scrubPeriod))
+    if err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.scrub.period: %w", err)
+    }
+    var response api.CanProposeTNDAOSettingResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting minipool.scrub.period response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting minipool.scrub.period: %s", response.Error)
+    }
+    return response, nil
+}
 
 
 // Propose a setting update
@@ -681,6 +695,20 @@ func (c *Client) ProposeTNDAOSettingProposalActionTimespan(proposalActionTimespa
     }
     return response, nil
 }
+func (c *Client) ProposeTNDAOSettingScrubPeriod(scrubPeriod uint64) (api.ProposeTNDAOSettingScrubPeriodResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao propose-scrub-period %d", scrubPeriod))
+    if err != nil {
+        return api.ProposeTNDAOSettingScrubPeriodResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.scrub.period: %w", err)
+    }
+    var response api.ProposeTNDAOSettingScrubPeriodResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.ProposeTNDAOSettingScrubPeriodResponse{}, fmt.Errorf("Could not decode propose oracle DAO setting minipool.scrub.period response: %w", err)
+    }
+    if response.Error != "" {
+        return api.ProposeTNDAOSettingScrubPeriodResponse{}, fmt.Errorf("Could not propose oracle DAO setting minipool.scrub.period: %s", response.Error)
+    }
+    return response, nil
+}
 
 
 // Get the member settings
@@ -714,6 +742,23 @@ func (c *Client) GetTNDAOProposalSettings() (api.GetTNDAOProposalSettingsRespons
     }
     if response.Error != "" {
         return api.GetTNDAOProposalSettingsResponse{}, fmt.Errorf("Could not get oracle DAO proposal settings: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Get the proposal settings
+func (c *Client) GetTNDAOMinipoolSettings() (api.GetTNDAOMinipoolSettingsResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("odao get-minipool-settings"))
+    if err != nil {
+        return api.GetTNDAOMinipoolSettingsResponse{}, fmt.Errorf("Could not get oracle DAO minipool settings: %w", err)
+    }
+    var response api.GetTNDAOMinipoolSettingsResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.GetTNDAOMinipoolSettingsResponse{}, fmt.Errorf("Could not decode oracle DAO minipool settings response: %w", err)
+    }
+    if response.Error != "" {
+        return api.GetTNDAOMinipoolSettingsResponse{}, fmt.Errorf("Could not get oracle DAO minipool settings: %s", response.Error)
     }
     return response, nil
 }

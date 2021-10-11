@@ -269,6 +269,12 @@ type ProposeTNDAOSettingProposalActionTimespanResponse struct {
     ProposalId uint64               `json:"proposalId"`
     TxHash common.Hash              `json:"txHash"`
 }
+type ProposeTNDAOSettingScrubPeriodResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ProposalId uint64               `json:"proposalId"`
+    TxHash common.Hash              `json:"txHash"`
+}
 
 
 type GetTNDAOMemberSettingsResponse struct {
@@ -289,5 +295,10 @@ type GetTNDAOProposalSettingsResponse struct {
     VoteDelayTime uint64            `json:"voteDelayTime"`
     ExecuteTime uint64              `json:"executeTime"`
     ActionTime uint64               `json:"actionTime"`
+}
+type GetTNDAOMinipoolSettingsResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    ScrubPeriod uint64              `json:"scrubPeriod"`
 }
 
