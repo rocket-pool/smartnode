@@ -109,6 +109,13 @@ func TestProposeMemberLeave(t *testing.T) {
         trustedNodeAccount4,
     }); err != nil { t.Fatal(err) }
 
+    // Get & check member leave executed time
+    if leaveExecutedTime, err := trustednodedao.GetMemberLeaveProposalExecutedTime(rp, proposalMemberAddress, nil); err != nil {
+        t.Error(err)
+    } else if leaveExecutedTime == 0 {
+        t.Errorf("Incorrect member leave proposal executed time %d", leaveExecutedTime)
+    }
+
     // Get & check initial member exists status
     if exists, err := trustednodedao.GetMemberExists(rp, trustedNodeAccount1.Address, nil); err != nil {
         t.Error(err)
@@ -133,13 +140,6 @@ func TestProposeMemberLeave(t *testing.T) {
         t.Error(err)
     } else if payloadStr != fmt.Sprintf("proposalLeave(%s)", proposalMemberAddress.Hex()) {
         t.Errorf("Incorrect proposal payload string %s", payloadStr)
-    }
-
-    // Get & check member leave executed block
-    if leaveExecutedBlock, err := trustednodedao.GetMemberLeaveProposalExecutedTime(rp, proposalMemberAddress, nil); err != nil {
-        t.Error(err)
-    } else if leaveExecutedBlock == 0 {
-        t.Errorf("Incorrect member leave proposal executed block %d", leaveExecutedBlock)
     }
 
 }

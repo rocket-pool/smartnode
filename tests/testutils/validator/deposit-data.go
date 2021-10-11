@@ -1,17 +1,18 @@
 package validator
 
 import (
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/prysmaticlabs/go-ssz"
+	"fmt"
 
-    "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/prysmaticlabs/go-ssz"
 
-    "github.com/rocket-pool/rocketpool-go/tests"
+	"github.com/rocket-pool/rocketpool-go/types"
+
+	"github.com/rocket-pool/rocketpool-go/tests"
 )
 
-
 // Deposit settings
-const depositAmount = 32000000000 // gwei
+const depositAmount = 16000000000 // gwei
 
 
 // Deposit data
@@ -24,14 +25,30 @@ type depositData struct {
 
 
 // Get the validator pubkey
-func GetValidatorPubkey() (types.ValidatorPubkey, error) {
-    return types.HexToValidatorPubkey(tests.ValidatorPubkey)
+func GetValidatorPubkey(pubkey int) (types.ValidatorPubkey, error) {
+    if pubkey == 1 {
+        return types.HexToValidatorPubkey(tests.ValidatorPubkey)
+    } else if pubkey == 2 {
+        return types.HexToValidatorPubkey(tests.ValidatorPubkey2)
+    } else if pubkey == 3 {
+        return types.HexToValidatorPubkey(tests.ValidatorPubkey3)
+    } else {
+        return types.ValidatorPubkey{}, fmt.Errorf("Invalid pubkey index %d", pubkey)
+    }
 }
 
 
 // Get the validator deposit signature
-func GetValidatorSignature() (types.ValidatorSignature, error) {
-    return types.HexToValidatorSignature(tests.ValidatorSignature)
+func GetValidatorSignature(pubkey int) (types.ValidatorSignature, error) {
+    if pubkey == 1 {
+        return types.HexToValidatorSignature(tests.ValidatorSignature)
+    } else if pubkey == 2 {
+        return types.HexToValidatorSignature(tests.ValidatorSignature2)
+    } else if pubkey == 3 {
+        return types.HexToValidatorSignature(tests.ValidatorSignature3)
+    } else {
+        return types.ValidatorSignature{}, fmt.Errorf("Invalid pubkey index %d", pubkey)
+    }
 }
 
 

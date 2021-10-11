@@ -12,6 +12,16 @@ import (
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
 
+// Combine a node's address and a salt to retreive a new salt compatible with depositing
+func GetNodeSalt(nodeAddress common.Address, salt *big.Int) common.Hash {
+    // Create a new salt by hashing the original and the node address
+    saltBytes := [32]byte{}
+    salt.FillBytes(saltBytes[:])
+    saltHash := crypto.Keccak256Hash(nodeAddress.Bytes(), saltBytes[:])
+    return saltHash
+}
+
+
 // Precompute the address of a minipool based on the node wallet, deposit type, and unique salt
 // If you set minipoolBytecode to nil, this will retrieve it from the contracts using minipool.GetMinipoolBytecode().
 func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte) (common.Address, error) {
@@ -41,13 +51,8 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depo
         return common.Address{}, fmt.Errorf("Error creating minipool constructor args: %w", err)
     }
 
-    // Create a new salt by hashing the original and the node address
-    saltBytes := [32]byte{}
-    salt.FillBytes(saltBytes[:])
-    saltHash := crypto.Keccak256(nodeAddress[:], saltBytes[:])
-    nodeSalt := [32]byte{}
-    copy(nodeSalt[:], saltHash[0:32])
-
+    // Get the node salt and initialization data
+    nodeSalt := GetNodeSalt(nodeAddress, salt)
     initData := append(minipoolBytecode, packedConstructorArgs...)
     initHash := crypto.Keccak256(initData)
 

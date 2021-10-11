@@ -36,7 +36,7 @@ func TestDeposit(t *testing.T) {
     if err := nodeutils.StakeRPL(rp, ownerAccount, nodeAccount, rplRequired); err != nil { t.Fatal(err) }
 
     // Deposit
-    if _, _, err := nodeutils.Deposit(rp, nodeAccount, eth.EthToWei(16)); err != nil { 
+    if _, _, err := nodeutils.Deposit(t, rp, nodeAccount, eth.EthToWei(16), 1); err != nil { 
         t.Fatal(err)
     }
 

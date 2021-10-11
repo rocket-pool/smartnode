@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -27,7 +28,7 @@ type minipoolCreated struct {
 
 
 // Create a minipool
-func CreateMinipool(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accounts.Account, depositAmount *big.Int) (*minipool.Minipool, error) {
+func CreateMinipool(t *testing.T, rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accounts.Account, depositAmount *big.Int, pubkey int) (*minipool.Minipool, error) {
 
     // Mint & stake RPL required for mininpool
     rplRequired, err := GetMinipoolRPLRequired(rp)
@@ -35,7 +36,7 @@ func CreateMinipool(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accoun
     if err := nodeutils.StakeRPL(rp, ownerAccount, nodeAccount, rplRequired); err != nil { return nil, err }
 
     // Do the node deposit to generate the minipool
-    expectedMinipoolAddress, txReceipt, err := nodeutils.Deposit(rp, nodeAccount, depositAmount)
+    expectedMinipoolAddress, txReceipt, err := nodeutils.Deposit(t, rp, nodeAccount, depositAmount, pubkey)
     if err != nil {
         return nil, fmt.Errorf("Could not do node deposit: %w", err)
     }
@@ -66,11 +67,11 @@ func CreateMinipool(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accoun
 func StakeMinipool(rp *rocketpool.RocketPool, mp *minipool.Minipool, nodeAccount *accounts.Account) error {
 
     // Get validator & deposit data
-    validatorPubkey, err := validator.GetValidatorPubkey()
+    validatorPubkey, err := validator.GetValidatorPubkey(1)
     if err != nil { return err }
     withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil)
     if err != nil { return err }
-    validatorSignature, err := validator.GetValidatorSignature()
+    validatorSignature, err := validator.GetValidatorSignature(1)
     if err != nil { return err }
     depositDataRoot, err := validator.GetDepositDataRoot(validatorPubkey, withdrawalCredentials, validatorSignature)
     if err != nil { return err }

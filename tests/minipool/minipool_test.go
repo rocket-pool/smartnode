@@ -2,8 +2,10 @@ package minipool
 
 import (
 	"bytes"
-    "github.com/rocket-pool/rocketpool-go/types"
-    "testing"
+	"fmt"
+	"testing"
+
+	"github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -47,15 +49,20 @@ func TestMinipoolDetails(t *testing.T) {
     minipoolDepositAmount := eth.EthToWei(32)
 
     // Create & stake minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, minipoolDepositAmount)
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, minipoolDepositAmount, 1)
     if err != nil { t.Fatal(err) }
+
+    // Delay for the time between depositing and staking (PLACEHOLDER)
+    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
+    
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
 
     // Mark minipool as withdrawable
     if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Get minipool validator pubkey
-    validatorPubkey, err := validator.GetValidatorPubkey()
+    validatorPubkey, err := validator.GetValidatorPubkey(1)
     if err != nil { t.Fatal(err) }
 
     // Get & check updated minipool details

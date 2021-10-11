@@ -1,30 +1,43 @@
 package auction
 
 import (
+	"fmt"
+	"testing"
+
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
 	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
 )
 
 // Create an amount of slashed RPL in the auction contract
-func CreateSlashedRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trustedNodeAccount, trustedNodeAccount2 *accounts.Account, userAccount *accounts.Account) error {
+func CreateSlashedRPL(t *testing.T, rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trustedNodeAccount, trustedNodeAccount2 *accounts.Account, userAccount *accounts.Account) error {
 
     // Stake a large amount of RPL against the node
     if err := nodeutils.StakeRPL(rp, ownerAccount, trustedNodeAccount, eth.EthToWei(1000000)); err != nil { return err }
 
+    // Make user deposit
+    depositOpts := userAccount.GetTransactor();
+    depositOpts.Value = eth.EthToWei(16)
+    if _, err := deposit.Deposit(rp, depositOpts); err != nil { return err }
+
     // Create unbonded minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, trustedNodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, trustedNodeAccount, eth.EthToWei(16), 1)
     if err != nil { return err }
 
     // Deposit user ETH to minipool
     opts := userAccount.GetTransactor()
     opts.Value = eth.EthToWei(16)
     if _, err := deposit.Deposit(rp, opts); err != nil { return err }
+
+    // Delay for the time between depositing and staking (PLACEHOLDER)
+    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    if err != nil { return fmt.Errorf("Could not increase time: %w", err) }
 
     // Stake minipool
     if err := minipoolutils.StakeMinipool(rp, mp, trustedNodeAccount); err != nil { return err }

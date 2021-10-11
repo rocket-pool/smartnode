@@ -1,16 +1,18 @@
 package rewards
 
 import (
-    "context"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/rewards"
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
-    "math/big"
-    "testing"
+	"context"
+	"math/big"
+	"testing"
+
+	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 
@@ -62,7 +64,20 @@ func TestNodeRewards(t *testing.T) {
     }
 
     // Stake RPL & create a minipool
-    if _, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(16), 1)
+    if err != nil { t.Fatal(err) }
+
+    // Deposit user ETH to minipool
+    opts := nodeAccount.GetTransactor()
+    opts.Value = eth.EthToWei(16)
+    if _, err := deposit.Deposit(rp, opts); err != nil { t.Error(err) }
+
+    // Delay for the time between depositing and staking (PLACEHOLDER)
+    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    if err != nil { t.Errorf("Could not increase time: %s", err.Error()) }
+
+    // Stake minipool
+    if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Error(err) }
 
     // Get & check updated node claim rewards percent
     if rewardsPerc, err := rewards.GetNodeClaimRewardsPerc(rp, nodeAccount.Address, nil); err != nil {

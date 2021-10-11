@@ -1,9 +1,10 @@
 package auction
 
 import (
-    "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-    "math/big"
+	"math/big"
 	"testing"
+
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -49,7 +50,7 @@ func TestAuctionDetails(t *testing.T) {
     }
 
     // Mint slashed RPL to auction contract
-    if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount1, trustedNodeAccount2, userAccount1); err != nil {
+    if err := auctionutils.CreateSlashedRPL(t, rp, ownerAccount, trustedNodeAccount1, trustedNodeAccount2, userAccount1); err != nil {
         t.Fatal(err)
     }
 
@@ -117,7 +118,7 @@ func TestLotDetails(t *testing.T) {
     if _, err := protocol.BootstrapLotDuration(rp, 5, ownerAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Mint slashed RPL to auction contract
-    if err := auctionutils.CreateSlashedRPL(rp, ownerAccount, trustedNodeAccount1, trustedNodeAccount2, userAccount1); err != nil { t.Fatal(err) }
+    if err := auctionutils.CreateSlashedRPL(t, rp, ownerAccount, trustedNodeAccount1, trustedNodeAccount2, userAccount1); err != nil { t.Fatal(err) }
 
     // Get & check initial lot details
     if lots, err := auction.GetLots(rp, nil); err != nil {

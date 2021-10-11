@@ -1,24 +1,27 @@
 package minipool
 
 import (
-    "bytes"
-    "encoding/hex"
-    "github.com/ethereum/go-ethereum/common"
-    trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-    "testing"
+	"bytes"
+	"encoding/hex"
+	"fmt"
+	"testing"
 
-    "github.com/rocket-pool/rocketpool-go/deposit"
-    "github.com/rocket-pool/rocketpool-go/minipool"
-    "github.com/rocket-pool/rocketpool-go/network"
-    "github.com/rocket-pool/rocketpool-go/node"
-    "github.com/rocket-pool/rocketpool-go/tokens"
-    rptypes "github.com/rocket-pool/rocketpool-go/types"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/ethereum/go-ethereum/common"
+	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/utils"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-    minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-    nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
+	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/tokens"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
+
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
 )
 
 
@@ -37,13 +40,17 @@ func TestDetails(t *testing.T) {
     if err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(32), 1)
     if err != nil { t.Fatal(err) }
 
     // Make user deposit
     depositOpts := userAccount.GetTransactor();
     depositOpts.Value = eth.EthToWei(16)
     if _, err := deposit.Deposit(rp, depositOpts); err != nil { t.Fatal(err) }
+
+    // Delay for the time between depositing and staking (PLACEHOLDER)
+    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
@@ -126,7 +133,7 @@ func TestRefund(t *testing.T) {
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(32), 1)
     if err != nil { t.Fatal(err) }
 
     // Make user deposit
@@ -166,15 +173,15 @@ func TestStake(t *testing.T) {
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(32))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(32), 1)
     if err != nil { t.Fatal(err) }
 
     // Get validator & deposit data
-    validatorPubkey, err := validator.GetValidatorPubkey()
+    validatorPubkey, err := validator.GetValidatorPubkey(1)
     if err != nil { t.Fatal(err) }
     withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil)
     if err != nil { t.Fatal(err) }
-    validatorSignature, err := validator.GetValidatorSignature()
+    validatorSignature, err := validator.GetValidatorSignature(1)
     if err != nil { t.Fatal(err) }
     depositDataRoot, err := validator.GetDepositDataRoot(validatorPubkey, withdrawalCredentials, validatorSignature)
     if err != nil { t.Fatal(err) }
@@ -185,6 +192,10 @@ func TestStake(t *testing.T) {
     } else if status != rptypes.Prelaunch {
         t.Errorf("Incorrect initial minipool status %s", status.String())
     }
+
+    // Delay for the time between depositing and staking (PLACEHOLDER)
+    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
     if _, err := mp.Stake(validatorPubkey, validatorSignature, depositDataRoot, nodeAccount.GetTransactor()); err != nil {
@@ -212,7 +223,7 @@ func TestDissolve(t *testing.T) {
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(16), 1)
     if err != nil { t.Fatal(err) }
 
     // Get & check initial minipool status
@@ -247,7 +258,7 @@ func TestClose(t *testing.T) {
     if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(16), 1)
     if err != nil { t.Fatal(err) }
 
     // Dissolve minipool
@@ -259,6 +270,15 @@ func TestClose(t *testing.T) {
     } else if !exists {
         t.Error("Incorrect initial minipool exists status")
     }
+
+    // Simulate a post-merge withdrawal by sending 16 ETH to the minipool
+    opts := nodeAccount.GetTransactor()
+    opts.Value = eth.EthToWei(16)
+    hash, err := eth.SendTransaction(rp.Client, mp.Address, opts)
+    if err != nil {
+        t.Errorf("Error sending ETH to minipool: %s", err.Error())
+    }
+    utils.WaitForTransaction(rp.Client, hash)
 
     // Close minipool
     if _, err := mp.Close(nodeAccount.GetTransactor()); err != nil {
@@ -293,7 +313,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(16), 1)
     if err != nil { t.Fatal(err) }
 
     // Make user deposit
@@ -301,6 +321,10 @@ func TestWithdrawValidatorBalance(t *testing.T) {
     userDepositOpts := userAccount.GetTransactor()
     userDepositOpts.Value = userDepositAmount
     if _, err := deposit.Deposit(rp, userDepositOpts); err != nil { t.Fatal(err) }
+
+    // Delay for the time between depositing and staking (PLACEHOLDER)
+    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
@@ -384,7 +408,7 @@ func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(16), 1)
     if err != nil { t.Fatal(err) }
 
     // Make user deposit
@@ -392,6 +416,10 @@ func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
     userDepositOpts := userAccount.GetTransactor()
     userDepositOpts.Value = userDepositAmount
     if _, err := deposit.Deposit(rp, userDepositOpts); err != nil { t.Fatal(err) }
+
+    // Delay for the time between depositing and staking (PLACEHOLDER)
+    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
     if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
@@ -445,15 +473,15 @@ func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
     }
     if rethCollateralRate, err := tokens.GetRETHCollateralRate(rp, nil); err != nil {
         t.Fatal(err)
-    } else if rethCollateralRate != 1 {
+    } else if rethCollateralRate != 0.1 {
         t.Errorf("Incorrect rETH collateral rate %f", rethCollateralRate)
     }
 
     // Confirm the minipool still exists
     if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
         t.Error(err)
-    } else if exists {
-        t.Error("Minipool still exists but it shouldn't")
+    } else if !exists {
+        t.Error("Minipool doesn't exist but it should")
     }
 
 }
@@ -469,7 +497,7 @@ func TestDelegateUpgradeAndRollback(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(16), 1)
     if err != nil { t.Fatal(err) }
 
     // Get original delegate contract
@@ -541,7 +569,7 @@ func TestUseLatestDelegate(t *testing.T) {
     if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil { t.Fatal(err) }
 
     // Create minipool
-    mp, err := minipoolutils.CreateMinipool(rp, ownerAccount, nodeAccount, eth.EthToWei(16))
+    mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(16), 1)
     if err != nil { t.Fatal(err) }
 
     // New delegate params

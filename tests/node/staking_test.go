@@ -1,9 +1,12 @@
 package node
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 
+	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -119,7 +122,22 @@ func TestStakeRPL(t *testing.T) {
     }
 
     // Make node deposit to create minipool
-    if _, _, err := nodeutils.Deposit(rp, nodeAccount, eth.EthToWei(16)); err != nil { t.Fatal(err) }    
+    minipoolAddress, _, err := nodeutils.Deposit(t, rp, nodeAccount, eth.EthToWei(16), 1)
+    if err != nil { t.Fatal(err) }
+    mp, err := minipool.NewMinipool(rp, minipoolAddress)
+    if err != nil { t.Fatal(err) }
+
+    // Make user deposit
+    depositOpts := nodeAccount.GetTransactor();
+    depositOpts.Value = eth.EthToWei(16)
+    if _, err := deposit.Deposit(rp, depositOpts); err != nil { t.Fatal(err) }
+
+    // Delay for the time between depositing and staking (PLACEHOLDER)
+    err = evm.IncreaseTime(24 * 60 * 60 + 1)
+    if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
+
+    // Stake minipool
+    if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil { t.Fatal(err) }
 
     // Check updated staking details
     if totalEffectiveRplStake, err := node.GetTotalEffectiveRPLStake(rp, nil); err != nil {
