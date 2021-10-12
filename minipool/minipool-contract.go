@@ -508,6 +508,7 @@ func (mp *Minipool) CalculateNodeShare(balance *big.Int, opts *bind.CallOpts) (*
     return *nodeAmount, nil
 }
 
+
 // Given a validator balance, calculates how much belongs to rETH users taking into consideration rewards and penalties
 func (mp *Minipool) CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*big.Int, error) {
     userAmount := new(*big.Int)
@@ -515,6 +516,22 @@ func (mp *Minipool) CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*
         return nil, fmt.Errorf("Could not get minipool user portion: %w", err)
     }
     return *userAmount, nil
+}
+
+
+// Estimate the gas requiired to vote to scrub a minipool
+func (mp *Minipool) EstimateVoteScrubGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "voteScrub")
+}
+
+
+// Vote to scrub a minipool
+func (mp *Minipool) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) { 
+    hash, err := mp.Contract.Transact(opts, "voteScrub")
+    if err != nil {
+        return common.Hash{}, fmt.Errorf("Could not vote to scrub minipool %s: %w", mp.Address.Hex(), err)
+    }
+    return hash, nil
 }
 
 

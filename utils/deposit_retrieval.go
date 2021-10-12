@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math/big"
+	"sort"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -33,6 +34,8 @@ type DepositData struct {
     Amount uint64                           `json:"amount"`
     Signature rptypes.ValidatorSignature    `json:"signature"`
     TxHash common.Hash                      `json:"txHash"`
+    BlockNumber uint64                      `json:"blockNumber"`
+    TxIndex uint                            `json:"txIndex"`
 }
 
 
@@ -89,12 +92,35 @@ func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipoolAddresses []common.A
                 Amount: amount,
                 Signature: rptypes.BytesToValidatorSignature(depositEvent.Signature),
                 TxHash: log.TxHash,
+                BlockNumber: log.BlockNumber,
+                TxIndex: log.TxIndex,
             }
             depositMap[minipoolAddress] = append(depositMap[minipoolAddress], depositData)
         }
     }
 
+    // Sort deposits by time
+    for _, deposits := range depositMap {
+        if len(deposits) > 1 {
+            sortDepositData(deposits)
+        }
+    }
+
     return depositMap, nil
+}
+
+
+// Sorts a slice of deposit data entries - lower blocks come first, and if multiple transactions occur
+// in the same block, lower transaction indices come first
+func sortDepositData(data []DepositData) {
+    sort.Slice(data, func(i int, j int) bool {
+        first := data[i] 
+        second := data[j] 
+        if first.BlockNumber == second.BlockNumber {
+            return first.TxIndex < second.TxIndex
+        }
+        return first.BlockNumber < second.BlockNumber
+    })
 }
 
 
