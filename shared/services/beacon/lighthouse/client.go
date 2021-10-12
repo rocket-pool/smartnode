@@ -33,6 +33,7 @@ const (
     RequestForkPath = "/eth/v1/beacon/states/%s/fork"
     RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators"
     RequestVoluntaryExitPath = "/eth/v1/beacon/pool/voluntary_exits"
+    RequestBeaconBlockPath = "/eth/v1/beacon/blocks/%s"
 
     MaxRequestValidatorsCount = 600
 )
@@ -323,6 +324,25 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 }
 
 
+// Get the ETH1 data for the target beacon block
+func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error) {
+
+    // Get the Beacon block
+    block, err := c.getBeaconBlock(blockId)
+    if err != nil {
+        return beacon.Eth1Data{}, err
+    }
+
+    // Convert the response to the eth1 data struct
+    return beacon.Eth1Data{
+        DepositRoot: common.BytesToHash(block.Data.Message.Body.Eth1Data.DepositRoot),
+        DepositCount: uint64(block.Data.Message.Body.Eth1Data.DepositCount),
+        BlockHash: common.BytesToHash(block.Data.Message.Body.Eth1Data.BlockHash),
+    }, nil
+
+}
+
+
 // Get sync status
 func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
     responseBody, status, err := c.getRequest(RequestSyncStatusPath)
@@ -497,6 +517,22 @@ func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
         return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
     }
     return nil
+}
+
+
+// Get the target beacon block
+func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, error) {
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
+    if err != nil {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: %w", err)
+    } else if status != http.StatusOK {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var beaconBlock BeaconBlockResponse
+    if err := json.Unmarshal(responseBody, &beaconBlock); err != nil {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not decode beacon block  data: %w", err)
+    }
+    return beaconBlock, nil
 }
 
 

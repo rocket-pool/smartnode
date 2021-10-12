@@ -147,7 +147,10 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
         if err != nil {
             return err
         }
-        withdrawalCredentials := utils.GetWithdrawalCredentials(minipoolAddress)
+        withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
+        if err != nil {
+            return err
+        }
 
         // Get validator deposit data and associated parameters
         depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
@@ -286,7 +289,10 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
     if err != nil {
         return nil, err
     }
-    withdrawalCredentials := utils.GetWithdrawalCredentials(minipoolAddress)
+    withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
+    if err != nil {
+        return nil, err
+    }
 
     // Get validator deposit data and associated parameters
     depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)

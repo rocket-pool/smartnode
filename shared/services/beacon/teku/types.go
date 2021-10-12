@@ -65,6 +65,19 @@ type ForkResponse struct {
         Epoch           uinteger  `json:"epoch"`
     } `json:"data"`
 }
+type BeaconBlockResponse struct {
+    Data struct {
+        Message struct {
+            Body struct {
+                Eth1Data struct {
+                    DepositRoot byteArray `json:"deposit_root"`
+                    DepositCount uinteger `json:"deposit_count"`
+                    BlockHash byteArray   `json:"block_hash"`
+                } `json:"eth1_data"`
+            } `json:"body"`
+        } `json:"message"`
+    } `json:"data"`
+}
 type ValidatorsResponse struct {
     Data []Validator `json:"data"`
 }

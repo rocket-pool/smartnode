@@ -364,3 +364,33 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 
 }
 
+
+// Get the ETH1 data for the target beacon block
+func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error) {
+
+    // Get chain head
+    head, err := c.bc.GetChainHead(context.Background(), &pbtypes.Empty{})
+    if err != nil {
+        return beacon.Eth1Data{}, fmt.Errorf("Could not get beacon chain head: %w", err)
+    }
+
+    // Get the Beacon block
+    request := pb.ListBlocksRequest{
+        QueryFilter: &pb.ListBlocksRequest_Slot{
+            Slot: head.FinalizedSlot,
+        },
+    }
+    response, err := c.bc.ListBlocks(context.Background(), &request)
+    if err != nil {
+        return beacon.Eth1Data{}, fmt.Errorf("Could not get latest finalized block: %w", err)
+    }
+    eth1Data := response.BlockContainers[0].Block.Block.Body.Eth1Data
+
+    // Convert the response to the eth1 data struct
+    return beacon.Eth1Data{
+        DepositRoot: common.BytesToHash(eth1Data.DepositRoot),
+        DepositCount: eth1Data.DepositCount,
+        BlockHash: common.BytesToHash(eth1Data.BlockHash),
+    }, nil
+
+}

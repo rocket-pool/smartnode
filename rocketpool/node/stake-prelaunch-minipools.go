@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -148,13 +149,13 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 
     // Data
     var wg errgroup.Group
-    statuses := make([]rptypes.MinipoolStatus, len(minipools))
+    statuses := make([]minipool.StatusDetails, len(minipools))
 
     // Load minipool statuses
     for mi, mp := range minipools {
         mi, mp := mi, mp
         wg.Go(func() error {
-            status, err := mp.GetStatus(nil)
+            status, err := mp.GetStatusDetails(nil)
             if err == nil { statuses[mi] = status }
             return err
         })
@@ -165,13 +166,30 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
         return []*minipool.Minipool{}, err
     }
 
+    // Get the scrub period
+    scrubPeriodSeconds, err := trustednode.GetScrubPeriod(t.rp, nil)
+    if err != nil{
+        return []*minipool.Minipool{}, err
+    }
+    scrubPeriod := time.Duration(scrubPeriodSeconds) * time.Second
+
     // Filter minipools by status
     prelaunchMinipools := []*minipool.Minipool{}
     for mi, mp := range minipools {
-        if statuses[mi] == rptypes.Prelaunch {
-            prelaunchMinipools = append(prelaunchMinipools, mp)
+        if statuses[mi].Status == rptypes.Prelaunch {
+            creationTime := statuses[mi].StatusTime
+            remainingTime := time.Until(creationTime.Add(scrubPeriod))
+            if remainingTime < 0 {
+                prelaunchMinipools = append(prelaunchMinipools, mp)
+            } else {
+                t.log.Printlnf("Minipool %s has %s left until it can be staked.", mp.Address.Hex(), remainingTime)
+            }
         }
     }
+
+    // Filter minipools that haven't passed the scrub period yet
+
+    //for _, 
 
     // Return
     return prelaunchMinipools, nil
@@ -186,7 +204,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
     t.log.Printlnf("Staking minipool %s...", mp.Address.Hex())
 
     // Get minipool withdrawal credentials
-    withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil)
+    withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(t.rp, mp.Address, nil)
     if err != nil {
         return err
     }

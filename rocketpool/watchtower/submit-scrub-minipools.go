@@ -7,20 +7,23 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prysmaticlabs/prysm/v2/beacon-chain/core/signing"
+	prdeposit "github.com/prysmaticlabs/prysm/v2/contracts/deposit"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils"
+	rputils "github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 
+	ethpb "github.com/prysmaticlabs/prysm/v2/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
 // Settings
@@ -95,29 +98,17 @@ func (t *submitScrubMinipools) run() error {
 		return err
 	}
 
-	// Data
-	var wg errgroup.Group
-	var nodeTrusted bool
-
-	// Get data
-	wg.Go(func() error {
-		var err error
-		nodeTrusted, err = trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
+	// Get trusted node status
+	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
+	if err != nil {
 		return err
 	}
-
-	// Check node trusted status
 	if !(nodeTrusted) {
 		return nil
 	}
 
 	// Log
-	t.log.Println("Checking for scrub worthy minipools...")
+	t.log.Println("Checking for minipools to scrub...")
 
 	// Get minipools in prelaunch status
 	addresses, err := minipool.GetPrelaunchMinipoolAddresses(t.rp, nil)
@@ -127,7 +118,6 @@ func (t *submitScrubMinipools) run() error {
 	if len(addresses) == 0 {
 		return nil
 	}
-	t.log.Printlnf("%d minipool(s) are in prelaunch status...", len(addresses))
 
 	// Get the starting eth1 block to search
 	startBlock, err := t.getDepositContractStartBlock()
@@ -135,21 +125,138 @@ func (t *submitScrubMinipools) run() error {
 		return err
 	}
 
-	// Submit vote to scrub minipools
-	for _, minipoolAddress := range addresses {
+	// Some counters
+	totalMinipools := len(addresses)
+	goodOnBeaconCount := 0
+	badOnBeaconCount := 0
+	goodOnDepositContract := 0
+	badOnDepositContract := 0
+	unknownDeposits := 0
 
+	// A map of what the withdrawal credentials *should be*
+	expectedWithdrawalCredentials := make(map[common.Address]common.Hash)
+
+	// A list of minipools that haven't been registered on the Beacon Chain yet and
+	// need to be validated via the deposit contract
+	minipoolsToCheckViaDepositContract := []common.Address{}
+
+	// A list of minipools that need to be scrubbed
+	minipoolsToScrub := []common.Address{}
+
+	for _, minipoolAddress := range addresses {
 		// This is what the withdrawal credentials *should be*
-		expectedCreds := utils.GetWithdrawalCredentials(minipoolAddress)
-		
-		// TBD
-		//if minipool.BeaconChainWithdrawalCredential != mp.Address {
-		//	if mp.GetScrubVoted(mp.Address) == false {
-		//		if err := t.submitVoteScrubMinipool(mp); err != nil {
-		//			t.log.Println(fmt.Errorf("Could not scrub minipool %s: %w", mp.Address.Hex(), err))
-		//		}
-		//	}
-		//}
+		expectedCreds, err := minipool.GetMinipoolWithdrawalCredentials(t.rp, minipoolAddress, nil)
+		if err != nil {
+			return err
+		}
+		expectedWithdrawalCredentials[minipoolAddress] = expectedCreds
+
+		// Query the Beacon Chain for the canonical credentials if present
+		beaconCreds, err := t.getCanonicalMinipoolWithdrawalAddress(minipoolAddress)
+		if err != nil {
+			return err
+		}
+
+		if beaconCreds != nil {
+			// This minipool's deposit has been seen on the Beacon Chain
+			if *beaconCreds != expectedCreds {
+				t.log.Println("=== SCRUB DETECTED ON BEACON CHAIN ===")
+				t.log.Printlnf("\tMinipool: %s", minipoolAddress.Hex())
+				t.log.Printlnf("\tExpected creds: %s", expectedCreds.Hex())
+				t.log.Printlnf("\tActual creds: %s", (*beaconCreds).Hex())
+				t.log.Println("======================================")
+				minipoolsToScrub = append(minipoolsToScrub, minipoolAddress)
+				badOnBeaconCount++
+			} else {
+				goodOnBeaconCount++
+			}
+		} else {
+			minipoolsToCheckViaDepositContract = append(minipoolsToCheckViaDepositContract, minipoolAddress)
+		}
 	}
+
+	// Get the map of minipools to deposit contract events
+	eventLogInterval, err := api.GetEventLogInterval(t.cfg)
+	if err != nil {
+		return err
+	}
+	depositMap, err := rputils.GetMinipoolDeposits(t.rp, minipoolsToCheckViaDepositContract, 
+		startBlock, eventLogInterval, nil)
+	if err != nil {
+		return err
+	}
+
+	// Put together the signature validation data
+    eth2Config, err := t.bc.GetEth2Config()
+    if err != nil {
+        return err
+    }
+	domain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
+	if err != nil {
+		return err
+	}
+
+	// Check each minipool's deposit data
+	for minipoolAddress, deposits := range depositMap {
+
+		if len(deposits) == 0 {
+			unknownDeposits++
+		} else {
+			// Go through each deposit for this minipool and find the first one that's valid
+			for depositIndex, deposit := range deposits {
+				depositData := new(ethpb.Deposit_Data)
+				depositData.Amount = deposit.Amount
+				depositData.PublicKey = deposit.Pubkey.Bytes()
+				depositData.WithdrawalCredentials = deposit.WithdrawalCredentials.Bytes()
+				depositData.Signature = deposit.Signature.Bytes()
+				
+				err = prdeposit.VerifyDepositSignature(depositData, domain)
+				if err != nil {
+					t.log.Printlnf("Invalid deposit for minipool %s:", minipoolAddress)
+					t.log.Printlnf("\tTX Hash: %s", deposit.TxHash.Hex())
+					t.log.Printlnf("\tBlock: %d, TX Index: %d, Deposit Index: %d", deposit.BlockNumber, deposit.TxIndex, depositIndex)
+					t.log.Printlnf("\tError: %s", err.Error())
+				} else {
+					// This is a valid deposit
+					expectedCreds := expectedWithdrawalCredentials[minipoolAddress]
+					if deposit.WithdrawalCredentials != expectedCreds {
+						t.log.Println("=== SCRUB DETECTED ON DEPOSIT CONTRACT ===")
+						t.log.Printlnf("\tTX Hash: %s", deposit.TxHash.Hex())
+						t.log.Printlnf("\tBlock: %d, TX Index: %d, Deposit Index: %d", deposit.BlockNumber, deposit.TxIndex, depositIndex)
+						t.log.Printlnf("\tMinipool: %s", minipoolAddress.Hex())
+						t.log.Printlnf("\tExpected creds: %s", expectedCreds.Hex())
+						t.log.Printlnf("\tActual creds: %s", deposit.WithdrawalCredentials.Hex())
+						t.log.Println("==========================================")
+						minipoolsToScrub = append(minipoolsToScrub, minipoolAddress)
+						badOnDepositContract++
+					} else {
+						goodOnDepositContract++
+					}
+					break
+				}
+			}
+		}
+	}
+
+	// Scrub minipools
+	for _, minipoolAddress := range minipoolsToScrub {
+		mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
+		if err != nil {
+			return err
+		}
+
+		err = t.submitVoteScrubMinipool(mp)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Print final tally
+	t.log.Println("Scrub check complete.")
+	t.log.Printlnf("\tTotal prelaunch minipools: %d", totalMinipools)
+	t.log.Printlnf("\tBeacon Chain scrubs: %d/%d", badOnBeaconCount, (badOnBeaconCount + goodOnBeaconCount))
+	t.log.Printlnf("\tDeposit Contract scrubs: %d/%d", badOnDepositContract, (badOnDepositContract + goodOnDepositContract))
+	t.log.Printlnf("\tPools without deposits: %d", unknownDeposits)
 
 	// Return
 	return nil
@@ -158,50 +265,49 @@ func (t *submitScrubMinipools) run() error {
 
 
 // Get the eth1 block that matches the eth1 block last seen in the latest finalized Beacon block, minus the start offset
-func (t *submitScrubMinipools) getDepositContractStartBlock() (uint64, error) {
+func (t *submitScrubMinipools) getDepositContractStartBlock() (*big.Int, error) {
 
 	data, err := t.bc.GetEth1DataForEth2Block("finalized")
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	
 	eth1Block, err := t.ec.BlockByHash(context.Background(), data.BlockHash)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	targetBlockNumber := big.NewInt(0).Sub(eth1Block.Number(), big.NewInt(BlockStartOffset))
 	targetBlock, err := t.ec.BlockByNumber(context.Background(), targetBlockNumber)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return targetBlock.NumberU64(), nil
+	return targetBlock.Number(), nil
 }
 
 
 // Get the official withdrawal address for a minipool according to the Beacon Chain
-func (t *submitScrubMinipools) getCanonicalMinipoolWithdrawalAddress(minipoolAddress common.Address, eth1StartBlock uint64) (common.Hash, error) {
+func (t *submitScrubMinipools) getCanonicalMinipoolWithdrawalAddress(minipoolAddress common.Address) (*common.Hash, error) {
 
 	// Get the validator pubkey
 	pubkey, err := minipool.GetMinipoolPubkey(t.rp, minipoolAddress, nil)
 	if err != nil {
-		return common.Hash{}, err
+		return nil, err
 	}
 
 	// Get the status of the validator on the Beacon chain
 	status, err := t.bc.GetValidatorStatus(pubkey, nil)
 	if err != nil {
-		return common.Hash{}, err
+		return nil, err
 	}
 
 	// Get the withdrawal credentials on Beacon if this validator exists
 	if status.Exists {
-		return status.WithdrawalCredentials, nil
-	} else {
-		// TODO: Walk the deposit contract and look for events
+		return &status.WithdrawalCredentials, nil
 	}
 	
+	return nil, nil
 }
 
 

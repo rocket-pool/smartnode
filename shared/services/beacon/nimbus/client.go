@@ -315,7 +315,7 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 // Get the ETH1 data for the target beacon block
 func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error) {
 
-    // Get sync status
+    // Get the Beacon block
     block, err := c.getBeaconBlock(blockId)
     if err != nil {
         return beacon.Eth1Data{}, err
