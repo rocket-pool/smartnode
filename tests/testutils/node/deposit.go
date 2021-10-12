@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils"
@@ -38,7 +39,8 @@ func Deposit(t *testing.T, rp *rocketpool.RocketPool, nodeAccount *accounts.Acco
     if err != nil { return common.Address{}, nil, fmt.Errorf("Error getting validator pubkey: %w", err) }
     expectedMinipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
     if err != nil { return common.Address{}, nil, fmt.Errorf("Error generating minipool address: %w", err) }
-    withdrawalCredentials := utils.GetWithdrawalCredentials(expectedMinipoolAddress)
+    withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, expectedMinipoolAddress, nil)
+    if err != nil { return common.Address{}, nil, fmt.Errorf("Error getting minipool withdrawal credentials: %w", err) }
     validatorSignature, err := validator.GetValidatorSignature(pubkey)
     if err != nil { return common.Address{}, nil, fmt.Errorf("Error getting validator signature: %w", err) }
     depositDataRoot, err := validator.GetDepositDataRoot(validatorPubkey, withdrawalCredentials, validatorSignature)

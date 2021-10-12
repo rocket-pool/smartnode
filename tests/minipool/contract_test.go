@@ -112,7 +112,7 @@ func TestDetails(t *testing.T) {
             t.Errorf("Incorrect minipool user deposit assigned time %v", user.DepositAssignedTime)
         }
     }
-    if withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil); err != nil {
+    if withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil); err != nil {
         t.Error(err)
     } else {
         withdrawalPrefix := byte(1)
@@ -182,7 +182,7 @@ func TestStake(t *testing.T) {
     // Get validator & deposit data
     validatorPubkey, err := validator.GetValidatorPubkey(1)
     if err != nil { t.Fatal(err) }
-    withdrawalCredentials, err := mp.GetWithdrawalCredentials(nil)
+    withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil)
     if err != nil { t.Fatal(err) }
     validatorSignature, err := validator.GetValidatorSignature(1)
     if err != nil { t.Fatal(err) }

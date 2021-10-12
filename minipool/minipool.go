@@ -483,6 +483,20 @@ func GetMinipoolBytecode(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]byte
 }
 
 
+// Get the 0x01-based Beacon Chain withdrawal credentials for a given minipool
+func GetMinipoolWithdrawalCredentials(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (common.Hash, error) {
+    rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+    if err != nil {
+        return common.Hash{}, err
+    }
+    withdrawalCredentials := new(common.Hash)
+    if err := rocketMinipoolManager.Call(opts, withdrawalCredentials, "getMinipoolWithdrawalCredentials", minipoolAddress); err != nil {
+        return common.Hash{}, fmt.Errorf("Could not get minipool withdrawal credentials: %w", err)
+    }
+    return *withdrawalCredentials, nil
+}
+
+
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
 func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {

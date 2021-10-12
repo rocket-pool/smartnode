@@ -62,18 +62,6 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depo
 }
 
 
-// Transform a Minipool address into a Beacon Chain withdrawal address
-func GetWithdrawalCredentials(minipoolAddress common.Address) common.Hash {
-    prefix := []byte{0x01}
-    padding := [11]byte{}
-    address := minipoolAddress.Bytes()
-    credentials := append(prefix, padding[:]...)
-    credentials = append(credentials, address[:]...)
-
-    return common.BytesToHash(credentials)
-}
-
-
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
 func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {

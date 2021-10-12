@@ -292,16 +292,6 @@ func (mp *Minipool) GetUserDepositAssignedTime(opts *bind.CallOpts) (time.Time, 
 }
 
 
-// Get withdrawal credentials
-func (mp *Minipool) GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error) {
-    withdrawalCredentials := new(common.Hash)
-    if err := mp.Contract.Call(opts, withdrawalCredentials, "getWithdrawalCredentials"); err != nil {
-        return common.Hash{}, fmt.Errorf("Could not get minipool %s withdrawal credentials: %w", mp.Address.Hex(), err)
-    }
-    return *withdrawalCredentials, nil
-}
-
-
 // Estimate the gas of Refund
 func (mp *Minipool) EstimateRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     return mp.Contract.GetTransactionGasInfo(opts, "refund")
