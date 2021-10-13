@@ -471,7 +471,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 Action: func(c *cli.Context) error {
 
                     // Validate args
-                    if err := cliutils.ValidateArgCount(c, 2); err != nil { return err }
+                    if err := cliutils.ValidateArgCount(c, 3); err != nil { return err }
                     amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
                     if err != nil { return err }
                     minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
