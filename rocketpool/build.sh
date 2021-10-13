@@ -13,7 +13,7 @@ apt update
 apt dist-upgrade -y
 apt install build-essential git wget -y
 cd /tmp
-wget https://golang.org/dl/go1.17.1.linux-$ARCH.tar.gz
+wget https://golang.org/dl/go1.17.2.linux-$ARCH.tar.gz
 rm -rf /usr/local/go && tar -C /usr/local -xzf go1.17.2.linux-$ARCH.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 cd /smartnode/rocketpool
