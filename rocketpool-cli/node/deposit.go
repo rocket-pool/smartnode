@@ -154,6 +154,10 @@ func nodeDeposit(c *cli.Context) error {
         return nil
     }
 
+    if c.String("salt") != "" {
+        fmt.Printf("Using custom salt %s, your minipool address will be %s.\n\n", c.String("salt"), canDeposit.MinipoolAddress.Hex())
+    }
+
     // Check to see if eth2 is synced
     colorReset := "\033[0m"
     colorRed := "\033[31m"

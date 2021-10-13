@@ -78,6 +78,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
     var isTrusted bool
     var minipoolCount uint64
     var minipoolLimit uint64
+    var minipoolAddress common.Address
 
     // Check node balance
     wg1.Go(func() error {
@@ -145,7 +146,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
         }
 
         // Get the next minipool address and withdrawal credentials
-        minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+        minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
         if err != nil {
             return err
         }
@@ -177,6 +178,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
     // Check data
     response.InsufficientRplStake = (minipoolCount >= minipoolLimit)
+    response.MinipoolAddress = minipoolAddress
     response.InvalidAmount = (!isTrusted && amountIsZero)
 
     // Check oracle node unbonded minipool limit
