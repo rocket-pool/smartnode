@@ -339,6 +339,12 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
     if err != nil {
         return nil, err
     }
+
+    // Save wallet
+    if err := w.Save(); err != nil {
+        return nil, err
+    }
+
     response.TxHash = hash
     response.MinipoolAddress = minipoolAddress
     response.ValidatorPubkey = pubKey

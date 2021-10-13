@@ -187,10 +187,6 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
         }
     }
 
-    // Filter minipools that haven't passed the scrub period yet
-
-    //for _, 
-
     // Return
     return prelaunchMinipools, nil
 
@@ -262,11 +258,6 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
     // Print TX info and wait for it to be mined
     err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
     if err != nil {
-        return err
-    }
-
-    // Save wallet
-    if err := t.w.Save(); err != nil {
         return err
     }
 
