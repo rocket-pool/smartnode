@@ -460,7 +460,7 @@ func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
 // Get the target beacon block
 func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, error) {
     var beaconBlockResponse BeaconBlockResponse
-    if err := c.client.Call(&beaconBlockResponse, RequestBeaconBlockMethod); err != nil {
+    if err := c.client.Call(&beaconBlockResponse, RequestBeaconBlockMethod, blockId); err != nil {
         message := c.getErrorString(err)
         return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block: %s", message)
     }
