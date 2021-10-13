@@ -267,6 +267,7 @@ func (t *submitScrubMinipools) run() error {
 // Get the eth1 block that matches the eth1 block last seen in the latest finalized Beacon block, minus the start offset
 func (t *submitScrubMinipools) getDepositContractStartBlock() (*big.Int, error) {
 
+    /*
     data, err := t.bc.GetEth1DataForEth2Block("finalized")
     if err != nil {
         return nil, err
@@ -276,8 +277,12 @@ func (t *submitScrubMinipools) getDepositContractStartBlock() (*big.Int, error) 
     if err != nil {
         return nil, err
     }
-
-    targetBlockNumber := big.NewInt(0).Sub(eth1Block.Number(), big.NewInt(BlockStartOffset))
+    */
+    eth1Block, err := t.ec.HeaderByNumber(context.Background(), nil)
+    if err != nil {
+        return nil, err
+    }
+    targetBlockNumber := big.NewInt(0).Sub(eth1Block.Number, big.NewInt(BlockStartOffset))
     targetBlock, err := t.ec.BlockByNumber(context.Background(), targetBlockNumber)
     if err != nil {
         return nil, err

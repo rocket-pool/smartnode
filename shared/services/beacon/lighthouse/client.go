@@ -530,7 +530,7 @@ func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, error) {
     }
     var beaconBlock BeaconBlockResponse
     if err := json.Unmarshal(responseBody, &beaconBlock); err != nil {
-        return BeaconBlockResponse{}, fmt.Errorf("Could not decode beacon block  data: %w", err)
+        return BeaconBlockResponse{}, fmt.Errorf("Could not decode beacon block data: %w", err)
     }
     return beaconBlock, nil
 }
