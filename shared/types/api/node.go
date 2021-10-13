@@ -206,6 +206,7 @@ type NodeDepositResponse struct {
     TxHash common.Hash                          `json:"txHash"`
     MinipoolAddress common.Address              `json:"minipoolAddress"`
     ValidatorPubkey rptypes.ValidatorPubkey     `json:"validatorPubkey"`
+    ScrubPeriod time.Duration                   `json:"scrubPeriod"`
 }
 
 

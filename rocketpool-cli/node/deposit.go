@@ -204,7 +204,7 @@ func nodeDeposit(c *cli.Context) error {
     fmt.Printf("Your new minipool's address is %s.\n", response.MinipoolAddress)
     fmt.Printf("The validator pubkey is %s.\n\n", response.ValidatorPubkey.Hex())
 
-    fmt.Printf("This minipool will move from prelaunch to staking status after a 24 hour wait period.")
+    fmt.Printf("This minipool will move from prelaunch to staking status in %s.\n", response.ScrubPeriod)
 
     return nil
 

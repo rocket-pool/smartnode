@@ -112,10 +112,6 @@ func run(c *cli.Context) error {
             errorLog.Println(err)
         }
         time.Sleep(taskCooldown)
-        if err := processWithdrawals.run(); err != nil {
-            errorLog.Println(err)
-        }
-        time.Sleep(taskCooldown)
         if err := submitScrubMinipools.run(); err != nil {
             errorLog.Println(err)
         }

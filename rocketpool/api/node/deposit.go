@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
@@ -11,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
@@ -264,6 +266,14 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
                             depositContractInfo.BeaconDepositContract.Hex(),
                             depositContractInfo.BeaconNetwork)
     }
+
+    // Get the scrub period
+    scrubPeriodUnix, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    scrubPeriod := time.Duration(scrubPeriodUnix) * time.Second
+    response.ScrubPeriod = scrubPeriod
 
     // Get transactor
     opts, err := w.GetNodeAccountTransactor()
