@@ -137,8 +137,9 @@ func printMinipoolDetails(minipool api.MinipoolDetails) () {
         }
     }
 
-    // Validator details - staking minipools
-    if minipool.Status.Status == types.Staking {
+    // Validator details - prelaunch and staking minipools
+    if minipool.Status.Status == types.Prelaunch || 
+       minipool.Status.Status == types.Staking {
     fmt.Printf("Validator pubkey:     %s\n", hex.AddPrefix(minipool.ValidatorPubkey.Hex()))
     fmt.Printf("Validator index:      %d\n", minipool.Validator.Index)
         if minipool.Validator.Exists {
