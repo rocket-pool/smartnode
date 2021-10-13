@@ -29,7 +29,7 @@ require (
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
-	github.com/rocket-pool/rocketpool-go v1.0.2
+	github.com/rocket-pool/rocketpool-go v1.0.3-0.20211013004128-6dccc680eebf
 	github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.5
@@ -42,5 +42,3 @@ require (
 	google.golang.org/grpc v1.40.0
 	gopkg.in/yaml.v2 v2.4.0
 )
-
-replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
