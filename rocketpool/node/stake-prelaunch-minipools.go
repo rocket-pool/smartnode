@@ -38,7 +38,6 @@ type stakePrelaunchMinipools struct {
     c *cli.Context
     log log.ColorLogger
     cfg config.RocketPoolConfig
-    w *wallet.Wallet
     rp *rocketpool.RocketPool
     bc beacon.Client
     d *client.Client
@@ -50,8 +49,6 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
 
     // Get services
     cfg, err := services.GetConfig(c)
-    if err != nil { return nil, err }
-    w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -65,7 +62,6 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
         c: c,
         log: logger,
         cfg: cfg,
-        w: w,
         rp: rp,
         bc: bc,
         d: d,
@@ -77,6 +73,10 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
 // Stake prelaunch minipools
 func (t *stakePrelaunchMinipools) run() error {
 
+    // Reload the wallet (in case a call to `node deposit` changed it)
+    wallet, err := services.GetWallet(t.c)
+    if err != nil { return err }
+
     // Wait for eth client to sync
     if err := services.WaitEthClientSynced(t.c, true); err != nil {
         return err
@@ -86,7 +86,7 @@ func (t *stakePrelaunchMinipools) run() error {
     t.log.Println("Checking for minipools to launch...")
 
     // Get node account
-    nodeAccount, err := t.w.GetNodeAccount()
+    nodeAccount, err := wallet.GetNodeAccount()
     if err != nil {
         return err
     }
@@ -111,7 +111,7 @@ func (t *stakePrelaunchMinipools) run() error {
 
     // Stake minipools
     for _, mp := range minipools {
-        if err := t.stakeMinipool(mp, eth2Config); err != nil {
+        if err := t.stakeMinipool(mp, eth2Config, wallet); err != nil {
             t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
             return err
         }
@@ -194,7 +194,7 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 
 
 // Stake a minipool
-func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Config beacon.Eth2Config) error {
+func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Config beacon.Eth2Config, wallet *wallet.Wallet) error {
 
     // Log
     t.log.Printlnf("Staking minipool %s...", mp.Address.Hex())
@@ -210,7 +210,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
     if err != nil {
         return err
     }
-    validatorKey, err := t.w.GetValidatorKeyByPubkey(validatorPubkey)
+    validatorKey, err := wallet.GetValidatorKeyByPubkey(validatorPubkey)
     if err != nil {
         return err
     }
@@ -222,7 +222,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
     }
 
     // Get transactor
-    opts, err := t.w.GetNodeAccountTransactor()
+    opts, err := wallet.GetNodeAccountTransactor()
     if err != nil {
         return err
     }
