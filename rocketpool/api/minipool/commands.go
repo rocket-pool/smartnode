@@ -393,6 +393,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "get-vanity-artifacts",
+                Aliases:   []string{"v"},
+                Usage:     "Gets the data necessary to search for vanity minipool addresses",
+                UsageText: "rocketpool api minipool get-vanity-artifacts deposit",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 1); err != nil { return err }
+                    depositAmount, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
+                    if err != nil { return err }
+
+                    // Run
+                    api.PrintResponse(getVanityArtifacts(c, depositAmount))
+                    return nil
+
+                },
+            },
+
         },
     })
 }

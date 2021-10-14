@@ -56,7 +56,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                 },
             },
-
+            /*
+            REMOVED UNTIL BEACON WITHDRAWALS
             cli.Command{
                 Name:      "dissolve",
                 Aliases:   []string{"d"},
@@ -87,7 +88,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                 },
             },
-
+            */
             cli.Command{
                 Name:      "exit",
                 Aliases:   []string{"e"},
@@ -118,7 +119,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                 },
             },
-
+            /*
+            REMOVED UNTIL BEACON WITHDRAWALS
             cli.Command{
                 Name:      "close",
                 Aliases:   []string{"c"},
@@ -145,7 +147,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
                 },
             },
-
+            */
             cli.Command{
                 Name:      "delegate-upgrade",
                 Aliases:   []string{"u"},

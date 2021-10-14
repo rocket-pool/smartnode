@@ -204,3 +204,12 @@ type GetEffectiveDelegateResponse struct {
     Address common.Address          `json:"address"`
 }
 
+
+type GetVanityArtifactsResponse struct {
+    Status string                           `json:"status"`
+    Error string                            `json:"error"`
+    NodeAddress common.Address              `json:"nodeAddress"`
+    MinipoolManagerAddress common.Address   `json:"minipoolManagerAddress"`
+    InitHash common.Hash                    `json:"initHash"`
+}
+
