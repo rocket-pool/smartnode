@@ -231,6 +231,34 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "find-vanity-address",
+                Aliases:   []string{"v"},
+                Usage:     "Search for a custom vanity minipool address",
+                UsageText: "rocketpool minipool find-vanity-address [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "prefix, p",
+                        Usage: "The prefix of the address to search for (must start with 0x)",
+                    },
+                    cli.StringFlag{
+                        Name:  "salt, s",
+                        Usage: "The salt to start searching from (must start with 0x)",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+
+                    // Run
+                    return findVanitySalt(c)
+
+                },
+            },
+
         },
     })
 }

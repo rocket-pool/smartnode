@@ -310,3 +310,20 @@ func (c *Client) SetUseLatestDelegateMinipool(address common.Address, setting bo
     return response, nil
 }
 
+
+// Get the artifacts necessary for vanity address searching
+func (c *Client) GetVanityArtifacts(depositAmount *big.Int) (api.GetVanityArtifactsResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("minipool get-vanity-artifacts %s", depositAmount.String()))
+    if err != nil {
+        return api.GetVanityArtifactsResponse{}, fmt.Errorf("Could not get vanity artifacts: %w", err)
+    }
+    var response api.GetVanityArtifactsResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.GetVanityArtifactsResponse{}, fmt.Errorf("Could not decode get vanity artifacts response: %w", err)
+    }
+    if response.Error != "" {
+        return api.GetVanityArtifactsResponse{}, fmt.Errorf("Could not get vanity artifacts: %s", response.Error)
+    }
+    return response, nil
+}
+
