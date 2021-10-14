@@ -1,8 +1,8 @@
 package watchtower
 
 import (
-	"context"
 	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -119,22 +119,12 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
     // Data
     var wg1 errgroup.Group
     var addresses []common.Address
-    var currentBlock uint64
-    var launchTimeout uint64
+    var launchTimeout time.Duration
 
     // Get minipool addresses
     wg1.Go(func() error {
         var err error
         addresses, err = minipool.GetMinipoolAddresses(t.rp, nil)
-        return err
-    })
-
-    // Get current block
-    wg1.Go(func() error {
-        header, err := t.ec.HeaderByNumber(context.Background(), nil)
-        if err == nil {
-            currentBlock = header.Number.Uint64()
-        }
         return err
     })
 
@@ -192,7 +182,7 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
     // Filter minipools by status
     timedOutMinipools := []*minipool.Minipool{}
     for mi, mp := range minipools {
-        if statuses[mi].Status == types.Prelaunch && (currentBlock - statuses[mi].StatusBlock) >= launchTimeout {
+        if statuses[mi].Status == types.Prelaunch && time.Since(statuses[mi].StatusTime) >= launchTimeout {
             timedOutMinipools = append(timedOutMinipools, mp)
         }
     }
