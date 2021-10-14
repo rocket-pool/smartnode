@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -119,8 +120,8 @@ func BootstrapMinipoolSubmitWithdrawableEnabled(rp *rocketpool.RocketPool, value
 }
 
 
-// Timeout period in blocks for prelaunch minipools to launch
-func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+// Timeout period in seconds for prelaunch minipools to launch
+func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
     minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
     if err != nil {
         return 0, err
@@ -129,10 +130,11 @@ func GetMinipoolLaunchTimeout(rp *rocketpool.RocketPool, opts *bind.CallOpts) (u
     if err := minipoolSettingsContract.Call(opts, value, "getLaunchTimeout"); err != nil {
         return 0, fmt.Errorf("Could not get minipool launch timeout: %w", err)
     }
-    return (*value).Uint64(), nil
+    seconds := time.Duration((*value).Int64()) * time.Second
+    return seconds, nil
 }
-func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-    return protocoldao.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.launch.timeout", big.NewInt(int64(value)), opts)
+func BootstrapMinipoolLaunchTimeout(rp *rocketpool.RocketPool, value time.Duration, opts *bind.TransactOpts) (common.Hash, error) {
+    return protocoldao.BootstrapUint(rp, MinipoolSettingsContractName, "minipool.launch.timeout", big.NewInt(int64(value.Seconds())), opts)
 }
 
 

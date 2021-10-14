@@ -1,12 +1,13 @@
 package protocol
 
 import (
-    "testing"
+	"testing"
+	"time"
 
-    "github.com/rocket-pool/rocketpool-go/settings/protocol"
-    "github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )
 
 
@@ -67,7 +68,7 @@ func TestMinipoolSettings(t *testing.T) {
     }
 
     // Set & get minipool launch timeout
-    var minipoolLaunchTimeout uint64 = 5
+    var minipoolLaunchTimeout time.Duration = 5 * time.Second
     if _, err := protocol.BootstrapMinipoolLaunchTimeout(rp, minipoolLaunchTimeout, ownerAccount.GetTransactor()); err != nil {
         t.Error(err)
     } else if value, err := protocol.GetMinipoolLaunchTimeout(rp, nil); err != nil {
