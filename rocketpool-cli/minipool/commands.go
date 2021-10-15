@@ -245,6 +245,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                         Name:  "salt, s",
                         Usage: "The salt to start searching from (must start with 0x)",
                     },
+                    cli.IntFlag{
+                        Name:  "threads, t",
+                        Usage: "The number of threads to use for searching (defaults to your CPU thread count)",
+                    },
+                    cli.StringFlag{
+                        Name:  "node-address, n",
+                        Usage: "The node address to search for (leave blank to use the local node)",
+                    },
                 },
                 Action: func(c *cli.Context) error {
 

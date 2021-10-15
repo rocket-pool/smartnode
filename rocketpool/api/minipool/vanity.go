@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -15,7 +16,7 @@ import (
 )
 
 
-func getVanityArtifacts(c *cli.Context, depositAmount *big.Int) (*api.GetVanityArtifactsResponse, error) {
+func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr string) (*api.GetVanityArtifactsResponse, error) {
 
     // Get services
     w, err := services.GetWallet(c)
@@ -27,11 +28,20 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int) (*api.GetVanityA
     response := api.GetVanityArtifactsResponse{}
 
     // Get node account
-    nodeAccount, err := w.GetNodeAccount()
-    if err != nil {
-        return nil, err
+    var nodeAddress common.Address
+    if nodeAddressStr == "0" {
+        nodeAccount, err := w.GetNodeAccount()
+        if err != nil {
+            return nil, err
+        }
+        nodeAddress = nodeAccount.Address
+    } else {
+        if common.IsHexAddress(nodeAddressStr) {
+            nodeAddress = common.HexToAddress(nodeAddressStr)
+        } else {
+            return nil, fmt.Errorf("%s is not a valid node address", nodeAddressStr)
+        }
     }
-    nodeAddress := nodeAccount.Address
 
     // Get some contract and ABI dependencies
     rocketMinipoolManager, err := rp.GetContract("rocketMinipoolManager")
