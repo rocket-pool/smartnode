@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -163,6 +164,7 @@ func runWorker(report bool, stop *bool, targetPrefix *big.Int, nodeAddress []byt
     // Set up the reporting ticker if requested
     var ticker *time.Ticker
     var tickerChan chan struct{}
+    lastSalt := big.NewInt(0).Set(salt)
     if report {
         start := time.Now()
         reportInterval := 5 * time.Second
@@ -172,7 +174,11 @@ func runWorker(report bool, stop *bool, targetPrefix *big.Int, nodeAddress []byt
             for {
             select {
                 case <- ticker.C:
-                    fmt.Printf("At salt 0x%x... %s\n", salt, time.Since(start))
+                    delta := big.NewInt(0).Sub(salt, lastSalt)
+                    deltaFloat, suffix := humanize.ComputeSI(float64(delta.Uint64()) / 5.0)
+                    deltaString := humanize.FtoaWithDigits(deltaFloat, 2) + suffix
+                    fmt.Printf("At salt 0x%x... %s (%s salts/sec)\n", salt, time.Since(start), deltaString)
+                    lastSalt.Set(salt)
                 case <- tickerChan:
                     ticker.Stop()
                     return

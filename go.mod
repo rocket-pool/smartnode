@@ -15,6 +15,7 @@ require (
 	github.com/docker/docker v1.4.2-0.20180625184442-8e610b2b55bf
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/dustin/go-humanize v1.0.0
 	github.com/ethereum/go-ethereum v1.10.10
 	github.com/fatih/color v1.12.0
 	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e
