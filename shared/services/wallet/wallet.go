@@ -224,6 +224,11 @@ func (w *Wallet) Save() error {
 
 }
 
+// Reloads wallet from disk
+func (w *Wallet) Reload() error {
+    _, err := w.loadStore()
+    return err
+}
 
 // Load the wallet store from disk and decrypt it
 func (w *Wallet) loadStore() (bool, error) {
