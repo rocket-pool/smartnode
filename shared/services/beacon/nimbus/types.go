@@ -11,80 +11,97 @@ import (
 
 // Request types
 type VoluntaryExitRequest struct {
-    Message   VoluntaryExitMessage `json:"message"`
-    Signature byteArray            `json:"signature"`
+    Message VoluntaryExitMessage        `json:"message"`
+    Signature byteArray                 `json:"signature"`
 }
 type VoluntaryExitMessage struct {
-    Epoch          uint64 `json:"epoch"`
-    ValidatorIndex uint64 `json:"validator_index"`
+    Epoch uinteger                      `json:"epoch"`
+    ValidatorIndex uinteger             `json:"validator_index"`
 }
+
 
 // Response types
 type SyncStatusResponse struct {
-    IsSyncing bool                      `json:"is_syncing"`
-    HeadSlot uint64                     `json:"head_slot"`
-    SyncDistance uint64                 `json:"sync_distance"`
+    Data struct {
+        IsSyncing bool                      `json:"is_syncing"`
+        HeadSlot uinteger                   `json:"head_slot"`
+        SyncDistance uinteger               `json:"sync_distance"`
+    }                                   `json:"data"`
 }
 type Eth2ConfigResponse struct {
-    SecondsPerSlot uinteger `json:"SECONDS_PER_SLOT"`
-    SlotsPerEpoch  uinteger `json:"SLOTS_PER_EPOCH"`
+    Data struct {
+        SecondsPerSlot uinteger             `json:"SECONDS_PER_SLOT"`
+        SlotsPerEpoch uinteger              `json:"SLOTS_PER_EPOCH"`
+    }                                   `json:"data"`
 }
 type Eth2DepositContractResponse struct {
-    ChainID uinteger            `json:"chain_id"`
-    Address common.Address      `json:"address"`
+    Data struct {
+        ChainID uinteger                    `json:"chain_id"`
+        Address common.Address              `json:"address"`
+    }                                   `json:"data"`
 }
 type GenesisResponse struct {
-    GenesisTime           uint64    `json:"genesis_time"`
-    GenesisForkVersion    byteArray `json:"genesis_fork_version"`
-    GenesisValidatorsRoot byteArray `json:"genesis_validators_root"`
+    Data struct {
+        GenesisTime uinteger                `json:"genesis_time"`
+        GenesisForkVersion byteArray        `json:"genesis_fork_version"`
+        GenesisValidatorsRoot byteArray     `json:"genesis_validators_root"`
+    }                                   `json:"data"`
 }
 type FinalityCheckpointsResponse struct {
-    PreviousJustified struct {
-        Epoch uint64 `json:"epoch"`
-    } `json:"previous_justified"`
-    CurrentJustified struct {
-        Epoch uint64 `json:"epoch"`
-    } `json:"current_justified"`
-    Finalized struct {
-        Epoch uint64 `json:"epoch"`
-    } `json:"finalized"`
+    Data struct {
+        PreviousJustified struct {
+            Epoch uinteger                      `json:"epoch"`
+        }                                   `json:"previous_justified"`
+        CurrentJustified struct {
+            Epoch uinteger                      `json:"epoch"`
+        }                                   `json:"current_justified"`
+        Finalized struct {
+            Epoch uinteger                      `json:"epoch"`
+        }                                   `json:"finalized"`
+    }                                   `json:"data"`
 }
 type ForkResponse struct {
-    PreviousVersion byteArray `json:"previous_version"`
-    CurrentVersion  byteArray `json:"current_version"`
-    Epoch           uint64    `json:"epoch"`
+    Data struct {
+        PreviousVersion byteArray           `json:"previous_version"`
+        CurrentVersion byteArray            `json:"current_version"`
+        Epoch uinteger                      `json:"epoch"`
+    }                                   
 }
 type BeaconBlockResponse struct {
-    Message struct {
-        Body struct {
-            Eth1Data struct {
-                DepositRoot string `json:"deposit_root"`
-                DepositCount uint64 `json:"deposit_count"`
-                BlockHash string `json:"block_hash"`
-            } `json:"eth1_data"`
-        } `json:"body"`
-    } `json:"message"`
+    Data struct {
+        Message struct {
+            Body struct {
+                Eth1Data struct {
+                    DepositRoot byteArray `json:"deposit_root"`
+                    DepositCount uinteger `json:"deposit_count"`
+                    BlockHash byteArray   `json:"block_hash"`
+                } `json:"eth1_data"`
+            } `json:"body"`
+        } `json:"message"`
+    } `json:"data"`
+}
+type ValidatorsResponse struct {
+    Data []Validator                    `json:"data"`
+}
+type Validator struct {
+    Index uinteger                      `json:"index"`
+    Balance uinteger                    `json:"balance"`
+    //Status string                       `json:"status"`
+    Validator struct {
+        Pubkey byteArray                    `json:"pubkey"`
+        WithdrawalCredentials byteArray     `json:"withdrawal_credentials"`
+        EffectiveBalance uinteger           `json:"effective_balance"`
+        Slashed bool                        `json:"slashed"`
+        ActivationEligibilityEpoch uinteger `json:"activation_eligibility_epoch"`
+        ActivationEpoch uinteger            `json:"activation_epoch"`
+        ExitEpoch uinteger                  `json:"exit_epoch"`
+        WithdrawableEpoch uinteger          `json:"withdrawable_epoch"`
+    }                                   `json:"validator"`
 }
 
-type Validator struct {
-    Index     uint64 `json:"index"`
-    Balance   uint64 `json:"balance"`
-    Status    string `json:"status"`
-    Validator struct {
-        Pubkey                     byteArray `json:"pubkey"`
-        WithdrawalCredentials      byteArray `json:"withdrawal_credentials"`
-        EffectiveBalance           uint64    `json:"effective_balance"`
-        Slashed                    bool      `json:"slashed"`
-        ActivationEligibilityEpoch int64     `json:"activation_eligibility_epoch"`  // Nimbus uses -1 for FAR_FUTURE_EPOCH so this has to be a signed int
-        ActivationEpoch            int64     `json:"activation_epoch"`              // Same here
-        ExitEpoch                  int64     `json:"exit_epoch"`                    // Same here
-        WithdrawableEpoch          int64     `json:"withdrawable_epoch"`            // Same here
-    } `json:"validator"`
-}
 
 // Unsigned integer type
 type uinteger uint64
-
 func (i uinteger) MarshalJSON() ([]byte, error) {
     return json.Marshal(strconv.Itoa(int(i)))
 }
@@ -108,9 +125,9 @@ func (i *uinteger) UnmarshalJSON(data []byte) error {
 
 }
 
+
 // Byte array type
 type byteArray []byte
-
 func (b byteArray) MarshalJSON() ([]byte, error) {
     return json.Marshal(hexutil.AddPrefix(hex.EncodeToString(b)))
 }
@@ -133,3 +150,4 @@ func (b *byteArray) UnmarshalJSON(data []byte) error {
     return nil
 
 }
+

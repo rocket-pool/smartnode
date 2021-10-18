@@ -1,12 +1,16 @@
 package nimbus
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	rpc "github.com/ethereum/go-ethereum/rpc"
 	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
@@ -18,40 +22,36 @@ import (
 
 // Config
 const (
-    RequestSyncStatusMethod          = "get_v1_node_syncing"
-    RequestEth2ConfigMethod          = "get_v1_config_spec"
-    RequestEth2DepositContractMethod = "get_v1_config_deposit_contract"
-    RequestGenesisMethod             = "get_v1_beacon_genesis"
-    RequestFinalityCheckpointsMethod = "get_v1_beacon_states_finality_checkpoints"
-    RequestForkMethod                = "get_v1_beacon_states_fork"
-    RequestValidatorsMethod          = "get_v1_beacon_states_stateId_validators"
-    RequestVoluntaryExitMethod       = "post_v1_beacon_pool_voluntary_exits"
-    RequestBeaconBlockMethod         = "get_v1_beacon_blocks_blockId"
+    RequestUrlFormat = "%s%s"
+    RequestContentType = "application/json"
 
-    MaxRequestValidatorsCount = 30
+    RequestSyncStatusPath = "/eth/v1/node/syncing"
+    RequestEth2ConfigPath = "/eth/v1/config/spec"
+    RequestEth2DepositContractMethod = "/eth/v1/config/deposit_contract"
+    RequestGenesisPath = "/eth/v1/beacon/genesis"
+    RequestFinalityCheckpointsPath = "/eth/v1/beacon/states/%s/finality_checkpoints"
+    RequestForkPath = "/eth/v1/beacon/states/%s/fork"
+    RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators"
+    RequestVoluntaryExitPath = "/eth/v1/beacon/pool/voluntary_exits"
+    RequestBeaconBlockPath = "/eth/v1/beacon/blocks/%s"
+
+    MaxRequestValidatorsCount = 600
 )
 
 // Nimbus client
 type Client struct {
-    client *rpc.Client
+    providerAddress string
 }
 
 // Create new Nimbus client
-func NewClient(providerAddress string) (*Client, error) {
-
-    // Start the RPC connection
-    client, err := rpc.DialHTTP(providerAddress)
-    if err != nil {
-        return nil, fmt.Errorf("Could not connect to Nimbus RPC server: %s", err)
-    }
+func NewClient(providerAddress string) (*Client) {
     return &Client{
-        client: client,
-    }, nil
+        providerAddress: providerAddress,
+    }
 }
 
 // Close the client connection
 func (c *Client) Close() error {
-    c.client.Close()
     return nil
 }
 
@@ -67,14 +67,14 @@ func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
     syncStatus, err := c.getSyncStatus()
     if err != nil {
         return beacon.SyncStatus{}, err
-    }
+    }    
 
     // Calculate the progress
-    progress := float64(syncStatus.HeadSlot) / float64(syncStatus.HeadSlot + syncStatus.SyncDistance)
+    progress := float64(syncStatus.Data.HeadSlot) / float64(syncStatus.Data.HeadSlot + syncStatus.Data.SyncDistance)
 
     // Return response
     return beacon.SyncStatus{
-        Syncing: syncStatus.IsSyncing,
+        Syncing: syncStatus.Data.IsSyncing,
         Progress: progress,
     }, nil
 
@@ -109,11 +109,11 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Return response
     return beacon.Eth2Config{
-        GenesisForkVersion:    genesis.GenesisForkVersion,
-        GenesisValidatorsRoot: genesis.GenesisValidatorsRoot,
-        GenesisEpoch:          0,
-        GenesisTime:           uint64(genesis.GenesisTime),
-        SecondsPerEpoch:       uint64(eth2Config.SecondsPerSlot * eth2Config.SlotsPerEpoch),
+        GenesisForkVersion: genesis.Data.GenesisForkVersion,
+        GenesisValidatorsRoot: genesis.Data.GenesisValidatorsRoot,
+        GenesisEpoch: 0,
+        GenesisTime: uint64(genesis.Data.GenesisTime),
+        SecondsPerEpoch: uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
     }, nil
 
 }
@@ -130,8 +130,8 @@ func (c *Client) GetEth2DepositContract() (beacon.Eth2DepositContract, error) {
 
     // Return response
     return beacon.Eth2DepositContract{
-        ChainID: uint64(depositContract.ChainID),
-        Address: depositContract.Address,
+        ChainID: uint64(depositContract.Data.ChainID),
+        Address: depositContract.Data.Address,
     }, nil
 }
 
@@ -165,10 +165,10 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 
     // Return response
     return beacon.BeaconHead{
-        Epoch:                  eth2.EpochAt(eth2Config, uint64(time.Now().Unix())),
-        FinalizedEpoch:         uint64(finalityCheckpoints.Finalized.Epoch),
-        JustifiedEpoch:         uint64(finalityCheckpoints.CurrentJustified.Epoch),
-        PreviousJustifiedEpoch: uint64(finalityCheckpoints.PreviousJustified.Epoch),
+        Epoch: eth2.EpochAt(eth2Config, uint64(time.Now().Unix())),
+        FinalizedEpoch: uint64(finalityCheckpoints.Data.Finalized.Epoch),
+        JustifiedEpoch: uint64(finalityCheckpoints.Data.CurrentJustified.Epoch),
+        PreviousJustifiedEpoch: uint64(finalityCheckpoints.Data.PreviousJustified.Epoch),
     }, nil
 
 }
@@ -288,16 +288,16 @@ func (c *Client) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) 
 
     // Get fork version
     var forkVersion []byte
-    if epoch < uint64(fork.Epoch) {
-        forkVersion = fork.PreviousVersion
+    if epoch < uint64(fork.Data.Epoch) {
+        forkVersion = fork.Data.PreviousVersion
     } else {
-        forkVersion = fork.CurrentVersion
+        forkVersion = fork.Data.CurrentVersion
     }
 
     // Compute & return domain
     var dt [4]byte
     copy(dt[:], domainType[:])
-    return eth2types.Domain(dt, forkVersion, genesis.GenesisValidatorsRoot), nil
+    return eth2types.Domain(dt, forkVersion, genesis.Data.GenesisValidatorsRoot), nil
 
 }
 
@@ -305,8 +305,8 @@ func (c *Client) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) 
 func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error {
     return c.postVoluntaryExit(VoluntaryExitRequest{
         Message: VoluntaryExitMessage{
-            Epoch:          epoch,
-            ValidatorIndex: validatorIndex,
+            Epoch: uinteger(epoch),
+            ValidatorIndex: uinteger(validatorIndex),
         },
         Signature: signature.Bytes(),
     })
@@ -323,79 +323,118 @@ func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error
 
     // Convert the response to the eth1 data struct
     return beacon.Eth1Data{
-        DepositRoot: common.HexToHash(block.Message.Body.Eth1Data.DepositRoot),
-        DepositCount: block.Message.Body.Eth1Data.DepositCount,
-        BlockHash: common.HexToHash(block.Message.Body.Eth1Data.BlockHash),
+        DepositRoot: common.BytesToHash(block.Data.Message.Body.Eth1Data.DepositRoot),
+        DepositCount: uint64(block.Data.Message.Body.Eth1Data.DepositCount),
+        BlockHash: common.BytesToHash(block.Data.Message.Body.Eth1Data.BlockHash),
     }, nil
 
 }
 
 // Get sync status
 func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
-    var syncStatusResponse SyncStatusResponse
-    if err := c.client.Call(&syncStatusResponse, RequestSyncStatusMethod); err != nil {
-        message := c.getErrorString(err)
-        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %s", message)
+    responseBody, status, err := c.getRequest(RequestSyncStatusPath)
+    if err != nil {
+        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %w", err)
+    } else if status != http.StatusOK {
+        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: HTTP status %d; response body: '%s'", status, string(responseBody))
     }
-    return syncStatusResponse, nil
+    var syncStatus SyncStatusResponse
+    if err := json.Unmarshal(responseBody, &syncStatus); err != nil {
+        return SyncStatusResponse{}, fmt.Errorf("Could not decode node sync status: %w", err)
+    }
+    return syncStatus, nil
 }
 
 // Get the eth2 config
 func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
+    responseBody, status, err := c.getRequest(RequestEth2ConfigPath)
+    if err != nil {
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %w", err)
+    } else if status != http.StatusOK {
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
     var eth2Config Eth2ConfigResponse
-    if err := c.client.Call(&eth2Config, RequestEth2ConfigMethod); err != nil {
-        message := c.getErrorString(err)
-        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %s", message)
+    if err := json.Unmarshal(responseBody, &eth2Config); err != nil {
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not decode eth2 config: %w", err)
     }
     return eth2Config, nil
 }
 
 // Get the eth2 deposit contract info
 func (c *Client) getEth2DepositContract() (Eth2DepositContractResponse, error) {
+    responseBody, status, err := c.getRequest(RequestEth2DepositContractMethod)
+    if err != nil {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: %w", err)
+    } else if status != http.StatusOK {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
     var eth2DepositContract Eth2DepositContractResponse
-    if err := c.client.Call(&eth2DepositContract, RequestEth2DepositContractMethod); err != nil {
-        message := c.getErrorString(err)
-        return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: %s", message)
+    if err := json.Unmarshal(responseBody, &eth2DepositContract); err != nil {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not decode eth2 deposit contract: %w", err)
     }
     return eth2DepositContract, nil
 }
 
 // Get genesis information
 func (c *Client) getGenesis() (GenesisResponse, error) {
+    responseBody, status, err := c.getRequest(RequestGenesisPath)
+    if err != nil {
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %w", err)
+    } else if status != http.StatusOK {
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
     var genesis GenesisResponse
-    if err := c.client.Call(&genesis, RequestGenesisMethod); err != nil {
-        message := c.getErrorString(err)
-        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %s", message)
+    if err := json.Unmarshal(responseBody, &genesis); err != nil {
+        return GenesisResponse{}, fmt.Errorf("Could not decode genesis: %w", err)
     }
     return genesis, nil
 }
 
 // Get finality checkpoints
 func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResponse, error) {
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestFinalityCheckpointsPath, stateId))
+    if err != nil {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %w", err)
+    } else if status != http.StatusOK {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
     var finalityCheckpoints FinalityCheckpointsResponse
-    if err := c.client.Call(&finalityCheckpoints, RequestFinalityCheckpointsMethod, stateId); err != nil {
-        message := c.getErrorString(err)
-        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %s", message)
+    if err := json.Unmarshal(responseBody, &finalityCheckpoints); err != nil {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not decode finality checkpoints: %w", err)
     }
     return finalityCheckpoints, nil
 }
 
 // Get fork
 func (c *Client) getFork(stateId string) (ForkResponse, error) {
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
+    if err != nil {
+        return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
+    } else if status != http.StatusOK {
+        return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
     var fork ForkResponse
-    if err := c.client.Call(&fork, RequestForkMethod, stateId); err != nil {
-        message := c.getErrorString(err)
-        return ForkResponse{}, fmt.Errorf("Could not get fork data: %s", message)
+    if err := json.Unmarshal(responseBody, &fork); err != nil {
+        return ForkResponse{}, fmt.Errorf("Could not decode fork data: %w", err)
     }
     return fork, nil
 }
 
 // Get validators
-func (c *Client) getValidators(stateId string, pubkeys []string) ([]Validator, error) {
-    var validators []Validator
-    if err := c.client.Call(&validators, RequestValidatorsMethod, stateId, pubkeys); err != nil {
-        message := c.getErrorString(err)
-        return []Validator{}, fmt.Errorf("Could not get validators: %s", message)
+func (c *Client) getValidators(stateId string, pubkeys []string) (ValidatorsResponse, error) {
+    var query string
+    if len(pubkeys) > 0 {
+        query = fmt.Sprintf("?id=%s", strings.Join(pubkeys, ","))
+    }
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId) + query)
+    if err != nil {
+        return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
+    } else if status != http.StatusOK {
+        return ValidatorsResponse{}, fmt.Errorf("Could not get validators: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var validators ValidatorsResponse
+    if err := json.Unmarshal(responseBody, &validators); err != nil {
+        return ValidatorsResponse{}, fmt.Errorf("Could not decode validators: %w", err)
     }
     return validators, nil
 }
@@ -416,7 +455,7 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
         }
 
         // Get slot nuimber
-        slot := opts.Epoch * uint64(eth2Config.SlotsPerEpoch)
+        slot := opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
         stateId = strconv.FormatInt(int64(slot), 10)
 
     }
@@ -441,7 +480,7 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
         if err != nil {
             return []Validator{}, err
         }
-        data = append(data, validators...)
+        data = append(data, validators.Data...)
 
     }
     return data, nil
@@ -450,40 +489,82 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 
 // Send voluntary exit request
 func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
-    if err := c.client.Call(nil, RequestVoluntaryExitMethod, request); err != nil {
-        message := c.getErrorString(err)
-        return fmt.Errorf("Could not broadcast exit for validator at index %d: %s", request.Message.ValidatorIndex, message)
+    responseBody, status, err := c.postRequest(RequestVoluntaryExitPath, request)
+    if err != nil {
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
+    } else if status != http.StatusOK {
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
     }
     return nil
 }
 
 // Get the target beacon block
 func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, error) {
-    var beaconBlockResponse BeaconBlockResponse
-    if err := c.client.Call(&beaconBlockResponse, RequestBeaconBlockMethod, blockId); err != nil {
-        message := c.getErrorString(err)
-        return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block: %s", message)
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
+    if err != nil {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: %w", err)
+    } else if status != http.StatusOK {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
     }
-    return beaconBlockResponse, nil
+    var beaconBlock BeaconBlockResponse
+    if err := json.Unmarshal(responseBody, &beaconBlock); err != nil {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not decode beacon block data: %w", err)
+    }
+    return beaconBlock, nil
 }
 
-// Format an error from Nimbus into a string
-func (c *Client) getErrorString(err error) string {
-    var message string
 
-    // Check if this is a JSON error response
-    if dataError, ok := err.(rpc.DataError); ok {
-        // If so, grab the message and the data from it
-        message = dataError.Error()
-        message += " - " + fmt.Sprintf("%v", dataError.ErrorData())
+// Make a GET request to the beacon node
+func (c *Client) getRequest(requestPath string) ([]byte, int, error) {
 
-        // Add the error code if available
-        if err, ok := err.(rpc.Error); ok {
-            message += " (code " + fmt.Sprintf("%d", err.ErrorCode()) + ")"
-        }
-    } else {
-        message = err.Error()
+    // Send request
+    response, err := http.Get(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath))
+    if err != nil {
+        return []byte{}, 0, err
+    }
+    defer func() {
+        _ = response.Body.Close()
+    }()
+
+    // Get response
+    body, err := ioutil.ReadAll(response.Body)
+    if err != nil {
+        return []byte{}, 0, err
     }
 
-    return message
+    // Return
+    return body, response.StatusCode, nil
+
 }
+
+
+// Make a POST request to the beacon node
+func (c *Client) postRequest(requestPath string, requestBody interface{}) ([]byte, int, error) {
+
+    // Get request body
+    requestBodyBytes, err := json.Marshal(requestBody)
+    if err != nil {
+        return []byte{}, 0, err
+    }
+    requestBodyReader := bytes.NewReader(requestBodyBytes)
+
+    // Send request
+    response, err := http.Post(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), RequestContentType, requestBodyReader)
+    if err != nil {
+        return []byte{}, 0, err
+    }
+    defer func() {
+        _ = response.Body.Close()
+    }()
+
+    // Get response
+    body, err := ioutil.ReadAll(response.Body)
+    if err != nil {
+        return []byte{}, 0, err
+    }
+
+    // Return
+    return body, response.StatusCode, nil
+
+}
+
