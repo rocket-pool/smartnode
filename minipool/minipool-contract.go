@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -32,6 +33,29 @@ type UserDetails struct {
     DepositBalance *big.Int         `json:"depositBalance"`
     DepositAssigned bool            `json:"depositAssigned"`
     DepositAssignedTime time.Time   `json:"depositAssignedTime"`
+}
+
+
+// The data from a minipool's MinipoolPrestaked event
+type minipoolPrestakeEvent struct {
+	Pubkey                  []byte
+	Signature               []byte
+    DepositDataRoot         [32]byte
+    Amount                  *big.Int
+    WithdrawalCredentials   []byte
+	Time                    *big.Int
+	Raw                     types.Log
+}
+
+
+// Formatted MinipoolPrestaked event data
+type PrestakeData struct {
+    Pubkey rptypes.ValidatorPubkey          `json:"pubkey"`
+    WithdrawalCredentials common.Hash       `json:"withdrawalCredentials"`
+    Amount *big.Int                         `json:"amount"`
+    Signature rptypes.ValidatorSignature    `json:"signature"`
+    DepositDataRoot common.Hash             `json:"depositDataRoot"`
+    Time time.Time                          `json:"time"`
 }
 
 
@@ -532,6 +556,41 @@ func (mp *Minipool) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) {
         return common.Hash{}, fmt.Errorf("Could not vote to scrub minipool %s: %w", mp.Address.Hex(), err)
     }
     return hash, nil
+}
+
+
+// Get the data from this minipool's MinipoolPrestaked event
+func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts) (PrestakeData, error) {
+
+    addressFilter := []common.Address{ mp.Address }
+    topicFilter := [][]common.Hash{{mp.Contract.ABI.Events["MinipoolPrestaked"].ID}}
+    logs, err := eth.GetLogs(mp.RocketPool, addressFilter, topicFilter, intervalSize, nil, nil, nil)
+    if err != nil {
+        return PrestakeData{}, fmt.Errorf("Error getting prestake logs for minipool %s: %w", mp.Address.Hex(), err)
+    }
+    
+    // Confirm there's only one of them
+    if len(logs) != 1 {
+        return PrestakeData{}, fmt.Errorf("ALERT: There were %d prestake logs for minipool %s", len(logs), mp.Address.Hex())
+    }
+
+    // Decode the event
+    prestakeEvent := new(minipoolPrestakeEvent)
+    mp.Contract.Contract.UnpackLog(prestakeEvent, "MinipoolPrestaked", logs[0])
+    if err != nil {
+        return PrestakeData{}, fmt.Errorf("Error unpacking prestake data: %w", err)
+    }
+
+    // Convert the event to a more useable struct
+    prestakeData := PrestakeData {
+        Pubkey: rptypes.BytesToValidatorPubkey(prestakeEvent.Pubkey),
+        WithdrawalCredentials: common.BytesToHash(prestakeEvent.WithdrawalCredentials),
+        Amount: prestakeEvent.Amount,
+        Signature: rptypes.BytesToValidatorSignature(prestakeEvent.Signature),
+        DepositDataRoot: prestakeEvent.DepositDataRoot,
+        Time: time.Unix(prestakeEvent.Time.Int64(), 0),
+    }
+    return prestakeData, nil
 }
 
 

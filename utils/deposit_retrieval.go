@@ -40,7 +40,7 @@ type DepositData struct {
 
 
 // Gets all of the deposit contract's deposit events for the provided minipool addresses 
-func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipoolAddresses []common.Address, startBlock *big.Int, intervalSize *big.Int, opts *bind.CallOpts) ( map[common.Address][]DepositData, error ) {
+func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipools []*minipool.Minipool, pubkeys []rptypes.ValidatorPubkey, startBlock *big.Int, intervalSize *big.Int, opts *bind.CallOpts) ( map[*minipool.Minipool][]DepositData, error ) {
 
     // Get the deposit contract wrapper
     casperDeposit, err := getCasperDeposit(rp)
@@ -49,13 +49,10 @@ func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipoolAddresses []common.A
     }
 
     // Create the initial map and pubkey lookup
-    depositMap := make(map[common.Address][]DepositData)
-    pubkeyLookup := make(map[rptypes.ValidatorPubkey]common.Address)
-    for _, address := range minipoolAddresses {
-        pubkey, err := minipool.GetMinipoolPubkey(rp, address, nil)
-        if err != nil {
-            return nil, err
-        }
+    depositMap := make(map[*minipool.Minipool][]DepositData)
+    pubkeyLookup := make(map[rptypes.ValidatorPubkey]*minipool.Minipool)
+    for i, address := range minipools {
+        pubkey := pubkeys[i]
         pubkeyLookup[pubkey] = address
         depositMap[address] = []DepositData{}
     }
@@ -71,7 +68,10 @@ func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipoolAddresses []common.A
     // Process each event
     for _, log := range logs {
         depositEvent := new(BeaconDepositEvent)
-        casperDeposit.Contract.UnpackLog(depositEvent, "DepositEvent", log)
+        err = casperDeposit.Contract.UnpackLog(depositEvent, "DepositEvent", log)
+        if err != nil {
+            return nil, err
+        }
 
         // Check if this is a deposit for one of the minipools we're looking for
         pubkey := rptypes.BytesToValidatorPubkey(depositEvent.Pubkey)
