@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -39,8 +38,8 @@ type DepositData struct {
 }
 
 
-// Gets all of the deposit contract's deposit events for the provided minipool addresses 
-func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipools []*minipool.Minipool, pubkeys []rptypes.ValidatorPubkey, startBlock *big.Int, intervalSize *big.Int, opts *bind.CallOpts) ( map[*minipool.Minipool][]DepositData, error ) {
+// Gets all of the deposit contract's deposit events for the provided pubkeys 
+func GetDeposits(rp *rocketpool.RocketPool, pubkeys map[rptypes.ValidatorPubkey]bool, startBlock *big.Int, intervalSize *big.Int, opts *bind.CallOpts) ( map[rptypes.ValidatorPubkey][]DepositData, error ) {
 
     // Get the deposit contract wrapper
     casperDeposit, err := getCasperDeposit(rp)
@@ -49,13 +48,7 @@ func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipools []*minipool.Minipo
     }
 
     // Create the initial map and pubkey lookup
-    depositMap := make(map[*minipool.Minipool][]DepositData)
-    pubkeyLookup := make(map[rptypes.ValidatorPubkey]*minipool.Minipool)
-    for i, address := range minipools {
-        pubkey := pubkeys[i]
-        pubkeyLookup[pubkey] = address
-        depositMap[address] = []DepositData{}
-    }
+    depositMap := make(map[rptypes.ValidatorPubkey][]DepositData)
 
     // Get the deposit events
     addressFilter := []common.Address{*casperDeposit.Address}
@@ -73,9 +66,9 @@ func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipools []*minipool.Minipo
             return nil, err
         }
 
-        // Check if this is a deposit for one of the minipools we're looking for
+        // Check if this is a deposit for one of the pubkeys we're looking for
         pubkey := rptypes.BytesToValidatorPubkey(depositEvent.Pubkey)
-        minipoolAddress, exists := pubkeyLookup[pubkey]
+        _, exists := pubkeys[pubkey]
         if exists {
             // Convert the deposit amount from little-endian binary to a uint64
             var amount uint64
@@ -85,7 +78,7 @@ func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipools []*minipool.Minipo
                 return nil, err
             }
 
-            // Create the deposit data wrapper and add it to this minipool's collection
+            // Create the deposit data wrapper and add it to this pubkey's collection
             depositData := DepositData{
                 Pubkey: pubkey,
                 WithdrawalCredentials: common.BytesToHash(depositEvent.WithdrawalCredentials),
@@ -95,7 +88,7 @@ func GetMinipoolDeposits(rp *rocketpool.RocketPool, minipools []*minipool.Minipo
                 BlockNumber: log.BlockNumber,
                 TxIndex: log.TxIndex,
             }
-            depositMap[minipoolAddress] = append(depositMap[minipoolAddress], depositData)
+            depositMap[pubkey] = append(depositMap[pubkey], depositData)
         }
     }
 
