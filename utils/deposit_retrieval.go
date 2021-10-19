@@ -48,7 +48,7 @@ func GetDeposits(rp *rocketpool.RocketPool, pubkeys map[rptypes.ValidatorPubkey]
     }
 
     // Create the initial map and pubkey lookup
-    depositMap := make(map[rptypes.ValidatorPubkey][]DepositData)
+    depositMap := make(map[rptypes.ValidatorPubkey][]DepositData, len(pubkeys))
 
     // Get the deposit events
     addressFilter := []common.Address{*casperDeposit.Address}
