@@ -145,6 +145,7 @@ func (t *submitScrubMinipools) run() error {
         t.log.Println("No minipools in prelaunch.")
         return nil
     }
+    t.it.minipools = make(map[*minipool.Minipool]*minipoolDetails, t.it.totalMinipools)
 
     // Get the correct withdrawal credentials and validator pubkeys for each minipool
     pubkeys := t.initializeMinipoolDetails(minipoolAddresses)
@@ -401,7 +402,7 @@ func (t *submitScrubMinipools) verifyDeposits() (error) {
     minipoolsToScrub := []*minipool.Minipool{}
 
     // Create a "hashset" of the remaining pubkeys
-    pubkeys := map[types.ValidatorPubkey]bool{}
+    pubkeys := make(map[types.ValidatorPubkey]bool, len(t.it.minipools))
     for _, details := range t.it.minipools {
         pubkeys[details.pubkey] = true
     }
