@@ -16,6 +16,7 @@ import (
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	ethpb "github.com/prysmaticlabs/prysm/v2/proto/prysm/v1alpha1"
@@ -349,6 +350,7 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() () {
 
     minipoolsToScrub := []*minipool.Minipool{}
 
+    weiPerGwei := big.NewInt(int64(eth.WeiPerGwei))
     for minipool := range t.it.minipools {
         // Get the MinipoolPrestaked event
         prestakeData, err := minipool.GetPrestakeEvent(t.it.eventLogInterval, nil)
@@ -356,6 +358,9 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() () {
             t.log.Printf("Error getting prestake event for minipool %s: %s", minipool.Address.Hex(), err.Error())
             continue
         }
+
+        // Convert the amount to gwei
+        prestakeData.Amount.Div(prestakeData.Amount, weiPerGwei)
 
         // Convert it into Prysm's deposit data struct
         depositData := new(ethpb.Deposit_Data)
