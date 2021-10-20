@@ -17,12 +17,12 @@ import (
 
 // BeaconDepositEvent represents a DepositEvent event raised by the BeaconDeposit contract.
 type BeaconDepositEvent struct {
-	Pubkey                []byte
-	WithdrawalCredentials []byte
-	Amount                []byte
-	Signature             []byte
-	Index                 []byte
-	Raw                   types.Log // Blockchain specific contextual infos
+	Pubkey []byte                   `abi:"pubkey"`
+	WithdrawalCredentials []byte    `abi:"withdrawal_credentials"`
+	Amount []byte                   `abi:"amount"`
+	Signature []byte                `abi:"signature"`
+	Index []byte                    `abi:"index"`
+	Raw types.Log // Blockchain specific contextual infos
 }
 
 

@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -38,13 +37,12 @@ type UserDetails struct {
 
 // The data from a minipool's MinipoolPrestaked event
 type minipoolPrestakeEvent struct {
-	Pubkey                  []byte
-	Signature               []byte
-    DepositDataRoot         [32]byte
-    Amount                  *big.Int
-    WithdrawalCredentials   []byte
-	Time                    *big.Int
-	Raw                     types.Log
+	Pubkey []byte                   `abi:"validatorPubkey"`  
+	Signature []byte                `abi:"validatorSignature"`
+    DepositDataRoot [32]byte        `abi:"depositDataRoot"`
+    Amount *big.Int                 `abi:"amount"`
+    WithdrawalCredentials []byte    `abi:"withdrawalCredentials"`
+	Time *big.Int                   `abi:"time"`
 }
 
 
