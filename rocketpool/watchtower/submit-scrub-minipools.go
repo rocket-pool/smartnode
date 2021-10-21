@@ -68,6 +68,7 @@ type iterationData struct {
     startBlock *big.Int
     eventLogInterval *big.Int
     depositDomain []byte
+    latestBlockTime time.Time
 }
 
 
@@ -306,21 +307,22 @@ func (t *submitScrubMinipools) getEth1SearchArtifacts() (error) {
         return nil, err
     }
     
-    eth1Block, err := t.ec.BlockByHash(context.Background(), data.BlockHash)
+    latestEth1Block, err := t.ec.BlockByHash(context.Background(), data.BlockHash)
     if err != nil {
         return nil, err
     }
     */
-    eth1Block, err := t.ec.HeaderByNumber(context.Background(), nil)
+    latestEth1Block, err := t.ec.HeaderByNumber(context.Background(), nil)
     if err != nil {
         return err
     }
-    targetBlockNumber := big.NewInt(0).Sub(eth1Block.Number, big.NewInt(BlockStartOffset))
-    targetBlock, err := t.ec.BlockByNumber(context.Background(), targetBlockNumber)
+    t.it.latestBlockTime = time.Unix(int64(latestEth1Block.Time), 0)
+    targetBlockNumber := big.NewInt(0).Sub(latestEth1Block.Number, big.NewInt(BlockStartOffset))
+    targetBlock, err := t.ec.HeaderByNumber(context.Background(), targetBlockNumber)
     if err != nil {
         return err
     }
-    t.it.startBlock = targetBlock.Number()
+    t.it.startBlock = targetBlock.Number
 
     // Check the prestake event from the minipool and validate its signature
     eventLogInterval, err := api.GetEventLogInterval(t.cfg)
@@ -524,7 +526,7 @@ func (t *submitScrubMinipools) checkSafetyScrub() (error) {
         }
 
         // Check the time it entered prelaunch against the safety period
-        if time.Since(statusDetails.StatusTime) > safetyPeriod {
+        if (t.it.latestBlockTime.Sub(statusDetails.StatusTime)) > safetyPeriod {
             t.log.Println("=== SAFETY SCRUB DETECTED ===")
             t.log.Printlnf("\tMinipool: %s", minipool.Address.Hex())
             t.log.Printlnf("\tTime since prelaunch: %s", time.Since(statusDetails.StatusTime))
