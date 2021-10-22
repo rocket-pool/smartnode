@@ -16,6 +16,7 @@ import (
 const (
     MinipoolSettingsContractName = "rocketDAONodeTrustedSettingsMinipool"
     ScrubPeriodPath = "minipool.scrub.period"
+    ScrubPenaltyEnabledPath = "minipool.scrub.penalty.enabled"
 )
 
 
@@ -39,6 +40,29 @@ func ProposeScrubPeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.Tran
 }
 func EstimateProposeScrubPeriodGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ScrubPeriodPath), MinipoolSettingsContractName, ScrubPeriodPath, big.NewInt(int64(value)), opts)
+}
+
+
+// Whether or not the RPL slashing penalty is applied to scrubbed minipools
+func GetScrubPenaltyEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+    minipoolSettingsContract, err := getMinipoolSettingsContract(rp)
+    if err != nil {
+        return false, err
+    }
+    value := new(bool)
+    if err := minipoolSettingsContract.Call(opts, value, "getScrubPenaltyEnabled"); err != nil {
+        return false, fmt.Errorf("Could not get scrub penalty setting: %w", err)
+    }
+    return (*value), nil
+}
+func BootstrapScrubPenaltyEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (common.Hash, error) {
+    return trustednodedao.BootstrapBool(rp, MinipoolSettingsContractName, ScrubPenaltyEnabledPath, value, opts)
+}
+func ProposeScrubPenaltyEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+    return trustednodedao.ProposeSetBool(rp, fmt.Sprintf("set %s", ScrubPenaltyEnabledPath), MinipoolSettingsContractName, ScrubPenaltyEnabledPath, value, opts)
+}
+func EstimateProposeScrubPenaltyEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return trustednodedao.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", ScrubPenaltyEnabledPath), MinipoolSettingsContractName, ScrubPenaltyEnabledPath, value, opts)
 }
 
 
