@@ -15,6 +15,7 @@ import (
 
 // Settings
 const (
+    MinipoolPrelaunchBatchSize = 750
     MinipoolAddressBatchSize = 50
     MinipoolDetailsBatchSize = 20
 )
@@ -140,14 +141,27 @@ func GetPrelaunchMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpt
     if err != nil {
         return []common.Address{}, err
     }
-    offset := big.NewInt(0)
-    limit := big.NewInt(0)
-    addresses := new([]common.Address)
-    if err := rocketMinipoolManager.Call(opts, addresses, "getPrelaunchMinipools", offset, limit); err != nil {
-        return []common.Address{}, fmt.Errorf("Could not get prelaunch minipool addresses: %w", err)
-    }
-    return *addresses, nil
 
+    // Get the total number of minipools
+    totalMinipoolsUint, err := GetMinipoolCount(rp, nil)
+    if err != nil {
+        return []common.Address{}, err
+    }
+
+    totalMinipools := int64(totalMinipoolsUint)
+    addresses := []common.Address{}
+    limit := big.NewInt(MinipoolPrelaunchBatchSize)
+    for i := int64(0); i < totalMinipools; i += MinipoolPrelaunchBatchSize {
+        // Get a batch of addresses
+        offset := big.NewInt(i)
+        newAddresses := new([]common.Address)
+        if err := rocketMinipoolManager.Call(opts, newAddresses, "getPrelaunchMinipools", offset, limit); err != nil {
+            return []common.Address{}, fmt.Errorf("Could not get prelaunch minipool addresses: %w", err)
+        }
+        addresses = append(addresses, *newAddresses...)
+    }
+
+    return addresses, nil
 }
 
 
