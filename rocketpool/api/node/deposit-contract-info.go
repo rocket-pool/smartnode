@@ -43,6 +43,9 @@ func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, e
     if err != nil {
         return nil, fmt.Errorf("Error getting Casper deposit contract: %w", err)
     }
+    if rpDepositContract == nil {
+        return nil, fmt.Errorf("Deposit contract was undefined.")
+    }
     response.RPDepositContract = *rpDepositContract.Address
 
     // Get the Beacon Client info
