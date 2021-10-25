@@ -1,16 +1,18 @@
 package watchtower
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -120,6 +122,7 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
     var wg1 errgroup.Group
     var addresses []common.Address
     var launchTimeout time.Duration
+    var latestEth1Block *types.Header
 
     // Get minipool addresses
     wg1.Go(func() error {
@@ -132,6 +135,13 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
     wg1.Go(func() error {
         var err error
         launchTimeout, err = protocol.GetMinipoolLaunchTimeout(t.rp, nil)
+        return err
+    })
+
+    // Get latest block
+    wg1.Go(func() error {
+        var err error
+        latestEth1Block, err = t.ec.HeaderByNumber(context.Background(), nil)
         return err
     })
 
@@ -159,9 +169,6 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
         mei := bsi + MinipoolStatusBatchSize
         if mei > len(minipools) { mei = len(minipools) }
 
-        // Log
-        //t.log.Printlnf("Checking minipools %d - %d of %d for timed out status...", msi + 1, mei, len(minipools))
-
         // Load statuses
         var wg errgroup.Group
         for mi := msi; mi < mei; mi++ {
@@ -180,9 +187,10 @@ func (t *dissolveTimedOutMinipools) getTimedOutMinipools() ([]*minipool.Minipool
     }
 
     // Filter minipools by status
+    latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
     timedOutMinipools := []*minipool.Minipool{}
     for mi, mp := range minipools {
-        if statuses[mi].Status == types.Prelaunch && time.Since(statuses[mi].StatusTime) >= launchTimeout {
+        if statuses[mi].Status == rptypes.Prelaunch && latestBlockTime.Sub(statuses[mi].StatusTime) >= launchTimeout {
             timedOutMinipools = append(timedOutMinipools, mp)
         }
     }
