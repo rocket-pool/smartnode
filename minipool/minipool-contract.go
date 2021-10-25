@@ -376,8 +376,8 @@ func (mp *Minipool) EstimateStakeGas(validatorPubkey rptypes.ValidatorPubkey, va
 
 
 // Progress the prelaunch minipool to staking
-func (mp *Minipool) Stake(validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
-    hash, err := mp.Contract.Transact(opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)
+func (mp *Minipool) Stake(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
+    hash, err := mp.Contract.Transact(opts, "stake", validatorSignature[:], depositDataRoot)
     if err != nil {
         return common.Hash{}, fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
     }
