@@ -251,7 +251,6 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
 
     // Stake minipool
     hash, err := mp.Stake(
-        pubKey,
         signature,
         depositDataRoot,
         opts,
