@@ -1,60 +1,61 @@
 package prysm
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	pbtypes "github.com/gogo/protobuf/types"
-	pb "github.com/prysmaticlabs/ethereumapis/eth/v1alpha1"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"google.golang.org/grpc"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
+
+// Config
+const (
+    RequestUrlFormat = "%s%s"
+    RequestContentType = "application/json"
+
+    RequestSyncStatusPath = "/eth/v1/node/syncing"
+    RequestEth2ConfigPath = "/eth/v1/config/spec"
+    RequestEth2DepositContractMethod = "/eth/v1/config/deposit_contract"
+    RequestGenesisPath = "/eth/v1/beacon/genesis"
+    RequestFinalityCheckpointsPath = "/eth/v1/beacon/states/%s/finality_checkpoints"
+    RequestForkPath = "/eth/v1/beacon/states/%s/fork"
+    RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators"
+    RequestVoluntaryExitPath = "/eth/v1/beacon/pool/voluntary_exits"
+    RequestBeaconBlockPath = "/eth/v1/beacon/blocks/%s"
+
+    MaxRequestValidatorsCount = 600
+)
+
 
 // Prysm client
 type Client struct {
-    conn *grpc.ClientConn
-    bc pb.BeaconChainClient
-    nc pb.NodeClient
-    vc pb.BeaconNodeValidatorClient
+    providerAddress string
 }
 
 
 // Create new prysm client
-func NewClient(providerAddress string) (*Client, error) {
-
-    // Initialize gRPC connection - remove the prefix if present (e.g. HTTP or HTTPS)
-    elements := strings.Split(providerAddress, "://")
-    if len(elements) > 1 {
-		providerAddress = elements[len(elements)-1]
-	}
-    conn, err := grpc.Dial(providerAddress, grpc.WithInsecure(), grpc.WithBlock())
-    if err != nil {
-        return nil, fmt.Errorf("Could not connect to gRPC server: %w", err)
-    }
-
-    // Initialize clients
-    bc := pb.NewBeaconChainClient(conn)
-    nc := pb.NewNodeClient(conn)
-    vc := pb.NewBeaconNodeValidatorClient(conn)
-
-    // Return client
+func NewClient(providerAddress string) (*Client) {
     return &Client{
-        conn: conn,
-        bc: bc,
-        nc: nc,
-        vc: vc,
-    }, nil
-
+        providerAddress: providerAddress,
+    }
 }
 
 
 // Close the client connection
 func (c *Client) Close() error {
-    return c.conn.Close()
+    return nil
 }
 
 
@@ -68,15 +69,18 @@ func (c *Client) GetClientType() (beacon.BeaconClientType) {
 func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
 
     // Get sync status
-    syncStatus, err := c.nc.GetSyncStatus(context.Background(), &pbtypes.Empty{})
+    syncStatus, err := c.getSyncStatus()
     if err != nil {
-        return beacon.SyncStatus{}, fmt.Errorf("Could not get node sync status: %w", err)
-    }
+        return beacon.SyncStatus{}, err
+    }    
 
-    // Return
+    // Calculate the progress
+    progress := float64(syncStatus.Data.HeadSlot) / float64(syncStatus.Data.HeadSlot + syncStatus.Data.SyncDistance)
+
+    // Return response
     return beacon.SyncStatus{
-        Syncing: syncStatus.Syncing,
-        Progress: -1, // Prysm doesn't support this yet
+        Syncing: syncStatus.Data.IsSyncing,
+        Progress: progress,
     }, nil
 
 }
@@ -85,36 +89,37 @@ func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
 // Get the eth2 config
 func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
-    // Get beacon config
-    config, err := c.bc.GetBeaconConfig(context.Background(), &pbtypes.Empty{})
-    if err != nil {
-        return beacon.Eth2Config{}, fmt.Errorf("Could not get beacon chain config: %w", err)
-    }
-    cfg := config.GetConfig()
+    // Data
+    var wg errgroup.Group
+    var eth2Config Eth2ConfigResponse
+    var genesis GenesisResponse
 
-    // Get genesis data
-    genesis, err := c.nc.GetGenesis(context.Background(), &pbtypes.Empty{})
-    if err != nil {
-        return beacon.Eth2Config{}, fmt.Errorf("Could not get genesis data: %w", err)
-    }
+    // Get eth2 config
+    wg.Go(func() error {
+        var err error
+        eth2Config, err = c.getEth2Config()
+        return err
+    })
 
-    // Get config settings
-    genesisForkVersion, err := getConfigBytes(cfg, "GenesisForkVersion")
-    if err != nil { return beacon.Eth2Config{}, err }
-    genesisEpoch, err := getConfigUint(cfg, "GenesisEpoch")
-    if err != nil { return beacon.Eth2Config{}, err }
-    secondsPerSlot, err := getConfigUint(cfg, "SecondsPerSlot")
-    if err != nil { return beacon.Eth2Config{}, err }
-    slotsPerEpoch, err := getConfigUint(cfg, "SlotsPerEpoch")
-    if err != nil { return beacon.Eth2Config{}, err }
+    // Get genesis
+    wg.Go(func() error {
+        var err error
+        genesis, err = c.getGenesis()
+        return err
+    })
+    
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return beacon.Eth2Config{}, err
+    }
 
     // Return response
     return beacon.Eth2Config{
-        GenesisForkVersion: genesisForkVersion,
-        GenesisValidatorsRoot: genesis.GenesisValidatorsRoot,
-        GenesisEpoch: genesisEpoch,
-        GenesisTime: uint64(genesis.GenesisTime.Seconds),
-        SecondsPerEpoch: secondsPerSlot * slotsPerEpoch,
+        GenesisForkVersion: genesis.Data.GenesisForkVersion,
+        GenesisValidatorsRoot: genesis.Data.GenesisValidatorsRoot,
+        GenesisEpoch: 0,
+        GenesisTime: uint64(genesis.Data.GenesisTime),
+        SecondsPerEpoch: uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
     }, nil
 
 }
@@ -123,23 +128,16 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 // Get the eth2 deposit contract info
 func (c *Client) GetEth2DepositContract() (beacon.Eth2DepositContract, error) {
 
-    // Get beacon config
-    config, err := c.bc.GetBeaconConfig(context.Background(), &pbtypes.Empty{})
+    // Get the deposit contract
+    depositContract, err := c.getEth2DepositContract()
     if err != nil {
-        return beacon.Eth2DepositContract{}, fmt.Errorf("Could not get beacon chain config: %w", err)
+        return beacon.Eth2DepositContract{}, err
     }
-    cfg := config.GetConfig()
-    
-    // Get config settings
-    chainID, err := getConfigUint(cfg, "DepositChainID")
-    if err != nil { return beacon.Eth2DepositContract{}, err }
-    address, err := getConfigString(cfg, "DepositContractAddress")
-    if err != nil { return beacon.Eth2DepositContract{}, err }
 
     // Return response
     return beacon.Eth2DepositContract{
-        ChainID: uint64(chainID),
-        Address: common.HexToAddress(address),
+        ChainID: uint64(depositContract.Data.ChainID),
+        Address: depositContract.Data.Address,
     }, nil
 }
 
@@ -147,18 +145,36 @@ func (c *Client) GetEth2DepositContract() (beacon.Eth2DepositContract, error) {
 // Get the beacon head
 func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 
-    // Get chain head
-    head, err := c.bc.GetChainHead(context.Background(), &pbtypes.Empty{})
-    if err != nil {
-        return beacon.BeaconHead{}, fmt.Errorf("Could not get beacon chain head: %w", err)
+    // Data
+    var wg errgroup.Group
+    var eth2Config beacon.Eth2Config
+    var finalityCheckpoints FinalityCheckpointsResponse
+
+    // Get eth2 config
+    wg.Go(func() error {
+        var err error
+        eth2Config, err = c.GetEth2Config()
+        return err
+    })
+
+    // Get finality checkpoints
+    wg.Go(func() error {
+        var err error
+        finalityCheckpoints, err = c.getFinalityCheckpoints("head")
+        return err
+    })
+    
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return beacon.BeaconHead{}, err
     }
 
     // Return response
     return beacon.BeaconHead{
-        Epoch: head.HeadEpoch,
-        FinalizedEpoch: head.FinalizedEpoch,
-        JustifiedEpoch: head.JustifiedEpoch,
-        PreviousJustifiedEpoch: head.PreviousJustifiedEpoch,
+        Epoch: eth2.EpochAt(eth2Config, uint64(time.Now().Unix())),
+        FinalizedEpoch: uint64(finalityCheckpoints.Data.Finalized.Epoch),
+        JustifiedEpoch: uint64(finalityCheckpoints.Data.CurrentJustified.Epoch),
+        PreviousJustifiedEpoch: uint64(finalityCheckpoints.Data.PreviousJustified.Epoch),
     }, nil
 
 }
@@ -167,50 +183,28 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 // Get a validator's status
 func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
-    // Build validator requests
-    validatorsRequest := &pb.ListValidatorsRequest{
-        PublicKeys: [][]byte{pubkey.Bytes()},
-    }
-    balancesRequest := &pb.ListValidatorBalancesRequest{
-        PublicKeys: [][]byte{pubkey.Bytes()},
-    }
-    if opts != nil {
-        validatorsRequest.QueryFilter = &pb.ListValidatorsRequest_Epoch{Epoch: opts.Epoch}
-        balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
-    }
-
-    // Get validator status
-    validators, err := c.bc.ListValidators(context.Background(), validatorsRequest)
+    // Get validator
+    validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, opts)
     if err != nil {
-        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator %s status: %w", pubkey.Hex(), err)
+        return beacon.ValidatorStatus{}, err
     }
-    if len(validators.ValidatorList) == 0 {
+    if len(validators.Data) == 0 {
         return beacon.ValidatorStatus{}, nil
     }
-    validator := validators.ValidatorList[0]
-
-    // Get validator balance
-    balances, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
-    if err != nil {
-        return beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator %s balance: %w", pubkey.Hex(), err)
-    }
-    if len(balances.Balances) == 0 {
-        return beacon.ValidatorStatus{}, nil
-    }
-    validatorBalance := balances.Balances[0]
+    validator := validators.Data[0]
 
     // Return response
     return beacon.ValidatorStatus{
-        Pubkey: types.BytesToValidatorPubkey(validator.Validator.PublicKey),
-        Index: validator.Index,
+        Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+        Index: uint64(validator.Index),
         WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
-        Balance: validatorBalance.Balance,
-        EffectiveBalance: validator.Validator.EffectiveBalance,
+        Balance: uint64(validator.Balance),
+        EffectiveBalance: uint64(validator.Validator.EffectiveBalance),
         Slashed: validator.Validator.Slashed,
-        ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,
-        ActivationEpoch: validator.Validator.ActivationEpoch,
-        ExitEpoch: validator.Validator.ExitEpoch,
-        WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
+        ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
+        ActivationEpoch: uint64(validator.Validator.ActivationEpoch),
+        ExitEpoch: uint64(validator.Validator.ExitEpoch),
+        WithdrawableEpoch: uint64(validator.Validator.WithdrawableEpoch),
         Exists: true,
     }, nil
 
@@ -220,102 +214,37 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 // Get multiple validators' statuses
 func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
-    // Return if no pubkeys defined
-    if len(pubkeys) == 0 {
-        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, nil
+    // Get validators
+    validators, err := c.getValidatorsByOpts(pubkeys, opts)
+    if err != nil {
+        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, err
     }
 
-    // Build validator statuses request
-    validatorsRequest := &pb.ListValidatorsRequest{
-        PublicKeys: make([][]byte, len(pubkeys)),
-    }
-    for ki, pubkey := range pubkeys {
-        validatorsRequest.PublicKeys[ki] = pubkey.Bytes()
-    }
-    if opts != nil {
-        validatorsRequest.QueryFilter = &pb.ListValidatorsRequest_Epoch{Epoch: opts.Epoch}
-    }
-
-    // Load validator statuses in pages
-    validators := make([]*pb.Validators_ValidatorContainer, 0, len(pubkeys))
-    for {
-
-        // Get & add validators
-        response, err := c.bc.ListValidators(context.Background(), validatorsRequest)
-        if err != nil {
-            return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator statuses: %w", err)
-        }
-        validators = append(validators, response.ValidatorList...)
-
-        // Update request page token; break on last page
-        if response.NextPageToken == "" || response.NextPageToken == "0" { break }
-        validatorsRequest.PageToken = response.NextPageToken
-
-    }
-
-    // Return if no validators found
-    if len(validators) == 0 {
-        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, nil
-    }
-
-    // Build validator balances request
-    balancesRequest := &pb.ListValidatorBalancesRequest{
-        PublicKeys: make([][]byte, len(validators)),
-    }
-    for vi, validator := range validators {
-        balancesRequest.PublicKeys[vi] = validator.Validator.PublicKey
-    }
-    if opts != nil {
-        balancesRequest.QueryFilter = &pb.ListValidatorBalancesRequest_Epoch{Epoch: opts.Epoch}
-    }
-
-    // Load validator balances in pages
-    balances := make([]*pb.ValidatorBalances_Balance, 0, len(pubkeys))
-    for {
-
-        // Get & add balances
-        response, err := c.bc.ListValidatorBalances(context.Background(), balancesRequest)
-        if err != nil {
-            return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Could not get validator balances: %w", err)
-        }
-        balances = append(balances, response.Balances...)
-
-        // Update request page token; break on last page
-        if response.NextPageToken == "" || response.NextPageToken == "0" { break }
-        balancesRequest.PageToken = response.NextPageToken
-
-    }
-
-    // Check validator balances count
-    if len(validators) != len(balances) {
-        return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, fmt.Errorf("Validator status and balance result counts do not match")
-    }
-
-    // Build & return status map
+    // Build validator status map
     statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
-    for vi := 0; vi < len(validators); vi++ {
+    for _, validator := range validators.Data {
 
-        // Get validator status, balance & pubkey
-        validator := validators[vi]
-        validatorBalance := balances[vi]
-        pubkey := types.BytesToValidatorPubkey(validator.Validator.PublicKey)
+        // Get validator pubkey
+        pubkey := types.BytesToValidatorPubkey(validator.Validator.Pubkey)
 
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
-            Pubkey: pubkey,
-            Index: validator.Index,
+            Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+            Index: uint64(validator.Index),
             WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
-            Balance: validatorBalance.Balance,
-            EffectiveBalance: validator.Validator.EffectiveBalance,
+            Balance: uint64(validator.Balance),
+            EffectiveBalance: uint64(validator.Validator.EffectiveBalance),
             Slashed: validator.Validator.Slashed,
-            ActivationEligibilityEpoch: validator.Validator.ActivationEligibilityEpoch,
-            ActivationEpoch: validator.Validator.ActivationEpoch,
-            ExitEpoch: validator.Validator.ExitEpoch,
-            WithdrawableEpoch: validator.Validator.WithdrawableEpoch,
+            ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
+            ActivationEpoch: uint64(validator.Validator.ActivationEpoch),
+            ExitEpoch: uint64(validator.Validator.ExitEpoch),
+            WithdrawableEpoch: uint64(validator.Validator.WithdrawableEpoch),
             Exists: true,
         }
 
     }
+
+    // Return
     return statuses, nil
 
 }
@@ -323,74 +252,341 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 
 // Get a validator's index
 func (c *Client) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {
-    validatorIndex, err := c.vc.ValidatorIndex(context.Background(), &pb.ValidatorIndexRequest{PublicKey: pubkey.Bytes()})
+
+    // Get validator
+    validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, nil)
     if err != nil {
-        return 0, fmt.Errorf("Could not get validator %s index: %w", pubkey.Hex(), err)
+        return 0, err
     }
-    return validatorIndex.Index, nil
+    if len(validators.Data) == 0 {
+        return 0, fmt.Errorf("Validator %s index not found.", pubkey.Hex())
+    }
+    validator := validators.Data[0]
+
+    // Return validator index
+    return uint64(validator.Index), nil
+
 }
 
 
 // Get domain data for a domain type at a given epoch
 func (c *Client) GetDomainData(domainType []byte, epoch uint64) ([]byte, error) {
-    domainData, err := c.vc.DomainData(context.Background(), &pb.DomainRequest{Domain: domainType, Epoch: epoch})
-    if err != nil {
-        return []byte{}, fmt.Errorf("Could not get domain data for epoch %d: %w", epoch, err)
+
+    // Data
+    var wg errgroup.Group
+    var genesis GenesisResponse
+    var fork ForkResponse
+
+    // Get genesis
+    wg.Go(func() error {
+        var err error
+        genesis, err = c.getGenesis()
+        return err
+    })
+
+    // Get fork
+    wg.Go(func() error {
+        var err error
+        fork, err = c.getFork("head")
+        return err
+    })
+    
+    // Wait for data
+    if err := wg.Wait(); err != nil {
+        return []byte{}, err
     }
-    return domainData.SignatureDomain, nil
+
+    // Get fork version
+    var forkVersion []byte
+    if epoch < uint64(fork.Data.Epoch) {
+        forkVersion = fork.Data.PreviousVersion
+    } else {
+        forkVersion = fork.Data.CurrentVersion
+    }
+
+    // Compute & return domain
+    var dt [4]byte
+    copy(dt[:], domainType[:])
+    return eth2types.Domain(dt, forkVersion, genesis.Data.GenesisValidatorsRoot), nil
+
 }
 
 
 // Perform a voluntary exit on a validator
 func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error {
-
-    // Build signed exit message
-    signedExitMessage := &pb.SignedVoluntaryExit{
-        Exit: &pb.VoluntaryExit{
-            Epoch: epoch,
-            ValidatorIndex: validatorIndex,
+    return c.postVoluntaryExit(VoluntaryExitRequest{
+        Message: VoluntaryExitMessage{
+            Epoch: uinteger(epoch),
+            ValidatorIndex: uinteger(validatorIndex),
         },
         Signature: signature.Bytes(),
-    }
-
-    // Propose exit
-    _, err := c.vc.ProposeExit(context.Background(), signedExitMessage)
-    if err != nil {
-        return fmt.Errorf("Could not propose exit for validator at index %d: %w", validatorIndex, err)
-    }
-
-    // Return
-    return nil
-
+    })
 }
 
 
 // Get the ETH1 data for the target beacon block
 func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error) {
 
-    // Get chain head
-    head, err := c.bc.GetChainHead(context.Background(), &pbtypes.Empty{})
-    if err != nil {
-        return beacon.Eth1Data{}, fmt.Errorf("Could not get beacon chain head: %w", err)
-    }
-
     // Get the Beacon block
-    request := pb.ListBlocksRequest{
-        QueryFilter: &pb.ListBlocksRequest_Slot{
-            Slot: head.FinalizedSlot,
-        },
-    }
-    response, err := c.bc.ListBlocks(context.Background(), &request)
+    block, err := c.getBeaconBlock(blockId)
     if err != nil {
-        return beacon.Eth1Data{}, fmt.Errorf("Could not get latest finalized block: %w", err)
+        return beacon.Eth1Data{}, err
     }
-    eth1Data := response.BlockContainers[0].Block.Block.Body.Eth1Data
 
     // Convert the response to the eth1 data struct
     return beacon.Eth1Data{
-        DepositRoot: common.BytesToHash(eth1Data.DepositRoot),
-        DepositCount: eth1Data.DepositCount,
-        BlockHash: common.BytesToHash(eth1Data.BlockHash),
+        DepositRoot: common.BytesToHash(block.Data.Message.Body.Eth1Data.DepositRoot),
+        DepositCount: uint64(block.Data.Message.Body.Eth1Data.DepositCount),
+        BlockHash: common.BytesToHash(block.Data.Message.Body.Eth1Data.BlockHash),
     }, nil
 
 }
+
+
+// Get sync status
+func (c *Client) getSyncStatus() (SyncStatusResponse, error) {
+    responseBody, status, err := c.getRequest(RequestSyncStatusPath)
+    if err != nil {
+        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %w", err)
+    } else if status != http.StatusOK {
+        return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var syncStatus SyncStatusResponse
+    if err := json.Unmarshal(responseBody, &syncStatus); err != nil {
+        return SyncStatusResponse{}, fmt.Errorf("Could not decode node sync status: %w", err)
+    }
+    return syncStatus, nil
+}
+
+
+// Get the eth2 config
+func (c *Client) getEth2Config() (Eth2ConfigResponse, error) {
+    responseBody, status, err := c.getRequest(RequestEth2ConfigPath)
+    if err != nil {
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %w", err)
+    } else if status != http.StatusOK {
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var eth2Config Eth2ConfigResponse
+    if err := json.Unmarshal(responseBody, &eth2Config); err != nil {
+        return Eth2ConfigResponse{}, fmt.Errorf("Could not decode eth2 config: %w", err)
+    }
+    return eth2Config, nil
+}
+
+
+// Get the eth2 deposit contract info
+func (c *Client) getEth2DepositContract() (Eth2DepositContractResponse, error) {
+    responseBody, status, err := c.getRequest(RequestEth2DepositContractMethod)
+    if err != nil {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: %w", err)
+    } else if status != http.StatusOK {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var eth2DepositContract Eth2DepositContractResponse
+    if err := json.Unmarshal(responseBody, &eth2DepositContract); err != nil {
+        return Eth2DepositContractResponse{}, fmt.Errorf("Could not decode eth2 deposit contract: %w", err)
+    }
+    return eth2DepositContract, nil
+}
+
+
+// Get genesis information
+func (c *Client) getGenesis() (GenesisResponse, error) {
+    responseBody, status, err := c.getRequest(RequestGenesisPath)
+    if err != nil {
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %w", err)
+    } else if status != http.StatusOK {
+        return GenesisResponse{}, fmt.Errorf("Could not get genesis data: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var genesis GenesisResponse
+    if err := json.Unmarshal(responseBody, &genesis); err != nil {
+        return GenesisResponse{}, fmt.Errorf("Could not decode genesis: %w", err)
+    }
+    return genesis, nil
+}
+
+
+// Get finality checkpoints
+func (c *Client) getFinalityCheckpoints(stateId string) (FinalityCheckpointsResponse, error) {
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestFinalityCheckpointsPath, stateId))
+    if err != nil {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %w", err)
+    } else if status != http.StatusOK {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var finalityCheckpoints FinalityCheckpointsResponse
+    if err := json.Unmarshal(responseBody, &finalityCheckpoints); err != nil {
+        return FinalityCheckpointsResponse{}, fmt.Errorf("Could not decode finality checkpoints: %w", err)
+    }
+    return finalityCheckpoints, nil
+}
+
+
+// Get fork
+func (c *Client) getFork(stateId string) (ForkResponse, error) {
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
+    if err != nil {
+        return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
+    } else if status != http.StatusOK {
+        return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var fork ForkResponse
+    if err := json.Unmarshal(responseBody, &fork); err != nil {
+        return ForkResponse{}, fmt.Errorf("Could not decode fork data: %w", err)
+    }
+    return fork, nil
+}
+
+
+// Get validators
+func (c *Client) getValidators(stateId string, pubkeys []string) (ValidatorsResponse, error) {
+    var query string
+    if len(pubkeys) > 0 {
+        query = fmt.Sprintf("?id=%s", strings.Join(pubkeys, ","))
+    }
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId) + query)
+    if err != nil {
+        return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
+    } else if status != http.StatusOK {
+        return ValidatorsResponse{}, fmt.Errorf("Could not get validators: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var validators ValidatorsResponse
+    if err := json.Unmarshal(responseBody, &validators); err != nil {
+        return ValidatorsResponse{}, fmt.Errorf("Could not decode validators: %w", err)
+    }
+    return validators, nil
+}
+
+
+// Get validators by pubkeys and status options
+func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (ValidatorsResponse, error) {
+
+    // Get state ID
+    var stateId string
+    if opts == nil {
+        stateId = "head"
+    } else {
+
+        // Get eth2 config
+        eth2Config, err := c.getEth2Config()
+        if err != nil {
+            return ValidatorsResponse{}, err
+        }
+
+        // Get slot nuimber
+        slot := opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
+        stateId = strconv.FormatInt(int64(slot), 10)
+
+    }
+
+    // Load validator data in batches & return
+    data := make([]Validator, 0, len(pubkeys))
+    for bsi := 0; bsi < len(pubkeys); bsi += MaxRequestValidatorsCount {
+
+        // Get batch start & end index
+        vsi := bsi
+        vei := bsi + MaxRequestValidatorsCount
+        if vei > len(pubkeys) { vei = len(pubkeys) }
+
+        // Get validator pubkeys for batch request
+        pubkeysHex := make([]string, vei - vsi)
+        for vi := vsi; vi < vei; vi++ {
+            pubkeysHex[vi - vsi] = hexutil.AddPrefix(pubkeys[vi].Hex())
+        }
+
+        // Get & add validators
+        validators, err := c.getValidators(stateId, pubkeysHex)
+        if err != nil {
+            return ValidatorsResponse{}, err
+        }
+        data = append(data, validators.Data...)
+
+    }
+    return ValidatorsResponse{Data: data}, nil
+
+}
+
+
+// Send voluntary exit request
+func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
+    responseBody, status, err := c.postRequest(RequestVoluntaryExitPath, request)
+    if err != nil {
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
+    } else if status != http.StatusOK {
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
+    }
+    return nil
+}
+
+
+// Get the target beacon block
+func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, error) {
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
+    if err != nil {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: %w", err)
+    } else if status != http.StatusOK {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+    var beaconBlock BeaconBlockResponse
+    if err := json.Unmarshal(responseBody, &beaconBlock); err != nil {
+        return BeaconBlockResponse{}, fmt.Errorf("Could not decode beacon block data: %w", err)
+    }
+    return beaconBlock, nil
+}
+
+
+// Make a GET request to the beacon node
+func (c *Client) getRequest(requestPath string) ([]byte, int, error) {
+
+    // Send request
+    response, err := http.Get(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath))
+    if err != nil {
+        return []byte{}, 0, err
+    }
+    defer func() {
+        _ = response.Body.Close()
+    }()
+
+    // Get response
+    body, err := ioutil.ReadAll(response.Body)
+    if err != nil {
+        return []byte{}, 0, err
+    }
+
+    // Return
+    return body, response.StatusCode, nil
+
+}
+
+
+// Make a POST request to the beacon node
+func (c *Client) postRequest(requestPath string, requestBody interface{}) ([]byte, int, error) {
+
+    // Get request body
+    requestBodyBytes, err := json.Marshal(requestBody)
+    if err != nil {
+        return []byte{}, 0, err
+    }
+    requestBodyReader := bytes.NewReader(requestBodyBytes)
+
+    // Send request
+    response, err := http.Post(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), RequestContentType, requestBodyReader)
+    if err != nil {
+        return []byte{}, 0, err
+    }
+    defer func() {
+        _ = response.Body.Close()
+    }()
+
+    // Get response
+    body, err := ioutil.ReadAll(response.Body)
+    if err != nil {
+        return []byte{}, 0, err
+    }
+
+    // Return
+    return body, response.StatusCode, nil
+
+}
+
