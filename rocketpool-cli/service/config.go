@@ -17,6 +17,9 @@ import (
 // Configure the Rocket Pool service
 func configureService(c *cli.Context) error {
 
+    colorReset := "\033[0m"
+    colorYellow := "\033[33m"
+
     // Get RP client
     rp, err := rocketpool.NewClientFromCtx(c)
     if err != nil { return err }
@@ -32,8 +35,20 @@ func configureService(c *cli.Context) error {
         return err
     }
 
+    showAdvanced := c.Bool("advanced")
+
+    // Ask about advanced mode
+    if !showAdvanced {
+        if cliutils.Confirm("Some settings (such as port selection) come with recommended defaults.\n" +
+            "Would you like to use them automatically? You can review them at the end of this setup.") {
+            showAdvanced = false
+        } else {
+            showAdvanced = true
+        }
+    }
+
     // Configure eth1
-    if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false, []string{}, true); err != nil {
+    if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false, []string{}, true, showAdvanced); err != nil {
         return err
     }
 
@@ -45,12 +60,12 @@ func configureService(c *cli.Context) error {
     }
 
     // Configure eth2
-    if err := configureChain(&(globalConfig.Chains.Eth2), &(userConfig.Chains.Eth2), "Eth 2.0", true, compatibleEth2Clients, true); err != nil {
+    if err := configureChain(&(globalConfig.Chains.Eth2), &(userConfig.Chains.Eth2), "Eth 2.0", true, compatibleEth2Clients, true, showAdvanced); err != nil {
         return err
     }
 
     // Configure metrics
-    if err := configureMetrics(&(globalConfig.Metrics), &(userConfig.Metrics)); err != nil {
+    if err := configureMetrics(&(globalConfig.Metrics), &(userConfig.Metrics), showAdvanced); err != nil {
         return err
     }
 
@@ -59,10 +74,39 @@ func configureService(c *cli.Context) error {
         return err
     }
 
+    // Print settings
+    fmt.Println("=== ETH1 Settings ===")
+    eth1Client := globalConfig.Chains.Eth1.GetClientById(userConfig.Chains.Eth1.Client.Selected)
+    fmt.Printf("Selected client: %s\n", eth1Client.Name)
+    for _, param := range userConfig.Chains.Eth1.Client.Params {
+        globalParam := eth1Client.GetParamByEnvName(param.Env)
+        if globalParam != nil {
+            fmt.Printf("%s: %s\n", globalParam.Name, param.Value)
+        }
+    }
+    fmt.Println()
+
+    fmt.Println("=== ETH2 Settings ===")
+    eth2Client := globalConfig.Chains.Eth2.GetClientById(userConfig.Chains.Eth2.Client.Selected)
+    fmt.Printf("Selected client: %s\n", eth2Client.Name)
+    for _, param := range userConfig.Chains.Eth2.Client.Params {
+        globalParam := eth2Client.GetParamByEnvName(param.Env)
+        if globalParam != nil {
+            fmt.Printf("%s: %s\n", globalParam.Name, param.Value)
+        }
+    }
+    fmt.Println()
+
+    if userConfig.Metrics.Enabled {
+        fmt.Println("=== Metrics Settings ===")
+        for _, param := range userConfig.Metrics.Settings {
+            fmt.Printf("%s: %s\n", globalConfig.Metrics.GetParamByEnvName(param.Env).Name, param.Value)
+        }
+        fmt.Println()
+    }
+
     // Log & return
     fmt.Println("Done!\n")
-    colorReset := "\033[0m"
-    colorYellow := "\033[33m"
     fmt.Printf("%sNOTE:\n", colorYellow)
     fmt.Printf("Please run 'rocketpool service stop' and 'rocketpool service start' to apply any changes you made.%s\n", colorReset)
     return nil
@@ -70,7 +114,7 @@ func configureService(c *cli.Context) error {
 }
 
 
-func configureMetrics(globalMetrics, userMetrics *config.Metrics) error {
+func configureMetrics(globalMetrics, userMetrics *config.Metrics, showAdvanced bool) error {
 
     // Prompt for enabling status
     enabled := cliutils.Confirm("Would you like to enable Rocket Pool's metrics dashboard?")
@@ -80,6 +124,15 @@ func configureMetrics(globalMetrics, userMetrics *config.Metrics) error {
     params := []config.UserParam{}
     if enabled {
         for _, param := range globalMetrics.Params {
+
+            // Skip advanced parameters if they're disabled
+            if param.Advanced && !showAdvanced {
+                params = append(params, config.UserParam{
+                    Env: param.Env,
+                    Value: param.Default,
+                })
+                continue
+            }
 
             // Get expected param format
             var expectedFormat string
@@ -174,7 +227,7 @@ func configureMetrics(globalMetrics, userMetrics *config.Metrics) error {
 
 
 // Configure a chain
-func configureChain(globalChain, userChain *config.Chain, chainName string, defaultRandomClient bool, compatibleClients []string, includeSupermajority bool) error {
+func configureChain(globalChain, userChain *config.Chain, chainName string, defaultRandomClient bool, compatibleClients []string, includeSupermajority bool, showAdvanced bool) error {
 
     // Check client options
     if len(globalChain.Client.Options) == 0 {
@@ -303,13 +356,22 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         fmt.Println()
         useDifferent := cliutils.Confirm("Would you like to use a different client (recommended)?")
         if useDifferent {
-            return configureChain(globalChain, userChain, chainName, defaultRandomClient, compatibleClients, false)
+            return configureChain(globalChain, userChain, chainName, defaultRandomClient, compatibleClients, false, showAdvanced)
         }
     }
 
     // Prompt for params
     params := []config.UserParam{}
     for _, param := range globalChain.GetSelectedClient().Params {
+
+        // Skip advanced parameters if they're disabled
+        if param.Advanced && !showAdvanced {
+            params = append(params, config.UserParam{
+                Env: param.Env,
+                Value: param.Default,
+            })
+            continue
+        }
 
         // Get expected param format
         var expectedFormat string

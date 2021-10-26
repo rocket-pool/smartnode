@@ -75,6 +75,7 @@ type ClientParam struct {
     Default string                      `yaml:"default,omitempty"`
     Max string                          `yaml:"max,omitempty"`
     BlankText string                    `yaml:"blankText,omitempty"`
+    Advanced bool                       `yaml:"advanced,omitempty"`
 }
 type UserParam struct {
     Env string                          `yaml:"env,omitempty"`
@@ -108,6 +109,28 @@ func (chain *Chain) GetClientById(id string) *ClientOption {
     for _, option := range chain.Client.Options {
         if option.ID == id {
             return &option
+        }
+    }
+    return nil
+}
+
+
+// Get a client parameter by its environment variable name
+func (client *ClientOption) GetParamByEnvName(env string) *ClientParam {
+    for _, param := range client.Params {
+        if param.Env == env {
+            return &param
+        }
+    }
+    return nil
+}
+
+
+// Get a metrics parameter by its environment variable name
+func (metrics *Metrics) GetParamByEnvName(env string) *ClientParam {
+    for _, param := range metrics.Params {
+        if param.Env == env {
+            return &param
         }
     }
     return nil

@@ -72,6 +72,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"c"},
                 Usage:     "Configure the Rocket Pool service",
                 UsageText: "rocketpool service config",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name:  "advanced, a",
+                        Usage: "Show all settings during configuration for advanced users",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args
