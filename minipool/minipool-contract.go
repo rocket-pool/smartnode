@@ -370,8 +370,8 @@ func (mp *Minipool) DistributeBalanceAndFinalise(opts *bind.TransactOpts) (commo
 
 
 // Estimate the gas of Stake
-func (mp *Minipool) EstimateStakeGas(validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorPubkey[:], validatorSignature[:], depositDataRoot)
+func (mp *Minipool) EstimateStakeGas(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+    return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorSignature[:], depositDataRoot)
 }
 
 
