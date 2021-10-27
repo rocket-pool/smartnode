@@ -232,16 +232,9 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
         return err
     }
 
-    pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
-    signature := rptypes.BytesToValidatorSignature(depositData.Signature)
-
     // Get the gas estimates
-    gasInfo, err := mp.EstimateStakeGas(
-        pubKey,
-        signature,
-        depositDataRoot,
-        opts,
-    )
+    signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+    gasInfo, err := mp.EstimateStakeGas(signature, depositDataRoot, opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
     }
