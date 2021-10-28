@@ -183,6 +183,9 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     rewardsIntervalDays := response.RewardsInterval.Seconds() / (60*60*24)
     inflationPerDay := eth.WeiToEth(inflationInterval)
     totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
+    if totalRplAtNextCheckpoint < 0 {
+        totalRplAtNextCheckpoint = 0
+    }
 
     if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
         response.EstimatedRewards = response.EffectiveRplStake / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent

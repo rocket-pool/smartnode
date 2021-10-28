@@ -353,6 +353,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     rewardsIntervalDays := rewardsInterval.Seconds() / (60*60*24)
     inflationPerDay := eth.WeiToEth(inflationInterval)
     totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
+    if totalRplAtNextCheckpoint < 0 {
+        totalRplAtNextCheckpoint = 0
+    }
     estimatedRewards := float64(0)
     if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
         estimatedRewards = effectiveStakedRpl / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
