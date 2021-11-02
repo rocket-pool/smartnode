@@ -3,6 +3,7 @@ package minipool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -14,6 +15,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+const colorReset string = "\033[0m"
+const colorYellow string = "\033[33m"
 
 func getStatus(c *cli.Context) error {
 
@@ -77,7 +80,7 @@ func getStatus(c *cli.Context) error {
 
         // Minipools
         for _, minipool := range minipools {
-            printMinipoolDetails(minipool)
+            printMinipoolDetails(minipool, status.LatestDelegate)
         }
 
         fmt.Println("")
@@ -89,7 +92,7 @@ func getStatus(c *cli.Context) error {
 
     // Minipools
     for _, minipool := range finalisedMinipools {
-        printMinipoolDetails(minipool)
+        printMinipoolDetails(minipool, status.LatestDelegate)
     }
 
     fmt.Println("")
@@ -116,7 +119,7 @@ func getStatus(c *cli.Context) error {
 }
 
 
-func printMinipoolDetails(minipool api.MinipoolDetails) () {
+func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Address) () {
 
     fmt.Printf("--------------------\n")
     fmt.Printf("\n")
@@ -169,6 +172,10 @@ func printMinipoolDetails(minipool api.MinipoolDetails) () {
     fmt.Printf("Delegate address:     %s\n", cliutils.GetPrettyAddress(minipool.Delegate))
     fmt.Printf("Rollback delegate:    %s\n", cliutils.GetPrettyAddress(minipool.PreviousDelegate))
     fmt.Printf("Effective delegate:   %s\n", cliutils.GetPrettyAddress(minipool.EffectiveDelegate))
+
+    if minipool.EffectiveDelegate != latestDelegate {
+    fmt.Printf("%s*Minipool can be upgraded to delegate %s!%s\n", colorYellow, latestDelegate.Hex(), colorReset)
+    }
 
     fmt.Printf("\n")
 
