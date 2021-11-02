@@ -456,7 +456,7 @@ func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
         return fmt.Errorf("Could not broadcast exit for validator at index %d: %s", request.Message.ValidatorIndex, message)
     }
     if !result {
-        return fmt.Errorf("Could not broadcast exit for validator at index %d: Nimbus failed with an unknown error. Please see its logs for more information.", request.Message.ValidatorIndex)
+        return fmt.Errorf("Could not broadcast exit for validator at index %d: Nimbus failed with an unknown error. Please see its logs for more information", request.Message.ValidatorIndex)
     }
     return nil
 }
