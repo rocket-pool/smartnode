@@ -72,7 +72,7 @@ func ClaimNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 }
 
 // Filters through token claim events and sums the total amount claimed by claimerAddress
-func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, intervalSize *big.Int) (*big.Int, error) {
+func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, intervalSize *big.Int, startBlock *big.Int) (*big.Int, error) {
     // Get contracts
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
@@ -88,7 +88,7 @@ func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress comm
     topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID}, {rocketClaimNode.Address.Hash()}, {claimerAddress.Hash()}}
     
     // Get the event logs
-    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, nil, nil, nil)
+    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
     if err != nil {
         return nil, err
     }
