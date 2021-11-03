@@ -1,8 +1,11 @@
 package minipool
 
 import (
-	"fmt"
-	"math/big"
+    "context"
+    "fmt"
+    "github.com/ethereum/go-ethereum/core/types"
+    "github.com/ethereum/go-ethereum/crypto"
+    "math/big"
 	"sync"
 	"time"
 
@@ -14,6 +17,9 @@ import (
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
+
+// The number of blocks to look for events in at once when scanning
+const EventScanInterval = 10000
 
 // Minipool detail types
 type StatusDetails struct {
@@ -562,19 +568,52 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 
     addressFilter := []common.Address{ mp.Address }
     topicFilter := [][]common.Hash{{mp.Contract.ABI.Events["MinipoolPrestaked"].ID}}
-    logs, err := eth.GetLogs(mp.RocketPool, addressFilter, topicFilter, intervalSize, nil, nil, nil)
+
+    // Grab the latest block number
+    currentBlock, err := mp.RocketPool.Client.BlockNumber(context.Background())
     if err != nil {
-        return PrestakeData{}, fmt.Errorf("Error getting prestake logs for minipool %s: %w", mp.Address.Hex(), err)
+        return PrestakeData{}, fmt.Errorf("Error getting current block %s: %w", mp.Address.Hex(), err)
     }
-    
-    // Confirm there's only one of them
-    if len(logs) != 1 {
-        return PrestakeData{}, fmt.Errorf("ALERT: There were %d prestake logs for minipool %s", len(logs), mp.Address.Hex())
+
+    // Grab the lowest block number worth querying from (should never have to go back this far in practice)
+    deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
+    fromBlockBig, err := mp.RocketPool.RocketStorage.GetUint(nil, deployBlockHash)
+    if err != nil {
+        return PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
+    }
+
+    fromBlock := fromBlockBig.Uint64()
+    var log types.Log
+    found := false
+
+    // Backwards scan through blocks to find the event
+    for i := currentBlock; i >= fromBlock; i -= EventScanInterval {
+        from := i - EventScanInterval + 1
+        if from < fromBlock { from = fromBlock }
+
+        fromBig := big.NewInt(0).SetUint64(from)
+        toBig := big.NewInt(0).SetUint64(i)
+
+        logs, err := eth.GetLogs(mp.RocketPool, addressFilter, topicFilter, intervalSize, fromBig, toBig, nil)
+        if err != nil {
+            return PrestakeData{}, fmt.Errorf("Error getting prestake logs for minipool %s: %w", mp.Address.Hex(), err)
+        }
+
+        if len(logs) > 0 {
+            log = logs[0]
+            found = true
+            break
+        }
+    }
+
+    if !found {
+        // This should never happen
+        return PrestakeData{}, fmt.Errorf("Error finding prestake log for minipool %s", mp.Address.Hex())
     }
 
     // Decode the event
     prestakeEvent := new(minipoolPrestakeEvent)
-    mp.Contract.Contract.UnpackLog(prestakeEvent, "MinipoolPrestaked", logs[0])
+    mp.Contract.Contract.UnpackLog(prestakeEvent, "MinipoolPrestaked", log)
     if err != nil {
         return PrestakeData{}, fmt.Errorf("Error unpacking prestake data: %w", err)
     }
