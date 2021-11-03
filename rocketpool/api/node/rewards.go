@@ -85,7 +85,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
     // Get cumulative rewards
     wg.Go(func() error {
-        rewards, err := rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, eventLogInterval)
+        rewards, err := rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, eventLogInterval, nil)
         if err == nil {
             response.CumulativeRewards = eth.WeiToEth(rewards)
         }
@@ -206,7 +206,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
         // Get cumulative ODAO rewards
         wg2.Go(func() error {
-            rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, eventLogInterval)
+            rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, eventLogInterval, nil)
             if err == nil {
                 response.CumulativeTrustedRewards = eth.WeiToEth(rewards)
             }

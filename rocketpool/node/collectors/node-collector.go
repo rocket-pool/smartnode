@@ -1,6 +1,7 @@
 package collectors
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math"
@@ -62,7 +63,7 @@ type NodeCollector struct {
     balances                *prometheus.Desc
 
     // The number of active minipools owned by the node
-    activeMinipoolCount           *prometheus.Desc
+    activeMinipoolCount     *prometheus.Desc
 
     // The amount of ETH this node deposited into minipools
     depositedEth            *prometheus.Desc
@@ -87,6 +88,12 @@ type NodeCollector struct {
 
     // The event log interval for the current eth1 client
     eventLogInterval        *big.Int
+
+    // The next block to start from when looking at cumulative RPL rewards 
+    nextRewardsStartBlock   *big.Int
+
+    // The cumulative amount of RPL earned
+    cumulativeRewards       float64
 }
 
 
@@ -180,7 +187,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     var wg errgroup.Group
     stakedRpl := float64(-1)
     effectiveStakedRpl := float64(-1)
-    cumulativeRewards := float64(-1)
     var rewardsInterval time.Duration
     var inflationInterval *big.Int
     var totalRplSupply *big.Int
@@ -221,12 +227,18 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
     // Get the cumulative RPL rewards
     wg.Go(func() error {
-        cumulativeRewardsWei, err := rewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval)
+        cumulativeRewardsWei, err := rewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock)
         if err != nil {
             return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
-        } else {
-            cumulativeRewards = eth.WeiToEth(cumulativeRewardsWei)
         }
+
+        header, err := collector.rp.Client.HeaderByNumber(context.Background(), nil)
+        if err != nil {
+            return fmt.Errorf("Error getting latest block header: %w", err)
+        }
+
+        collector.cumulativeRewards += eth.WeiToEth(cumulativeRewardsWei)
+        collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
         return nil
     })
 
@@ -392,7 +404,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
     channel <- prometheus.MustNewConstMetric(
         collector.rplCollateral, prometheus.GaugeValue, collateralRatio)
     channel <- prometheus.MustNewConstMetric(
-        collector.cumulativeRplRewards, prometheus.GaugeValue, cumulativeRewards)
+        collector.cumulativeRplRewards, prometheus.GaugeValue, collector.cumulativeRewards)
     channel <- prometheus.MustNewConstMetric(
         collector.expectedRplRewards, prometheus.GaugeValue, estimatedRewards)
     channel <- prometheus.MustNewConstMetric(
