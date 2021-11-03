@@ -77,7 +77,7 @@ func StakeMinipool(rp *rocketpool.RocketPool, mp *minipool.Minipool, nodeAccount
     if err != nil { return err }
 
     // Stake minipool & return
-    _, err = mp.Stake(validatorPubkey, validatorSignature, depositDataRoot, nodeAccount.GetTransactor())
+    _, err = mp.Stake(validatorSignature, depositDataRoot, nodeAccount.GetTransactor())
     return err
 
 }

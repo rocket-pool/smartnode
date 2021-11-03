@@ -203,7 +203,7 @@ func TestStake(t *testing.T) {
     if err != nil { t.Fatal(fmt.Errorf("Could not increase time: %w", err)) }
 
     // Stake minipool
-    if _, err := mp.Stake(validatorPubkey, validatorSignature, depositDataRoot, nodeAccount.GetTransactor()); err != nil {
+    if _, err := mp.Stake(validatorSignature, depositDataRoot, nodeAccount.GetTransactor()); err != nil {
         t.Fatal(err)
     }
 
