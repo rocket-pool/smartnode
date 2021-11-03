@@ -357,7 +357,7 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() () {
         // Get the MinipoolPrestaked event
         prestakeData, err := minipool.GetPrestakeEvent(t.it.eventLogInterval, nil)
         if err != nil {
-            t.log.Printf("Error getting prestake event for minipool %s: %s", minipool.Address.Hex(), err.Error())
+            t.log.Printlnf("Error getting prestake event for minipool %s: %s", minipool.Address.Hex(), err.Error())
             continue
         }
 
@@ -515,7 +515,7 @@ func (t *submitScrubMinipools) checkSafetyScrub() (error) {
         // Get the minipool's status
         statusDetails, err := minipool.GetStatusDetails(nil)
         if err != nil {
-            t.log.Printf("Error getting status for minipool %s: %s", minipool.Address.Hex(), err.Error())
+            t.log.Printlnf("Error getting status for minipool %s: %s", minipool.Address.Hex(), err.Error())
             continue
         }
 
