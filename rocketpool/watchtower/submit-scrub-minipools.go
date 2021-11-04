@@ -20,6 +20,7 @@ import (
 	"github.com/urfave/cli"
 
 	ethpb "github.com/prysmaticlabs/prysm/v2/proto/prysm/v1alpha1"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -46,6 +47,7 @@ type submitScrubMinipools struct {
     ec *ethclient.Client 
     bc beacon.Client
     it *iterationData
+    coll *collectors.ScrubCollector
 }
 
 
@@ -79,7 +81,7 @@ type minipoolDetails struct {
 
 
 // Create submit scrub minipools task
-func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger) (*submitScrubMinipools, error) {
+func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, coll *collectors.ScrubCollector) (*submitScrubMinipools, error) {
 
     // Get services
     cfg, err := services.GetConfig(c)
@@ -102,6 +104,7 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger) (*submitScr
         rp: rp,
         ec: ec,
         bc: bc,
+        coll: coll,
     }, nil
 
 }
@@ -605,5 +608,21 @@ func (t *submitScrubMinipools) printFinalTally() {
     t.log.Printlnf("\tPools without deposits: %d", t.it.unknownMinipools)
     t.log.Printlnf("\tRemaining uncovered minipools: %d", len(t.it.minipools))
 
+    // Update the metrics collector
+    if t.coll != nil {
+        t.coll.UpdateLock.Lock()
+        defer t.coll.UpdateLock.Unlock()
+        
+        t.coll.TotalMinipools = float64(t.it.totalMinipools)
+        t.coll.GoodOnBeaconCount = float64(t.it.goodOnBeaconCount)
+        t.coll.BadOnBeaconCount = float64(t.it.badOnBeaconCount)
+        t.coll.GoodPrestakeCount = float64(t.it.goodPrestakeCount)
+        t.coll.BadPrestakeCount = float64(t.it.badPrestakeCount)
+        t.coll.GoodOnDepositContract = float64(t.it.goodOnDepositContract)
+        t.coll.BadOnDepositContract = float64(t.it.badOnDepositContract)
+        t.coll.DepositlessMinipools = float64(t.it.unknownMinipools)
+        t.coll.UncoveredMinipools = float64(len(t.it.minipools))
+        t.coll.LatestBlockTime = float64(t.it.latestBlockTime.Unix())
+    }
 }
 
