@@ -586,6 +586,128 @@ func CalculateTrustedNodeBalancesParticipation(rp *rocketpool.RocketPool, interv
     return &participation, nil
 }
 
+// Returns an array of members who submitted a balance since fromBlock
+func GetLatestBalancesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, intervalSize *big.Int) ([]common.Address, error) {
+    // Get contracts
+    rocketNetworkBalances, err := getRocketNetworkBalances(rp)
+    if err != nil {
+        return nil, err
+    }
+    // Construct a filter query for relevant logs
+    addressFilter := []common.Address{*rocketNetworkBalances.Address}
+    topicFilter := [][]common.Hash{{rocketNetworkBalances.ABI.Events["BalancesSubmitted"].ID}}
+
+    // Get the event logs
+    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    results := make([]common.Address, len(logs))
+    for i, log := range logs {
+        // Topic 0 is the event, topic 1 is the "from" address
+        address := common.BytesToAddress(log.Topics[1].Bytes())
+        results[i] = address
+    }
+    return results, nil
+}
+
+// Returns a mapping of members and whether they have submitted balances this interval or not
+func GetTrustedNodeLatestBalancesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (map[common.Address]bool, error) {
+    // Get the update frequency
+    updateBalancesFrequency, err := protocol.GetSubmitBalancesFrequency(rp, opts)
+    if err != nil {
+        return nil, err
+    }
+    // Get the current block
+    currentBlock, err := rp.Client.HeaderByNumber(context.Background(), nil)
+    if err != nil {
+        return nil, err
+    }
+    currentBlockNumber := currentBlock.Number.Uint64()
+    // Get trusted members
+    members, err := trustednode.GetMembers(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    // Get submission within the current interval
+    fromBlock := currentBlockNumber / updateBalancesFrequency * updateBalancesFrequency
+    submissions, err := GetLatestBalancesSubmissions(rp, fromBlock, intervalSize)
+    if err != nil {
+        return nil, err
+    }
+    // Build and return result table
+    participationTable := make(map[common.Address]bool)
+    for _, member := range(members) {
+        participationTable[member.Address] = false
+    }
+    for _, submission := range(submissions) {
+        participationTable[submission] = true
+    }
+    return participationTable, nil
+}
+
+// Returns an array of members who submitted prices since fromBlock
+func GetLatestPricesSubmissions(rp *rocketpool.RocketPool, fromBlock uint64, intervalSize *big.Int) ([]common.Address, error) {
+    // Get contracts
+    rocketNetworkPrices, err := getRocketNetworkPrices(rp)
+    if err != nil {
+        return nil, err
+    }
+    // Construct a filter query for relevant logs
+    addressFilter := []common.Address{*rocketNetworkPrices.Address}
+    topicFilter := [][]common.Hash{{rocketNetworkPrices.ABI.Events["PricesSubmitted"].ID}}
+
+    // Get the event logs
+    logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, big.NewInt(int64(fromBlock)), nil, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    results := make([]common.Address, len(logs))
+    for i, log := range logs {
+        // Topic 0 is the event, topic 1 is the "from" address
+        address := common.BytesToAddress(log.Topics[1].Bytes())
+        results[i] = address
+    }
+    return results, nil
+}
+
+// Returns a mapping of members and whether they have submitted prices this interval or not
+func GetTrustedNodeLatestPricesParticipation(rp *rocketpool.RocketPool, intervalSize *big.Int, opts *bind.CallOpts) (map[common.Address]bool, error) {
+    // Get the update frequency
+    updatePricesFrequency, err := protocol.GetSubmitPricesFrequency(rp, opts)
+    if err != nil {
+        return nil, err
+    }
+    // Get the current block
+    currentBlock, err := rp.Client.HeaderByNumber(context.Background(), nil)
+    if err != nil {
+        return nil, err
+    }
+    currentBlockNumber := currentBlock.Number.Uint64()
+    // Get trusted members
+    members, err := trustednode.GetMembers(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+    // Get submission within the current interval
+    fromBlock := currentBlockNumber / updatePricesFrequency * updatePricesFrequency
+    submissions, err := GetLatestPricesSubmissions(rp, fromBlock, intervalSize)
+    if err != nil {
+        return nil, err
+    }
+    // Build and return result table
+    participationTable := make(map[common.Address]bool)
+    for _, member := range(members) {
+        participationTable[member.Address] = false
+    }
+    for _, submission := range(submissions) {
+        participationTable[submission] = true
+    }
+    return participationTable, nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 func getRocketNodeManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
