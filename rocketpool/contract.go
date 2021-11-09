@@ -65,8 +65,16 @@ func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string,
         return response, fmt.Errorf("Error getting transaction gas info: Could not encode input data: %w", err)
     }
 
+    // Temporarily set the gas price to 0 for simulation
+    userGasPrice := opts.GasPrice
+    opts.GasPrice = big.NewInt(0)
+
     // Estimate gas limit
     estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, input)
+
+    // Replace the gas price
+    opts.GasPrice = userGasPrice
+
     if err != nil {
         return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas limit: %w", err)
     }
