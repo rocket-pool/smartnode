@@ -44,31 +44,33 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
         return err
     }
 
-    // Prompt for a test transaction
-    if cliutils.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
-        inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddress), "^\\d+(\\.\\d+)?$", "Invalid amount")
-        testAmount, err := strconv.ParseFloat(inputAmount, 64)
-        if err != nil {
-            return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
+    if confirm {
+        // Prompt for a test transaction
+        if cliutils.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
+            inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddress), "^\\d+(\\.\\d+)?$", "Invalid amount")
+            testAmount, err := strconv.ParseFloat(inputAmount, 64)
+            if err != nil {
+                return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
+            }
+            amountWei := eth.EthToWei(testAmount)
+            response, err := rp.NodeSend(amountWei, "eth", withdrawalAddress)
+            if err != nil {
+                return err
+            }
+    
+            if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddress)) {
+                fmt.Println("Cancelled.")
+                return nil
+            }
+    
+            fmt.Printf("Sending ETH to %s...\n", withdrawalAddress.Hex())
+            cliutils.PrintTransactionHash(rp, response.TxHash)
+            if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+                return err
+            }
+    
+            fmt.Printf("Successfully sent the test transaction.\nPlease verify that your withdrawal address received it before confirming it below.\n\n")
         }
-        amountWei := eth.EthToWei(testAmount)
-        response, err := rp.NodeSend(amountWei, "eth", withdrawalAddress)
-        if err != nil {
-            return err
-        }
-
-        if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddress)) {
-            fmt.Println("Cancelled.")
-            return nil
-        }
-
-        fmt.Printf("Sending ETH to %s...\n", withdrawalAddress.Hex())
-        cliutils.PrintTransactionHash(rp, response.TxHash)
-        if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-            return err
-        }
-
-        fmt.Printf("Successfully sent the test transaction.\nPlease verify that your withdrawal address received it before confirming it below.\n\n")
     }
 
     // Display gas estimate
