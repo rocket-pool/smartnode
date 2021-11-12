@@ -110,6 +110,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"s"},
                 Usage:     "Start the Rocket Pool service",
                 UsageText: "rocketpool service start",
+                Flags: []cli.Flag{
+                    cli.BoolFlag{
+                        Name: "ignore-slash-timer",
+                        Usage: "Bypass the safety timer that forces a delay when switching to a new ETH2 client",
+                    },
+                },
                 Action: func(c *cli.Context) error {
 
                     // Validate args

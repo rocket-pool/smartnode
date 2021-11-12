@@ -10,6 +10,7 @@ import (
 	"os"
 	osUser "os/user"
 	"strings"
+	"time"
 
 	"github.com/a8m/envsubst"
 	"github.com/fatih/color"
@@ -452,6 +453,66 @@ func (c *Client) GetServiceVersion() (string, error) {
 // This is used for calls that involve multiple transactions, so they don't all have the same nonce.
 func (c *Client) IncrementCustomNonce() {
     c.customNonce += 1
+}
+
+
+// Get the current Docker image used by the given container
+func (c *Client) GetDockerImage(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker container inspect --format={{.Config.Image}} %s", container)
+    image, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+
+    return strings.TrimSpace(string(image)), nil
+
+}
+
+
+// Get the current Docker image used by the given container
+func (c *Client) GetDockerStatus(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker container inspect --format={{.State.Status}} %s", container)
+    status, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+
+    return strings.TrimSpace(string(status)), nil
+
+}
+
+
+// Get the time that the given container shut down
+func (c *Client) GetDockerContainerShutdownTime(container string) (time.Time, error) {
+
+    cmd := fmt.Sprintf("docker container inspect --format={{.State.FinishedAt}} %s", container)
+    finishTimeBytes, err := c.readOutput(cmd)
+    if err != nil {
+        return time.Time{}, err
+    }
+
+    finishTime, err := time.Parse(time.RFC3339, strings.TrimSpace(string(finishTimeBytes)))
+    if err != nil {
+        return time.Time{}, fmt.Errorf("Error parsing validator container exit time [%s]: %w", string(finishTimeBytes), err)
+    }
+
+    return finishTime, nil
+    
+}
+
+
+// Shut down a container
+func (c *Client) StopContainer(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker stop %s", container)
+    output, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(output)), nil
+    
 }
 
 
