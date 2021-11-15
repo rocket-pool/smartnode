@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -73,8 +74,11 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
         }
     }
 
-    // Display gas estimate
-    rp.PrintGasInfo(canResponse.GasInfo)
+    // Assign max fees
+    err = services.AssignMaxFee(canResponse.GasInfo, rp)
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s?", withdrawalAddress.Hex())) {
@@ -129,8 +133,11 @@ func confirmWithdrawalAddress(c *cli.Context) error {
         return err
     }
 
-    // Display gas estimate
-    rp.PrintGasInfo(canResponse.GasInfo)
+    // Assign max fees
+    err = services.AssignMaxFee(canResponse.GasInfo, rp)
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to confirm your node's address as the new withdrawal address?")) {

@@ -92,8 +92,12 @@ func main() {
             Usage: "Eth 2.0 provider `address`",
         },
         cli.StringFlag{
-            Name:  "gasPrice, g",
-            Usage: "Desired gas price in gwei",
+            Name:  "maxFee",
+            Usage: "Desired max fee in gwei",
+        },
+        cli.StringFlag{
+            Name:  "maxPrioFee",
+            Usage: "Desired max priority fee in gwei",
         },
         cli.StringFlag{
             Name:  "gasLimit, l",

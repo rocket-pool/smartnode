@@ -49,7 +49,8 @@ const (
 type Client struct {
     configPath string
     daemonPath string
-    gasPrice string
+    maxFee string
+    maxPrioFee string
     gasLimit string
     customNonce uint64
     client *ssh.Client
@@ -65,14 +66,15 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
                      c.GlobalString("key"), 
                      c.GlobalString("passphrase"),
                      c.GlobalString("known-hosts"),
-                     c.GlobalString("gasPrice"),
+                     c.GlobalString("maxFee"),
+                     c.GlobalString("maxPrioFee"),
                      c.GlobalString("gasLimit"),
                      c.GlobalUint64("nonce"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, knownhostsFile, gasPrice, gasLimit string, customNonce uint64) (*Client, error) {
+func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, knownhostsFile, maxFee, maxPrioFee, gasLimit string, customNonce uint64) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -143,7 +145,8 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePat
     return &Client{
         configPath: os.ExpandEnv(configPath),
         daemonPath: os.ExpandEnv(daemonPath),
-        gasPrice: gasPrice,
+        maxFee: maxFee,
+        maxPrioFee: maxPrioFee,
         gasLimit: gasLimit,
         customNonce: customNonce,
         client: sshClient,
@@ -516,6 +519,13 @@ func (c *Client) StopContainer(container string) (string, error) {
 }
 
 
+// Assign fees
+func (c *Client) AssignMaxFees(maxFee string, maxPrioFee string) {
+    c.maxFee = maxFee
+    c.maxPrioFee = maxPrioFee
+}
+
+
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
     expandedPath, err := homedir.Expand(path)
@@ -739,8 +749,11 @@ func (c *Client) getAPIContainerName() (string, error) {
 // Get gas price & limit flags
 func (c *Client) getGasOpts() string {
     var opts string
-    if c.gasPrice != "" {
-        opts += fmt.Sprintf("--gasPrice %s ", shellescape.Quote(c.gasPrice))
+    if c.maxFee != "" {
+        opts += fmt.Sprintf("--maxFee %s ", shellescape.Quote(c.maxFee))
+    }
+    if c.maxPrioFee != "" {
+        opts += fmt.Sprintf("--maxPrioFee %s ", shellescape.Quote(c.maxPrioFee))
     }
     if c.gasLimit != "" {
         opts += fmt.Sprintf("--gasLimit %s ", shellescape.Quote(c.gasLimit))

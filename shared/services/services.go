@@ -173,13 +173,16 @@ func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager 
 func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
     var err error
     initNodeWallet.Do(func() {
-        var gasPrice *big.Int
+        var maxFee *big.Int
+        var maxPriorityFee *big.Int
         var gasLimit uint64
-        gasPrice, err = cfg.GetGasPrice()
+        maxFee, err = cfg.GetMaxFee()
+        if err != nil { return }
+        maxPriorityFee, err = cfg.GetMaxPriorityFee()
         if err != nil { return }
         gasLimit, err = cfg.GetGasLimit()
         if err != nil { return }
-        nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, gasPrice, gasLimit, pm)
+        nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, maxFee, maxPriorityFee, gasLimit, pm)
         if err != nil { return }
         lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
         nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)

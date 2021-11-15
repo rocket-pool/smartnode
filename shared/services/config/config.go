@@ -30,7 +30,8 @@ type RocketPoolConfig struct {
         WalletPath string               `yaml:"walletPath,omitempty"`
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
         ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
-        GasPrice string                 `yaml:"gasPrice,omitempty"`
+        MaxFee string                   `yaml:"maxFee,omitempty"`
+        MaxPriorityFee string           `yaml:"maxPriorityFee,omitempty"`
         GasLimit string                 `yaml:"gasLimit,omitempty"`
         RplClaimGasThreshold string     `yaml:"rplClaimGasThreshold,omitempty"`
         TxWatchUrl string               `yaml:"txWatchUrl,omitempty"`
@@ -305,7 +306,8 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
-    config.Smartnode.GasPrice = c.GlobalString("gasPrice")
+    config.Smartnode.MaxFee = c.GlobalString("maxFee")
+    config.Smartnode.MaxPriorityFee = c.GlobalString("maxPrioFee")
     config.Smartnode.GasLimit = c.GlobalString("gasLimit")
     config.Chains.Eth1.Provider = c.GlobalString("eth1Provider")
     config.Chains.Eth2.Provider = c.GlobalString("eth2Provider")
@@ -313,27 +315,52 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
 }
 
 
-// Parse and return the gas price in wei
-func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
+// Parse and return the max fee in wei
+func (config *RocketPoolConfig) GetMaxFee() (*big.Int, error) {
 
     // No gas price specified
-    if config.Smartnode.GasPrice == "" {
+    if config.Smartnode.MaxFee == "" {
         return nil, nil
     }
 
     // Parse gas price in gwei
-    gasPriceGwei, err := strconv.ParseFloat(config.Smartnode.GasPrice, 64)
+    maxFeeGwei, err := strconv.ParseFloat(config.Smartnode.MaxFee, 64)
     if err != nil {
-        return nil, fmt.Errorf("Invalid gas price '%s': %w", config.Smartnode.GasPrice, err)
+        return nil, fmt.Errorf("Invalid max fee '%s': %w", config.Smartnode.MaxFee, err)
     }
 
     // Return nil if gas price is set to zero
-    if gasPriceGwei == 0 {
+    if maxFeeGwei == 0 {
         return nil, nil
     }
 
     // Return gas price in wei
-    return eth.GweiToWei(gasPriceGwei), nil
+    return eth.GweiToWei(maxFeeGwei), nil
+
+}
+
+
+// Parse and return the max priority fee in wei
+func (config *RocketPoolConfig) GetMaxPriorityFee() (*big.Int, error) {
+
+    // No gas price specified
+    if config.Smartnode.MaxPriorityFee == "" {
+        return nil, nil
+    }
+
+    // Parse gas price in gwei
+    maxPrioFeeGwei, err := strconv.ParseFloat(config.Smartnode.MaxPriorityFee, 64)
+    if err != nil {
+        return nil, fmt.Errorf("Invalid max priority fee '%s': %w", config.Smartnode.MaxPriorityFee, err)
+    }
+
+    // Return nil if gas price is set to zero
+    if maxPrioFeeGwei == 0 {
+        return nil, nil
+    }
+
+    // Return gas price in wei
+    return eth.GweiToWei(maxPrioFeeGwei), nil
 
 }
 

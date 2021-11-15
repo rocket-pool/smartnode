@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -62,7 +63,11 @@ func join(c *cli.Context) error {
                 if err != nil {
                     return err
                 }
-                rp.PrintGasInfo(approvalGas.GasInfo)
+                // Assign max fees
+                err = services.AssignMaxFee(approvalGas.GasInfo, rp)
+                if err != nil{
+                    return err
+                }
                 
                 // Prompt for confirmation
                 if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Do you want to let the new RPL contract interact with your legacy RPL?"))) {
@@ -102,7 +107,11 @@ func join(c *cli.Context) error {
                 return nil
             }
             fmt.Println("RPL Swap Gas Info:")
-            rp.PrintGasInfo(canSwap.GasInfo)
+            // Assign max fees
+            err = services.AssignMaxFee(canSwap.GasInfo, rp)
+            if err != nil{
+                return err
+            }
 
             // Prompt for confirmation
             if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
@@ -153,7 +162,11 @@ func join(c *cli.Context) error {
     }
 
     // Display gas estimate
-    rp.PrintGasInfo(canJoin.GasInfo)
+    // Assign max fees
+    err = services.AssignMaxFee(canJoin.GasInfo, rp)
+    if err != nil{
+        return err
+    }
     rp.PrintMultiTxWarning()
 
     // Prompt for confirmation

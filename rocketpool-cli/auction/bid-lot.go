@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -135,8 +136,11 @@ func bidOnLot(c *cli.Context) error {
         return nil
     }
 
-    // Display gas estimate
-    rp.PrintGasInfo(canBid.GasInfo)
+    // Assign max fees
+    err = services.AssignMaxFee(canBid.GasInfo, rp)
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Details.Index))) {
