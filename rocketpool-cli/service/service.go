@@ -233,7 +233,7 @@ func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPool
         } else {
             fmt.Printf("%s=== WARNING ===\n", colorRed)
             fmt.Printf("You have changed your validator client from %s to %s.\n", currentValidatorName, pendingValidatorName)
-            fmt.Println("If you have active validators, this can cause them to be slashed if they send duplicate attestations.")
+            fmt.Println("If you have active validators, starting the new client immediately will cause them to be slashed due to duplicate attestations!")
             fmt.Println("To prevent slashing, Rocket Pool will delay activating the new client for 15 minutes.")
             fmt.Printf("If you want to bypass this cooldown and understand the risks, rerun this command with the `--ignore-slash-timer` flag.%s\n\n", colorReset)
 
