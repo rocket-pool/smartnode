@@ -103,7 +103,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
         gasSuggestion.SlowTime, fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
     fmt.Printf("+==================================================+\n\n%s", colorReset)
 
-    fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
+    fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", eth.WeiToGwei(priorityFee))
 
     for {
         desiredPrice := cliutils.Prompt(
@@ -141,7 +141,7 @@ func printGasInfo(gasInfo rocketpool.GasInfo, priorityFee *big.Int) (*big.Int) {
     totalSafeGasWei := new(big.Int).Mul(gasPrice, safeGas)
     fmt.Printf("%sSuggested max fee (including %.2f gwei priority fee): %.2f Gwei\nEstimated gas used: %d to %d gas\nEstimated gas cost: %.4f to %.4f ETH\n%s",
                colorYellow,
-               priorityFee,
+               eth.WeiToGwei(priorityFee),
                eth.WeiToGwei(gasPrice), 
                gasInfo.EstGasLimit, 
                gasInfo.SafeGasLimit,
@@ -154,7 +154,7 @@ func printGasInfo(gasInfo rocketpool.GasInfo, priorityFee *big.Int) (*big.Int) {
     if gasInfo.ReqGasPrice != nil {
         userGasMessage += fmt.Sprintf("\n%sRequested gas price (including %.2f gwei priority fee): %.2f Gwei\n%s", 
                                       colorYellow,
-                                      priorityFee,
+                                      eth.WeiToGwei(priorityFee),
                                       eth.WeiToGwei(gasInfo.ReqGasPrice),
                                       colorReset)
     }
