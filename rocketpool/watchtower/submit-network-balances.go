@@ -148,11 +148,7 @@ func (t *submitNetworkBalances) run() error {
     }
 
     // Allow some blocks to pass in case of a short reorg
-    ec, err := services.GetEthClient(t.c)
-    if err != nil {
-        return err
-    }
-    currentBlockNumber, err := ec.BlockNumber(context.Background())
+    currentBlockNumber, err := t.ec.BlockNumber(context.Background())
     if err != nil {
         return err
     }

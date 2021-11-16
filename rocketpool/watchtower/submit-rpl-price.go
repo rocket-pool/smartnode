@@ -3,7 +3,8 @@ package watchtower
 import (
     "context"
     "fmt"
-	"math/big"
+    "github.com/ethereum/go-ethereum/ethclient"
+    "math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,6 +36,7 @@ type submitRplPrice struct {
     c *cli.Context
     log log.ColorLogger
     cfg config.RocketPoolConfig
+    ec *ethclient.Client
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     oio *contracts.OneInchOracle
@@ -49,6 +51,8 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
     if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
     oio, err := services.GetOneInchOracle(c)
@@ -59,6 +63,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
         c: c,
         log: logger,
         cfg: cfg,
+        ec: ec,
         w: w,
         rp: rp,
         oio: oio,
@@ -118,11 +123,7 @@ func (t *submitRplPrice) run() error {
     }
 
     // Allow some blocks to pass in case of a short reorg
-    ec, err := services.GetEthClient(t.c)
-    if err != nil {
-        return err
-    }
-    currentBlockNumber, err := ec.BlockNumber(context.Background())
+    currentBlockNumber, err := t.ec.BlockNumber(context.Background())
     if err != nil {
         return err
     }
