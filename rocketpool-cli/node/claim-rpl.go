@@ -34,7 +34,7 @@ func nodeClaimRpl(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canClaim.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canClaim.GasInfo, rp)
     if err != nil{
         return err
     }

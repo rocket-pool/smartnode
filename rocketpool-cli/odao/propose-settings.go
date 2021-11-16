@@ -34,7 +34,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -85,7 +85,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -136,7 +136,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -194,7 +194,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan str
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -252,7 +252,7 @@ func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan str
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -310,7 +310,7 @@ func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimesp
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -368,7 +368,7 @@ func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimesp
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -426,7 +426,7 @@ func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -484,7 +484,7 @@ func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod string) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
     if err != nil{
         return err
     }

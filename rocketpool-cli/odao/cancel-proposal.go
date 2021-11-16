@@ -89,7 +89,7 @@ func cancelProposal(c *cli.Context) error {
         return err
     }
     // Assign max fees
-    err = services.AssignMaxFee(canResponse.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp)
     if err != nil{
         return err
     }

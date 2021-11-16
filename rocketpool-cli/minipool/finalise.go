@@ -26,7 +26,7 @@ func finaliseMinipool(c *cli.Context, minipoolAddress common.Address) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canResponse.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp)
     if err != nil{
         return err
     }

@@ -176,7 +176,7 @@ func nodeDeposit(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canDeposit.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canDeposit.GasInfo, rp)
     if err != nil{
         return err
     }

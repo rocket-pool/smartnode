@@ -38,7 +38,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canSend.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canSend.GasInfo, rp)
     if err != nil{
         return err
     }

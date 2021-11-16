@@ -33,7 +33,7 @@ func setTimezoneLocation(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canResponse.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp)
     if err != nil{
         return err
     }

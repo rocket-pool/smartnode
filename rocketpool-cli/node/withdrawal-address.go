@@ -75,7 +75,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canResponse.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp)
     if err != nil{
         return err
     }
@@ -134,7 +134,7 @@ func confirmWithdrawalAddress(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canResponse.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp)
     if err != nil{
         return err
     }

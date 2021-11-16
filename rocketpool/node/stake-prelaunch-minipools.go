@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"os/exec"
 	"time"
@@ -42,6 +43,9 @@ type stakePrelaunchMinipools struct {
     rp *rocketpool.RocketPool
     bc beacon.Client
     d *client.Client
+    maxFee *big.Int
+    maxPriorityFee *big.Int
+    gasLimit uint64
 }
 
 
@@ -60,6 +64,28 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
     d, err := services.GetDocker(c)
     if err != nil { return nil, err }
 
+    // Get the user-requested max fee
+    maxFee, err := cfg.GetMaxFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max fee in configuration: %w", err)
+    }
+
+    // Get the user-requested max fee
+    maxPriorityFee, err := cfg.GetMaxPriorityFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max priority fee in configuration: %w", err)
+    }
+    if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+        logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.");
+        maxPriorityFee = big.NewInt(2)
+    }
+
+    // Get the user-requested gas limit
+    gasLimit, err := cfg.GetGasLimit()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting gas limit in configuration: %w", err)
+    }
+
     // Return task
     return &stakePrelaunchMinipools{
         c: c,
@@ -69,6 +95,9 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
         rp: rp,
         bc: bc,
         d: d,
+        maxFee: maxFee,
+        maxPriorityFee: maxPriorityFee,
+        gasLimit: gasLimit,
     }, nil
 
 }
@@ -232,15 +261,36 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
         return err
     }
 
-    // Get the gas estimates
+    // Get the gas limit
     signature := rptypes.BytesToValidatorSignature(depositData.Signature)
     gasInfo, err := mp.EstimateStakeGas(signature, depositDataRoot, opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
     }
-    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+    var gas *big.Int 
+    if t.gasLimit != 0 {
+        gas = new(big.Int).SetUint64(t.gasLimit)
+    } else {
+        gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+    }
+
+    // Get the max fee
+    maxFee := t.maxFee
+    if maxFee == nil || maxFee.Uint64() == 0 {
+        maxFee, err = services.GetHeadlessMaxFee()
+        if err != nil {
+            return err
+        }
+    }
+    
+    // Print the gas info
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, gas.Uint64()) {
         return nil
     }
+
+    opts.GasFeeCap = maxFee
+    opts.GasTipCap = t.maxPriorityFee
+    opts.GasLimit = gas.Uint64()
 
     // Stake minipool
     hash, err := mp.Stake(

@@ -35,7 +35,7 @@ func createLot(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFee(canCreate.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canCreate.GasInfo, rp)
     if err != nil{
         return err
     }

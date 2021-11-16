@@ -64,7 +64,7 @@ func join(c *cli.Context) error {
                     return err
                 }
                 // Assign max fees
-                err = services.AssignMaxFee(approvalGas.GasInfo, rp)
+                err = services.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp)
                 if err != nil{
                     return err
                 }
@@ -108,7 +108,7 @@ func join(c *cli.Context) error {
             }
             fmt.Println("RPL Swap Gas Info:")
             // Assign max fees
-            err = services.AssignMaxFee(canSwap.GasInfo, rp)
+            err = services.AssignMaxFeeAndLimit(canSwap.GasInfo, rp)
             if err != nil{
                 return err
             }
@@ -163,7 +163,7 @@ func join(c *cli.Context) error {
 
     // Display gas estimate
     // Assign max fees
-    err = services.AssignMaxFee(canJoin.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canJoin.GasInfo, rp)
     if err != nil{
         return err
     }

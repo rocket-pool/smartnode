@@ -102,7 +102,7 @@ func refundMinipools(c *cli.Context) error {
     gasInfo.SafeGasLimit = totalSafeGas
 
     // Assign max fees
-    err = services.AssignMaxFee(gasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(gasInfo, rp)
     if err != nil{
         return err
     }

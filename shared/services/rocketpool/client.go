@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"os"
 	osUser "os/user"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	"github.com/blang/semver/v4"
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/net"
 )
@@ -49,9 +51,9 @@ const (
 type Client struct {
     configPath string
     daemonPath string
-    maxFee string
-    maxPrioFee string
-    gasLimit string
+    maxFee *big.Int
+    maxPrioFee *big.Int
+    gasLimit uint64
     customNonce uint64
     client *ssh.Client
 }
@@ -59,6 +61,8 @@ type Client struct {
 
 // Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
+    maxFee := c.GlobalFloat64("maxFee")
+    maxPrioFee := c.GlobalFloat64("maxPrioFee")
     return NewClient(c.GlobalString("config-path"), 
                      c.GlobalString("daemon-path"), 
                      c.GlobalString("host"), 
@@ -66,15 +70,15 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
                      c.GlobalString("key"), 
                      c.GlobalString("passphrase"),
                      c.GlobalString("known-hosts"),
-                     c.GlobalString("maxFee"),
-                     c.GlobalString("maxPrioFee"),
-                     c.GlobalString("gasLimit"),
+                     eth.GweiToWei(maxFee),
+                     eth.GweiToWei(maxPrioFee),
+                     c.GlobalUint64("gasLimit"),
                      c.GlobalUint64("nonce"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, knownhostsFile, maxFee, maxPrioFee, gasLimit string, customNonce uint64) (*Client, error) {
+func NewClient(configPath string, daemonPath string, hostAddress string, user string, keyPath string, passphrasePath string, knownhostsFile string, maxFee *big.Int, maxPrioFee *big.Int, gasLimit uint64, customNonce uint64) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -519,10 +523,17 @@ func (c *Client) StopContainer(container string) (string, error) {
 }
 
 
-// Assign fees
-func (c *Client) AssignMaxFees(maxFee string, maxPrioFee string) {
+// Get the gas settings
+func (c *Client) GetGasSettings() (*big.Int, *big.Int, uint64) {
+    return c.maxFee, c.maxPrioFee, c.gasLimit
+}
+
+
+// Get the gas fees
+func (c *Client) AssignGasSettings(maxFee *big.Int, maxPrioFee *big.Int, gasLimit uint64) {
     c.maxFee = maxFee
     c.maxPrioFee = maxPrioFee
+    c.gasLimit = gasLimit
 }
 
 
@@ -749,15 +760,9 @@ func (c *Client) getAPIContainerName() (string, error) {
 // Get gas price & limit flags
 func (c *Client) getGasOpts() string {
     var opts string
-    if c.maxFee != "" {
-        opts += fmt.Sprintf("--maxFee %s ", shellescape.Quote(c.maxFee))
-    }
-    if c.maxPrioFee != "" {
-        opts += fmt.Sprintf("--maxPrioFee %s ", shellescape.Quote(c.maxPrioFee))
-    }
-    if c.gasLimit != "" {
-        opts += fmt.Sprintf("--gasLimit %s ", shellescape.Quote(c.gasLimit))
-    }
+    opts += fmt.Sprintf("--maxFee %s ", c.maxFee.String())
+    opts += fmt.Sprintf("--maxPrioFee %s ", c.maxPrioFee.String())
+    opts += fmt.Sprintf("--gasLimit %d ", c.gasLimit)
     return opts
 }
 

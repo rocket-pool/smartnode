@@ -81,29 +81,37 @@ ______           _        _    ______           _
         },
         cli.StringFlag{
             Name:  "host, o",
-            Usage: "Smart node SSH host `address`",
+            Usage: "DEPRECATED - Smart node SSH host `address`",
         },
         cli.StringFlag{
             Name:  "user, u",
-            Usage: "Smart node SSH user `name`",
+            Usage: "DEPRECATED - Smart node SSH user `name`",
         },
         cli.StringFlag{
             Name:  "key, k",
-            Usage: "Smart node SSH key `file`",
+            Usage: "DEPRECATED - Smart node SSH key `file`",
         },
         cli.StringFlag{
             Name:  "passphrase, p",
-            Usage: "Smart node SSH key passphrase `file`",
+            Usage: "DEPRECATED - Smart node SSH key passphrase `file`",
         },
         cli.StringFlag{
             Name:  "known-hosts, n",
-            Usage: "Smart node SSH known_hosts `file` (default: current user's ~/.ssh/known_hosts)",
+            Usage: "DEPRECATED - Smart node SSH known_hosts `file` (default: current user's ~/.ssh/known_hosts)",
         },
         cli.StringFlag{
             Name:  "gasPrice, g",
-            Usage: "Desired gas price in gwei",
+            Usage: "DEPRECATED - No longer used, please use --maxFee and --maxPrioFee instead",
         },
-        cli.StringFlag{
+        cli.Float64Flag{
+            Name:   "maxFee, f",
+            Usage:  "The max fee (including the priority fee) you want a transaction to cost, in gwei",
+        },
+        cli.Float64Flag{
+            Name:   "maxPrioFee, i",
+            Usage:  "The max priority fee you want a transaction to use, in gwei",
+        },
+        cli.Uint64Flag{
             Name:  "gasLimit, l",
             Usage: "Desired gas limit",
         },
@@ -170,6 +178,12 @@ ______           _        _    ______           _
             fmt.Fprintln(os.Stderr, "If you want to run rocketpool as root anyway, use the '--allow-root' option to override this warning.")
             os.Exit(1)
         }
+
+        if c.String("gasPrice") != "" {
+            fmt.Fprintln(os.Stderr, "The `gasPrice` flag is deprecated - please use `--maxFee` and optionally `--maxPrioFee` instead.")
+            os.Exit(1)
+        }
+        
         return nil
     }
 
