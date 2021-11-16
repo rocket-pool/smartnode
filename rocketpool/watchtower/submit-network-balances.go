@@ -251,7 +251,7 @@ func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Add
 }
 
 
-// Check whether specific blanaces for a block has already been submitted by the node
+// Check whether specific balances for a block has already been submitted by the node
 func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
 
     // Calculate total ETH balance
