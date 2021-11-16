@@ -246,6 +246,7 @@ type NodeSyncProgressResponse struct {
     Eth2Progress float64                `json:"eth2Progress"`
     Eth1Synced bool                     `json:"eth1Synced"`
     Eth2Synced bool                     `json:"eth2Synced"`
+    Eth1LatestBlockTime uint64          `json:"eth1LatestBlockTime"`
 }
 
 

@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"errors"
-	"log"
-	"sync"
+    "log"
+    "sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -22,6 +22,7 @@ var checkRocketStorageInterval, _ = time.ParseDuration("15s")
 var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
 var ethClientSyncPollInterval, _ = time.ParseDuration("5s")
 var beaconClientSyncPollInterval, _ = time.ParseDuration("5s")
+var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
 
 
 //
@@ -417,7 +418,16 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
                 }
             }
         } else {
-            return true, nil
+            // Eth 1 client is not in "syncing" state but may be behind head
+            // Get the latest block it knows about and make sure it's recent compared to system clock time
+            timestamp, err := GetEthClientLatestBlockTimestamp(c)
+            if err != nil {
+                return false, err
+            }
+            // Only return true if the last reportedly known block is within our defined threshold
+            if timestamp + uint64(ethClientRecentBlockThreshold.Seconds()) > uint64(time.Now().Unix()) {
+                return true, nil
+            }
         }
 
         // Pause before next poll
