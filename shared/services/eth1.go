@@ -22,11 +22,11 @@ func GetEthClientLatestBlockTimestamp(c *cli.Context) (uint64, error) {
 	blockNumberBig := big.NewInt(0).SetUint64(blockNumber)
 
 	// Get latest block
-	block, err := ec.BlockByNumber(context.Background(), blockNumberBig)
+	header, err := ec.HeaderByNumber(context.Background(), blockNumberBig)
 	if err != nil {
 		return 0, err
 	}
 
 	// Return block timestamp
-	return block.Time(), nil
+	return header.Time, nil
 }
