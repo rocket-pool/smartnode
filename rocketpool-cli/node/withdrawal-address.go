@@ -75,13 +75,13 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }
 
     // Prompt for confirmation
-    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s?", withdrawalAddress.Hex())) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s?", withdrawalAddress.Hex()))) {
         fmt.Println("Cancelled.")
         return nil
     }
@@ -134,13 +134,13 @@ func confirmWithdrawalAddress(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }
 
     // Prompt for confirmation
-    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to confirm your node's address as the new withdrawal address?")) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to confirm your node's address as the new withdrawal address?"))) {
         fmt.Println("Cancelled.")
         return nil
     }

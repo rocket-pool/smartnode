@@ -43,7 +43,7 @@ func registerNode(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canRegister.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canRegister.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

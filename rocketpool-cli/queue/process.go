@@ -38,7 +38,7 @@ func processQueue(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canProcess.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canProcess.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

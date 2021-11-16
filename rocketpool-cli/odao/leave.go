@@ -73,7 +73,7 @@ func leave(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canLeave.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canLeave.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

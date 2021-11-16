@@ -40,7 +40,7 @@ func nodeBurn(c *cli.Context, amount float64, token string) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canBurn.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canBurn.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

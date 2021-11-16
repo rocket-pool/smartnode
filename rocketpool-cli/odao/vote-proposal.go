@@ -120,7 +120,7 @@ func voteOnProposal(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canVote.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

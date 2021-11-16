@@ -104,7 +104,7 @@ func proposeKick(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

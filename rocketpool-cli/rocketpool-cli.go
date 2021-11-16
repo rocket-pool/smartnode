@@ -101,7 +101,7 @@ ______           _        _    ______           _
         },
         cli.StringFlag{
             Name:  "gasPrice, g",
-            Usage: "DEPRECATED - No longer used, please use --maxFee and --maxPrioFee instead",
+            Usage: "OBSOLETE - No longer used, please use --maxFee and --maxPrioFee instead",
         },
         cli.Float64Flag{
             Name:   "maxFee, f",

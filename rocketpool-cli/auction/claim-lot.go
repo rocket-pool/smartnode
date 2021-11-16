@@ -108,7 +108,7 @@ func claimFromLot(c *cli.Context) error {
     gasInfo.SafeGasLimit = totalSafeGas
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(gasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

@@ -40,7 +40,7 @@ func withdrawRpl(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp)
+    err = services.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }
