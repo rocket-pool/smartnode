@@ -16,10 +16,7 @@ import (
 func EstimateSendTransactionGas(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 
     // User-defined settings
-    response := rocketpool.GasInfo {
-        ReqGasPrice: opts.GasPrice,
-        ReqGasLimit: opts.GasLimit,
-    }
+    response := rocketpool.GasInfo{}
 
     // Set default value
     value := opts.Value
@@ -27,18 +24,11 @@ func EstimateSendTransactionGas(client *ethclient.Client, toAddress common.Addre
         value = big.NewInt(0)
     }
 
-    // Get suggested gas price
-    gasPrice, err := client.SuggestGasPrice(context.Background())
-    if err != nil {
-        return rocketpool.GasInfo{}, err
-    }
-    response.EstGasPrice = gasPrice
-
     // Estimate gas limit
     gasLimit, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
         From: opts.From,
         To: &toAddress,
-        GasPrice: gasPrice,
+        GasPrice: big.NewInt(0), // set to 0 for simulation
         Value: value,
     })
     if err != nil {

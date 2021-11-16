@@ -32,13 +32,10 @@ type Contract struct {
 }
 
 
-// Response for gas prices and limits from network and from user request
+// Response for gas limits from network and from user request
 type GasInfo struct {
-    EstGasPrice *big.Int            `json:"estGasPrice"`
     EstGasLimit uint64              `json:"estGasLimit"`
     SafeGasLimit uint64             `json:"safeGasLimit"`
-    ReqGasPrice *big.Int            `json:"reqGasPrice"`
-    ReqGasLimit uint64              `json:"reqGasLimit"`
 }
 
 
@@ -50,14 +47,10 @@ func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, 
 }
 
 
-// Get Gas Price and Gas Limit for transaction
+// Get Gas Limit for transaction
 func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string, params ...interface{}) (GasInfo, error) {
 
-    // set user option for gas price and gas limit
-    response := GasInfo {
-        ReqGasPrice: opts.GasPrice,
-        ReqGasLimit: opts.GasLimit,
-    }
+    response := GasInfo{}
 
     // Pack transaction Info
     input, err := c.ABI.Pack(method, params...)
@@ -65,28 +58,14 @@ func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string,
         return response, fmt.Errorf("Error getting transaction gas info: Could not encode input data: %w", err)
     }
 
-    // Temporarily set the gas price to 0 for simulation
-    userGasPrice := opts.GasPrice
-    opts.GasPrice = big.NewInt(0)
-
     // Estimate gas limit
     estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, input)
-
-    // Replace the gas price
-    opts.GasPrice = userGasPrice
 
     if err != nil {
         return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas limit: %w", err)
     }
     response.EstGasLimit = estGasLimit
     response.SafeGasLimit = safeGasLimit
-
-    // Estimate gas price
-    estGasPrice, err := c.Client.SuggestGasPrice(context.Background())
-    if err != nil {
-        return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas price: %w", err)
-    }
-    response.EstGasPrice = estGasPrice
 
     return response, err
 }
@@ -119,14 +98,10 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
 }
 
 
-// Get gas price and gas limit for a transfer call
+// Get gas limit for a transfer call
 func (c *Contract) GetTransferGasInfo(opts *bind.TransactOpts) (GasInfo, error) {
 
-    // set user option for gas price and gas limit
-    response := GasInfo {
-        ReqGasPrice: opts.GasPrice,
-        ReqGasLimit: opts.GasLimit,
-    }
+    response := GasInfo {}
 
     // Estimate gas limit
     estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, []byte{})
@@ -135,13 +110,6 @@ func (c *Contract) GetTransferGasInfo(opts *bind.TransactOpts) (GasInfo, error) 
     }
     response.EstGasLimit = estGasLimit
     response.SafeGasLimit = safeGasLimit
-
-    // Estimate gas price
-    estGasPrice, err := c.Client.SuggestGasPrice(context.Background())
-    if err != nil {
-        return response, fmt.Errorf("Error getting transfer gas info: could not estimate gas price: %w", err)
-    }
-    response.EstGasPrice = estGasPrice
 
     return response, nil
 }
@@ -177,10 +145,11 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
     gasLimit, err := c.Client.EstimateGas(context.Background(), ethereum.CallMsg{
         From: opts.From,
         To: c.Address,
-        GasPrice: opts.GasPrice,
+        GasPrice: big.NewInt(0), // use 0 gwei for simulation
         Value: opts.Value,
         Data: input,
     })
+    
     if err != nil {
         return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", err)
     }
