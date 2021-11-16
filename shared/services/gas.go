@@ -148,8 +148,8 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
         slowLowLimit = slowEth * float64(gasInfo.EstGasLimit)
         slowHighLimit = slowEth * float64(gasInfo.SafeGasLimit)
     } else {
-        standardLowLimit = standardEth * float64(gasLimit)
-        standardHighLimit = standardLowLimit
+        slowLowLimit = slowEth * float64(gasLimit)
+        slowHighLimit = slowLowLimit
     }
 
     fmt.Printf("%s+============== Suggested Gas Prices ==============+\n", colorBlue)
