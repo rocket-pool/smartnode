@@ -1,8 +1,10 @@
 package watchtower
 
 import (
-	"fmt"
-	"math/big"
+    "context"
+    "fmt"
+    "github.com/ethereum/go-ethereum/ethclient"
+    "math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,11 +27,16 @@ import (
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+// Settings
+const SubmitFollowDistancePrices = 2
+const ConfirmDistancePrices = 30
+
 // Submit RPL price task
 type submitRplPrice struct {
     c *cli.Context
     log log.ColorLogger
     cfg config.RocketPoolConfig
+    ec *ethclient.Client
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     oio *contracts.OneInchOracle
@@ -44,6 +51,8 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
     if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
     oio, err := services.GetOneInchOracle(c)
@@ -54,6 +63,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
         c: c,
         log: logger,
         cfg: cfg,
+        ec: ec,
         w: w,
         rp: rp,
         oio: oio,
@@ -112,13 +122,33 @@ func (t *submitRplPrice) run() error {
         return err
     }
 
-    // Check if price for block can be submitted by node
-    canSubmit, err := t.canSubmitBlockPrice(nodeAccount.Address, blockNumber)
+    // Allow some blocks to pass in case of a short reorg
+    currentBlockNumber, err := t.ec.BlockNumber(context.Background())
     if err != nil {
         return err
     }
-    if !canSubmit {
+    if blockNumber + SubmitFollowDistancePrices > currentBlockNumber {
         return nil
+    }
+
+    // Check if a submission needs to be made
+    pricesBlock, err := network.GetPricesBlock(t.rp, nil)
+    if err != nil {
+        return err
+    }
+    if blockNumber > pricesBlock {
+        return nil
+    }
+
+    // If confirm distance has passed, we just want to ensure we have submitted and then early exit
+    if blockNumber + ConfirmDistancePrices <= currentBlockNumber {
+        hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+        if err != nil {
+            return err
+        }
+        if hasSubmitted {
+            return nil
+        }
     }
 
     // Log
@@ -139,6 +169,27 @@ func (t *submitRplPrice) run() error {
 
     // Log
     t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+
+    // Check if we have reported these specific values before
+    hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice, effectiveRplStake)
+    if err != nil {
+        return err
+    }
+    if hasSubmittedSpecific {
+        return nil
+    }
+
+    // We haven't submitted these values, check if we've submitted any for this block so we can log it
+    hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+    if err != nil {
+        return err
+    }
+    if hasSubmitted {
+        t.log.Printlnf("Have previously submitted out-of-date prices for block $d, trying again...", blockNumber)
+    }
+
+    // Log
+    t.log.Println("Submitting RPL price...")
 
     // Submit RPL price
     if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake); err != nil {
@@ -164,38 +215,33 @@ func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
         return 0, fmt.Errorf("Error getting latest reportable block: %w", err)
     }
     return latestBlock.Uint64(), nil
+
 }
 
 
-// Check whether prices for a block can be submitted by the node
-func (t *submitRplPrice) canSubmitBlockPrice(nodeAddress common.Address, blockNumber uint64) (bool, error) {
+// Check whether prices for a block has already been submitted by the node
+func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blockNumber uint64) (bool, error) {
 
-    // Data
-    var wg errgroup.Group
-    var currentPricesBlock uint64
-    var nodeSubmittedBlock bool
+    blockNumberBuf := make([]byte, 32)
+    big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+    return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.prices.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
 
-    // Get data
-    wg.Go(func() error {
-        var err error
-        currentPricesBlock, err = network.GetPricesBlock(t.rp, nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        blockNumberBuf := make([]byte, 32)
-        big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-        nodeSubmittedBlock, err = t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.prices.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
-        return err
-    })
+}
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return false, err
-    }
 
-    // Return
-    return (blockNumber > currentPricesBlock && !nodeSubmittedBlock), nil
+// Check whether specific prices for a block has already been submitted by the node
+func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice, effectiveRplStake *big.Int) (bool, error) {
+
+    blockNumberBuf := make([]byte, 32)
+    big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+
+    rplPriceBuf := make([]byte, 32)
+    rplPrice.FillBytes(rplPriceBuf)
+
+    effectiveRplStakeBuf := make([]byte, 32)
+    effectiveRplStake.FillBytes(effectiveRplStakeBuf)
+
+    return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.prices.submitted.node"), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf, effectiveRplStakeBuf))
 
 }
 
