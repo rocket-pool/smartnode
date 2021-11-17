@@ -24,6 +24,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
@@ -612,7 +613,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
     // Get the max fee
     maxFee := t.maxFee
     if maxFee == nil || maxFee.Uint64() == 0 {
-        maxFee, err = services.GetHeadlessMaxFee()
+        maxFee, err = rpgas.GetHeadlessMaxFee()
         if err != nil {
             return err
         }

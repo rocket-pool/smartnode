@@ -1,4 +1,4 @@
-package services
+package gas
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services/etherchain"
-	"github.com/rocket-pool/smartnode/shared/services/etherscan"
+	"github.com/rocket-pool/smartnode/shared/services/gas/etherchain"
+	"github.com/rocket-pool/smartnode/shared/services/gas/etherscan"
 	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"

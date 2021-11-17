@@ -8,7 +8,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -137,7 +137,7 @@ func bidOnLot(c *cli.Context) error {
     }
 
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canBid.GasInfo, rp, c.Bool("yes"))
+    err = gas.AssignMaxFeeAndLimit(canBid.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

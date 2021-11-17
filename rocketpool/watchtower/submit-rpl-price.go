@@ -1,10 +1,11 @@
 package watchtower
 
 import (
-    "context"
-    "fmt"
-    "github.com/ethereum/go-ethereum/ethclient"
-    "math/big"
+	"context"
+	"fmt"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -329,7 +331,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
     // Get the max fee
     maxFee := t.maxFee
     if maxFee == nil || maxFee.Uint64() == 0 {
-        maxFee, err = services.GetHeadlessMaxFee()
+        maxFee, err = rpgas.GetHeadlessMaxFee()
         if err != nil {
             return err
         }

@@ -8,7 +8,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -66,7 +66,7 @@ func nodeStakeRpl(c *cli.Context) error {
                     return err
                 }
                 // Assign max fees
-                err = services.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, c.Bool("yes"))
+                err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, c.Bool("yes"))
                 if err != nil{
                     return err
                 }
@@ -110,7 +110,7 @@ func nodeStakeRpl(c *cli.Context) error {
             }
             fmt.Println("RPL Swap Gas Info:")
             // Assign max fees
-            err = services.AssignMaxFeeAndLimit(canSwap.GasInfo, rp, c.Bool("yes"))
+            err = gas.AssignMaxFeeAndLimit(canSwap.GasInfo, rp, c.Bool("yes"))
             if err != nil{
                 return err
             }
@@ -245,7 +245,7 @@ func nodeStakeRpl(c *cli.Context) error {
             return err
         }
         // Assign max fees
-        err = services.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, c.Bool("yes"))
+        err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, c.Bool("yes"))
         if err != nil{
             return err
         }
@@ -293,7 +293,7 @@ func nodeStakeRpl(c *cli.Context) error {
 
     fmt.Println("RPL Stake Gas Info:")
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canStake.GasInfo, rp, c.Bool("yes"))
+    err = gas.AssignMaxFeeAndLimit(canStake.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -135,7 +136,7 @@ func (t *respondChallenges) run() error {
     // Get the max fee
     maxFee := t.maxFee
     if maxFee == nil || maxFee.Uint64() == 0 {
-        maxFee, err = services.GetHeadlessMaxFee()
+        maxFee, err = rpgas.GetHeadlessMaxFee()
         if err != nil {
             return err
         }

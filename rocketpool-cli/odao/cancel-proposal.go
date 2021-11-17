@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -89,7 +89,7 @@ func cancelProposal(c *cli.Context) error {
         return err
     }
     // Assign max fees
-    err = services.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+    err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
     if err != nil{
         return err
     }
