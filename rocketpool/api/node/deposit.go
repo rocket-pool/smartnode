@@ -387,11 +387,11 @@ func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmountWei *big.Int
     
     // Convert the deposit amount to gwei
     weiPerGwei := big.NewInt(int64(eth.WeiPerGwei))
-    depositAmountWei.Div(depositAmountWei, weiPerGwei)
+    depositAmountGwei := big.NewInt(0).Div(depositAmountWei, weiPerGwei)
     
     // Create the deposit struct
     depositData := new(ethpb.Deposit_Data)
-    depositData.Amount = depositAmountWei.Uint64()
+    depositData.Amount = depositAmountGwei.Uint64()
     depositData.PublicKey = pubkey.Bytes()
     depositData.WithdrawalCredentials = withdrawalCredentials.Bytes()
     depositData.Signature = signature.Bytes()
