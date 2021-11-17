@@ -31,6 +31,8 @@ func WaitForTransaction(client *ethclient.Client, hash common.Hash) (*types.Rece
                 continue;
             }
             return nil, err
+        } else {
+            break
         }
     }
 
