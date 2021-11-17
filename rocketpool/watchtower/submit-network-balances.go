@@ -190,7 +190,7 @@ func (t *submitNetworkBalances) run() error {
     if err != nil {
         return err
     }
-    if blockNumber > balancesBlock {
+    if blockNumber <= balancesBlock {
         return nil
     }
 

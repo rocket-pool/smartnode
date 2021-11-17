@@ -166,7 +166,7 @@ func (t *submitRplPrice) run() error {
     if err != nil {
         return err
     }
-    if blockNumber > pricesBlock {
+    if blockNumber <= pricesBlock {
         return nil
     }
 
