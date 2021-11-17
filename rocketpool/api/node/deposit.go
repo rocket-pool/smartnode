@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/prysmaticlabs/prysm/v2/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -16,13 +17,18 @@ import (
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	prdeposit "github.com/prysmaticlabs/prysm/v2/contracts/deposit"
+	ethpb "github.com/prysmaticlabs/prysm/v2/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
 
@@ -162,6 +168,14 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
         }
         pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
         signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+
+        // Do a final sanity check
+        err = validateDepositInfo(eth2Config, opts.Value, pubKey, withdrawalCredentials, signature)
+        if err != nil {
+            return fmt.Errorf("Your deposit failed the validation safety check: %w\n" + 
+                "For your safety, this deposit will not be submitted and your ETH will not be staked.\n" +
+                "PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.", err)
+        }
 
         // Run the deposit gas estimator
         gasInfo, err := node.EstimateDepositGas(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
@@ -328,6 +342,14 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
             "***************\n", minipoolAddress.Hex(), pubKey.Hex(), status.Index);
     }
 
+    // Do a final sanity check
+    err = validateDepositInfo(eth2Config, opts.Value, pubKey, withdrawalCredentials, signature)
+    if err != nil {
+        return nil, fmt.Errorf("Your deposit failed the validation safety check: %w\n" + 
+            "For your safety, this deposit will not be submitted and your ETH will not be staked.\n" +
+            "PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.", err)
+    }
+
     // Override the provided pending TX if requested 
     err = eth1.CheckForNonceOverride(c, opts)
     if err != nil {
@@ -351,6 +373,32 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 
     // Return response
     return &response, nil
+
+}
+
+
+func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmountWei *big.Int, pubkey rptypes.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) (error) {
+
+    // Get the deposit domain based on the eth2 config 
+    depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
+    if err != nil {
+        return err
+    }
+    
+    // Convert the deposit amount to gwei
+    weiPerGwei := big.NewInt(int64(eth.WeiPerGwei))
+    depositAmountWei.Div(depositAmountWei, weiPerGwei)
+    
+    // Create the deposit struct
+    depositData := new(ethpb.Deposit_Data)
+    depositData.Amount = depositAmountWei.Uint64()
+    depositData.PublicKey = pubkey.Bytes()
+    depositData.WithdrawalCredentials = withdrawalCredentials.Bytes()
+    depositData.Signature = signature.Bytes()
+
+    // Validate the signature
+    err = prdeposit.VerifyDepositSignature(depositData, depositDomain)
+    return err
 
 }
 
