@@ -618,7 +618,7 @@ func (t *submitScrubMinipools) submitVoteScrubMinipool(mp *minipool.Minipool) er
     }
 
     // Print the gas info
-    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, gas.Uint64()) {
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
         return nil
     }
 

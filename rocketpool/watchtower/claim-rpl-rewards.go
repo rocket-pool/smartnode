@@ -163,7 +163,7 @@ func (t *claimRplRewards) run() error {
     }
 
     // Check the threshold
-    if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, gas.Uint64()) {
+    if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
         return nil
     }
     
