@@ -736,7 +736,6 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
             c.getCustomNonce(),
             args)
     }
-    fmt.Println(cmd)
     return c.readOutput(cmd)
 }
 
