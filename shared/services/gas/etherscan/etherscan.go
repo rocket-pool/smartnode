@@ -4,11 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/big"
 	"net/http"
 	"strconv"
-
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 const gasOracleUrl string = "https://api.etherscan.io/api?module=gastracker&action=gasoracle"
@@ -25,9 +22,9 @@ type gasOracleResponse struct {
 }
 
 type GasFeeSuggestion struct {
-    SlowWei *big.Int
-    StandardWei *big.Int
-    FastWei *big.Int
+    SlowGwei float64
+    StandardGwei float64
+    FastGwei float64
 }
 
 // Get gas prices
@@ -63,9 +60,9 @@ func GetGasPrices() (GasFeeSuggestion, error) {
     }
 
     suggestion := GasFeeSuggestion{
-        SlowWei: eth.GweiToWei(float64(gOResponse.Result.SafeGasPrice)),
-        StandardWei: eth.GweiToWei(float64(gOResponse.Result.ProposeGasPrice)),
-        FastWei: eth.GweiToWei(float64(gOResponse.Result.FastGasPrice)),
+        SlowGwei: float64(gOResponse.Result.SafeGasPrice),
+        StandardGwei: float64(gOResponse.Result.ProposeGasPrice),
+        FastGwei: float64(gOResponse.Result.FastGasPrice),
     }
 
     // Return

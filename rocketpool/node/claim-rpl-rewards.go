@@ -3,7 +3,6 @@ package node
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -46,10 +45,7 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
     if err != nil { return nil, err }
 
     // Check if auto-claiming is disabled
-    gasThreshold, err := strconv.ParseFloat(cfg.Smartnode.RplClaimGasThreshold, 0)
-    if err != nil {
-        return nil, fmt.Errorf("Error parsing RPL claim gas threshold: %w", err)
-    }
+    gasThreshold := cfg.Smartnode.RplClaimGasThreshold
     if gasThreshold == 0 {
         logger.Println("RPL claim gas threshold is set to 0, automatic claims will be disabled.")
     }
@@ -148,7 +144,7 @@ func (t *claimRplRewards) run() error {
     // Get the max fee
     maxFee := t.maxFee
     if maxFee == nil || maxFee.Uint64() == 0 {
-        maxFee, err = rpgas.GetHeadlessMaxFee()
+        maxFee, err = rpgas.GetHeadlessMaxFeeWei()
         if err != nil {
             return err
         }

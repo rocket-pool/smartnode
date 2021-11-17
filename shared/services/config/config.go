@@ -30,10 +30,10 @@ type RocketPoolConfig struct {
         WalletPath string               `yaml:"walletPath,omitempty"`
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
         ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
-        MaxFee string                   `yaml:"maxFee,omitempty"`
-        MaxPriorityFee string           `yaml:"maxPriorityFee,omitempty"`
-        GasLimit string                 `yaml:"gasLimit,omitempty"`
-        RplClaimGasThreshold string     `yaml:"rplClaimGasThreshold,omitempty"`
+        MaxFee float64                  `yaml:"maxFee,omitempty"`
+        MaxPriorityFee float64          `yaml:"maxPriorityFee,omitempty"`
+        GasLimit uint64                 `yaml:"gasLimit,omitempty"`
+        RplClaimGasThreshold float64    `yaml:"rplClaimGasThreshold,omitempty"`
         TxWatchUrl string               `yaml:"txWatchUrl,omitempty"`
         StakeUrl string                 `yaml:"stakeUrl,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
@@ -306,9 +306,9 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
-    config.Smartnode.MaxFee = c.GlobalString("maxFee")
-    config.Smartnode.MaxPriorityFee = c.GlobalString("maxPrioFee")
-    config.Smartnode.GasLimit = c.GlobalString("gasLimit")
+    config.Smartnode.MaxFee = c.GlobalFloat64("maxFee")
+    config.Smartnode.MaxPriorityFee = c.GlobalFloat64("maxPrioFee")
+    config.Smartnode.GasLimit = c.GlobalUint64("gasLimit")
     config.Chains.Eth1.Provider = c.GlobalString("eth1Provider")
     config.Chains.Eth2.Provider = c.GlobalString("eth2Provider")
     return config
@@ -319,23 +319,12 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
 func (config *RocketPoolConfig) GetMaxFee() (*big.Int, error) {
 
     // No gas price specified
-    if config.Smartnode.MaxFee == "" {
-        return nil, nil
-    }
-
-    // Parse gas price in gwei
-    maxFeeGwei, err := strconv.ParseFloat(config.Smartnode.MaxFee, 64)
-    if err != nil {
-        return nil, fmt.Errorf("Invalid max fee '%s': %w", config.Smartnode.MaxFee, err)
-    }
-
-    // Return nil if gas price is set to zero
-    if maxFeeGwei == 0 {
+    if config.Smartnode.MaxFee == 0 {
         return nil, nil
     }
 
     // Return gas price in wei
-    return eth.GweiToWei(maxFeeGwei), nil
+    return eth.GweiToWei(config.Smartnode.MaxFee), nil
 
 }
 
@@ -344,23 +333,12 @@ func (config *RocketPoolConfig) GetMaxFee() (*big.Int, error) {
 func (config *RocketPoolConfig) GetMaxPriorityFee() (*big.Int, error) {
 
     // No gas price specified
-    if config.Smartnode.MaxPriorityFee == "" {
+    if config.Smartnode.MaxPriorityFee == 0 {
         return nil, nil
     }
-
-    // Parse gas price in gwei
-    maxPrioFeeGwei, err := strconv.ParseFloat(config.Smartnode.MaxPriorityFee, 64)
-    if err != nil {
-        return nil, fmt.Errorf("Invalid max priority fee '%s': %w", config.Smartnode.MaxPriorityFee, err)
-    }
-
-    // Return nil if gas price is set to zero
-    if maxPrioFeeGwei == 0 {
-        return nil, nil
-    }
-
+    
     // Return gas price in wei
-    return eth.GweiToWei(maxPrioFeeGwei), nil
+    return eth.GweiToWei(config.Smartnode.MaxPriorityFee), nil
 
 }
 
@@ -369,18 +347,12 @@ func (config *RocketPoolConfig) GetMaxPriorityFee() (*big.Int, error) {
 func (config *RocketPoolConfig) GetGasLimit() (uint64, error) {
 
     // No gas limit specified
-    if config.Smartnode.GasLimit == "" {
+    if config.Smartnode.GasLimit == 0 {
         return 0, nil
     }
 
-    // Parse gas limit
-    gasLimit, err := strconv.ParseUint(config.Smartnode.GasLimit, 10, 64)
-    if err != nil {
-        return 0, fmt.Errorf("Invalid gas limit '%s': %w", config.Smartnode.GasLimit, err)
-    }
-
     // Return
-    return gasLimit, nil
+    return config.Smartnode.GasLimit, nil
 
 }
 

@@ -91,15 +91,15 @@ func main() {
             Name:  "eth2Provider, b",
             Usage: "Eth 2.0 provider `address`",
         },
-        cli.StringFlag{
+        cli.Float64Flag{
             Name:  "maxFee",
             Usage: "Desired max fee in gwei",
         },
-        cli.StringFlag{
+        cli.Float64Flag{
             Name:  "maxPrioFee",
             Usage: "Desired max priority fee in gwei",
         },
-        cli.StringFlag{
+        cli.Uint64Flag{
             Name:  "gasLimit, l",
             Usage: "Desired gas limit",
         },

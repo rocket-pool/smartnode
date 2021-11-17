@@ -278,7 +278,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
     // Get the max fee
     maxFee := t.maxFee
     if maxFee == nil || maxFee.Uint64() == 0 {
-        maxFee, err = rpgas.GetHeadlessMaxFee()
+        maxFee, err = rpgas.GetHeadlessMaxFeeWei()
         if err != nil {
             return err
         }

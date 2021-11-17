@@ -258,7 +258,7 @@ func (t *dissolveTimedOutMinipools) dissolveMinipool(mp *minipool.Minipool) erro
     // Get the max fee
     maxFee := t.maxFee
     if maxFee == nil || maxFee.Uint64() == 0 {
-        maxFee, err = rpgas.GetHeadlessMaxFee()
+        maxFee, err = rpgas.GetHeadlessMaxFeeWei()
         if err != nil {
             return err
         }
