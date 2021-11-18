@@ -112,6 +112,9 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
         fmt.Printf("Using the requested gas limit of %d units.\n%sNOTE: if you set this too low, your transaction may fail but you will still have to pay the gas fee!%s\n", gasLimit, colorYellow, colorReset)
     }
 
+    if maxPriorityFeeGwei > maxFeeGwei {
+        return fmt.Errorf("Priority fee cannot be greater than max fee.");
+    }
     rp.AssignGasSettings(maxFeeGwei, maxPriorityFeeGwei, gasLimit)
     return nil
 
