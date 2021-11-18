@@ -196,7 +196,9 @@ func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPool
 
     // Compare the clients and warn if necessary
     if currentValidatorName == pendingValidatorName {
-        fmt.Printf("Validator client [%s] was previously used, no slashing prevention delay necessary.\n", currentValidatorName)
+        fmt.Printf("Validator client [%s] was previously used - no slashing prevention delay necessary.\n", currentValidatorName)
+    } else if currentValidatorName == "" {
+        fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
     } else {
 
         // Get the time that the container responsible for validator duties exited
@@ -285,6 +287,11 @@ func getValidatorFinishTime(CurrentValidatorClientName string, rp *rocketpool.Cl
 
 // Extract the image name from a Docker image string
 func getDockerImageName(imageString string) (string, error) {
+
+    // Return the empty string if the validator didn't exist (probably because this is the first time starting it up)
+    if imageString == "" {
+        return "", nil
+    }
 
     reg := regexp.MustCompile(dockerImageRegex)
     matches := reg.FindStringSubmatch(imageString)

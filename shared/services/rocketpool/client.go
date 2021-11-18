@@ -54,6 +54,9 @@ type Client struct {
     gasLimit uint64
     customNonce uint64
     client *ssh.Client
+    originalMaxFee float64
+    originalMaxPrioFee float64
+    originalGasLimit uint64
 }
 
 
@@ -148,6 +151,9 @@ func NewClient(configPath string, daemonPath string, hostAddress string, user st
         maxFee: maxFee,
         maxPrioFee: maxPrioFee,
         gasLimit: gasLimit,
+        originalMaxFee: maxFee,
+        originalMaxPrioFee: maxPrioFee,
+        originalGasLimit: gasLimit,
         customNonce: customNonce,
         client: sshClient,
     }, nil
@@ -736,7 +742,14 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
             c.getCustomNonce(),
             args)
     }
-    return c.readOutput(cmd)
+    output, err := c.readOutput(cmd)
+
+    // Reset the gas settings after the call
+    c.maxFee = c.originalMaxFee
+    c.maxPrioFee = c.originalMaxPrioFee
+    c.gasLimit = c.originalGasLimit
+
+    return output, err
 }
 
 
