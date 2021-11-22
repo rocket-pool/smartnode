@@ -2,6 +2,7 @@ package eth
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -37,7 +38,7 @@ func TestSendTransaction(t *testing.T) {
     // Send transaction
     opts := userAccount.GetTransactor()
     opts.Value = sendAmount
-    hash, err := eth.SendTransaction(client, toAddress, opts)
+    hash, err := eth.SendTransaction(client, toAddress, big.NewInt(1337), opts) // Ganache's default chain ID is 1337
     if err != nil {
         t.Fatal(err)
     }

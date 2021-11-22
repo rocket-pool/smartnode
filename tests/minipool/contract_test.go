@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -279,7 +280,7 @@ func TestClose(t *testing.T) {
     // Simulate a post-merge withdrawal by sending 16 ETH to the minipool
     opts := nodeAccount.GetTransactor()
     opts.Value = eth.EthToWei(16)
-    hash, err := eth.SendTransaction(rp.Client, mp.Address, opts)
+    hash, err := eth.SendTransaction(rp.Client, mp.Address, big.NewInt(1337), opts) // Ganache's default chain ID is 1337
     if err != nil {
         t.Errorf("Error sending ETH to minipool: %s", err.Error())
     }

@@ -42,7 +42,7 @@ func EstimateSendTransactionGas(client *ethclient.Client, toAddress common.Addre
 
 
 // Send a transaction to an address
-func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+func SendTransaction(client *ethclient.Client, toAddress common.Address, chainID *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     var err error
 
     // Get from address nonce
@@ -62,22 +62,13 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
         value = big.NewInt(0)
     }
 
-    // Get suggested gas price
-    gasPrice := opts.GasPrice
-    if gasPrice == nil {
-        gasPrice, err = client.SuggestGasPrice(context.Background())
-        if err != nil {
-            return common.Hash{}, err
-        }
-    }
-
     // Estimate gas limit
     gasLimit := opts.GasLimit
     if gasLimit == 0 {
         gasLimit, err = client.EstimateGas(context.Background(), ethereum.CallMsg{
             From: opts.From,
             To: &toAddress,
-            GasPrice: gasPrice,
+            GasPrice: big.NewInt(0), // use 0 gwei for simulation
             Value: value,
         })
         if err != nil {
@@ -86,7 +77,17 @@ func SendTransaction(client *ethclient.Client, toAddress common.Address, opts *b
     }
 
     // Initialize transaction
-    tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, []byte{})
+    tx := types.NewTx(&types.DynamicFeeTx{
+        ChainID: chainID,
+        Nonce: nonce,
+        GasTipCap: opts.GasTipCap,
+        GasFeeCap: opts.GasFeeCap,
+        Gas: gasLimit,
+        To: &toAddress,
+        Value: value,
+        Data: []byte{},
+        AccessList: []types.AccessTuple{},
+    })
 
     // Sign transaction
     signedTx, err := opts.Signer(opts.From, tx)
