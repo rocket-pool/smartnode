@@ -105,6 +105,13 @@ func NewWallet(walletPath, chainIDStr string, maxFee *big.Int, maxPriorityFee *b
 }
 
 
+// Gets the wallet's chain ID
+func (w *Wallet) GetChainID() (*big.Int) {
+    copy := big.NewInt(0).Set(w.chainID)
+    return copy
+}
+
+
 // Add a keystore to the wallet
 func (w *Wallet) AddKeystore(name string, ks keystore.Keystore) {
     w.keystores[name] = ks

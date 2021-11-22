@@ -143,7 +143,7 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
             // Transfer ETH
             opts.Value = amountWei
-            hash, err := eth.SendTransaction(ec, to, opts)
+            hash, err := eth.SendTransaction(ec, to, w.GetChainID(), opts)
             if err != nil {
                 return nil, err
             }
