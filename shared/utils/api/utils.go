@@ -3,10 +3,12 @@ package api
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -14,16 +16,20 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+// The fraction of the timeout period to trigger overdue transactions
+const TimeoutSafetyFactor int = 2
+
+
 // Print the gas price and cost of a TX
-func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThreshold float64, logger log.ColorLogger, maxFee *big.Int, gasLimit uint64) (bool) {
+func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThresholdGwei float64, logger log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) (bool) {
 
     // Check the gas threshold if requested
     if checkThreshold {
-        gasThresholdGwei := math.RoundUp(gasThreshold * eth.WeiPerGwei, 0)
-        gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdGwei))
-        if maxFee.Cmp(gasThreshold) != -1 {
-            logger.Printlnf("Current network gas price is %.6f Gwei, which is higher than the set threshold of %.6f Gwei. " + 
-                "Aborting the transaction.", eth.WeiToGwei(maxFee), eth.WeiToGwei(gasThreshold))
+        gasThresholdWei := math.RoundUp(gasThresholdGwei * eth.WeiPerGwei, 0)
+        gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdWei))
+        if maxFeeWei.Cmp(gasThreshold) != -1 {
+            logger.Printlnf("Current network gas price is %.2f Gwei, which is higher than the set threshold of %.2f Gwei. " + 
+                "Aborting the transaction.", eth.WeiToGwei(maxFeeWei), gasThreshold)
             return false
         } 
     } else {
@@ -40,10 +46,10 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
         gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
         safeGas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
     }
-    totalGasWei := new(big.Int).Mul(maxFee, gas)
-    totalSafeGasWei := new(big.Int).Mul(maxFee, safeGas)
+    totalGasWei := new(big.Int).Mul(maxFeeWei, gas)
+    totalSafeGasWei := new(big.Int).Mul(maxFeeWei, safeGas)
     logger.Printlnf("This transaction will use a gas price of %.6f Gwei, for a total of %.6f to %.6f ETH.",
-        eth.WeiToGwei(maxFee),
+        eth.WeiToGwei(maxFeeWei),
         math.RoundDown(eth.WeiToEth(totalGasWei), 6),
         math.RoundDown(eth.WeiToEth(totalSafeGasWei), 6))
         
@@ -89,5 +95,20 @@ func GetEventLogInterval(cfg config.RocketPoolConfig) (*big.Int, error) {
     }
 
     return eventLogInterval, nil
+
+}
+
+
+// True if a transaction is due and needs to bypass the gas threshold
+func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time) (bool, error) {
+
+    // Get the dissolve timeout
+    timeout, err := protocol.GetMinipoolLaunchTimeout(rp, nil)
+    if err != nil {
+        return false, err
+    }
+
+    dueTime := timeout / time.Duration(TimeoutSafetyFactor)
+    return (time.Since(startTime) > dueTime), nil
 
 }

@@ -44,6 +44,7 @@ type stakePrelaunchMinipools struct {
     rp *rocketpool.RocketPool
     bc beacon.Client
     d *client.Client
+    gasThreshold float64
     maxFee *big.Int
     maxPriorityFee *big.Int
     gasLimit uint64
@@ -64,6 +65,12 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
     if err != nil { return nil, err }
     d, err := services.GetDocker(c)
     if err != nil { return nil, err }
+
+    // Check if auto-staking is disabled
+    gasThreshold := cfg.Smartnode.RplClaimGasThreshold
+    if gasThreshold == 0 {
+        logger.Println("RPL claim gas threshold is set to 0, automatic staking of prelaunch minipools will be disabled.")
+    }
 
     // Get the user-requested max fee
     maxFee, err := cfg.GetMaxFee()
@@ -96,6 +103,7 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
         rp: rp,
         bc: bc,
         d: d,
+        gasThreshold: gasThreshold,
         maxFee: maxFee,
         maxPriorityFee: maxPriorityFee,
         gasLimit: gasLimit,
@@ -285,8 +293,21 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
     }
     
     // Print the gas info
-    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
-        return nil
+    if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+        // Check for the timeout buffer
+        prelaunchTime, err := mp.GetStatusTime(nil)
+        if err != nil {
+            t.log.Printlnf("Error checking minipool launch time: %s\nStaking now for safety...", err.Error())
+        }
+        isDue, err := api.IsTransactionDue(t.rp, prelaunchTime)
+        if err != nil {
+            t.log.Printlnf("Error checking if minipool is due: %s\nStaking now for safety...", err.Error())
+        }
+        if !isDue {
+            return nil
+        } else {
+            t.log.Println("NOTICE: The minipool has exceeded half of the timeout period, so it will be force-staked at the current gas price.")
+        }
     }
 
     opts.GasFeeCap = maxFee
