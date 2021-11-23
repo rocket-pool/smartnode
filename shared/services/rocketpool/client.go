@@ -10,6 +10,7 @@ import (
 	"os"
 	osUser "os/user"
 	"strings"
+	"time"
 
 	"github.com/a8m/envsubst"
 	"github.com/fatih/color"
@@ -48,10 +49,14 @@ const (
 type Client struct {
     configPath string
     daemonPath string
-    gasPrice string
-    gasLimit string
+    maxFee float64
+    maxPrioFee float64
+    gasLimit uint64
     customNonce uint64
     client *ssh.Client
+    originalMaxFee float64
+    originalMaxPrioFee float64
+    originalGasLimit uint64
 }
 
 
@@ -64,14 +69,15 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
                      c.GlobalString("key"), 
                      c.GlobalString("passphrase"),
                      c.GlobalString("known-hosts"),
-                     c.GlobalString("gasPrice"),
-                     c.GlobalString("gasLimit"),
+                     c.GlobalFloat64("maxFee"),
+                     c.GlobalFloat64("maxPrioFee"),
+                     c.GlobalUint64("gasLimit"),
                      c.GlobalUint64("nonce"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePath, knownhostsFile, gasPrice, gasLimit string, customNonce uint64) (*Client, error) {
+func NewClient(configPath string, daemonPath string, hostAddress string, user string, keyPath string, passphrasePath string, knownhostsFile string, maxFee float64, maxPrioFee float64, gasLimit uint64, customNonce uint64) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -142,8 +148,12 @@ func NewClient(configPath, daemonPath, hostAddress, user, keyPath, passphrasePat
     return &Client{
         configPath: os.ExpandEnv(configPath),
         daemonPath: os.ExpandEnv(daemonPath),
-        gasPrice: gasPrice,
+        maxFee: maxFee,
+        maxPrioFee: maxPrioFee,
         gasLimit: gasLimit,
+        originalMaxFee: maxFee,
+        originalMaxPrioFee: maxPrioFee,
+        originalGasLimit: gasLimit,
         customNonce: customNonce,
         client: sshClient,
     }, nil
@@ -455,6 +465,80 @@ func (c *Client) IncrementCustomNonce() {
 }
 
 
+// Get the current Docker image used by the given container
+func (c *Client) GetDockerImage(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker container inspect --format={{.Config.Image}} %s", container)
+    image, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+
+    return strings.TrimSpace(string(image)), nil
+
+}
+
+
+// Get the current Docker image used by the given container
+func (c *Client) GetDockerStatus(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker container inspect --format={{.State.Status}} %s", container)
+    status, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+
+    return strings.TrimSpace(string(status)), nil
+
+}
+
+
+// Get the time that the given container shut down
+func (c *Client) GetDockerContainerShutdownTime(container string) (time.Time, error) {
+
+    cmd := fmt.Sprintf("docker container inspect --format={{.State.FinishedAt}} %s", container)
+    finishTimeBytes, err := c.readOutput(cmd)
+    if err != nil {
+        return time.Time{}, err
+    }
+
+    finishTime, err := time.Parse(time.RFC3339, strings.TrimSpace(string(finishTimeBytes)))
+    if err != nil {
+        return time.Time{}, fmt.Errorf("Error parsing validator container exit time [%s]: %w", string(finishTimeBytes), err)
+    }
+
+    return finishTime, nil
+    
+}
+
+
+// Shut down a container
+func (c *Client) StopContainer(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker stop %s", container)
+    output, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(output)), nil
+    
+}
+
+
+// Get the gas settings
+func (c *Client) GetGasSettings() (float64, float64, uint64) {
+    return c.maxFee, c.maxPrioFee, c.gasLimit
+}
+
+
+// Get the gas fees
+func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit uint64) {
+    c.maxFee = maxFee
+    c.maxPrioFee = maxPrioFee
+    c.gasLimit = gasLimit
+}
+
+
 // Load a config file
 func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
     expandedPath, err := homedir.Expand(path)
@@ -658,7 +742,14 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
             c.getCustomNonce(),
             args)
     }
-    return c.readOutput(cmd)
+    output, err := c.readOutput(cmd)
+
+    // Reset the gas settings after the call
+    c.maxFee = c.originalMaxFee
+    c.maxPrioFee = c.originalMaxPrioFee
+    c.gasLimit = c.originalGasLimit
+
+    return output, err
 }
 
 
@@ -678,12 +769,9 @@ func (c *Client) getAPIContainerName() (string, error) {
 // Get gas price & limit flags
 func (c *Client) getGasOpts() string {
     var opts string
-    if c.gasPrice != "" {
-        opts += fmt.Sprintf("--gasPrice %s ", shellescape.Quote(c.gasPrice))
-    }
-    if c.gasLimit != "" {
-        opts += fmt.Sprintf("--gasLimit %s ", shellescape.Quote(c.gasLimit))
-    }
+    opts += fmt.Sprintf("--maxFee %f ", c.maxFee)
+    opts += fmt.Sprintf("--maxPrioFee %f ", c.maxPrioFee)
+    opts += fmt.Sprintf("--gasLimit %d ", c.gasLimit)
     return opts
 }
 

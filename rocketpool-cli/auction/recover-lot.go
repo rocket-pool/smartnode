@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -106,8 +107,11 @@ func recoverRplFromLot(c *cli.Context) error {
     gasInfo.EstGasLimit = totalGas
     gasInfo.SafeGasLimit = totalSafeGas
 
-    // Display gas estimate
-    rp.PrintGasInfo(gasInfo)
+    // Assign max fees
+    err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to recover %d lots?", len(selectedLots)))) {

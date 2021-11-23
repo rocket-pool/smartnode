@@ -85,7 +85,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
     // Get cumulative rewards
     wg.Go(func() error {
-        rewards, err := rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, eventLogInterval)
+        rewards, err := rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, eventLogInterval, nil)
         if err == nil {
             response.CumulativeRewards = eth.WeiToEth(rewards)
         }
@@ -183,6 +183,9 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     rewardsIntervalDays := response.RewardsInterval.Seconds() / (60*60*24)
     inflationPerDay := eth.WeiToEth(inflationInterval)
     totalRplAtNextCheckpoint := (math.Pow(inflationPerDay, float64(rewardsIntervalDays)) - 1) * eth.WeiToEth(totalRplSupply)
+    if totalRplAtNextCheckpoint < 0 {
+        totalRplAtNextCheckpoint = 0
+    }
 
     if totalEffectiveStake.Cmp(big.NewInt(0)) == 1 {
         response.EstimatedRewards = response.EffectiveRplStake / eth.WeiToEth(totalEffectiveStake) * totalRplAtNextCheckpoint * nodeOperatorRewardsPercent
@@ -203,7 +206,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
         // Get cumulative ODAO rewards
         wg2.Go(func() error {
-            rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, eventLogInterval)
+            rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, eventLogInterval, nil)
             if err == nil {
                 response.CumulativeTrustedRewards = eth.WeiToEth(rewards)
             }

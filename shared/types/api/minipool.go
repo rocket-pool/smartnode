@@ -16,6 +16,7 @@ type MinipoolStatusResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     Minipools []MinipoolDetails     `json:"minipools"`
+    LatestDelegate common.Address   `json:"latestDelegate"`
 }
 type MinipoolDetails struct {
     Address common.Address                  `json:"address"`

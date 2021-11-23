@@ -2,13 +2,16 @@ package node
 
 import (
 	"fmt"
+    "time"
 
-	"github.com/urfave/cli"
+    "github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
+// Settings
+var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
 
 func getSyncProgress(c *cli.Context) error {
 
@@ -53,7 +56,12 @@ func getSyncProgress(c *cli.Context) error {
 
     // Print eth1 status
     if status.Eth1Synced {
-        fmt.Print("Your eth1 client is fully synced.\n")
+        if status.Eth1LatestBlockTime + uint64(ethClientRecentBlockThreshold.Seconds()) > uint64(time.Now().Unix()) {
+            fmt.Print("Your eth1 client is fully synced.\n")
+        } else {
+            duration := time.Now().Sub(time.Unix(int64(status.Eth1LatestBlockTime), 0))
+            fmt.Printf("Your eth1 client is reporting as fully synced but its latest known block was from %s ago; it likely doesn't have enough peers yet.\n", duration)
+        }
     } else {
         fmt.Printf("Your eth1 client is still syncing (%0.2f%%).\n", status.Eth1Progress * 100)
     }

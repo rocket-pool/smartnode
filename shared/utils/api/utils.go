@@ -15,21 +15,15 @@ import (
 )
 
 // Print the gas price and cost of a TX
-func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThreshold float64, logger log.ColorLogger) (bool) {
-
-    // Use the requested gas price if provided
-    gasPrice := gasInfo.ReqGasPrice
-    if gasPrice == nil {
-        gasPrice = gasInfo.EstGasPrice
-    }
+func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasThreshold float64, logger log.ColorLogger, maxFee *big.Int, gasLimit uint64) (bool) {
 
     // Check the gas threshold if requested
     if checkThreshold {
         gasThresholdGwei := math.RoundUp(gasThreshold * eth.WeiPerGwei, 0)
         gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdGwei))
-        if gasPrice.Cmp(gasThreshold) != -1 {
+        if maxFee.Cmp(gasThreshold) != -1 {
             logger.Printlnf("Current network gas price is %.6f Gwei, which is higher than the set threshold of %.6f Gwei. " + 
-                "Aborting the transaction.", eth.WeiToGwei(gasInfo.EstGasPrice), eth.WeiToGwei(gasThreshold))
+                "Aborting the transaction.", eth.WeiToGwei(maxFee), eth.WeiToGwei(gasThreshold))
             return false
         } 
     } else {
@@ -39,17 +33,17 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
     // Print the total TX cost
     var gas *big.Int 
     var safeGas *big.Int 
-    if gasInfo.ReqGasLimit != 0 {
-        gas = new(big.Int).SetUint64(gasInfo.ReqGasLimit)
+    if gasLimit != 0 {
+        gas = new(big.Int).SetUint64(gasLimit)
         safeGas = gas
     } else {
         gas = new(big.Int).SetUint64(gasInfo.EstGasLimit)
         safeGas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
     }
-    totalGasWei := new(big.Int).Mul(gasPrice, gas)
-    totalSafeGasWei := new(big.Int).Mul(gasPrice, safeGas)
+    totalGasWei := new(big.Int).Mul(maxFee, gas)
+    totalSafeGasWei := new(big.Int).Mul(maxFee, safeGas)
     logger.Printlnf("This transaction will use a gas price of %.6f Gwei, for a total of %.6f to %.6f ETH.",
-        eth.WeiToGwei(gasPrice),
+        eth.WeiToGwei(maxFee),
         math.RoundDown(eth.WeiToEth(totalGasWei), 6),
         math.RoundDown(eth.WeiToEth(totalSafeGasWei), 6))
         

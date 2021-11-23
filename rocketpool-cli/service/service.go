@@ -2,12 +2,21 @@ package service
 
 import (
 	"fmt"
+	"regexp"
+	"time"
 
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
+
+const dockerImageRegex string = ".*/(?P<image>.*):.*"
+const colorReset string = "\033[0m"
+const colorRed string = "\033[31m"
+const colorYellow string = "\033[33m"
+const clearLine string = "\033[2K"
 
 // Install the Rocket Pool service
 func installService(c *cli.Context) error {
@@ -140,9 +149,162 @@ func startService(c *cli.Context) error {
         }
     }
 
+    if !c.Bool("ignore-slash-timer") {
+        // Do the client swap check
+        err := checkForValidatorChange(rp, userConfig)
+        if err != nil {
+            fmt.Printf("%sWarning: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
+            fmt.Println("If you are changing to a different ETH2 client, it may resubmit an attestation you have already submitted.")
+            fmt.Println("This will slash your validator!")
+            fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.\n")
+            fmt.Println("**If you did NOT change clients, you can safely ignore this warning.**\n")
+            if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+                fmt.Println("Cancelled.")
+                return nil
+            }
+        }
+    } else {
+        fmt.Printf("%sIgnoring anti-slashing safety delay.%s\n", colorYellow, colorReset)
+    }
+
     // Start service
     return rp.StartService(getComposeFiles(c))
 
+}
+
+
+func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPoolConfig) (error) {
+
+    // Get the current validator client
+    currentValidatorImageString, err := rp.GetDockerImage("rocketpool_validator")
+    currentValidatorName, err := getDockerImageName(currentValidatorImageString)
+    if err != nil {
+        return fmt.Errorf("Error getting current validator image name: %w", err)
+    }
+
+    // Get the new validator client according to the settings file
+    globalConfig, err := rp.LoadGlobalConfig()
+    if err != nil {
+        return fmt.Errorf("Error loading global settings: %w", err)
+    }
+    newClient := globalConfig.Chains.Eth2.GetClientById(userConfig.Chains.Eth2.Client.Selected)
+    pendingValidatorImageString := newClient.GetValidatorImage()
+    pendingValidatorName, err := getDockerImageName(pendingValidatorImageString)
+    if err != nil {
+        return fmt.Errorf("Error getting pending validator image name: %w", err)
+    }
+
+    // Compare the clients and warn if necessary
+    if currentValidatorName == pendingValidatorName {
+        fmt.Printf("Validator client [%s] was previously used - no slashing prevention delay necessary.\n", currentValidatorName)
+    } else if currentValidatorName == "" {
+        fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
+    } else {
+
+        // Get the time that the container responsible for validator duties exited
+        validatorDutyContainerName := getContainerNameForValidatorDuties(currentValidatorName, rp)
+        validatorFinishTime, err := rp.GetDockerContainerShutdownTime(validatorDutyContainerName)
+        if err != nil {
+            return fmt.Errorf("Error getting validator shutdown time: %w", err)
+        }
+
+        // If it hasn't exited yet, shut it down
+        zeroTime := time.Time{}
+        status, err := rp.GetDockerStatus(validatorDutyContainerName)
+        if err != nil {
+            return fmt.Errorf("Error getting container [%s] status: %w", validatorDutyContainerName, err)
+        }
+        if validatorFinishTime == zeroTime || status == "running" {
+            fmt.Printf("%sValidator is currently running, stopping it...%s\n", colorYellow, colorReset)
+            response, err := rp.StopContainer(validatorDutyContainerName)
+            validatorFinishTime = time.Now()
+            if err != nil {
+                return fmt.Errorf("Error stopping container [%s]: %w", validatorDutyContainerName, err)
+            }
+            if response != validatorDutyContainerName {
+                return fmt.Errorf("Unexpected response when stopping container [%s]: %s", validatorDutyContainerName, response)
+            }
+        }
+
+        // Print the warning and start the time lockout
+        safeStartTime := validatorFinishTime.Add(15 * time.Minute)
+        remainingTime := time.Until(safeStartTime)
+        if remainingTime <= 0 {
+            fmt.Printf("The validator has been offline for %s, which is long enough to prevent slashing.\n", time.Since(validatorFinishTime))
+            fmt.Println("The new client can be safely started.")
+        } else {
+            fmt.Printf("%s=== WARNING ===\n", colorRed)
+            fmt.Printf("You have changed your validator client from %s to %s.\n", currentValidatorName, pendingValidatorName)
+            fmt.Println("If you have active validators, starting the new client immediately will cause them to be slashed due to duplicate attestations!")
+            fmt.Println("To prevent slashing, Rocket Pool will delay activating the new client for 15 minutes.")
+            fmt.Printf("If you want to bypass this cooldown and understand the risks, rerun this command with the `--ignore-slash-timer` flag.%s\n\n", colorReset)
+
+            // Wait for 15 minutes
+            for remainingTime > 0 {
+                fmt.Printf("Remaining time: %s", remainingTime)
+                time.Sleep(1 * time.Second)
+                remainingTime = time.Until(safeStartTime)
+                fmt.Printf("%s\r", clearLine)
+            }
+
+            fmt.Println(colorReset)
+            fmt.Println("You may now safely start the validator without fear of being slashed.")
+        }
+    }
+
+    return nil
+}
+
+
+// Get the name of the container responsible for validator duties based on the client name
+// TODO: this is temporary and can change, clean it up when Nimbus supports split mode
+func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *rocketpool.Client) (string) {
+
+    if (CurrentValidatorClientName == "nimbus") {
+        return "rocketpool_eth2"
+    } else {
+        return "rocketpool_validator"
+    }
+
+}
+
+
+// Get the time that the container responsible for validator duties exited
+func getValidatorFinishTime(CurrentValidatorClientName string, rp *rocketpool.Client) (time.Time, error) {
+
+    var validatorFinishTime time.Time
+    var err error
+    if (CurrentValidatorClientName == "nimbus") {
+        validatorFinishTime, err = rp.GetDockerContainerShutdownTime("rocketpool_eth2")
+    } else {
+        validatorFinishTime, err = rp.GetDockerContainerShutdownTime("rocketpool_validator")
+    }
+
+    return validatorFinishTime, err
+
+}
+
+
+// Extract the image name from a Docker image string
+func getDockerImageName(imageString string) (string, error) {
+
+    // Return the empty string if the validator didn't exist (probably because this is the first time starting it up)
+    if imageString == "" {
+        return "", nil
+    }
+
+    reg := regexp.MustCompile(dockerImageRegex)
+    matches := reg.FindStringSubmatch(imageString)
+    if matches == nil {
+        return "", fmt.Errorf("Couldn't parse the Docker image string [%s]", imageString)
+    }
+    imageIndex := reg.SubexpIndex("image")
+    if imageIndex == -1 {
+        return "", fmt.Errorf("Image name not found in Docker image [%s]", imageString)
+    }
+
+    imageName := matches[imageIndex]
+    return imageName, nil
 }
 
 

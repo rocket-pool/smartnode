@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -174,8 +175,11 @@ func nodeDeposit(c *cli.Context) error {
         }
     }
 
-    // Display gas estimate
-    rp.PrintGasInfo(canDeposit.GasInfo)
+    // Assign max fees
+    err = gas.AssignMaxFeeAndLimit(canDeposit.GasInfo, rp, c.Bool("yes"))
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
@@ -204,9 +208,9 @@ func nodeDeposit(c *cli.Context) error {
     }
 
     // Log & return
-    fmt.Printf("The node deposit of %.6f ETH was made successfully.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
-    fmt.Printf("Your new minipool's address is %s.\n", response.MinipoolAddress)
-    fmt.Printf("The validator pubkey is %s.\n\n", response.ValidatorPubkey.Hex())
+    fmt.Printf("The node deposit of %.6f ETH was made successfully!\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
+    fmt.Printf("Your new minipool's address is: %s\n", response.MinipoolAddress)
+    fmt.Printf("The validator pubkey is: %s\n\n", response.ValidatorPubkey.Hex())
 
     fmt.Printf("This minipool will move from prelaunch to staking status in %s.\n", response.ScrubPeriod)
 

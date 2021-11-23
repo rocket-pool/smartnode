@@ -20,9 +20,11 @@ import (
 	"github.com/urfave/cli"
 
 	ethpb "github.com/prysmaticlabs/prysm/v2/proto/prysm/v1alpha1"
+	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -46,6 +48,10 @@ type submitScrubMinipools struct {
     ec *ethclient.Client 
     bc beacon.Client
     it *iterationData
+    coll *collectors.ScrubCollector
+    maxFee *big.Int
+    maxPriorityFee *big.Int
+    gasLimit uint64
 }
 
 
@@ -79,7 +85,7 @@ type minipoolDetails struct {
 
 
 // Create submit scrub minipools task
-func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger) (*submitScrubMinipools, error) {
+func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, coll *collectors.ScrubCollector) (*submitScrubMinipools, error) {
 
     // Get services
     cfg, err := services.GetConfig(c)
@@ -93,6 +99,28 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger) (*submitScr
     bc, err := services.GetBeaconClient(c)
     if err != nil { return nil, err }
 
+    // Get the user-requested max fee
+    maxFee, err := cfg.GetMaxFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max fee in configuration: %w", err)
+    }
+
+    // Get the user-requested max fee
+    maxPriorityFee, err := cfg.GetMaxPriorityFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max priority fee in configuration: %w", err)
+    }
+    if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+        logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.");
+        maxPriorityFee = big.NewInt(2)
+    }
+
+    // Get the user-requested gas limit
+    gasLimit, err := cfg.GetGasLimit()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting gas limit in configuration: %w", err)
+    }
+
     // Return task
     return &submitScrubMinipools{
         c: c,
@@ -102,6 +130,10 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger) (*submitScr
         rp: rp,
         ec: ec,
         bc: bc,
+        coll: coll,
+        maxFee: maxFee,
+        maxPriorityFee: maxPriorityFee,
+        gasLimit: gasLimit,
     }, nil
 
 }
@@ -357,7 +389,7 @@ func (t *submitScrubMinipools) verifyPrestakeEvents() () {
         // Get the MinipoolPrestaked event
         prestakeData, err := minipool.GetPrestakeEvent(t.it.eventLogInterval, nil)
         if err != nil {
-            t.log.Printf("Error getting prestake event for minipool %s: %s", minipool.Address.Hex(), err.Error())
+            t.log.Printlnf("Error getting prestake event for minipool %s: %s", minipool.Address.Hex(), err.Error())
             continue
         }
 
@@ -515,7 +547,7 @@ func (t *submitScrubMinipools) checkSafetyScrub() (error) {
         // Get the minipool's status
         statusDetails, err := minipool.GetStatusDetails(nil)
         if err != nil {
-            t.log.Printf("Error getting status for minipool %s: %s", minipool.Address.Hex(), err.Error())
+            t.log.Printlnf("Error getting status for minipool %s: %s", minipool.Address.Hex(), err.Error())
             continue
         }
 
@@ -564,14 +596,35 @@ func (t *submitScrubMinipools) submitVoteScrubMinipool(mp *minipool.Minipool) er
         return err
     }
 
-    // Get the gas estimates
+    // Get the gas limit
     gasInfo, err := mp.EstimateVoteScrubGas(opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to voteScrub the minipool: %w", err)
     }
-    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+    var gas *big.Int 
+    if t.gasLimit != 0 {
+        gas = new(big.Int).SetUint64(t.gasLimit)
+    } else {
+        gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+    }
+
+    // Get the max fee
+    maxFee := t.maxFee
+    if maxFee == nil || maxFee.Uint64() == 0 {
+        maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+        if err != nil {
+            return err
+        }
+    }
+
+    // Print the gas info
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
         return nil
     }
+
+    opts.GasFeeCap = maxFee
+    opts.GasTipCap = t.maxPriorityFee
+    opts.GasLimit = gas.Uint64()
 
     // Dissolve
     hash, err := mp.VoteScrub(opts)
@@ -605,5 +658,21 @@ func (t *submitScrubMinipools) printFinalTally() {
     t.log.Printlnf("\tPools without deposits: %d", t.it.unknownMinipools)
     t.log.Printlnf("\tRemaining uncovered minipools: %d", len(t.it.minipools))
 
+    // Update the metrics collector
+    if t.coll != nil {
+        t.coll.UpdateLock.Lock()
+        defer t.coll.UpdateLock.Unlock()
+        
+        t.coll.TotalMinipools = float64(t.it.totalMinipools)
+        t.coll.GoodOnBeaconCount = float64(t.it.goodOnBeaconCount)
+        t.coll.BadOnBeaconCount = float64(t.it.badOnBeaconCount)
+        t.coll.GoodPrestakeCount = float64(t.it.goodPrestakeCount)
+        t.coll.BadPrestakeCount = float64(t.it.badPrestakeCount)
+        t.coll.GoodOnDepositContract = float64(t.it.goodOnDepositContract)
+        t.coll.BadOnDepositContract = float64(t.it.badOnDepositContract)
+        t.coll.DepositlessMinipools = float64(t.it.unknownMinipools)
+        t.coll.UncoveredMinipools = float64(len(t.it.minipools))
+        t.coll.LatestBlockTime = float64(t.it.latestBlockTime.Unix())
+    }
 }
 

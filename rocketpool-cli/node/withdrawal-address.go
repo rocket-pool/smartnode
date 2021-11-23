@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -44,38 +45,43 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
         return err
     }
 
-    // Prompt for a test transaction
-    if cliutils.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
-        inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddress), "^\\d+(\\.\\d+)?$", "Invalid amount")
-        testAmount, err := strconv.ParseFloat(inputAmount, 64)
-        if err != nil {
-            return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
+    if confirm {
+        // Prompt for a test transaction
+        if cliutils.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
+            inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddress), "^\\d+(\\.\\d+)?$", "Invalid amount")
+            testAmount, err := strconv.ParseFloat(inputAmount, 64)
+            if err != nil {
+                return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
+            }
+            amountWei := eth.EthToWei(testAmount)
+            response, err := rp.NodeSend(amountWei, "eth", withdrawalAddress)
+            if err != nil {
+                return err
+            }
+    
+            if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddress)) {
+                fmt.Println("Cancelled.")
+                return nil
+            }
+    
+            fmt.Printf("Sending ETH to %s...\n", withdrawalAddress.Hex())
+            cliutils.PrintTransactionHash(rp, response.TxHash)
+            if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+                return err
+            }
+    
+            fmt.Printf("Successfully sent the test transaction.\nPlease verify that your withdrawal address received it before confirming it below.\n\n")
         }
-        amountWei := eth.EthToWei(testAmount)
-        response, err := rp.NodeSend(amountWei, "eth", withdrawalAddress)
-        if err != nil {
-            return err
-        }
-
-        if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddress)) {
-            fmt.Println("Cancelled.")
-            return nil
-        }
-
-        fmt.Printf("Sending ETH to %s...\n", withdrawalAddress.Hex())
-        cliutils.PrintTransactionHash(rp, response.TxHash)
-        if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-            return err
-        }
-
-        fmt.Printf("Successfully sent the test transaction.\nPlease verify that your withdrawal address received it before confirming it below.\n\n")
     }
 
-    // Display gas estimate
-    rp.PrintGasInfo(canResponse.GasInfo)
+    // Assign max fees
+    err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
-    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s?", withdrawalAddress.Hex())) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s?", withdrawalAddress.Hex()))) {
         fmt.Println("Cancelled.")
         return nil
     }
@@ -127,11 +133,14 @@ func confirmWithdrawalAddress(c *cli.Context) error {
         return err
     }
 
-    // Display gas estimate
-    rp.PrintGasInfo(canResponse.GasInfo)
+    // Assign max fees
+    err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
-    if !cliutils.Confirm(fmt.Sprintf("Are you sure you want to confirm your node's address as the new withdrawal address?")) {
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to confirm your node's address as the new withdrawal address?"))) {
         fmt.Println("Cancelled.")
         return nil
     }

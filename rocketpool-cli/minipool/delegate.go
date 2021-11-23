@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 
 	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -79,8 +80,11 @@ func delegateUpgradeMinipools(c *cli.Context) error {
     gasInfo.EstGasLimit = totalGas
     gasInfo.SafeGasLimit = totalSafeGas
 
-    // Display gas estimate
-    rp.PrintGasInfo(gasInfo)
+    // Assign max fees
+    err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to upgrade %d minipools?", len(selectedMinipools)))) {
@@ -178,8 +182,11 @@ func delegateRollbackMinipools(c *cli.Context) error {
     gasInfo.EstGasLimit = totalGas
     gasInfo.SafeGasLimit = totalSafeGas
 
-    // Display gas estimate
-    rp.PrintGasInfo(gasInfo)
+    // Assign max fees
+    err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to rollback %d minipools?", len(selectedMinipools)))) {
@@ -276,8 +283,11 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
     gasInfo.EstGasLimit = totalGas
     gasInfo.SafeGasLimit = totalSafeGas
 
-    // Display gas estimate
-    rp.PrintGasInfo(gasInfo)
+    // Assign max fees
+    err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to change the auto-upgrade setting for %d minipools to %t?", len(selectedMinipools), setting))) {

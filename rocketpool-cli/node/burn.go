@@ -6,6 +6,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -38,8 +39,11 @@ func nodeBurn(c *cli.Context, amount float64, token string) error {
         return nil
     }
 
-    // Display gas estimate
-    rp.PrintGasInfo(canBurn.GasInfo)
+    // Assign max fees
+    err = gas.AssignMaxFeeAndLimit(canBurn.GasInfo, rp, c.Bool("yes"))
+    if err != nil{
+        return err
+    }
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to burn %.6f %s for ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6), token))) {

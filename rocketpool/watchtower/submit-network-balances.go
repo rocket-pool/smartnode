@@ -24,6 +24,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
@@ -34,6 +35,8 @@ import (
 
 // Settings
 const MinipoolBalanceDetailsBatchSize = 20
+const SubmitFollowDistanceBalances = 2
+const ConfirmDistanceBalances = 30
 
 
 // Submit network balances task
@@ -45,6 +48,9 @@ type submitNetworkBalances struct {
     ec *ethclient.Client
     rp *rocketpool.RocketPool
     bc beacon.Client
+    maxFee *big.Int
+    maxPriorityFee *big.Int
+    gasLimit uint64
 }
 
 
@@ -78,6 +84,28 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNe
     bc, err := services.GetBeaconClient(c)
     if err != nil { return nil, err }
 
+    // Get the user-requested max fee
+    maxFee, err := cfg.GetMaxFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max fee in configuration: %w", err)
+    }
+
+    // Get the user-requested max fee
+    maxPriorityFee, err := cfg.GetMaxPriorityFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max priority fee in configuration: %w", err)
+    }
+    if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+        logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.");
+        maxPriorityFee = big.NewInt(2)
+    }
+
+    // Get the user-requested gas limit
+    gasLimit, err := cfg.GetGasLimit()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting gas limit in configuration: %w", err)
+    }
+
     // Return task
     return &submitNetworkBalances{
         c: c,
@@ -87,6 +115,9 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNe
         ec: ec,
         rp: rp,
         bc: bc,
+        maxFee: maxFee,
+        maxPriorityFee: maxPriorityFee,
+        gasLimit: gasLimit,
     }, nil
 
 }
@@ -145,13 +176,33 @@ func (t *submitNetworkBalances) run() error {
         return err
     }
 
-    // Check if balances for block can be submitted by node
-    canSubmit, err := t.canSubmitBlockBalances(nodeAccount.Address, blockNumber)
+    // Allow some blocks to pass in case of a short reorg
+    currentBlockNumber, err := t.ec.BlockNumber(context.Background())
     if err != nil {
         return err
     }
-    if !canSubmit {
+    if blockNumber + SubmitFollowDistanceBalances > currentBlockNumber {
         return nil
+    }
+
+    // Check if a submission needs to be made
+    balancesBlock, err := network.GetBalancesBlock(t.rp, nil)
+    if err != nil {
+        return err
+    }
+    if blockNumber <= balancesBlock {
+        return nil
+    }
+
+    // If confirm distance has passed, we just want to ensure we have submitted and then early exit
+    if blockNumber + ConfirmDistanceBalances <= currentBlockNumber {
+        hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAccount.Address, blockNumber)
+        if err != nil {
+            return err
+        }
+        if hasSubmitted {
+            return nil
+        }
     }
 
     // Log
@@ -169,6 +220,27 @@ func (t *submitNetworkBalances) run() error {
     t.log.Printlnf("Staking minipool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.MinipoolsStaking), 6))
     t.log.Printlnf("rETH contract balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.RETHContract), 6))
     t.log.Printlnf("rETH token supply: %.6f rETH", math.RoundDown(eth.WeiToEth(balances.RETHSupply), 6))
+
+    // Check if we have reported these specific values before
+    hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, blockNumber, balances)
+    if err != nil {
+        return err
+    }
+    if hasSubmittedSpecific {
+        return nil
+    }
+
+    // We haven't submitted these values, check if we've submitted any for this block so we can log it
+    hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAccount.Address, blockNumber)
+    if err != nil {
+        return err
+    }
+    if hasSubmitted {
+        t.log.Printlnf("Have previously submitted out-of-date balances for block $d, trying again...", blockNumber)
+    }
+
+    // Log
+    t.log.Println("Submitting balances...")
 
     // Submit balances
     if err := t.submitBalances(balances); err != nil {
@@ -198,35 +270,38 @@ func (t *submitNetworkBalances) getLatestReportableBlock() (uint64, error) {
 }
 
 
-// Check whether balances for a block can be submitted by the node
-func (t *submitNetworkBalances) canSubmitBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
+// Check whether balances for a block has already been submitted by the node
+func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
 
-    // Data
-    var wg errgroup.Group
-    var currentBalancesBlock uint64
-    var nodeSubmittedBlock bool
+    blockNumberBuf := make([]byte, 32)
+    big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+    return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
 
-    // Get data
-    wg.Go(func() error {
-        var err error
-        currentBalancesBlock, err = network.GetBalancesBlock(t.rp, nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        blockNumberBuf := make([]byte, 32)
-        big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-        nodeSubmittedBlock, err = t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
-        return err
-    })
+}
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return false, err
-    }
 
-    // Return
-    return (blockNumber > currentBalancesBlock && !nodeSubmittedBlock), nil
+// Check whether specific balances for a block has already been submitted by the node
+func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
+
+    // Calculate total ETH balance
+    totalEth := big.NewInt(0)
+    totalEth.Add(totalEth, balances.DepositPool)
+    totalEth.Add(totalEth, balances.MinipoolsTotal)
+    totalEth.Add(totalEth, balances.RETHContract)
+
+    blockNumberBuf := make([]byte, 32)
+    big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+
+    totalEthBuf := make([]byte, 32)
+    totalEth.FillBytes(totalEthBuf)
+
+    stakingBuf := make([]byte, 32)
+    balances.MinipoolsStaking.FillBytes(stakingBuf)
+
+    rethSupplyBuf := make([]byte, 32)
+    balances.RETHSupply.FillBytes(rethSupplyBuf)
+
+    return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.balances.submitted.node"), nodeAddress.Bytes(), blockNumberBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
 
 }
 
@@ -523,14 +598,35 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
         return err
     }
 
-    // Get the gas estimates
+    // Get the gas limit
     gasInfo, err := network.EstimateSubmitBalancesGas(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to submit network balances: %w", err)
     }
-    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+    var gas *big.Int 
+    if t.gasLimit != 0 {
+        gas = new(big.Int).SetUint64(t.gasLimit)
+    } else {
+        gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+    }
+
+    // Get the max fee
+    maxFee := t.maxFee
+    if maxFee == nil || maxFee.Uint64() == 0 {
+        maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+        if err != nil {
+            return err
+        }
+    }
+
+    // Print the gas info
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
         return nil
     }
+
+    opts.GasFeeCap = maxFee
+    opts.GasTipCap = t.maxPriorityFee
+    opts.GasLimit = gas.Uint64()
 
     // Submit balances
     hash, err := network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)

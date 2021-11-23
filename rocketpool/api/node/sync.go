@@ -3,7 +3,7 @@ package node
 import (
 	"context"
 
-	"github.com/urfave/cli"
+    "github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -56,6 +56,14 @@ func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
         response.Eth2Progress = 1
         response.Eth2Synced = true
     }
+
+    // Get eth1 latest block timestamp
+    latestBlockTime, err := services.GetEthClientLatestBlockTimestamp(c)
+    if err != nil {
+        return nil, err
+    }
+
+    response.Eth1LatestBlockTime = latestBlockTime
 
     // Return response
     return &response, nil

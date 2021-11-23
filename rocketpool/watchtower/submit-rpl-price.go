@@ -1,8 +1,11 @@
 package watchtower
 
 import (
+	"context"
 	"fmt"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,20 +22,29 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+// Settings
+const SubmitFollowDistancePrices = 2
+const ConfirmDistancePrices = 30
+
 // Submit RPL price task
 type submitRplPrice struct {
     c *cli.Context
     log log.ColorLogger
     cfg config.RocketPoolConfig
+    ec *ethclient.Client
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     oio *contracts.OneInchOracle
+    maxFee *big.Int
+    maxPriorityFee *big.Int
+    gasLimit uint64
 }
 
 
@@ -44,19 +56,47 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
     if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
     oio, err := services.GetOneInchOracle(c)
     if err != nil { return nil, err }
+
+    // Get the user-requested max fee
+    maxFee, err := cfg.GetMaxFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max fee in configuration: %w", err)
+    }
+
+    // Get the user-requested max fee
+    maxPriorityFee, err := cfg.GetMaxPriorityFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max priority fee in configuration: %w", err)
+    }
+    if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+        logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.");
+        maxPriorityFee = big.NewInt(2)
+    }
+
+    // Get the user-requested gas limit
+    gasLimit, err := cfg.GetGasLimit()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting gas limit in configuration: %w", err)
+    }
 
     // Return task
     return &submitRplPrice{
         c: c,
         log: logger,
         cfg: cfg,
+        ec: ec,
         w: w,
         rp: rp,
         oio: oio,
+        maxFee: maxFee,
+        maxPriorityFee: maxPriorityFee,
+        gasLimit: gasLimit,
     }, nil
 
 }
@@ -112,13 +152,33 @@ func (t *submitRplPrice) run() error {
         return err
     }
 
-    // Check if price for block can be submitted by node
-    canSubmit, err := t.canSubmitBlockPrice(nodeAccount.Address, blockNumber)
+    // Allow some blocks to pass in case of a short reorg
+    currentBlockNumber, err := t.ec.BlockNumber(context.Background())
     if err != nil {
         return err
     }
-    if !canSubmit {
+    if blockNumber + SubmitFollowDistancePrices > currentBlockNumber {
         return nil
+    }
+
+    // Check if a submission needs to be made
+    pricesBlock, err := network.GetPricesBlock(t.rp, nil)
+    if err != nil {
+        return err
+    }
+    if blockNumber <= pricesBlock {
+        return nil
+    }
+
+    // If confirm distance has passed, we just want to ensure we have submitted and then early exit
+    if blockNumber + ConfirmDistancePrices <= currentBlockNumber {
+        hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+        if err != nil {
+            return err
+        }
+        if hasSubmitted {
+            return nil
+        }
     }
 
     // Log
@@ -139,6 +199,27 @@ func (t *submitRplPrice) run() error {
 
     // Log
     t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
+
+    // Check if we have reported these specific values before
+    hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, blockNumber, rplPrice, effectiveRplStake)
+    if err != nil {
+        return err
+    }
+    if hasSubmittedSpecific {
+        return nil
+    }
+
+    // We haven't submitted these values, check if we've submitted any for this block so we can log it
+    hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
+    if err != nil {
+        return err
+    }
+    if hasSubmitted {
+        t.log.Printlnf("Have previously submitted out-of-date prices for block $d, trying again...", blockNumber)
+    }
+
+    // Log
+    t.log.Println("Submitting RPL price...")
 
     // Submit RPL price
     if err := t.submitRplPrice(blockNumber, rplPrice, effectiveRplStake); err != nil {
@@ -164,38 +245,33 @@ func (t *submitRplPrice) getLatestReportableBlock() (uint64, error) {
         return 0, fmt.Errorf("Error getting latest reportable block: %w", err)
     }
     return latestBlock.Uint64(), nil
+
 }
 
 
-// Check whether prices for a block can be submitted by the node
-func (t *submitRplPrice) canSubmitBlockPrice(nodeAddress common.Address, blockNumber uint64) (bool, error) {
+// Check whether prices for a block has already been submitted by the node
+func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blockNumber uint64) (bool, error) {
 
-    // Data
-    var wg errgroup.Group
-    var currentPricesBlock uint64
-    var nodeSubmittedBlock bool
+    blockNumberBuf := make([]byte, 32)
+    big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+    return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.prices.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
 
-    // Get data
-    wg.Go(func() error {
-        var err error
-        currentPricesBlock, err = network.GetPricesBlock(t.rp, nil)
-        return err
-    })
-    wg.Go(func() error {
-        var err error
-        blockNumberBuf := make([]byte, 32)
-        big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-        nodeSubmittedBlock, err = t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.prices.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
-        return err
-    })
+}
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        return false, err
-    }
 
-    // Return
-    return (blockNumber > currentPricesBlock && !nodeSubmittedBlock), nil
+// Check whether specific prices for a block has already been submitted by the node
+func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice, effectiveRplStake *big.Int) (bool, error) {
+
+    blockNumberBuf := make([]byte, 32)
+    big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+
+    rplPriceBuf := make([]byte, 32)
+    rplPrice.FillBytes(rplPriceBuf)
+
+    effectiveRplStakeBuf := make([]byte, 32)
+    effectiveRplStake.FillBytes(effectiveRplStakeBuf)
+
+    return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.prices.submitted.node"), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf, effectiveRplStakeBuf))
 
 }
 
@@ -240,14 +316,35 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
         return err
     }
 
-    // Get the gas estimates
+    // Get the gas limit
     gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
     }
-    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log) {
+    var gas *big.Int 
+    if t.gasLimit != 0 {
+        gas = new(big.Int).SetUint64(t.gasLimit)
+    } else {
+        gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+    }
+
+    // Get the max fee
+    maxFee := t.maxFee
+    if maxFee == nil || maxFee.Uint64() == 0 {
+        maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+        if err != nil {
+            return err
+        }
+    }
+
+    // Print the gas info
+    if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
         return nil
     }
+
+    opts.GasFeeCap = maxFee
+    opts.GasTipCap = t.maxPriorityFee
+    opts.GasLimit = gas.Uint64()
 
     // Submit RPL price
     hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)

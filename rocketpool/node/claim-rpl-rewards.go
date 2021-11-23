@@ -3,7 +3,6 @@ package node
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -27,6 +27,9 @@ type claimRplRewards struct {
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     gasThreshold float64
+    maxFee *big.Int
+    maxPriorityFee *big.Int
+    gasLimit uint64
 }
 
 
@@ -42,12 +45,31 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
     if err != nil { return nil, err }
 
     // Check if auto-claiming is disabled
-    gasThreshold, err := strconv.ParseFloat(cfg.Smartnode.RplClaimGasThreshold, 0)
-    if err != nil {
-        return nil, fmt.Errorf("Error parsing RPL claim gas threshold: %w", err)
-    }
+    gasThreshold := cfg.Smartnode.RplClaimGasThreshold
     if gasThreshold == 0 {
         logger.Println("RPL claim gas threshold is set to 0, automatic claims will be disabled.")
+    }
+
+    // Get the user-requested max fee
+    maxFee, err := cfg.GetMaxFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max fee in configuration: %w", err)
+    }
+
+    // Get the user-requested max fee
+    maxPriorityFee, err := cfg.GetMaxPriorityFee()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting max priority fee in configuration: %w", err)
+    }
+    if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+        logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.");
+        maxPriorityFee = big.NewInt(2)
+    }
+
+    // Get the user-requested gas limit
+    gasLimit, err := cfg.GetGasLimit()
+    if err != nil {
+        return nil, fmt.Errorf("Error getting gas limit in configuration: %w", err)
     }
 
     // Return task
@@ -58,6 +80,9 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
         w: w,
         rp: rp,
         gasThreshold: gasThreshold,
+        maxFee: maxFee,
+        maxPriorityFee: maxPriorityFee,
+        gasLimit: gasLimit,
     }, nil
 
 }
@@ -104,12 +129,29 @@ func (t *claimRplRewards) run() error {
         return err
     }
 
-    // Get the gas estimates and check the gas threshold
+    // Get the gas limit
     gasInfo, err := rewards.EstimateClaimNodeRewardsGas(t.rp, opts)
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
     }
-    if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log) {
+    var gas *big.Int 
+    if t.gasLimit != 0 {
+        gas = new(big.Int).SetUint64(t.gasLimit)
+    } else {
+        gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+    }
+
+    // Get the max fee
+    maxFee := t.maxFee
+    if maxFee == nil || maxFee.Uint64() == 0 {
+        maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+        if err != nil {
+            return err
+        }
+    }
+
+    // Check the threshold
+    if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
         return nil
     }
 
@@ -119,17 +161,7 @@ func (t *claimRplRewards) run() error {
         return err
     }
     rewardsInEth := eth.WeiToEth(rplPriceWei) * rewardsAmount
-    gasPrice := gasInfo.ReqGasPrice
-    if gasPrice == nil {
-        gasPrice = gasInfo.EstGasPrice
-    }
-    var gas *big.Int 
-    if gasInfo.ReqGasLimit != 0 {
-        gas = new(big.Int).SetUint64(gasInfo.ReqGasLimit)
-    } else {
-        gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
-    }
-    totalGasWei := new(big.Int).Mul(gasPrice, gas)
+    totalGasWei := new(big.Int).Mul(maxFee, gas)
     totalEthCost := math.RoundDown(eth.WeiToEth(totalGasWei), 6)
     
     if totalEthCost >= rewardsInEth {
@@ -137,6 +169,10 @@ func (t *claimRplRewards) run() error {
             totalEthCost, rewardsInEth)
         return nil
     }
+
+    opts.GasFeeCap = maxFee
+    opts.GasTipCap = t.maxPriorityFee
+    opts.GasLimit = gas.Uint64()
 
     // Claim rewards
     hash, err := rewards.ClaimNodeRewards(t.rp, opts)

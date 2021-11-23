@@ -202,11 +202,7 @@ func withdrawRpl(c *cli.Context) (*api.FaucetWithdrawRplResponse, error) {
 
 func estimateWithdrawGas(c *cli.Context, client *ethclient.Client, faucet *contracts.RPLFaucet, opts *bind.TransactOpts, amount *big.Int) (rocketpool.GasInfo, error) {
 
-    // Set user option for gas price and gas limit
-    response := rocketpool.GasInfo {
-        ReqGasPrice: opts.GasPrice,
-        ReqGasLimit: opts.GasLimit,
-    }
+    response := rocketpool.GasInfo{}
 
     // Get the faucet address
     config, err := services.GetConfig(c)

@@ -1,24 +1,23 @@
 package wallet
 
 import (
-    "crypto/ecdsa"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "io/ioutil"
-    "math/big"
+	"crypto/ecdsa"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"math/big"
 
-    "github.com/btcsuite/btcd/chaincfg"
-    "github.com/btcsuite/btcutil/hdkeychain"
-    "github.com/google/uuid"
-    "github.com/tyler-smith/go-bip39"
-    eth2types "github.com/wealdtech/go-eth2-types/v2"
-    eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/google/uuid"
+	"github.com/tyler-smith/go-bip39"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
-    "github.com/rocket-pool/smartnode/shared/services/passwords"
-    "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
+	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
-
 
 // Config
 const (
@@ -55,7 +54,8 @@ type Wallet struct {
     keystores map[string]keystore.Keystore
 
     // Desired gas price & limit from config
-    gasPrice *big.Int
+    maxFee *big.Int
+    maxPriorityFee *big.Int
     gasLimit uint64
 
 }
@@ -72,7 +72,7 @@ type walletStore struct {
 
 
 // Create new wallet
-func NewWallet(walletPath, chainIDStr string, gasPrice *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager) (*Wallet, error) {
+func NewWallet(walletPath, chainIDStr string, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager) (*Wallet, error) {
 
     // Parse chain ID
     chainID := new(big.Int)
@@ -89,7 +89,8 @@ func NewWallet(walletPath, chainIDStr string, gasPrice *big.Int, gasLimit uint64
         validatorKeys: map[uint]*eth2types.BLSPrivateKey{},
         validatorKeyIndices: map[string]uint{},
         keystores: map[string]keystore.Keystore{},
-        gasPrice: gasPrice,
+        maxFee: maxFee,
+        maxPriorityFee: maxPriorityFee,
         gasLimit: gasLimit,
     }
 
@@ -101,6 +102,13 @@ func NewWallet(walletPath, chainIDStr string, gasPrice *big.Int, gasLimit uint64
     // Return
     return w, nil
 
+}
+
+
+// Gets the wallet's chain ID
+func (w *Wallet) GetChainID() (*big.Int) {
+    copy := big.NewInt(0).Set(w.chainID)
+    return copy
 }
 
 

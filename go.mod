@@ -16,12 +16,13 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/ethereum/go-ethereum v1.10.11
-	github.com/fatih/color v1.12.0
+	github.com/ethereum/go-ethereum v1.10.12
+	github.com/fatih/color v1.13.0
 	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/herumi/bls-eth-go-binary v0.0.0-20211108015406-b5186ba08dc7 // indirect
 	github.com/imdario/mergo v0.3.12
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -30,16 +31,16 @@ require (
 	github.com/prysmaticlabs/ethereumapis v0.0.0-20200729044127-8027cc96e2c0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
-	github.com/rocket-pool/rocketpool-go v1.0.5-0.20211025064616-aefeca3a0106
+	github.com/rocket-pool/rocketpool-go v1.0.9-0.20211122052252-6e17cf298991
 	github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.5
-	github.com/wealdtech/go-eth2-types/v2 v2.5.3
-	github.com/wealdtech/go-eth2-util v1.6.4
-	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.1.5
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	github.com/wealdtech/go-eth2-types/v2 v2.6.0
+	github.com/wealdtech/go-eth2-util v1.7.0
+	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.2.0
+	golang.org/x/crypto v0.0.0-20211115234514-b4de73f9ece8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
-	google.golang.org/grpc v1.40.0
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+	google.golang.org/grpc v1.42.0
 	gopkg.in/yaml.v2 v2.4.0
 )

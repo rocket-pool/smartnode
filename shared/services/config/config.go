@@ -30,9 +30,10 @@ type RocketPoolConfig struct {
         WalletPath string               `yaml:"walletPath,omitempty"`
         ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
         ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
-        GasPrice string                 `yaml:"gasPrice,omitempty"`
-        GasLimit string                 `yaml:"gasLimit,omitempty"`
-        RplClaimGasThreshold string     `yaml:"rplClaimGasThreshold,omitempty"`
+        MaxFee float64                  `yaml:"maxFee,omitempty"`
+        MaxPriorityFee float64          `yaml:"maxPriorityFee,omitempty"`
+        GasLimit uint64                 `yaml:"gasLimit,omitempty"`
+        RplClaimGasThreshold float64    `yaml:"rplClaimGasThreshold,omitempty"`
         TxWatchUrl string               `yaml:"txWatchUrl,omitempty"`
         StakeUrl string                 `yaml:"stakeUrl,omitempty"`
     }                                   `yaml:"smartnode,omitempty"`
@@ -75,6 +76,7 @@ type ClientParam struct {
     Default string                      `yaml:"default,omitempty"`
     Max string                          `yaml:"max,omitempty"`
     BlankText string                    `yaml:"blankText,omitempty"`
+    Advanced bool                       `yaml:"advanced,omitempty"`
 }
 type UserParam struct {
     Env string                          `yaml:"env,omitempty"`
@@ -108,6 +110,28 @@ func (chain *Chain) GetClientById(id string) *ClientOption {
     for _, option := range chain.Client.Options {
         if option.ID == id {
             return &option
+        }
+    }
+    return nil
+}
+
+
+// Get a client parameter by its environment variable name
+func (client *ClientOption) GetParamByEnvName(env string) *ClientParam {
+    for _, param := range client.Params {
+        if param.Env == env {
+            return &param
+        }
+    }
+    return nil
+}
+
+
+// Get a metrics parameter by its environment variable name
+func (metrics *Metrics) GetParamByEnvName(env string) *ClientParam {
+    for _, param := range metrics.Params {
+        if param.Env == env {
+            return &param
         }
     }
     return nil
@@ -282,35 +306,39 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
     config.Smartnode.PasswordPath = c.GlobalString("password")
     config.Smartnode.WalletPath = c.GlobalString("wallet")
     config.Smartnode.ValidatorKeychainPath = c.GlobalString("validatorKeychain")
-    config.Smartnode.GasPrice = c.GlobalString("gasPrice")
-    config.Smartnode.GasLimit = c.GlobalString("gasLimit")
+    config.Smartnode.MaxFee = c.GlobalFloat64("maxFee")
+    config.Smartnode.MaxPriorityFee = c.GlobalFloat64("maxPrioFee")
+    config.Smartnode.GasLimit = c.GlobalUint64("gasLimit")
     config.Chains.Eth1.Provider = c.GlobalString("eth1Provider")
     config.Chains.Eth2.Provider = c.GlobalString("eth2Provider")
     return config
 }
 
 
-// Parse and return the gas price in wei
-func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
+// Parse and return the max fee in wei
+func (config *RocketPoolConfig) GetMaxFee() (*big.Int, error) {
 
     // No gas price specified
-    if config.Smartnode.GasPrice == "" {
-        return nil, nil
-    }
-
-    // Parse gas price in gwei
-    gasPriceGwei, err := strconv.ParseFloat(config.Smartnode.GasPrice, 64)
-    if err != nil {
-        return nil, fmt.Errorf("Invalid gas price '%s': %w", config.Smartnode.GasPrice, err)
-    }
-
-    // Return nil if gas price is set to zero
-    if gasPriceGwei == 0 {
+    if config.Smartnode.MaxFee == 0 {
         return nil, nil
     }
 
     // Return gas price in wei
-    return eth.GweiToWei(gasPriceGwei), nil
+    return eth.GweiToWei(config.Smartnode.MaxFee), nil
+
+}
+
+
+// Parse and return the max priority fee in wei
+func (config *RocketPoolConfig) GetMaxPriorityFee() (*big.Int, error) {
+
+    // No gas price specified
+    if config.Smartnode.MaxPriorityFee == 0 {
+        return nil, nil
+    }
+    
+    // Return gas price in wei
+    return eth.GweiToWei(config.Smartnode.MaxPriorityFee), nil
 
 }
 
@@ -319,18 +347,12 @@ func (config *RocketPoolConfig) GetGasPrice() (*big.Int, error) {
 func (config *RocketPoolConfig) GetGasLimit() (uint64, error) {
 
     // No gas limit specified
-    if config.Smartnode.GasLimit == "" {
+    if config.Smartnode.GasLimit == 0 {
         return 0, nil
     }
 
-    // Parse gas limit
-    gasLimit, err := strconv.ParseUint(config.Smartnode.GasLimit, 10, 64)
-    if err != nil {
-        return 0, fmt.Errorf("Invalid gas limit '%s': %w", config.Smartnode.GasLimit, err)
-    }
-
     // Return
-    return gasLimit, nil
+    return config.Smartnode.GasLimit, nil
 
 }
 
