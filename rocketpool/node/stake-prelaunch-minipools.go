@@ -153,16 +153,23 @@ func (t *stakePrelaunchMinipools) run() error {
     t.log.Printlnf("%d minipool(s) are ready for staking...", len(minipools))
 
     // Stake minipools
+    successCount := 0
     for _, mp := range minipools {
-        if err := t.stakeMinipool(mp, eth2Config); err != nil {
+        success, err := t.stakeMinipool(mp, eth2Config)
+        if err != nil {
             t.log.Println(fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err))
             return err
         }
+        if success {
+            successCount++
+        }
     }
 
-    // Restart validator process
-    if err := t.restartValidator(); err != nil {
-        return err
+    // Restart validator process if any minipools were staked successfully
+    if successCount > 0 {
+        if err := t.restartValidator(); err != nil {
+            return err
+        }
     }
 
     // Return
@@ -237,7 +244,7 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 
 
 // Stake a minipool
-func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Config beacon.Eth2Config) error {
+func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Config beacon.Eth2Config) (bool, error) {
 
     // Log
     t.log.Printlnf("Staking minipool %s...", mp.Address.Hex())
@@ -245,36 +252,36 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
     // Get minipool withdrawal credentials
     withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(t.rp, mp.Address, nil)
     if err != nil {
-        return err
+        return false, err
     }
 
     // Get the validator key for the minipool
     validatorPubkey, err := minipool.GetMinipoolPubkey(t.rp, mp.Address, nil)
     if err != nil {
-        return err
+        return false, err
     }
     validatorKey, err := t.w.GetValidatorKeyByPubkey(validatorPubkey)
     if err != nil {
-        return err
+        return false, err
     }
 
     // Get validator deposit data
     depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config)
     if err != nil {
-        return err
+        return false, err
     }
 
     // Get transactor
     opts, err := t.w.GetNodeAccountTransactor()
     if err != nil {
-        return err
+        return false, err
     }
 
     // Get the gas limit
     signature := rptypes.BytesToValidatorSignature(depositData.Signature)
     gasInfo, err := mp.EstimateStakeGas(signature, depositDataRoot, opts)
     if err != nil {
-        return fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
+        return false, fmt.Errorf("Could not estimate the gas required to stake the minipool: %w", err)
     }
     var gas *big.Int 
     if t.gasLimit != 0 {
@@ -288,7 +295,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
     if maxFee == nil || maxFee.Uint64() == 0 {
         maxFee, err = rpgas.GetHeadlessMaxFeeWei()
         if err != nil {
-            return err
+            return false, err
         }
     }
     
@@ -299,12 +306,13 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
         if err != nil {
             t.log.Printlnf("Error checking minipool launch time: %s\nStaking now for safety...", err.Error())
         }
-        isDue, err := api.IsTransactionDue(t.rp, prelaunchTime)
+        isDue, timeUntilDue, err := api.IsTransactionDue(t.rp, prelaunchTime)
         if err != nil {
             t.log.Printlnf("Error checking if minipool is due: %s\nStaking now for safety...", err.Error())
         }
         if !isDue {
-            return nil
+            t.log.Printlnf("Time until staking will be forced for safety: %s", timeUntilDue)
+            return false, nil
         } else {
             t.log.Println("NOTICE: The minipool has exceeded half of the timeout period, so it will be force-staked at the current gas price.")
         }
@@ -321,20 +329,20 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
         opts,
     )
     if err != nil {
-        return err
+        return false, err
     }
 
     // Print TX info and wait for it to be mined
     err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
     if err != nil {
-        return err
+        return false, err
     }
 
     // Log
     t.log.Printlnf("Successfully staked minipool %s.", mp.Address.Hex())
 
     // Return
-    return nil
+    return true, nil
 
 }
 

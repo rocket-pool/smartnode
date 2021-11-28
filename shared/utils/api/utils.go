@@ -29,7 +29,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
         gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdWei))
         if maxFeeWei.Cmp(gasThreshold) != -1 {
             logger.Printlnf("Current network gas price is %.2f Gwei, which is higher than the set threshold of %.2f Gwei. " + 
-                "Aborting the transaction.", eth.WeiToGwei(maxFeeWei), gasThreshold)
+                "Aborting the transaction.", eth.WeiToGwei(maxFeeWei), gasThresholdGwei)
             return false
         } 
     } else {
@@ -100,15 +100,17 @@ func GetEventLogInterval(cfg config.RocketPoolConfig) (*big.Int, error) {
 
 
 // True if a transaction is due and needs to bypass the gas threshold
-func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time) (bool, error) {
+func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time) (bool, time.Duration, error) {
 
     // Get the dissolve timeout
     timeout, err := protocol.GetMinipoolLaunchTimeout(rp, nil)
     if err != nil {
-        return false, err
+        return false, 0, err
     }
 
     dueTime := timeout / time.Duration(TimeoutSafetyFactor)
-    return (time.Since(startTime) > dueTime), nil
+    isDue := time.Since(startTime) > dueTime
+    timeUntilDue := time.Until(startTime.Add(dueTime))
+    return isDue, timeUntilDue, nil
 
 }
