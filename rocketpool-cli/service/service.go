@@ -188,6 +188,9 @@ func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPool
         return fmt.Errorf("Error loading global settings: %w", err)
     }
     newClient := globalConfig.Chains.Eth2.GetClientById(userConfig.Chains.Eth2.Client.Selected)
+    if newClient == nil {
+        return fmt.Errorf("Error getting selected client - either it does not exist (user has not run `rocketpool service config` yet) or the selected client is invalid.")
+    }
     pendingValidatorImageString := newClient.GetValidatorImage()
     pendingValidatorName, err := getDockerImageName(pendingValidatorImageString)
     if err != nil {
