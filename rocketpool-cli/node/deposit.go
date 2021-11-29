@@ -212,7 +212,10 @@ func nodeDeposit(c *cli.Context) error {
     fmt.Printf("Your new minipool's address is: %s\n", response.MinipoolAddress)
     fmt.Printf("The validator pubkey is: %s\n\n", response.ValidatorPubkey.Hex())
 
-    fmt.Printf("This minipool will move from prelaunch to staking status in %s.\n", response.ScrubPeriod)
+    fmt.Println("Your minipool is now in Initialized status.")
+    fmt.Println("Once the 16 ETH deposit has been matched by the staking pool, it will move to Prelaunch status.")
+    fmt.Printf("After that, it will move to Staking status once %s have passed.\n", response.ScrubPeriod)
+    fmt.Println("You can watch its progress using `rocketpool service logs node`.")
 
     return nil
 
