@@ -54,8 +54,14 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
                 return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
             }
             amountWei := eth.EthToWei(testAmount)
-            response, err := rp.NodeSend(amountWei, "eth", withdrawalAddress)
+            canSendResponse, err := rp.CanNodeSend(amountWei, "eth")
             if err != nil {
+                return err
+            }
+
+            // Assign max fees
+            err = gas.AssignMaxFeeAndLimit(canSendResponse.GasInfo, rp, c.Bool("yes"))
+            if err != nil{
                 return err
             }
     
@@ -64,9 +70,14 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
                 return nil
             }
     
+            sendResponse, err := rp.NodeSend(amountWei, "eth", withdrawalAddress)
+            if err != nil {
+                return err
+            }
+
             fmt.Printf("Sending ETH to %s...\n", withdrawalAddress.Hex())
-            cliutils.PrintTransactionHash(rp, response.TxHash)
-            if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+            cliutils.PrintTransactionHash(rp, sendResponse.TxHash)
+            if _, err = rp.WaitForTransaction(sendResponse.TxHash); err != nil {
                 return err
             }
     
