@@ -742,6 +742,7 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
             c.getCustomNonce(),
             args)
     }
+    // fmt.Println(cmd)
     output, err := c.readOutput(cmd)
 
     // Reset the gas settings after the call

@@ -17,6 +17,7 @@ WORKDIR /src
 RUN apk update
 RUN apk add --no-cache build-base linux-headers
 RUN apk upgrade
+ARG CGO_CFLAGS="-O -D__BLST_PORTABLE__"
 RUN go install ./rocketpool
 
 
