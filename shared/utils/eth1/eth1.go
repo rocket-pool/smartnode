@@ -13,7 +13,7 @@ import (
 // Sets the nonce of the provided transaction options to the latest nonce if requested
 func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
 
-    customNonceString := c.String("nonce")
+    customNonceString := c.GlobalString("nonce")
     if customNonceString != "" {
         customNonce, success := big.NewInt(0).SetString(customNonceString, 0)
         if !success {
