@@ -119,6 +119,10 @@ ______           _        _    ______           _
             Name: "nonce",
             Usage: "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
         },
+        cli.BoolFlag{
+            Name:"debug",
+            Usage: "Enable debug printing of API commands",
+        },
     }
 
     // Register commands

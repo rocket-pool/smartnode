@@ -58,6 +58,7 @@ type Client struct {
     originalMaxFee float64
     originalMaxPrioFee float64
     originalGasLimit uint64
+    debugPrint bool
 }
 
 
@@ -73,12 +74,13 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
                      c.GlobalFloat64("maxFee"),
                      c.GlobalFloat64("maxPrioFee"),
                      c.GlobalUint64("gasLimit"),
-                     c.GlobalString("nonce"))
+                     c.GlobalString("nonce"),
+                     c.GlobalBool("debug"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath string, daemonPath string, hostAddress string, user string, keyPath string, passphrasePath string, knownhostsFile string, maxFee float64, maxPrioFee float64, gasLimit uint64, customNonce string) (*Client, error) {
+func NewClient(configPath string, daemonPath string, hostAddress string, user string, keyPath string, passphrasePath string, knownhostsFile string, maxFee float64, maxPrioFee float64, gasLimit uint64, customNonce string, debug bool) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -166,6 +168,7 @@ func NewClient(configPath string, daemonPath string, hostAddress string, user st
         originalGasLimit: gasLimit,
         customNonce: customNonceBigInt,
         client: sshClient,
+        debugPrint: debug,
     }, nil
 
 }
@@ -752,8 +755,24 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
             c.getCustomNonce(),
             args)
     }
-    // fmt.Println(cmd)
+    
+    if c.debugPrint {
+        fmt.Println("To API:")
+        fmt.Println(cmd)
+    }
+
     output, err := c.readOutput(cmd)
+    
+    if c.debugPrint {
+        if output != nil {
+            fmt.Println("API Out:")
+            fmt.Println(string(output))
+        }
+        if err != nil {
+            fmt.Println("API Err:")
+            fmt.Println(err.Error())
+        }
+    }
 
     // Reset the gas settings after the call
     c.maxFee = c.originalMaxFee
