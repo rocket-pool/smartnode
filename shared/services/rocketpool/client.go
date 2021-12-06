@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"os"
 	osUser "os/user"
 	"strings"
@@ -52,7 +53,7 @@ type Client struct {
     maxFee float64
     maxPrioFee float64
     gasLimit uint64
-    customNonce uint64
+    customNonce *big.Int
     client *ssh.Client
     originalMaxFee float64
     originalMaxPrioFee float64
@@ -72,12 +73,12 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
                      c.GlobalFloat64("maxFee"),
                      c.GlobalFloat64("maxPrioFee"),
                      c.GlobalUint64("gasLimit"),
-                     c.GlobalUint64("nonce"))
+                     c.GlobalString("nonce"))
 }
 
 
 // Create new Rocket Pool client
-func NewClient(configPath string, daemonPath string, hostAddress string, user string, keyPath string, passphrasePath string, knownhostsFile string, maxFee float64, maxPrioFee float64, gasLimit uint64, customNonce uint64) (*Client, error) {
+func NewClient(configPath string, daemonPath string, hostAddress string, user string, keyPath string, passphrasePath string, knownhostsFile string, maxFee float64, maxPrioFee float64, gasLimit uint64, customNonce string) (*Client, error) {
 
     // Initialize SSH client if configured for SSH
     var sshClient *ssh.Client
@@ -144,6 +145,15 @@ func NewClient(configPath string, daemonPath string, hostAddress string, user st
 
     }
 
+    var customNonceBigInt *big.Int = nil
+    var success bool
+    if customNonce != "" {
+        customNonceBigInt, success = big.NewInt(0).SetString(customNonce, 0)
+        if !success {
+            return nil, fmt.Errorf("Invalid nonce: %s", customNonce)
+        }
+    }
+
     // Return client
     return &Client{
         configPath: os.ExpandEnv(configPath),
@@ -154,7 +164,7 @@ func NewClient(configPath string, daemonPath string, hostAddress string, user st
         originalMaxFee: maxFee,
         originalMaxPrioFee: maxPrioFee,
         originalGasLimit: gasLimit,
-        customNonce: customNonce,
+        customNonce: customNonceBigInt,
         client: sshClient,
     }, nil
 
@@ -461,7 +471,7 @@ func (c *Client) GetServiceVersion() (string, error) {
 // Increments the custom nonce parameter.
 // This is used for calls that involve multiple transactions, so they don't all have the same nonce.
 func (c *Client) IncrementCustomNonce() {
-    c.customNonce += 1
+    c.customNonce.Add(c.customNonce, big.NewInt(1))
 }
 
 
@@ -780,8 +790,8 @@ func (c *Client) getGasOpts() string {
 func (c *Client) getCustomNonce() string {
     // Set the custom nonce
     nonce := ""
-    if c.customNonce != 0 {
-        nonce = fmt.Sprintf("--nonce %d", c.customNonce)
+    if c.customNonce != nil {
+        nonce = fmt.Sprintf("--nonce %s", c.customNonce.String())
     }
     return nonce
 }

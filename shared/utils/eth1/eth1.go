@@ -13,8 +13,13 @@ import (
 // Sets the nonce of the provided transaction options to the latest nonce if requested
 func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
 
-    customNonce := c.GlobalUint64("nonce")
-    if customNonce != 0 {
+    customNonceString := c.String("nonce")
+    if customNonceString != "" {
+        customNonce, success := big.NewInt(0).SetString(customNonceString, 0)
+        if !success {
+            return fmt.Errorf("Invalid nonce: %s", customNonceString)
+        }
+
         // Do a sanity check to make sure the provided nonce is for a pending transaction
         // otherwise the user is burning gas for no reason
         ec, err := services.GetEthClient(c)
@@ -23,25 +28,29 @@ func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
         }
 
         // Make sure it's not higher than the next available nonce
-        nextNonce, err := ec.PendingNonceAt(context.Background(), opts.From)
+        nextNonceUint, err := ec.PendingNonceAt(context.Background(), opts.From)
         if err != nil {
             return fmt.Errorf("Could not get next available nonce: %w", err)
         }
-        if customNonce > nextNonce {
-            return fmt.Errorf("Can't use nonce %d because it's greater than the next available nonce (%d).", customNonce, nextNonce)
+
+        nextNonce := big.NewInt(0).SetUint64(nextNonceUint)
+        if customNonce.Cmp(nextNonce) == 1 {
+            return fmt.Errorf("Can't use nonce %s because it's greater than the next available nonce (%d).", customNonceString, nextNonceUint)
         }
 
         // Make sure the nonce hasn't already been mined
-        latestMinedNonce, err := ec.NonceAt(context.Background(), opts.From, nil)
+        latestMinedNonceUint, err := ec.NonceAt(context.Background(), opts.From, nil)
         if err != nil {
             return fmt.Errorf("Could not get latest nonce: %w", err)
         }
-        if customNonce < latestMinedNonce {
-            return fmt.Errorf("Can't use nonce %d because it has already been mined.", customNonce)
+
+        latestMinedNonce := big.NewInt(0).SetUint64(latestMinedNonceUint)
+        if customNonce.Cmp(latestMinedNonce) == -1 {
+            return fmt.Errorf("Can't use nonce %s because it has already been mined.", customNonceString)
         }
 
         // It points to a pending transaction, so this is a valid thing to do
-        opts.Nonce = new(big.Int).SetUint64(customNonce)
+        opts.Nonce = customNonce
     }
     return nil
 
