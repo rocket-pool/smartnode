@@ -37,11 +37,11 @@ type TrustedNodeCollector struct {
 	// The ETH balance of each trusted node
 	ethBalance *prometheus.Desc
 
-	// This node's relative balances participation performance
-	balancesPerformance *prometheus.Desc
+	// The balances submission participation of the ODAO members
+	balancesParticipation *prometheus.Desc
 
-	// This node's relative prices participation performance
-	pricesPerformance *prometheus.Desc
+	// The prices submission participation of the ODAO members
+	pricesParticipation *prometheus.Desc
 
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
@@ -53,9 +53,8 @@ type TrustedNodeCollector struct {
 	nodeAddress common.Address
 
 	// Cached data
-	cacheTime             time.Time
-	balancesParticipation *node.TrustedNodeParticipation
-	pricesParticipation   *node.TrustedNodeParticipation
+	cacheTime time.Time
+	cachedMetrics []prometheus.Metric
 
     // The event log interval for the current eth1 client
     eventLogInterval        *big.Int
@@ -89,14 +88,6 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 			"The ETH balance of each trusted node",
 			[]string{"member"}, nil,
 		),
-		balancesPerformance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "balances_performance"),
-			"This node's relative balances participation performance",
-			nil, nil,
-		),
-		pricesPerformance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "prices_performance"),
-			"This node's relative prices participation performance",
-			nil, nil,
-		),
 		rp:          rp,
 		bc:          bc,
 		nodeAddress: nodeAddress,
@@ -110,8 +101,63 @@ func (collector *TrustedNodeCollector) Describe(channel chan<- *prometheus.Desc)
 	channel <- collector.unvotedProposalCount
 	channel <- collector.proposalTable
 	channel <- collector.ethBalance
-	channel <- collector.balancesPerformance
-	channel <- collector.pricesPerformance
+}
+
+// Caches slow to process metrics so it doesn't have to be processed every second
+func (collector *TrustedNodeCollector) collectSlowMetrics(memberIds map[common.Address]string) {
+
+	// Create a new cached metrics array to populate
+	collector.cachedMetrics = make([]prometheus.Metric, 0)
+
+	// Sync
+	var wg errgroup.Group
+
+	var balancesParticipation map[common.Address]bool
+	var pricesParticipation map[common.Address]bool
+
+	// Get the balances participation data
+	wg.Go(func() error {
+		var err error
+		balancesParticipation, err = node.GetTrustedNodeLatestBalancesParticipation(collector.rp, nil, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting trusted node balances participation data: %w", err)
+		}
+		return nil
+	})
+
+	// Get the prices participation data
+	wg.Go(func() error {
+		var err error
+		pricesParticipation, err = node.GetTrustedNodeLatestPricesParticipation(collector.rp, nil, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting trusted node prices participation data: %w", err)
+		}
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
+
+	// Balances participation
+	for member, status := range balancesParticipation {
+		value := float64(0)
+		if status {
+			value = 1
+		}
+		collector.cachedMetrics = append(collector.cachedMetrics, prometheus.MustNewConstMetric(collector.balancesParticipation, prometheus.GaugeValue, value, memberIds[member]))
+	}
+
+	// Prices participation
+	for member, status := range pricesParticipation {
+		value := float64(0)
+		if status {
+			value = 1
+		}
+		collector.cachedMetrics = append(collector.cachedMetrics, prometheus.MustNewConstMetric(collector.pricesParticipation, prometheus.GaugeValue, value, memberIds[member]))
+	}
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -155,29 +201,10 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 		return nil
 	})
 
-	// Only collect fresh participation from chain every 30 minutes
+	// Only collect fresh participation metrics from chain every 60 seconds as it updates infrequently and takes longer to collect
 	now := time.Now()
-	if now.Unix() > collector.cacheTime.Add(time.Minute*30).Unix() {
-		// Get the balances participation data
-		wg.Go(func() error {
-			var err error
-			collector.balancesParticipation, err = node.CalculateTrustedNodeBalancesParticipation(collector.rp, collector.eventLogInterval, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting trusted node balances participation data: %w", err)
-			}
-			return nil
-		})
-
-		// Get the prices participation data
-		wg.Go(func() error {
-			var err error
-			collector.pricesParticipation, err = node.CalculateTrustedNodePricesParticipation(collector.rp, collector.eventLogInterval, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting trusted node prices participation data: %w", err)
-			}
-			return nil
-		})
-
+	if now.Unix() > collector.cacheTime.Add(time.Second*60).Unix() {
+		collector.collectSlowMetrics(memberIds)
 		collector.cacheTime = now
 	}
 
@@ -272,22 +299,8 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 			collector.proposalTable, prometheus.GaugeValue, proposal.VotesRequired, strconv.FormatUint(proposal.ID, 10), "required")
 	}
 
-	// Update participation metrics
-	balancesPerformance := float64(1)
-	if collector.balancesParticipation != nil && collector.balancesParticipation.ExpectedSubmissions > 0 {
-		if count, ok := collector.balancesParticipation.ActualSubmissions[collector.nodeAddress]; ok {
-			balancesPerformance = count / collector.balancesParticipation.ExpectedSubmissions
-		}
+	// Include cached metrics
+	for _, metric := range collector.cachedMetrics {
+		channel <- metric
 	}
-	channel <- prometheus.MustNewConstMetric(
-		collector.balancesPerformance, prometheus.GaugeValue, balancesPerformance)
-
-	pricesPerformance := float64(1)
-	if collector.pricesParticipation != nil && collector.pricesParticipation.ExpectedSubmissions > 0 {
-		if count, ok := collector.pricesParticipation.ActualSubmissions[collector.nodeAddress]; ok {
-			pricesPerformance = count / collector.pricesParticipation.ExpectedSubmissions
-		}
-	}
-	channel <- prometheus.MustNewConstMetric(
-		collector.pricesPerformance, prometheus.GaugeValue, pricesPerformance)
 }
