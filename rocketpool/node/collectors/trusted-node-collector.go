@@ -88,6 +88,14 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 			"The ETH balance of each trusted node",
 			[]string{"member"}, nil,
 		),
+		balancesParticipation: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "balances_participation"),
+			"Whether each member has participated in the current balances update interval",
+			[]string{"member"}, nil,
+		),
+		pricesParticipation: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "prices_participation"),
+			"Whether each member has participated in the current prices update interval",
+			[]string{"member"}, nil,
+		),
 		rp:          rp,
 		bc:          bc,
 		nodeAddress: nodeAddress,
@@ -101,6 +109,8 @@ func (collector *TrustedNodeCollector) Describe(channel chan<- *prometheus.Desc)
 	channel <- collector.unvotedProposalCount
 	channel <- collector.proposalTable
 	channel <- collector.ethBalance
+	channel <- collector.balancesParticipation
+	channel <- collector.pricesParticipation
 }
 
 // Caches slow to process metrics so it doesn't have to be processed every second
