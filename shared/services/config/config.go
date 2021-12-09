@@ -39,6 +39,7 @@ type RocketPoolConfig struct {
     }                                   `yaml:"smartnode,omitempty"`
     Chains struct {
         Eth1 Chain                      `yaml:"eth1,omitempty"`
+        Eth1Fallback Chain              `yaml:"eth1Fallback,omitempty"`
         Eth2 Chain                      `yaml:"eth2,omitempty"`
     }                                   `yaml:"chains,omitempty"`
     Metrics Metrics                     `yaml:"metrics,omitempty"`
@@ -46,6 +47,8 @@ type RocketPoolConfig struct {
 type Chain struct {
     Provider string                     `yaml:"provider,omitempty"`
     WsProvider string                   `yaml:"wsProvider,omitempty"`
+    FallbackProvider string             `yaml:"fallbackProvider,omitempty"`
+    FallbackWsProvider string           `yaml:"fallbackWsProvider,omitempty"`
     ChainID string                      `yaml:"chainID,omitempty"`
     Client struct {
         Options []ClientOption          `yaml:"options,omitempty"`
@@ -65,6 +68,7 @@ type ClientOption struct {
     EventLogInterval string             `yaml:"eventLogInterval,omitempty"`
     Supermajority bool                  `yaml:"supermajority,omitempty"`
     Params []ClientParam                `yaml:"params,omitempty"`
+    Fallback bool                       `yam:"fallback,omitempty"`
 }
 type ClientParam struct {
     Name string                         `yaml:"name,omitempty"`

@@ -48,8 +48,15 @@ func configureService(c *cli.Context) error {
     }
 
     // Configure eth1
-    if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false, []string{}, true, showAdvanced); err != nil {
+    if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1), "Eth 1.0", false, false, []string{}, true, showAdvanced); err != nil {
         return err
+    }
+
+    // Configure eth1 fallback
+    if cliutils.Confirm("Would you like to configure a second Eth 1.0 client to act as a fallback in case your primary Eth 1.0 client is unavailable?") {
+        if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1Fallback), "Eth 1.0 Fallback", false, true, []string{}, true, showAdvanced); err != nil {
+            return err
+        }
     }
 
     // Get the list of compatible eth2 clients
@@ -60,7 +67,7 @@ func configureService(c *cli.Context) error {
     }
 
     // Configure eth2
-    if err := configureChain(&(globalConfig.Chains.Eth2), &(userConfig.Chains.Eth2), "Eth 2.0", true, compatibleEth2Clients, true, showAdvanced); err != nil {
+    if err := configureChain(&(globalConfig.Chains.Eth2), &(userConfig.Chains.Eth2), "Eth 2.0", true, false, compatibleEth2Clients, true, showAdvanced); err != nil {
         return err
     }
 
@@ -227,7 +234,7 @@ func configureMetrics(globalMetrics, userMetrics *config.Metrics, showAdvanced b
 
 
 // Configure a chain
-func configureChain(globalChain, userChain *config.Chain, chainName string, defaultRandomClient bool, compatibleClients []string, includeSupermajority bool, showAdvanced bool) error {
+func configureChain(globalChain, userChain *config.Chain, chainName string, defaultRandomClient bool, fallbackOnly bool, compatibleClients []string, includeSupermajority bool, showAdvanced bool) error {
 
     // Check client options
     if len(globalChain.Client.Options) == 0 {
@@ -239,12 +246,13 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
     if userChain.Client.Selected != "" {
         client := globalChain.GetClientById(userChain.Client.Selected)
         if client != nil {
-            if client.Supermajority && !includeSupermajority {
+            if (client.Supermajority && !includeSupermajority) || (!client.Fallback && fallbackOnly) {
                 // If supermajorities are excluded and they're already using one, ignore it.
+                // If in fallback clients only mode and this isn't one, ignore it.
                 reuseClient = false
             } else {
                 reuseClient = cliutils.Confirm(fmt.Sprintf(
-                    "Detected an existing %s client choice of %s.\nWould you like to continue using it to retain your sync progress?", chainName, client.Name))
+                    "Detected an existing %s client choice of %s.\nWould you like to continue using?", chainName, client.Name))
             }
         }
     }
@@ -263,10 +271,14 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         if len(compatibleClients) > 0 {
             // Go through each client
             for clientIndex, clientId := range globalChain.Client.Options {
+                // Ignore this client if it's not a fallback choice and only fallbacks should be included
+                if !clientId.Fallback && fallbackOnly {
+                    continue
+                }
                 // Go through the list of compatible clients
                 for _, compatibleId := range compatibleClients {
                     // If this client is compatible, add its index to the list of good ones
-                    if clientId.ID == compatibleId {
+                    if clientId.ID == compatibleId { 
                         compatibleClientIndices = append(compatibleClientIndices, clientIndex)
                     }
                 }
@@ -295,9 +307,15 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
                     if !globalChain.Client.Options[selectedIndex].Supermajority {
                         break
                     }
-                } else {
-                    break
                 }
+                // Only pick fallback clients if they're required
+                if fallbackOnly {
+                    selectedIndex := compatibleClientIndices[selected]
+                    if globalChain.Client.Options[selectedIndex].Fallback {
+                        break
+                    }
+                }
+                break
             }
 
         } else {
@@ -356,7 +374,7 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         fmt.Println()
         useDifferent := cliutils.Confirm("Would you like to use a different client (recommended)?")
         if useDifferent {
-            return configureChain(globalChain, userChain, chainName, defaultRandomClient, compatibleClients, false, showAdvanced)
+            return configureChain(globalChain, userChain, chainName, defaultRandomClient, fallbackOnly, compatibleClients, false, showAdvanced)
         }
     }
 

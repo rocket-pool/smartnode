@@ -201,6 +201,12 @@ func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
     var err error
     initEthClient.Do(func() {
         ethClient, err = ethclient.Dial(cfg.Chains.Eth1.Provider)
+        if err != nil {
+            // Try the fallback provider if there is one
+            if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+                ethClient, err = ethclient.Dial(cfg.Chains.Eth1.FallbackProvider)
+            }
+        }
     })
     return ethClient, err
 }
