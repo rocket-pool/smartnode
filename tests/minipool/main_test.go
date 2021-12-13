@@ -1,22 +1,22 @@
 package minipool
 
 import (
-    "log"
-    "os"
-    "testing"
+	"log"
+	"os"
+	"testing"
 
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/common"
 
-    "github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	uc "github.com/rocket-pool/rocketpool-go/utils/client"
 
-    "github.com/rocket-pool/rocketpool-go/tests"
-    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	"github.com/rocket-pool/rocketpool-go/tests"
+	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 )
 
 
 var (
-    client *ethclient.Client
+    client *uc.EthClientProxy
     rp *rocketpool.RocketPool
 
     ownerAccount *accounts.Account
@@ -31,8 +31,7 @@ func TestMain(m *testing.M) {
     var err error
 
     // Initialize eth client
-    client, err = ethclient.Dial(tests.Eth1ProviderAddress)
-    if err != nil { log.Fatal(err) }
+    client = uc.NewEth1ClientProxy(tests.Eth1ProviderAddress)
 
     // Initialize contract manager
     rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))

@@ -9,11 +9,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 )
 
 // Wait for a transaction to get mined
-func WaitForTransaction(client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
+func WaitForTransaction(client *client.EthClientProxy, hash common.Hash) (*types.Receipt, error) {
     
     var tx *types.Transaction
     var err error

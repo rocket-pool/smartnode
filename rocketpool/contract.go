@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 )
 
 // Transaction settings
@@ -28,7 +28,7 @@ type Contract struct {
     Contract *bind.BoundContract
     Address *common.Address
     ABI *abi.ABI
-    Client *ethclient.Client
+    Client *client.EthClientProxy
 }
 
 

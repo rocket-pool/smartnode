@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 )
 
 // Estimate the gas of SendTransaction
@@ -42,7 +43,7 @@ func EstimateSendTransactionGas(client *ethclient.Client, toAddress common.Addre
 
 
 // Send a transaction to an address
-func SendTransaction(client *ethclient.Client, toAddress common.Address, chainID *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func SendTransaction(client *client.EthClientProxy, toAddress common.Address, chainID *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
     var err error
 
     // Get from address nonce

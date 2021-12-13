@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/contracts"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 )
 
 // Cache settings
@@ -37,7 +37,7 @@ type cachedContract struct {
 
 // Rocket Pool contract manager
 type RocketPool struct {
-    Client                  *ethclient.Client
+    Client                  *client.EthClientProxy
     RocketStorage           *contracts.RocketStorage
     RocketStorageContract   *Contract
     addresses               map[string]cachedAddress
@@ -50,7 +50,7 @@ type RocketPool struct {
 
 
 // Create new contract manager
-func NewRocketPool(client *ethclient.Client, rocketStorageAddress common.Address) (*RocketPool, error) {
+func NewRocketPool(client *client.EthClientProxy, rocketStorageAddress common.Address) (*RocketPool, error) {
 
     // Initialize RocketStorage contract
     rocketStorage, err := contracts.NewRocketStorage(rocketStorageAddress, client)
