@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strings"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -26,9 +27,11 @@ const (
 // Contract type wraps go-ethereum bound contract
 type Contract struct {
     Contract *bind.BoundContract
+    FallbackContract *bind.BoundContract
     Address *common.Address
     ABI *abi.ABI
     Client *ethclient.Client
+    FallbackClient *ethclient.Client
 }
 
 
@@ -43,7 +46,16 @@ type GasInfo struct {
 func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
     results := make([]interface{}, 1)
     results[0] = result
-    return c.Contract.Call(opts, &results, method, params...)
+    err := c.Contract.Call(opts, &results, method, params...)
+    if err != nil {
+        if strings.Contains(err.Error(), "dial tcp") && c.FallbackContract != nil {
+            // This was a connection problem, try the fallback if possible
+            return c.FallbackContract.Call(opts, &results, method, params...)
+        } else {
+            return err
+        }
+    }
+    return nil
 }
 
 
@@ -90,7 +102,12 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
     // Send transaction
     tx, err := c.Contract.Transact(opts, method, params...)
     if err != nil {
-        return common.Hash{}, err
+        if strings.Contains(err.Error(), "dial tcp") && c.FallbackContract != nil {
+            // This was a connection problem, try the fallback if possible
+            tx, err = c.FallbackContract.Transact(opts, method, params...)
+        } else {
+            return common.Hash{}, err
+        }
     }
 
     return tx.Hash(), nil
@@ -130,7 +147,12 @@ func (c *Contract) Transfer(opts *bind.TransactOpts) (common.Hash, error) {
     // Send transaction
     tx, err := c.Contract.Transfer(opts)
     if err != nil {
-        return common.Hash{}, err
+        if strings.Contains(err.Error(), "dial tcp") && c.FallbackContract != nil {
+            // This was a connection problem, try the fallback if possible
+            tx, err = c.FallbackContract.Transfer(opts)
+        } else {
+            return common.Hash{}, err
+        }
     }
 
     return tx.Hash(), nil
@@ -151,7 +173,18 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
     })
     
     if err != nil {
-        return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", err)
+        if strings.Contains(err.Error(), "dial tcp") && c.FallbackClient != nil {
+            // This was a connection problem, try the fallback if possible
+            gasLimit, err = c.FallbackClient.EstimateGas(context.Background(), ethereum.CallMsg{
+                From: opts.From,
+                To: c.Address,
+                GasPrice: big.NewInt(0), // use 0 gwei for simulation
+                Value: opts.Value,
+                Data: input,
+            })
+        } else {
+            return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", err)
+        }
     }
 
     // Pad and return gas limit
@@ -169,7 +202,12 @@ func (c *Contract) getTransactionReceipt(tx *types.Transaction) (*types.Receipt,
     // Wait for transaction to be mined
     txReceipt, err := bind.WaitMined(context.Background(), c.Client, tx)
     if err != nil {
-        return nil, err
+        if strings.Contains(err.Error(), "dial tcp") && c.FallbackClient != nil {
+            // This was a connection problem, try the fallback if possible
+            txReceipt, err = bind.WaitMined(context.Background(), c.FallbackClient, tx)
+        } else {
+            return nil, err
+        }
     }
 
     // Check transaction status

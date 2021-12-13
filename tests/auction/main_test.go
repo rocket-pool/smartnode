@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
     if err != nil { log.Fatal(err) }
 
     // Initialize contract manager
-    rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))
+    rp, err = rocketpool.NewRocketPool(client, nil, common.HexToAddress(tests.RocketStorageAddress))
     if err != nil { log.Fatal(err) }
 
     // Initialize accounts

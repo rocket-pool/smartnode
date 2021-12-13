@@ -1,13 +1,15 @@
 package minipool
 
 import (
-    "context"
-    "fmt"
-    "github.com/ethereum/go-ethereum/core/types"
-    "github.com/ethereum/go-ethereum/crypto"
-    "math/big"
+	"context"
+	"fmt"
+	"math/big"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -579,7 +581,14 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
     deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
     fromBlockBig, err := mp.RocketPool.RocketStorage.GetUint(nil, deployBlockHash)
     if err != nil {
-        return PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
+        if strings.Contains(err.Error(), "dial tcp") && mp.RocketPool.FallbackClient != nil {
+            fromBlockBig, err = mp.RocketPool.FallbackRocketStorage.GetUint(nil, deployBlockHash)
+            if err != nil {
+                return PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
+            }
+        } else {
+            return PrestakeData{}, fmt.Errorf("Error getting deploy block %s: %w", mp.Address.Hex(), err)
+        }
     }
 
     fromBlock := fromBlockBig.Uint64()
