@@ -62,17 +62,17 @@ func run(c *cli.Context) error {
 
     // Run task loop
     go func() {
-        for {
-            if err := claimRplRewards.run(); err != nil {
-                errorLog.Println(err)
-            }
-            time.Sleep(taskCooldown)
-            if err := stakePrelaunchMinipools.run(); err != nil {
-                errorLog.Println(err)
-            }
-            time.Sleep(tasksInterval)
-        }
-        wg.Done()
+       for {
+           if err := claimRplRewards.run(); err != nil {
+               errorLog.Println(err)
+           }
+           time.Sleep(taskCooldown)
+           if err := stakePrelaunchMinipools.run(); err != nil {
+               errorLog.Println(err)
+           }
+           time.Sleep(tasksInterval)
+       }
+       wg.Done()
     }()
 
     // Run metrics loop

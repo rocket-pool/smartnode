@@ -25,15 +25,16 @@ const (
     RequestUrlFormat = "%s%s"
     RequestContentType = "application/json"
 
-    RequestSyncStatusPath = "/eth/v1/node/syncing"
-    RequestEth2ConfigPath = "/eth/v1/config/spec"
+    RequestSyncStatusPath            = "/eth/v1/node/syncing"
+    RequestEth2ConfigPath            = "/eth/v1/config/spec"
     RequestEth2DepositContractMethod = "/eth/v1/config/deposit_contract"
-    RequestGenesisPath = "/eth/v1/beacon/genesis"
-    RequestFinalityCheckpointsPath = "/eth/v1/beacon/states/%s/finality_checkpoints"
-    RequestForkPath = "/eth/v1/beacon/states/%s/fork"
-    RequestValidatorsPath = "/eth/v1/beacon/states/%s/validators"
-    RequestVoluntaryExitPath = "/eth/v1/beacon/pool/voluntary_exits"
-    RequestBeaconBlockPath = "/eth/v1/beacon/blocks/%s"
+    RequestGenesisPath               = "/eth/v1/beacon/genesis"
+    RequestFinalityCheckpointsPath   = "/eth/v1/beacon/states/%s/finality_checkpoints"
+    RequestForkPath                  = "/eth/v1/beacon/states/%s/fork"
+    RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
+    RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
+    RequestBeaconBlockPath           = "/eth/v1/beacon/blocks/%s"
+    RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
 
     MaxRequestValidatorsCount = 600
 )
@@ -109,11 +110,12 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Return response
     return beacon.Eth2Config{
-        GenesisForkVersion: genesis.Data.GenesisForkVersion,
-        GenesisValidatorsRoot: genesis.Data.GenesisValidatorsRoot,
-        GenesisEpoch: 0,
-        GenesisTime: uint64(genesis.Data.GenesisTime),
-        SecondsPerEpoch: uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
+        GenesisForkVersion:             genesis.Data.GenesisForkVersion,
+        GenesisValidatorsRoot:          genesis.Data.GenesisValidatorsRoot,
+        GenesisEpoch:                   0,
+        GenesisTime:                    uint64(genesis.Data.GenesisTime),
+        SecondsPerEpoch:                uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
+        EpochsPerSyncCommitteePeriod:   uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
     }, nil
 
 }
@@ -240,6 +242,48 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
     return statuses, nil
 
 }
+
+
+// Get whether validators have sync duties to perform at given epoch
+func (c *Client) GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uint64]bool, error) {
+
+    // Convert incoming uint64 validator indices into an array of string for the request
+    indicesStrings := make([]string, len(indices))
+
+    for i, index := range indices {
+        indicesStrings[i] = strconv.FormatUint(index, 10)
+    }
+
+    // Perform the post request
+    responseBody, status, err := c.postRequest(fmt.Sprintf(RequestValidatorSyncDuties, strconv.FormatUint(epoch, 10)), indicesStrings)
+
+    if err != nil {
+        return nil, fmt.Errorf("Could not get validator sync duties: %w", err)
+    } else if status != http.StatusOK {
+        return nil, fmt.Errorf("Could not get validator sync duties: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+
+    var response SyncDutiesResponse
+    if err := json.Unmarshal(responseBody, &response); err != nil {
+        return nil, fmt.Errorf("Could not decode validator sync duties data: %w", err)
+    }
+
+    // Map the results
+    validatorMap := make(map[uint64]bool)
+
+    for _, index := range indices {
+        validatorMap[index] = false
+        for _, duty := range response.Data {
+            if uint64(duty.ValidatorIndex) == index {
+                validatorMap[index] = true
+                break
+            }
+        }
+    }
+
+    return validatorMap, nil
+}
+
 
 // Get a validator's index
 func (c *Client) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {

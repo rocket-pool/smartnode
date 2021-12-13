@@ -1,23 +1,24 @@
 package teku
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+    "net/http"
+    "strconv"
+    "strings"
+    "time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/types"
-	eth2types "github.com/wealdtech/go-eth2-types/v2"
-	"golang.org/x/sync/errgroup"
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/prysmaticlabs/prysm/v2/crypto/bls"
+    "github.com/rocket-pool/rocketpool-go/types"
+    eth2types "github.com/wealdtech/go-eth2-types/v2"
+    "golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/utils/eth2"
-	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+    "github.com/rocket-pool/smartnode/shared/services/beacon"
+    "github.com/rocket-pool/smartnode/shared/utils/eth2"
+    hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
@@ -25,15 +26,16 @@ const (
     RequestUrlFormat   = "%s%s"
     RequestContentType = "application/json"
 
-    RequestSyncStatusPath               = "/eth/v1/node/syncing"
-    RequestEth2ConfigPath               = "/eth/v1/config/spec"
-    RequestEth2DepositContractMethod    = "/eth/v1/config/deposit_contract"
-    RequestGenesisPath                  = "/eth/v1/beacon/genesis"
-    RequestFinalityCheckpointsPath      = "/eth/v1/beacon/states/%s/finality_checkpoints"
-    RequestForkPath                     = "/eth/v1/beacon/states/%s/fork"
-    RequestValidatorsPath               = "/eth/v1/beacon/states/%s/validators"
-    RequestVoluntaryExitPath            = "/eth/v1/beacon/pool/voluntary_exits"
-    RequestBeaconBlockPath              = "/eth/v1/beacon/blocks/%s"
+    RequestSyncStatusPath            = "/eth/v1/node/syncing"
+    RequestEth2ConfigPath            = "/eth/v1/config/spec"
+    RequestEth2DepositContractMethod = "/eth/v1/config/deposit_contract"
+    RequestGenesisPath               = "/eth/v1/beacon/genesis"
+    RequestFinalityCheckpointsPath   = "/eth/v1/beacon/states/%s/finality_checkpoints"
+    RequestForkPath                  = "/eth/v1/beacon/states/%s/fork"
+    RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
+    RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
+    RequestBeaconBlockPath           = "/eth/v1/beacon/blocks/%s"
+    RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
 
     MaxRequestValidatorsCount = 600
 )
@@ -110,11 +112,12 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 
     // Return response
     return beacon.Eth2Config{
-        GenesisForkVersion:    genesis.Data.GenesisForkVersion,
-        GenesisValidatorsRoot: genesis.Data.GenesisValidatorsRoot,
-        GenesisEpoch:          0,
-        GenesisTime:           uint64(genesis.Data.GenesisTime),
-        SecondsPerEpoch:       uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
+        GenesisForkVersion:             genesis.Data.GenesisForkVersion,
+        GenesisValidatorsRoot:          genesis.Data.GenesisValidatorsRoot,
+        GenesisEpoch:                   0,
+        GenesisTime:                    uint64(genesis.Data.GenesisTime),
+        SecondsPerEpoch:                uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
+        EpochsPerSyncCommitteePeriod:   uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
     }, nil
 
 }
@@ -220,7 +223,12 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
         if bytes.Equal(pubkey.Bytes(), nullPubkey.Bytes()) {
             nullPubkeyExists = true
         } else {
-            realPubkeys = append(realPubkeys, pubkey)
+            // Teku doesn't like invalid pubkeys, so filter them out to make it consistent with other clients
+            _, err := bls.PublicKeyFromBytes(pubkey.Bytes())
+
+            if err == nil {
+                realPubkeys = append(realPubkeys, pubkey)
+            }
         }
     }
 
@@ -239,17 +247,17 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
 
         // Add status
         statuses[pubkey] = beacon.ValidatorStatus{
-            Pubkey: types.BytesToValidatorPubkey(validator.Validator.Pubkey),
-            Index: uint64(validator.Index),
-            WithdrawalCredentials: common.BytesToHash(validator.Validator.WithdrawalCredentials),
-            Balance: uint64(validator.Balance),
-            EffectiveBalance: uint64(validator.Validator.EffectiveBalance),
-            Slashed: validator.Validator.Slashed,
+            Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+            Index:                      uint64(validator.Index),
+            WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
+            Balance:                    uint64(validator.Balance),
+            EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
+            Slashed:                    validator.Validator.Slashed,
             ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
-            ActivationEpoch: uint64(validator.Validator.ActivationEpoch),
-            ExitEpoch: uint64(validator.Validator.ExitEpoch),
-            WithdrawableEpoch: uint64(validator.Validator.WithdrawableEpoch),
-            Exists: true,
+            ActivationEpoch:            uint64(validator.Validator.ActivationEpoch),
+            ExitEpoch:                  uint64(validator.Validator.ExitEpoch),
+            WithdrawableEpoch:          uint64(validator.Validator.WithdrawableEpoch),
+            Exists:                     true,
         }
 
     }
@@ -262,6 +270,47 @@ func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *bea
     // Return
     return statuses, nil
 
+}
+
+
+// Get whether validators have sync duties to perform at given epoch
+func (c *Client) GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uint64]bool, error) {
+
+    // Convert incoming uint64 validator indices into an array of string for the request
+    indicesStrings := make([]string, len(indices))
+
+    for i, index := range indices {
+        indicesStrings[i] = strconv.FormatUint(index, 10)
+    }
+
+    // Perform the post request
+    responseBody, status, err := c.postRequest(fmt.Sprintf(RequestValidatorSyncDuties, strconv.FormatUint(epoch, 10)), indicesStrings)
+
+    if err != nil {
+        return nil, fmt.Errorf("Could not get validator sync duties: %w", err)
+    } else if status != http.StatusOK {
+        return nil, fmt.Errorf("Could not get validator sync duties: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+
+    var response SyncDutiesResponse
+    if err := json.Unmarshal(responseBody, &response); err != nil {
+        return nil, fmt.Errorf("Could not decode validator sync duties data: %w", err)
+    }
+
+    // Map the results
+    validatorMap := make(map[uint64]bool)
+
+    for _, index := range indices {
+        validatorMap[index] = false
+        for _, duty := range response.Data {
+            if uint64(duty.ValidatorIndex) == index {
+                validatorMap[index] = true
+                break
+            }
+        }
+    }
+
+    return validatorMap, nil
 }
 
 // Get a validator's index
@@ -346,9 +395,9 @@ func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error
 
     // Convert the response to the eth1 data struct
     return beacon.Eth1Data{
-        DepositRoot: common.BytesToHash(block.Data.Message.Body.Eth1Data.DepositRoot),
+        DepositRoot:  common.BytesToHash(block.Data.Message.Body.Eth1Data.DepositRoot),
         DepositCount: uint64(block.Data.Message.Body.Eth1Data.DepositCount),
-        BlockHash: common.BytesToHash(block.Data.Message.Body.Eth1Data.BlockHash),
+        BlockHash:    common.BytesToHash(block.Data.Message.Body.Eth1Data.BlockHash),
     }, nil
 
 }
