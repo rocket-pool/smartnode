@@ -36,6 +36,7 @@ const (
     UserConfigFile = "settings.yml"
     ComposeFile = "docker-compose.yml"
     MetricsComposeFile = "docker-compose-metrics.yml"
+    FallbackComposeFile = "docker-compose-fallback.yml"
     PrometheusTemplate = "prometheus.tmpl"
     PrometheusFile = "prometheus.yml"
 
@@ -651,11 +652,18 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         fmt.Sprintf("ETH2_PROVIDER=%s",           shellescape.Quote(cfg.Chains.Eth2.Provider)),
         fmt.Sprintf("EXTERNAL_IP=%s",             shellescape.Quote(externalIP)),
     }
+
+    if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+        env = append(env, fmt.Sprintf("ETH1_FALLBACK_CLIENT=%s",    shellescape.Quote(cfg.GetSelectedEth1FallbackClient().ID)))
+        env = append(env, fmt.Sprintf("ETH1_FALLBACK_IMAGE=%s",     shellescape.Quote(cfg.GetSelectedEth1FallbackClient().Image)))
+    }
+
     if cfg.Metrics.Enabled {
         env = append(env, "ENABLE_METRICS=1")
     } else {
         env = append(env, "ENABLE_METRICS=0")
     }
+
     paramsSet := map[string]bool{}
     for _, param := range cfg.Chains.Eth1.Client.Params {
         env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
@@ -690,7 +698,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     // How many built-in compose files are we using
     builtInFileCount := 1
     if cfg.Metrics.Enabled {
-        builtInFileCount = 2
+        builtInFileCount++
+    }
+    if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+        builtInFileCount++
     }
 
     // Set compose file flags
@@ -701,11 +712,20 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     }
 
     // Add the default docker-compose.yml
-    composeFileFlags[0] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, ComposeFile))))
+    index := 0
+    composeFileFlags[index] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, ComposeFile))))
+    index++
 
     // Add docker-compose-metrics.yml if metrics are enabled
     if cfg.Metrics.Enabled {
-        composeFileFlags[1] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, MetricsComposeFile))))
+        composeFileFlags[index] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, MetricsComposeFile))))
+        index++
+    }
+
+    // Add docker-compose-fallback.yml if fallback is enabled
+    if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+        composeFileFlags[index] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, FallbackComposeFile))))
+        index++
     }
 
     for fi, composeFile := range composeFiles {

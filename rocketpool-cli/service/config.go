@@ -52,11 +52,21 @@ func configureService(c *cli.Context) error {
         return err
     }
 
+    // Get the list of fallback eth1 clients
+    var fallbackEth1Clients []string
+    for _, eth1Client := range globalConfig.Chains.Eth1.Client.Options {
+        if eth1Client.Fallback {
+            fallbackEth1Clients = append(fallbackEth1Clients, eth1Client.ID)
+        }
+    }
+
     // Configure eth1 fallback
     if cliutils.Confirm("Would you like to configure a second Eth 1.0 client to act as a fallback in case your primary Eth 1.0 client is unavailable?") {
-        if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1Fallback), "Eth 1.0 Fallback", false, true, []string{}, true, showAdvanced); err != nil {
+        if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1Fallback), "Eth 1.0 Fallback", false, true, fallbackEth1Clients, true, showAdvanced); err != nil {
             return err
         }
+    } else {
+        userConfig.Chains.Eth1Fallback = config.Chain{}
     }
 
     // Get the list of compatible eth2 clients
@@ -92,6 +102,19 @@ func configureService(c *cli.Context) error {
         }
     }
     fmt.Println()
+
+    if userConfig.Chains.Eth1Fallback.Client.Selected != "" {
+        fmt.Println("=== ETH1 Fallback Settings ===")
+        eth1FallbackClient := globalConfig.Chains.Eth1.GetClientById(userConfig.Chains.Eth1Fallback.Client.Selected)
+        fmt.Printf("Selected client: %s\n", eth1FallbackClient.Name)
+        for _, param := range userConfig.Chains.Eth1Fallback.Client.Params {
+            globalParam := eth1FallbackClient.GetParamByEnvName(param.Env)
+            if globalParam != nil {
+                fmt.Printf("%s: %s\n", globalParam.Name, param.Value)
+            }
+        }
+        fmt.Println()
+    }
 
     fmt.Println("=== ETH2 Settings ===")
     eth2Client := globalConfig.Chains.Eth2.GetClientById(userConfig.Chains.Eth2.Client.Selected)
@@ -252,7 +275,7 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
                 reuseClient = false
             } else {
                 reuseClient = cliutils.Confirm(fmt.Sprintf(
-                    "Detected an existing %s client choice of %s.\nWould you like to continue using?", chainName, client.Name))
+                    "Detected an existing %s client choice of %s.\nWould you like to continue using it?", chainName, client.Name))
             }
         }
     }
@@ -271,10 +294,6 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         if len(compatibleClients) > 0 {
             // Go through each client
             for clientIndex, clientId := range globalChain.Client.Options {
-                // Ignore this client if it's not a fallback choice and only fallbacks should be included
-                if !clientId.Fallback && fallbackOnly {
-                    continue
-                }
                 // Go through the list of compatible clients
                 for _, compatibleId := range compatibleClients {
                     // If this client is compatible, add its index to the list of good ones

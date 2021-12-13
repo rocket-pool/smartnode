@@ -29,7 +29,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
-	github.com/rocket-pool/rocketpool-go v1.0.9
+	github.com/rocket-pool/rocketpool-go v1.0.10-0.20211213021053-66488eeb46bf
 	github.com/sethvargo/go-password v0.2.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.5

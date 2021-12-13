@@ -68,7 +68,7 @@ type ClientOption struct {
     EventLogInterval string             `yaml:"eventLogInterval,omitempty"`
     Supermajority bool                  `yaml:"supermajority,omitempty"`
     Params []ClientParam                `yaml:"params,omitempty"`
-    Fallback bool                       `yam:"fallback,omitempty"`
+    Fallback bool                       `yaml:"fallback,omitempty"`
 }
 type ClientParam struct {
     Name string                         `yaml:"name,omitempty"`
@@ -97,6 +97,9 @@ type Metrics struct {
 func (config *RocketPoolConfig) GetSelectedEth1Client() *ClientOption {
     return config.Chains.Eth1.GetSelectedClient()
 }
+func (config *RocketPoolConfig) GetSelectedEth1FallbackClient() *ClientOption {
+    return config.Chains.Eth1.GetClientById(config.Chains.Eth1Fallback.Client.Selected)
+}
 func (config *RocketPoolConfig) GetSelectedEth2Client() *ClientOption {
     return config.Chains.Eth2.GetSelectedClient()
 }
@@ -111,6 +114,10 @@ func (chain *Chain) GetSelectedClient() *ClientOption {
 
 // Get a client by it's ID
 func (chain *Chain) GetClientById(id string) *ClientOption {
+    if id == "" {
+        return nil
+    }
+    
     for _, option := range chain.Client.Options {
         if option.ID == id {
             return &option

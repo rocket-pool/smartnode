@@ -37,7 +37,7 @@ var (
     passwordManager *passwords.PasswordManager
     nodeWallet *wallet.Wallet
     ethClient *ethclient.Client
-    mainnetEthClient *ethclient.Client
+    ethFallbackClient *ethclient.Client
     rocketPool *rocketpool.RocketPool
     oneInchOracle *contracts.OneInchOracle
     rplFaucet *contracts.RPLFaucet
@@ -48,7 +48,7 @@ var (
     initPasswordManager sync.Once
     initNodeWallet sync.Once
     initEthClient sync.Once
-    initMainnetEthClient sync.Once
+    initEthFallbackClient sync.Once
     initRocketPool sync.Once
     initOneInchOracle sync.Once
     initRplFaucet sync.Once
@@ -95,6 +95,15 @@ func GetEthClient(c *cli.Context) (*ethclient.Client, error) {
 }
 
 
+func GetEthFallbackClient(c *cli.Context) (*ethclient.Client, error) {
+    cfg, err := getConfig(c)
+    if err != nil {
+        return nil, err
+    }
+    return getEthFallbackClient(cfg)
+}
+
+
 func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     cfg, err := getConfig(c)
     if err != nil {
@@ -104,7 +113,11 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     if err != nil {
         return nil, err
     }
-    return getRocketPool(cfg, ec)
+    fallbackEc, err := getEthFallbackClient(cfg)
+    if err != nil {
+        return nil, err
+    }
+    return getRocketPool(cfg, ec, fallbackEc)
 }
 
 
@@ -201,21 +214,28 @@ func getEthClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
     var err error
     initEthClient.Do(func() {
         ethClient, err = ethclient.Dial(cfg.Chains.Eth1.Provider)
-        if err != nil {
-            // Try the fallback provider if there is one
-            if cfg.Chains.Eth1Fallback.Client.Selected != "" {
-                ethClient, err = ethclient.Dial(cfg.Chains.Eth1.FallbackProvider)
-            }
-        }
     })
     return ethClient, err
 }
 
 
-func getRocketPool(cfg config.RocketPoolConfig, client *ethclient.Client) (*rocketpool.RocketPool, error) {
+func getEthFallbackClient(cfg config.RocketPoolConfig) (*ethclient.Client, error) {
+    var err error
+    initEthFallbackClient.Do(func() {
+        if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+            ethFallbackClient, err = ethclient.Dial(cfg.Chains.Eth1Fallback.Provider)
+        } else {
+            ethFallbackClient, err = nil, nil
+        }
+    })
+    return ethFallbackClient, err
+}
+
+
+func getRocketPool(cfg config.RocketPoolConfig, client *ethclient.Client, fallbackClient *ethclient.Client) (*rocketpool.RocketPool, error) {
     var err error
     initRocketPool.Do(func() {
-        rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Rocketpool.StorageAddress))
+        rocketPool, err = rocketpool.NewRocketPool(client, fallbackClient, common.HexToAddress(cfg.Rocketpool.StorageAddress))
     })
     return rocketPool, err
 }
