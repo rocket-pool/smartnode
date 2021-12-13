@@ -223,6 +223,26 @@ func (p *EthClientProxy) TransactionByHash(ctx context.Context, hash common.Hash
 }
 
 
+// NonceAt returns the account nonce of the given account.
+// The block number can be nil, in which case the nonce is taken from the latest known block.
+func (p *EthClientProxy) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
+    result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
+        return client.NonceAt(ctx, account, blockNumber)
+    })
+    return result.(uint64), err
+}
+
+
+// SyncProgress retrieves the current progress of the sync algorithm. If there's
+// no sync currently running, it returns nil.
+func (p *EthClientProxy) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
+    result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
+        return client.SyncProgress(ctx)
+    })
+    return result.(*ethereum.SyncProgress), err
+}
+
+
 /// ==================
 /// Internal functions
 /// ==================

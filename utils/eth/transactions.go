@@ -8,13 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/client"
 )
 
 // Estimate the gas of SendTransaction
-func EstimateSendTransactionGas(client *ethclient.Client, toAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSendTransactionGas(client *client.EthClientProxy, toAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 
     // User-defined settings
     response := rocketpool.GasInfo{}
