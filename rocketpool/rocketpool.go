@@ -46,23 +46,16 @@ type RocketPool struct {
     addressesLock           sync.RWMutex
     abisLock                sync.RWMutex
     contractsLock           sync.RWMutex
-
-    FallbackClient          *ethclient.Client
-    FallbackRocketStorage   *contracts.RocketStorage
 }
 
 
 // Create new contract manager
-func NewRocketPool(client *ethclient.Client, fallbackClient *ethclient.Client, rocketStorageAddress common.Address) (*RocketPool, error) {
+func NewRocketPool(client *ethclient.Client, rocketStorageAddress common.Address) (*RocketPool, error) {
 
     // Initialize RocketStorage contract
     rocketStorage, err := contracts.NewRocketStorage(rocketStorageAddress, client)
     if err != nil {
         return nil, fmt.Errorf("Could not initialize Rocket Pool storage contract: %w", err)
-    }
-    fallbackRocketStorage, err := contracts.NewRocketStorage(rocketStorageAddress, fallbackClient)
-    if err != nil {
-        return nil, fmt.Errorf("Could not initialize fallback Rocket Pool storage contract: %w", err)
     }
 
     // Create a Contract for it
@@ -72,11 +65,9 @@ func NewRocketPool(client *ethclient.Client, fallbackClient *ethclient.Client, r
 	}
     contract := &Contract{
         Contract: bind.NewBoundContract(rocketStorageAddress, rsAbi, client, client, client),
-        FallbackContract: bind.NewBoundContract(rocketStorageAddress, rsAbi, fallbackClient, fallbackClient, fallbackClient),
         Address: &rocketStorageAddress,
         ABI: &rsAbi,
         Client: client,
-        FallbackClient: fallbackClient,
     }
 
     // Create and return
@@ -87,10 +78,8 @@ func NewRocketPool(client *ethclient.Client, fallbackClient *ethclient.Client, r
         addresses: make(map[string]cachedAddress),
         abis: make(map[string]cachedABI),
         contracts: make(map[string]cachedContract),
-        
-        FallbackClient: fallbackClient,
-        FallbackRocketStorage: fallbackRocketStorage,
     }, nil
+
 }
 
 
@@ -109,15 +98,7 @@ func (rp *RocketPool) GetAddress(contractName string) (*common.Address, error) {
     // Get address
     address, err := rp.RocketStorage.GetAddress(nil, crypto.Keccak256Hash([]byte("contract.address"), []byte(contractName)))
     if err != nil {
-        // Try the fallback client
-        if strings.Contains(err.Error(), "dial tcp") && rp.FallbackClient != nil {
-            address, err = rp.FallbackRocketStorage.GetAddress(nil, crypto.Keccak256Hash([]byte("contract.address"), []byte(contractName)))
-            if err != nil {
-                return nil, fmt.Errorf("Could not load contract %s address: %w", contractName, err)
-            }
-        } else {
-            return nil, fmt.Errorf("Could not load contract %s address: %w", contractName, err)
-        }
+        return nil, fmt.Errorf("Could not load contract %s address: %w", contractName, err)
     }
 
     // Cache address
@@ -172,15 +153,7 @@ func (rp *RocketPool) GetABI(contractName string) (*abi.ABI, error) {
     // Get ABI
     abiEncoded, err := rp.RocketStorage.GetString(nil, crypto.Keccak256Hash([]byte("contract.abi"), []byte(contractName)))
     if err != nil {
-        // Try the fallback client
-        if strings.Contains(err.Error(), "dial tcp") && rp.FallbackClient != nil {
-            abiEncoded, err = rp.FallbackRocketStorage.GetString(nil, crypto.Keccak256Hash([]byte("contract.abi"), []byte(contractName)))
-            if err != nil {
-                return nil, fmt.Errorf("Could not load contract %s ABI: %w", contractName, err)
-            }
-        } else {
-            return nil, fmt.Errorf("Could not load contract %s ABI: %w", contractName, err)
-        }
+        return nil, fmt.Errorf("Could not load contract %s ABI: %w", contractName, err)
     }
 
     // Decode ABI
@@ -263,11 +236,9 @@ func (rp *RocketPool) GetContract(contractName string) (*Contract, error) {
     // Create contract
     contract := &Contract{
         Contract: bind.NewBoundContract(*address, *abi, rp.Client, rp.Client, rp.Client),
-        FallbackContract: bind.NewBoundContract(*address, *abi, rp.FallbackClient, rp.FallbackClient, rp.FallbackClient),
         Address: address,
         ABI: abi,
         Client: rp.Client,
-        FallbackClient: rp.FallbackClient,
     }
 
     // Cache contract
@@ -319,11 +290,9 @@ func (rp *RocketPool) MakeContract(contractName string, address common.Address) 
     // Create and return
     return &Contract{
         Contract: bind.NewBoundContract(address, *abi, rp.Client, rp.Client, rp.Client),
-        FallbackContract: bind.NewBoundContract(address, *abi, rp.FallbackClient, rp.FallbackClient, rp.FallbackClient),
         Address: &address,
         ABI: abi,
         Client: rp.Client,
-        FallbackClient: rp.FallbackClient,
     }, nil
 
 }

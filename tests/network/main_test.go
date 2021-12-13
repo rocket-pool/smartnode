@@ -1,17 +1,17 @@
 package network
 
 import (
-	"log"
-	"os"
-	"testing"
+    "log"
+    "os"
+    "testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/ethclient"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+    "github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/rocketpool-go/tests"
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+    "github.com/rocket-pool/rocketpool-go/tests"
+    "github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 )
 
 
@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
     if err != nil { log.Fatal(err) }
 
     // Initialize contract manager
-    rp, err = rocketpool.NewRocketPool(client, nil, common.HexToAddress(tests.RocketStorageAddress))
+    rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))
     if err != nil { log.Fatal(err) }
 
     // Initialize accounts

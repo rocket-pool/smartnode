@@ -3,7 +3,6 @@ package eth
 import (
 	"context"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,15 +56,8 @@ func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFil
 		var err error
 		deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
 		fromBlock, err = rp.RocketStorage.GetUint(nil, deployBlockHash)
-        if err != nil {
-			if strings.Contains(err.Error(), "dial tcp") && rp.FallbackClient != nil {
-				fromBlock, err = rp.FallbackRocketStorage.GetUint(nil, deployBlockHash)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				return nil, err
-			}
+		if err != nil {
+			return nil, err
 		}
 	}
 
