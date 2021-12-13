@@ -18,7 +18,7 @@ func getStatus(c *cli.Context) (*api.FaucetStatusResponse, error) {
     if err := services.RequireRplFaucet(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil { return nil, err }
     f, err := services.GetRplFaucet(c)
     if err != nil { return nil, err }

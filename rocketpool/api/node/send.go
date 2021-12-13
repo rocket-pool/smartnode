@@ -23,7 +23,7 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }
@@ -117,7 +117,7 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
     if err := services.RequireRocketStorage(c); err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }

@@ -9,7 +9,7 @@ import (
 func GetEthClientLatestBlockTimestamp(c *cli.Context) (uint64, error) {
 	// Get eth client
 	var err error
-	ec, err := GetEthClient(c)
+	ec, err := GetEthClientProxy(c)
 	if err != nil {
 		return 0, err
 	}

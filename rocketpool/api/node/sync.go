@@ -16,7 +16,7 @@ func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
     response := api.NodeSyncProgressResponse{}
 
     // Get eth1 client
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil {
         return nil, err
     }

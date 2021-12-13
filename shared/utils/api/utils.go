@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -58,7 +58,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 
 
 // Print a TX's details to the logger and waits for it to be mined.
-func PrintAndWaitForTransaction(config config.RocketPoolConfig, hash common.Hash, ec *ethclient.Client, logger log.ColorLogger) (error) {
+func PrintAndWaitForTransaction(config config.RocketPoolConfig, hash common.Hash, ec *client.EthClientProxy, logger log.ColorLogger) (error) {
 
     txWatchUrl := config.Smartnode.TxWatchUrl
     hashString := hash.String()

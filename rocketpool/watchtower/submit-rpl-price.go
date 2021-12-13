@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/ethclient"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -15,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -38,7 +37,7 @@ type submitRplPrice struct {
     c *cli.Context
     log log.ColorLogger
     cfg config.RocketPoolConfig
-    ec *ethclient.Client
+    ec *client.EthClientProxy
     w *wallet.Wallet
     rp *rocketpool.RocketPool
     oio *contracts.OneInchOracle
@@ -56,7 +55,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
     if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }

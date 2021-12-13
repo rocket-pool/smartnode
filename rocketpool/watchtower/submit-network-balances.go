@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -17,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -45,7 +45,7 @@ type submitNetworkBalances struct {
     log log.ColorLogger
     cfg config.RocketPoolConfig
     w *wallet.Wallet
-    ec *ethclient.Client
+    ec *client.EthClientProxy
     rp *rocketpool.RocketPool
     bc beacon.Client
     maxFee *big.Int
@@ -77,7 +77,7 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNe
     if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }

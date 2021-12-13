@@ -8,12 +8,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -35,7 +35,7 @@ type dissolveTimedOutMinipools struct {
     log log.ColorLogger
     cfg config.RocketPoolConfig
     w *wallet.Wallet
-    ec *ethclient.Client
+    ec *client.EthClientProxy
     rp *rocketpool.RocketPool
     maxFee *big.Int
     maxPriorityFee *big.Int
@@ -51,7 +51,7 @@ func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*diss
     if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }

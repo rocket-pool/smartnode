@@ -26,7 +26,7 @@ func ExportValidators(c *cli.Context) error {
 	opts := &bind.CallOpts{}
 
 	// Get services
-	ec, err := services.GetEthClient(c)
+	ec, err := services.GetEthClientProxy(c)
 	if err != nil {
 		return err
 	}

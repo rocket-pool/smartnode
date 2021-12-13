@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prysmaticlabs/prysm/v2/beacon-chain/core/signing"
 	prdeposit "github.com/prysmaticlabs/prysm/v2/contracts/deposit"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
@@ -16,6 +15,7 @@ import (
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -45,7 +45,7 @@ type submitScrubMinipools struct {
     cfg config.RocketPoolConfig
     w *wallet.Wallet
     rp *rocketpool.RocketPool
-    ec *ethclient.Client 
+    ec *client.EthClientProxy 
     bc beacon.Client
     it *iterationData
     coll *collectors.ScrubCollector
@@ -92,7 +92,7 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, coll *colle
     if err != nil { return nil, err }
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
     if err != nil { return nil, err }

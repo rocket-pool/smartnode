@@ -290,7 +290,7 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
     if err != nil {
         return false, err
     }
-    ec, err := GetEthClient(c)
+    ec, err := GetEthClientProxy(c)
     if err != nil {
         return false, err
     }
@@ -308,7 +308,7 @@ func getOneInchOracleLoaded(c *cli.Context) (bool, error) {
     if err != nil {
         return false, err
     }
-    ec, err := GetEthClient(c)
+    ec, err := GetEthClientProxy(c)
     if err != nil {
         return false, err
     }
@@ -326,7 +326,7 @@ func getRplFaucetLoaded(c *cli.Context) (bool, error) {
     if err != nil {
         return false, err
     }
-    ec, err := GetEthClient(c)
+    ec, err := GetEthClientProxy(c)
     if err != nil {
         return false, err
     }
@@ -385,7 +385,7 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 
     // Get eth client
     var err error
-    ec, err := GetEthClient(c)
+    ec, err := GetEthClientProxy(c)
     if err != nil {
         return false, err
     }
