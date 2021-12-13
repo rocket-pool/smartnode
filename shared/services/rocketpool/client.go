@@ -678,6 +678,13 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         paramsSet[setting.Env] = true
     }
 
+    if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+        for _, param := range cfg.Chains.Eth1Fallback.Client.Params {
+            env = append(env, fmt.Sprintf("FALLBACK_%s=%s", param.Env, shellescape.Quote(param.Value)))
+            paramsSet[param.Env] = true
+        }
+    }
+
     // Set default values from client config
     for _, param := range cfg.GetSelectedEth1Client().Params {
         if _, ok := paramsSet[param.Env]; ok { continue }
