@@ -33,8 +33,6 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec *ethclient.Client, bc
         return nil, fmt.Errorf("Error getting node minipool count: %w", err)
     }
 
-    fmt.Printf("Minipool count: %d\n", minipoolCount)
-
     // Enumerate node's minipools and grab each of their pubkey
     var wg errgroup.Group
     var lock = sync.RWMutex{}
@@ -52,8 +50,6 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec *ethclient.Client, bc
                 if err != nil {
                     return fmt.Errorf("Error getting minipool pubkey: %w", err)
                 }
-
-                fmt.Printf("%s = %s\n", minipoolAddress.Hex(), pubkey.Hex())
 
                 lock.Lock()
                 pubkeys[index] = pubkey
