@@ -4,16 +4,13 @@ import (
 	"context"
 	"fmt"
     "math/big"
-    "sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"golang.org/x/sync/errgroup"
 )
 
 func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec *ethclient.Client, bc beacon.Client, nodeAddress common.Address) ([]uint64, error) {
@@ -27,40 +24,9 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec *ethclient.Client, bc
     blockNumberBig := big.NewInt(0).SetUint64(blockNumber)
     callOpts := bind.CallOpts{BlockNumber: blockNumberBig}
 
-    // Get node's minipool count
-    minipoolCount, err := minipool.GetNodeMinipoolCount(rp, nodeAddress, &callOpts)
+    // Get list of pubkeys for this given node
+    pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAddress, &callOpts)
     if err != nil {
-        return nil, fmt.Errorf("Error getting node minipool count: %w", err)
-    }
-
-    // Enumerate node's minipools and grab each of their pubkey
-    var wg errgroup.Group
-    var lock = sync.RWMutex{}
-    pubkeys := make([]types.ValidatorPubkey, minipoolCount)
-
-    for i := uint64(0); i < minipoolCount; i++ {
-        func(index uint64) {
-            wg.Go(func() error {
-                minipoolAddress, err := minipool.GetNodeMinipoolAt(rp, nodeAddress, index, &callOpts)
-                if err != nil {
-                    return fmt.Errorf("Error getting minipool: %w", err)
-                }
-
-                pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
-                if err != nil {
-                    return fmt.Errorf("Error getting minipool pubkey: %w", err)
-                }
-
-                lock.Lock()
-                pubkeys[index] = pubkey
-                lock.Unlock()
-                return nil
-            })
-        }(i)
-    }
-
-    // Check for errors
-    if err := wg.Wait(); err != nil {
         return nil, err
     }
 

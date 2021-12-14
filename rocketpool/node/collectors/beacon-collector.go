@@ -67,6 +67,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
     // Sync
     var wg errgroup.Group
+
     activeSyncCommittee := float64(0)
 	upcomingSyncCommittee := float64(0)
 
@@ -82,37 +83,47 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 			return fmt.Errorf("Error getting beaconchain head: %w", err)
 		}
 
-		// Get current duties
-		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch)
-        if err != nil {
-            return fmt.Errorf("Error getting sync duties: %w", err)
-        }
+		var wg2 errgroup.Group
 
-		for _, duty := range duties {
-			if duty {
-				activeSyncCommittee ++
+		wg2.Go(func() error {
+			// Get current duties
+			duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch)
+			if err != nil {
+				return fmt.Errorf("Error getting sync duties: %w", err)
 			}
-		}
 
-		// Get epochs per sync committee period config to query next period
-		config, err := collector.bc.GetEth2Config()
-		if err != nil {
-			return fmt.Errorf("Error getting ETH2 config: %w", err)
-		}
-
-		// Get upcoming duties
-		duties, err = collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch + config.EpochsPerSyncCommitteePeriod)
-		if err != nil {
-			return fmt.Errorf("Error getting sync duties: %w", err)
-		}
-
-		for _, duty := range duties {
-			if duty {
-				upcomingSyncCommittee ++
+			for _, duty := range duties {
+				if duty {
+					activeSyncCommittee ++
+				}
 			}
-		}
 
-		return nil
+			return nil
+		})
+
+		wg2.Go(func() error {
+			// Get epochs per sync committee period config to query next period
+			config, err := collector.bc.GetEth2Config()
+			if err != nil {
+				return fmt.Errorf("Error getting ETH2 config: %w", err)
+			}
+
+			// Get upcoming duties
+			duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch+config.EpochsPerSyncCommitteePeriod)
+			if err != nil {
+				return fmt.Errorf("Error getting sync duties: %w", err)
+			}
+
+			for _, duty := range duties {
+				if duty {
+					upcomingSyncCommittee++
+				}
+			}
+
+			return nil
+		})
+
+		return wg2.Wait()
 	})
 
     // Wait for data
