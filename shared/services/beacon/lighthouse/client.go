@@ -34,7 +34,7 @@ const (
     RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
     RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
     RequestBeaconBlockPath           = "/eth/v1/beacon/blocks/%s"
-    RequestValidatorSyncDuties       = "/eth1/v1/validator/duties/sync/%s"
+    RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
 
     MaxRequestValidatorsCount = 600
 )
