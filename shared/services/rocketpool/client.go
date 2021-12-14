@@ -654,8 +654,10 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
     }
 
     if cfg.Chains.Eth1Fallback.Client.Selected != "" {
-        env = append(env, fmt.Sprintf("ETH1_FALLBACK_CLIENT=%s",    shellescape.Quote(cfg.GetSelectedEth1FallbackClient().ID)))
-        env = append(env, fmt.Sprintf("ETH1_FALLBACK_IMAGE=%s",     shellescape.Quote(cfg.GetSelectedEth1FallbackClient().Image)))
+        env = append(env, fmt.Sprintf("ETH1_FALLBACK_CLIENT=%s",      shellescape.Quote(cfg.GetSelectedEth1FallbackClient().ID)))
+        env = append(env, fmt.Sprintf("ETH1_FALLBACK_IMAGE=%s",       shellescape.Quote(cfg.GetSelectedEth1FallbackClient().Image)))
+        env = append(env, fmt.Sprintf("ETH1_FALLBACK_PROVIDER=%s",    shellescape.Quote(cfg.Chains.Eth1.FallbackProvider)))
+        env = append(env, fmt.Sprintf("ETH1_FALLBACK_WS_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.FallbackWsProvider)))
     }
 
     if cfg.Metrics.Enabled {

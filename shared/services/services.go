@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
@@ -89,7 +90,11 @@ func GetEthClientProxy(c *cli.Context) (*uc.EthClientProxy, error) {
     if err != nil {
         return nil, err
     }
-    return getEthClientProxy(cfg), nil
+    ec, err := getEthClientProxy(cfg)
+    if err != nil {
+        return nil, err
+    }
+    return ec, nil
 }
 
 
@@ -98,9 +103,12 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
     if err != nil {
         return nil, err
     }
-    proxy := getEthClientProxy(cfg)
+    ec, err := getEthClientProxy(cfg)
+    if err != nil {
+        return nil, err
+    }
 
-    return getRocketPool(cfg, proxy)
+    return getRocketPool(cfg, ec)
 }
 
 
@@ -109,7 +117,10 @@ func GetOneInchOracle(c *cli.Context) (*contracts.OneInchOracle, error) {
     if err != nil {
         return nil, err
     }
-    ec := getEthClientProxy(cfg)
+    ec, err := getEthClientProxy(cfg)
+    if err != nil {
+        return nil, err
+    }
     return getOneInchOracle(cfg, ec)
 }
 
@@ -119,7 +130,10 @@ func GetRplFaucet(c *cli.Context) (*contracts.RPLFaucet, error) {
     if err != nil {
         return nil, err
     }
-    ec := getEthClientProxy(cfg)
+    ec, err := getEthClientProxy(cfg)
+    if err != nil {
+        return nil, err
+    }
     return getRplFaucet(cfg, ec)
 }
 
@@ -187,15 +201,18 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
 }
 
 
-func getEthClientProxy(cfg config.RocketPoolConfig) (*uc.EthClientProxy) {
+func getEthClientProxy(cfg config.RocketPoolConfig) (*uc.EthClientProxy, error) {
+    var err error
     initEthClientProxy.Do(func() {
+        reconnectDelay, err := time.ParseDuration(cfg.Chains.Eth1.ReconnectDelay)
+        if err != nil { return }
         if cfg.Chains.Eth1Fallback.Client.Selected == "" {
-            ethClientProxy = uc.NewEth1ClientProxy(cfg.Chains.Eth1.Provider)
+            ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, cfg.Chains.Eth1.Provider)
         } else {
-            ethClientProxy = uc.NewEth1ClientProxy(cfg.Chains.Eth1.Provider, cfg.Chains.Eth1.FallbackProvider)
+            ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, cfg.Chains.Eth1.Provider, cfg.Chains.Eth1.FallbackProvider)
         }
     })
-    return ethClientProxy
+    return ethClientProxy, err
 }
 
 
