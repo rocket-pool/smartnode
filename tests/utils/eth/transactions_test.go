@@ -24,7 +24,7 @@ func TestSendTransaction(t *testing.T) {
     t.Cleanup(func() { if err := evm.RevertSnapshot(); err != nil { t.Fatal(err) } })
 
     // Initialize eth client
-    client := uc.NewEth1ClientProxy(tests.Eth1ProviderAddress)
+    client := uc.NewEth1ClientProxy(0, tests.Eth1ProviderAddress)
 
     // Initialize accounts
     userAccount, err := accounts.GetAccount(9)

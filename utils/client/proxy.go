@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,6 +17,8 @@ import (
 type EthClientProxy struct {
     clientUrls []string
     clients []*ethclient.Client
+    timeouts []time.Time
+    reconnectDelay time.Duration
 }
 
 
@@ -24,18 +27,32 @@ type clientFunction func(*ethclient.Client) (interface{}, error)
 
 
 // Creates a new Eth1ClientProxy instance based on the main and backup client URLs
-func NewEth1ClientProxy(urls ...string) (*EthClientProxy) {
+func NewEth1ClientProxy(reconnectDelay time.Duration, urls ...string) (*EthClientProxy) {
+
+    clients := []*ethclient.Client{}
+    timeouts := []time.Time{}
+
+    // Clamp the delay
+    if reconnectDelay < 0 {
+        reconnectDelay = 0
+    }
 
     // Try connecting to each client, but ignore errors - they'll be handled at runtime
-    clients := []*ethclient.Client{}
     for _, url := range urls {
-        client, _ := ethclient.Dial(url)
+        client, err := ethclient.Dial(url)
+        if err != nil {
+            timeouts = append(timeouts, time.Now())
+        } else {
+            timeouts = append(timeouts, time.Time{})
+        }
         clients = append(clients, client)
     }
 
     return &EthClientProxy{
         clientUrls: urls,
         clients: clients,
+        timeouts: timeouts,
+        reconnectDelay: reconnectDelay,
     }
 
 }
@@ -266,6 +283,7 @@ func (p *EthClientProxy) runFunction(function clientFunction) (interface{}, erro
                 errorString += fmt.Sprintf("\nError with client %d: %s", i, err.Error())
                 if isDisconnected(err) {
                     p.clients[i] = nil
+                    p.timeouts[i] = time.Now()
 
                 // If it's a different error, just return it
                 } else {
@@ -301,8 +319,21 @@ func (p *EthClientProxy) getClient(index int) (*ethclient.Client, error) {
     // Try connecting to the client if it's dead
     var err error
     if p.clients[index] == nil {
-        p.clients[index], err = ethclient.Dial(p.clientUrls[index])
+
+        // Check if enough time has passed
+        if time.Since(p.timeouts[index]) > p.reconnectDelay {
+            p.clients[index], err = ethclient.Dial(p.clientUrls[index])
+        
+            // If the connection failed, reset the timer
+            if err != nil {
+                p.timeouts[index] = time.Now()
+            }
+
+        } else {
+            err = fmt.Errorf("Connection failure, waiting %s to reconnect", p.reconnectDelay)
+        }
     }
+
     // Return the client regardless of its state
     return p.clients[index], err
 }

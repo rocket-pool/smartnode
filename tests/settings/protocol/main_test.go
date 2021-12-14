@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
     var err error
 
     // Initialize eth client
-    client = uc.NewEth1ClientProxy(tests.Eth1ProviderAddress)
+    client = uc.NewEth1ClientProxy(0, tests.Eth1ProviderAddress)
 
     // Initialize contract manager
     rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))
