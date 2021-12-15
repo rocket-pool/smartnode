@@ -1,6 +1,7 @@
 package node
 
 import (
+	"crypto/rand"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -121,10 +122,15 @@ func nodeDeposit(c *cli.Context) error {
         var success bool
         salt, success = big.NewInt(0).SetString(c.String("salt"), 0)
         if !success {
-            return fmt.Errorf("Invalid minipool salt: %s")
+            return fmt.Errorf("Invalid minipool salt: %s", c.String("salt"))
         }
     } else {
-        salt = big.NewInt(0)
+        buffer := make([]byte, 32)
+        _, err = rand.Read(buffer)
+        if err != nil {
+            return fmt.Errorf("Error generating random salt: %w", err)
+        }
+        salt = big.NewInt(0).SetBytes(buffer)
     }
 
     // Check deposit can be made

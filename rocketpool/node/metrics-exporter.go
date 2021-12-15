@@ -40,9 +40,9 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     performanceCollector := collectors.NewPerformanceCollector(rp)
     supplyCollector := collectors.NewSupplyCollector(rp)
     rplCollector := collectors.NewRplCollector(rp)
-    //odaoCollector := collectors.NewOdaoCollector(rp)
+    odaoCollector := collectors.NewOdaoCollector(rp)
     nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg)
-    //trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg)
+    trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg)
 
     // Set up Prometheus
     registry := prometheus.NewRegistry()
@@ -50,9 +50,9 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     registry.MustRegister(performanceCollector)
     registry.MustRegister(supplyCollector)
     registry.MustRegister(rplCollector)
-    //registry.MustRegister(odaoCollector)
+    registry.MustRegister(odaoCollector)
     registry.MustRegister(nodeCollector)
-    //registry.MustRegister(trustedNodeCollector)
+    registry.MustRegister(trustedNodeCollector)
     handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
     // Start the HTTP server
