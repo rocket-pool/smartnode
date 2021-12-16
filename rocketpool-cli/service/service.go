@@ -12,6 +12,12 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
+// Settings
+const ExporterContainerSuffix = "_exporter"
+const ValidatorContainerSuffix = "_validator"
+const BeaconContainerSuffix = "_eth2"
+const ExecutionContainerSuffix = "_eth1"
+const PruneProvisionerContainerSuffix = "_prune_provisioner"
 const dockerImageRegex string = ".*/(?P<image>.*):.*"
 const colorReset string = "\033[0m"
 const colorRed string = "\033[31m"
@@ -89,6 +95,12 @@ func installUpdateTracker(c *cli.Context) error {
     if err != nil { return err }
     defer rp.Close()
 
+    // Get the container prefix
+    prefix, err := getContainerPrefix(rp)
+    if err != nil {
+        return fmt.Errorf("Error getting validator container prefix: %w", err)
+    }
+
     // Install service
     err = rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
     if err != nil { return err }
@@ -100,7 +112,7 @@ func installUpdateTracker(c *cli.Context) error {
     fmt.Printf("The Rocket Pool update tracker service was successfully installed %s!\n", location)
     if c.GlobalString("host") == "" {
         fmt.Println("")
-        fmt.Printf("%sNOTE:\nPlease run 'docker restart rocketpool_exporter' to enable update tracking on the metrics dashboard.%s\n", colorYellow, colorReset)
+        fmt.Printf("%sNOTE:\nPlease run 'docker restart %s%s' to enable update tracking on the metrics dashboard.%s\n", colorYellow, prefix, ExporterContainerSuffix, colorReset)
         fmt.Println("")
     }
     return nil
@@ -175,8 +187,14 @@ func startService(c *cli.Context) error {
 
 func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPoolConfig) (error) {
 
+    // Get the container prefix
+    prefix, err := getContainerPrefix(rp)
+    if err != nil {
+        return fmt.Errorf("Error getting validator container prefix: %w", err)
+    }
+
     // Get the current validator client
-    currentValidatorImageString, err := rp.GetDockerImage("rocketpool_validator")
+    currentValidatorImageString, err := rp.GetDockerImage(prefix + ValidatorContainerSuffix)
     currentValidatorName, err := getDockerImageName(currentValidatorImageString)
     if err != nil {
         return fmt.Errorf("Error getting current validator image name: %w", err)
@@ -205,7 +223,10 @@ func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPool
     } else {
 
         // Get the time that the container responsible for validator duties exited
-        validatorDutyContainerName := getContainerNameForValidatorDuties(currentValidatorName, rp)
+        validatorDutyContainerName, err := getContainerNameForValidatorDuties(currentValidatorName, rp)
+        if err != nil {
+            return fmt.Errorf("Error getting validator container name: %w", err)
+        }
         validatorFinishTime, err := rp.GetDockerContainerShutdownTime(validatorDutyContainerName)
         if err != nil {
             return fmt.Errorf("Error getting validator shutdown time: %w", err)
@@ -261,12 +282,17 @@ func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPool
 
 // Get the name of the container responsible for validator duties based on the client name
 // TODO: this is temporary and can change, clean it up when Nimbus supports split mode
-func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *rocketpool.Client) (string) {
+func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *rocketpool.Client) (string, error) {
+
+    prefix, err := getContainerPrefix(rp)
+    if err != nil {
+        return "", err
+    }
 
     if (CurrentValidatorClientName == "nimbus") {
-        return "rocketpool_eth2"
+        return prefix + BeaconContainerSuffix, nil
     } else {
-        return "rocketpool_validator"
+        return prefix + ValidatorContainerSuffix, nil
     }
 
 }
@@ -275,12 +301,16 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 // Get the time that the container responsible for validator duties exited
 func getValidatorFinishTime(CurrentValidatorClientName string, rp *rocketpool.Client) (time.Time, error) {
 
+    prefix, err := getContainerPrefix(rp)
+    if err != nil {
+        return time.Time{}, err
+    }
+
     var validatorFinishTime time.Time
-    var err error
     if (CurrentValidatorClientName == "nimbus") {
-        validatorFinishTime, err = rp.GetDockerContainerShutdownTime("rocketpool_eth2")
+        validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + BeaconContainerSuffix)
     } else {
-        validatorFinishTime, err = rp.GetDockerContainerShutdownTime("rocketpool_validator")
+        validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + ValidatorContainerSuffix)
     }
 
     return validatorFinishTime, err
@@ -308,6 +338,95 @@ func getDockerImageName(imageString string) (string, error) {
 
     imageName := matches[imageIndex]
     return imageName, nil
+}
+
+
+// Gets the prefix specified for Rocket Pool's Docker containers
+func getContainerPrefix(rp *rocketpool.Client) (string, error) {
+
+    cfg, err := rp.LoadGlobalConfig()
+    if err != nil {
+        return "", err
+    }
+
+    return cfg.Smartnode.ProjectName, nil
+}
+
+
+// Prepares the execution client for pruning
+func pruneExecutionClient(c *cli.Context) error {
+
+    fmt.Println("This will shut down your main ETH1 client and prune its database, freeing up disk space.")
+    fmt.Println("Once pruning is complete, your ETH1 client will restart automatically.\n")
+    fmt.Println("If you have configured a fallback ETH1 client, Rocket Pool (and your ETH2 client) will use that while the main client is pruning.")
+    fmt.Printf("%sIf you have not configured a fallback client, please do so before running this with `rocketpool service config`.%s\n", colorYellow, colorReset)
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to prune your main ETH1 client?")) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Get the config
+    cfg, err := rp.LoadGlobalConfig()
+    if err != nil {
+        return err
+    }
+
+    // Get the container prefix
+    prefix, err := getContainerPrefix(rp)
+    if err != nil {
+        return fmt.Errorf("Error getting container prefix: %w", err)
+    }
+
+    // Get the prune provisioner image
+    pruneProvisioner := cfg.Chains.Eth1.PruneProvisioner
+    if pruneProvisioner == "" {
+        return fmt.Errorf("Prune provisioner was not found in your configuration; are you running an old version of Rocket Pool?")
+    }
+
+    // Shut down ETH1
+    executionContainerName := prefix + ExecutionContainerSuffix
+    fmt.Printf("Stopping %s...\n", executionContainerName)
+    result, err := rp.StopContainer(executionContainerName)
+    if err != nil {
+        return fmt.Errorf("Error stopping main ETH1 container: %w", err)
+    }
+    if result != executionContainerName {
+        return fmt.Errorf("Unexpected output while stopping main ETH1 container: %s", result)
+    }
+
+    // Get the ETH1 volume name
+    volume, err := rp.GetExecutionClientVolumeName(executionContainerName)
+    if err != nil {
+        return fmt.Errorf("Error getting ETH1 volume name: %w", err)
+    }
+
+    // Run the prune provisioner
+    fmt.Printf("Provisioning pruning on volume %s...\n", volume)
+    err = rp.RunPruneProvisioner(prefix + PruneProvisionerContainerSuffix, volume, pruneProvisioner)
+    if err != nil {
+        return fmt.Errorf("Error running prune provisioner: %w", err)
+    }
+
+    // Restart ETH1
+    fmt.Printf("Restarting %s...\n", executionContainerName)
+    result, err = rp.StartContainer(executionContainerName)
+    if err != nil {
+        return fmt.Errorf("Error starting main ETH1 container: %w", err)
+    }
+    if result != executionContainerName {
+        return fmt.Errorf("Unexpected output while starting main ETH1 container: %s", result)
+    }
+
+    fmt.Printf("Done! Your main ETH1 client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
+    return nil
+
 }
 
 
@@ -392,7 +511,7 @@ func serviceVersion(c *cli.Context) error {
     if err != nil {
         return err
     }
-
+    
     // Get RP service version
     serviceVersion, err := rp.GetServiceVersion()
     if err != nil { return err }

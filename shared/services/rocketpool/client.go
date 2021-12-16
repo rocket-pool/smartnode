@@ -539,6 +539,54 @@ func (c *Client) StopContainer(container string) (string, error) {
 }
 
 
+// Start a container
+func (c *Client) StartContainer(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker start %s", container)
+    output, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(output)), nil
+    
+}
+
+
+// Gets the name of the execution client volume
+func (c *Client) GetExecutionClientVolumeName(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker container inspect --format='{{range .Mounts}}{{if eq \"/ethclient\" .Destination}}{{.Name}}{{end}}{{end}}' %s", container)
+    output, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(output)), nil
+}
+
+
+// Runs the prune provisioner
+func (c *Client) RunPruneProvisioner(container string, volume string, image string) (error) {
+
+    // Run the prune provisioner
+    cmd := fmt.Sprintf("docker run --name %s -v %s:/ethclient %s", container, volume, image)
+    output, err := c.readOutput(cmd)
+    if err != nil {
+        return err
+    }
+
+    outputString := strings.TrimSpace(string(output))
+    if outputString != "" {
+        return fmt.Errorf("Unexpected output running the prune provisioner: %s", outputString)
+    }
+
+    // Remove the prune provisioner, ignoring output
+    cmd = fmt.Sprintf("docker container rm %s", container)
+    c.readOutput(cmd)
+    return nil
+    
+}
+
+
 // Get the gas settings
 func (c *Client) GetGasSettings() (float64, float64, uint64) {
     return c.maxFee, c.maxPrioFee, c.gasLimit

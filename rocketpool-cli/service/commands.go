@@ -245,6 +245,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "prune-eth1",
+                Aliases:   []string{"n"},
+                Usage:     "Shuts down the main ETH1 client and prunes its database, freeing up disk space, then restarts it when it's done.",
+                UsageText: "rocketpool service prune-eth1",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return pruneExecutionClient(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "install-update-tracker",
                 Aliases:   []string{"d"},
                 Usage:     "Install the update tracker that provides the available system update count to the metrics dashboard",

@@ -50,6 +50,7 @@ type Chain struct {
     FallbackProvider string             `yaml:"fallbackProvider,omitempty"`
     FallbackWsProvider string           `yaml:"fallbackWsProvider,omitempty"`
     ReconnectDelay string               `yaml:"reconnectDelay,omitempty"`
+    PruneProvisioner string             `yaml:"pruneProvisioner,omitempty"`
     ChainID string                      `yaml:"chainID,omitempty"`
     Client struct {
         Options []ClientOption          `yaml:"options,omitempty"`
