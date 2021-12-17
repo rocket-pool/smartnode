@@ -107,6 +107,12 @@ type SyncDuty struct {
     ValidatorIndex uinteger             `json:"validator_index"`
     SyncCommitteeIndices []uinteger     `json:"validator_sync_committee_indices"`
 }
+type ProposerDutiesResponse struct {
+    Data []ProposerDuty                 `json:"data"`
+}
+type ProposerDuty struct {
+    ValidatorIndex uinteger             `json:"validator_index"`
+}
 
 
 // Unsigned integer type

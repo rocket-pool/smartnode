@@ -21,6 +21,9 @@ type BeaconCollector struct {
 	// The number of this node's validators on the next sync committee
 	upcomingSyncCommittee *prometheus.Desc
 
+	// The number of upcoming proposals for this node's validators
+	upcomingProposals *prometheus.Desc
+
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
@@ -47,6 +50,10 @@ func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec *ethclie
 			"The number of validators on the next sync committee",
 			nil, nil,
 		),
+		upcomingProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "upcoming_proposals"),
+			"The number of proposals assigned to validators in this epoch and the next",
+			nil, nil,
+		),
 		rp: rp,
 		bc: bc,
 		ec: ec,
@@ -59,6 +66,7 @@ func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec *ethclie
 func (collector *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.activeSyncCommittee
 	channel <- collector.upcomingSyncCommittee
+	channel <- collector.upcomingProposals
 }
 
 
@@ -70,6 +78,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
     activeSyncCommittee := float64(0)
 	upcomingSyncCommittee := float64(0)
+	upcomingProposals := float64(0)
 
 	// Get sync committee duties
     wg.Go(func() error {
@@ -123,6 +132,34 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 			return nil
 		})
 
+		wg2.Go(func() error {
+			// Get proposals in this epoch
+			duties, err := collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch)
+			if err != nil {
+				return fmt.Errorf("Error getting proposer duties: %w", err)
+			}
+
+			for _, duty := range duties {
+				upcomingProposals += float64(duty)
+			}
+
+			return nil
+		})
+
+		wg2.Go(func() error {
+			// Get proposals in the next epoch
+			duties, err := collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch + 1)
+			if err != nil {
+				return fmt.Errorf("Error getting proposer duties: %w", err)
+			}
+
+			for _, duty := range duties {
+				upcomingProposals += float64(duty)
+			}
+
+			return nil
+		})
+
 		return wg2.Wait()
 	})
 
@@ -136,4 +173,6 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.activeSyncCommittee, prometheus.GaugeValue, activeSyncCommittee)
 	channel <- prometheus.MustNewConstMetric(
 		collector.upcomingSyncCommittee, prometheus.GaugeValue, upcomingSyncCommittee)
+	channel <- prometheus.MustNewConstMetric(
+		collector.upcomingProposals, prometheus.GaugeValue, upcomingProposals)
 }

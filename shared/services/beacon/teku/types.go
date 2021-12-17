@@ -98,12 +98,18 @@ type Validator struct {
     } `json:"validator"`
 }
 type SyncDutiesResponse struct {
-    Data []SyncDuty                    `json:"data"`
+    Data []SyncDuty                     `json:"data"`
 }
 type SyncDuty struct {
     Pubkey byteArray                    `json:"pubkey"`
     ValidatorIndex uinteger             `json:"validator_index"`
     SyncCommitteeIndices []uinteger     `json:"validator_sync_committee_indices"`
+}
+type ProposerDutiesResponse struct {
+    Data []ProposerDuty                 `json:"data"`
+}
+type ProposerDuty struct {
+    ValidatorIndex uinteger             `json:"validator_index"`
 }
 
 // Unsigned integer type

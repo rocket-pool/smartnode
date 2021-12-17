@@ -36,6 +36,7 @@ const (
     RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
     RequestBeaconBlockPath           = "/eth/v1/beacon/blocks/%s"
     RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
+    RequestValidatorProposerDuties   = "/eth/v1/validator/duties/proposer/%s"
 
     MaxRequestValidatorsCount = 600
 )
@@ -311,6 +312,39 @@ func (c *Client) GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uin
     }
 
     return validatorMap, nil
+}
+
+// Sums proposer duties per validators for a given epoch
+func (c *Client) GetValidatorProposerDuties(indices []uint64, epoch uint64) (map[uint64]uint64, error) {
+
+    // Perform the post request
+    responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorProposerDuties, strconv.FormatUint(epoch, 10)))
+
+    if err != nil {
+        return nil, fmt.Errorf("Could not get validator proposer duties: %w", err)
+    } else if status != http.StatusOK {
+        return nil, fmt.Errorf("Could not get validator proposer duties: HTTP status %d; response body: '%s'", status, string(responseBody))
+    }
+
+    var response ProposerDutiesResponse
+    if err := json.Unmarshal(responseBody, &response); err != nil {
+        return nil, fmt.Errorf("Could not decode validator proposer duties data: %w", err)
+    }
+
+    // Map the results
+    proposerMap := make(map[uint64]uint64)
+
+    for _, index := range indices {
+        proposerMap[index] = 0
+        for _, duty := range response.Data {
+            if uint64(duty.ValidatorIndex) == index {
+                proposerMap[index]++
+                break
+            }
+        }
+    }
+
+    return proposerMap, nil
 }
 
 // Get a validator's index

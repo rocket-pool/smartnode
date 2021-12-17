@@ -37,7 +37,7 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec *ethclient.Client, bc
     }
 
     // Enumerate validators statuses and fill indices array
-    validatorIndices := make([]uint64, len(statuses))
+    validatorIndices := make([]uint64, len(statuses) + 1)
 
     i := 0
     for _, status := range statuses {
