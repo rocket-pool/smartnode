@@ -551,6 +551,17 @@ func (c *Client) StartContainer(container string) (string, error) {
     
 }
 
+// Gets the absolute file path of the execution client volume
+func (c *Client) GetExecutionClientVolumeSource(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker container inspect --format='{{range .Mounts}}{{if eq \"/ethclient\" .Destination}}{{.Source}}{{end}}{{end}}' %s", container)
+    output, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(output)), nil
+}
+
 
 // Gets the name of the execution client volume
 func (c *Client) GetExecutionClientVolumeName(container string) (string, error) {

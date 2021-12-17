@@ -31,6 +31,7 @@ require (
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
 	github.com/rocket-pool/rocketpool-go v1.0.10-0.20211214012631-1b1ad7f17922
 	github.com/sethvargo/go-password v0.2.0
+	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.5
 	github.com/wealdtech/go-eth2-types/v2 v2.6.0

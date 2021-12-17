@@ -3,13 +3,16 @@ package service
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/urfave/cli"
 
+	"github.com/dustin/go-humanize"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/shirou/gopsutil/v3/disk"
 )
 
 // Settings
@@ -18,6 +21,7 @@ const ValidatorContainerSuffix = "_validator"
 const BeaconContainerSuffix = "_eth2"
 const ExecutionContainerSuffix = "_eth1"
 const PruneProvisionerContainerSuffix = "_prune_provisioner"
+const PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
 const dockerImageRegex string = ".*/(?P<image>.*):.*"
 const colorReset string = "\033[0m"
 const colorRed string = "\033[31m"
@@ -356,10 +360,27 @@ func getContainerPrefix(rp *rocketpool.Client) (string, error) {
 // Prepares the execution client for pruning
 func pruneExecutionClient(c *cli.Context) error {
 
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Get the config
+    cfg, err := rp.LoadMergedConfig()
+    if err != nil {
+        return err
+    }
+    
     fmt.Println("This will shut down your main ETH1 client and prune its database, freeing up disk space.")
     fmt.Println("Once pruning is complete, your ETH1 client will restart automatically.\n")
-    fmt.Println("If you have configured a fallback ETH1 client, Rocket Pool (and your ETH2 client) will use that while the main client is pruning.")
-    fmt.Printf("%sIf you have not configured a fallback client, please do so before running this with `rocketpool service config`.%s\n", colorYellow, colorReset)
+    
+    if cfg.Chains.Eth1Fallback.Client.Selected == "" {
+        fmt.Printf("%sYou do not have a fallback ETH1 client configured. You will continue attesting while ETH1 prunes, but block proposals and most of Rocket Pool's commands will not work. Please configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+    } else {
+        fmt.Printf("You have a fallback ETH1 client configured (%s). Rocket Pool (and your ETH2 client) will use that while the main client is pruning.\n", cfg.Chains.Eth1Fallback.Client.Selected)
+    }
+
+    fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", colorYellow, colorReset)
 
     // Prompt for confirmation
     if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to prune your main ETH1 client?")) {
@@ -367,16 +388,6 @@ func pruneExecutionClient(c *cli.Context) error {
         return nil
     }
 
-    // Get RP client
-    rp, err := rocketpool.NewClientFromCtx(c)
-    if err != nil { return err }
-    defer rp.Close()
-
-    // Get the config
-    cfg, err := rp.LoadGlobalConfig()
-    if err != nil {
-        return err
-    }
 
     // Get the container prefix
     prefix, err := getContainerPrefix(rp)
@@ -390,8 +401,37 @@ func pruneExecutionClient(c *cli.Context) error {
         return fmt.Errorf("Prune provisioner was not found in your configuration; are you running an old version of Rocket Pool?")
     }
 
-    // Shut down ETH1
+    // Check for enough free space
     executionContainerName := prefix + ExecutionContainerSuffix
+    volumePath, err := rp.GetExecutionClientVolumeSource(executionContainerName)
+    if err != nil {
+        return fmt.Errorf("Error getting ETH1 volume source path: %w", err)
+    }
+    partitions, err := disk.Partitions(false)
+    if err != nil {
+        return fmt.Errorf("Error getting partition list: %w", err)
+    }
+
+    longestPath := 0
+    bestPartition := disk.PartitionStat{}
+    for _, partition := range partitions {
+        if strings.HasPrefix(volumePath, partition.Mountpoint) && len(partition.Mountpoint) > longestPath {
+            bestPartition = partition
+            longestPath = len(partition.Mountpoint)
+        }
+    }
+
+	diskUsage, err := disk.Usage(bestPartition.Mountpoint)
+	if err != nil {
+        return fmt.Errorf("Error getting free disk space available: %w", err)
+	}
+    freeSpaceHuman := humanize.IBytes(diskUsage.Free)
+    if diskUsage.Free < PruneFreeSpaceRequired {
+        return fmt.Errorf("%sYour disk must have 50 GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, freeSpaceHuman, colorReset)
+    } else {
+        fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
+    }
+
     fmt.Printf("Stopping %s...\n", executionContainerName)
     result, err := rp.StopContainer(executionContainerName)
     if err != nil {
@@ -424,7 +464,8 @@ func pruneExecutionClient(c *cli.Context) error {
         return fmt.Errorf("Unexpected output while starting main ETH1 container: %s", result)
     }
 
-    fmt.Printf("Done! Your main ETH1 client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
+    fmt.Printf("\nDone! Your main ETH1 client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
+    fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
     return nil
 
 }
