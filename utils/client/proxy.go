@@ -69,6 +69,9 @@ func (p *EthClientProxy) CodeAt(ctx context.Context, contract common.Address, bl
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.CodeAt(ctx, contract, blockNumber)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.([]byte), err
 }
 
@@ -79,6 +82,9 @@ func (p *EthClientProxy) CallContract(ctx context.Context, call ethereum.CallMsg
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.CallContract(ctx, call, blockNumber)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.([]byte), err
 }
 
@@ -94,6 +100,9 @@ func (p *EthClientProxy) HeaderByNumber(ctx context.Context, number *big.Int) (*
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.HeaderByNumber(ctx, number)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.(*types.Header), err
 }
 
@@ -103,6 +112,9 @@ func (p *EthClientProxy) PendingCodeAt(ctx context.Context, account common.Addre
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.PendingCodeAt(ctx, account)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.([]byte), err
 }
 
@@ -112,6 +124,9 @@ func (p *EthClientProxy) PendingNonceAt(ctx context.Context, account common.Addr
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.PendingNonceAt(ctx, account)
     })
+    if err != nil {
+        return 0, err
+    }
     return result.(uint64), err
 }
 
@@ -122,6 +137,9 @@ func (p *EthClientProxy) SuggestGasPrice(ctx context.Context) (*big.Int, error) 
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.SuggestGasPrice(ctx)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.(*big.Int), err
 }
 
@@ -132,6 +150,9 @@ func (p *EthClientProxy) SuggestGasTipCap(ctx context.Context) (*big.Int, error)
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.SuggestGasTipCap(ctx)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.(*big.Int), err
 }
 
@@ -145,6 +166,9 @@ func (p *EthClientProxy) EstimateGas(ctx context.Context, call ethereum.CallMsg)
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.EstimateGas(ctx, call)
     })
+    if err != nil {
+        return 0, err
+    }
     return result.(uint64), err
 }
 
@@ -171,6 +195,9 @@ func (p *EthClientProxy) FilterLogs(ctx context.Context, query ethereum.FilterQu
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.FilterLogs(ctx, query)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.([]types.Log), err
 }
 
@@ -181,6 +208,9 @@ func (p *EthClientProxy) SubscribeFilterLogs(ctx context.Context, query ethereum
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.SubscribeFilterLogs(ctx, query, ch)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.(ethereum.Subscription), err
 }
 
@@ -196,6 +226,9 @@ func (p *EthClientProxy) TransactionReceipt(ctx context.Context, txHash common.H
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.TransactionReceipt(ctx, txHash)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.(*types.Receipt), err
 }
 
@@ -210,6 +243,9 @@ func (p *EthClientProxy) BlockNumber(ctx context.Context) (uint64, error) {
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.BlockNumber(ctx)
     })
+    if err != nil {
+        return 0, err
+    }
     return result.(uint64), err
 }
 
@@ -220,6 +256,9 @@ func (p *EthClientProxy) BalanceAt(ctx context.Context, account common.Address, 
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.BalanceAt(ctx, account, blockNumber)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.(*big.Int), err
 }
 
@@ -231,6 +270,9 @@ func (p *EthClientProxy) TransactionByHash(ctx context.Context, hash common.Hash
         result := []interface{} { tx, isPending }
         return result, err
     })
+    if err != nil {
+        return nil, false, err
+    }
 
     // TODO: Can we just use the named return values inside the closer to skip this?
     resultArray := result.([]interface{})
@@ -246,6 +288,9 @@ func (p *EthClientProxy) NonceAt(ctx context.Context, account common.Address, bl
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.NonceAt(ctx, account, blockNumber)
     })
+    if err != nil {
+        return 0, err
+    }
     return result.(uint64), err
 }
 
@@ -256,6 +301,9 @@ func (p *EthClientProxy) SyncProgress(ctx context.Context) (*ethereum.SyncProgre
     result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
         return client.SyncProgress(ctx)
     })
+    if err != nil {
+        return nil, err
+    }
     return result.(*ethereum.SyncProgress), err
 }
 
