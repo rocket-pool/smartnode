@@ -65,3 +65,12 @@ func Select(initialPrompt string, options []string) (int, string) {
 
 }
 
+// Prompts the user to verify that there is nobody looking over their shoulder before printing sensitive information.
+func ConfirmSecureSession(warning string) bool {
+    if !Confirm(fmt.Sprintf("%s%s%s\nAre you sure you want to continue?", colorYellow, warning, colorReset)) {
+        fmt.Println("Cancelled.")
+        return false
+    }
+
+    return true
+}

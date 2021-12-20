@@ -1,9 +1,6 @@
 package wallet
 
 import (
-    "fmt"
-    "os"
-
     "github.com/urfave/cli"
 
     cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -120,38 +117,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 Aliases:   []string{"e"},
                 Usage:     "Export the node wallet in JSON format",
                 UsageText: "rocketpool wallet export",
-                Flags: []cli.Flag{
-                    cli.BoolFlag{
-                        Name:  "force, f",
-                        Usage: "Skips warnings about printing sensitive information",
-                    },
-                },
                 Action: func(c *cli.Context) error {
-                    colorYellow := "\033[33m"
-		    colorReset := "\033[0m"
 
                     // Validate args
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-                    // Prompt for user confirmation
-                    if !c.Bool("force") {
-                        stat, err := os.Stdout.Stat()
-                        if err != nil {
-                            fmt.Fprintf(os.Stderr, "Error checking stdout stat: %w.\nUse --force to export wallet.\n", err)
-			    return nil
-                        }
-
-                        if (stat.Mode() & os.ModeCharDevice) != os.ModeCharDevice {
-                            fmt.Fprintln(os.Stderr, "Call wallet export with --force to export wallet to non-interactive terminal.")
-			    return nil
-                        }
-
-                        if !cliutils.Confirm(fmt.Sprintf("%sExporting a wallet will print sensitive information to your screen.%s\n" +
-                            "Are you sure you want to continue?", colorYellow, colorReset)) {
-                                fmt.Println("Cancelled.")
-                                return nil
-                        }
-                    }
 
                     // Run
                     return exportWallet(c)

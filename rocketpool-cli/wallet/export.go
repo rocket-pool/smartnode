@@ -2,10 +2,12 @@ package wallet
 
 import (
     "fmt"
+    "os"
 
     "github.com/urfave/cli"
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -24,6 +26,21 @@ func exportWallet(c *cli.Context) error {
     if !status.WalletInitialized {
         fmt.Println("The node wallet is not initialized.")
         return nil
+    }
+
+    if !c.GlobalBool("secure-session") {
+        // Check if stdout is interactive
+        stat, err := os.Stdout.Stat()
+        if err != nil {
+            fmt.Fprintf(os.Stderr, "An error occured while determining whether or not the output is a tty: %w\n" +
+                "Use \"rocketpool --secure-session wallet export\" to bypass.\n", err)
+            os.Exit(1)
+        }
+
+        if (stat.Mode() & os.ModeCharDevice) == os.ModeCharDevice &&
+            !cliutils.ConfirmSecureSession("Exporting a wallet will print sensitive information to your screen.") {
+            return nil
+        }
     }
 
     // Export wallet
