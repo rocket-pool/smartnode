@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/dustin/go-humanize"
+	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -26,6 +27,8 @@ const dockerImageRegex string = ".*/(?P<image>.*):.*"
 const colorReset string = "\033[0m"
 const colorRed string = "\033[31m"
 const colorYellow string = "\033[33m"
+const colorGreen string = "\033[32m"
+const colorLightBlue string = "\033[36m"
 const clearLine string = "\033[2K"
 
 // Install the Rocket Pool service
@@ -69,8 +72,46 @@ func installService(c *cli.Context) error {
         fmt.Printf("If you have installed Rocket Pool previously and are just upgrading, you can safely ignore this message.%s\n", colorReset)
         fmt.Println("")
     }
-    fmt.Println("Please run 'rocketpool service config' to configure the service before starting it.")
+
+    printPatchNotes(c)
+
+    fmt.Printf("%sPlease run 'rocketpool service config' to configure the service before starting it.%s", colorLightBlue, colorReset)
     return nil
+
+}
+
+
+// Print the latest patch notes for this release
+// TODO: get this from an external source and don't hardcode it into the CLI 
+func printPatchNotes(c *cli.Context) {
+
+    fmt.Print(`
+______           _        _    ______           _ 
+| ___ \         | |      | |   | ___ \         | |
+| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
+|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
+| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
+\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|
+
+`)
+    fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
+    fmt.Printf("Changes you should be aware of before starting:\n\n")
+
+    fmt.Printf("%s=== ETH1 Fallback Support ===%s\n", colorGreen, colorReset)
+    fmt.Println("The Smartnode now supports a secondary fallback ETH1 client!")
+    fmt.Println("If you use Geth as your main client and specify a fallback, you can now safely take Geth down for maintenance.")
+    fmt.Println("The Smartnode will automatically tell all of its components (including your ETH2 client) to switch to the fallback so you don't lose any activity.")
+    fmt.Println("It will also try to reconnect to your main client every so often, and tell everything to switch back to it once it's up again.\n")
+
+    fmt.Println("To configure a fallback client, please run `rocketpool service config` again.\n")
+
+
+    fmt.Printf("%s=== Geth Pruning ===%s\n", colorGreen, colorReset)
+    fmt.Println("The Smartnode CLI has a new command: `rocketpool service prune-eth1`.")
+    fmt.Println("Use this command when you are running low on disk space (about 80% full) to clean Geth up and reclaim some space.")
+    fmt.Println("The Smartnode will stop Geth and tell it to begin pruning. When it's done, it will restart automatically.")
+    fmt.Println("It will also automatically use your fallback ETH1 client during this time if you have one configured.\n")
+    fmt.Println("The Smartnode takes care of everything for you, all you need to do is run the command when you're low on space!\n")
 
 }
 
