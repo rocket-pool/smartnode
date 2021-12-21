@@ -12,7 +12,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-
 func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
 
     // Get services
@@ -24,12 +23,14 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     if err != nil { return err }
     bc, err := services.GetBeaconClient(c)
     if err != nil { return err }
+    ec, err := services.GetEthClient(c)
+    if err != nil { return err }
 
     // Return if metrics are disabled
     if !cfg.Metrics.Enabled {
         return nil;
     }
-    
+
     nodeAccount, err := w.GetNodeAccount()
     if err != nil {
         return fmt.Errorf("Error getting node account: %w", err)
@@ -43,6 +44,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     odaoCollector := collectors.NewOdaoCollector(rp)
     nodeCollector := collectors.NewNodeCollector(rp, bc, nodeAccount.Address, cfg)
     trustedNodeCollector := collectors.NewTrustedNodeCollector(rp, bc, nodeAccount.Address, cfg)
+    beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address)
 
     // Set up Prometheus
     registry := prometheus.NewRegistry()
@@ -53,6 +55,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     registry.MustRegister(odaoCollector)
     registry.MustRegister(nodeCollector)
     registry.MustRegister(trustedNodeCollector)
+    registry.MustRegister(beaconCollector)
     handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
     // Start the HTTP server

@@ -30,8 +30,9 @@ type SyncStatusResponse struct {
 }
 type Eth2ConfigResponse struct {
     Data struct {
-        SecondsPerSlot uinteger             `json:"SECONDS_PER_SLOT"`
-        SlotsPerEpoch uinteger              `json:"SLOTS_PER_EPOCH"`
+        SecondsPerSlot uinteger                `json:"SECONDS_PER_SLOT"`
+        SlotsPerEpoch uinteger                 `json:"SLOTS_PER_EPOCH"`
+        EpochsPerSyncCommitteePeriod uinteger  `json:"EPOCHS_PER_SYNC_COMMITTEE_PERIOD"`
     }                                   `json:"data"`
 }
 type Eth2DepositContractResponse struct {
@@ -98,7 +99,20 @@ type Validator struct {
         WithdrawableEpoch uinteger          `json:"withdrawable_epoch"`
     }                                   `json:"validator"`
 }
-
+type SyncDutiesResponse struct {
+    Data []SyncDuty                    `json:"data"`
+}
+type SyncDuty struct {
+    Pubkey byteArray                    `json:"pubkey"`
+    ValidatorIndex uinteger             `json:"validator_index"`
+    SyncCommitteeIndices []uinteger     `json:"validator_sync_committee_indices"`
+}
+type ProposerDutiesResponse struct {
+    Data []ProposerDuty                 `json:"data"`
+}
+type ProposerDuty struct {
+    ValidatorIndex uinteger             `json:"validator_index"`
+}
 
 // Unsigned integer type
 type uinteger uint64
