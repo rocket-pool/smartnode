@@ -1,0 +1,16 @@
+name: Code Formatting
+on: [push]
+jobs:
+  goimports:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.15'
+      - name: Install goimports
+        run: go get golang.org/x/tools/cmd/goimports@latest
+      - name: Run goimports
+        run: if [ "$(goimports -l . | wc -l)" -gt 0 ]; then exit 1; fi
