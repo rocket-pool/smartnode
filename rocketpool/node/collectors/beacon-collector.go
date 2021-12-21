@@ -5,12 +5,12 @@ import (
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,7 +32,7 @@ type BeaconCollector struct {
 	bc beacon.Client
 
 	// The eth1 client
-	ec *ethclient.Client
+	ec *client.EthClientProxy
 
 	// The node's address
 	nodeAddress common.Address
@@ -40,7 +40,7 @@ type BeaconCollector struct {
 
 
 // Create a new PerformanceCollector instance
-func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec *ethclient.Client, nodeAddress common.Address) *BeaconCollector {
+func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec *client.EthClientProxy, nodeAddress common.Address) *BeaconCollector {
 	subsystem := "beacon"
 	return &BeaconCollector{
 		activeSyncCommittee: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_sync_committee"),

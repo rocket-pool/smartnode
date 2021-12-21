@@ -23,7 +23,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) (error) {
     if err != nil { return err }
     bc, err := services.GetBeaconClient(c)
     if err != nil { return err }
-    ec, err := services.GetEthClient(c)
+    ec, err := services.GetEthClientProxy(c)
     if err != nil { return err }
 
     // Return if metrics are disabled

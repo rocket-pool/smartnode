@@ -3,17 +3,17 @@ package rp
 import (
 	"context"
 	"fmt"
-    "math/big"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
-func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec *ethclient.Client, bc beacon.Client, nodeAddress common.Address) ([]uint64, error) {
+func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec *client.EthClientProxy, bc beacon.Client, nodeAddress common.Address) ([]uint64, error) {
     // Get current block number so all subsequent queries are done at same point in time
     blockNumber, err := ec.BlockNumber(context.Background())
     if err != nil {
