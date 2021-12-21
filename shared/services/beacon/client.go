@@ -22,6 +22,7 @@ type Eth2Config struct {
     GenesisEpoch uint64
     GenesisTime uint64
     SecondsPerEpoch uint64
+    EpochsPerSyncCommitteePeriod uint64
 }
 type Eth2DepositContract struct {
     ChainID uint64
@@ -78,6 +79,8 @@ type Client interface {
     GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
     GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
     GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error)
+    GetValidatorSyncDuties(indices []uint64, epoch uint64) (map[uint64]bool, error)
+    GetValidatorProposerDuties(indices []uint64, epoch uint64) (map[uint64]uint64, error)
     GetDomainData(domainType []byte, epoch uint64) ([]byte, error)
     ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
     Close() error
