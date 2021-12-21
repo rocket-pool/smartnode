@@ -7,6 +7,7 @@ import (
 
     "github.com/rocket-pool/smartnode/shared/services/rocketpool"
     "github.com/rocket-pool/smartnode/shared/utils/term"
+    cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 
@@ -24,6 +25,12 @@ func initWallet(c *cli.Context) error {
     }
     if status.WalletInitialized {
         fmt.Println("The node wallet is already initialized.")
+        return nil
+    }
+
+    // Prompt for user confirmation before printing sensitive information
+    if !(c.GlobalBool("secure-session") ||
+         cliutils.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.")) {
         return nil
     }
 

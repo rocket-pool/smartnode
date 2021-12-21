@@ -116,12 +116,17 @@ ______           _        _    ______           _
             Usage: "Desired gas limit",
         },
         cli.StringFlag{
-            Name: "nonce",
+            Name:  "nonce",
             Usage: "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
         },
         cli.BoolFlag{
-            Name:"debug",
+            Name:  "debug",
             Usage: "Enable debug printing of API commands",
+        },
+        cli.BoolFlag{
+            Name:  "secure-session, s",
+            Usage: "Some commands may print sensitive information to your terminal. " +
+                   "Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting",
         },
     }
 
@@ -175,19 +180,20 @@ ______           _        _    ______           _
      service.RegisterCommands(app, "service",  []string{"s"})
       wallet.RegisterCommands(app, "wallet",   []string{"w"})
 
-    // Check user ID
     app.Before = func(c *cli.Context) error {
+        // Check user ID
         if os.Getuid() == 0 && !c.GlobalBool("allow-root") {
             fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
             fmt.Fprintln(os.Stderr, "If you want to run rocketpool as root anyway, use the '--allow-root' option to override this warning.")
             os.Exit(1)
         }
 
+        // Check for deprecated flags
         if c.String("gasPrice") != "" {
             fmt.Fprintln(os.Stderr, "The `gasPrice` flag is deprecated - please use `--maxFee` and optionally `--maxPrioFee` instead.")
             os.Exit(1)
         }
-        
+
         return nil
     }
 
