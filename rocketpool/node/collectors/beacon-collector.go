@@ -2,11 +2,12 @@ package collectors
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
-	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -75,96 +76,104 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
     // Sync
     var wg errgroup.Group
+	var wg2 errgroup.Group
 
     activeSyncCommittee := float64(0)
 	upcomingSyncCommittee := float64(0)
 	upcomingProposals := float64(0)
 
+	var validatorIndices []uint64
+	var head beacon.BeaconHead
+
 	// Get sync committee duties
     wg.Go(func() error {
-		validatorIndices, err := rp.GetNodeValidatorIndices(collector.rp, collector.ec, collector.bc, collector.nodeAddress)
+		var err error
+		validatorIndices, err = rp.GetNodeValidatorIndices(collector.rp, collector.ec, collector.bc, collector.nodeAddress)
 		if err != nil {
 			return fmt.Errorf("Error getting validator indices: %w", err)
 		}
+		return nil
+	})
 
-		head, err := collector.bc.GetBeaconHead()
+	wg.Go(func() error {
+		var err error
+		head, err = collector.bc.GetBeaconHead()
 		if err != nil {
 			return fmt.Errorf("Error getting beaconchain head: %w", err)
 		}
-
-		var wg2 errgroup.Group
-
-		wg2.Go(func() error {
-			// Get current duties
-			duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch)
-			if err != nil {
-				return fmt.Errorf("Error getting sync duties: %w", err)
-			}
-
-			for _, duty := range duties {
-				if duty {
-					activeSyncCommittee ++
-				}
-			}
-
-			return nil
-		})
-
-		wg2.Go(func() error {
-			// Get epochs per sync committee period config to query next period
-			config, err := collector.bc.GetEth2Config()
-			if err != nil {
-				return fmt.Errorf("Error getting ETH2 config: %w", err)
-			}
-
-			// Get upcoming duties
-			duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch+config.EpochsPerSyncCommitteePeriod)
-			if err != nil {
-				return fmt.Errorf("Error getting sync duties: %w", err)
-			}
-
-			for _, duty := range duties {
-				if duty {
-					upcomingSyncCommittee++
-				}
-			}
-
-			return nil
-		})
-
-		wg2.Go(func() error {
-			// Get proposals in this epoch
-			duties, err := collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch)
-			if err != nil {
-				return fmt.Errorf("Error getting proposer duties: %w", err)
-			}
-
-			for _, duty := range duties {
-				upcomingProposals += float64(duty)
-			}
-
-			return nil
-		})
-
-		wg2.Go(func() error {
-			// Get proposals in the next epoch
-			duties, err := collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch + 1)
-			if err != nil {
-				return fmt.Errorf("Error getting proposer duties: %w", err)
-			}
-
-			for _, duty := range duties {
-				upcomingProposals += float64(duty)
-			}
-
-			return nil
-		})
-
-		return wg2.Wait()
+		return nil
 	})
 
     // Wait for data
     if err := wg.Wait(); err != nil {
+        log.Printf("%s\n", err.Error())
+        return
+    }
+
+	wg2.Go(func() error {
+		// Get current duties
+		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch)
+		if err != nil {
+			return fmt.Errorf("Error getting sync duties: %w", err)
+		}
+
+		for _, duty := range duties {
+			if duty {
+				activeSyncCommittee++
+			}
+		}
+
+		return nil
+	})
+
+	wg2.Go(func() error {
+		// Get epochs per sync committee period config to query next period
+		config, err := collector.bc.GetEth2Config()
+		if err != nil {
+			return fmt.Errorf("Error getting ETH2 config: %w", err)
+		}
+
+		// Get upcoming duties
+		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch + config.EpochsPerSyncCommitteePeriod)
+		if err != nil {
+			return fmt.Errorf("Error getting sync duties: %w", err)
+		}
+
+		for _, duty := range duties {
+			if duty {
+				upcomingSyncCommittee++
+			}
+		}
+
+		return nil
+	})
+
+	wg2.Go(func() error {
+		// Get proposals in this epoch
+		duties, err := collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch)
+		if err != nil {
+			return fmt.Errorf("Error getting proposer duties: %w", err)
+		}
+
+		for _, duty := range duties {
+			upcomingProposals += float64(duty)
+		}
+
+		// Get proposals in the next epoch
+		duties, err = collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch + 1)
+		if err != nil {
+			return fmt.Errorf("Error getting proposer duties: %w", err)
+		}
+
+		for _, duty := range duties {
+			upcomingProposals += float64(duty)
+		}
+
+		return nil
+	})
+
+    // Wait for data
+    if err := wg2.Wait(); err != nil {
         log.Printf("%s\n", err.Error())
         return
     }
