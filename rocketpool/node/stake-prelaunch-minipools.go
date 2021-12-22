@@ -223,12 +223,19 @@ func (t *stakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
     }
     scrubPeriod := time.Duration(scrubPeriodSeconds) * time.Second
 
+    // Get the time of the latest block
+    latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
+    if err != nil {
+        return []*minipool.Minipool{}, fmt.Errorf("Can't get the latest block time: %w", err)
+    }
+    latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
+
     // Filter minipools by status
     prelaunchMinipools := []*minipool.Minipool{}
     for mi, mp := range minipools {
         if statuses[mi].Status == rptypes.Prelaunch {
             creationTime := statuses[mi].StatusTime
-            remainingTime := time.Until(creationTime.Add(scrubPeriod))
+            remainingTime := creationTime.Add(scrubPeriod).Sub(latestBlockTime)
             if remainingTime < 0 {
                 prelaunchMinipools = append(prelaunchMinipools, mp)
             } else {
