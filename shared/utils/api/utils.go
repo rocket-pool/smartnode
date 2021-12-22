@@ -28,7 +28,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
         gasThresholdWei := math.RoundUp(gasThresholdGwei * eth.WeiPerGwei, 0)
         gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdWei))
         if maxFeeWei.Cmp(gasThreshold) != -1 {
-            logger.Printlnf("Current network gas price is %.2f Gwei, which is higher than the set threshold of %.2f Gwei. " + 
+            logger.Printlnf("Current network gas price is %.2f Gwei, which is not lower than the set threshold of %.2f Gwei. " + 
                 "Aborting the transaction.", eth.WeiToGwei(maxFeeWei), gasThresholdGwei)
             return false
         } 
