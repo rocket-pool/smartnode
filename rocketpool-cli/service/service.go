@@ -21,6 +21,7 @@ const ExporterContainerSuffix = "_exporter"
 const ValidatorContainerSuffix = "_validator"
 const BeaconContainerSuffix = "_eth2"
 const ExecutionContainerSuffix = "_eth1"
+const NodeContainerSuffix = "_node"
 const PruneProvisionerContainerSuffix = "_prune_provisioner"
 const PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
 const dockerImageRegex string = ".*/(?P<image>.*):.*"
@@ -416,24 +417,32 @@ func pruneExecutionClient(c *cli.Context) error {
     fmt.Println("Once pruning is complete, your ETH1 client will restart automatically.\n")
     
     if cfg.Chains.Eth1Fallback.Client.Selected == "" {
-        fmt.Printf("%sYou do not have a fallback ETH1 client configured. You will continue attesting while ETH1 prunes, but block proposals and most of Rocket Pool's commands will not work. Please configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+        fmt.Printf("%sYou do not have a fallback ETH1 client configured.\nYou will continue attesting while ETH1 prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
     } else {
         fmt.Printf("You have a fallback ETH1 client configured (%s). Rocket Pool (and your ETH2 client) will use that while the main client is pruning.\n", cfg.Chains.Eth1Fallback.Client.Selected)
     }
-
-    fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", colorYellow, colorReset)
-
-    // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to prune your main ETH1 client?")) {
-        fmt.Println("Cancelled.")
-        return nil
-    }
-
 
     // Get the container prefix
     prefix, err := getContainerPrefix(rp)
     if err != nil {
         return fmt.Errorf("Error getting container prefix: %w", err)
+    }
+
+    // Prompt for stopping the node container if using Infura to prevent people from hitting the rate limit
+    if cfg.Chains.Eth1Fallback.Client.Selected == "infura" {
+        fmt.Printf("\n%s=== NOTE ===\n\n", colorYellow)
+        fmt.Printf("If you are using Infura's free tier, you may hit its rate limit if pruning takes a long time.\n")
+        fmt.Printf("If this happens, you should temporarily disable the `%s` container until pruning is complete. This will:\n", prefix + NodeContainerSuffix)
+        fmt.Println("\t- Stop collecting Rocket Pool's network metrics in the Grafana dashboard")
+        fmt.Println("\t- Stop automatic operations (claiming RPL rewards and staking new minipools)\n")
+        fmt.Printf("To disable the container, run: `docker stop %s`\n", prefix + NodeContainerSuffix)
+        fmt.Printf("To re-enable the container one pruning is complete, run: `docker start %s`%s\n\n", prefix + NodeContainerSuffix, colorReset)
+    }
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to prune your main ETH1 client?")) {
+        fmt.Println("Cancelled.")
+        return nil
     }
 
     // Get the prune provisioner image
@@ -507,6 +516,9 @@ func pruneExecutionClient(c *cli.Context) error {
 
     fmt.Printf("\nDone! Your main ETH1 client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
     fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
+
+    fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", colorYellow, colorReset)
+
     return nil
 
 }
