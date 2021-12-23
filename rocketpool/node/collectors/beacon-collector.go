@@ -159,6 +159,9 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 			upcomingProposals += float64(duty)
 		}
 
+		// TODO: this seems to be illegal according to the official spec: 
+		// https://eth2book.info/altair/annotated-spec/#compute_proposer_index
+		/*
 		// Get proposals in the next epoch
 		duties, err = collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch + 1)
 		if err != nil {
@@ -168,6 +171,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		for _, duty := range duties {
 			upcomingProposals += float64(duty)
 		}
+		*/
 
 		return nil
 	})
