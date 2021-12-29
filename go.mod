@@ -16,7 +16,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/ethereum/go-ethereum v1.10.13
+	github.com/ethereum/go-ethereum v1.10.14
 	github.com/fatih/color v1.13.0
 	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e
 	github.com/google/uuid v1.3.0
@@ -29,7 +29,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
-	github.com/rocket-pool/rocketpool-go v1.0.10-0.20211219030055-47613d067e73
+	github.com/rocket-pool/rocketpool-go v1.0.10-0.20211229032750-0cec01318f92
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/tyler-smith/go-bip39 v1.1.0
