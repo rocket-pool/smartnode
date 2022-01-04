@@ -551,8 +551,34 @@ func (c *Client) StartContainer(container string) (string, error) {
     
 }
 
-// Gets the absolute file path of the execution client volume
-func (c *Client) GetExecutionClientVolumeSource(container string) (string, error) {
+
+// Deletes a container
+func (c *Client) RemoveContainer(container string) (string, error) {
+
+    cmd := fmt.Sprintf("docker rm %s", container)
+    output, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(output)), nil
+    
+}
+
+
+// Deletes a container
+func (c *Client) DeleteVolume(volume string) (string, error) {
+
+    cmd := fmt.Sprintf("docker volume rm %s", volume)
+    output, err := c.readOutput(cmd)
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(output)), nil
+    
+}
+
+// Gets the absolute file path of the client volume
+func (c *Client) GetClientVolumeSource(container string) (string, error) {
 
     cmd := fmt.Sprintf("docker container inspect --format='{{range .Mounts}}{{if eq \"/ethclient\" .Destination}}{{.Source}}{{end}}{{end}}' %s", container)
     output, err := c.readOutput(cmd)
@@ -563,8 +589,8 @@ func (c *Client) GetExecutionClientVolumeSource(container string) (string, error
 }
 
 
-// Gets the name of the execution client volume
-func (c *Client) GetExecutionClientVolumeName(container string) (string, error) {
+// Gets the name of the client volume
+func (c *Client) GetClientVolumeName(container string) (string, error) {
 
     cmd := fmt.Sprintf("docker container inspect --format='{{range .Mounts}}{{if eq \"/ethclient\" .Destination}}{{.Name}}{{end}}{{end}}' %s", container)
     output, err := c.readOutput(cmd)

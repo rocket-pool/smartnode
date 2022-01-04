@@ -23,9 +23,11 @@ const BeaconContainerSuffix = "_eth2"
 const ExecutionContainerSuffix = "_eth1"
 const NodeContainerSuffix = "_node"
 const PruneProvisionerContainerSuffix = "_prune_provisioner"
+const checkpointSyncSetting = "ETH2_CHECKPOINT_SYNC_URL"
 const PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
 const dockerImageRegex string = ".*/(?P<image>.*):.*"
 const colorReset string = "\033[0m"
+const colorBold string = "\033[1m"
 const colorRed string = "\033[31m"
 const colorYellow string = "\033[33m"
 const colorGreen string = "\033[32m"
@@ -453,7 +455,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
     // Check for enough free space
     executionContainerName := prefix + ExecutionContainerSuffix
-    volumePath, err := rp.GetExecutionClientVolumeSource(executionContainerName)
+    volumePath, err := rp.GetClientVolumeSource(executionContainerName)
     if err != nil {
         return fmt.Errorf("Error getting ETH1 volume source path: %w", err)
     }
@@ -492,7 +494,7 @@ func pruneExecutionClient(c *cli.Context) error {
     }
 
     // Get the ETH1 volume name
-    volume, err := rp.GetExecutionClientVolumeName(executionContainerName)
+    volume, err := rp.GetClientVolumeName(executionContainerName)
     if err != nil {
         return fmt.Errorf("Error getting ETH1 volume name: %w", err)
     }
@@ -649,5 +651,209 @@ func serviceVersion(c *cli.Context) error {
 // Get the compose file paths for a CLI context
 func getComposeFiles(c *cli.Context) []string {
     return c.Parent().StringSlice("compose-file")
+}
+
+
+// Destroy and resync the eth1 client from scratch
+func resyncEth1(c *cli.Context) error {
+
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Get the config
+    cfg, err := rp.LoadMergedConfig()
+    if err != nil {
+        return err
+    }
+    
+    fmt.Println("This will delete the chain data of your primary ETH1 client and resync it from scratch.")
+    fmt.Printf("%sYou should only do this if your ETH1 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n", colorYellow, colorReset)
+    
+    if cfg.Chains.Eth1Fallback.Client.Selected == "" {
+        fmt.Printf("%sYou do not have a fallback ETH1 client configured.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+        return nil
+    } else {
+        fmt.Printf("You have a fallback ETH1 client configured (%s). Rocket Pool (and your ETH2 client) will use that while the main client is resyncing.\n", cfg.Chains.Eth1Fallback.Client.Selected)
+    }
+
+    // Get the container prefix
+    prefix, err := getContainerPrefix(rp)
+    if err != nil {
+        return fmt.Errorf("Error getting container prefix: %w", err)
+    }
+
+    // Prompt for stopping the node container if using Infura to prevent people from hitting the rate limit
+    if cfg.Chains.Eth1Fallback.Client.Selected == "infura" {
+        fmt.Printf("\n%s=== NOTE ===\n\n", colorYellow)
+        fmt.Printf("If you are using Infura's free tier, you will very likely hit its rate limit while resyncing.\n")
+        fmt.Printf("You should temporarily disable the `%s` container until resyncing is complete. This will:\n", prefix + NodeContainerSuffix)
+        fmt.Println("\t- Stop collecting Rocket Pool's network metrics in the Grafana dashboard")
+        fmt.Println("\t- Stop automatic operations (claiming RPL rewards and staking new minipools)\n")
+        fmt.Printf("To disable the container, run: `docker stop %s`\n", prefix + NodeContainerSuffix)
+        fmt.Printf("To re-enable the container one resyncing is complete, run: `docker start %s`%s\n\n", prefix + NodeContainerSuffix, colorReset)
+    }
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
+    // Stop ETH1
+    executionContainerName := prefix + ExecutionContainerSuffix
+    fmt.Printf("Stopping %s...\n", executionContainerName)
+    result, err := rp.StopContainer(executionContainerName)
+    if err != nil {
+        fmt.Printf("%sWARNING: Stopping main ETH1 container failed: %s%s\n", colorYellow, err.Error(), colorReset)
+    }
+    if result != executionContainerName {
+        fmt.Printf("%sWARNING: Unexpected output while stopping main ETH1 container: %s%s\n", colorYellow, err.Error(), colorReset)
+    }
+
+    // Get ETH1 volume name
+    volume, err := rp.GetClientVolumeName(executionContainerName)
+    if err != nil {
+        return fmt.Errorf("Error getting ETH1 volume name: %w", err)
+    }
+
+    // Remove ETH1
+    fmt.Printf("Deleting %s...\n", executionContainerName)
+    result, err = rp.RemoveContainer(executionContainerName)
+    if err != nil {
+        return fmt.Errorf("Error deleting main ETH1 container: %w", err)
+    }
+    if result != executionContainerName {
+        return fmt.Errorf("Unexpected output while deleting main ETH1 container: %s", result)
+    }
+
+    // Delete the ETH1 volume
+    fmt.Printf("Deleting volume %s...\n", volume)
+    result, err = rp.DeleteVolume(volume)
+    if err != nil {
+        return fmt.Errorf("Error deleting volume: %w", err)
+    }
+    if result != volume {
+        return fmt.Errorf("Unexpected output while deleting volume: %s", result)
+    }
+
+    // Restart Rocket Pool
+    fmt.Printf("Rebuilding %s and restarting Rocket Pool...\n", executionContainerName)
+    err = startService(c)
+    if err != nil {
+        return fmt.Errorf("Error starting Rocket Pool: %s", err)
+    }
+
+    fmt.Printf("\nDone! Your main ETH1 client is now resyncing. You can follow its progress with `rocketpool service logs eth1`.\n")
+
+    return nil
+
+}
+
+
+// Destroy and resync the eth2 client from scratch
+func resyncEth2(c *cli.Context) error {
+
+    // Get RP client
+    rp, err := rocketpool.NewClientFromCtx(c)
+    if err != nil { return err }
+    defer rp.Close()
+
+    // Get the merged config
+    cfg, err := rp.LoadMergedConfig()
+    if err != nil {
+        return err
+    }
+    
+    fmt.Println("This will delete the chain data of your ETH2 client and resync it from scratch.")
+    fmt.Printf("%sYou should only do this if your ETH2 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n\n", colorYellow, colorReset)
+    
+    // Check if the selected client supports checkpoint sync
+    supportsCheckpointSync := false
+    for _, param := range cfg.GetSelectedEth2Client().Params {
+        if param.Env == checkpointSyncSetting {
+            supportsCheckpointSync = true
+            break
+        }
+    }
+    if !supportsCheckpointSync {
+        fmt.Printf("%sYour ETH2 client (%s) does not support checkpoint sync.\nIf you have active validators, they %swill be considered offline and will leak ETH%s%s while the client is syncing.%s\n\n", colorRed, cfg.GetSelectedEth2Client().Name, colorBold, colorReset, colorRed, colorReset)
+    } else {
+        // Get the current checkpoint sync URL
+        checkpointSyncUrl := ""
+        for _, param := range cfg.Chains.Eth2.Client.Params {
+            if param.Env == checkpointSyncSetting {
+                checkpointSyncUrl = param.Value
+                break
+            }
+        }
+        if checkpointSyncUrl == "" {
+            fmt.Printf("%sYou do not have a checkpoint sync provider configured.\nIf you have active validators, they %swill be considered offline and will lose ETH%s%s until your ETH2 client finishes syncing.\nWe strongly recommend you configure a checkpoint sync provider with `rocketpool service config` so it syncs instantly before running this.%s\n\n", colorRed, colorBold, colorReset, colorRed, colorReset)
+        } else {
+            fmt.Printf("You have a checkpoint sync provider configured (%s).\nYour ETH2 client will use it to sync to the head of the Beacon Chain instantly after being rebuilt.\n\n", checkpointSyncUrl)
+        }
+    }
+
+    // Get the container prefix
+    prefix, err := getContainerPrefix(rp)
+    if err != nil {
+        return fmt.Errorf("Error getting container prefix: %w", err)
+    }
+
+    // Prompt for confirmation
+    if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+        fmt.Println("Cancelled.")
+        return nil
+    }
+
+    // Stop ETH2
+    beaconContainerName := prefix + BeaconContainerSuffix
+    fmt.Printf("Stopping %s...\n", beaconContainerName)
+    result, err := rp.StopContainer(beaconContainerName)
+    if err != nil {
+        fmt.Printf("%sWARNING: Stopping ETH2 container failed: %s%s\n", colorYellow, err.Error(), colorReset)
+    }
+    if result != beaconContainerName {
+        fmt.Printf("%sWARNING: Unexpected output while stopping ETH2 container: %s%s\n", colorYellow, err.Error(), colorReset)
+    }
+
+    // Get ETH2 volume name
+    volume, err := rp.GetClientVolumeName(beaconContainerName)
+    if err != nil {
+        return fmt.Errorf("Error getting ETH2 volume name: %w", err)
+    }
+
+    // Remove ETH2
+    fmt.Printf("Deleting %s...\n", beaconContainerName)
+    result, err = rp.RemoveContainer(beaconContainerName)
+    if err != nil {
+        return fmt.Errorf("Error deleting ETH2 container: %w", err)
+    }
+    if result != beaconContainerName {
+        return fmt.Errorf("Unexpected output while deleting ETH2 container: %s", result)
+    }
+
+    // Delete the ETH2 volume
+    fmt.Printf("Deleting volume %s...\n", volume)
+    result, err = rp.DeleteVolume(volume)
+    if err != nil {
+        return fmt.Errorf("Error deleting volume: %w", err)
+    }
+    if result != volume {
+        return fmt.Errorf("Unexpected output while deleting volume: %s", result)
+    }
+
+    // Restart Rocket Pool
+    fmt.Printf("Rebuilding %s and restarting Rocket Pool...\n", beaconContainerName)
+    err = startService(c)
+    if err != nil {
+        return fmt.Errorf("Error starting Rocket Pool: %s", err)
+    }
+
+    fmt.Printf("\nDone! Your ETH2 client is now resyncing. You can follow its progress with `rocketpool service logs eth2`.\n")
+
+    return nil
+
 }
 

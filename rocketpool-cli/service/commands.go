@@ -291,6 +291,36 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                 },
             },
 
+            cli.Command{
+                Name:      "resync-eth1",
+                Usage:     fmt.Sprintf("%sDeletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!%s", colorRed, colorReset),
+                UsageText: "rocketpool service resync-eth1",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return resyncEth1(c)
+
+                },
+            },
+
+            cli.Command{
+                Name:      "resync-eth2",
+                Usage:     fmt.Sprintf("%sDeletes the ETH2 client's chain data and resyncs it from scratch. Only use this as a last resort!%s", colorRed, colorReset),
+                UsageText: "rocketpool service resync-eth2",
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Run command
+                    return resyncEth2(c)
+
+                },
+            },
+
         },
     })
 }
