@@ -330,16 +330,47 @@ func GetActiveMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 
 
 // Get the minipool count by status
-func GetMinipoolCountPerStatus(rp *rocketpool.RocketPool, offset, limit uint64, opts *bind.CallOpts) (MinipoolCountsPerStatus, error) {
+func GetMinipoolCountPerStatus(rp *rocketpool.RocketPool, opts *bind.CallOpts) (MinipoolCountsPerStatus, error) {
     rocketMinipoolManager, err := getRocketMinipoolManager(rp)
     if err != nil {
         return MinipoolCountsPerStatus{}, err
     }
-    minipoolCounts := new(MinipoolCountsPerStatus)
-    if err := rocketMinipoolManager.Call(opts, minipoolCounts, "getMinipoolCountPerStatus", big.NewInt(int64(offset)), big.NewInt(int64(limit))); err != nil {
-        return MinipoolCountsPerStatus{}, fmt.Errorf("Could not get minipool counts: %w", err)
+
+    // Get the total number of minipools
+    totalMinipoolsUint, err := GetMinipoolCount(rp, nil)
+    if err != nil {
+        return MinipoolCountsPerStatus{}, err
     }
-    return *minipoolCounts, nil
+
+    totalMinipools := int64(totalMinipoolsUint)
+    minipoolCounts := MinipoolCountsPerStatus{}
+    limit := big.NewInt(MinipoolPrelaunchBatchSize)
+    for i := int64(0); i < totalMinipools; i += MinipoolPrelaunchBatchSize {
+        // Get a batch of addresses
+        offset := big.NewInt(i)
+        newMinipoolCounts := new(MinipoolCountsPerStatus)
+        if err := rocketMinipoolManager.Call(opts, newMinipoolCounts, "getMinipoolCountPerStatus", offset, limit); err != nil {
+            return MinipoolCountsPerStatus{}, fmt.Errorf("Could not get minipool counts: %w", err)
+        }
+        if newMinipoolCounts != nil {
+            if newMinipoolCounts.Initialized != nil {
+                minipoolCounts.Initialized.Add(minipoolCounts.Initialized, newMinipoolCounts.Initialized)
+            }
+            if newMinipoolCounts.Prelaunch != nil {
+                minipoolCounts.Prelaunch.Add(minipoolCounts.Prelaunch, newMinipoolCounts.Prelaunch)
+            }
+            if newMinipoolCounts.Staking != nil {
+                minipoolCounts.Staking.Add(minipoolCounts.Staking, newMinipoolCounts.Staking)
+            }
+            if newMinipoolCounts.Dissolved != nil {
+                minipoolCounts.Dissolved.Add(minipoolCounts.Dissolved, newMinipoolCounts.Dissolved)
+            }
+            if newMinipoolCounts.Withdrawable != nil {
+                minipoolCounts.Withdrawable.Add(minipoolCounts.Withdrawable, newMinipoolCounts.Withdrawable)
+            }
+        }
+    }
+    return minipoolCounts, nil
 }
 
 
