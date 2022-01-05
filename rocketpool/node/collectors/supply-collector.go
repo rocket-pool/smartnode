@@ -111,7 +111,7 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 
     // Get the total number of Rocket Pool minipools
     wg.Go(func() error {
-		minipoolCounts, err := minipool.GetMinipoolCountPerStatus(collector.rp, 0, 0, nil)
+		minipoolCounts, err := minipool.GetMinipoolCountPerStatus(collector.rp, nil)
 		if err != nil {
             return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
 		} else {

@@ -75,7 +75,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 
     // Get minipool counts
     wg.Go(func() error {
-        minipoolCounts, err := minipool.GetMinipoolCountPerStatus(rp, 0, 0, nil)
+        minipoolCounts, err := minipool.GetMinipoolCountPerStatus(rp, nil)
         if err != nil {
             return err
         }
