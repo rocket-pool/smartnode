@@ -685,6 +685,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
     // Check config
     eth1Client := cfg.GetSelectedEth1Client()
+    eth1FallbackClient := cfg.GetSelectedEth1FallbackClient()
     eth2Client := cfg.GetSelectedEth2Client()
     if eth1Client == nil {
         return "", errors.New("No Eth 1.0 client selected. Please run 'rocketpool service config' and try again.")
@@ -707,7 +708,26 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
         }
     }
     if !isCompatible {
-        return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 client [%s]. Please run 'rocketpool service config' and select compatible clients.", eth2Client.Name, eth1Client.Name)
+        return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 client [%s].\nPlease run 'rocketpool service config' and select compatible clients.", eth2Client.Name, eth1Client.Name)
+    }
+
+    // Make sure the selected eth2 is compatible with the selected eth1 fallback
+    if eth1FallbackClient != nil {
+        isCompatible = false 
+        if eth1FallbackClient.CompatibleEth2Clients == "" {
+            isCompatible = true
+        } else {
+            compatibleEth2ClientIds := strings.Split(eth1FallbackClient.CompatibleEth2Clients, ";")
+            for _, id := range compatibleEth2ClientIds {
+                if id == eth2Client.ID {
+                    isCompatible = true
+                    break
+                }
+            }
+        }
+        if !isCompatible {
+            return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 fallback client [%s].\nPlease run 'rocketpool service config' and select compatible clients.", eth2Client.Name, eth1FallbackClient.Name)
+        }
     }
 
     // Get the external IP address

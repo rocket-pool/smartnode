@@ -60,20 +60,50 @@ func configureService(c *cli.Context) error {
         }
     }
 
+    // Get the list of compatible eth2 clients for the primary
+    var compatibleEth2Clients []string
+    compatibleString := globalConfig.Chains.Eth1.GetSelectedClient().CompatibleEth2Clients
+    if compatibleString != "" {
+        compatibleEth2Clients = strings.Split(globalConfig.Chains.Eth1.GetSelectedClient().CompatibleEth2Clients, ";")
+    }
+
     // Configure eth1 fallback
     if cliutils.Confirm("Would you like to configure a second Eth 1.0 client to act as a fallback in case your primary Eth 1.0 client is unavailable?") {
         if err := configureChain(&(globalConfig.Chains.Eth1), &(userConfig.Chains.Eth1Fallback), "Eth 1.0 Fallback", false, true, fallbackEth1Clients, true, showAdvanced); err != nil {
             return err
         }
+
+        // Get the list of compatible eth2 clients for the fallback
+        var fallbackCompatibleEth2Clients []string
+        fallbackCompatibleString := globalConfig.Chains.Eth1.GetClientById(userConfig.Chains.Eth1Fallback.Client.Selected).CompatibleEth2Clients
+        if fallbackCompatibleString != "" {
+            fallbackCompatibleEth2Clients = strings.Split(globalConfig.Chains.Eth1.GetSelectedClient().CompatibleEth2Clients, ";")
+        }
+
+        if len(fallbackCompatibleEth2Clients) == 0 {
+            // If the fallback is compatible with everything, do nothing
+        } else if len(compatibleEth2Clients) == 0 {
+            // If the primary client is compatible with all clients, defer to the fallback settings
+            compatibleEth2Clients = fallbackCompatibleEth2Clients
+        } else {
+            // Remove any clients from the primary that aren't also in the fallback
+            for i, compatibleClient := range compatibleEth2Clients {
+                clientExists := false
+                // See if this is also in the compatible fallback list 
+                for _, fallbackCompatibleClient := range fallbackCompatibleEth2Clients {
+                    if fallbackCompatibleClient == compatibleClient {
+                        clientExists = true
+                        break
+                    }
+                }
+                // Remove the client from the main compatible list
+                if !clientExists {
+                    compatibleEth2Clients = append(compatibleEth2Clients[:i], compatibleEth2Clients[i+1:]...)
+                }
+            }
+        }
     } else {
         userConfig.Chains.Eth1Fallback = config.Chain{}
-    }
-
-    // Get the list of compatible eth2 clients
-    var compatibleEth2Clients []string
-    compatibleString := globalConfig.Chains.Eth1.GetSelectedClient().CompatibleEth2Clients
-    if compatibleString != "" {
-        compatibleEth2Clients = strings.Split(globalConfig.Chains.Eth1.GetSelectedClient().CompatibleEth2Clients, ";")
     }
 
     // Configure eth2
