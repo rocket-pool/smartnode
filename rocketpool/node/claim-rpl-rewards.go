@@ -119,6 +119,15 @@ func (t *claimRplRewards) run() error {
         return nil
     }
 
+    // Don't claim unless the oDAO has claimed first (prevent known issue yet to be patched in smart contracts)
+    trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(t.rp, nil)
+    if err != nil {
+        return err
+    }
+    if trustedNodeClaimed.Cmp(big.NewInt(0)) == 0 {
+        return nil
+    }
+
     // Log
     rewardsAmount := math.RoundDown(eth.WeiToEth(rewardsAmountWei), 6)
     t.log.Printlnf("%.6f RPL is available to claim...", rewardsAmount)
@@ -134,7 +143,7 @@ func (t *claimRplRewards) run() error {
     if err != nil {
         return fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
     }
-    var gas *big.Int 
+    var gas *big.Int
     if t.gasLimit != 0 {
         gas = new(big.Int).SetUint64(t.gasLimit)
     } else {
@@ -163,7 +172,7 @@ func (t *claimRplRewards) run() error {
     rewardsInEth := eth.WeiToEth(rplPriceWei) * rewardsAmount
     totalGasWei := new(big.Int).Mul(maxFee, gas)
     totalEthCost := math.RoundDown(eth.WeiToEth(totalGasWei), 6)
-    
+
     if totalEthCost >= rewardsInEth {
         t.log.Printlnf("Transaction would cost up to %f ETH in gas but only provide %f ETH worth of RPL. Ignoring until gas is cheaper.",
             totalEthCost, rewardsInEth)
