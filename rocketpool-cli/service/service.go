@@ -64,21 +64,16 @@ func installService(c *cli.Context) error {
     if err != nil { return err }
 
     // Print success message & return
-    colorReset := "\033[0m"
-    colorYellow := "\033[33m"
     fmt.Println("")
     fmt.Printf("The Rocket Pool service was successfully installed %s!\n", location)
-    if c.GlobalString("host") == "" {
-        fmt.Println("")
-        fmt.Printf("%sNOTE:\nIf this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
-        fmt.Println("This is necessary for your user account to have permissions to use Docker.")
-        fmt.Printf("If you have installed Rocket Pool previously and are just upgrading, you can safely ignore this message.%s\n", colorReset)
-        fmt.Println("")
-    }
 
     printPatchNotes(c)
 
-    fmt.Printf("%sPlease run 'rocketpool service config' to configure the service before starting it.%s", colorLightBlue, colorReset)
+    if c.GlobalString("host") == "" {
+        fmt.Printf("%sNOTE:\nIf this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
+        fmt.Println("This is necessary for your user account to have permissions to use Docker.")
+        fmt.Printf("If you have installed Rocket Pool previously and are just upgrading, you can safely ignore this message.%s", colorReset)
+    }
     return nil
 
 }
@@ -116,6 +111,9 @@ ______           _        _    ______           _
     fmt.Println("It will also automatically use your fallback ETH1 client during this time if you have one configured.\n")
     fmt.Println("The Smartnode takes care of everything for you, all you need to do is run the command when you're low on space!\n")
 
+    fmt.Printf("%s=== Emergency Resync ===%s\n", colorGreen, colorReset)
+    fmt.Println("The Smartnode CLI has two new commands: `rocketpool service resync-eth1` and `rocketpool service resync-eth2`.")
+    fmt.Println("If your ETH1 or ETH2 containers ever encounter serious problems and can no longer start correctly, you can use these to delete them and resync the chain data from scratch!\n")
 }
 
 

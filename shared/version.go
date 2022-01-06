@@ -1,3 +1,3 @@
 package shared
 
-const RocketPoolVersion string = "1.2.1-dev"
+const RocketPoolVersion string = "1.2.1"
