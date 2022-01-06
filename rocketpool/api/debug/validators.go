@@ -93,9 +93,11 @@ func ExportValidators(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+	fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 		"Minipool Address",
 		"Validator Pub Key",
+		"Activation Epoch",
+		"Node Fee",
 		"Validator Balance",
 		"Node Balance",
 		"User Balance",
@@ -153,6 +155,7 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	var status types.MinipoolStatus
 	var userDepositBalance *big.Int
 	var userDepositTime uint64
+	var nodeFee float64
 
 	// Load data
 	wg.Go(func() error {
@@ -170,6 +173,10 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 		if err == nil {
 			userDepositTime = uint64(userDepositAssignedTime.Unix())
 		}
+		return err
+	})
+	wg.Go(func() error {
+		nodeFee, err = mp.GetNodeFee(opts)
 		return err
 	})
 
@@ -219,9 +226,11 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 		nodeBalance.Sub(blockBalance, userBalance)
 	}
 
-	fmt.Printf("%s\t%s\t%.10f\t%.10f\t%.10f\t%s\t%t\t%t\t%t\n",
+	fmt.Printf("%s\t%s\t%d\t%.10f\t%.10f\t%.10f\t%.10f\t%s\t%t\t%t\t%t\n",
 		minipoolAddress.Hex(),
 		validator.Pubkey.Hex(),
+		validator.ActivationEpoch,
+		nodeFee,
 		eth.WeiToEth(blockBalance),
 		eth.WeiToEth(nodeBalance),
 		eth.WeiToEth(userBalance),
@@ -229,13 +238,8 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 		finalised,
 		validator.ExitEpoch > blockEpoch,
 		validator.ActivationEpoch >= blockEpoch,
-)
+	)
 
 	// Return
 	return nil
-	//minipoolBalanceDetails{
-	//	IsStaking: (validator.ExitEpoch > blockEpoch),
-	//	UserBalance: userBalance,
-	//}, nil
-
 }
