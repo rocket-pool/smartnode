@@ -304,8 +304,24 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
                 // If in fallback clients only mode and this isn't one, ignore it.
                 reuseClient = false
             } else {
-                reuseClient = cliutils.Confirm(fmt.Sprintf(
-                    "Detected an existing %s client choice of %s.\nWould you like to continue using it?", chainName, client.Name))
+                // Check the compatible clients and make sure the selected one is compatible
+                isCompatible := false
+                if len(compatibleClients) == 0 {
+                    isCompatible = true
+                } else {
+                    for _, compatibleClient := range compatibleClients {
+                        if compatibleClient == client.ID {
+                            isCompatible = true
+                            break
+                        }
+                    }
+                }
+                if isCompatible {
+                    reuseClient = cliutils.Confirm(fmt.Sprintf(
+                        "Detected an existing %s client choice of %s.\nWould you like to continue using it?", chainName, client.Name))
+                } else {
+                    fmt.Printf("%sWarning: your existing eth2 client [%s] is incompatible with your eth1 and fallback choices.%s\n\n", colorYellow, client.Name, colorReset)
+                }
             }
         }
     }
