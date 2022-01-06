@@ -343,10 +343,16 @@ func GetMinipoolCountPerStatus(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
     }
 
     totalMinipools := int64(totalMinipoolsUint)
-    minipoolCounts := MinipoolCountsPerStatus{}
+    minipoolCounts := MinipoolCountsPerStatus{
+        Initialized: big.NewInt(0),
+        Prelaunch: big.NewInt(0),
+        Staking: big.NewInt(0),
+        Dissolved: big.NewInt(0),
+        Withdrawable: big.NewInt(0),
+    }
     limit := big.NewInt(MinipoolPrelaunchBatchSize)
     for i := int64(0); i < totalMinipools; i += MinipoolPrelaunchBatchSize {
-        // Get a batch of addresses
+        // Get a batch of counts
         offset := big.NewInt(i)
         newMinipoolCounts := new(MinipoolCountsPerStatus)
         if err := rocketMinipoolManager.Call(opts, newMinipoolCounts, "getMinipoolCountPerStatus", offset, limit); err != nil {
