@@ -69,6 +69,20 @@ func getClaimingContractUserRegisteredTime(rp *rocketpool.RocketPool, claimsCont
 }
 
 
+// Get the total amount claimed in the current interval by the given claiming contract
+func getClaimingContractTotalClaimed(rp *rocketpool.RocketPool, claimsContract string, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return nil, err
+	}
+	totalClaimed := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, totalClaimed, "getClaimingContractTotalClaimed", claimsContract); err != nil {
+		return nil, fmt.Errorf("Could not get total claimed for %s: %w", claimsContract, err)
+	}
+	return *totalClaimed, nil
+}
+
+
 // Estimate the gas of claim
 func estimateClaimGas(claimsContract *rocketpool.Contract, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     return claimsContract.GetTransactionGasInfo(opts, "claim")

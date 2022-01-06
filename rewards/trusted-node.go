@@ -116,6 +116,13 @@ func GetTrustedNodeRegistrationTime(rp *rocketpool.RocketPool, claimerAddress co
     return getClaimingContractUserRegisteredTime(rp, "rocketClaimTrustedNode", claimerAddress, opts)
 }
 
+
+// Get the total rewards claimed for this claiming contract this interval
+func GetTrustedNodeTotalClaimed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    return getClaimingContractTotalClaimed(rp, "rocketClaimTrustedNode", opts)
+}
+
+
 // Get contracts
 var rocketClaimTrustedNodeLock sync.Mutex
 func getRocketClaimTrustedNode(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {

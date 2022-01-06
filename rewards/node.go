@@ -51,7 +51,6 @@ func GetNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress common.
     return getClaimRewardsAmount(rocketClaimNode, "node", claimerAddress, opts)
 }
 
-
 // Estimate the gas of ClaimNodeRewards
 func EstimateClaimNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
     rocketClaimNode, err := getRocketClaimNode(rp)
@@ -113,6 +112,12 @@ func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress comm
 // Get the time that the user registered as a claimer
 func GetNodeRegistrationTime(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
     return getClaimingContractUserRegisteredTime(rp, "rocketClaimNode", claimerAddress, opts)
+}
+
+
+// Get the total rewards claimed for this claiming contract this interval
+func GetNodeTotalClaimed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+    return getClaimingContractTotalClaimed(rp, "rocketClaimNode", opts)
 }
 
 // Get contracts
