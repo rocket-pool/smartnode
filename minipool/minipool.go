@@ -215,6 +215,7 @@ func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress com
     }
 
     // Load pubkeys in batches
+    var lock = sync.RWMutex{}
     pubkeys := make([]rptypes.ValidatorPubkey, minipoolCount)
     for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolAddressBatchSize {
 
@@ -236,7 +237,9 @@ func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress com
                 if err != nil {
                     return err
                 }
+                lock.Lock()
                 pubkeys[mi] = pubkey
+                lock.Unlock()
                 return nil
             })
         }
