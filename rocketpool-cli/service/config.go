@@ -363,25 +363,27 @@ func configureChain(globalChain, userChain *config.Chain, chainName string, defa
         // Select client
         var selected int
         if randomClient {
-            rand.Seed(time.Now().UnixNano())
-            for {
-                selected = rand.Intn(len(compatibleClientIndices))
-                // Don't pick supermajority clients if they're disabled
-                if !includeSupermajority {
-                    selectedIndex := compatibleClientIndices[selected]
-                    if !globalChain.Client.Options[selectedIndex].Supermajority {
-                        break
-                    }
+            // Make a new list indices in compatibleClientIndices which represent eligible clients
+            var eligible []int
+            for clientIndicesIndex, clientIndex := range compatibleClientIndices {
+                if !includeSupermajority && globalChain.Client.Options[clientIndex].Supermajority {
+                    continue
                 }
-                // Only pick fallback clients if they're required
-                if fallbackOnly {
-                    selectedIndex := compatibleClientIndices[selected]
-                    if globalChain.Client.Options[selectedIndex].Fallback {
-                        break
-                    }
+
+                if fallbackOnly && !globalChain.Client.Options[clientIndex].Fallback {
+                    continue
                 }
-                break
+
+                eligible = append(eligible, clientIndicesIndex)
             }
+
+            if len(eligible) == 0 {
+                // No clients could be selected, due to fallback/supermajority preferences
+                return fmt.Errorf("There are no compatible %s clients available with Fallback %t and includeSupermajority %t", chainName, fallbackOnly, includeSupermajority)
+            }
+
+            rand.Seed(time.Now().UnixNano())
+            selected = eligible[rand.Intn(len(eligible))]
 
         } else {
             clientOptions := make([]string, len(compatibleClientIndices))
