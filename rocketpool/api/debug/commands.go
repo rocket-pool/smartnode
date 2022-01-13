@@ -1,6 +1,7 @@
 package debug
 
 import (
+	"fmt"
 	"github.com/urfave/cli"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -27,7 +28,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Export TSV of validators
-					ExportValidators(c)
+					if err := ExportValidators(c); err != nil {
+						fmt.Printf("An error occurred: %s\n", err)
+					}
 					return nil
 
 				},
