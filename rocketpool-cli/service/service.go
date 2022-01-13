@@ -241,6 +241,10 @@ func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPool
 
     // Get the current validator client
     currentValidatorImageString, err := rp.GetDockerImage(prefix + ValidatorContainerSuffix)
+    if err != nil {
+        return fmt.Errorf("Error getting current validator image: %w", err)
+    }
+
     currentValidatorName, err := getDockerImageName(currentValidatorImageString)
     if err != nil {
         return fmt.Errorf("Error getting current validator image name: %w", err)
