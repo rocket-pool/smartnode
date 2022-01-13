@@ -89,4 +89,3 @@ The following commands are available via the smart node client:
 
 - `rocketpool queue status` - Display the current status of the deposit pool
 - `rocketpool queue process` - Process the deposit pool by assigning user-deposited ETH to available minipools
-
