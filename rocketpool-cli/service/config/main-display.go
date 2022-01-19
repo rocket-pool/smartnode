@@ -56,10 +56,10 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
     settingsHome := newSettingsHome(md)
     md.setPage(settingsHome.homePage)
 
-    newUserModal := createNewUserWelcomeModal(md)
+    newUserWizard := newNewUserWizard(md)
 	
     // TODO: some logic to decide which one to set first
-	modal := tview.NewModal().
+	modal := NewDirectionalModal(DirectionalModalVertical, app).
         SetText("[DEBUG MENU, NOT REAL]\nChoose your Destiny:").
         AddButtons([]string{
             "New User Wizard",
@@ -68,7 +68,7 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
         }).
         SetDoneFunc(func(buttonIndex int, buttonLabel string) {
             if buttonIndex == 0 {
-                app.SetRoot(newUserModal, true)
+                app.SetRoot(newUserWizard.welcomeModal, true)
             } else if buttonIndex == 1 {
 
             } else if buttonIndex == 2 {
