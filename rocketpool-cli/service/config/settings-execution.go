@@ -1,30 +1,28 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-// Creates a new page for the Smartnode settings
-func createSettingSmartnodePage(home *settingsHome) *page {
+// Creates a new page for the Execution client settings
+func createSettingExecutionPage(home *settingsHome) *page {
 
-    content := createSettingSmartnodeContent(home)
+    content := createSettingExecutionContent(home)
 
     return newPage(
         home.homePage, 
-        "settings-smartnode", 
-        "Smartnode and TX Fees",
-        "Select this to configure the settings for the Smartnode itself, including the defaults and limits on transaction fees.",
+        "settings-execution", 
+        "Execution Client (Eth1)",
+        "Select this to choose your Execution client (formerly called \"ETH1 client\") and configure its settings.",
         content,
     )
 
 }
 
 
-// Creates the content for the Smartnode settings page
-func createSettingSmartnodeContent(home *settingsHome) tview.Primitive {
+// Creates the content for the Execution client settings page
+func createSettingExecutionContent(home *settingsHome) tview.Primitive {
 
     layout := newStandardLayout()
 
@@ -43,7 +41,6 @@ func createSettingSmartnodeContent(home *settingsHome) tview.Primitive {
 	a.SetFocusFunc(func() {
 		layout.descriptionBox.SetText(paramDescriptions[0])
 	})
-    a.SetTextOptions(" ", " ", "", "", "")
 	form.AddFormItem(a)
 
 	b := tview.NewCheckbox().
@@ -79,41 +76,5 @@ func createSettingSmartnodeContent(home *settingsHome) tview.Primitive {
 
     // Return the standard layout's grid
     return layout.grid
-
-}
-
-
-// Create the footer, including the nav bar and the save / quit buttons
-func createSettingFooter() (*tview.Flex, int) {
-
-    // Nav bar
-    navString1 := "Tab: Next Setting   Shift-Tab: Previous Setting"
-    navTextView1 := tview.NewTextView().
-        SetDynamicColors(false).
-        SetRegions(false).
-        SetWrap(false)
-    fmt.Fprint(navTextView1, navString1)
-
-    navString2 := "Space/Enter: Change Setting   Esc: Done, Return to Categories"
-    navTextView2 := tview.NewTextView().
-        SetDynamicColors(false).
-        SetRegions(false).
-        SetWrap(false)
-    fmt.Fprint(navTextView2, navString2)
-
-    navBar := tview.NewFlex().
-        SetDirection(tview.FlexRow).
-        AddItem(tview.NewFlex().
-            AddItem(tview.NewBox(), 0, 1, false).
-            AddItem(navTextView1, len(navString1), 1, false).
-            AddItem(tview.NewBox(), 0, 1, false),
-        1, 1, false).
-        AddItem(tview.NewFlex().
-            AddItem(tview.NewBox(), 0, 1, false).
-            AddItem(navTextView2, len(navString2), 1, false).
-            AddItem(tview.NewBox(), 0, 1, false),
-        1, 1, false)
-
-	return navBar, 2
 
 }

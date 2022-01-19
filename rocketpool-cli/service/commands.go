@@ -5,6 +5,7 @@ import (
 
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
 	"github.com/rocket-pool/smartnode/shared"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -84,7 +85,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
                     if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
 
                     // Run command
-                    return configureService(c)
+                    return config.ConfigureService(c)
 
                 },
             },

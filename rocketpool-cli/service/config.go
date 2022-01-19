@@ -15,7 +15,7 @@ import (
 )
 
 // Configure the Rocket Pool service
-func configureService(c *cli.Context) error {
+func configureServiceLegacy(c *cli.Context) error {
 
     colorReset := "\033[0m"
     colorYellow := "\033[33m"

@@ -9,10 +9,10 @@ type page struct {
     id string
     title string
     description string
-    content *tview.Box
+    content tview.Primitive
 }
 
-func newPage(parent *page, id string, title string, description string, content *tview.Box) *page {
+func newPage(parent *page, id string, title string, description string, content tview.Primitive) *page {
 
     return &page{
         parent:  parent,
@@ -30,10 +30,13 @@ func (p *page) getHeader() string {
     parent := p.parent
     for {
         if parent == nil {
-            return header
+            break
         }
         header = parent.title + " > " + header
-        parent = p.parent
+        parent = parent.parent
     }
+
+    header = "Navigation: " + header
+    return header
 
 }

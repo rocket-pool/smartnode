@@ -26,7 +26,7 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
         SetRows(1, 1, 1, 0, 1)     // Also 1-unit border
 
     grid.SetBorder(true).
-         SetTitle(fmt.Sprintf("Rocket Pool Smartnode %s Configuration", shared.RocketPoolVersion)).
+         SetTitle(fmt.Sprintf(" Rocket Pool Smartnode %s Configuration ", shared.RocketPoolVersion)).
          SetBorderColor(tcell.ColorOrange).
          SetTitleColor(tcell.ColorOrange).
          SetBackgroundColor(tcell.ColorBlack)
@@ -40,7 +40,7 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
 
     // Create the page collection
     pages := tview.NewPages()
-    grid.AddItem(pages, 3, 1, 1, 1, 0, 0, false)
+    grid.AddItem(pages, 3, 1, 1, 1, 0, 0, true)
 
     // Create the main display object
     md := &mainDisplay{
@@ -56,6 +56,7 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
     // TODO: some logic to decide which one to set first
     md.setPage(settingsHome.homePage)
 
+    app.SetRoot(grid, true)
     return md
 
 }
