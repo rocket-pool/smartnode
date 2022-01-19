@@ -62,9 +62,13 @@ func (layout *standardLayout) setContent(content tview.Primitive, contentBox *tv
 // Sets the footer for this layout.
 func (layout *standardLayout) setFooter(footer tview.Primitive, height int) {
 
-	// Add the footer to the grid
-	layout.footer = footer
-	layout.grid.SetRows(0, 1, height)
-	layout.grid.AddItem(footer, 2, 0, 1, 3, 0, 0, false)
+	if footer == nil {
+		layout.grid.SetRows(0, 1)
+	} else {
+		// Add the footer to the grid
+		layout.footer = footer
+		layout.grid.SetRows(0, 1, height)
+		layout.grid.AddItem(footer, 2, 0, 1, 3, 0, 0, false)
+	}
 
 }

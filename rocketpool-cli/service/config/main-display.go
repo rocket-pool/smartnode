@@ -14,6 +14,7 @@ type mainDisplay struct {
     pages *tview.Pages
     app *tview.Application
     content *tview.Box
+    mainGrid *tview.Grid
 }
 
 
@@ -48,15 +49,34 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
         pages: pages,
         app: app,
         content: grid.Box,
+        mainGrid: grid,
     }
 
     // Create all of the child elements
     settingsHome := newSettingsHome(md)
-	
-    // TODO: some logic to decide which one to set first
     md.setPage(settingsHome.homePage)
 
-    app.SetRoot(grid, true)
+    newUserModal := createNewUserWelcomeModal(md)
+	
+    // TODO: some logic to decide which one to set first
+	modal := tview.NewModal().
+        SetText("[DEBUG MENU, NOT REAL]\nChoose your Destiny:").
+        AddButtons([]string{
+            "New User Wizard",
+            "Migration Wizard",
+            "Straight to Settings",
+        }).
+        SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+            if buttonIndex == 0 {
+                app.SetRoot(newUserModal, true)
+            } else if buttonIndex == 1 {
+
+            } else if buttonIndex == 2 {
+                app.SetRoot(grid, true)
+            }
+        })
+
+    app.SetRoot(modal, true)
     return md
 
 }
@@ -66,4 +86,10 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
 func (md *mainDisplay) setPage(page *page) {
     md.navHeader.SetText(page.getHeader())
     md.pages.SwitchToPage(page.id)
+}
+
+
+// Shows the main grid on-screen.
+func (md *mainDisplay) showMainGrid() {
+    md.app.SetRoot(md.mainGrid, true)
 }
