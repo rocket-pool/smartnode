@@ -67,10 +67,7 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
     if err != nil { return nil, err }
 
     // Check if auto-staking is disabled
-    gasThreshold := cfg.Smartnode.RplClaimGasThreshold
-    if gasThreshold == 0 {
-        logger.Println("RPL claim gas threshold is set to 0, automatic staking of prelaunch minipools will be disabled.")
-    }
+    gasThreshold := cfg.Smartnode.MinipoolStakeGasThreshold
 
     // Get the user-requested max fee
     maxFee, err := cfg.GetMaxFee()
