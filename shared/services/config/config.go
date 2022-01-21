@@ -17,81 +17,82 @@ import (
 // Rocket Pool config
 type RocketPoolConfig struct {
     Rocketpool struct {
-        StorageAddress string           `yaml:"storageAddress,omitempty"`
-        OneInchOracleAddress string     `yaml:"oneInchOracleAddress,omitempty"`
-        RplTokenAddress string          `yaml:"rplTokenAddress,omitempty"`
-        RPLFaucetAddress string         `yaml:"rplFaucetAddress,omitempty"`
-    }                                   `yaml:"rocketpool,omitempty"`
+        StorageAddress string               `yaml:"storageAddress,omitempty"`
+        OneInchOracleAddress string         `yaml:"oneInchOracleAddress,omitempty"`
+        RplTokenAddress string              `yaml:"rplTokenAddress,omitempty"`
+        RPLFaucetAddress string             `yaml:"rplFaucetAddress,omitempty"`
+    }                                       `yaml:"rocketpool,omitempty"`
     Smartnode struct {
-        ProjectName string              `yaml:"projectName,omitempty"`
-        GraffitiVersion string          `yaml:"graffitiVersion,omitempty"`
-        Image string                    `yaml:"image,omitempty"`
-        PasswordPath string             `yaml:"passwordPath,omitempty"`
-        WalletPath string               `yaml:"walletPath,omitempty"`
-        ValidatorKeychainPath string    `yaml:"validatorKeychainPath,omitempty"`
-        ValidatorRestartCommand string  `yaml:"validatorRestartCommand,omitempty"`
-        MaxFee float64                  `yaml:"maxFee,omitempty"`
-        MaxPriorityFee float64          `yaml:"maxPriorityFee,omitempty"`
-        GasLimit uint64                 `yaml:"gasLimit,omitempty"`
-        RplClaimGasThreshold float64    `yaml:"rplClaimGasThreshold,omitempty"`
-        TxWatchUrl string               `yaml:"txWatchUrl,omitempty"`
-        StakeUrl string                 `yaml:"stakeUrl,omitempty"`
-    }                                   `yaml:"smartnode,omitempty"`
+        ProjectName string                  `yaml:"projectName,omitempty"`
+        GraffitiVersion string              `yaml:"graffitiVersion,omitempty"`
+        Image string                        `yaml:"image,omitempty"`
+        PasswordPath string                 `yaml:"passwordPath,omitempty"`
+        WalletPath string                   `yaml:"walletPath,omitempty"`
+        ValidatorKeychainPath string        `yaml:"validatorKeychainPath,omitempty"`
+        ValidatorRestartCommand string      `yaml:"validatorRestartCommand,omitempty"`
+        MaxFee float64                      `yaml:"maxFee,omitempty"`
+        MaxPriorityFee float64              `yaml:"maxPriorityFee,omitempty"`
+        GasLimit uint64                     `yaml:"gasLimit,omitempty"`
+        RplClaimGasThreshold float64        `yaml:"rplClaimGasThreshold,omitempty"`
+        MinipoolStakeGasThreshold float64   `yaml:"minipoolStakeGasThreshold,omitempty"`
+        TxWatchUrl string                   `yaml:"txWatchUrl,omitempty"`
+        StakeUrl string                     `yaml:"stakeUrl,omitempty"`
+    }                                       `yaml:"smartnode,omitempty"`
     Chains struct {
-        Eth1 Chain                      `yaml:"eth1,omitempty"`
-        Eth1Fallback Chain              `yaml:"eth1Fallback,omitempty"`
-        Eth2 Chain                      `yaml:"eth2,omitempty"`
-    }                                   `yaml:"chains,omitempty"`
-    Metrics Metrics                     `yaml:"metrics,omitempty"`
+        Eth1 Chain                          `yaml:"eth1,omitempty"`
+        Eth1Fallback Chain                  `yaml:"eth1Fallback,omitempty"`
+        Eth2 Chain                          `yaml:"eth2,omitempty"`
+    }                                       `yaml:"chains,omitempty"`
+    Metrics Metrics                         `yaml:"metrics,omitempty"`
 }
 type Chain struct {
-    Provider string                     `yaml:"provider,omitempty"`
-    WsProvider string                   `yaml:"wsProvider,omitempty"`
-    FallbackProvider string             `yaml:"fallbackProvider,omitempty"`
-    FallbackWsProvider string           `yaml:"fallbackWsProvider,omitempty"`
-    ReconnectDelay string               `yaml:"reconnectDelay,omitempty"`
-    PruneProvisioner string             `yaml:"pruneProvisioner,omitempty"`
-    ChainID string                      `yaml:"chainID,omitempty"`
+    Provider string                         `yaml:"provider,omitempty"`
+    WsProvider string                       `yaml:"wsProvider,omitempty"`
+    FallbackProvider string                 `yaml:"fallbackProvider,omitempty"`
+    FallbackWsProvider string               `yaml:"fallbackWsProvider,omitempty"`
+    ReconnectDelay string                   `yaml:"reconnectDelay,omitempty"`
+    PruneProvisioner string                 `yaml:"pruneProvisioner,omitempty"`
+    ChainID string                          `yaml:"chainID,omitempty"`
     Client struct {
-        Options []ClientOption          `yaml:"options,omitempty"`
-        Selected string                 `yaml:"selected,omitempty"`
-        Params []UserParam              `yaml:"params,omitempty"`
-    }                                   `yaml:"client,omitempty"`
+        Options []ClientOption              `yaml:"options,omitempty"`
+        Selected string                     `yaml:"selected,omitempty"`
+        Params []UserParam                  `yaml:"params,omitempty"`
+    }                                       `yaml:"client,omitempty"`
 }
 type ClientOption struct {
-    ID string                           `yaml:"id,omitempty"`
-    Name string                         `yaml:"name,omitempty"`
-    Desc string                         `yaml:"desc,omitempty"`
-    Image string                        `yaml:"image,omitempty"`
-    BeaconImage string                  `yaml:"beaconImage,omitempty"`
-    ValidatorImage string               `yaml:"validatorImage,omitempty"`
-    Link string                         `yaml:"link,omitempty"`
-    CompatibleEth2Clients string        `yaml:"compatibleEth2Clients,omitempty"`
-    EventLogInterval string             `yaml:"eventLogInterval,omitempty"`
-    Supermajority bool                  `yaml:"supermajority,omitempty"`
-    Params []ClientParam                `yaml:"params,omitempty"`
-    Fallback bool                       `yaml:"fallback,omitempty"`
+    ID string                               `yaml:"id,omitempty"`
+    Name string                             `yaml:"name,omitempty"`
+    Desc string                             `yaml:"desc,omitempty"`
+    Image string                            `yaml:"image,omitempty"`
+    BeaconImage string                      `yaml:"beaconImage,omitempty"`
+    ValidatorImage string                   `yaml:"validatorImage,omitempty"`
+    Link string                             `yaml:"link,omitempty"`
+    CompatibleEth2Clients string            `yaml:"compatibleEth2Clients,omitempty"`
+    EventLogInterval string                 `yaml:"eventLogInterval,omitempty"`
+    Supermajority bool                      `yaml:"supermajority,omitempty"`
+    Params []ClientParam                    `yaml:"params,omitempty"`
+    Fallback bool                           `yaml:"fallback,omitempty"`
 }
 type ClientParam struct {
-    Name string                         `yaml:"name,omitempty"`
-    Desc string                         `yaml:"desc,omitempty"`
-    Env string                          `yaml:"env,omitempty"`
-    Required bool                       `yaml:"required,omitempty"`
-    Regex string                        `yaml:"regex,omitempty"`
-    Type string                         `yaml:"type,omitempty"`
-    Default string                      `yaml:"default,omitempty"`
-    Max string                          `yaml:"max,omitempty"`
-    BlankText string                    `yaml:"blankText,omitempty"`
-    Advanced bool                       `yaml:"advanced,omitempty"`
+    Name string                             `yaml:"name,omitempty"`
+    Desc string                             `yaml:"desc,omitempty"`
+    Env string                              `yaml:"env,omitempty"`
+    Required bool                           `yaml:"required,omitempty"`
+    Regex string                            `yaml:"regex,omitempty"`
+    Type string                             `yaml:"type,omitempty"`
+    Default string                          `yaml:"default,omitempty"`
+    Max string                              `yaml:"max,omitempty"`
+    BlankText string                        `yaml:"blankText,omitempty"`
+    Advanced bool                           `yaml:"advanced,omitempty"`
 }
 type UserParam struct {
-    Env string                          `yaml:"env,omitempty"`
-    Value string                        `yaml:"value"`
+    Env string                              `yaml:"env,omitempty"`
+    Value string                            `yaml:"value"`
 }
 type Metrics struct {
-    Enabled bool                        `yaml:"enabled,omitempty"`
-    Params []ClientParam                `yaml:"params,omitempty"`
-    Settings []UserParam                `yaml:"settings,omitempty"`
+    Enabled bool                            `yaml:"enabled,omitempty"`
+    Params []ClientParam                    `yaml:"params,omitempty"`
+    Settings []UserParam                    `yaml:"settings,omitempty"`
 }
 
 

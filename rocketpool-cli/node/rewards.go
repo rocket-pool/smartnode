@@ -32,6 +32,9 @@ func getRewards(c *cli.Context) error {
     colorReset := "\033[0m"
     colorYellow := "\033[33m"
 
+    fmt.Println("=== ETH ===")
+    fmt.Printf("You have earned %.4f ETH from the Beacon Chain (including your commissions) so far.\n", rewards.BeaconRewards)
+
     nextRewardsTime := rewards.LastCheckpoint.Add(rewards.RewardsInterval)
     nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
     timeToCheckpointString := time.Until(nextRewardsTime).Round(time.Second).String()
@@ -40,6 +43,7 @@ func getRewards(c *cli.Context) error {
     // Assume 365 days in a year, 24 hours per day
     rplApr := rewards.EstimatedRewards / rewards.TotalRplStake / rewards.RewardsInterval.Hours() * (24*365) * 100
 
+    fmt.Println("\n=== RPL ===")
     fmt.Printf("The current rewards cycle started on %s.\n", cliutils.GetDateTimeString(uint64(rewards.LastCheckpoint.Unix())))
     fmt.Printf("It will end on %s (%s from now).\n", nextRewardsTimeString, timeToCheckpointString)
     
