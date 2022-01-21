@@ -280,6 +280,7 @@ type NodeRewardsResponse struct {
     CumulativeTrustedRewards float64        `json:"cumulativeTrustedRewards"`
     UnclaimedRewards float64                `json:"unclaimedRewards"`
     UnclaimedTrustedRewards float64         `json:"unclaimedTrustedRewards"`
+    BeaconRewards float64                   `json:"beaconRewards"`
     TxHash common.Hash                      `json:"txHash"`
 }
 

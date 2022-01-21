@@ -32,6 +32,8 @@ func getRewards(c *cli.Context) error {
     colorReset := "\033[0m"
     colorYellow := "\033[33m"
 
+    fmt.Printf("You have earned %.4f ETH from the Beacon Chain (including your commissions) so far.", rewards.BeaconRewards)
+
     nextRewardsTime := rewards.LastCheckpoint.Add(rewards.RewardsInterval)
     nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
     timeToCheckpointString := time.Until(nextRewardsTime).Round(time.Second).String()

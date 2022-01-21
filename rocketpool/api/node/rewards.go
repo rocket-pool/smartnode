@@ -1,10 +1,13 @@
 package node
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -13,8 +16,10 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 )
 
 
@@ -27,6 +32,8 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     w, err := services.GetWallet(c)
     if err != nil { return nil, err }
     rp, err := services.GetRocketPool(c)
+    if err != nil { return nil, err }
+    bc, err := services.GetBeaconClient(c)
     if err != nil { return nil, err }
     cfg, err := services.GetConfig(c)
     if err != nil { return nil, err }
@@ -52,6 +59,10 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
     var odaoSize uint64
     var nodeOperatorRewardsPercent float64
     var trustedNodeOperatorRewardsPercent float64
+    var totalDepositBalance float64
+    var totalNodeShare float64
+    var addresses []common.Address
+    var beaconHead beacon.BeaconHead
 
     // Sync
     var wg errgroup.Group
@@ -173,11 +184,41 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
         return err
     })
 
+    // Get the list of minipool addresses for this node
+    wg.Go(func() error {
+        _addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAccount.Address, nil)
+        if err != nil {
+            return fmt.Errorf("Error getting node minipool addresses: %w", err)
+        }
+        addresses = _addresses
+        return nil
+    })
+
+    // Get the beacon head
+    wg.Go(func() error {
+        _beaconHead, err := bc.GetBeaconHead()
+        if err != nil {
+            return fmt.Errorf("Error getting beacon chain head: %w", err)
+        }
+        beaconHead = _beaconHead
+        return nil
+    })
 
     // Wait for data
     if err := wg.Wait(); err != nil {
         return nil, err
     }
+
+    // Calculate the total deposits and corresponding beacon chain balance share
+    minipoolDetails, err := eth2.GetBeaconBalances(rp, bc, addresses, beaconHead, nil)
+    if err != nil {
+        return nil, err
+    }
+    for _, minipool := range minipoolDetails {
+        totalDepositBalance += eth.WeiToEth(minipool.NodeDeposit)
+        totalNodeShare += eth.WeiToEth(minipool.NodeBalance)
+    }
+    response.BeaconRewards = totalNodeShare - totalDepositBalance
     
     // Calculate the estimated rewards
     rewardsIntervalDays := response.RewardsInterval.Seconds() / (60*60*24)
