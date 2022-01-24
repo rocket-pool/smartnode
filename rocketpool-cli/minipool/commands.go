@@ -31,6 +31,33 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
             },
 
             cli.Command{
+                Name:      "stake",
+                Aliases:   []string{"t"},
+                Usage:     "Stake a minipool after the scrub check, moving it from prelaunch to staking.",
+                UsageText: "rocketpool minipool stake [options]",
+                Flags: []cli.Flag{
+                    cli.StringFlag{
+                        Name:  "minipool, m",
+                        Usage: "The minipool/s to stake (address or 'all')",
+                    },
+                },
+                Action: func(c *cli.Context) error {
+
+                    // Validate args
+                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+
+                    // Validate flags
+                    if c.String("minipool") != "" && c.String("minipool") != "all" {
+                        if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
+                    }
+
+                    // Run
+                    return stakeMinipools(c)
+
+                },
+            },
+
+            cli.Command{
                 Name:      "refund",
                 Aliases:   []string{"r"},
                 Usage:     "Refund ETH belonging to the node from minipools",

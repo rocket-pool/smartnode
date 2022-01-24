@@ -2,6 +2,7 @@ package api
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -27,6 +28,7 @@ type MinipoolDetails struct {
     User minipool.UserDetails               `json:"user"`
     Balances tokens.Balances                `json:"balances"`
     Validator ValidatorDetails              `json:"validator"`
+    CanStake bool                           `json:"canStake"`
     RefundAvailable bool                    `json:"refundAvailable"`
     WithdrawalAvailable bool                `json:"withdrawalAvailable"`
     CloseAvailable bool                     `json:"closeAvailable"`
@@ -35,6 +37,7 @@ type MinipoolDetails struct {
     Delegate common.Address                 `json:"delegate"`
     PreviousDelegate common.Address         `json:"previousDelegate"`
     EffectiveDelegate common.Address        `json:"effectiveDelegate"`
+    TimeUntilDissolve time.Duration         `json:"timeUntilDissolve"`
 }
 type ValidatorDetails struct {
     Exists bool                     `json:"exists"`
@@ -172,6 +175,19 @@ type CanSetUseLatestDelegateResponse struct {
     GasInfo rocketpool.GasInfo      `json:"gasInfo"`
 }
 type SetUseLatestDelegateResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    TxHash common.Hash              `json:"txHash"`
+}
+
+
+type CanStakeMinipoolResponse struct {
+    Status string                   `json:"status"`
+    Error string                    `json:"error"`
+    CanStake bool                   `json:"canStake"`
+    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
+}
+type StakeMinipoolResponse struct {
     Status string                   `json:"status"`
     Error string                    `json:"error"`
     TxHash common.Hash              `json:"txHash"`

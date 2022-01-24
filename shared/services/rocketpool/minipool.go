@@ -73,6 +73,40 @@ func (c *Client) RefundMinipool(address common.Address) (api.RefundMinipoolRespo
 }
 
 
+// Check whether a minipool is eligible for staking
+func (c *Client) CanStakeMinipool(address common.Address) (api.CanStakeMinipoolResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-stake %s", address.Hex()))
+    if err != nil {
+        return api.CanStakeMinipoolResponse{}, fmt.Errorf("Could not get can stake minipool status: %w", err)
+    }
+    var response api.CanStakeMinipoolResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.CanStakeMinipoolResponse{}, fmt.Errorf("Could not decode can stake minipool response: %w", err)
+    }
+    if response.Error != "" {
+        return api.CanStakeMinipoolResponse{}, fmt.Errorf("Could not get can stake minipool status: %s", response.Error)
+    }
+    return response, nil
+}
+
+
+// Stake a minipool
+func (c *Client) StakeMinipool(address common.Address) (api.StakeMinipoolResponse, error) {
+    responseBytes, err := c.callAPI(fmt.Sprintf("minipool stake %s", address.Hex()))
+    if err != nil {
+        return api.StakeMinipoolResponse{}, fmt.Errorf("Could not stake minipool: %w", err)
+    }
+    var response api.StakeMinipoolResponse
+    if err := json.Unmarshal(responseBytes, &response); err != nil {
+        return api.StakeMinipoolResponse{}, fmt.Errorf("Could not decode stake minipool response: %w", err)
+    }
+    if response.Error != "" {
+        return api.StakeMinipoolResponse{}, fmt.Errorf("Could not stake minipool: %s", response.Error)
+    }
+    return response, nil
+}
+
+
 // Check whether a minipool can be dissolved
 func (c *Client) CanDissolveMinipool(address common.Address) (api.CanDissolveMinipoolResponse, error) {
     responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-dissolve %s", address.Hex()))
