@@ -5,10 +5,13 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -115,6 +118,37 @@ func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
             return []api.MinipoolDetails{}, err
         }
 
+    }
+
+    // Get the scrub period
+    scrubPeriodSeconds, err := trustednode.GetScrubPeriod(rp, nil)
+    if err != nil{
+        return nil, err
+    }
+    scrubPeriod := time.Duration(scrubPeriodSeconds) * time.Second
+    
+    // Get the dissolve timeout
+    timeout, err := protocol.GetMinipoolLaunchTimeout(rp, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    // Get the time of the latest block
+    latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
+    if err != nil {
+        return nil, fmt.Errorf("Can't get the latest block time: %w", err)
+    }
+    latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
+    
+    // Check the stake status of each minipool
+    for _, mpDetails := range details {
+        creationTime := mpDetails.Status.StatusTime
+        dissolveTime := creationTime.Add(timeout)
+        remainingTime := creationTime.Add(scrubPeriod).Sub(latestBlockTime)
+        if remainingTime < 0 {
+            mpDetails.CanStake = true
+            mpDetails.TimeUntilDissolve = time.Until(dissolveTime)
+        }
     }
 
     // Return
