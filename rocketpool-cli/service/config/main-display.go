@@ -57,6 +57,7 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
     md.setPage(settingsHome.homePage)
 
     newUserWizard := newNewUserWizard(md)
+    md.setPage(newUserWizard.welcomeModal)
 	
     // TODO: some logic to decide which one to set first
 	modal := NewDirectionalModal(DirectionalModalVertical, app).
@@ -68,7 +69,8 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
         }).
         SetDoneFunc(func(buttonIndex int, buttonLabel string) {
             if buttonIndex == 0 {
-                app.SetRoot(newUserWizard.welcomeModal, true)
+                app.SetRoot(grid, true)
+                //app.SetRoot(newUserWizard.welcomeModal, true)
             } else if buttonIndex == 1 {
 
             } else if buttonIndex == 2 {

@@ -3,9 +3,9 @@ package config
 
 type newUserWizard struct {
 	md *mainDisplay
-	welcomeModal *DirectionalModal
-	networkModal *DirectionalModal
-	executionModeModal *DirectionalModal
+	welcomeModal *page
+	networkModal *page
+	executionModeModal *page
 	executionDockerModal *DirectionalModal
 	executionExternalModal *DirectionalModal
 	consensusModeModal *DirectionalModal
@@ -36,6 +36,32 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 // Create the welcome modal
 func (wiz *newUserWizard) createWelcomeModal() {
 
+	modal := newModalLayout(
+		wiz.md.app,
+		60,
+`______           _        _    ______           _
+| ___ \         | |      | |   | ___ \         | |
+| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
+|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
+| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
+\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|` + "\n\n" +
+		
+		"Welcome to the Smartnode configuration wizard!\n\n" +
+		"Since this is your first time configuring the Smartnode, we'll walk you through the basic setup.\n\n",
+		[]string{ "Next", "Quit"}, nil, DirectionalModalHorizontal,
+	)
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		if buttonIndex == 0 {
+			wiz.md.setPage(wiz.networkModal)
+		} else if buttonIndex == 1 {
+			wiz.md.app.Stop()
+		}
+	}
+
+	page := newPage(nil, "new-user-welcome", "New User Wizard > [1/8] Welcome", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+
+	/*
 	modal := NewDirectionalModal(DirectionalModalHorizontal, wiz.md.app).
 		SetText(`
 		______           _        _    ______           _
@@ -56,8 +82,8 @@ func (wiz *newUserWizard) createWelcomeModal() {
 				wiz.md.app.Stop()
 			}
 		})
-
-	wiz.welcomeModal = modal
+	*/
+	wiz.welcomeModal = page
 
 }
 
@@ -65,6 +91,25 @@ func (wiz *newUserWizard) createWelcomeModal() {
 // Create the network modal
 func (wiz *newUserWizard) createNetworkModal() {
 
+	modal := newModalLayout(
+		wiz.md.app,
+		40,
+		"Which network would you like to use?",
+		[]string{ "The Prater Testnet", "The Ethereum Mainnet", },
+		nil,
+		DirectionalModalVertical)
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		if buttonIndex == 2 {
+			wiz.md.app.Stop()
+		} else {
+			wiz.md.setPage(wiz.executionModeModal)
+		}
+	}
+
+	page := newPage(nil, "new-user-network", "New User Wizard > [2/8] Select Network", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+
+	/*
 	modal := NewDirectionalModal(DirectionalModalVertical, wiz.md.app).
 		SetText("Which network would you like to use?").
 		AddButtons([]string{"The Prater Testnet", "The Ethereum Mainnet", "Quit without Saving"}).
@@ -75,8 +120,8 @@ func (wiz *newUserWizard) createNetworkModal() {
 				wiz.md.app.SetRoot(wiz.executionModeModal, true)
 			}
 		})
-
-	wiz.networkModal = modal
+	*/
+	wiz.networkModal = page
 
 }
 
@@ -84,26 +129,31 @@ func (wiz *newUserWizard) createNetworkModal() {
 // Create the execution client mode selection modal
 func (wiz *newUserWizard) createExecutionModeModal() {
 
-	modal := NewDirectionalModal(DirectionalModalVertical, wiz.md.app).
-		SetText("Let's start by choosing how you'd like to run your execution client (formerly eth1 client).\n\n" +
+	modal := newModalLayout(
+		wiz.md.app,
+		60,
+		"Let's start by choosing how you'd like to run your Execution Client (formerly eth1 client).\n\n" +
 			"Would you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (formerly known as \"Hybrid Mode\")?",
-		).
-		AddButtons([]string{
+		[]string{
 			"Let Rocket Pool Manage its Own Client (Default)", 
 			"Use an Existing External Client (Hybrid Mode)", 
-			"Quit without Saving",
-		}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 0 {
-				wiz.md.app.SetRoot(wiz.executionDockerModal, true)
-			} else if buttonIndex == 1 {
-				wiz.md.app.SetRoot(wiz.executionExternalModal, true)
-			} else if buttonIndex == 2 {
-				wiz.md.app.Stop()
-			}
-		})
+		},
+		nil,
+		DirectionalModalVertical)
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		if buttonIndex == 0 {
+			wiz.md.app.SetRoot(wiz.executionDockerModal, true)
+		} else if buttonIndex == 1 {
+			wiz.md.app.SetRoot(wiz.executionExternalModal, true)
+		} else if buttonIndex == 2 {
+			wiz.md.app.Stop()
+		}
+	}
 
-	wiz.executionModeModal = modal
+	page := newPage(nil, "new-user-execution-mode", "New User Wizard > [3/8] Select Execution Client Mode", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+
+	wiz.executionModeModal = page
 
 }
 
