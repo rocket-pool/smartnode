@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -175,7 +176,17 @@ func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescrip
 
         formsFlex := tview.NewFlex().
             SetDirection(tview.FlexRow)
-        for index, label := range buttonLabels {
+        if len(buttonDescriptions) > 0 {
+            // Add a spacing row to make the first button line up with the description box
+            spacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+            formsFlex.AddItem(spacer, 1, 1, false)
+        }
+
+        // Adjust the labels so they all have the same length
+        sizedButtonLabels := layout.getSizedButtonLabels(buttonLabels)
+        buttonsWidth := tview.TaggedStringWidth(sizedButtonLabels[0]) + 4 + 2
+
+        for index, label := range sizedButtonLabels {
             func(i int, l string) {
 
                 // Create a new form for this button
@@ -222,12 +233,6 @@ func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescrip
                     return event
                 })
 
-                // Calculate the width of this button 
-                buttonWidth := tview.TaggedStringWidth(label) + 4 + 2
-                if buttonWidth > buttonsWidth {
-                    buttonsWidth = buttonWidth
-                }
-
                 // Add the form to the layout's list of forms
                 layout.forms = append(layout.forms, form)
                 formsFlex.AddItem(form, 1, 1, true)
@@ -240,21 +245,36 @@ func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescrip
         buttonsWidth -= 2
         if len(buttonDescriptions) == 0 {
             buttonGrid.SetColumns(0, buttonsWidth, 0)
+            
             leftSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
             rightSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+            
             buttonGrid.AddItem(leftSpacer, 0, 0, 1, 1, 0, 0, false)
             buttonGrid.AddItem(formsFlex, 0, 1, 1, 1, 0, 0, true)
             buttonGrid.AddItem(rightSpacer, 0, 2, 1, 1, 0, 0, false)
+            
+            height = len(layout.forms) * 2 - 1
         } else {
             // If this layout comes with button descriptions, include the description box
-            layout.descriptionBox = tview.NewTextView()
-            buttonGrid.SetColumns(1, buttonsWidth, 1, 0, 1)
+            layout.descriptionBox = tview.NewTextView().
+                SetWordWrap(true)
+            layout.descriptionBox.SetBorder(true)
+            layout.descriptionBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+            layout.descriptionBox.SetTitle("Description")
+
+            leftSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+            midSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+            rightSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+
+            buttonGrid.SetColumns(1, -2, 1, -5, 1)
+            buttonGrid.AddItem(leftSpacer, 0, 0, 1, 1, 0, 0, false)
             buttonGrid.AddItem(formsFlex, 0, 1, 1, 1, 0, 0, true)
+            buttonGrid.AddItem(midSpacer, 0, 2, 1, 1, 0, 0, false)
             buttonGrid.AddItem(layout.descriptionBox, 0, 3, 1, 1, 0, 0, false)
+            buttonGrid.AddItem(rightSpacer, 0, 4, 1, 1, 0, 0, false)
+
+            height = len(layout.forms) * 2 + 1
         }
-
-
-        height = len(layout.forms) * 2 - 1
 
     }
 
@@ -263,3 +283,29 @@ func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescrip
     return height
 }
 
+
+// Pads each of the button labels with spaces so they all have the same length while staying centered.
+func (layout *modalLayout) getSizedButtonLabels(buttonLabels []string) []string {
+
+    // Get the longest label
+    maxLabelSize := 0
+    for _, label := range buttonLabels {
+        if len(label) > maxLabelSize {
+            maxLabelSize = tview.TaggedStringWidth(label)
+        }
+    }
+
+    // Pad each label
+    sizedButtonLabels := []string{}
+    for _, label := range buttonLabels {
+        length := tview.TaggedStringWidth(label)
+        leftPad := (maxLabelSize - length) / 2
+        rightPad := maxLabelSize - length - leftPad
+
+        sizedLabel := strings.Repeat(" ", leftPad) + label + strings.Repeat(" ", rightPad)
+        sizedButtonLabels = append(sizedButtonLabels, sizedLabel)
+    }
+
+    return sizedButtonLabels
+
+}

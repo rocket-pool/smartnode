@@ -13,8 +13,8 @@ func createSettingConsensusPage(home *settingsHome) *page {
     return newPage(
         home.homePage, 
         "settings-consensus", 
-        "Beacon Client (Eth2)",
-        "Select this to choose your Beacon client (formerly called \"ETH2 client\") and configure its settings.",
+        "Consensus Client (Eth2)",
+        "Select this to choose your Consensus client (formerly called \"ETH2 client\") and configure its settings.",
         content,
     )
 

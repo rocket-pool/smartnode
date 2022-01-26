@@ -6,12 +6,12 @@ type newUserWizard struct {
 	welcomeModal *page
 	networkModal *page
 	executionModeModal *page
-	executionDockerModal *DirectionalModal
+	executionDockerModal *page
 	executionExternalModal *DirectionalModal
 	consensusModeModal *DirectionalModal
-	consensusDockerModal *DirectionalModal
+	consensusDockerModal *page
 	consensusExternalMoadl *DirectionalModal
-	finishedModal *DirectionalModal
+	finishedModal *page
 }
 
 
@@ -106,7 +106,7 @@ func (wiz *newUserWizard) createNetworkModal() {
 		}
 	}
 
-	page := newPage(nil, "new-user-network", "New User Wizard > [2/8] Select Network", "", modal.borderGrid)
+	page := newPage(nil, "new-user-network", "New User Wizard > [2/8] Network", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 
 	/*
@@ -142,7 +142,7 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 		DirectionalModalVertical)
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
-			wiz.md.app.SetRoot(wiz.executionDockerModal, true)
+			wiz.md.setPage(wiz.executionDockerModal)
 		} else if buttonIndex == 1 {
 			wiz.md.app.SetRoot(wiz.executionExternalModal, true)
 		} else if buttonIndex == 2 {
@@ -150,7 +150,7 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 		}
 	}
 
-	page := newPage(nil, "new-user-execution-mode", "New User Wizard > [3/8] Select Execution Client Mode", "", modal.borderGrid)
+	page := newPage(nil, "new-user-execution-mode", "New User Wizard > [3/8] Execution Client Mode", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 
 	wiz.executionModeModal = page
@@ -161,26 +161,34 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 // Create the execution client Docker modal
 func (wiz *newUserWizard) createExecutionDockerModal() {
 
-	modal := NewDirectionalModal(DirectionalModalVertical, wiz.md.app).
-		SetText("Please select the Execution client you would like to use.\n\n" +
-			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth1-clients to learn more about them.",
-		).
-		AddButtons([]string{
+	modal := newModalLayout(
+		wiz.md.app,
+		70,
+		"Please select the Execution client you would like to use.\n\n" +
+		"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth1-clients to learn more about them.",
+		[]string{
 			"Geth",
 			"Infura",
 			"Pocket",
-			"Quit without Saving",
-			"[More stuff for required params here]",
-		}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 3 {
-				wiz.md.app.Stop()
-			} else {
-				wiz.md.app.SetRoot(wiz.consensusDockerModal, true)
-			}
-		})
+		},
+		[]string{
+			"Geth is one of the three original implementations of the Ethereum protocol. It is written in Go, fully open source and licensed under the GNU LGPL v3.",
+			"Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
+			"Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
+		},
+		DirectionalModalVertical)
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		if buttonIndex == 3 {
+			wiz.md.app.Stop()
+		} else {
+			wiz.md.setPage(wiz.consensusDockerModal)
+		}
+	}
 
-	wiz.executionDockerModal = modal
+	page := newPage(nil, "new-user-execution-docker", "New User Wizard > [4/8] Execution Client", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+
+	wiz.executionDockerModal = page
 
 }
 
@@ -188,27 +196,36 @@ func (wiz *newUserWizard) createExecutionDockerModal() {
 // Create the consensus client Docker modal
 func (wiz *newUserWizard) createConsensusDockerModal() {
 
-	modal := NewDirectionalModal(DirectionalModalVertical, wiz.md.app).
-		SetText("Please select the Consensus client you would like to use.\n\n" +
-			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.",
-		).
-		AddButtons([]string{
+	modal := newModalLayout(
+		wiz.md.app,
+		80,
+		"Please select the Consensus client you would like to use.\n\n" +
+		"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.",
+		[]string{
 			"Lighthouse",
-			"Nimbus (Recommended)",
+			"Nimbus",
 			"Prysm",
-			"Teku (Recommended)",
-			"Quit without Saving",
-			"[More stuff for required params here]",
-		}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 4 {
-				wiz.md.app.Stop()
-			} else {
-				wiz.md.app.SetRoot(wiz.finishedModal, true)
-			}
-		})
+			"Teku",
+		},
+		[]string{
+			"Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
+			"Nimbus is a Consensus client implementation that strives to be as lightweight as possible in terms of resources used. This allows it to perform well on embedded systems, resource-restricted devices -- including Raspberry Pis and mobile devices -- and multi-purpose servers.",
+			"Prysm is a Go implementation of a Consensus client with a focus on usability, security, and reliability. Prysm is developed by Prysmatic Labs, a company with the sole focus on the development of their client. Prysm is written in Go and released under a GPL-3.0 license.",
+			"Teku is a Java-based Consensus client designed & built to meet institutional needs and security requirements. PegaSys is an arm of ConsenSys dedicated to building enterprise-ready clients and tools for interacting with the core Ethereum platform. Teku is Apache 2 licensed.",
+		},
+		DirectionalModalVertical)
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		if buttonIndex == 4 {
+			wiz.md.app.Stop()
+		} else {
+			wiz.md.setPage(wiz.finishedModal)
+		}
+	}
 
-	wiz.consensusDockerModal = modal
+	page := newPage(nil, "new-user-consensus-docker", "New User Wizard > [6/8] Consensus Client", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+
+	wiz.consensusDockerModal = page
 
 }
 
@@ -216,22 +233,28 @@ func (wiz *newUserWizard) createConsensusDockerModal() {
 // Create the finished modal
 func (wiz *newUserWizard) createFinishedModal() {
 
-	modal := NewDirectionalModal(DirectionalModalVertical, wiz.md.app).
-		SetText("All done! You're ready to run.\n\n" +
-			"If you'd like, you can review and change all of the Smartnode and client settings next or just save and exit.",
-		).
-		AddButtons([]string{
+	modal := newModalLayout(
+		wiz.md.app,
+		40,
+		"All done! You're ready to run.\n\n" +
+		"If you'd like, you can review and change all of the Smartnode and client settings next or just save and exit.",
+		[]string{
 			"Review All Settings",
 			"Save and Exit",
-		}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 0 {
-				wiz.md.showMainGrid()
-			} else {
-				wiz.md.app.Stop()
-			}
-		})
+		},
+		nil,
+		DirectionalModalVertical)
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		if buttonIndex == 0 {
+			wiz.md.setPage(wiz.md.settingsHome.homePage)
+		} else {
+			wiz.md.app.Stop()
+		}
+	}
 
-	wiz.finishedModal = modal
+	page := newPage(nil, "new-user-finished", "New User Wizard > [8/8] Finished", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+
+	wiz.finishedModal = page
 
 }

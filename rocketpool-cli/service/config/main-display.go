@@ -15,6 +15,8 @@ type mainDisplay struct {
     app *tview.Application
     content *tview.Box
     mainGrid *tview.Grid
+    newUserWizard *newUserWizard
+    settingsHome *settingsHome
 }
 
 
@@ -53,11 +55,8 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
     }
 
     // Create all of the child elements
-    settingsHome := newSettingsHome(md)
-    md.setPage(settingsHome.homePage)
-
-    newUserWizard := newNewUserWizard(md)
-    md.setPage(newUserWizard.welcomeModal)
+    md.settingsHome = newSettingsHome(md)
+    md.newUserWizard = newNewUserWizard(md)
 	
     // TODO: some logic to decide which one to set first
 	modal := NewDirectionalModal(DirectionalModalVertical, app).
@@ -69,11 +68,12 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
         }).
         SetDoneFunc(func(buttonIndex int, buttonLabel string) {
             if buttonIndex == 0 {
+                md.setPage(md.newUserWizard.welcomeModal)
                 app.SetRoot(grid, true)
-                //app.SetRoot(newUserWizard.welcomeModal, true)
             } else if buttonIndex == 1 {
 
             } else if buttonIndex == 2 {
+                md.setPage(md.settingsHome.homePage)
                 app.SetRoot(grid, true)
             }
         })
