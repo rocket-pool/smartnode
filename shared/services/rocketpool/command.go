@@ -54,6 +54,23 @@ func (c *command) Run() error {
     }
 }
 
+// Start executes the command. Don't forget to call Wait
+func (c *command) Start() error {
+	if c.cmd != nil {
+		return c.cmd.Start()
+	} else {
+		return c.session.Start(c.cmdText)
+	}
+}
+
+// Wait for the command to exit
+func (c *command) Wait() error {
+	if c.cmd != nil {
+		return c.cmd.Wait()
+	} else {
+		return c.session.Wait()
+	}
+}
 
 // Run the command and return its output
 func (c *command) Output() ([]byte, error) {
@@ -84,3 +101,13 @@ func (c *command) StderrPipe() (io.Reader, error) {
     }
 }
 
+// OutputPipes pipes for stdout and stderr
+func (c *command) OutputPipes() (io.Reader, io.Reader, error) {
+	cmdOut, err := c.StdoutPipe()
+	if err != nil {
+		return nil, nil, err
+	}
+	cmdErr, err := c.StderrPipe()
+
+	return cmdOut, cmdErr, err
+}

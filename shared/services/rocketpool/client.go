@@ -11,6 +11,7 @@ import (
 	"os"
 	osUser "os/user"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/a8m/envsubst"
@@ -970,37 +971,65 @@ func (c *Client) getDownloader() (string, error) {
 
 }
 
+// pipeToStdOut pipes cmdOut to stdout
+// Adds to WaitGroup and calls Done
+func pipeToStdOut(cmdOut io.Reader, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
+	_, err := io.Copy(os.Stdout, cmdOut)
+	if err != nil {
+		log.Printf("Error piping stdout: %v", err)
+	}
+}
+
+// pipeToStdErr pipes cmdErr to stderr
+// Adds to WaitGroup and calls Done
+func pipeToStdErr(cmdErr io.Reader, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
+	_, err := io.Copy(os.Stderr, cmdErr)
+	if err != nil {
+		log.Printf("Error piping stderr: %v", err)
+	}
+}
+
+// pipeOutput pipes cmdOut and cmdErr to stdout and stderr
+// Blocks until both cmdOut and cmdErr file descriptors are closed
+func pipeOutput(cmdOut, cmdErr io.Reader) {
+	var wg sync.WaitGroup
+
+	go pipeToStdOut(cmdOut, &wg)
+	go pipeToStdErr(cmdErr, &wg)
+
+	wg.Wait()
+}
 
 // Run a command and print its output
 func (c *Client) printOutput(cmdText string) error {
 
-    // Initialize command
-    cmd, err := c.newCommand(cmdText)
-    if err != nil { return err }
-    defer func() {
-        _ = cmd.Close()
-    }()
+	// Initialize command
+	cmd, err := c.newCommand(cmdText)
+	if err != nil {
+		return err
+	}
+	defer cmd.Close()
 
-    // Copy command output to stdout & stderr
-    cmdOut, err := cmd.StdoutPipe()
-    if err != nil { return err }
-    cmdErr, err := cmd.StderrPipe()
-    if err != nil { return err }
-    go func() {
-        _, err := io.Copy(os.Stdout, cmdOut)
-        if err != nil {
-        	log.Printf("Error piping stdout: %v", err)
-        }
-    }()
-    go func() {
-        _, err := io.Copy(os.Stderr, cmdErr)
-        if err != nil {
-            log.Printf("Error piping stderr: %v", err)
-        }
-    }()
+	cmdOut, cmdErr, err := cmd.OutputPipes()
+	if err != nil {
+		return err
+	}
 
-    // Run command
-    return cmd.Run()
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	pipeOutput(cmdOut, cmdErr)
+
+	// Wait for the command to exit
+	return cmd.Wait()
 
 }
 
