@@ -185,6 +185,32 @@ type TekuConfig struct {
 }
 
 
+// Configuration for Grafana
+type GrafanaConfig struct {
+    Port *Parameter
+    ContainerName *Parameter
+    AdditionalFlags *Parameter
+}
+
+
+// Configuration for Prometheus
+type PrometheusConfig struct {
+    Port *Parameter
+    OpenPort *Parameter
+    ContainerName *Parameter
+    AdditionalFlags *Parameter
+}
+
+
+// Configuration for Exporter
+type ExporterConfig struct {
+    RootFs *Parameter
+    Port *Parameter
+    ContainerName *Parameter
+    AdditionalFlags *Parameter
+}
+
+
 // Generates a new Smartnode configuration
 func NewSmartnodeConfig() *SmartnodeConfig {
 
@@ -837,6 +863,141 @@ func NewTekuConfig() *TekuConfig {
             Default: "",
             AffectsContainers: []ContainerID { ContainerID_Validator },
             EnvironmentVariable: "VC_ADDITIONAL_FLAGS",
+            Required: false,
+        },
+    }
+}
+
+
+// Generates a new Grafana config
+func NewGrafanaConfig() *GrafanaConfig {
+    return &GrafanaConfig{
+        Port: &Parameter{
+            ID: "port",
+            Name: "HTTP Port",
+            Description: "The port Grafana should run its HTTP server on - this is the port you will connect to in your browser.",
+            Type: ParameterType_Uint16,
+            Default: 3100,
+            AffectsContainers: []ContainerID { ContainerID_Grafana },
+            EnvironmentVariable: "GRAFANA_PORT",
+            Required: true,
+        },
+        
+        ContainerName: &Parameter{
+            ID: "containerName",
+            Name: "Container Name",
+            Description: "The tag name of the Grafana container you want to use on Docker hub.",
+            Type: ParameterType_String,
+            Default: "grafana/grafana:8.3.2",
+            AffectsContainers: []ContainerID { ContainerID_Grafana },
+            Required: true,
+        },
+
+        AdditionalFlags: &Parameter{
+            ID: "additionalFlags",
+            Name: "Additional Flags",
+            Description: "Additional custom command line flags you want to pass to Grafana, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+            Type: ParameterType_String,
+            Default: "",
+            AffectsContainers: []ContainerID { ContainerID_Grafana },
+            EnvironmentVariable: "GRAFANA_ADDITIONAL_FLAGS",
+            Required: false,
+        },
+    }
+}
+
+
+// Generates a new Prometheus config
+func NewPrometheusConfig() *PrometheusConfig {
+    return &PrometheusConfig{
+        Port: &Parameter{
+            ID: "port",
+            Name: "API Port",
+            Description: "The port Prometheus should make its statistics available on.",
+            Type: ParameterType_Uint16,
+            Default: 9091,
+            AffectsContainers: []ContainerID { ContainerID_Prometheus },
+            EnvironmentVariable: "PROMETHEUS_PORT",
+            Required: true,
+        },
+
+        OpenPort: &Parameter{
+            ID: "openPort",
+            Name: "Open Port",
+            Description: "Enable this to open Prometheus's port to your local network, so other machines can access it too.",
+            Type: ParameterType_Bool,
+            Default: false,
+            AffectsContainers: []ContainerID { ContainerID_Prometheus },
+            EnvironmentVariable: "PROMETHEUS_PORT",
+        },
+        
+        ContainerName: &Parameter{
+            ID: "containerName",
+            Name: "Container Name",
+            Description: "The tag name of the Prometheus container you want to use on Docker hub.",
+            Type: ParameterType_String,
+            Default: "prom/prometheus:v2.31.1",
+            AffectsContainers: []ContainerID { ContainerID_Prometheus },
+            Required: true,
+        },
+
+        AdditionalFlags: &Parameter{
+            ID: "additionalFlags",
+            Name: "Additional Flags",
+            Description: "Additional custom command line flags you want to pass to Prometheus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+            Type: ParameterType_String,
+            Default: "",
+            AffectsContainers: []ContainerID { ContainerID_Prometheus },
+            EnvironmentVariable: "PROMETHEUS_ADDITIONAL_FLAGS",
+            Required: false,
+        },
+    }
+}
+
+
+// Generates a new Exporter config
+func NewExporterConfig() *ExporterConfig {
+    return &ExporterConfig{
+        RootFs: &Parameter{
+            ID: "enableRootFs",
+            Name: "Allow Root Filesystem Access",
+            Description: "Give the exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
+            Type: ParameterType_Bool,
+            Default: false,
+            AffectsContainers: []ContainerID { ContainerID_Exporter },
+            EnvironmentVariable: "EXPORTER_ROOT_FS",
+            Required: false,
+        },
+
+        Port: &Parameter{
+            ID: "port",
+            Name: "API Port",
+            Description: "The port the Exporter should make its statistics available on.",
+            Type: ParameterType_Uint16,
+            Default: 9103,
+            AffectsContainers: []ContainerID { ContainerID_Exporter },
+            EnvironmentVariable: "EXPORTER_PORT",
+            Required: true,
+        },
+        
+        ContainerName: &Parameter{
+            ID: "containerName",
+            Name: "Container Name",
+            Description: "The tag name of the Exporter container you want to use on Docker hub.",
+            Type: ParameterType_String,
+            Default: "prom/node-exporter:v1.3.1",
+            AffectsContainers: []ContainerID { ContainerID_Exporter },
+            Required: true,
+        },
+
+        AdditionalFlags: &Parameter{
+            ID: "additionalFlags",
+            Name: "Additional Flags",
+            Description: "Additional custom command line flags you want to pass to the Exporter, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+            Type: ParameterType_String,
+            Default: "",
+            AffectsContainers: []ContainerID { ContainerID_Exporter },
+            EnvironmentVariable: "EXPORTER_ADDITIONAL_FLAGS",
             Required: false,
         },
     }
