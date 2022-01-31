@@ -14,25 +14,23 @@ import (
 
 const namespace = "rocketpool"
 
-
 // Represents the collector for the Demand metrics
 type DemandCollector struct {
 	// The amount of ETH currently in the Deposit Pool
-	depositPoolBalance 			*prometheus.Desc
+	depositPoolBalance *prometheus.Desc
 
 	// The excess ETH balance of the Deposit Pool
-	depositPoolExcess			*prometheus.Desc
+	depositPoolExcess *prometheus.Desc
 
 	// The total ETH capacity of the Minipool queue
-	totalMinipoolCapacity 		*prometheus.Desc
+	totalMinipoolCapacity *prometheus.Desc
 
 	// The effective ETH capacity of the Minipool queue
-	effectiveMinipoolCapacity 	*prometheus.Desc
+	effectiveMinipoolCapacity *prometheus.Desc
 
 	// The Rocket Pool contract manager
-	rp 							*rocketpool.RocketPool
+	rp *rocketpool.RocketPool
 }
-
 
 // Create a new DemandCollector instance
 func NewDemandCollector(rp *rocketpool.RocketPool) *DemandCollector {
@@ -58,7 +56,6 @@ func NewDemandCollector(rp *rocketpool.RocketPool) *DemandCollector {
 	}
 }
 
-
 // Write metric descriptions to the Prometheus channel
 func (collector *DemandCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.depositPoolBalance
@@ -67,64 +64,63 @@ func (collector *DemandCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.effectiveMinipoolCapacity
 }
 
-
 // Collect the latest metric values and pass them to Prometheus
 func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
- 
-    // Sync
-    var wg errgroup.Group
+
+	// Sync
+	var wg errgroup.Group
 	balanceFloat := float64(-1)
 	excessFloat := float64(-1)
-	totalFloat := float64(-1) 
+	totalFloat := float64(-1)
 	effectiveFloat := float64(-1)
 
 	// Get the Deposit Pool balance
-    wg.Go(func() error {
+	wg.Go(func() error {
 		depositPoolBalance, err := deposit.GetBalance(collector.rp, nil)
-        if err != nil {
-            return fmt.Errorf("Error getting deposit pool balance: %w", err)
-        } else {
-            balanceFloat = eth.WeiToEth(depositPoolBalance)
-        }
-        return nil
-    })
+		if err != nil {
+			return fmt.Errorf("Error getting deposit pool balance: %w", err)
+		} else {
+			balanceFloat = eth.WeiToEth(depositPoolBalance)
+		}
+		return nil
+	})
 
 	// Get the deposit pool excess
-    wg.Go(func() error {
+	wg.Go(func() error {
 		depositPoolExcess, err := deposit.GetExcessBalance(collector.rp, nil)
-        if err != nil {
-            return fmt.Errorf("Error getting deposit pool excess: %w", err)
-        } else {
+		if err != nil {
+			return fmt.Errorf("Error getting deposit pool excess: %w", err)
+		} else {
 			excessFloat = eth.WeiToEth(depositPoolExcess)
-        }
-        return nil
-    })
+		}
+		return nil
+	})
 
 	// Get the total and effective minipool capacities
-    wg.Go(func() error {
+	wg.Go(func() error {
 		minipoolQueueCapacity, err := minipool.GetQueueCapacity(collector.rp, nil)
-        if err != nil {
-            return fmt.Errorf("Error getting minipool queue capacity: %w", err)
-        } else {
+		if err != nil {
+			return fmt.Errorf("Error getting minipool queue capacity: %w", err)
+		} else {
 			totalFloat = eth.WeiToEth(minipoolQueueCapacity.Total)
 			effectiveFloat = eth.WeiToEth(minipoolQueueCapacity.Effective)
-        }
-        return nil
-    })
-	
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        log.Printf("%s\n", err.Error())
-        return
-    }
-	
-    channel <- prometheus.MustNewConstMetric(
+		}
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
+
+	channel <- prometheus.MustNewConstMetric(
 		collector.depositPoolBalance, prometheus.GaugeValue, balanceFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.depositPoolExcess, prometheus.GaugeValue, excessFloat)
-    channel <- prometheus.MustNewConstMetric(
+	channel <- prometheus.MustNewConstMetric(
 		collector.totalMinipoolCapacity, prometheus.GaugeValue, totalFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
-		
+
 }

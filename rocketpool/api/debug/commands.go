@@ -15,7 +15,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Usage:   "Debugging and troubleshooting commands",
 		Subcommands: []cli.Command{
 
-			cli.Command{
+			{
 				Name:      "export-validators",
 				Aliases:   []string{"x"},
 				Usage:     "Exports a TSV file of validators",

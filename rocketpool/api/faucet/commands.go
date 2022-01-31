@@ -9,62 +9,66 @@ import (
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
-    command.Subcommands = append(command.Subcommands, cli.Command{
-        Name:      name,
-        Aliases:   aliases,
-        Usage:     "Access the legacy RPL faucet",
-        Subcommands: []cli.Command{
+	command.Subcommands = append(command.Subcommands, cli.Command{
+		Name:    name,
+		Aliases: aliases,
+		Usage:   "Access the legacy RPL faucet",
+		Subcommands: []cli.Command{
 
-            cli.Command{
-                Name:      "status",
-                Aliases:   []string{"s"},
-                Usage:     "Get the faucet's status",
-                UsageText: "rocketpool api faucet status",
-                Action: func(c *cli.Context) error {
+			{
+				Name:      "status",
+				Aliases:   []string{"s"},
+				Usage:     "Get the faucet's status",
+				UsageText: "rocketpool api faucet status",
+				Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-                    // Run
-                    api.PrintResponse(getStatus(c))
-                    return nil
+					// Run
+					api.PrintResponse(getStatus(c))
+					return nil
 
-                },
-            },
+				},
+			},
 
-            cli.Command{
-                Name:      "can-withdraw-rpl",
-                Usage:     "Check whether the node can withdraw legacy RPL from the faucet",
-                UsageText: "rocketpool api faucet can-withdraw-rpl",
-                Action: func(c *cli.Context) error {
+			{
+				Name:      "can-withdraw-rpl",
+				Usage:     "Check whether the node can withdraw legacy RPL from the faucet",
+				UsageText: "rocketpool api faucet can-withdraw-rpl",
+				Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-                    // Run
-                    api.PrintResponse(canWithdrawRpl(c))
-                    return nil
+					// Run
+					api.PrintResponse(canWithdrawRpl(c))
+					return nil
 
-                },
-            },
-            cli.Command{
-                Name:      "withdraw-rpl",
-                Aliases:   []string{"w"},
-                Usage:     "Withdraw legacy RPL from the faucet",
-                UsageText: "rocketpool api faucet withdraw-rpl",
-                Action: func(c *cli.Context) error {
+				},
+			},
+			{
+				Name:      "withdraw-rpl",
+				Aliases:   []string{"w"},
+				Usage:     "Withdraw legacy RPL from the faucet",
+				UsageText: "rocketpool api faucet withdraw-rpl",
+				Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-                    // Run
-                    api.PrintResponse(withdrawRpl(c))
-                    return nil
+					// Run
+					api.PrintResponse(withdrawRpl(c))
+					return nil
 
-                },
-            },
-
-        },
-    })
+				},
+			},
+		},
+	})
 }
-

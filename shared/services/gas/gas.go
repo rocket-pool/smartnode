@@ -18,298 +18,291 @@ const colorReset string = "\033[0m"
 const colorYellow string = "\033[33m"
 const colorBlue string = "\033[36m"
 
-func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) (error) {
+func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) error {
 
-    cfg, err := rp.LoadGlobalConfig()
-    if err != nil {
-        return fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
-    }
+	cfg, err := rp.LoadGlobalConfig()
+	if err != nil {
+		return fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
+	}
 
-    // Get the current settings from the CLI arguments
-    maxFeeGwei, maxPriorityFeeGwei, gasLimit := rp.GetGasSettings()
+	// Get the current settings from the CLI arguments
+	maxFeeGwei, maxPriorityFeeGwei, gasLimit := rp.GetGasSettings()
 
-    // Get the max fee - prioritize the CLI arguments, default to the config file setting
-    if maxFeeGwei == 0 {
-        maxFee, err := cfg.GetMaxFee()
-        if err != nil {
-            return err
-        }
-        if maxFee != nil && maxFee.Uint64() != 0 {
-            maxFeeGwei = eth.WeiToGwei(maxFee)
-        }
-    }
+	// Get the max fee - prioritize the CLI arguments, default to the config file setting
+	if maxFeeGwei == 0 {
+		maxFee, err := cfg.GetMaxFee()
+		if err != nil {
+			return err
+		}
+		if maxFee != nil && maxFee.Uint64() != 0 {
+			maxFeeGwei = eth.WeiToGwei(maxFee)
+		}
+	}
 
-    // Get the priority fee - prioritize the CLI arguments, default to the config file setting
-    if maxPriorityFeeGwei == 0 {
-        maxPriorityFee, err := cfg.GetMaxPriorityFee()
-        if err != nil {
-            fmt.Printf("%sWARNING: Couldn't get max priority fee - %w\n", colorYellow, err.Error())
-            fmt.Printf("Defaulting to a max priority fee of 2 gwei\n%s", colorReset)
-            maxPriorityFeeGwei = 2
-        }
-        if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
-            fmt.Printf("%sNOTE: max priority fee not set or set to 0, defaulting to 2 gwei%s\n", colorYellow, colorReset)
-            maxPriorityFeeGwei = 2
-        } else {
-            maxPriorityFeeGwei = eth.WeiToGwei(maxPriorityFee)
-        }
-    }
+	// Get the priority fee - prioritize the CLI arguments, default to the config file setting
+	if maxPriorityFeeGwei == 0 {
+		maxPriorityFee, err := cfg.GetMaxPriorityFee()
+		if err != nil {
+			fmt.Printf("%sWARNING: Couldn't get max priority fee - %w\n", colorYellow, err.Error())
+			fmt.Printf("Defaulting to a max priority fee of 2 gwei\n%s", colorReset)
+			maxPriorityFeeGwei = 2
+		}
+		if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+			fmt.Printf("%sNOTE: max priority fee not set or set to 0, defaulting to 2 gwei%s\n", colorYellow, colorReset)
+			maxPriorityFeeGwei = 2
+		} else {
+			maxPriorityFeeGwei = eth.WeiToGwei(maxPriorityFee)
+		}
+	}
 
-    // Get the user gas limit
-    if gasLimit == 0 {
-        gasLimit, err = cfg.GetGasLimit()
-        if err != nil {
-            return err
-        }
-    }
+	// Get the user gas limit
+	if gasLimit == 0 {
+		gasLimit, err = cfg.GetGasLimit()
+		if err != nil {
+			return err
+		}
+	}
 
-    // Use the requested max fee and priority fee if provided
-    if maxFeeGwei != 0 {
-        fmt.Printf("%sUsing the requested max fee of %.2f gwei (including a max priority fee of %.2f gwei).\n", colorYellow, maxFeeGwei, maxPriorityFeeGwei)
-        
-        var lowLimit float64
-        var highLimit float64
-        if gasLimit == 0 {
-            lowLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.EstGasLimit)
-            highLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.SafeGasLimit) 
-        } else {
-            lowLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasLimit)
-            highLimit = lowLimit
-        }
-        fmt.Printf("Total cost: %.4f to %.4f ETH%s\n", lowLimit, highLimit, colorReset)
+	// Use the requested max fee and priority fee if provided
+	if maxFeeGwei != 0 {
+		fmt.Printf("%sUsing the requested max fee of %.2f gwei (including a max priority fee of %.2f gwei).\n", colorYellow, maxFeeGwei, maxPriorityFeeGwei)
 
-    } else {
-        if headless {
-            maxFeeWei, err := GetHeadlessMaxFeeWei()
-            if err != nil {
-                return err
-            }
-            maxFeeGwei = eth.WeiToGwei(maxFeeWei)
-        } else {
-            // Try to get the latest gas prices from Etherchain
-            etherchainData, err := etherchain.GetGasPrices()
-            if err == nil {
-                // Print the Etherchain data and ask for an amount
-                maxFeeGwei = handleEtherchainGasPrices(etherchainData, gasInfo, maxPriorityFeeGwei, gasLimit)
-                
-            } else {
-                // Fallback to Etherscan
-                fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
-                etherscanData, err := etherscan.GetGasPrices()
-                if err == nil {
-                    // Print the Etherscan data and ask for an amount
-                    maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasLimit)
-                } else {
-                    return fmt.Errorf("Error getting gas price suggestions: %w", err)
-                }
-            }
-        }
-        fmt.Printf("%sUsing a max fee of %.2f gwei and a priority fee of %.2f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
-    }
+		var lowLimit float64
+		var highLimit float64
+		if gasLimit == 0 {
+			lowLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.EstGasLimit)
+			highLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasInfo.SafeGasLimit)
+		} else {
+			lowLimit = maxFeeGwei / eth.WeiPerGwei * float64(gasLimit)
+			highLimit = lowLimit
+		}
+		fmt.Printf("Total cost: %.4f to %.4f ETH%s\n", lowLimit, highLimit, colorReset)
 
-    // Use the requested gas limit if provided
-    if gasLimit != 0 {
-        fmt.Printf("Using the requested gas limit of %d units.\n%sNOTE: if you set this too low, your transaction may fail but you will still have to pay the gas fee!%s\n", gasLimit, colorYellow, colorReset)
-    }
+	} else {
+		if headless {
+			maxFeeWei, err := GetHeadlessMaxFeeWei()
+			if err != nil {
+				return err
+			}
+			maxFeeGwei = eth.WeiToGwei(maxFeeWei)
+		} else {
+			// Try to get the latest gas prices from Etherchain
+			etherchainData, err := etherchain.GetGasPrices()
+			if err == nil {
+				// Print the Etherchain data and ask for an amount
+				maxFeeGwei = handleEtherchainGasPrices(etherchainData, gasInfo, maxPriorityFeeGwei, gasLimit)
 
-    if maxPriorityFeeGwei > maxFeeGwei {
-        return fmt.Errorf("Priority fee cannot be greater than max fee.");
-    }
-    rp.AssignGasSettings(maxFeeGwei, maxPriorityFeeGwei, gasLimit)
-    return nil
+			} else {
+				// Fallback to Etherscan
+				fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
+				etherscanData, err := etherscan.GetGasPrices()
+				if err == nil {
+					// Print the Etherscan data and ask for an amount
+					maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasLimit)
+				} else {
+					return fmt.Errorf("Error getting gas price suggestions: %w", err)
+				}
+			}
+		}
+		fmt.Printf("%sUsing a max fee of %.2f gwei and a priority fee of %.2f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
+	}
+
+	// Use the requested gas limit if provided
+	if gasLimit != 0 {
+		fmt.Printf("Using the requested gas limit of %d units.\n%sNOTE: if you set this too low, your transaction may fail but you will still have to pay the gas fee!%s\n", gasLimit, colorYellow, colorReset)
+	}
+
+	if maxPriorityFeeGwei > maxFeeGwei {
+		return fmt.Errorf("Priority fee cannot be greater than max fee.")
+	}
+	rp.AssignGasSettings(maxFeeGwei, maxPriorityFeeGwei, gasLimit)
+	return nil
 
 }
-
 
 // Get the suggested max fee for service operations
 func GetHeadlessMaxFeeWei() (*big.Int, error) {
-    etherchainData, err := etherchain.GetGasPrices()
-    if err == nil {
-        return etherchainData.RapidWei, nil
-    } else {
-        fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
-        etherscanData, err := etherscan.GetGasPrices()
-        if err == nil {
-            return eth.GweiToWei(etherscanData.FastGwei), nil
-        } else {
-            return nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
-        }
-    }
+	etherchainData, err := etherchain.GetGasPrices()
+	if err == nil {
+		return etherchainData.RapidWei, nil
+	} else {
+		fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
+		etherscanData, err := etherscan.GetGasPrices()
+		if err == nil {
+			return eth.GweiToWei(etherscanData.FastGwei), nil
+		} else {
+			return nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
+		}
+	}
 }
 
+func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {
 
-func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) (float64) {
+	rapidGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.RapidWei)+priorityFee, 0)
+	rapidEth := eth.WeiToEth(gasSuggestion.RapidWei)
 
-    
-    rapidGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.RapidWei) + priorityFee, 0)
-    rapidEth := eth.WeiToEth(gasSuggestion.RapidWei)
+	var rapidLowLimit float64
+	var rapidHighLimit float64
+	if gasLimit == 0 {
+		rapidLowLimit = rapidEth * float64(gasInfo.EstGasLimit)
+		rapidHighLimit = rapidEth * float64(gasInfo.SafeGasLimit)
+	} else {
+		rapidLowLimit = rapidEth * float64(gasLimit)
+		rapidHighLimit = rapidLowLimit
+	}
 
-    var rapidLowLimit float64
-    var rapidHighLimit float64
-    if gasLimit == 0 {
-        rapidLowLimit = rapidEth * float64(gasInfo.EstGasLimit)
-        rapidHighLimit = rapidEth * float64(gasInfo.SafeGasLimit) 
-    } else {
-        rapidLowLimit = rapidEth * float64(gasLimit)
-        rapidHighLimit = rapidLowLimit
-    }
+	fastGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.FastWei)+priorityFee, 0)
+	fastEth := eth.WeiToEth(gasSuggestion.FastWei)
 
-    fastGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.FastWei) + priorityFee, 0)
-    fastEth := eth.WeiToEth(gasSuggestion.FastWei)
+	var fastLowLimit float64
+	var fastHighLimit float64
+	if gasLimit == 0 {
+		fastLowLimit = fastEth * float64(gasInfo.EstGasLimit)
+		fastHighLimit = fastEth * float64(gasInfo.SafeGasLimit)
+	} else {
+		fastLowLimit = fastEth * float64(gasLimit)
+		fastHighLimit = fastLowLimit
+	}
 
-    var fastLowLimit float64
-    var fastHighLimit float64
-    if gasLimit == 0 {
-        fastLowLimit = fastEth * float64(gasInfo.EstGasLimit)
-        fastHighLimit = fastEth * float64(gasInfo.SafeGasLimit)
-    } else {
-        fastLowLimit = fastEth * float64(gasLimit)
-        fastHighLimit = fastLowLimit
-    }
+	standardGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.StandardWei)+priorityFee, 0)
+	standardEth := eth.WeiToEth(gasSuggestion.StandardWei)
 
-    standardGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.StandardWei) + priorityFee, 0)
-    standardEth := eth.WeiToEth(gasSuggestion.StandardWei)
+	var standardLowLimit float64
+	var standardHighLimit float64
+	if gasLimit == 0 {
+		standardLowLimit = standardEth * float64(gasInfo.EstGasLimit)
+		standardHighLimit = standardEth * float64(gasInfo.SafeGasLimit)
+	} else {
+		standardLowLimit = standardEth * float64(gasLimit)
+		standardHighLimit = standardLowLimit
+	}
 
-    var standardLowLimit float64
-    var standardHighLimit float64
-    if gasLimit == 0 {
-        standardLowLimit = standardEth * float64(gasInfo.EstGasLimit)
-        standardHighLimit = standardEth * float64(gasInfo.SafeGasLimit)
-    } else {
-        standardLowLimit = standardEth * float64(gasLimit)
-        standardHighLimit = standardLowLimit
-    }
+	slowGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.SlowWei)+priorityFee, 0)
+	slowEth := eth.WeiToEth(gasSuggestion.SlowWei)
 
-    slowGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.SlowWei) + priorityFee, 0)
-    slowEth := eth.WeiToEth(gasSuggestion.SlowWei)
+	var slowLowLimit float64
+	var slowHighLimit float64
+	if gasLimit == 0 {
+		slowLowLimit = slowEth * float64(gasInfo.EstGasLimit)
+		slowHighLimit = slowEth * float64(gasInfo.SafeGasLimit)
+	} else {
+		slowLowLimit = slowEth * float64(gasLimit)
+		slowHighLimit = slowLowLimit
+	}
 
-    var slowLowLimit float64
-    var slowHighLimit float64
-    if gasLimit == 0 {
-        slowLowLimit = slowEth * float64(gasInfo.EstGasLimit)
-        slowHighLimit = slowEth * float64(gasInfo.SafeGasLimit)
-    } else {
-        slowLowLimit = slowEth * float64(gasLimit)
-        slowHighLimit = slowLowLimit
-    }
+	fmt.Printf("%s+============== Suggested Gas Prices ==============+\n", colorBlue)
+	fmt.Println("| Avg Wait Time |  Max Fee  |    Total Gas Cost    |")
+	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
+		gasSuggestion.RapidTime, fmt.Sprintf("%d gwei", int(rapidGwei)), rapidLowLimit, rapidHighLimit)
+	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
+		gasSuggestion.FastTime, fmt.Sprintf("%d gwei", int(fastGwei)), fastLowLimit, fastHighLimit)
+	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
+		gasSuggestion.StandardTime, fmt.Sprintf("%d gwei", int(standardGwei)), standardLowLimit, standardHighLimit)
+	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
+		gasSuggestion.SlowTime, fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
+	fmt.Printf("+==================================================+\n\n%s", colorReset)
 
-    fmt.Printf("%s+============== Suggested Gas Prices ==============+\n", colorBlue)
-    fmt.Println("| Avg Wait Time |  Max Fee  |    Total Gas Cost    |")
-    fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n", 
-        gasSuggestion.RapidTime, fmt.Sprintf("%d gwei", int(rapidGwei)), rapidLowLimit, rapidHighLimit)
-    fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n", 
-        gasSuggestion.FastTime, fmt.Sprintf("%d gwei", int(fastGwei)), fastLowLimit, fastHighLimit)
-    fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n", 
-        gasSuggestion.StandardTime, fmt.Sprintf("%d gwei", int(standardGwei)), standardLowLimit, standardHighLimit)
-    fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n", 
-        gasSuggestion.SlowTime, fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
-    fmt.Printf("+==================================================+\n\n%s", colorReset)
+	fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
 
-    fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
+	for {
+		desiredPrice := cliutils.Prompt(
+			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
+			"^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
+			"Not a valid gas price, try again:")
 
-    for {
-        desiredPrice := cliutils.Prompt(
-            fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
-            "^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
-            "Not a valid gas price, try again:")
+		if desiredPrice == "" {
+			return fastGwei
+		}
 
-        if desiredPrice == "" {
-            return fastGwei
-        }
+		desiredPriceFloat, err := strconv.ParseFloat(desiredPrice, 64)
+		if err != nil {
+			fmt.Println("Not a valid gas price (%s), try again.", err.Error())
+			continue
+		}
+		if desiredPriceFloat <= 0 {
+			fmt.Println("Max fee must be greater than zero.")
+			continue
+		}
 
-        desiredPriceFloat, err := strconv.ParseFloat(desiredPrice, 64)
-        if err != nil {
-            fmt.Println("Not a valid gas price (%s), try again.", err.Error())
-            continue
-        }
-        if desiredPriceFloat <= 0 {
-            fmt.Println("Max fee must be greater than zero.")
-            continue
-        }
-
-        return desiredPriceFloat
-    }
-
-}
-
-
-func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) (float64) {
-
-    
-    fastGwei := math.RoundUp(gasSuggestion.FastGwei + priorityFee, 0)
-    fastEth := gasSuggestion.FastGwei / eth.WeiPerGwei
-
-    var fastLowLimit float64
-    var fastHighLimit float64
-    if gasLimit == 0 {
-        fastLowLimit = fastEth * float64(gasInfo.EstGasLimit)
-        fastHighLimit = fastEth * float64(gasInfo.SafeGasLimit)
-    } else {
-        fastLowLimit = fastEth * float64(gasLimit)
-        fastHighLimit = fastLowLimit
-    }
-
-    standardGwei := math.RoundUp(gasSuggestion.StandardGwei + priorityFee, 0)
-    standardEth := gasSuggestion.StandardGwei / eth.WeiPerGwei
-
-    var standardLowLimit float64
-    var standardHighLimit float64
-    if gasLimit == 0 {
-        standardLowLimit = standardEth * float64(gasInfo.EstGasLimit)
-        standardHighLimit = standardEth * float64(gasInfo.SafeGasLimit)
-    } else {
-        standardLowLimit = standardEth * float64(gasLimit)
-        standardHighLimit = standardLowLimit
-    }
-
-    slowGwei := math.RoundUp(gasSuggestion.SlowGwei + priorityFee, 0)
-    slowEth := gasSuggestion.SlowGwei / eth.WeiPerGwei
-
-    var slowLowLimit float64
-    var slowHighLimit float64
-    if gasLimit == 0 {
-        slowLowLimit = slowEth * float64(gasInfo.EstGasLimit)
-        slowHighLimit = slowEth * float64(gasInfo.SafeGasLimit)
-    } else {
-        slowLowLimit = slowEth * float64(gasLimit)
-        slowHighLimit = slowLowLimit
-    }
-
-    fmt.Printf("%s+============ Suggested Gas Prices ============+\n", colorBlue)
-    fmt.Println("|   Speed   |  Max Fee  |    Total Gas Cost    |")
-    fmt.Printf("| Fast      | %-9s | %.4f to %.4f ETH |\n", 
-        fmt.Sprintf("%d gwei", int(fastGwei)), fastLowLimit, fastHighLimit)
-    fmt.Printf("| Standard  | %-9s | %.4f to %.4f ETH |\n", 
-        fmt.Sprintf("%d gwei", int(standardGwei)), standardLowLimit, standardHighLimit)
-    fmt.Printf("| Slow      | %-9s | %.4f to %.4f ETH |\n", 
-        fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
-    fmt.Printf("+==============================================+\n\n%s", colorReset)
-
-    fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
-
-    for {
-        desiredPrice := cliutils.Prompt(
-            fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
-            "^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
-            "Not a valid gas price, try again:")
-
-        if desiredPrice == "" {
-            return fastGwei
-        }
-
-        desiredPriceFloat, err := strconv.ParseFloat(desiredPrice, 64)
-        if err != nil {
-            fmt.Println("Not a valid gas price (%s), try again.", err.Error())
-            continue
-        }
-        if desiredPriceFloat <= 0 {
-            fmt.Println("Max fee must be greater than zero.")
-            continue
-        }
-
-        return desiredPriceFloat
-    }
+		return desiredPriceFloat
+	}
 
 }
 
+func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {
 
+	fastGwei := math.RoundUp(gasSuggestion.FastGwei+priorityFee, 0)
+	fastEth := gasSuggestion.FastGwei / eth.WeiPerGwei
+
+	var fastLowLimit float64
+	var fastHighLimit float64
+	if gasLimit == 0 {
+		fastLowLimit = fastEth * float64(gasInfo.EstGasLimit)
+		fastHighLimit = fastEth * float64(gasInfo.SafeGasLimit)
+	} else {
+		fastLowLimit = fastEth * float64(gasLimit)
+		fastHighLimit = fastLowLimit
+	}
+
+	standardGwei := math.RoundUp(gasSuggestion.StandardGwei+priorityFee, 0)
+	standardEth := gasSuggestion.StandardGwei / eth.WeiPerGwei
+
+	var standardLowLimit float64
+	var standardHighLimit float64
+	if gasLimit == 0 {
+		standardLowLimit = standardEth * float64(gasInfo.EstGasLimit)
+		standardHighLimit = standardEth * float64(gasInfo.SafeGasLimit)
+	} else {
+		standardLowLimit = standardEth * float64(gasLimit)
+		standardHighLimit = standardLowLimit
+	}
+
+	slowGwei := math.RoundUp(gasSuggestion.SlowGwei+priorityFee, 0)
+	slowEth := gasSuggestion.SlowGwei / eth.WeiPerGwei
+
+	var slowLowLimit float64
+	var slowHighLimit float64
+	if gasLimit == 0 {
+		slowLowLimit = slowEth * float64(gasInfo.EstGasLimit)
+		slowHighLimit = slowEth * float64(gasInfo.SafeGasLimit)
+	} else {
+		slowLowLimit = slowEth * float64(gasLimit)
+		slowHighLimit = slowLowLimit
+	}
+
+	fmt.Printf("%s+============ Suggested Gas Prices ============+\n", colorBlue)
+	fmt.Println("|   Speed   |  Max Fee  |    Total Gas Cost    |")
+	fmt.Printf("| Fast      | %-9s | %.4f to %.4f ETH |\n",
+		fmt.Sprintf("%d gwei", int(fastGwei)), fastLowLimit, fastHighLimit)
+	fmt.Printf("| Standard  | %-9s | %.4f to %.4f ETH |\n",
+		fmt.Sprintf("%d gwei", int(standardGwei)), standardLowLimit, standardHighLimit)
+	fmt.Printf("| Slow      | %-9s | %.4f to %.4f ETH |\n",
+		fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
+	fmt.Printf("+==============================================+\n\n%s", colorReset)
+
+	fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
+
+	for {
+		desiredPrice := cliutils.Prompt(
+			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
+			"^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
+			"Not a valid gas price, try again:")
+
+		if desiredPrice == "" {
+			return fastGwei
+		}
+
+		desiredPriceFloat, err := strconv.ParseFloat(desiredPrice, 64)
+		if err != nil {
+			fmt.Println("Not a valid gas price (%s), try again.", err.Error())
+			continue
+		}
+		if desiredPriceFloat <= 0 {
+			fmt.Println("Max fee must be greater than zero.")
+			continue
+		}
+
+		return desiredPriceFloat
+	}
+
+}

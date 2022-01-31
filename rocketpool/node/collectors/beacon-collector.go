@@ -38,7 +38,6 @@ type BeaconCollector struct {
 	nodeAddress common.Address
 }
 
-
 // Create a new PerformanceCollector instance
 func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec *client.EthClientProxy, nodeAddress common.Address) *BeaconCollector {
 	subsystem := "beacon"
@@ -55,13 +54,12 @@ func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec *client.
 			"The number of proposals assigned to validators in this epoch and the next",
 			nil, nil,
 		),
-		rp: rp,
-		bc: bc,
-		ec: ec,
+		rp:          rp,
+		bc:          bc,
+		ec:          ec,
 		nodeAddress: nodeAddress,
 	}
 }
-
 
 // Write metric descriptions to the Prometheus channel
 func (collector *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
@@ -70,15 +68,14 @@ func (collector *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.upcomingProposals
 }
 
-
 // Collect the latest metric values and pass them to Prometheus
 func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
-    // Sync
-    var wg errgroup.Group
+	// Sync
+	var wg errgroup.Group
 	var wg2 errgroup.Group
 
-    activeSyncCommittee := float64(0)
+	activeSyncCommittee := float64(0)
 	upcomingSyncCommittee := float64(0)
 	upcomingProposals := float64(0)
 
@@ -86,7 +83,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 	var head beacon.BeaconHead
 
 	// Get sync committee duties
-    wg.Go(func() error {
+	wg.Go(func() error {
 		var err error
 		validatorIndices, err = rp.GetNodeValidatorIndices(collector.rp, collector.ec, collector.bc, collector.nodeAddress)
 		if err != nil {
@@ -104,11 +101,11 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        log.Printf("%s\n", err.Error())
-        return
-    }
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
 
 	wg2.Go(func() error {
 		// Get current duties
@@ -134,7 +131,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 
 		// Get upcoming duties
-		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch + config.EpochsPerSyncCommitteePeriod)
+		duties, err := collector.bc.GetValidatorSyncDuties(validatorIndices, head.Epoch+config.EpochsPerSyncCommitteePeriod)
 		if err != nil {
 			return fmt.Errorf("Error getting sync duties: %w", err)
 		}
@@ -159,30 +156,30 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 			upcomingProposals += float64(duty)
 		}
 
-		// TODO: this seems to be illegal according to the official spec: 
+		// TODO: this seems to be illegal according to the official spec:
 		// https://eth2book.info/altair/annotated-spec/#compute_proposer_index
 		/*
-		// Get proposals in the next epoch
-		duties, err = collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch + 1)
-		if err != nil {
-			return fmt.Errorf("Error getting proposer duties: %w", err)
-		}
+			// Get proposals in the next epoch
+			duties, err = collector.bc.GetValidatorProposerDuties(validatorIndices, head.Epoch + 1)
+			if err != nil {
+				return fmt.Errorf("Error getting proposer duties: %w", err)
+			}
 
-		for _, duty := range duties {
-			upcomingProposals += float64(duty)
-		}
+			for _, duty := range duties {
+				upcomingProposals += float64(duty)
+			}
 		*/
 
 		return nil
 	})
 
-    // Wait for data
-    if err := wg2.Wait(); err != nil {
-        log.Printf("%s\n", err.Error())
-        return
-    }
+	// Wait for data
+	if err := wg2.Wait(); err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
 
-    channel <- prometheus.MustNewConstMetric(
+	channel <- prometheus.MustNewConstMetric(
 		collector.activeSyncCommittee, prometheus.GaugeValue, activeSyncCommittee)
 	channel <- prometheus.MustNewConstMetric(
 		collector.upcomingSyncCommittee, prometheus.GaugeValue, upcomingSyncCommittee)
