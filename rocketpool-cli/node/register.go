@@ -10,65 +10,65 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-
 func registerNode(c *cli.Context) error {
 
-    // Get RP client
-    rp, err := rocketpool.NewClientFromCtx(c)
-    if err != nil { return err }
-    defer rp.Close()
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
 
-    // Prompt for timezone location
-    var timezoneLocation string
-    if c.String("timezone") != "" {
-        timezoneLocation = c.String("timezone")
-    } else {
-        timezoneLocation = promptTimezone()
-    }
+	// Prompt for timezone location
+	var timezoneLocation string
+	if c.String("timezone") != "" {
+		timezoneLocation = c.String("timezone")
+	} else {
+		timezoneLocation = promptTimezone()
+	}
 
-    // Check node can be registered
-    canRegister, err := rp.CanRegisterNode(timezoneLocation)
-    if err != nil {
-        return err
-    }
-    if !canRegister.CanRegister {
-        fmt.Println("The node cannot be registered:")
-        if canRegister.AlreadyRegistered {
-            fmt.Println("The node is already registered with Rocket Pool.")
-        }
-        if canRegister.RegistrationDisabled {
-            fmt.Println("Node registrations are currently disabled.")
-        }
-        return nil
-    }
+	// Check node can be registered
+	canRegister, err := rp.CanRegisterNode(timezoneLocation)
+	if err != nil {
+		return err
+	}
+	if !canRegister.CanRegister {
+		fmt.Println("The node cannot be registered:")
+		if canRegister.AlreadyRegistered {
+			fmt.Println("The node is already registered with Rocket Pool.")
+		}
+		if canRegister.RegistrationDisabled {
+			fmt.Println("Node registrations are currently disabled.")
+		}
+		return nil
+	}
 
-    // Assign max fees
-    err = gas.AssignMaxFeeAndLimit(canRegister.GasInfo, rp, c.Bool("yes"))
-    if err != nil{
-        return err
-    }
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(canRegister.GasInfo, rp, c.Bool("yes"))
+	if err != nil {
+		return err
+	}
 
-    // Prompt for confirmation
-    if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to register this node?")) {
-        fmt.Println("Cancelled.")
-        return nil
-    }
+	// Prompt for confirmation
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to register this node?")) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
 
-    // Register node
-    response, err := rp.RegisterNode(timezoneLocation)
-    if err != nil {
-        return err
-    }
+	// Register node
+	response, err := rp.RegisterNode(timezoneLocation)
+	if err != nil {
+		return err
+	}
 
-    fmt.Printf("Registering node...\n")
-    cliutils.PrintTransactionHash(rp, response.TxHash)
-    if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-        return err
-    }
+	fmt.Printf("Registering node...\n")
+	cliutils.PrintTransactionHash(rp, response.TxHash)
+	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+		return err
+	}
 
-    // Log & return
-    fmt.Println("The node was successfully registered with Rocket Pool.")
-    return nil
+	// Log & return
+	fmt.Println("The node was successfully registered with Rocket Pool.")
+	return nil
 
 }
-

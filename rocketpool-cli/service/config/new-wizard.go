@@ -1,19 +1,17 @@
 package config
 
-
 type newUserWizard struct {
-	md *mainDisplay
-	welcomeModal *page
-	networkModal *page
-	executionModeModal *page
-	executionDockerModal *page
+	md                     *mainDisplay
+	welcomeModal           *page
+	networkModal           *page
+	executionModeModal     *page
+	executionDockerModal   *page
 	executionExternalModal *DirectionalModal
-	consensusModeModal *DirectionalModal
-	consensusDockerModal *page
+	consensusModeModal     *DirectionalModal
+	consensusDockerModal   *page
 	consensusExternalMoadl *DirectionalModal
-	finishedModal *page
+	finishedModal          *page
 }
-
 
 func newNewUserWizard(md *mainDisplay) *newUserWizard {
 
@@ -32,23 +30,22 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 
 }
 
-
 // Create the welcome modal
 func (wiz *newUserWizard) createWelcomeModal() {
 
 	modal := newModalLayout(
 		wiz.md.app,
 		60,
-`______           _        _    ______           _
+		`______           _        _    ______           _
 | ___ \         | |      | |   | ___ \         | |
 | |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
 |    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
 | |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
-\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|` + "\n\n" +
-		
-		"Welcome to the Smartnode configuration wizard!\n\n" +
-		"Since this is your first time configuring the Smartnode, we'll walk you through the basic setup.\n\n",
-		[]string{ "Next", "Quit"}, nil, DirectionalModalHorizontal,
+\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|`+"\n\n"+
+
+			"Welcome to the Smartnode configuration wizard!\n\n"+
+			"Since this is your first time configuring the Smartnode, we'll walk you through the basic setup.\n\n",
+		[]string{"Next", "Quit"}, nil, DirectionalModalHorizontal,
 	)
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
@@ -62,31 +59,30 @@ func (wiz *newUserWizard) createWelcomeModal() {
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 
 	/*
-	modal := NewDirectionalModal(DirectionalModalHorizontal, wiz.md.app).
-		SetText(`
-		______           _        _    ______           _
-			| ___ \         | |      | |   | ___ \         | |
-			| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
-			|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
-			| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
-			\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|` + "\n\n" +
-			
-			"Welcome to the Smartnode configuration wizard!\n\n" +
-			"Since this is your first time configuring the Smartnode, we'll walk you through the basic setup.\n\n",
-		).
-		AddButtons([]string{"Next", "Quit", "this is a really long button to make the thing fit"}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 0 {
-				wiz.md.app.SetRoot(wiz.networkModal, true)
-			} else if buttonIndex == 1 {
-				wiz.md.app.Stop()
-			}
-		})
+		modal := NewDirectionalModal(DirectionalModalHorizontal, wiz.md.app).
+			SetText(`
+			______           _        _    ______           _
+				| ___ \         | |      | |   | ___ \         | |
+				| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
+				|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
+				| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
+				\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|` + "\n\n" +
+
+				"Welcome to the Smartnode configuration wizard!\n\n" +
+				"Since this is your first time configuring the Smartnode, we'll walk you through the basic setup.\n\n",
+			).
+			AddButtons([]string{"Next", "Quit", "this is a really long button to make the thing fit"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				if buttonIndex == 0 {
+					wiz.md.app.SetRoot(wiz.networkModal, true)
+				} else if buttonIndex == 1 {
+					wiz.md.app.Stop()
+				}
+			})
 	*/
 	wiz.welcomeModal = page
 
 }
-
 
 // Create the network modal
 func (wiz *newUserWizard) createNetworkModal() {
@@ -95,7 +91,7 @@ func (wiz *newUserWizard) createNetworkModal() {
 		wiz.md.app,
 		40,
 		"Which network would you like to use?",
-		[]string{ "The Prater Testnet", "The Ethereum Mainnet", },
+		[]string{"The Prater Testnet", "The Ethereum Mainnet"},
 		nil,
 		DirectionalModalVertical)
 	modal.done = func(buttonIndex int, buttonLabel string) {
@@ -110,21 +106,20 @@ func (wiz *newUserWizard) createNetworkModal() {
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 
 	/*
-	modal := NewDirectionalModal(DirectionalModalVertical, wiz.md.app).
-		SetText("Which network would you like to use?").
-		AddButtons([]string{"The Prater Testnet", "The Ethereum Mainnet", "Quit without Saving"}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 2 {
-				wiz.md.app.Stop()
-			} else {
-				wiz.md.app.SetRoot(wiz.executionModeModal, true)
-			}
-		})
+		modal := NewDirectionalModal(DirectionalModalVertical, wiz.md.app).
+			SetText("Which network would you like to use?").
+			AddButtons([]string{"The Prater Testnet", "The Ethereum Mainnet", "Quit without Saving"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				if buttonIndex == 2 {
+					wiz.md.app.Stop()
+				} else {
+					wiz.md.app.SetRoot(wiz.executionModeModal, true)
+				}
+			})
 	*/
 	wiz.networkModal = page
 
 }
-
 
 // Create the execution client mode selection modal
 func (wiz *newUserWizard) createExecutionModeModal() {
@@ -132,11 +127,11 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 	modal := newModalLayout(
 		wiz.md.app,
 		60,
-		"Let's start by choosing how you'd like to run your Execution Client (formerly eth1 client).\n\n" +
+		"Let's start by choosing how you'd like to run your Execution Client (formerly eth1 client).\n\n"+
 			"Would you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (formerly known as \"Hybrid Mode\")?",
 		[]string{
-			"Let Rocket Pool Manage its Own Client (Default)", 
-			"Use an Existing External Client (Hybrid Mode)", 
+			"Let Rocket Pool Manage its Own Client (Default)",
+			"Use an Existing External Client (Hybrid Mode)",
 		},
 		nil,
 		DirectionalModalVertical)
@@ -157,15 +152,14 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 
 }
 
-
 // Create the execution client Docker modal
 func (wiz *newUserWizard) createExecutionDockerModal() {
 
 	modal := newModalLayout(
 		wiz.md.app,
 		70,
-		"Please select the Execution client you would like to use.\n\n" +
-		"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth1-clients to learn more about them.",
+		"Please select the Execution client you would like to use.\n\n"+
+			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth1-clients to learn more about them.",
 		[]string{
 			"Geth",
 			"Infura",
@@ -192,15 +186,14 @@ func (wiz *newUserWizard) createExecutionDockerModal() {
 
 }
 
-
 // Create the consensus client Docker modal
 func (wiz *newUserWizard) createConsensusDockerModal() {
 
 	modal := newModalLayout(
 		wiz.md.app,
 		80,
-		"Please select the Consensus client you would like to use.\n\n" +
-		"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.",
+		"Please select the Consensus client you would like to use.\n\n"+
+			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.",
 		[]string{
 			"Lighthouse",
 			"Nimbus",
@@ -229,15 +222,14 @@ func (wiz *newUserWizard) createConsensusDockerModal() {
 
 }
 
-
 // Create the finished modal
 func (wiz *newUserWizard) createFinishedModal() {
 
 	modal := newModalLayout(
 		wiz.md.app,
 		40,
-		"All done! You're ready to run.\n\n" +
-		"If you'd like, you can review and change all of the Smartnode and client settings next or just save and exit.",
+		"All done! You're ready to run.\n\n"+
+			"If you'd like, you can review and change all of the Smartnode and client settings next or just save and exit.",
 		[]string{
 			"Review All Settings",
 			"Save and Exit",

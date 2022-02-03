@@ -9,24 +9,23 @@ import (
 
 // A layout container with the standard elements and design
 type standardLayout struct {
-	grid *tview.Grid
-	content tview.Primitive
+	grid           *tview.Grid
+	content        tview.Primitive
 	descriptionBox *tview.TextView
-	footer tview.Primitive
+	footer         tview.Primitive
 }
 
-
 // Creates a new StandardLayout instance, which includes the grid and description box preconstructed.
-func newStandardLayout() (*standardLayout) {
+func newStandardLayout() *standardLayout {
 
-    // Create the main display grid
-    grid := tview.NewGrid().
+	// Create the main display grid
+	grid := tview.NewGrid().
 		SetColumns(-5, 2, -3).
 		SetRows(0, 1, 0).
 		SetBorders(false)
 
-    // Create the description box
-    descriptionBox := tview.NewTextView()
+	// Create the description box
+	descriptionBox := tview.NewTextView()
 	descriptionBox.SetBorder(true)
 	descriptionBox.SetBorderPadding(1, 0, 0, 0)
 	descriptionBox.SetTitle(" Description ")
@@ -34,30 +33,28 @@ func newStandardLayout() (*standardLayout) {
 	descriptionBox.SetBorderColor(tcell.ColorDeepSkyBlue)
 	descriptionBox.SetTextColor(tcell.ColorDeepSkyBlue)
 
-    grid.AddItem(descriptionBox, 0, 2, 1, 1, 0, 0, false)
+	grid.AddItem(descriptionBox, 0, 2, 1, 1, 0, 0, false)
 
 	return &standardLayout{
-		grid: grid,
+		grid:           grid,
 		descriptionBox: descriptionBox,
 	}
 
 }
 
-
 // Sets the main content (the box on the left side of the screen) for this layout,
 // applying the default styles to it.
 func (layout *standardLayout) setContent(content tview.Primitive, contentBox *tview.Box, title string) {
-	
-	// Set the standard properties for the content (border and title) 
+
+	// Set the standard properties for the content (border and title)
 	contentBox.SetBorder(true)
 	contentBox.SetTitle(fmt.Sprintf(" %s ", title))
 	contentBox.SetBorderColor(tcell.ColorGreen)
-	
+
 	// Add the content to the grid
 	layout.content = content
-	layout.grid.AddItem(content, 0, 0, 1, 1, 0, 0, true)	
+	layout.grid.AddItem(content, 0, 0, 1, 1, 0, 0, true)
 }
-
 
 // Sets the footer for this layout.
 func (layout *standardLayout) setFooter(footer tview.Primitive, height int) {

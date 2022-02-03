@@ -8,33 +8,32 @@ import (
 // Creates a new page for the Consensus client settings
 func createSettingConsensusPage(home *settingsHome) *page {
 
-    content := createSettingConsensusContent(home)
+	content := createSettingConsensusContent(home)
 
-    return newPage(
-        home.homePage, 
-        "settings-consensus", 
-        "Consensus Client (Eth2)",
-        "Select this to choose your Consensus client (formerly called \"ETH2 client\") and configure its settings.",
-        content,
-    )
+	return newPage(
+		home.homePage,
+		"settings-consensus",
+		"Consensus Client (Eth2)",
+		"Select this to choose your Consensus client (formerly called \"ETH2 client\") and configure its settings.",
+		content,
+	)
 
 }
-
 
 // Creates the content for the Consensus client settings page
 func createSettingConsensusContent(home *settingsHome) tview.Primitive {
 
-    layout := newStandardLayout()
+	layout := newStandardLayout()
 
-    // PLACEHOLDER
-    paramDescriptions := []string{
-        "The Execution client you'd like to use. Probably have to describe each one when you open this dropdown and hover over them.",
-        "Select this if you have an external Execution client that you want the Smartnode to use, instead of managing its own (\"Hybrid Mode\").",
-        "Enter Geth's cache size, in MB.",
-    }
+	// PLACEHOLDER
+	paramDescriptions := []string{
+		"The Execution client you'd like to use. Probably have to describe each one when you open this dropdown and hover over them.",
+		"Select this if you have an external Execution client that you want the Smartnode to use, instead of managing its own (\"Hybrid Mode\").",
+		"Enter Geth's cache size, in MB.",
+	}
 
-    // Create the settings form
-    form := tview.NewForm()
+	// Create the settings form
+	form := tview.NewForm()
 	a := tview.NewDropDown().
 		SetLabel("Client").
 		SetOptions([]string{"Geth", "Infura", "Pocket", "Custom"}, nil)
@@ -66,15 +65,15 @@ func createSettingConsensusContent(home *settingsHome) tview.Primitive {
 		return event
 	})
 
-    // Make it the content of the layout and set the default description text
-    layout.setContent(form, form.Box, "Execution Client (Eth1) Settings")
-    layout.descriptionBox.SetText(paramDescriptions[0])
+	// Make it the content of the layout and set the default description text
+	layout.setContent(form, form.Box, "Execution Client (Eth1) Settings")
+	layout.descriptionBox.SetText(paramDescriptions[0])
 
-    // Make the footer
-    footer, height := createSettingFooter()
-    layout.setFooter(footer, height)
+	// Make the footer
+	footer, height := createSettingFooter()
+	layout.setFooter(footer, height)
 
-    // Return the standard layout's grid
-    return layout.grid
+	// Return the standard layout's grid
+	return layout.grid
 
 }

@@ -1,75 +1,68 @@
 package passwords
 
 import (
-    "errors"
-    "fmt"
-    "io/ioutil"
+	"errors"
+	"fmt"
+	"io/ioutil"
 )
-
 
 // Config
 const (
-    MinPasswordLength = 12
-    FileMode = 0600
+	MinPasswordLength = 12
+	FileMode          = 0600
 )
-
 
 // Password manager
 type PasswordManager struct {
-    passwordPath string
+	passwordPath string
 }
-
 
 // Create new password manager
 func NewPasswordManager(passwordPath string) *PasswordManager {
-    return &PasswordManager{
-        passwordPath: passwordPath,
-    }
+	return &PasswordManager{
+		passwordPath: passwordPath,
+	}
 }
-
 
 // Check if the password has been set
 func (pm *PasswordManager) IsPasswordSet() bool {
-    _, err := ioutil.ReadFile(pm.passwordPath)
-    return (err == nil)
+	_, err := ioutil.ReadFile(pm.passwordPath)
+	return (err == nil)
 }
-
 
 // Get the password
 func (pm *PasswordManager) GetPassword() (string, error) {
 
-    // Read from disk
-    password, err := ioutil.ReadFile(pm.passwordPath)
-    if err != nil {
-        return "", fmt.Errorf("Could not read password from disk: %w", err)
-    }
+	// Read from disk
+	password, err := ioutil.ReadFile(pm.passwordPath)
+	if err != nil {
+		return "", fmt.Errorf("Could not read password from disk: %w", err)
+	}
 
-    // Return
-    return string(password), nil
+	// Return
+	return string(password), nil
 
 }
-
 
 // Set the password
 func (pm *PasswordManager) SetPassword(password string) error {
 
-    // Check password is not set
-    if pm.IsPasswordSet() {
-        return errors.New("Password is already set")
-    }
+	// Check password is not set
+	if pm.IsPasswordSet() {
+		return errors.New("Password is already set")
+	}
 
-    // Check password length
-    if len(password) < MinPasswordLength {
-        return fmt.Errorf("Password must be at least %d characters long", MinPasswordLength)
-    }
+	// Check password length
+	if len(password) < MinPasswordLength {
+		return fmt.Errorf("Password must be at least %d characters long", MinPasswordLength)
+	}
 
-    // Write to disk
-    if err := ioutil.WriteFile(pm.passwordPath, []byte(password), FileMode); err != nil {
-        return fmt.Errorf("Could not write password to disk: %w", err)
-    }
+	// Write to disk
+	if err := ioutil.WriteFile(pm.passwordPath, []byte(password), FileMode); err != nil {
+		return fmt.Errorf("Could not write password to disk: %w", err)
+	}
 
-    // Return
-    return nil
+	// Return
+	return nil
 
 }
-

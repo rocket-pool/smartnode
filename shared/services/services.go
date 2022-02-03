@@ -31,242 +31,231 @@ import (
 // Config
 const DockerAPIVersion = "1.40"
 
-
 // Service instances & initializers
 var (
-    cfg config.RocketPoolConfig
-    passwordManager *passwords.PasswordManager
-    nodeWallet *wallet.Wallet
-    ethClientProxy *uc.EthClientProxy
-    rocketPool *rocketpool.RocketPool
-    oneInchOracle *contracts.OneInchOracle
-    rplFaucet *contracts.RPLFaucet
-    beaconClient beacon.Client
-    docker *client.Client
+	cfg             config.RocketPoolConfig
+	passwordManager *passwords.PasswordManager
+	nodeWallet      *wallet.Wallet
+	ethClientProxy  *uc.EthClientProxy
+	rocketPool      *rocketpool.RocketPool
+	oneInchOracle   *contracts.OneInchOracle
+	rplFaucet       *contracts.RPLFaucet
+	beaconClient    beacon.Client
+	docker          *client.Client
 
-    initCfg sync.Once
-    initPasswordManager sync.Once
-    initNodeWallet sync.Once
-    initEthClientProxy sync.Once
-    initRocketPool sync.Once
-    initOneInchOracle sync.Once
-    initRplFaucet sync.Once
-    initBeaconClient sync.Once
-    initDocker sync.Once
+	initCfg             sync.Once
+	initPasswordManager sync.Once
+	initNodeWallet      sync.Once
+	initEthClientProxy  sync.Once
+	initRocketPool      sync.Once
+	initOneInchOracle   sync.Once
+	initRplFaucet       sync.Once
+	initBeaconClient    sync.Once
+	initDocker          sync.Once
 )
-
 
 //
 // Service providers
 //
 
-
 func GetConfig(c *cli.Context) (config.RocketPoolConfig, error) {
-    return getConfig(c)
+	return getConfig(c)
 }
-
 
 func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    return getPasswordManager(cfg), nil
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	return getPasswordManager(cfg), nil
 }
-
 
 func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    pm := getPasswordManager(cfg)
-    return getWallet(cfg, pm)
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	pm := getPasswordManager(cfg)
+	return getWallet(cfg, pm)
 }
-
 
 func GetEthClientProxy(c *cli.Context) (*uc.EthClientProxy, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    ec, err := getEthClientProxy(cfg)
-    if err != nil {
-        return nil, err
-    }
-    return ec, nil
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := getEthClientProxy(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return ec, nil
 }
-
 
 func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    ec, err := getEthClientProxy(cfg)
-    if err != nil {
-        return nil, err
-    }
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := getEthClientProxy(cfg)
+	if err != nil {
+		return nil, err
+	}
 
-    return getRocketPool(cfg, ec)
+	return getRocketPool(cfg, ec)
 }
-
 
 func GetOneInchOracle(c *cli.Context) (*contracts.OneInchOracle, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    ec, err := getEthClientProxy(cfg)
-    if err != nil {
-        return nil, err
-    }
-    return getOneInchOracle(cfg, ec)
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := getEthClientProxy(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return getOneInchOracle(cfg, ec)
 }
-
 
 func GetRplFaucet(c *cli.Context) (*contracts.RPLFaucet, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    ec, err := getEthClientProxy(cfg)
-    if err != nil {
-        return nil, err
-    }
-    return getRplFaucet(cfg, ec)
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := getEthClientProxy(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return getRplFaucet(cfg, ec)
 }
-
 
 func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
-    cfg, err := getConfig(c)
-    if err != nil {
-        return nil, err
-    }
-    return getBeaconClient(cfg)
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	return getBeaconClient(cfg)
 }
-
 
 func GetDocker(c *cli.Context) (*client.Client, error) {
-    return getDocker()
+	return getDocker()
 }
-
 
 //
 // Service instance getters
 //
 
-
 func getConfig(c *cli.Context) (config.RocketPoolConfig, error) {
-    var err error
-    initCfg.Do(func() {
-        cfg, err = config.Load(c)
-    })
-    return cfg, err
+	var err error
+	initCfg.Do(func() {
+		cfg, err = config.Load(c)
+	})
+	return cfg, err
 }
-
 
 func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager {
-    initPasswordManager.Do(func() {
-        passwordManager = passwords.NewPasswordManager(os.ExpandEnv(cfg.Smartnode.PasswordPath))
-    })
-    return passwordManager
+	initPasswordManager.Do(func() {
+		passwordManager = passwords.NewPasswordManager(os.ExpandEnv(cfg.Smartnode.PasswordPath))
+	})
+	return passwordManager
 }
-
 
 func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
-    var err error
-    initNodeWallet.Do(func() {
-        var maxFee *big.Int
-        var maxPriorityFee *big.Int
-        var gasLimit uint64
-        maxFee, err = cfg.GetMaxFee()
-        if err != nil { return }
-        maxPriorityFee, err = cfg.GetMaxPriorityFee()
-        if err != nil { return }
-        gasLimit, err = cfg.GetGasLimit()
-        if err != nil { return }
-        nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, maxFee, maxPriorityFee, gasLimit, pm)
-        if err != nil { return }
-        lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-        nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-        prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-        tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-        nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
-        nodeWallet.AddKeystore("nimbus", nimbusKeystore)
-        nodeWallet.AddKeystore("prysm", prysmKeystore)
-        nodeWallet.AddKeystore("teku", tekuKeystore)
-    })
-    return nodeWallet, err
+	var err error
+	initNodeWallet.Do(func() {
+		var maxFee *big.Int
+		var maxPriorityFee *big.Int
+		var gasLimit uint64
+		maxFee, err = cfg.GetMaxFee()
+		if err != nil {
+			return
+		}
+		maxPriorityFee, err = cfg.GetMaxPriorityFee()
+		if err != nil {
+			return
+		}
+		gasLimit, err = cfg.GetGasLimit()
+		if err != nil {
+			return
+		}
+		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, maxFee, maxPriorityFee, gasLimit, pm)
+		if err != nil {
+			return
+		}
+		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+		nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+		prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+		tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+		nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
+		nodeWallet.AddKeystore("nimbus", nimbusKeystore)
+		nodeWallet.AddKeystore("prysm", prysmKeystore)
+		nodeWallet.AddKeystore("teku", tekuKeystore)
+	})
+	return nodeWallet, err
 }
-
 
 func getEthClientProxy(cfg config.RocketPoolConfig) (*uc.EthClientProxy, error) {
-    var err error
-    initEthClientProxy.Do(func() {
-        reconnectDelay, err := time.ParseDuration(cfg.Chains.Eth1.ReconnectDelay)
-        if err != nil { return }
-        if cfg.Chains.Eth1Fallback.Client.Selected == "" {
-            ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, cfg.Chains.Eth1.Provider)
-        } else {
-            ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, cfg.Chains.Eth1.Provider, cfg.Chains.Eth1.FallbackProvider)
-        }
-    })
-    return ethClientProxy, err
+	var err error
+	initEthClientProxy.Do(func() {
+		reconnectDelay, err := time.ParseDuration(cfg.Chains.Eth1.ReconnectDelay)
+		if err != nil {
+			return
+		}
+		if cfg.Chains.Eth1Fallback.Client.Selected == "" {
+			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, cfg.Chains.Eth1.Provider)
+		} else {
+			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, cfg.Chains.Eth1.Provider, cfg.Chains.Eth1.FallbackProvider)
+		}
+	})
+	return ethClientProxy, err
 }
-
 
 func getRocketPool(cfg config.RocketPoolConfig, client *uc.EthClientProxy) (*rocketpool.RocketPool, error) {
-    var err error
-    initRocketPool.Do(func() {
-        rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Rocketpool.StorageAddress))
-    })
-    return rocketPool, err
+	var err error
+	initRocketPool.Do(func() {
+		rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Rocketpool.StorageAddress))
+	})
+	return rocketPool, err
 }
-
 
 func getOneInchOracle(cfg config.RocketPoolConfig, client *uc.EthClientProxy) (*contracts.OneInchOracle, error) {
-    var err error
-    initOneInchOracle.Do(func() {
-        oneInchOracle, err = contracts.NewOneInchOracle(common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), client)
-    })
-    return oneInchOracle, err
+	var err error
+	initOneInchOracle.Do(func() {
+		oneInchOracle, err = contracts.NewOneInchOracle(common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), client)
+	})
+	return oneInchOracle, err
 }
-
 
 func getRplFaucet(cfg config.RocketPoolConfig, client *uc.EthClientProxy) (*contracts.RPLFaucet, error) {
-    var err error
-    initRplFaucet.Do(func() {
-        rplFaucet, err = contracts.NewRPLFaucet(common.HexToAddress(cfg.Rocketpool.RPLFaucetAddress), client)
-    })
-    return rplFaucet, err
+	var err error
+	initRplFaucet.Do(func() {
+		rplFaucet, err = contracts.NewRPLFaucet(common.HexToAddress(cfg.Rocketpool.RPLFaucetAddress), client)
+	})
+	return rplFaucet, err
 }
-
 
 func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
-    var err error
-    initBeaconClient.Do(func() {
-        switch cfg.Chains.Eth2.Client.Selected {
-            case "lighthouse":
-                beaconClient = lighthouse.NewClient(cfg.Chains.Eth2.Provider)
-            case "nimbus":
-                beaconClient = nimbus.NewClient(cfg.Chains.Eth2.Provider)
-            case "prysm":
-                beaconClient = prysm.NewClient(cfg.Chains.Eth2.Provider)
-            case "teku":
-                beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
-            default:
-                err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
-        }
-    })
-    return beaconClient, err
+	var err error
+	initBeaconClient.Do(func() {
+		switch cfg.Chains.Eth2.Client.Selected {
+		case "lighthouse":
+			beaconClient = lighthouse.NewClient(cfg.Chains.Eth2.Provider)
+		case "nimbus":
+			beaconClient = nimbus.NewClient(cfg.Chains.Eth2.Provider)
+		case "prysm":
+			beaconClient = prysm.NewClient(cfg.Chains.Eth2.Provider)
+		case "teku":
+			beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
+		default:
+			err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
+		}
+	})
+	return beaconClient, err
 }
 
-
 func getDocker() (*client.Client, error) {
-    var err error
-    initDocker.Do(func() {
-        docker, err = client.NewClientWithOpts(client.WithVersion(DockerAPIVersion))
-    })
-    return docker, err
+	var err error
+	initDocker.Do(func() {
+		docker, err = client.NewClientWithOpts(client.WithVersion(DockerAPIVersion))
+	})
+	return docker, err
 }

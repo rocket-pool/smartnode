@@ -53,23 +53,23 @@ type TrustedNodeCollector struct {
 	nodeAddress common.Address
 
 	// Cached data
-	cacheTime time.Time
+	cacheTime     time.Time
 	cachedMetrics []prometheus.Metric
 
-    // The event log interval for the current eth1 client
-    eventLogInterval        *big.Int
+	// The event log interval for the current eth1 client
+	eventLogInterval *big.Int
 }
 
 // Create a new NodeCollector instance
 func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg config.RocketPoolConfig) *TrustedNodeCollector {
-	
-    // Get the event log interval
-    eventLogInterval, err := api.GetEventLogInterval(cfg)
-    if err != nil {
-        log.Printf("Error getting event log interval: %s\n", err.Error())
-        return nil
-    }
-	
+
+	// Get the event log interval
+	eventLogInterval, err := api.GetEventLogInterval(cfg)
+	if err != nil {
+		log.Printf("Error getting event log interval: %s\n", err.Error())
+		return nil
+	}
+
 	subsystem := "trusted_node"
 	return &TrustedNodeCollector{
 		proposalCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposal_count"),
@@ -96,10 +96,10 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 			"Whether each member has participated in the current prices update interval",
 			[]string{"member"}, nil,
 		),
-		rp:          rp,
-		bc:          bc,
-		nodeAddress: nodeAddress,
-        eventLogInterval: eventLogInterval,
+		rp:               rp,
+		bc:               bc,
+		nodeAddress:      nodeAddress,
+		eventLogInterval: eventLogInterval,
 	}
 }
 

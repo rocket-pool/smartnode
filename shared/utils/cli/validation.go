@@ -17,278 +17,252 @@ import (
 
 // Config
 const (
-    MinDAOMemberIDLength = 3
+	MinDAOMemberIDLength = 3
 )
-
 
 //
 // General types
 //
 
-
 // Validate command argument count
 func ValidateArgCount(c *cli.Context, count int) error {
-    if len(c.Args()) != count {
-        return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
-    }
-    return nil
+	if len(c.Args()) != count {
+		return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
+	}
+	return nil
 }
-
 
 // Validate a big int
 func ValidateBigInt(name, value string) (*big.Int, error) {
-    val, success := big.NewInt(0).SetString(value, 0)
-    if !success {
-        return nil, fmt.Errorf("Invalid %s '%s'", name, value)
-    }
-    return val, nil
+	val, success := big.NewInt(0).SetString(value, 0)
+	if !success {
+		return nil, fmt.Errorf("Invalid %s '%s'", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a boolean value
 func ValidateBool(name, value string) (bool, error) {
-    val := strings.ToLower(value)
-    if !(val == "true" || val == "yes" || val == "false" || val == "no") {
-        return false, fmt.Errorf("Invalid %s '%s' - valid values are 'true', 'yes', 'false' and 'no'", name, value)
-    }
-    if val == "true" || val == "yes" {
-        return true, nil
-    } else {
-        return false, nil
-    }
+	val := strings.ToLower(value)
+	if !(val == "true" || val == "yes" || val == "false" || val == "no") {
+		return false, fmt.Errorf("Invalid %s '%s' - valid values are 'true', 'yes', 'false' and 'no'", name, value)
+	}
+	if val == "true" || val == "yes" {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
-
 
 // Validate an unsigned integer value
 func ValidateUint(name, value string) (uint64, error) {
-    val, err := strconv.ParseUint(value, 10, 64)
-    if err != nil {
-        return 0, fmt.Errorf("Invalid %s '%s'", name, value)
-    }
-    return val, nil
+	val, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("Invalid %s '%s'", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate an address
 func ValidateAddress(name, value string) (common.Address, error) {
-    if !common.IsHexAddress(value) {
-        return common.Address{}, fmt.Errorf("Invalid %s '%s'", name, value)
-    }
-    return common.HexToAddress(value), nil
+	if !common.IsHexAddress(value) {
+		return common.Address{}, fmt.Errorf("Invalid %s '%s'", name, value)
+	}
+	return common.HexToAddress(value), nil
 }
-
 
 // Validate a wei amount
 func ValidateWeiAmount(name, value string) (*big.Int, error) {
-    val := new(big.Int)
-    if _, ok := val.SetString(value, 10); !ok {
-        return nil, fmt.Errorf("Invalid %s '%s'", name, value)
-    }
-    return val, nil
+	val := new(big.Int)
+	if _, ok := val.SetString(value, 10); !ok {
+		return nil, fmt.Errorf("Invalid %s '%s'", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate an ether amount
 func ValidateEthAmount(name, value string) (float64, error) {
-    val, err := strconv.ParseFloat(value, 64)
-    if err != nil {
-        return 0, fmt.Errorf("Invalid %s '%s'", name, value)
-    }
-    return val, nil
+	val, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("Invalid %s '%s'", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a fraction
 func ValidateFraction(name, value string) (float64, error) {
-    val, err := strconv.ParseFloat(value, 64)
-    if err != nil || val < 0 || val > 1 {
-        return 0, fmt.Errorf("Invalid %s '%s' - must be a number between 0 and 1", name, value)
-    }
-    return val, nil
+	val, err := strconv.ParseFloat(value, 64)
+	if err != nil || val < 0 || val > 1 {
+		return 0, fmt.Errorf("Invalid %s '%s' - must be a number between 0 and 1", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a percentage
 func ValidatePercentage(name, value string) (float64, error) {
-    val, err := strconv.ParseFloat(value, 64)
-    if err != nil || val < 0 || val > 100 {
-        return 0, fmt.Errorf("Invalid %s '%s' - must be a number between 0 and 100", name, value)
-    }
-    return val, nil
+	val, err := strconv.ParseFloat(value, 64)
+	if err != nil || val < 0 || val > 100 {
+		return 0, fmt.Errorf("Invalid %s '%s' - must be a number between 0 and 100", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a token type
 func ValidateTokenType(name, value string) (string, error) {
-    val := strings.ToLower(value)
-    if !(val == "eth" || val == "rpl" || val == "fsrpl" || val == "reth") {
-        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH', 'RPL', 'fsRPL', and 'rETH'", name, value)
-    }
-    return val, nil
+	val := strings.ToLower(value)
+	if !(val == "eth" || val == "rpl" || val == "fsrpl" || val == "reth") {
+		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH', 'RPL', 'fsRPL', and 'rETH'", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a proposal type
 func ValidateProposalType(name, value string) (string, error) {
-    val := strings.ToLower(value)
-    if !(val == "pending" || val == "active" || val == "succeeded" || val == "executed" || val == "cancelled" || val == "defeated" || val == "expired" || val == "all") {
-        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', 'expired', and 'all'", name, value)
-    }
-    return val, nil
+	val := strings.ToLower(value)
+	if !(val == "pending" || val == "active" || val == "succeeded" || val == "executed" || val == "cancelled" || val == "defeated" || val == "expired" || val == "all") {
+		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', 'expired', and 'all'", name, value)
+	}
+	return val, nil
 }
-
 
 //
 // Command specific types
 //
 
-
 // Validate a positive unsigned integer value
 func ValidatePositiveUint(name, value string) (uint64, error) {
-    val, err := ValidateUint(name, value)
-    if err != nil {
-        return 0, err
-    }
-    if val == 0 {
-        return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
-    }
-    return val, nil
+	val, err := ValidateUint(name, value)
+	if err != nil {
+		return 0, err
+	}
+	if val == 0 {
+		return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a positive wei amount
 func ValidatePositiveWeiAmount(name, value string) (*big.Int, error) {
-    val, err := ValidateWeiAmount(name, value)
-    if err != nil {
-        return nil, err
-    }
-    if val.Cmp(big.NewInt(0)) < 1 {
-        return nil, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
-    }
-    return val, nil
+	val, err := ValidateWeiAmount(name, value)
+	if err != nil {
+		return nil, err
+	}
+	if val.Cmp(big.NewInt(0)) < 1 {
+		return nil, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a positive or zero wei amount
 func ValidatePositiveOrZeroWeiAmount(name, value string) (*big.Int, error) {
-    val, err := ValidateWeiAmount(name, value)
-    if err != nil {
-        return nil, err
-    }
-    if val.Cmp(big.NewInt(0)) < 0 {
-        return nil, fmt.Errorf("Invalid %s '%s' - must be greater or equal to 0", name, value)
-    }
-    return val, nil
+	val, err := ValidateWeiAmount(name, value)
+	if err != nil {
+		return nil, err
+	}
+	if val.Cmp(big.NewInt(0)) < 0 {
+		return nil, fmt.Errorf("Invalid %s '%s' - must be greater or equal to 0", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a deposit amount in wei
 func ValidateDepositWeiAmount(name, value string) (*big.Int, error) {
-    val, err := ValidateWeiAmount(name, value)
-    if err != nil {
-        return nil, err
-    }
-    if ether := strings.Repeat("0", 18); !(val.String() == "0" || val.String() == "16"+ether || val.String() == "32"+ether) {
-        return nil, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32 ether", name, value)
-    }
-    return val, nil
+	val, err := ValidateWeiAmount(name, value)
+	if err != nil {
+		return nil, err
+	}
+	if ether := strings.Repeat("0", 18); !(val.String() == "0" || val.String() == "16"+ether || val.String() == "32"+ether) {
+		return nil, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32 ether", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a positive ether amount
 func ValidatePositiveEthAmount(name, value string) (float64, error) {
-    val, err := ValidateEthAmount(name, value)
-    if err != nil {
-        return 0, err
-    }
-    if val <= 0 {
-        return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
-    }
-    return val, nil
+	val, err := ValidateEthAmount(name, value)
+	if err != nil {
+		return 0, err
+	}
+	if val <= 0 {
+		return 0, fmt.Errorf("Invalid %s '%s' - must be greater than 0", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a deposit amount in ether
 func ValidateDepositEthAmount(name, value string) (float64, error) {
-    val, err := ValidateEthAmount(name, value)
-    if err != nil {
-        return 0, err
-    }
-    if !(val == 0 || val == 16 || val == 32) {
-        return 0, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32 ether", name, value)
-    }
-    return val, nil
+	val, err := ValidateEthAmount(name, value)
+	if err != nil {
+		return 0, err
+	}
+	if !(val == 0 || val == 16 || val == 32) {
+		return 0, fmt.Errorf("Invalid %s '%s' - valid values are 0, 16 and 32 ether", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a burnable token type
 func ValidateBurnableTokenType(name, value string) (string, error) {
-    val := strings.ToLower(value)
-    if !(val == "reth") {
-        return "", fmt.Errorf("Invalid %s '%s' - valid types are 'rETH'", name, value)
-    }
-    return val, nil
+	val := strings.ToLower(value)
+	if !(val == "reth") {
+		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'rETH'", name, value)
+	}
+	return val, nil
 }
-
 
 // Validate a node password
 func ValidateNodePassword(name, value string) (string, error) {
-    if len(value) < passwords.MinPasswordLength {
-        return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, passwords.MinPasswordLength)
-    }
-    return value, nil
+	if len(value) < passwords.MinPasswordLength {
+		return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, value, passwords.MinPasswordLength)
+	}
+	return value, nil
 }
-
 
 // Validate a wallet mnemonic phrase
 func ValidateWalletMnemonic(name, value string) (string, error) {
-    if !bip39.IsMnemonicValid(value) {
-        return "", fmt.Errorf("Invalid %s '%s'", name, value)
-    }
-    return value, nil
+	if !bip39.IsMnemonicValid(value) {
+		return "", fmt.Errorf("Invalid %s '%s'", name, value)
+	}
+	return value, nil
 }
-
 
 // Validate a timezone location
 func ValidateTimezoneLocation(name, value string) (string, error) {
-    if !regexp.MustCompile("^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$").MatchString(value) {
-        return "", fmt.Errorf("Invalid %s '%s' - must be in the format 'Country/City'", name, value)
-    }
-    return value, nil
+	if !regexp.MustCompile("^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$").MatchString(value) {
+		return "", fmt.Errorf("Invalid %s '%s' - must be in the format 'Country/City'", name, value)
+	}
+	return value, nil
 }
-
 
 // Validate a DAO member ID
 func ValidateDAOMemberID(name, value string) (string, error) {
-    val := strings.TrimSpace(value)
-    if len(val) < MinDAOMemberIDLength {
-        return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, val, MinDAOMemberIDLength)
-    }
-    return val, nil
+	val := strings.TrimSpace(value)
+	if len(val) < MinDAOMemberIDLength {
+		return "", fmt.Errorf("Invalid %s '%s' - must be at least %d characters long", name, val, MinDAOMemberIDLength)
+	}
+	return val, nil
 }
-
 
 // Validate a transaction hash
 func ValidateTxHash(name, value string) (common.Hash, error) {
 
-    // Remove a 0x prefix if present
-    if strings.HasPrefix(value, "0x") {
-        value = value[2:]
-    }
+	// Remove a 0x prefix if present
+	if strings.HasPrefix(value, "0x") {
+		value = value[2:]
+	}
 
-    // Hash should be 64 characters long
-    if len(value) != hex.EncodedLen(common.HashLength) {
-        return common.Hash{}, fmt.Errorf("Invalid %s '%s': it must have 64 characters.", name, value)
-    }
+	// Hash should be 64 characters long
+	if len(value) != hex.EncodedLen(common.HashLength) {
+		return common.Hash{}, fmt.Errorf("Invalid %s '%s': it must have 64 characters.", name, value)
+	}
 
-    // Try to parse the string (removing the prefix)
-    bytes, err := hex.DecodeString(value)
-    if err != nil {
-        return common.Hash{}, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
-    }
-    hash := common.BytesToHash(bytes)
+	// Try to parse the string (removing the prefix)
+	bytes, err := hex.DecodeString(value)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Invalid %s '%s': %w", name, value, err)
+	}
+	hash := common.BytesToHash(bytes)
 
-    return hash, nil
+	return hash, nil
 
 }
-
