@@ -14,6 +14,7 @@ steps:
     inputs:
       secureFile: 'rp-azure-pipeline-github.pem'
   - bash: |
+      if [ "$(goimports -l . | wc -l)" -gt 0 ]; then exit 1; fi
       eval $(ruby -e "require 'openssl'; require 'jwt'; private_pem = File.read(ENV['GITHUB_PEM_PATH']); private_key = OpenSSL::PKey::RSA.new(private_pem); payload = { iat: Time.now.to_i - 60, exp: Time.now.to_i + (10 * 60), iss: ENV['GITHUB_APP_ID'] }; jwt = JWT.encode(payload, private_key, 'RS256'); puts 'PUSH_JWT='+jwt;")
       TOKEN=$(curl -s -X POST \
         -H "Authorization: Bearer $PUSH_JWT" \
