@@ -8,77 +8,83 @@ import (
 
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
-    app.Commands = append(app.Commands, cli.Command{
-        Name:      name,
-        Aliases:   aliases,
-        Usage:     "Manage Rocket Pool network parameters",
-        Subcommands: []cli.Command{
+	app.Commands = append(app.Commands, cli.Command{
+		Name:    name,
+		Aliases: aliases,
+		Usage:   "Manage Rocket Pool network parameters",
+		Subcommands: []cli.Command{
 
-            cli.Command{
-                Name:      "stats",
-                Aliases:   []string{"s"},
-                Usage:     "Get stats about the Rocket Pool network and its tokens",
-                UsageText: "rocketpool network stats",
-                Action: func(c *cli.Context) error {
+			{
+				Name:      "stats",
+				Aliases:   []string{"s"},
+				Usage:     "Get stats about the Rocket Pool network and its tokens",
+				UsageText: "rocketpool network stats",
+				Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-                    // Run
-                    return getStats(c)
+					// Run
+					return getStats(c)
 
-                },
-            },
+				},
+			},
 
-            cli.Command{
-                Name:      "timezone-map",
-                Aliases:   []string{"t"},
-                Usage:     "Shows a table of the timezones that node operators belong to",
-                UsageText: "rocketpool network timezone-map",
-                Action: func(c *cli.Context) error {
+			{
+				Name:      "timezone-map",
+				Aliases:   []string{"t"},
+				Usage:     "Shows a table of the timezones that node operators belong to",
+				UsageText: "rocketpool network timezone-map",
+				Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-                    // Run
-                    return getTimezones(c)
+					// Run
+					return getTimezones(c)
 
-                },
-            },
+				},
+			},
 
-            cli.Command{
-                Name:      "node-fee",
-                Aliases:   []string{"f"},
-                Usage:     "Get the current network node commission rate",
-                UsageText: "rocketpool network node-fee",
-                Action: func(c *cli.Context) error {
+			{
+				Name:      "node-fee",
+				Aliases:   []string{"f"},
+				Usage:     "Get the current network node commission rate",
+				UsageText: "rocketpool network node-fee",
+				Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-                    // Run
-                    return getNodeFee(c)
+					// Run
+					return getNodeFee(c)
 
-                },
-            },
+				},
+			},
 
-            cli.Command{
-                Name:      "rpl-price",
-                Aliases:   []string{"p"},
-                Usage:     "Get the current network RPL price in ETH",
-                UsageText: "rocketpool network rpl-price",
-                Action: func(c *cli.Context) error {
+			{
+				Name:      "rpl-price",
+				Aliases:   []string{"p"},
+				Usage:     "Get the current network RPL price in ETH",
+				UsageText: "rocketpool network rpl-price",
+				Action: func(c *cli.Context) error {
 
-                    // Validate args
-                    if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-                    // Run
-                    return getRplPrice(c)
+					// Run
+					return getRplPrice(c)
 
-                },
-            },
-
-        },
-    })
+				},
+			},
+		},
+	})
 }
-

@@ -7,28 +7,25 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
-
 type QueueStatusResponse struct {
-    Status string                   `json:"status"`
-    Error string                    `json:"error"`
-    DepositPoolBalance *big.Int     `json:"depositPoolBalance"`
-    MinipoolQueueLength uint64      `json:"minipoolQueueLength"`
-    MinipoolQueueCapacity *big.Int  `json:"minipoolQueueCapacity"`
+	Status                string   `json:"status"`
+	Error                 string   `json:"error"`
+	DepositPoolBalance    *big.Int `json:"depositPoolBalance"`
+	MinipoolQueueLength   uint64   `json:"minipoolQueueLength"`
+	MinipoolQueueCapacity *big.Int `json:"minipoolQueueCapacity"`
 }
-
 
 type CanProcessQueueResponse struct {
-    Status string                   `json:"status"`
-    Error string                    `json:"error"`
-    CanProcess bool                 `json:"canProcess"`
-    AssignDepositsDisabled bool     `json:"assignDepositsDisabled"`
-    NoMinipoolsAvailable bool       `json:"noMinipoolsAvailable"`
-    InsufficientDepositBalance bool `json:"insufficientDepositBalance"`
-    GasInfo rocketpool.GasInfo      `json:"gasInfo"`
+	Status                     string             `json:"status"`
+	Error                      string             `json:"error"`
+	CanProcess                 bool               `json:"canProcess"`
+	AssignDepositsDisabled     bool               `json:"assignDepositsDisabled"`
+	NoMinipoolsAvailable       bool               `json:"noMinipoolsAvailable"`
+	InsufficientDepositBalance bool               `json:"insufficientDepositBalance"`
+	GasInfo                    rocketpool.GasInfo `json:"gasInfo"`
 }
 type ProcessQueueResponse struct {
-    Status string                   `json:"status"`
-    Error string                    `json:"error"`
-    TxHash common.Hash              `json:"txHash"`
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
 }
-

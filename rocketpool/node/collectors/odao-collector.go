@@ -14,21 +14,20 @@ import (
 // Represents the collector for the ODAO metrics
 type OdaoCollector struct {
 	// The latest block reported by the ETH1 client at the time of collecting the metrics
-	currentEth1Block 		*prometheus.Desc
+	currentEth1Block *prometheus.Desc
 
 	// The ETH1 block that was used when reporting the latest prices
-	pricesBlock	            *prometheus.Desc
+	pricesBlock *prometheus.Desc
 
 	// The ETH1 block where the Effective RPL Stake was last updated
-	effectiveRplStakeBlock  *prometheus.Desc
+	effectiveRplStakeBlock *prometheus.Desc
 
 	// The latest ETH1 block where network prices were reportable by the ODAO
-	latestReportableBlock   *prometheus.Desc
+	latestReportableBlock *prometheus.Desc
 
 	// The Rocket Pool contract manager
-	rp 						*rocketpool.RocketPool
+	rp *rocketpool.RocketPool
 }
-
 
 // Create a new DemandCollector instance
 func NewOdaoCollector(rp *rocketpool.RocketPool) *OdaoCollector {
@@ -54,7 +53,6 @@ func NewOdaoCollector(rp *rocketpool.RocketPool) *OdaoCollector {
 	}
 }
 
-
 // Write metric descriptions to the Prometheus channel
 func (collector *OdaoCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.currentEth1Block
@@ -63,64 +61,63 @@ func (collector *OdaoCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.latestReportableBlock
 }
 
-
 // Collect the latest metric values and pass them to Prometheus
 func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
- 
-    // Sync
-    var wg errgroup.Group
-    blockNumberFloat := float64(-1)
+
+	// Sync
+	var wg errgroup.Group
+	blockNumberFloat := float64(-1)
 	pricesBlockFloat := float64(-1)
 	effectiveRplStakeBlockFloat := float64(-1)
-	latestReportableBlockFloat := float64(-1) 
-	
-	// Get the latest block reported by the ETH1 client
-    wg.Go(func() error {
-		blockNumber, err := collector.rp.Client.BlockNumber(context.Background())
-        if err != nil {
-            return fmt.Errorf("Error getting latest ETH1 block: %w", err)
-        } else {
-            blockNumberFloat = float64(blockNumber)
-        }
-        return nil
-    })
-	
-	// Get ETH1 block that was used when reporting the latest prices
-    wg.Go(func() error {
-		pricesBlock, err := network.GetPricesBlock(collector.rp, nil)
-        if err != nil {
-            return fmt.Errorf("Error getting ETH1 prices block: %w", err)
-        } else {
-            pricesBlockFloat = float64(pricesBlock)
-            effectiveRplStakeBlockFloat = float64(pricesBlock)
-        }
-        return nil
-    })
-	
-    // Get the latest ETH1 block where network prices were reportable by the ODAO
-    wg.Go(func() error {
-		latestReportableBlock, err := network.GetLatestReportablePricesBlock(collector.rp, nil)
-        if err != nil {
-            return fmt.Errorf("Error getting ETH1 latest reportable block: %w", err)
-        } else {
-            latestReportableBlockFloat = float64(latestReportableBlock.Uint64())
-        }
-        return nil
-    })
-	
-    // Wait for data
-    if err := wg.Wait(); err != nil {
-        log.Printf("%s\n", err.Error())
-        return
-    }
+	latestReportableBlockFloat := float64(-1)
 
-    channel <- prometheus.MustNewConstMetric(
+	// Get the latest block reported by the ETH1 client
+	wg.Go(func() error {
+		blockNumber, err := collector.rp.Client.BlockNumber(context.Background())
+		if err != nil {
+			return fmt.Errorf("Error getting latest ETH1 block: %w", err)
+		} else {
+			blockNumberFloat = float64(blockNumber)
+		}
+		return nil
+	})
+
+	// Get ETH1 block that was used when reporting the latest prices
+	wg.Go(func() error {
+		pricesBlock, err := network.GetPricesBlock(collector.rp, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting ETH1 prices block: %w", err)
+		} else {
+			pricesBlockFloat = float64(pricesBlock)
+			effectiveRplStakeBlockFloat = float64(pricesBlock)
+		}
+		return nil
+	})
+
+	// Get the latest ETH1 block where network prices were reportable by the ODAO
+	wg.Go(func() error {
+		latestReportableBlock, err := network.GetLatestReportablePricesBlock(collector.rp, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting ETH1 latest reportable block: %w", err)
+		} else {
+			latestReportableBlockFloat = float64(latestReportableBlock.Uint64())
+		}
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		log.Printf("%s\n", err.Error())
+		return
+	}
+
+	channel <- prometheus.MustNewConstMetric(
 		collector.currentEth1Block, prometheus.GaugeValue, blockNumberFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.pricesBlock, prometheus.GaugeValue, pricesBlockFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveRplStakeBlock, prometheus.GaugeValue, effectiveRplStakeBlockFloat)
-    channel <- prometheus.MustNewConstMetric(
-        collector.latestReportableBlock, prometheus.GaugeValue, latestReportableBlockFloat)
-		
+	channel <- prometheus.MustNewConstMetric(
+		collector.latestReportableBlock, prometheus.GaugeValue, latestReportableBlockFloat)
+
 }
