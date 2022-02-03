@@ -45,14 +45,15 @@ const (
 
 // A parameter that can be configured by the user
 type Parameter struct {
-	Name                string
-	ID                  string
-	Description         string
-	Type                ParameterType
-	Default             interface{}
-	AffectsContainers   []ContainerID
-	EnvironmentVariable string
-	Required            bool
+	Name                 string
+	ID                   string
+	Description          string
+	Type                 ParameterType
+	Default              interface{}
+	AffectsContainers    []ContainerID
+	EnvironmentVariables []string
+	CanBeBlank           bool
+	OverwriteOnUpgrade   bool
 }
 
 // The value for a parameter
@@ -120,56 +121,6 @@ type PocketConfig struct {
 	OpenRpcPorts *Parameter
 }
 
-// Configuration for Lighthouse
-type LighthouseConfig struct {
-	Graffiti               *Parameter
-	CheckpointSyncProvider *Parameter
-	TargetPeers            *Parameter
-	P2pPort                *Parameter
-	ApiPort                *Parameter
-	OpenApiPort            *Parameter
-	ContainerName          *Parameter
-	AdditionalBnFlags      *Parameter
-	AdditionalVcFlags      *Parameter
-}
-
-// Configuration for Nimbus
-type NimbusConfig struct {
-	Graffiti        *Parameter
-	MaxPeers        *Parameter
-	P2pPort         *Parameter
-	ApiPort         *Parameter
-	OpenApiPort     *Parameter
-	ContainerName   *Parameter
-	AdditionalFlags *Parameter
-}
-
-// Configuration for Prysm
-type PrysmConfig struct {
-	Graffiti          *Parameter
-	TargetPeers       *Parameter
-	P2pPort           *Parameter
-	HttpPort          *Parameter
-	RpcPort           *Parameter
-	OpenApiPorts      *Parameter
-	ContainerName     *Parameter
-	AdditionalBnFlags *Parameter
-	AdditionalVcFlags *Parameter
-}
-
-// Configuration for Teku
-type TekuConfig struct {
-	Graffiti               *Parameter
-	CheckpointSyncProvider *Parameter
-	MaxPeers               *Parameter
-	P2pPort                *Parameter
-	ApiPort                *Parameter
-	OpenApiPort            *Parameter
-	ContainerName          *Parameter
-	AdditionalBnFlags      *Parameter
-	AdditionalVcFlags      *Parameter
-}
-
 // Configuration for Grafana
 type GrafanaConfig struct {
 	Port            *Parameter
@@ -230,7 +181,7 @@ func NewSmartnodeConfig() *SmartnodeConfig {
 			Description:       "The Ethereum network you want to use - select Prater Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
 			Type:              ParameterType_Choice,
 			Default:           "",
-			Required:          true,
+			CanBeBlank:        true,
 			AffectsContainers: []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2, ContainerID_Validator},
 		},
 
@@ -273,79 +224,79 @@ func NewSmartnodeConfig() *SmartnodeConfig {
 func NewGethConfig() *GethConfig {
 	return &GethConfig{
 		EthstatsLabel: &Parameter{
-			ID:                  "ethstatsLabel",
-			Name:                "ETHStats Label",
-			Description:         "If you would like to report your Execution client statistics to https://ethstats.net/, enter the label you want to use here.",
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "ETHSTATS_LABEL",
+			ID:                   "ethstatsLabel",
+			Name:                 "ETHStats Label",
+			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the label you want to use here.",
+			Default:              "",
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "ETHSTATS_LABEL",
 		},
 
 		EthstatsLogin: &Parameter{
-			ID:                  "ethstatsLogin",
-			Name:                "ETHStats Login",
-			Description:         "If you would like to report your Execution client statistics to https://ethstats.net/, enter the login you want to use here.",
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "ETHSTATS_LOGIN",
+			ID:                   "ethstatsLogin",
+			Name:                 "ETHStats Login",
+			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the login you want to use here.",
+			Default:              "",
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "ETHSTATS_LOGIN",
 		},
 
 		CacheSize: &Parameter{
-			ID:                  "cache",
-			Name:                "Cache Size",
-			Description:         "The amount of RAM (in MB) you want Geth's cache to use. Larger values mean your disk space usage will increase slower, and you will have to prune less frequently. The default is based on how much total RAM your system has but you can adjust it manually.",
-			Default:             calculateGethCache(),
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "GETH_CACHE_SIZE",
+			ID:                   "cache",
+			Name:                 "Cache Size",
+			Description:          "The amount of RAM (in MB) you want Geth's cache to use. Larger values mean your disk space usage will increase slower, and you will have to prune less frequently. The default is based on how much total RAM your system has but you can adjust it manually.",
+			Default:              calculateGethCache(),
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "GETH_CACHE_SIZE",
 		},
 
 		MaxPeers: &Parameter{
-			ID:                  "maxPeers",
-			Name:                "Max Peers",
-			Description:         "The maximum number of peers Geth should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
-			Default:             calculateGethPeers(),
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "GETH_MAX_PEERS",
+			ID:                   "maxPeers",
+			Name:                 "Max Peers",
+			Description:          "The maximum number of peers Geth should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
+			Default:              calculateGethPeers(),
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "GETH_MAX_PEERS",
 		},
 
 		P2pPort: &Parameter{
-			ID:                  "p2pPort",
-			Name:                "P2P Port",
-			Description:         "The port Geth should use for P2P (blockchain) traffic to communicate with other nodes.",
-			Default:             30303,
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "EC_P2P_PORT",
-			Required:            true,
+			ID:                   "p2pPort",
+			Name:                 "P2P Port",
+			Description:          "The port Geth should use for P2P (blockchain) traffic to communicate with other nodes.",
+			Default:              30303,
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "EC_P2P_PORT",
+			CanBeBlank:           true,
 		},
 
 		HttpPort: &Parameter{
-			ID:                  "httpPort",
-			Name:                "HTTP Port",
-			Description:         "The port Geth should use for its HTTP RPC endpoint.",
-			Default:             8545,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariable: "EC_HTTP_PORT",
-			Required:            true,
+			ID:                   "httpPort",
+			Name:                 "HTTP Port",
+			Description:          "The port Geth should use for its HTTP RPC endpoint.",
+			Default:              8545,
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
+			EnvironmentVariables: "EC_HTTP_PORT",
+			CanBeBlank:           true,
 		},
 
 		WsPort: &Parameter{
-			ID:                  "wsPort",
-			Name:                "Websocket Port",
-			Description:         "The port Geth should use for its Websocket RPC endpoint.",
-			Default:             8546,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariable: "EC_WS_PORT",
-			Required:            true,
+			ID:                   "wsPort",
+			Name:                 "Websocket Port",
+			Description:          "The port Geth should use for its Websocket RPC endpoint.",
+			Default:              8546,
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
+			EnvironmentVariables: "EC_WS_PORT",
+			CanBeBlank:           true,
 		},
 
 		OpenRpcPorts: &Parameter{
-			ID:                  "openRpcPorts",
-			Name:                "Open RPC Ports",
-			Description:         "Open the HTTP and Websocket RPC ports to your local network, so other local machines can access your Execution Client's RPC endpoint.",
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "EC_OPEN_RPC_PORTS",
-			Required:            false,
+			ID:                   "openRpcPorts",
+			Name:                 "Open RPC Ports",
+			Description:          "Open the HTTP and Websocket RPC ports to your local network, so other local machines can access your Execution Client's RPC endpoint.",
+			Default:              false,
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "EC_OPEN_RPC_PORTS",
+			CanBeBlank:           false,
 		},
 
 		ContainerName: &Parameter{
@@ -355,18 +306,18 @@ func NewGethConfig() *GethConfig {
 			Type:              ParameterType_String,
 			Default:           "ethereum/client-go:v1.10.15",
 			AffectsContainers: []ContainerID{ContainerID_Eth1},
-			Required:          true,
+			CanBeBlank:        true,
 		},
 
 		AdditionalFlags: &Parameter{
-			ID:                  "additionalFlags",
-			Name:                "Additional Flags",
-			Description:         "Additional custom command line flags you want to pass to Geth, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "EC_ADDITIONAL_FLAGS",
-			Required:            false,
+			ID:                   "additionalFlags",
+			Name:                 "Additional Flags",
+			Description:          "Additional custom command line flags you want to pass to Geth, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 ParameterType_String,
+			Default:              "",
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "EC_ADDITIONAL_FLAGS",
+			CanBeBlank:           false,
 		},
 	}
 }
@@ -375,44 +326,44 @@ func NewGethConfig() *GethConfig {
 func NewInfuraConfig() *InfuraConfig {
 	return &InfuraConfig{
 		ProjectID: &Parameter{
-			ID:                  "projectID",
-			Name:                "Project ID",
-			Description:         "The ID of your `Ethereum` project in Infura. Note: This is your Project ID, not your Project Secret!",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "INFURA_PROJECT_ID",
-			Required:            true,
+			ID:                   "projectID",
+			Name:                 "Project ID",
+			Description:          "The ID of your `Ethereum` project in Infura. Note: This is your Project ID, not your Project Secret!",
+			Type:                 ParameterType_String,
+			Default:              "",
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "INFURA_PROJECT_ID",
+			CanBeBlank:           true,
 		},
 
 		HttpPort: &Parameter{
-			ID:                  "httpPort",
-			Name:                "HTTP Port",
-			Description:         "The port the Infura proxy should use for its HTTP RPC endpoint.",
-			Default:             8545,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariable: "EC_HTTP_PORT",
-			Required:            true,
+			ID:                   "httpPort",
+			Name:                 "HTTP Port",
+			Description:          "The port the Infura proxy should use for its HTTP RPC endpoint.",
+			Default:              8545,
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
+			EnvironmentVariables: "EC_HTTP_PORT",
+			CanBeBlank:           true,
 		},
 
 		WsPort: &Parameter{
-			ID:                  "wsPort",
-			Name:                "Websocket Port",
-			Description:         "The port the Infura proxy should use for its Websocket RPC endpoint.",
-			Default:             8546,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariable: "EC_WS_PORT",
-			Required:            true,
+			ID:                   "wsPort",
+			Name:                 "Websocket Port",
+			Description:          "The port the Infura proxy should use for its Websocket RPC endpoint.",
+			Default:              8546,
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
+			EnvironmentVariables: "EC_WS_PORT",
+			CanBeBlank:           true,
 		},
 
 		OpenRpcPorts: &Parameter{
-			ID:                  "openRpcPorts",
-			Name:                "Open RPC Ports",
-			Description:         "Open the HTTP and Websocket RPC ports to your local network, so other local machines can access the Infura proxy's RPC endpoint.",
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "EC_OPEN_RPC_PORTS",
-			Required:            false,
+			ID:                   "openRpcPorts",
+			Name:                 "Open RPC Ports",
+			Description:          "Open the HTTP and Websocket RPC ports to your local network, so other local machines can access the Infura proxy's RPC endpoint.",
+			Default:              false,
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "EC_OPEN_RPC_PORTS",
+			CanBeBlank:           false,
 		},
 	}
 }
@@ -421,424 +372,34 @@ func NewInfuraConfig() *InfuraConfig {
 func NewPocketConfig() *PocketConfig {
 	return &PocketConfig{
 		GatewayID: &Parameter{
-			ID:                  "gatewayID",
-			Name:                "Gateway ID",
-			Description:         "If you would like to use a custom gateway for Pocket instead of the default Rocket Pool gateway, enter it here.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "Pocket_PROJECT_ID",
-			Required:            true,
+			ID:                   "gatewayID",
+			Name:                 "Gateway ID",
+			Description:          "If you would like to use a custom gateway for Pocket instead of the default Rocket Pool gateway, enter it here.",
+			Type:                 ParameterType_String,
+			Default:              "",
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "Pocket_PROJECT_ID",
+			CanBeBlank:           true,
 		},
 
 		HttpPort: &Parameter{
-			ID:                  "httpPort",
-			Name:                "HTTP Port",
-			Description:         "The port the Pocket proxy should use for its HTTP RPC endpoint.",
-			Default:             8545,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariable: "EC_HTTP_PORT",
-			Required:            true,
+			ID:                   "httpPort",
+			Name:                 "HTTP Port",
+			Description:          "The port the Pocket proxy should use for its HTTP RPC endpoint.",
+			Default:              8545,
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
+			EnvironmentVariables: "EC_HTTP_PORT",
+			CanBeBlank:           true,
 		},
 
 		OpenRpcPorts: &Parameter{
-			ID:                  "openRpcPorts",
-			Name:                "Open RPC Ports",
-			Description:         "Open the HTTP RPC port to your local network, so other local machines can access the Pocket proxy's RPC endpoint.",
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "EC_OPEN_RPC_PORTS",
-			Required:            false,
-		},
-	}
-}
-
-// Generates a new Lighthouse configuration
-func NewLighthouseConfig() *LighthouseConfig {
-	return &LighthouseConfig{
-		Graffiti: &Parameter{
-			ID:                  "graffiti",
-			Name:                "Custom Graffiti",
-			Description:         "Add a short message to any blocks you propose, so the world can see what you have to say! It has a 16 character limit.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Validator},
-			EnvironmentVariable: "CUSTOM_GRAFFITI",
-			Required:            false,
-		},
-
-		CheckpointSyncProvider: &Parameter{
-			ID:   "checkpointSyncUrl",
-			Name: "Checkpoint Sync URL",
-			Description: "If you would like to instantly sync using an existing Beacon node, enter its URL.\n" +
-				"Example: https://<project ID>:<secret>@eth2-beacon-prater.infura.io\n" +
-				"Leave this blank if you want to sync normally from the start of the chain.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "CHECKPOINT_SYNC_URL",
-			Required:            false,
-		},
-
-		TargetPeers: &Parameter{
-			ID:                  "targetPeers",
-			Name:                "Target Peers",
-			Description:         "The number of peers Lighthouse should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                ParameterType_Uint16,
-			Default:             50,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_MAX_PEERS",
-			Required:            true,
-		},
-
-		P2pPort: &Parameter{
-			ID:                  "p2pPort",
-			Name:                "P2P Port",
-			Description:         "The port to use for P2P (blockchain) traffic.",
-			Type:                ParameterType_Uint16,
-			Default:             9001,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_P2P_PORT",
-			Required:            true,
-		},
-
-		ApiPort: &Parameter{
-			ID:                  "apiPort",
-			Name:                "HTTP API Port",
-			Description:         "The port Lighthouse should run its HTTP API on.",
-			Type:                ParameterType_Uint16,
-			Default:             5052,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator, ContainerID_Prometheus},
-			EnvironmentVariable: "BN_API_PORT",
-			Required:            true,
-		},
-
-		OpenApiPort: &Parameter{
-			ID:                  "openApiPort",
-			Name:                "Open API Port",
-			Description:         "Enable this to open Lighthouse's API port to your local network, so other machines can access it too.",
-			Type:                ParameterType_Bool,
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_OPEN_API_PORT",
-		},
-
-		ContainerName: &Parameter{
-			ID:                "containerName",
-			Name:              "Container Name",
-			Description:       "The tag name of the Lighthouse container you want to use on Docker hub.",
-			Type:              ParameterType_String,
-			Default:           "sigp/lighthouse:v2.1.1",
-			AffectsContainers: []ContainerID{ContainerID_Eth2},
-			Required:          true,
-		},
-
-		AdditionalBnFlags: &Parameter{
-			ID:                  "additionalBnFlags",
-			Name:                "Additional Beacon Client Flags",
-			Description:         "Additional custom command line flags you want to pass Lighthouse's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_ADDITIONAL_FLAGS",
-			Required:            false,
-		},
-
-		AdditionalVcFlags: &Parameter{
-			ID:                  "additionalVcFlags",
-			Name:                "Additional Validator Client Flags",
-			Description:         "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Validator},
-			EnvironmentVariable: "VC_ADDITIONAL_FLAGS",
-			Required:            false,
-		},
-	}
-}
-
-// Generates a new Nimbus configuration
-func NewNimbusConfig() *NimbusConfig {
-	return &NimbusConfig{
-		Graffiti: &Parameter{
-			ID:                  "graffiti",
-			Name:                "Custom Graffiti",
-			Description:         "Add a short message to any blocks you propose, so the world can see what you have to say! It has a 16 character limit.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Validator},
-			EnvironmentVariable: "CUSTOM_GRAFFITI",
-			Required:            false,
-		},
-
-		MaxPeers: &Parameter{
-			ID:                  "maxPeers",
-			Name:                "Max Peers",
-			Description:         "The maximum number of peers Nimbus should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                ParameterType_Uint16,
-			Default:             50,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_MAX_PEERS",
-			Required:            true,
-		},
-
-		P2pPort: &Parameter{
-			ID:                  "p2pPort",
-			Name:                "P2P Port",
-			Description:         "The port to use for P2P (blockchain) traffic.",
-			Type:                ParameterType_Uint16,
-			Default:             9001,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_P2P_PORT",
-			Required:            true,
-		},
-
-		ApiPort: &Parameter{
-			ID:                  "apiPort",
-			Name:                "HTTP API Port",
-			Description:         "The port Nimbus should run its HTTP API on.",
-			Type:                ParameterType_Uint16,
-			Default:             5052,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator, ContainerID_Prometheus},
-			EnvironmentVariable: "BN_API_PORT",
-			Required:            true,
-		},
-
-		OpenApiPort: &Parameter{
-			ID:                  "openApiPort",
-			Name:                "Open API Port",
-			Description:         "Enable this to open Nimbus's API port to your local network, so other machines can access it too.",
-			Type:                ParameterType_Bool,
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_OPEN_API_PORT",
-		},
-
-		ContainerName: &Parameter{
-			ID:                "containerName",
-			Name:              "Container Name",
-			Description:       "The tag name of the Nimbus container you want to use on Docker hub.",
-			Type:              ParameterType_String,
-			Default:           "statusim/nimbus-eth2:multiarch-v1.6.0",
-			AffectsContainers: []ContainerID{ContainerID_Eth2},
-			Required:          true,
-		},
-
-		AdditionalFlags: &Parameter{
-			ID:                  "additionalFlags",
-			Name:                "Additional Flags",
-			Description:         "Additional custom command line flags you want to pass to Nimbus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth1},
-			EnvironmentVariable: "BN_ADDITIONAL_FLAGS",
-			Required:            false,
-		},
-	}
-}
-
-// Generates a new Prysm configuration
-func NewPrysmConfig() *PrysmConfig {
-	return &PrysmConfig{
-		Graffiti: &Parameter{
-			ID:                  "graffiti",
-			Name:                "Custom Graffiti",
-			Description:         "Add a short message to any blocks you propose, so the world can see what you have to say! It has a 16 character limit.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Validator},
-			EnvironmentVariable: "CUSTOM_GRAFFITI",
-			Required:            false,
-		},
-
-		TargetPeers: &Parameter{
-			ID:                  "targetPeers",
-			Name:                "Target Peers",
-			Description:         "The number of peers Prysm should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                ParameterType_Uint16,
-			Default:             45,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_MAX_PEERS",
-			Required:            true,
-		},
-
-		P2pPort: &Parameter{
-			ID:                  "p2pPort",
-			Name:                "P2P Port",
-			Description:         "The port to use for P2P (blockchain) traffic.",
-			Type:                ParameterType_Uint16,
-			Default:             9001,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_P2P_PORT",
-			Required:            true,
-		},
-
-		HttpPort: &Parameter{
-			ID:                  "httpPort",
-			Name:                "HTTP Port",
-			Description:         "The port Prysm should run its HTTP (gRPC) API on.",
-			Type:                ParameterType_Uint16,
-			Default:             5052,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator, ContainerID_Prometheus},
-			EnvironmentVariable: "BN_HTTP_PORT",
-			Required:            true,
-		},
-
-		RpcPort: &Parameter{
-			ID:                  "rpcPort",
-			Name:                "RPC Port",
-			Description:         "The port Prysm should run its JSON-RPC API on.",
-			Type:                ParameterType_Uint16,
-			Default:             5053,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator, ContainerID_Prometheus},
-			EnvironmentVariable: "BN_RPC_PORT",
-			Required:            true,
-		},
-
-		OpenApiPorts: &Parameter{
-			ID:                  "openApiPorts",
-			Name:                "Open API Ports",
-			Description:         "Enable this to open Prysm's API ports to your local network, so other machines can access it too.",
-			Type:                ParameterType_Bool,
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_OPEN_API_PORTS",
-		},
-
-		ContainerName: &Parameter{
-			ID:                "containerName",
-			Name:              "Container Name",
-			Description:       "The tag name of the Prysm container you want to use on Docker hub.",
-			Type:              ParameterType_String,
-			Default:           "prysmaticlabs/prysm-beacon-chain:HEAD-d6338f-debug",
-			AffectsContainers: []ContainerID{ContainerID_Eth2},
-			Required:          true,
-		},
-
-		AdditionalBnFlags: &Parameter{
-			ID:                  "additionalBnFlags",
-			Name:                "Additional Beacon Client Flags",
-			Description:         "Additional custom command line flags you want to pass Prysm's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_ADDITIONAL_FLAGS",
-			Required:            false,
-		},
-
-		AdditionalVcFlags: &Parameter{
-			ID:                  "additionalVcFlags",
-			Name:                "Additional Validator Client Flags",
-			Description:         "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Validator},
-			EnvironmentVariable: "VC_ADDITIONAL_FLAGS",
-			Required:            false,
-		},
-	}
-}
-
-// Generates a new Teku configuration
-func NewTekuConfig() *TekuConfig {
-	return &TekuConfig{
-		Graffiti: &Parameter{
-			ID:                  "graffiti",
-			Name:                "Custom Graffiti",
-			Description:         "Add a short message to any blocks you propose, so the world can see what you have to say! It has a 16 character limit.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Validator},
-			EnvironmentVariable: "CUSTOM_GRAFFITI",
-			Required:            false,
-		},
-
-		CheckpointSyncProvider: &Parameter{
-			ID:   "checkpointSyncUrl",
-			Name: "Checkpoint Sync URL",
-			Description: "If you would like to instantly sync using an existing Beacon node, enter its URL.\n" +
-				"Example: https://<project ID>:<secret>@eth2-beacon-prater.infura.io\n" +
-				"Leave this blank if you want to sync normally from the start of the chain.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "CHECKPOINT_SYNC_URL",
-			Required:            false,
-		},
-
-		MaxPeers: &Parameter{
-			ID:                  "maxPeers",
-			Name:                "Max Peers",
-			Description:         "The maximum number of peers Teku should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                ParameterType_Uint16,
-			Default:             74,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_MAX_PEERS",
-			Required:            true,
-		},
-
-		P2pPort: &Parameter{
-			ID:                  "p2pPort",
-			Name:                "P2P Port",
-			Description:         "The port to use for P2P (blockchain) traffic.",
-			Type:                ParameterType_Uint16,
-			Default:             9001,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_P2P_PORT",
-			Required:            true,
-		},
-
-		ApiPort: &Parameter{
-			ID:                  "apiPort",
-			Name:                "HTTP API Port",
-			Description:         "The port Teku should run its HTTP API on.",
-			Type:                ParameterType_Uint16,
-			Default:             5052,
-			AffectsContainers:   []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator, ContainerID_Prometheus},
-			EnvironmentVariable: "BN_API_PORT",
-			Required:            true,
-		},
-
-		OpenApiPort: &Parameter{
-			ID:                  "openApiPort",
-			Name:                "Open API Port",
-			Description:         "Enable this to open Teku's API port to your local network, so other machines can access it too.",
-			Type:                ParameterType_Bool,
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_OPEN_API_PORT",
-		},
-
-		ContainerName: &Parameter{
-			ID:                "containerName",
-			Name:              "Container Name",
-			Description:       "The tag name of the Teku container you want to use on Docker hub.",
-			Type:              ParameterType_String,
-			Default:           "consensys/teku:22.1.0",
-			AffectsContainers: []ContainerID{ContainerID_Eth2},
-			Required:          true,
-		},
-
-		AdditionalBnFlags: &Parameter{
-			ID:                  "additionalBnFlags",
-			Name:                "Additional Beacon Client Flags",
-			Description:         "Additional custom command line flags you want to pass Teku's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Eth2},
-			EnvironmentVariable: "BN_ADDITIONAL_FLAGS",
-			Required:            false,
-		},
-
-		AdditionalVcFlags: &Parameter{
-			ID:                  "additionalVcFlags",
-			Name:                "Additional Validator Client Flags",
-			Description:         "Additional custom command line flags you want to pass Teku's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Validator},
-			EnvironmentVariable: "VC_ADDITIONAL_FLAGS",
-			Required:            false,
+			ID:                   "openRpcPorts",
+			Name:                 "Open RPC Ports",
+			Description:          "Open the HTTP RPC port to your local network, so other local machines can access the Pocket proxy's RPC endpoint.",
+			Default:              false,
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: "EC_OPEN_RPC_PORTS",
+			CanBeBlank:           false,
 		},
 	}
 }
@@ -847,14 +408,14 @@ func NewTekuConfig() *TekuConfig {
 func NewGrafanaConfig() *GrafanaConfig {
 	return &GrafanaConfig{
 		Port: &Parameter{
-			ID:                  "port",
-			Name:                "HTTP Port",
-			Description:         "The port Grafana should run its HTTP server on - this is the port you will connect to in your browser.",
-			Type:                ParameterType_Uint16,
-			Default:             3100,
-			AffectsContainers:   []ContainerID{ContainerID_Grafana},
-			EnvironmentVariable: "GRAFANA_PORT",
-			Required:            true,
+			ID:                   "port",
+			Name:                 "HTTP Port",
+			Description:          "The port Grafana should run its HTTP server on - this is the port you will connect to in your browser.",
+			Type:                 ParameterType_Uint16,
+			Default:              3100,
+			AffectsContainers:    []ContainerID{ContainerID_Grafana},
+			EnvironmentVariables: "GRAFANA_PORT",
+			CanBeBlank:           true,
 		},
 
 		ContainerName: &Parameter{
@@ -864,18 +425,18 @@ func NewGrafanaConfig() *GrafanaConfig {
 			Type:              ParameterType_String,
 			Default:           "grafana/grafana:8.3.2",
 			AffectsContainers: []ContainerID{ContainerID_Grafana},
-			Required:          true,
+			CanBeBlank:        true,
 		},
 
 		AdditionalFlags: &Parameter{
-			ID:                  "additionalFlags",
-			Name:                "Additional Flags",
-			Description:         "Additional custom command line flags you want to pass to Grafana, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Grafana},
-			EnvironmentVariable: "GRAFANA_ADDITIONAL_FLAGS",
-			Required:            false,
+			ID:                   "additionalFlags",
+			Name:                 "Additional Flags",
+			Description:          "Additional custom command line flags you want to pass to Grafana, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 ParameterType_String,
+			Default:              "",
+			AffectsContainers:    []ContainerID{ContainerID_Grafana},
+			EnvironmentVariables: "GRAFANA_ADDITIONAL_FLAGS",
+			CanBeBlank:           false,
 		},
 	}
 }
@@ -884,24 +445,24 @@ func NewGrafanaConfig() *GrafanaConfig {
 func NewPrometheusConfig() *PrometheusConfig {
 	return &PrometheusConfig{
 		Port: &Parameter{
-			ID:                  "port",
-			Name:                "API Port",
-			Description:         "The port Prometheus should make its statistics available on.",
-			Type:                ParameterType_Uint16,
-			Default:             9091,
-			AffectsContainers:   []ContainerID{ContainerID_Prometheus},
-			EnvironmentVariable: "PROMETHEUS_PORT",
-			Required:            true,
+			ID:                   "port",
+			Name:                 "API Port",
+			Description:          "The port Prometheus should make its statistics available on.",
+			Type:                 ParameterType_Uint16,
+			Default:              9091,
+			AffectsContainers:    []ContainerID{ContainerID_Prometheus},
+			EnvironmentVariables: "PROMETHEUS_PORT",
+			CanBeBlank:           true,
 		},
 
 		OpenPort: &Parameter{
-			ID:                  "openPort",
-			Name:                "Open Port",
-			Description:         "Enable this to open Prometheus's port to your local network, so other machines can access it too.",
-			Type:                ParameterType_Bool,
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Prometheus},
-			EnvironmentVariable: "PROMETHEUS_PORT",
+			ID:                   "openPort",
+			Name:                 "Open Port",
+			Description:          "Enable this to open Prometheus's port to your local network, so other machines can access it too.",
+			Type:                 ParameterType_Bool,
+			Default:              false,
+			AffectsContainers:    []ContainerID{ContainerID_Prometheus},
+			EnvironmentVariables: "PROMETHEUS_PORT",
 		},
 
 		ContainerName: &Parameter{
@@ -911,18 +472,18 @@ func NewPrometheusConfig() *PrometheusConfig {
 			Type:              ParameterType_String,
 			Default:           "prom/prometheus:v2.31.1",
 			AffectsContainers: []ContainerID{ContainerID_Prometheus},
-			Required:          true,
+			CanBeBlank:        true,
 		},
 
 		AdditionalFlags: &Parameter{
-			ID:                  "additionalFlags",
-			Name:                "Additional Flags",
-			Description:         "Additional custom command line flags you want to pass to Prometheus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Prometheus},
-			EnvironmentVariable: "PROMETHEUS_ADDITIONAL_FLAGS",
-			Required:            false,
+			ID:                   "additionalFlags",
+			Name:                 "Additional Flags",
+			Description:          "Additional custom command line flags you want to pass to Prometheus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 ParameterType_String,
+			Default:              "",
+			AffectsContainers:    []ContainerID{ContainerID_Prometheus},
+			EnvironmentVariables: "PROMETHEUS_ADDITIONAL_FLAGS",
+			CanBeBlank:           false,
 		},
 	}
 }
@@ -931,25 +492,25 @@ func NewPrometheusConfig() *PrometheusConfig {
 func NewExporterConfig() *ExporterConfig {
 	return &ExporterConfig{
 		RootFs: &Parameter{
-			ID:                  "enableRootFs",
-			Name:                "Allow Root Filesystem Access",
-			Description:         "Give the exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
-			Type:                ParameterType_Bool,
-			Default:             false,
-			AffectsContainers:   []ContainerID{ContainerID_Exporter},
-			EnvironmentVariable: "EXPORTER_ROOT_FS",
-			Required:            false,
+			ID:                   "enableRootFs",
+			Name:                 "Allow Root Filesystem Access",
+			Description:          "Give the exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
+			Type:                 ParameterType_Bool,
+			Default:              false,
+			AffectsContainers:    []ContainerID{ContainerID_Exporter},
+			EnvironmentVariables: "EXPORTER_ROOT_FS",
+			CanBeBlank:           false,
 		},
 
 		Port: &Parameter{
-			ID:                  "port",
-			Name:                "API Port",
-			Description:         "The port the Exporter should make its statistics available on.",
-			Type:                ParameterType_Uint16,
-			Default:             9103,
-			AffectsContainers:   []ContainerID{ContainerID_Exporter},
-			EnvironmentVariable: "EXPORTER_PORT",
-			Required:            true,
+			ID:                   "port",
+			Name:                 "API Port",
+			Description:          "The port the Exporter should make its statistics available on.",
+			Type:                 ParameterType_Uint16,
+			Default:              9103,
+			AffectsContainers:    []ContainerID{ContainerID_Exporter},
+			EnvironmentVariables: "EXPORTER_PORT",
+			CanBeBlank:           true,
 		},
 
 		ContainerName: &Parameter{
@@ -959,18 +520,18 @@ func NewExporterConfig() *ExporterConfig {
 			Type:              ParameterType_String,
 			Default:           "prom/node-exporter:v1.3.1",
 			AffectsContainers: []ContainerID{ContainerID_Exporter},
-			Required:          true,
+			CanBeBlank:        true,
 		},
 
 		AdditionalFlags: &Parameter{
-			ID:                  "additionalFlags",
-			Name:                "Additional Flags",
-			Description:         "Additional custom command line flags you want to pass to the Exporter, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                ParameterType_String,
-			Default:             "",
-			AffectsContainers:   []ContainerID{ContainerID_Exporter},
-			EnvironmentVariable: "EXPORTER_ADDITIONAL_FLAGS",
-			Required:            false,
+			ID:                   "additionalFlags",
+			Name:                 "Additional Flags",
+			Description:          "Additional custom command line flags you want to pass to the Exporter, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 ParameterType_String,
+			Default:              "",
+			AffectsContainers:    []ContainerID{ContainerID_Exporter},
+			EnvironmentVariables: "EXPORTER_ADDITIONAL_FLAGS",
+			CanBeBlank:           false,
 		},
 	}
 }
