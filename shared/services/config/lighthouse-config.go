@@ -7,6 +7,9 @@ type LighthouseConfig struct {
 	// Common parameters shared across clients
 	CommonParams *ConsensusCommonParams
 
+	// Common parameters that Lighthouse doesn't support and should be hidden
+	UnsupportedCommonParams []string
+
 	// The Docker Hub tag for Lighthouse
 	ContainerTag *Parameter
 

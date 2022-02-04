@@ -7,6 +7,9 @@ type TekuConfig struct {
 	// Common parameters shared across clients
 	CommonParams *ConsensusCommonParams
 
+	// Common parameters that Teku doesn't support and should be hidden
+	UnsupportedCommonParams []string
+
 	// The Docker Hub tag for Lighthouse
 	ContainerTag *Parameter
 
@@ -21,6 +24,10 @@ type TekuConfig struct {
 func NewTekuConfig(commonParams *ConsensusCommonParams) *TekuConfig {
 	return &TekuConfig{
 		CommonParams: commonParams,
+
+		UnsupportedCommonParams: []string{
+			doppelgangerDetectionID,
+		},
 
 		ContainerTag: &Parameter{
 			ID:                   "containerTag",

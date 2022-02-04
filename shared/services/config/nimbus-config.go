@@ -7,6 +7,9 @@ type NimbusConfig struct {
 	// Common parameters shared across clients
 	CommonParams *ConsensusCommonParams
 
+	// Common parameters that Nimbus doesn't support and should be hidden
+	UnsupportedCommonParams []string
+
 	// The Docker Hub tag for Nimbus
 	ContainerName *Parameter
 

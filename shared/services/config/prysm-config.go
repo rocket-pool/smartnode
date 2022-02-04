@@ -9,13 +9,16 @@ import (
 const prysmBnTagAmd64 string = "prysmaticlabs/prysm-beacon-chain:HEAD-e26cde-debug"
 const prysmVcTagAmd64 string = "prysmaticlabs/prysm-validator:HEAD-e26cde-debug"
 const prysmTagArm64 string = "rocketpool/prysm:v2.0.6"
-const defaultRpcPort uint16 = 5053
-const defaultOpenRpcPort bool = false
+const defaultPrysmRpcPort uint16 = 5053
+const defaultPrysmOpenRpcPort bool = false
 
 // Configuration for Prysm
 type PrysmConfig struct {
 	// Common parameters shared across clients
 	CommonParams *ConsensusCommonParams
+
+	// Common parameters that Prysm doesn't support and should be hidden
+	UnsupportedCommonParams []string
 
 	// The RPC port for BN / VC connections
 	RpcPort *Parameter
@@ -41,12 +44,16 @@ func NewPrysmConfig(commonParams *ConsensusCommonParams) *PrysmConfig {
 	return &PrysmConfig{
 		CommonParams: commonParams,
 
+		UnsupportedCommonParams: []string{
+			checkpointSyncUrlID,
+		},
+
 		RpcPort: &Parameter{
 			ID:                   "rpcPort",
 			Name:                 "RPC Port",
 			Description:          "The port Prysm should run its JSON-RPC API on.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultRpcPort,
+			Default:              defaultPrysmRpcPort,
 			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_RPC_PORT"},
 			CanBeBlank:           false,
@@ -58,7 +65,7 @@ func NewPrysmConfig(commonParams *ConsensusCommonParams) *PrysmConfig {
 			Name:                 "Open RPC Port",
 			Description:          "Enable this to open Prysm's API ports to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
-			Default:              defaultOpenRpcPort,
+			Default:              defaultPrysmOpenRpcPort,
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_RPC_PORT"},
 			CanBeBlank:           false,

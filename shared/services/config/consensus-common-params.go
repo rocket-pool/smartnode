@@ -2,14 +2,15 @@ package config
 
 // Param IDs
 const checkpointSyncUrlID string = "checkpointSyncUrl"
+const doppelgangerDetectionID string = "doppelgangerDetection"
 
 // Defaults
 const defaultGraffiti string = ""
 const defaultCheckpointSyncProvider string = ""
 const defaultMaxPeers uint16 = 50
 const defaultP2pPort uint16 = 9001
-const defaultApiPort uint16 = 5052
-const defaultOpenApiPort bool = false
+const defaultBnApiPort uint16 = 5052
+const defaultOpenBnApiPort bool = false
 const defaultDoppelgangerDetection bool = true
 
 // Common parameters shared by all of the Beacon Clients
@@ -94,7 +95,7 @@ func NewConsensusCommonParams() *ConsensusCommonParams {
 			Name:                 "HTTP API Port",
 			Description:          "The port %s should run its HTTP API on.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultApiPort,
+			Default:              defaultBnApiPort,
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator, ContainerID_Prometheus},
 			EnvironmentVariables: []string{"BN_API_PORT"},
 			CanBeBlank:           false,
@@ -106,7 +107,7 @@ func NewConsensusCommonParams() *ConsensusCommonParams {
 			Name:                 "Open API Port",
 			Description:          "Enable this to open %s's API port to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
-			Default:              defaultOpenApiPort,
+			Default:              defaultOpenBnApiPort,
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_API_PORT"},
 			CanBeBlank:           false,
@@ -114,7 +115,7 @@ func NewConsensusCommonParams() *ConsensusCommonParams {
 		},
 
 		DoppelgangerDetection: &Parameter{
-			ID:                   "doppelgangerDetection",
+			ID:                   doppelgangerDetectionID,
 			Name:                 "Enable Doppelgänger Detection",
 			Description:          "If enabled, %s will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, %s will disable validation duties for them to prevent you from being slashed.",
 			Type:                 ParameterType_Bool,
