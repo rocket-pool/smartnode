@@ -165,11 +165,7 @@ func (wiz *newUserWizard) createExecutionDockerModal() {
 			"Infura",
 			"Pocket",
 		},
-		[]string{
-			"Geth is one of the three original implementations of the Ethereum protocol. It is written in Go, fully open source and licensed under the GNU LGPL v3.",
-			"Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
-			"Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
-		},
+		[]string{},
 		DirectionalModalVertical)
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 3 {
