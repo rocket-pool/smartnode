@@ -8,6 +8,9 @@ const defaultGrafanaPort uint16 = 3100
 
 // Configuration for Grafana
 type GrafanaConfig struct {
+	// The master configuration this belongs to
+	MasterConfig *Configuration
+
 	// The HTTP port to serve on
 	Port *Parameter
 
@@ -16,8 +19,10 @@ type GrafanaConfig struct {
 }
 
 // Generates a new Grafana config
-func NewGrafanaConfig() *GrafanaConfig {
+func NewGrafanaConfig(config *Configuration) *GrafanaConfig {
 	return &GrafanaConfig{
+		MasterConfig: config,
+
 		Port: &Parameter{
 			ID:                   "port",
 			Name:                 "HTTP Port",

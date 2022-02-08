@@ -1,12 +1,19 @@
 package config
 
+import (
+	"fmt"
+
+	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+)
+
 type newUserWizard struct {
 	md                     *mainDisplay
 	welcomeModal           *page
-	networkModal           *page
-	executionModeModal     *page
-	executionDockerModal   *page
-	executionExternalModal *DirectionalModal
+	networkModal           *modalLayout
+	executionModeModal     *modalLayout
+	executionLocalModal    *page
+	executionExternalModal *page
 	consensusModeModal     *DirectionalModal
 	consensusDockerModal   *page
 	consensusExternalMoadl *DirectionalModal
@@ -36,12 +43,7 @@ func (wiz *newUserWizard) createWelcomeModal() {
 	modal := newModalLayout(
 		wiz.md.app,
 		60,
-		`______           _        _    ______           _
-| ___ \         | |      | |   | ___ \         | |
-| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
-|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
-| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
-\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|`+"\n\n"+
+		shared.Logo+"\n\n"+
 
 			"Welcome to the Smartnode configuration wizard!\n\n"+
 			"Since this is your first time configuring the Smartnode, we'll walk you through the basic setup.\n\n",
@@ -49,7 +51,8 @@ func (wiz *newUserWizard) createWelcomeModal() {
 	)
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
-			wiz.md.setPage(wiz.networkModal)
+			wiz.md.setPage(wiz.networkModal.page)
+			wiz.networkModal.focus(0)
 		} else if buttonIndex == 1 {
 			wiz.md.app.Stop()
 		}
@@ -58,28 +61,6 @@ func (wiz *newUserWizard) createWelcomeModal() {
 	page := newPage(nil, "new-user-welcome", "New User Wizard > [1/8] Welcome", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 
-	/*
-		modal := NewDirectionalModal(DirectionalModalHorizontal, wiz.md.app).
-			SetText(`
-			______           _        _    ______           _
-				| ___ \         | |      | |   | ___ \         | |
-				| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
-				|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
-				| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
-				\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|` + "\n\n" +
-
-				"Welcome to the Smartnode configuration wizard!\n\n" +
-				"Since this is your first time configuring the Smartnode, we'll walk you through the basic setup.\n\n",
-			).
-			AddButtons([]string{"Next", "Quit", "this is a really long button to make the thing fit"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				if buttonIndex == 0 {
-					wiz.md.app.SetRoot(wiz.networkModal, true)
-				} else if buttonIndex == 1 {
-					wiz.md.app.Stop()
-				}
-			})
-	*/
 	wiz.welcomeModal = page
 
 }
@@ -87,68 +68,82 @@ func (wiz *newUserWizard) createWelcomeModal() {
 // Create the network modal
 func (wiz *newUserWizard) createNetworkModal() {
 
-	modal := newModalLayout(
-		wiz.md.app,
-		40,
-		"Which network would you like to use?",
-		[]string{"The Prater Testnet", "The Ethereum Mainnet"},
-		nil,
-		DirectionalModalVertical)
-	modal.done = func(buttonIndex int, buttonLabel string) {
-		if buttonIndex == 2 {
-			wiz.md.app.Stop()
-		} else {
-			wiz.md.setPage(wiz.executionModeModal)
-		}
+	// Create the button names and descriptions from the config
+	networks := wiz.md.config.Smartnode.Network.Options
+	networkNames := []string{}
+	networkDescriptions := []string{}
+	for _, network := range networks {
+		networkNames = append(networkNames, network.Name)
+		networkDescriptions = append(networkDescriptions, network.Description)
 	}
 
+	// Create the modal
+	modal := newModalLayout(
+		wiz.md.app,
+		70,
+		"Let's start by choosing which network you'd like to use.\n\n",
+		networkNames,
+		networkDescriptions,
+		DirectionalModalVertical)
+
+	// Set up the callbacks
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		wiz.md.config.Smartnode.Network.Value = networks[buttonIndex].Value
+		wiz.md.setPage(wiz.executionModeModal.page)
+		wiz.executionModeModal.focus(0)
+	}
+
+	// Create the page
+	wiz.networkModal = modal
 	page := newPage(nil, "new-user-network", "New User Wizard > [2/8] Network", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
-
-	/*
-		modal := NewDirectionalModal(DirectionalModalVertical, wiz.md.app).
-			SetText("Which network would you like to use?").
-			AddButtons([]string{"The Prater Testnet", "The Ethereum Mainnet", "Quit without Saving"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				if buttonIndex == 2 {
-					wiz.md.app.Stop()
-				} else {
-					wiz.md.app.SetRoot(wiz.executionModeModal, true)
-				}
-			})
-	*/
-	wiz.networkModal = page
-
+	modal.page = page
 }
 
 // Create the execution client mode selection modal
 func (wiz *newUserWizard) createExecutionModeModal() {
 
+	// Create the button names and descriptions from the config
+	modes := wiz.md.config.ExecutionClientMode.Options
+	modeNames := []string{}
+	modeDescriptions := []string{}
+	for _, mode := range modes {
+		modeNames = append(modeNames, mode.Name)
+		modeDescriptions = append(modeDescriptions, mode.Description)
+	}
+
+	// Create the modal
 	modal := newModalLayout(
 		wiz.md.app,
-		60,
-		"Let's start by choosing how you'd like to run your Execution Client (formerly eth1 client).\n\n"+
-			"Would you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (formerly known as \"Hybrid Mode\")?",
-		[]string{
+		76,
+		"Now let's decide which mode you'd like to use for the Execution client (formerly eth1 client).\n\n"+
+			"Would you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (also known as \"Hybrid Mode\")?",
+		/*[]string{
 			"Let Rocket Pool Manage its Own Client (Default)",
 			"Use an Existing External Client (Hybrid Mode)",
-		},
-		nil,
+		},*/
+		modeNames,
+		modeDescriptions,
 		DirectionalModalVertical)
+
+	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
-		if buttonIndex == 0 {
-			wiz.md.setPage(wiz.executionDockerModal)
-		} else if buttonIndex == 1 {
-			wiz.md.app.SetRoot(wiz.executionExternalModal, true)
-		} else if buttonIndex == 2 {
-			wiz.md.app.Stop()
+		wiz.md.config.ExecutionClientMode.Value = modes[buttonIndex].Value
+		switch modes[buttonIndex].Value {
+		case config.Mode_Local:
+			wiz.md.setPage(wiz.executionLocalModal)
+		case config.Mode_External:
+			wiz.md.setPage(wiz.executionExternalModal)
+		default:
+			panic(fmt.Sprintf("Unknown execution client mode %s", modes[buttonIndex].Value))
 		}
 	}
 
+	// Create the page
+	wiz.executionModeModal = modal
 	page := newPage(nil, "new-user-execution-mode", "New User Wizard > [3/8] Execution Client Mode", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
-
-	wiz.executionModeModal = page
+	modal.page = page
 
 }
 
@@ -157,7 +152,7 @@ func (wiz *newUserWizard) createExecutionDockerModal() {
 
 	modal := newModalLayout(
 		wiz.md.app,
-		70,
+		90,
 		"Please select the Execution client you would like to use.\n\n"+
 			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth1-clients to learn more about them.",
 		[]string{
@@ -178,7 +173,7 @@ func (wiz *newUserWizard) createExecutionDockerModal() {
 	page := newPage(nil, "new-user-execution-docker", "New User Wizard > [4/8] Execution Client", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 
-	wiz.executionDockerModal = page
+	wiz.executionLocalModal = page
 
 }
 

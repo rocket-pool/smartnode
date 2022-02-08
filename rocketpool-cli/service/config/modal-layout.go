@@ -13,6 +13,8 @@ type modalLayout struct {
 	// The parent application that owns this modal (for focus changes on vertical layouts)
 	app *tview.Application
 
+	width int
+
 	borderGrid  *tview.Grid
 	contentGrid *tview.Grid
 	buttonGrid  *tview.Grid
@@ -25,13 +27,19 @@ type modalLayout struct {
 	selected int
 
 	descriptionBox *tview.TextView
+
+	buttonDescriptions []string
+
+	page *page
 }
 
 // Creates a new ModalLayout instance
 func newModalLayout(app *tview.Application, width int, text string, buttonLabels []string, buttonDescriptions []string, direction int) *modalLayout {
 
 	layout := &modalLayout{
-		app: app,
+		app:                app,
+		width:              width,
+		buttonDescriptions: buttonDescriptions,
 	}
 
 	// Create the button grid
@@ -44,6 +52,7 @@ func newModalLayout(app *tview.Application, width int, text string, buttonLabels
 		SetWordWrap(true).
 		SetTextColor(tview.Styles.PrimaryTextColor)
 	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	textView.SetBorderPadding(0, 0, 1, 1)
 
 	// Row spacers with the correct background color
 	spacer1 := tview.NewBox().
@@ -238,6 +247,9 @@ func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescrip
 			}(index, label)
 		}
 
+		bottomFormSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+		formsFlex.AddItem(bottomFormSpacer, 0, 2, false)
+
 		// Create the columns, including the left and right spacers
 		buttonsWidth -= 2
 		if len(buttonDescriptions) == 0 {
@@ -256,6 +268,7 @@ func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescrip
 			layout.descriptionBox = tview.NewTextView().
 				SetWordWrap(true)
 			layout.descriptionBox.SetBorder(true)
+			layout.descriptionBox.SetBorderPadding(0, 0, 1, 1)
 			layout.descriptionBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 			layout.descriptionBox.SetTitle("Description")
 
@@ -271,6 +284,14 @@ func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescrip
 			buttonGrid.AddItem(rightSpacer, 0, 4, 1, 1, 0, 0, false)
 
 			height = len(layout.forms)*2 + 1
+
+			// Get the description box height
+			for _, description := range buttonDescriptions {
+				lines := tview.WordWrap(description, layout.width*2/5-6)
+				if len(lines) > height {
+					height = len(lines)
+				}
+			}
 		}
 
 	}
@@ -304,4 +325,17 @@ func (layout *modalLayout) getSizedButtonLabels(buttonLabels []string) []string 
 
 	return sizedButtonLabels
 
+}
+
+// Focuses the given button
+func (layout *modalLayout) focus(index int) {
+	if index < 0 || index > len(layout.forms)-1 {
+		return
+	}
+
+	if layout.descriptionBox != nil {
+		layout.descriptionBox.SetText(layout.buttonDescriptions[index])
+	}
+	layout.app.SetFocus(layout.forms[index])
+	layout.selected = index
 }

@@ -12,6 +12,9 @@ const defaultProjectName string = "rocketpool"
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
+	// The master configuration this belongs to
+	MasterConfig *Configuration
+
 	// Docker container prefix
 	ProjectName Parameter
 
@@ -38,9 +41,11 @@ type SmartnodeConfig struct {
 }
 
 // Generates a new Smartnode configuration
-func NewSmartnodeConfig() *SmartnodeConfig {
+func NewSmartnodeConfig(config *Configuration) *SmartnodeConfig {
 
 	return &SmartnodeConfig{
+		MasterConfig: config,
+
 		ProjectName: Parameter{
 			ID:                   "projectName",
 			Name:                 "Project Name",
@@ -91,10 +96,12 @@ func NewSmartnodeConfig() *SmartnodeConfig {
 				ID:          "mainnet",
 				Name:        "Ethereum Mainnet",
 				Description: "This is the real Ethereum main network, using real ETH and real RPL to make real validators.",
+				Value:       Network_Mainnet,
 			}, {
 				ID:          "prater",
 				Name:        "Prater Testnet",
 				Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to mainnet.",
+				Value:       Network_Prater,
 			}},
 		},
 

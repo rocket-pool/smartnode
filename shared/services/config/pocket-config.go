@@ -2,8 +2,8 @@ package config
 
 // Configuration for Pocket
 type PocketConfig struct {
-	// Common parameters shared across clients
-	CommonParams *ExecutionCommonParams
+	// The master configuration this belongs to
+	MasterConfig *Configuration
 
 	// Common parameters that Pocket doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -13,9 +13,9 @@ type PocketConfig struct {
 }
 
 // Generates a new Pocket configuration
-func NewPocketConfig(commonParams *ExecutionCommonParams) *PocketConfig {
+func NewPocketConfig(config *Configuration) *PocketConfig {
 	return &PocketConfig{
-		CommonParams: commonParams,
+		MasterConfig: config,
 
 		UnsupportedCommonParams: []string{ecWsPortID},
 

@@ -14,8 +14,8 @@ const defaultGethP2pPort uint16 = 30303
 
 // Configuration for Geth
 type GethConfig struct {
-	// Common parameters shared across clients
-	CommonParams *ExecutionCommonParams
+	// The master configuration this belongs to
+	MasterConfig *Configuration
 
 	// Common parameters that Geth doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -43,9 +43,9 @@ type GethConfig struct {
 }
 
 // Generates a new Geth configuration
-func NewGethConfig(commonParams *ExecutionCommonParams) *GethConfig {
+func NewGethConfig(config *Configuration) *GethConfig {
 	return &GethConfig{
-		CommonParams: commonParams,
+		MasterConfig: config,
 
 		UnsupportedCommonParams: []string{},
 

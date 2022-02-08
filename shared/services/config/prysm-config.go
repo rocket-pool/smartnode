@@ -14,8 +14,8 @@ const defaultPrysmOpenRpcPort bool = false
 
 // Configuration for Prysm
 type PrysmConfig struct {
-	// Common parameters shared across clients
-	CommonParams *ConsensusCommonParams
+	// The master configuration this belongs to
+	MasterConfig *Configuration
 
 	// Common parameters that Prysm doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -40,9 +40,9 @@ type PrysmConfig struct {
 }
 
 // Generates a new Prysm configuration
-func NewPrysmConfig(commonParams *ConsensusCommonParams) *PrysmConfig {
+func NewPrysmConfig(config *Configuration) *PrysmConfig {
 	return &PrysmConfig{
-		CommonParams: commonParams,
+		MasterConfig: config,
 
 		UnsupportedCommonParams: []string{
 			checkpointSyncUrlID,

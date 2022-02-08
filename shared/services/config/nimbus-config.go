@@ -4,8 +4,8 @@ const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.6.0"
 
 // Configuration for Nimbus
 type NimbusConfig struct {
-	// Common parameters shared across clients
-	CommonParams *ConsensusCommonParams
+	// The master configuration this belongs to
+	MasterConfig *Configuration
 
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -18,9 +18,9 @@ type NimbusConfig struct {
 }
 
 // Generates a new Nimbus configuration
-func NewNimbusConfig(commonParams *ConsensusCommonParams) *NimbusConfig {
+func NewNimbusConfig(config *Configuration) *NimbusConfig {
 	return &NimbusConfig{
-		CommonParams: commonParams,
+		MasterConfig: config,
 
 		ContainerName: &Parameter{
 			ID:                   "containerTag",

@@ -2,8 +2,8 @@ package config
 
 // Configuration for Infura
 type InfuraConfig struct {
-	// Common parameters shared across clients
-	CommonParams *ExecutionCommonParams
+	// The master configuration this belongs to
+	MasterConfig *Configuration
 
 	// Common parameters that Infura doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -13,9 +13,9 @@ type InfuraConfig struct {
 }
 
 // Generates a new Infura configuration
-func NewInfuraConfig(commonParams *ExecutionCommonParams) *InfuraConfig {
+func NewInfuraConfig(config *Configuration) *InfuraConfig {
 	return &InfuraConfig{
-		CommonParams: commonParams,
+		MasterConfig: config,
 
 		ProjectID: &Parameter{
 			ID:                   "projectID",

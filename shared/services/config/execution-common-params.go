@@ -12,6 +12,9 @@ const defaultOpenEcApiPort bool = false
 
 // Configuration for the Execution client
 type ExecutionCommonParams struct {
+	// The master configuration this belongs to
+	MasterConfig *Configuration
+
 	// The HTTP API port
 	HttpPort *Parameter
 
@@ -23,8 +26,10 @@ type ExecutionCommonParams struct {
 }
 
 // Create a new ExecutionCommonParams struct
-func NewExecutionCommonParams() *ExecutionCommonParams {
+func NewExecutionCommonParams(config *Configuration) *ExecutionCommonParams {
 	return &ExecutionCommonParams{
+		MasterConfig: config,
+
 		HttpPort: &Parameter{
 			ID:                   ecHttpPortID,
 			Name:                 "HTTP Port",

@@ -4,8 +4,8 @@ const lighthouseTag string = "sigp/lighthouse:v2.1.2"
 
 // Configuration for Lighthouse
 type LighthouseConfig struct {
-	// Common parameters shared across clients
-	CommonParams *ConsensusCommonParams
+	// The master configuration this belongs to
+	MasterConfig *Configuration
 
 	// Common parameters that Lighthouse doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -21,9 +21,9 @@ type LighthouseConfig struct {
 }
 
 // Generates a new Lighthouse configuration
-func NewLighthouseConfig(commonParams *ConsensusCommonParams) *LighthouseConfig {
+func NewLighthouseConfig(config *Configuration) *LighthouseConfig {
 	return &LighthouseConfig{
-		CommonParams: commonParams,
+		MasterConfig: config,
 
 		ContainerTag: &Parameter{
 			ID:                   "containerTag",

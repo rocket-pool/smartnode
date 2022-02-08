@@ -9,6 +9,9 @@ const defaultExporterPort uint16 = 9103
 
 // Configuration for Exporter
 type ExporterConfig struct {
+	// The master configuration this belongs to
+	MasterConfig *Configuration
+
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
 	RootFs *Parameter
 
@@ -20,8 +23,10 @@ type ExporterConfig struct {
 }
 
 // Generates a new Exporter config
-func NewExporterConfig() *ExporterConfig {
+func NewExporterConfig(config *Configuration) *ExporterConfig {
 	return &ExporterConfig{
+		MasterConfig: config,
+
 		RootFs: &Parameter{
 			ID:                   "enableRootFs",
 			Name:                 "Allow Root Filesystem Access",

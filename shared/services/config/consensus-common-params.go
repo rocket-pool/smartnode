@@ -15,6 +15,9 @@ const defaultDoppelgangerDetection bool = true
 
 // Common parameters shared by all of the Beacon Clients
 type ConsensusCommonParams struct {
+	// The master configuration this belongs to
+	MasterConfig *Configuration
+
 	// Custom proposal graffiti
 	Graffiti *Parameter
 
@@ -38,8 +41,10 @@ type ConsensusCommonParams struct {
 }
 
 // Create a new ConsensusCommonParams struct
-func NewConsensusCommonParams() *ConsensusCommonParams {
+func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
 	return &ConsensusCommonParams{
+		MasterConfig: config,
+
 		Graffiti: &Parameter{
 			ID:                   "graffiti",
 			Name:                 "Custom Graffiti",

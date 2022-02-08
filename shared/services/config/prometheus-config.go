@@ -9,6 +9,9 @@ const defaultPrometheusOpenPort bool = false
 
 // Configuration for Prometheus
 type PrometheusConfig struct {
+	// The master configuration this belongs to
+	MasterConfig *Configuration
+
 	// The port to serve metrics on
 	Port *Parameter
 
@@ -20,8 +23,10 @@ type PrometheusConfig struct {
 }
 
 // Generates a new Prometheus config
-func NewPrometheusConfig() *PrometheusConfig {
+func NewPrometheusConfig(config *Configuration) *PrometheusConfig {
 	return &PrometheusConfig{
+		MasterConfig: config,
+
 		Port: &Parameter{
 			ID:                   "port",
 			Name:                 "API Port",

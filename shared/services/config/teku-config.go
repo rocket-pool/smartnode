@@ -4,8 +4,8 @@ const tekuTag string = "consensys/teku:22.1.1"
 
 // Configuration for Teku
 type TekuConfig struct {
-	// Common parameters shared across clients
-	CommonParams *ConsensusCommonParams
+	// The master configuration this belongs to
+	MasterConfig *Configuration
 
 	// Common parameters that Teku doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -21,9 +21,9 @@ type TekuConfig struct {
 }
 
 // Generates a new Teku configuration
-func NewTekuConfig(commonParams *ConsensusCommonParams) *TekuConfig {
+func NewTekuConfig(config *Configuration) *TekuConfig {
 	return &TekuConfig{
-		CommonParams: commonParams,
+		MasterConfig: config,
 
 		UnsupportedCommonParams: []string{
 			doppelgangerDetectionID,

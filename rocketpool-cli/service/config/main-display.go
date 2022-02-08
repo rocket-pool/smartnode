@@ -6,6 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 // This represents the primary TUI for the configuration command
@@ -17,10 +18,11 @@ type mainDisplay struct {
 	mainGrid      *tview.Grid
 	newUserWizard *newUserWizard
 	settingsHome  *settingsHome
+	config        *config.Configuration
 }
 
 // Creates a new MainDisplay instance.
-func newMainDisplay(app *tview.Application) *mainDisplay {
+func newMainDisplay(app *tview.Application, config *config.Configuration) *mainDisplay {
 
 	// Create the main grid
 	grid := tview.NewGrid().
@@ -51,6 +53,7 @@ func newMainDisplay(app *tview.Application) *mainDisplay {
 		app:       app,
 		content:   grid.Box,
 		mainGrid:  grid,
+		config:    config,
 	}
 
 	// Create all of the child elements
