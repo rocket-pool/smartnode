@@ -10,7 +10,7 @@ const defaultPrometheusOpenPort bool = false
 // Configuration for Prometheus
 type PrometheusConfig struct {
 	// The master configuration this belongs to
-	MasterConfig *Configuration
+	MasterConfig *MasterConfig
 
 	// The port to serve metrics on
 	Port *Parameter
@@ -23,7 +23,7 @@ type PrometheusConfig struct {
 }
 
 // Generates a new Prometheus config
-func NewPrometheusConfig(config *Configuration) *PrometheusConfig {
+func NewPrometheusConfig(config *MasterConfig) *PrometheusConfig {
 	return &PrometheusConfig{
 		MasterConfig: config,
 
@@ -32,7 +32,7 @@ func NewPrometheusConfig(config *Configuration) *PrometheusConfig {
 			Name:                 "API Port",
 			Description:          "The port Prometheus should make its statistics available on.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultPrometheusPort,
+			Default:              map[Network]interface{}{Network_All: defaultPrometheusPort},
 			AffectsContainers:    []ContainerID{ContainerID_Prometheus},
 			EnvironmentVariables: []string{"PROMETHEUS_PORT"},
 			CanBeBlank:           true,
@@ -44,7 +44,7 @@ func NewPrometheusConfig(config *Configuration) *PrometheusConfig {
 			Name:                 "Open Port",
 			Description:          "Enable this to open Prometheus's port to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
-			Default:              defaultPrometheusOpenPort,
+			Default:              map[Network]interface{}{Network_All: defaultPrometheusOpenPort},
 			AffectsContainers:    []ContainerID{ContainerID_Prometheus},
 			EnvironmentVariables: []string{"PROMETHEUS_OPEN_PORT"},
 			CanBeBlank:           false,
@@ -56,7 +56,7 @@ func NewPrometheusConfig(config *Configuration) *PrometheusConfig {
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Prometheus container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              prometheusTag,
+			Default:              map[Network]interface{}{Network_All: prometheusTag},
 			AffectsContainers:    []ContainerID{ContainerID_Prometheus},
 			EnvironmentVariables: []string{"PROMETHEUS_CONTAINER_TAG"},
 			CanBeBlank:           false,

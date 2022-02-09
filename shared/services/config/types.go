@@ -4,6 +4,8 @@ type ContainerID int
 type Network int
 type Mode int
 type ParameterType int
+type ExecutionClient int
+type ConsensusClient int
 
 // Enum to describe which container(s) a parameter impacts, so the Smartnode knows which
 // ones to restart upon a settings change
@@ -26,6 +28,7 @@ const (
 	Network_Unknown Network = iota
 	Network_Mainnet
 	Network_Prater
+	Network_All
 )
 
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)
@@ -47,13 +50,30 @@ const (
 	ParameterType_Choice
 )
 
+// Enum to describe the Execution client options
+const (
+	ExecutionClient_Unknown ExecutionClient = iota
+	ExecutionClient_Geth
+	ExecutionClient_Infura
+	ExecutionClient_Pocket
+)
+
+// Enum to describe the Consensus client options
+const (
+	ConsensusClient_Unknown ConsensusClient = iota
+	ConsensusClient_Lighthouse
+	ConsensusClient_Nimbus
+	ConsensusClient_Prysm
+	ConsensusClient_Teku
+)
+
 // A parameter that can be configured by the user
 type Parameter struct {
 	ID                   string
 	Name                 string
 	Description          string
 	Type                 ParameterType
-	Default              interface{}
+	Default              map[Network]interface{}
 	Advanced             bool
 	AffectsContainers    []ContainerID
 	EnvironmentVariables []string

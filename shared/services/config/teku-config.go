@@ -5,7 +5,7 @@ const tekuTag string = "consensys/teku:22.1.1"
 // Configuration for Teku
 type TekuConfig struct {
 	// The master configuration this belongs to
-	MasterConfig *Configuration
+	MasterConfig *MasterConfig
 
 	// Common parameters that Teku doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -21,7 +21,7 @@ type TekuConfig struct {
 }
 
 // Generates a new Teku configuration
-func NewTekuConfig(config *Configuration) *TekuConfig {
+func NewTekuConfig(config *MasterConfig) *TekuConfig {
 	return &TekuConfig{
 		MasterConfig: config,
 
@@ -34,7 +34,7 @@ func NewTekuConfig(config *Configuration) *TekuConfig {
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Teku container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              tekuTag,
+			Default:              map[Network]interface{}{Network_All: tekuTag},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -46,7 +46,7 @@ func NewTekuConfig(config *Configuration) *TekuConfig {
 			Name:                 "Additional Beacon Node Flags",
 			Description:          "Additional custom command line flags you want to pass Teku's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 ParameterType_String,
-			Default:              "",
+			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
@@ -58,7 +58,7 @@ func NewTekuConfig(config *Configuration) *TekuConfig {
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Teku's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 ParameterType_String,
-			Default:              "",
+			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,

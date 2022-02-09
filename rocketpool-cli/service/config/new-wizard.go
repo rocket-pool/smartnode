@@ -10,10 +10,10 @@ import (
 type newUserWizard struct {
 	md                     *mainDisplay
 	welcomeModal           *page
-	networkModal           *modalLayout
-	executionModeModal     *modalLayout
-	executionLocalModal    *page
-	executionExternalModal *page
+	networkModal           *choiceModalLayout
+	executionModeModal     *choiceModalLayout
+	executionLocalModal    *choiceModalLayout
+	executionExternalModal *textBoxModalLayout
 	consensusModeModal     *DirectionalModal
 	consensusDockerModal   *page
 	consensusExternalMoadl *DirectionalModal
@@ -37,10 +37,12 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 
 }
 
-// Create the welcome modal
+// ========================
+// === 1: Welcome Modal ===
+// ========================
 func (wiz *newUserWizard) createWelcomeModal() {
 
-	modal := newModalLayout(
+	modal := newChoiceModalLayout(
 		wiz.md.app,
 		60,
 		shared.Logo+"\n\n"+
@@ -65,7 +67,9 @@ func (wiz *newUserWizard) createWelcomeModal() {
 
 }
 
-// Create the network modal
+// =========================
+// === 2: Select Network ===
+// =========================
 func (wiz *newUserWizard) createNetworkModal() {
 
 	// Create the button names and descriptions from the config
@@ -78,7 +82,7 @@ func (wiz *newUserWizard) createNetworkModal() {
 	}
 
 	// Create the modal
-	modal := newModalLayout(
+	modal := newChoiceModalLayout(
 		wiz.md.app,
 		70,
 		"Let's start by choosing which network you'd like to use.\n\n",
@@ -88,7 +92,8 @@ func (wiz *newUserWizard) createNetworkModal() {
 
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
-		wiz.md.config.Smartnode.Network.Value = networks[buttonIndex].Value
+		newNetwork := networks[buttonIndex].Value.(config.Network)
+		wiz.md.config.ChangeNetwork(newNetwork)
 		wiz.md.setPage(wiz.executionModeModal.page)
 		wiz.executionModeModal.focus(0)
 	}
@@ -100,7 +105,9 @@ func (wiz *newUserWizard) createNetworkModal() {
 	modal.page = page
 }
 
-// Create the execution client mode selection modal
+// ================================
+// === 3: Select Execution Mode ===
+// ================================
 func (wiz *newUserWizard) createExecutionModeModal() {
 
 	// Create the button names and descriptions from the config
@@ -113,15 +120,12 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 	}
 
 	// Create the modal
-	modal := newModalLayout(
+	modal := newChoiceModalLayout(
 		wiz.md.app,
 		76,
 		"Now let's decide which mode you'd like to use for the Execution client (formerly eth1 client).\n\n"+
 			"Would you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (also known as \"Hybrid Mode\")?",
-		/*[]string{
-			"Let Rocket Pool Manage its Own Client (Default)",
-			"Use an Existing External Client (Hybrid Mode)",
-		},*/
+
 		modeNames,
 		modeDescriptions,
 		DirectionalModalVertical)
@@ -131,9 +135,10 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 		wiz.md.config.ExecutionClientMode.Value = modes[buttonIndex].Value
 		switch modes[buttonIndex].Value {
 		case config.Mode_Local:
-			wiz.md.setPage(wiz.executionLocalModal)
+			wiz.md.setPage(wiz.executionLocalModal.page)
+			wiz.executionLocalModal.focus(0)
 		case config.Mode_External:
-			wiz.md.setPage(wiz.executionExternalModal)
+			wiz.md.setPage(wiz.executionExternalModal.page)
 		default:
 			panic(fmt.Sprintf("Unknown execution client mode %s", modes[buttonIndex].Value))
 		}
@@ -147,40 +152,90 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 
 }
 
-// Create the execution client Docker modal
+// ========================================
+// === 4a: Select Local Exection Client ===
+// ========================================
 func (wiz *newUserWizard) createExecutionDockerModal() {
 
-	modal := newModalLayout(
+	// Create the button names and descriptions from the config
+	clients := wiz.md.config.ExecutionClient.Options
+	clientNames := []string{}
+	clientDescriptions := []string{}
+	for _, client := range clients {
+		clientNames = append(clientNames, client.Name)
+		clientDescriptions = append(clientDescriptions, client.Description)
+	}
+
+	// Create the modal
+	modal := newChoiceModalLayout(
 		wiz.md.app,
-		90,
+		76,
 		"Please select the Execution client you would like to use.\n\n"+
 			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth1-clients to learn more about them.",
-		[]string{
-			"Geth",
-			"Infura",
-			"Pocket",
-		},
-		[]string{},
+		clientNames,
+		clientDescriptions,
 		DirectionalModalVertical)
+
+	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
-		if buttonIndex == 3 {
-			wiz.md.app.Stop()
-		} else {
-			wiz.md.setPage(wiz.consensusDockerModal)
+		selectedClient := clients[buttonIndex].Value.(config.ExecutionClient)
+		wiz.md.config.ExecutionClient.Value = selectedClient
+		switch selectedClient {
+		case config.ExecutionClient_Geth:
+			// Geth doesn't have any required parameters so move on
+			break
+		case config.ExecutionClient_Infura:
+			// Show the Infura modal
+			//do stuffbuttonIndex
+		case config.ExecutionClient_Pocket:
+			break
 		}
 	}
 
-	page := newPage(nil, "new-user-execution-docker", "New User Wizard > [4/8] Execution Client", "", modal.borderGrid)
+	// Create the page
+	wiz.executionLocalModal = modal
+	page := newPage(nil, "new-user-execution-local", "New User Wizard > [4/8] Execution Client", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
 
-	wiz.executionLocalModal = page
+}
+
+// ===========================================
+// === 4b: Select External Exection Client ===
+// ===========================================
+func (wiz *newUserWizard) createExternalExecutionModal() {
+
+	// Create the labels
+	httpLabel := wiz.md.config.ExternalExecution.HttpUrl.Name
+	wsLabel := wiz.md.config.ExternalExecution.WsUrl.Name
+
+	// Create the modal
+	modal := newTextBoxModalLayout(
+		wiz.md.app,
+		76,
+		"Please enter the URL of the HTTP-based RPC API for your existing Execution client and the URL of the Websocket-based RPC API for your existing client.\n\n"+
+			"For example: `http://192.168.1.45:8545` and `ws://192.168.1.45:8546`",
+		[]string{httpLabel, wsLabel},
+		[]string{})
+
+	// Set up the callbacks
+	modal.done = func(text map[string]string) {
+		wiz.md.config.ExternalExecution.HttpUrl.Value = text[httpLabel]
+		wiz.md.config.ExternalExecution.WsUrl.Value = text[wsLabel]
+	}
+
+	// Create the page
+	wiz.executionExternalModal = modal
+	page := newPage(nil, "new-user-execution-external", "New User Wizard > [4/8] Execution Client", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
 
 }
 
 // Create the consensus client Docker modal
 func (wiz *newUserWizard) createConsensusDockerModal() {
 
-	modal := newModalLayout(
+	modal := newChoiceModalLayout(
 		wiz.md.app,
 		80,
 		"Please select the Consensus client you would like to use.\n\n"+
@@ -216,7 +271,7 @@ func (wiz *newUserWizard) createConsensusDockerModal() {
 // Create the finished modal
 func (wiz *newUserWizard) createFinishedModal() {
 
-	modal := newModalLayout(
+	modal := newChoiceModalLayout(
 		wiz.md.app,
 		40,
 		"All done! You're ready to run.\n\n"+

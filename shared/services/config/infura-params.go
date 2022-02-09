@@ -3,7 +3,7 @@ package config
 // Configuration for Infura
 type InfuraConfig struct {
 	// The master configuration this belongs to
-	MasterConfig *Configuration
+	MasterConfig *MasterConfig
 
 	// Common parameters that Infura doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -13,7 +13,7 @@ type InfuraConfig struct {
 }
 
 // Generates a new Infura configuration
-func NewInfuraConfig(config *Configuration) *InfuraConfig {
+func NewInfuraConfig(config *MasterConfig) *InfuraConfig {
 	return &InfuraConfig{
 		MasterConfig: config,
 
@@ -22,7 +22,7 @@ func NewInfuraConfig(config *Configuration) *InfuraConfig {
 			Name:                 "Project ID",
 			Description:          "The ID of your `Ethereum` project in Infura. Note: This is your Project ID, not your Project Secret!",
 			Type:                 ParameterType_String,
-			Default:              "",
+			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"INFURA_PROJECT_ID"},
 			CanBeBlank:           false,

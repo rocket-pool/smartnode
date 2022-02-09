@@ -15,7 +15,7 @@ const defaultPrysmOpenRpcPort bool = false
 // Configuration for Prysm
 type PrysmConfig struct {
 	// The master configuration this belongs to
-	MasterConfig *Configuration
+	MasterConfig *MasterConfig
 
 	// Common parameters that Prysm doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -40,7 +40,7 @@ type PrysmConfig struct {
 }
 
 // Generates a new Prysm configuration
-func NewPrysmConfig(config *Configuration) *PrysmConfig {
+func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
 	return &PrysmConfig{
 		MasterConfig: config,
 
@@ -53,7 +53,7 @@ func NewPrysmConfig(config *Configuration) *PrysmConfig {
 			Name:                 "RPC Port",
 			Description:          "The port Prysm should run its JSON-RPC API on.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultPrysmRpcPort,
+			Default:              map[Network]interface{}{Network_All: defaultPrysmRpcPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_RPC_PORT"},
 			CanBeBlank:           false,
@@ -65,7 +65,7 @@ func NewPrysmConfig(config *Configuration) *PrysmConfig {
 			Name:                 "Open RPC Port",
 			Description:          "Enable this to open Prysm's API ports to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
-			Default:              defaultPrysmOpenRpcPort,
+			Default:              map[Network]interface{}{Network_All: defaultPrysmOpenRpcPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_RPC_PORT"},
 			CanBeBlank:           false,
@@ -77,7 +77,7 @@ func NewPrysmConfig(config *Configuration) *PrysmConfig {
 			Name:                 "Beacon Node Container Tag",
 			Description:          "The tag name of the Prysm Beacon Node container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              getPrysmBnTag(),
+			Default:              map[Network]interface{}{Network_All: getPrysmBnTag()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -89,7 +89,7 @@ func NewPrysmConfig(config *Configuration) *PrysmConfig {
 			Name:                 "Validator Client Container Tag",
 			Description:          "The tag name of the Prysm Validator Client container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              getPrysmVcTag(),
+			Default:              map[Network]interface{}{Network_All: getPrysmVcTag()},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -101,7 +101,7 @@ func NewPrysmConfig(config *Configuration) *PrysmConfig {
 			Name:                 "Additional Beacon Node Flags",
 			Description:          "Additional custom command line flags you want to pass Prysm's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 ParameterType_String,
-			Default:              "",
+			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
@@ -113,7 +113,7 @@ func NewPrysmConfig(config *Configuration) *PrysmConfig {
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 ParameterType_String,
-			Default:              "",
+			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,

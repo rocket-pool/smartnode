@@ -18,11 +18,11 @@ type mainDisplay struct {
 	mainGrid      *tview.Grid
 	newUserWizard *newUserWizard
 	settingsHome  *settingsHome
-	config        *config.Configuration
+	config        *config.MasterConfig
 }
 
 // Creates a new MainDisplay instance.
-func newMainDisplay(app *tview.Application, config *config.Configuration) *mainDisplay {
+func newMainDisplay(app *tview.Application, config *config.MasterConfig) *mainDisplay {
 
 	// Create the main grid
 	grid := tview.NewGrid().

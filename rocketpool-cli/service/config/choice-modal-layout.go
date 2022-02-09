@@ -8,8 +8,8 @@ import (
 	"github.com/rivo/tview"
 )
 
-// A layout container that mimics a modal display
-type modalLayout struct {
+// A layout container that mimics a modal display with a series of buttons and a description box
+type choiceModalLayout struct {
 	// The parent application that owns this modal (for focus changes on vertical layouts)
 	app *tview.Application
 
@@ -33,10 +33,10 @@ type modalLayout struct {
 	page *page
 }
 
-// Creates a new ModalLayout instance
-func newModalLayout(app *tview.Application, width int, text string, buttonLabels []string, buttonDescriptions []string, direction int) *modalLayout {
+// Creates a new ChoiceModalLayout instance
+func newChoiceModalLayout(app *tview.Application, width int, text string, buttonLabels []string, buttonDescriptions []string, direction int) *choiceModalLayout {
 
-	layout := &modalLayout{
+	layout := &choiceModalLayout{
 		app:                app,
 		width:              width,
 		buttonDescriptions: buttonDescriptions,
@@ -119,7 +119,7 @@ func newModalLayout(app *tview.Application, width int, text string, buttonLabels
 }
 
 // Creates the grid for the layout's buttons and optional description text.
-func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescriptions []string, direction int) int {
+func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonDescriptions []string, direction int) int {
 
 	buttonGrid := tview.NewGrid().
 		SetRows(0)
@@ -302,7 +302,7 @@ func (layout *modalLayout) createButtonGrid(buttonLabels []string, buttonDescrip
 }
 
 // Pads each of the button labels with spaces so they all have the same length while staying centered.
-func (layout *modalLayout) getSizedButtonLabels(buttonLabels []string) []string {
+func (layout *choiceModalLayout) getSizedButtonLabels(buttonLabels []string) []string {
 
 	// Get the longest label
 	maxLabelSize := 0
@@ -328,7 +328,7 @@ func (layout *modalLayout) getSizedButtonLabels(buttonLabels []string) []string 
 }
 
 // Focuses the given button
-func (layout *modalLayout) focus(index int) {
+func (layout *choiceModalLayout) focus(index int) {
 	if index < 0 || index > len(layout.forms)-1 {
 		return
 	}

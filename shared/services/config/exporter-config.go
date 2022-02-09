@@ -10,7 +10,7 @@ const defaultExporterPort uint16 = 9103
 // Configuration for Exporter
 type ExporterConfig struct {
 	// The master configuration this belongs to
-	MasterConfig *Configuration
+	MasterConfig *MasterConfig
 
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
 	RootFs *Parameter
@@ -23,7 +23,7 @@ type ExporterConfig struct {
 }
 
 // Generates a new Exporter config
-func NewExporterConfig(config *Configuration) *ExporterConfig {
+func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 	return &ExporterConfig{
 		MasterConfig: config,
 
@@ -32,7 +32,7 @@ func NewExporterConfig(config *Configuration) *ExporterConfig {
 			Name:                 "Allow Root Filesystem Access",
 			Description:          "Give the exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
 			Type:                 ParameterType_Bool,
-			Default:              defaultExporterRootFs,
+			Default:              map[Network]interface{}{Network_All: defaultExporterRootFs},
 			AffectsContainers:    []ContainerID{ContainerID_Exporter},
 			EnvironmentVariables: []string{"EXPORTER_ROOT_FS"},
 			CanBeBlank:           false,
@@ -44,7 +44,7 @@ func NewExporterConfig(config *Configuration) *ExporterConfig {
 			Name:                 "API Port",
 			Description:          "The port the Exporter should make its statistics available on.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultExporterPort,
+			Default:              map[Network]interface{}{Network_All: defaultExporterPort},
 			AffectsContainers:    []ContainerID{ContainerID_Exporter},
 			EnvironmentVariables: []string{"EXPORTER_PORT"},
 			CanBeBlank:           true,
@@ -56,7 +56,7 @@ func NewExporterConfig(config *Configuration) *ExporterConfig {
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Exporter container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              exporterTag,
+			Default:              map[Network]interface{}{Network_All: exporterTag},
 			AffectsContainers:    []ContainerID{ContainerID_Exporter},
 			EnvironmentVariables: []string{"EXPORTER_CONTAINER_TAG"},
 			CanBeBlank:           false,

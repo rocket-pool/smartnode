@@ -14,9 +14,9 @@ const defaultOpenBnApiPort bool = false
 const defaultDoppelgangerDetection bool = true
 
 // Common parameters shared by all of the Beacon Clients
-type ConsensusCommonParams struct {
+type ConsensusCommonConfig struct {
 	// The master configuration this belongs to
-	MasterConfig *Configuration
+	MasterConfig *MasterConfig
 
 	// Custom proposal graffiti
 	Graffiti *Parameter
@@ -41,8 +41,8 @@ type ConsensusCommonParams struct {
 }
 
 // Create a new ConsensusCommonParams struct
-func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
-	return &ConsensusCommonParams{
+func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
+	return &ConsensusCommonConfig{
 		MasterConfig: config,
 
 		Graffiti: &Parameter{
@@ -50,7 +50,7 @@ func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
 			Name:                 "Custom Graffiti",
 			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
 			Type:                 ParameterType_String,
-			Default:              defaultGraffiti,
+			Default:              map[Network]interface{}{Network_All: defaultGraffiti},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"CUSTOM_GRAFFITI"},
 			CanBeBlank:           true,
@@ -64,7 +64,7 @@ func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
 				"Example: https://<project ID>:<secret>@eth2-beacon-prater.infura.io\n" +
 				"Leave this blank if you want to sync normally from the start of the chain.",
 			Type:                 ParameterType_String,
-			Default:              defaultCheckpointSyncProvider,
+			Default:              map[Network]interface{}{Network_All: defaultCheckpointSyncProvider},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"CHECKPOINT_SYNC_URL"},
 			CanBeBlank:           true,
@@ -76,7 +76,7 @@ func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
 			Name:                 "Max Peers",
 			Description:          "The maximum number of peers %s should try to maintain. You can try lowering this if you have a low-resource system or a constrained network, but try to keep it above 25 or you may run into attestation issues.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultMaxPeers,
+			Default:              map[Network]interface{}{Network_All: defaultMaxPeers},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
@@ -88,7 +88,7 @@ func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
 			Name:                 "P2P Port",
 			Description:          "The port to use for P2P (blockchain) traffic.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultP2pPort,
+			Default:              map[Network]interface{}{Network_All: defaultP2pPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_P2P_PORT"},
 			CanBeBlank:           false,
@@ -100,7 +100,7 @@ func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
 			Name:                 "HTTP API Port",
 			Description:          "The port %s should run its HTTP API on.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultBnApiPort,
+			Default:              map[Network]interface{}{Network_All: defaultBnApiPort},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator, ContainerID_Prometheus},
 			EnvironmentVariables: []string{"BN_API_PORT"},
 			CanBeBlank:           false,
@@ -112,7 +112,7 @@ func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
 			Name:                 "Open API Port",
 			Description:          "Enable this to open %s's API port to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
-			Default:              defaultOpenBnApiPort,
+			Default:              map[Network]interface{}{Network_All: defaultOpenBnApiPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_API_PORT"},
 			CanBeBlank:           false,
@@ -124,11 +124,15 @@ func NewConsensusCommonParams(config *Configuration) *ConsensusCommonParams {
 			Name:                 "Enable Doppelgänger Detection",
 			Description:          "If enabled, %s will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, %s will disable validation duties for them to prevent you from being slashed.",
 			Type:                 ParameterType_Bool,
-			Default:              defaultDoppelgangerDetection,
+			Default:              map[Network]interface{}{Network_All: defaultDoppelgangerDetection},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 	}
+}
+
+func (config *ConsensusCommonConfig) HandleNetworkChange(newNetwork Network) {
+
 }

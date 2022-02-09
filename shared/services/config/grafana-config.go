@@ -9,7 +9,7 @@ const defaultGrafanaPort uint16 = 3100
 // Configuration for Grafana
 type GrafanaConfig struct {
 	// The master configuration this belongs to
-	MasterConfig *Configuration
+	MasterConfig *MasterConfig
 
 	// The HTTP port to serve on
 	Port *Parameter
@@ -19,7 +19,7 @@ type GrafanaConfig struct {
 }
 
 // Generates a new Grafana config
-func NewGrafanaConfig(config *Configuration) *GrafanaConfig {
+func NewGrafanaConfig(config *MasterConfig) *GrafanaConfig {
 	return &GrafanaConfig{
 		MasterConfig: config,
 
@@ -28,7 +28,7 @@ func NewGrafanaConfig(config *Configuration) *GrafanaConfig {
 			Name:                 "HTTP Port",
 			Description:          "The port Grafana should run its HTTP server on - this is the port you will connect to in your browser.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultGrafanaPort,
+			Default:              map[Network]interface{}{Network_All: defaultGrafanaPort},
 			AffectsContainers:    []ContainerID{ContainerID_Grafana},
 			EnvironmentVariables: []string{"GRAFANA_PORT"},
 			CanBeBlank:           false,
@@ -40,7 +40,7 @@ func NewGrafanaConfig(config *Configuration) *GrafanaConfig {
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Grafana container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              grafanaTag,
+			Default:              map[Network]interface{}{Network_All: grafanaTag},
 			AffectsContainers:    []ContainerID{ContainerID_Grafana},
 			EnvironmentVariables: []string{"GRAFANA_CONTAINER_TAG"},
 			CanBeBlank:           false,

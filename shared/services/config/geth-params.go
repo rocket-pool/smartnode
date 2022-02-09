@@ -15,7 +15,7 @@ const defaultGethP2pPort uint16 = 30303
 // Configuration for Geth
 type GethConfig struct {
 	// The master configuration this belongs to
-	MasterConfig *Configuration
+	MasterConfig *MasterConfig
 
 	// Common parameters that Geth doesn't support and should be hidden
 	UnsupportedCommonParams []string
@@ -43,7 +43,7 @@ type GethConfig struct {
 }
 
 // Generates a new Geth configuration
-func NewGethConfig(config *Configuration) *GethConfig {
+func NewGethConfig(config *MasterConfig) *GethConfig {
 	return &GethConfig{
 		MasterConfig: config,
 
@@ -54,7 +54,7 @@ func NewGethConfig(config *Configuration) *GethConfig {
 			Name:                 "Cache Size",
 			Description:          "The amount of RAM (in MB) you want Geth's cache to use. Larger values mean your disk space usage will increase slower, and you will have to prune less frequently. The default is based on how much total RAM your system has but you can adjust it manually.",
 			Type:                 ParameterType_Uint,
-			Default:              calculateGethCache(),
+			Default:              map[Network]interface{}{Network_All: calculateGethCache()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"GETH_CACHE_SIZE"},
 			CanBeBlank:           false,
@@ -66,7 +66,7 @@ func NewGethConfig(config *Configuration) *GethConfig {
 			Name:                 "Max Peers",
 			Description:          "The maximum number of peers Geth should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
 			Type:                 ParameterType_Uint16,
-			Default:              calculateGethPeers(),
+			Default:              map[Network]interface{}{Network_All: calculateGethPeers()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"GETH_MAX_PEERS"},
 			CanBeBlank:           false,
@@ -78,7 +78,7 @@ func NewGethConfig(config *Configuration) *GethConfig {
 			Name:                 "P2P Port",
 			Description:          "The port Geth should use for P2P (blockchain) traffic to communicate with other nodes.",
 			Type:                 ParameterType_Uint16,
-			Default:              defaultGethP2pPort,
+			Default:              map[Network]interface{}{Network_All: defaultGethP2pPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"GETH_P2P_PORT"},
 			CanBeBlank:           false,
@@ -90,7 +90,7 @@ func NewGethConfig(config *Configuration) *GethConfig {
 			Name:                 "ETHStats Label",
 			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the label you want to use here.",
 			Type:                 ParameterType_String,
-			Default:              "",
+			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"ETHSTATS_LABEL"},
 			CanBeBlank:           true,
@@ -102,7 +102,7 @@ func NewGethConfig(config *Configuration) *GethConfig {
 			Name:                 "ETHStats Login",
 			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the login you want to use here.",
 			Type:                 ParameterType_String,
-			Default:              "",
+			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"ETHSTATS_LOGIN"},
 			CanBeBlank:           true,
@@ -114,7 +114,7 @@ func NewGethConfig(config *Configuration) *GethConfig {
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Geth container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              gethTag,
+			Default:              map[Network]interface{}{Network_All: gethTag},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"GETH_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -126,7 +126,7 @@ func NewGethConfig(config *Configuration) *GethConfig {
 			Name:                 "Additional Flags",
 			Description:          "Additional custom command line flags you want to pass to Geth, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 ParameterType_String,
-			Default:              "",
+			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"GETH_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,

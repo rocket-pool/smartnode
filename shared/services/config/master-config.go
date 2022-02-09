@@ -1,7 +1,9 @@
 package config
 
+import "reflect"
+
 // The master configuration struct
-type Configuration struct {
+type MasterConfig struct {
 
 	// The Smartnode configuration
 	Smartnode *SmartnodeConfig
@@ -40,7 +42,7 @@ type Configuration struct {
 	ExternalConsensusClient Parameter
 
 	// Consensus client configurations
-	ConsensusCommon   *ConsensusCommonParams
+	ConsensusCommon   *ConsensusCommonConfig
 	Lighthouse        *LighthouseConfig
 	Nimbus            *NimbusConfig
 	Prysm             *PrysmConfig
@@ -58,15 +60,15 @@ type Configuration struct {
 }
 
 // Creates a new master Configuration instance
-func NewConfiguration() *Configuration {
+func NewMasterConfig() *MasterConfig {
 
-	config := &Configuration{
+	config := &MasterConfig{
 		ExecutionClientMode: Parameter{
 			ID:                   "executionClientMode",
 			Name:                 "Execution Client Mode",
 			Description:          "Choose which mode to use for your Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:                 ParameterType_Choice,
-			Default:              nil,
+			Default:              map[Network]interface{}{},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -89,7 +91,7 @@ func NewConfiguration() *Configuration {
 			Name:                 "Execution Client",
 			Description:          "Select which Execution client you would like to run.",
 			Type:                 ParameterType_Choice,
-			Default:              nil,
+			Default:              map[Network]interface{}{Network_All: nil},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -98,14 +100,17 @@ func NewConfiguration() *Configuration {
 				ID:          "geth",
 				Name:        "Geth",
 				Description: "Geth is one of the three original implementations of the Ethereum protocol. It is written in Go, fully open source and licensed under the GNU LGPL v3.",
+				Value:       ExecutionClient_Geth,
 			}, {
 				ID:          "infura",
 				Name:        "Infura",
 				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
+				Value:       ExecutionClient_Infura,
 			}, {
 				ID:          "pocket",
 				Name:        "Pocket",
 				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
+				Value:       ExecutionClient_Pocket,
 			}},
 		},
 
@@ -114,7 +119,7 @@ func NewConfiguration() *Configuration {
 			Name:                 "Use Fallback Execution Client",
 			Description:          "Enable this if you would like to specify a fallback Execution client, which will temporarily be used by the Smartnode and your Consensus client if your primary Execution client ever goes offline.",
 			Type:                 ParameterType_Bool,
-			Default:              false,
+			Default:              map[Network]interface{}{Network_All: false},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1Fallback},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -126,7 +131,7 @@ func NewConfiguration() *Configuration {
 			Name:                 "Fallback Execution Client Mode",
 			Description:          "Choose which mode to use for your fallback Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:                 ParameterType_Choice,
-			Default:              nil,
+			Default:              map[Network]interface{}{Network_All: nil},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1Fallback},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -135,10 +140,12 @@ func NewConfiguration() *Configuration {
 				ID:          "local",
 				Name:        "Locally Managed",
 				Description: "Allow the Smartnode to manage a fallback Execution client for you (Docker Mode)",
+				Value:       Mode_Local,
 			}, {
 				ID:          "external",
 				Name:        "Externally Managed",
 				Description: "Use an existing fallback Execution client that you manage on your own (Hybrid Mode)",
+				Value:       Mode_External,
 			}},
 		},
 
@@ -147,7 +154,7 @@ func NewConfiguration() *Configuration {
 			Name:                 "Fallback Execution Client",
 			Description:          "Select which fallback Execution client you would like to run.",
 			Type:                 ParameterType_Choice,
-			Default:              nil,
+			Default:              map[Network]interface{}{Network_All: nil},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1Fallback},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -156,10 +163,12 @@ func NewConfiguration() *Configuration {
 				ID:          "infura",
 				Name:        "Infura",
 				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
+				Value:       ExecutionClient_Infura,
 			}, {
 				ID:          "pocket",
 				Name:        "Pocket",
 				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
+				Value:       ExecutionClient_Pocket,
 			}},
 		},
 
@@ -168,7 +177,7 @@ func NewConfiguration() *Configuration {
 			Name:                 "Consensus Client Mode",
 			Description:          "Choose which mode to use for your Consensus client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:                 ParameterType_Choice,
-			Default:              nil,
+			Default:              map[Network]interface{}{Network_All: nil},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -189,7 +198,7 @@ func NewConfiguration() *Configuration {
 			Name:                 "Consensus Client",
 			Description:          "Select which Consensus client you would like to use.",
 			Type:                 ParameterType_Choice,
-			Default:              nil,
+			Default:              map[Network]interface{}{Network_All: nil},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -198,18 +207,22 @@ func NewConfiguration() *Configuration {
 				ID:          "lighthouse",
 				Name:        "Lighthouse",
 				Description: "Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
+				Value:       ConsensusClient_Lighthouse,
 			}, {
 				ID:          "nimbus",
 				Name:        "Nimbus",
 				Description: "Nimbus is a Consensus client implementation that strives to be as lightweight as possible in terms of resources used. This allows it to perform well on embedded systems, resource-restricted devices -- including Raspberry Pis and mobile devices -- and multi-purpose servers.",
+				Value:       ConsensusClient_Nimbus,
 			}, {
 				ID:          "prysm",
 				Name:        "Prysm",
 				Description: "Prysm is a Go implementation of Ethereum Consensus protocol with a focus on usability, security, and reliability. Prysm is developed by Prysmatic Labs, a company with the sole focus on the development of their client. Prysm is written in Go and released under a GPL-3.0 license.",
+				Value:       ConsensusClient_Prysm,
 			}, {
 				ID:          "teku",
 				Name:        "Teku",
 				Description: "PegaSys Teku (formerly known as Artemis) is a Java-based Ethereum 2.0 client designed & built to meet institutional needs and security requirements. PegaSys is an arm of ConsenSys dedicated to building enterprise-ready clients and tools for interacting with the core Ethereum platform. Teku is Apache 2 licensed and written in Java, a language notable for its maturity & ubiquity.",
+				Value:       ConsensusClient_Teku,
 			}},
 		},
 
@@ -218,7 +231,7 @@ func NewConfiguration() *Configuration {
 			Name:                 "Consensus Client",
 			Description:          "Select which Consensus client your externally managed client is.",
 			Type:                 ParameterType_Choice,
-			Default:              nil,
+			Default:              map[Network]interface{}{Network_All: nil},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -227,14 +240,17 @@ func NewConfiguration() *Configuration {
 				ID:          "lighthouse",
 				Name:        "Lighthouse",
 				Description: "Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
+				Value:       ConsensusClient_Lighthouse,
 			}, {
 				ID:          "prysm",
 				Name:        "Prysm",
 				Description: "Prysm is a Go implementation of Ethereum Consensus protocol with a focus on usability, security, and reliability. Prysm is developed by Prysmatic Labs, a company with the sole focus on the development of their client. Prysm is written in Go and released under a GPL-3.0 license.",
+				Value:       ConsensusClient_Prysm,
 			}, {
 				ID:          "teku",
 				Name:        "Teku",
 				Description: "PegaSys Teku (formerly known as Artemis) is a Java-based Ethereum 2.0 client designed & built to meet institutional needs and security requirements. PegaSys is an arm of ConsenSys dedicated to building enterprise-ready clients and tools for interacting with the core Ethereum platform. Teku is Apache 2 licensed and written in Java, a language notable for its maturity & ubiquity.",
+				Value:       ConsensusClient_Teku,
 			}},
 		},
 
@@ -243,7 +259,7 @@ func NewConfiguration() *Configuration {
 			Name:                 "Enable Metrics",
 			Description:          "Enable the Smartnode's performance and status metrics system. This will provide you with the node operator's Grafana dashboard.",
 			Type:                 ParameterType_Bool,
-			Default:              false,
+			Default:              map[Network]interface{}{Network_All: false},
 			AffectsContainers:    []ContainerID{ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Grafana, ContainerID_Prometheus, ContainerID_Exporter},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -252,9 +268,9 @@ func NewConfiguration() *Configuration {
 	}
 
 	// Set the defaults for choices
-	config.ExecutionClientMode.Default = config.ExecutionClientMode.Options[0]
-	config.FallbackExecutionClientMode.Default = config.FallbackExecutionClientMode.Options[0]
-	config.ConsensusClientMode.Default = config.ConsensusClientMode.Options[0]
+	config.ExecutionClientMode.Default[Network_All] = config.ExecutionClientMode.Options[0]
+	config.FallbackExecutionClientMode.Default[Network_All] = config.FallbackExecutionClientMode.Options[0]
+	config.ConsensusClientMode.Default[Network_All] = config.ConsensusClientMode.Options[0]
 
 	config.Smartnode = NewSmartnodeConfig(config)
 	config.ExecutionCommon = NewExecutionCommonParams(config)
@@ -266,7 +282,7 @@ func NewConfiguration() *Configuration {
 	config.FallbackInfura = NewInfuraConfig(config)
 	config.FallbackPocket = NewPocketConfig(config)
 	config.FallbackExternalExecution = NewExternalExecutionConfig(config)
-	config.ConsensusCommon = NewConsensusCommonParams(config)
+	config.ConsensusCommon = NewConsensusCommonConfig(config)
 	config.Lighthouse = NewLighthouseConfig(config)
 	config.Nimbus = NewNimbusConfig(config)
 	config.Prysm = NewPrysmConfig(config)
@@ -278,4 +294,51 @@ func NewConfiguration() *Configuration {
 	config.Exporter = NewExporterConfig(config)
 
 	return config
+}
+
+// Triggers when a network change occurs
+func (config *MasterConfig) ChangeNetwork(newNetwork Network) {
+	currentNetwork, ok := config.Smartnode.Network.Value.(Network)
+	if !ok {
+		currentNetwork = Network_Unknown
+	}
+	if currentNetwork != newNetwork {
+		changeNetworkImpl(config, currentNetwork, newNetwork)
+	}
+	config.Smartnode.Network.Value = newNetwork
+}
+
+// Reflectively go through a type and apply a network change to all of its parameters and children
+func changeNetworkImpl(object interface{}, oldNetwork Network, newNetwork Network) {
+
+	configValue := reflect.ValueOf(object)
+	numberOfFields := configValue.NumField()
+
+	for i := 0; i < numberOfFields; i++ {
+		field := configValue.Field(i)
+		if field.Kind() == reflect.Struct {
+			// This is a struct, so recurse into it
+			changeNetworkImpl(field, oldNetwork, newNetwork)
+		} else {
+			fieldAsParam, ok := field.Interface().(Parameter)
+			if ok {
+				// This is a Parameter - get the defaults and the current value
+				currentValue := fieldAsParam.Value
+				oldDefault, exists := fieldAsParam.Default[oldNetwork]
+				if !exists {
+					oldDefault = fieldAsParam.Default[Network_All]
+				}
+				newDefault, exists := fieldAsParam.Default[newNetwork]
+				if !exists {
+					newDefault = fieldAsParam.Default[Network_All]
+				}
+
+				// If the old value matches the old default, replace it with the new default
+				if currentValue == oldDefault {
+					fieldAsParam.Value = newDefault
+				}
+			}
+		}
+	}
+
 }
