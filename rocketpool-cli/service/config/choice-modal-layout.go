@@ -77,7 +77,7 @@ func newChoiceModalLayout(app *tview.Application, width int, text string, button
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
 	// Get the total content height, including spacers and borders
-	lines := tview.WordWrap(text, width)
+	lines := tview.WordWrap(text, width-4)
 	textViewHeight := len(lines) + 2
 	borderGrid.SetRows(0, textViewHeight+buttonGridHeight+2, 0, 1)
 

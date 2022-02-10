@@ -14,9 +14,12 @@ type newUserWizard struct {
 	executionModeModal     *choiceModalLayout
 	executionLocalModal    *choiceModalLayout
 	executionExternalModal *textBoxModalLayout
-	consensusModeModal     *DirectionalModal
-	consensusDockerModal   *page
-	consensusExternalMoadl *DirectionalModal
+	infuraModal            *textBoxModalLayout
+	fallbackInfuraModal    *textBoxModalLayout
+	fallbackExecutionModal *choiceModalLayout
+	consensusModeModal     *choiceModalLayout
+	consensusLocalModal    *choiceModalLayout
+	consensusExternalModal *choiceModalLayout
 	finishedModal          *page
 }
 
@@ -31,7 +34,12 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 	wiz.createExecutionModeModal()
 	wiz.createLocalExecutionModal()
 	wiz.createExternalExecutionModal()
-	wiz.createConsensusDockerModal()
+	wiz.createInfuraModal()
+	wiz.createFallbackExecutionModal()
+	wiz.createFallbackInfuraModal()
+	wiz.createConsensusModeModal()
+	wiz.createLocalConsensusModal()
+	//wiz.createExternalConsensusModal()
 	wiz.createFinishedModal()
 
 	return wiz
@@ -184,18 +192,22 @@ func (wiz *newUserWizard) createLocalExecutionModal() {
 		switch selectedClient {
 		case config.ExecutionClient_Geth:
 			// Geth doesn't have any required parameters so move on
-			break
+			wiz.md.setPage(wiz.fallbackExecutionModal.page)
+			wiz.fallbackExecutionModal.focus(0)
 		case config.ExecutionClient_Infura:
-			// Show the Infura modal
-			//do stuffbuttonIndex
+			// Switch to the Infura dialog
+			wiz.md.setPage(wiz.infuraModal.page)
+			wiz.infuraModal.focus()
 		case config.ExecutionClient_Pocket:
-			break
+			// Pocket doesn't have any required parameters so move on
+			wiz.md.setPage(wiz.fallbackExecutionModal.page)
+			wiz.fallbackExecutionModal.focus(0)
 		}
 	}
 
 	// Create the page
 	wiz.executionLocalModal = modal
-	page := newPage(nil, "new-user-execution-local", "New User Wizard > [4/8] Execution Client (Local)", "", modal.borderGrid)
+	page := newPage(nil, "new-user-execution-local", "New User Wizard > [4/8] Execution Client > Selection", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -223,6 +235,8 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 	modal.done = func(text map[string]string) {
 		wiz.md.config.ExternalExecution.HttpUrl.Value = text[httpLabel]
 		wiz.md.config.ExternalExecution.WsUrl.Value = text[wsLabel]
+		wiz.md.setPage(wiz.fallbackExecutionModal.page)
+		wiz.fallbackExecutionModal.focus(0)
 	}
 
 	// Create the page
@@ -233,39 +247,212 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 
 }
 
-// Create the consensus client Docker modal
-func (wiz *newUserWizard) createConsensusDockerModal() {
+// ========================
+// === 4c: Local Infura ===
+// ========================
+func (wiz *newUserWizard) createInfuraModal() {
 
+	// Create the labels
+	projectIdLabel := wiz.md.config.Infura.ProjectID.Name
+
+	// Create the modal
+	modal := newTextBoxModalLayout(
+		wiz.md.app,
+		70,
+		"Please enter the Project ID for your Infura Ethereum project. You can find this on the Infura website, in your Ethereum project settings.",
+		[]string{projectIdLabel},
+		[]string{})
+
+	// Set up the callbacks
+	modal.done = func(text map[string]string) {
+		wiz.md.config.Infura.ProjectID.Value = text[projectIdLabel]
+		wiz.md.setPage(wiz.fallbackExecutionModal.page)
+		wiz.fallbackExecutionModal.focus(0)
+	}
+
+	// Create the page
+	wiz.infuraModal = modal
+	page := newPage(nil, "new-user-execution-infura", "New User Wizard > [4/8] Execution Client > Infura", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
+
+}
+
+// =====================================
+// === 5a: Fallback Execution Client ===
+// =====================================
+func (wiz *newUserWizard) createFallbackExecutionModal() {
+
+	// Create the button names and descriptions from the config
+	clients := wiz.md.config.FallbackExecutionClient.Options
+	clientNames := []string{"None"}
+	clientDescriptions := []string{"Do not use a fallback client."}
+	for _, client := range clients {
+		clientNames = append(clientNames, client.Name)
+		clientDescriptions = append(clientDescriptions, client.Description)
+	}
+
+	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
-		80,
-		"Please select the Consensus client you would like to use.\n\n"+
-			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.",
-		[]string{
-			"Lighthouse",
-			"Nimbus",
-			"Prysm",
-			"Teku",
-		},
-		[]string{
-			"Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
-			"Nimbus is a Consensus client implementation that strives to be as lightweight as possible in terms of resources used. This allows it to perform well on embedded systems, resource-restricted devices -- including Raspberry Pis and mobile devices -- and multi-purpose servers.",
-			"Prysm is a Go implementation of a Consensus client with a focus on usability, security, and reliability. Prysm is developed by Prysmatic Labs, a company with the sole focus on the development of their client. Prysm is written in Go and released under a GPL-3.0 license.",
-			"Teku is a Java-based Consensus client designed & built to meet institutional needs and security requirements. PegaSys is an arm of ConsenSys dedicated to building enterprise-ready clients and tools for interacting with the core Ethereum platform. Teku is Apache 2 licensed.",
-		},
-		DirectionalModalVertical)
+		70,
+		"If you would like to add a fallback Execution client, please choose it below.\n\nThe Smartnode will temporarily use this instead of your main Execution client if the main client ever fails.\nIt will switch back to the main client when it starts working again.",
+		clientNames,
+		clientDescriptions,
+		DirectionalModalVertical,
+	)
+
+	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
-		if buttonIndex == 4 {
-			wiz.md.app.Stop()
+		if buttonIndex == 0 {
+			wiz.md.config.UseFallbackExecutionClient.Value = false
 		} else {
-			wiz.md.setPage(wiz.finishedModal)
+			wiz.md.config.UseFallbackExecutionClient.Value = true
+			selectedClient := clients[buttonIndex].Value.(config.ExecutionClient)
+			wiz.md.config.ExecutionClient.Value = selectedClient
+			switch selectedClient {
+			case config.ExecutionClient_Infura:
+				// Switch to the Infura dialog
+				wiz.md.setPage(wiz.fallbackInfuraModal.page)
+				wiz.fallbackInfuraModal.focus()
+			}
 		}
 	}
 
-	page := newPage(nil, "new-user-consensus-docker", "New User Wizard > [6/8] Consensus Client", "", modal.borderGrid)
+	// Create the page
+	wiz.fallbackExecutionModal = modal
+	page := newPage(nil, "new-user-fallback-execution", "New User Wizard > [5/8] Fallback Execution Client", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
 
-	wiz.consensusDockerModal = page
+}
+
+// ===========================
+// === 5b: Fallback Infura ===
+// ===========================
+func (wiz *newUserWizard) createFallbackInfuraModal() {
+
+	// Create the labels
+	projectIdLabel := wiz.md.config.FallbackInfura.ProjectID.Name
+
+	// Create the modal
+	modal := newTextBoxModalLayout(
+		wiz.md.app,
+		70,
+		"Please enter the Project ID for your Infura Ethereum project. You can find this on the Infura website, in your Ethereum project settings.",
+		[]string{projectIdLabel},
+		[]string{})
+
+	// Set up the callbacks
+	modal.done = func(text map[string]string) {
+		wiz.md.config.FallbackInfura.ProjectID.Value = text[projectIdLabel]
+		wiz.md.setPage(wiz.fallbackExecutionModal.page)
+	}
+
+	// Create the page
+	wiz.fallbackInfuraModal = modal
+	page := newPage(nil, "new-user-fallback-execution-infura", "New User Wizard > [5/8] Fallback Execution Client > Infura", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
+
+}
+
+// ================================
+// === 6: Select Consensus Mode ===
+// ================================
+func (wiz *newUserWizard) createConsensusModeModal() {
+
+	// Create the button names and descriptions from the config
+	modes := wiz.md.config.ConsensusClientMode.Options
+	modeNames := []string{}
+	modeDescriptions := []string{}
+	for _, mode := range modes {
+		modeNames = append(modeNames, mode.Name)
+		modeDescriptions = append(modeDescriptions, mode.Description)
+	}
+
+	// Create the modal
+	modal := newChoiceModalLayout(
+		wiz.md.app,
+		76,
+		"Next, let's decide which mode you'd like to use for the Consensus client (formerly eth2 client).\n\n"+
+			"Would you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (also known as \"Hybrid Mode\")?",
+
+		modeNames,
+		modeDescriptions,
+		DirectionalModalVertical)
+
+	// Set up the callbacks
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		wiz.md.config.ConsensusClientMode.Value = modes[buttonIndex].Value
+		switch modes[buttonIndex].Value {
+		case config.Mode_Local:
+			wiz.md.setPage(wiz.consensusLocalModal.page)
+			wiz.consensusLocalModal.focus(0)
+		case config.Mode_External:
+			wiz.md.setPage(wiz.consensusExternalModal.page)
+		default:
+			panic(fmt.Sprintf("Unknown execution client mode %s", modes[buttonIndex].Value))
+		}
+	}
+
+	// Create the page
+	wiz.consensusModeModal = modal
+	page := newPage(nil, "new-user-consensus-mode", "New User Wizard > [6/8] Consensus Client Mode", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
+
+}
+
+// =========================================
+// === 7a: Select Local Consensus Client ===
+// =========================================
+func (wiz *newUserWizard) createLocalConsensusModal() {
+
+	// Create the button names and descriptions from the config
+	clients := wiz.md.config.ConsensusClient.Options
+	clientNames := []string{}
+	clientDescriptions := []string{}
+	for _, client := range clients {
+		clientNames = append(clientNames, client.Name)
+		clientDescriptions = append(clientDescriptions, client.Description)
+	}
+
+	// Create the modal
+	modal := newChoiceModalLayout(
+		wiz.md.app,
+		76,
+		"Please select the Consensus client you would like to use.\n\n"+
+			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.",
+		clientNames,
+		clientDescriptions,
+		DirectionalModalVertical)
+
+	// Set up the callbacks
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		selectedClient := clients[buttonIndex].Value.(config.ConsensusClient)
+		wiz.md.config.ConsensusClient.Value = selectedClient
+		switch selectedClient {
+		/*
+			case config.ExecutionClient_Geth:
+				// Geth doesn't have any required parameters so move on
+				wiz.md.setPage(wiz.fallbackExecutionModal.page)
+			case config.ExecutionClient_Infura:
+				// Switch to the Infura dialog
+				wiz.md.setPage(wiz.infuraModal.page)
+				wiz.infuraModal.focus()
+			case config.ExecutionClient_Pocket:
+				// Pocket doesn't have any required parameters so move on
+				wiz.md.setPage(wiz.fallbackExecutionModal.page)
+		*/
+		}
+	}
+
+	// Create the page
+	wiz.consensusLocalModal = modal
+	page := newPage(nil, "new-user-consensus-local", "New User Wizard > [7/8] Consensus Client > Selection", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
 
 }
 

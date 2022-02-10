@@ -161,7 +161,7 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValu
 		AddItem(rightSpacer, 0, 2, 1, 1, 0, 0, false)
 	layout.controlGrid = controlGrid
 
-	return len(labels)*3 - 1
+	return len(labels)*2 + 1
 }
 
 // Focuses the textbox
