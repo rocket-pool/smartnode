@@ -74,7 +74,7 @@ func NewMasterConfig() *MasterConfig {
 			Options: []ParameterOption{{
 				ID:          "local",
 				Name:        "Locally Managed",
-				Description: "(Default)\n\nAllow the Smartnode to manage an Execution client for you (Docker Mode)",
+				Description: "Allow the Smartnode to manage an Execution client for you (Docker Mode)",
 				Value:       Mode_Local,
 			}, {
 				ID:          "external",
@@ -184,10 +184,12 @@ func NewMasterConfig() *MasterConfig {
 				ID:          "local",
 				Name:        "Locally Managed",
 				Description: "Allow the Smartnode to manage a Consensus client for you (Docker Mode)",
+				Value:       Mode_Local,
 			}, {
 				ID:          "external",
 				Name:        "Externally Managed",
 				Description: "Use an existing Consensus client that you manage on your own (Hybrid Mode)",
+				Value:       Mode_External,
 			}},
 		},
 
@@ -338,4 +340,77 @@ func (config *MasterConfig) ChangeNetwork(newNetwork Network) {
 	config.Grafana.changeNetwork(oldNetwork, newNetwork)
 	config.Prometheus.changeNetwork(oldNetwork, newNetwork)
 	config.Exporter.changeNetwork(oldNetwork, newNetwork)
+}
+
+// Get the Consensus clients compatible with the config's EC and fallback EC selection
+func (config *MasterConfig) GetCompatibleConsensusClients() ([]ParameterOption, []string) {
+
+	// Get the compatible clients based on the EC choice
+	var compatibleConsensusClients []ConsensusClient
+	executionClient := config.ExecutionClient.Value.(ExecutionClient)
+	switch executionClient {
+	case ExecutionClient_Geth:
+		compatibleConsensusClients = config.Geth.CompatibleConsensusClients
+	case ExecutionClient_Infura:
+		compatibleConsensusClients = config.Infura.CompatibleConsensusClients
+	case ExecutionClient_Pocket:
+		compatibleConsensusClients = config.Pocket.CompatibleConsensusClients
+	}
+
+	// Get the compatible clients based on the fallback EC choice
+	var fallbackCompatibleConsensusClients []ConsensusClient
+	if config.UseFallbackExecutionClient.Value == true {
+		fallbackExecutionClient := config.FallbackExecutionClient.Value.(ExecutionClient)
+		switch fallbackExecutionClient {
+		case ExecutionClient_Infura:
+			compatibleConsensusClients = config.FallbackInfura.CompatibleConsensusClients
+		case ExecutionClient_Pocket:
+			compatibleConsensusClients = config.FallbackPocket.CompatibleConsensusClients
+		}
+	}
+
+	// Sort every consensus client into good and bad lists
+	var goodClients []ParameterOption
+	var badClients []string
+	for _, consensusClient := range config.ConsensusClient.Options {
+		// Get the value for one of the consensus client options
+		clientValue := consensusClient.Value.(ConsensusClient)
+
+		// Check if it's in the list of clients compatible with the EC
+		isGood := false
+		for _, compatibleWithEC := range compatibleConsensusClients {
+			if compatibleWithEC == clientValue {
+				isGood = true
+				break
+			}
+		}
+
+		// If it isn't, append it to the list of bad clients and move on
+		if !isGood {
+			badClients = append(badClients, consensusClient.Name)
+			continue
+		}
+
+		// Check the fallback EC too
+		if len(fallbackCompatibleConsensusClients) > 0 {
+			isGood = false
+			for _, compatibleWithFallbackEC := range fallbackCompatibleConsensusClients {
+				if compatibleWithFallbackEC == clientValue {
+					isGood = true
+					break
+				}
+			}
+
+			if !isGood {
+				badClients = append(badClients, consensusClient.Name)
+				continue
+			}
+		}
+
+		// If we get here, it's compatible.
+		goodClients = append(goodClients, consensusClient)
+	}
+
+	return goodClients, badClients
+
 }

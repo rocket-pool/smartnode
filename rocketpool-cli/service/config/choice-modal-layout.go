@@ -50,6 +50,7 @@ func newChoiceModalLayout(app *tview.Application, width int, text string, button
 		SetText(text).
 		SetTextAlign(tview.AlignCenter).
 		SetWordWrap(true).
+		SetDynamicColors(true).
 		SetTextColor(tview.Styles.PrimaryTextColor)
 	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	textView.SetBorderPadding(0, 0, 1, 1)
@@ -290,7 +291,7 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 
 			// Get the description box height
 			for _, description := range buttonDescriptions {
-				lines := tview.WordWrap(description, layout.width*2/5-6)
+				lines := tview.WordWrap(description, (layout.width-6)/2)
 				if len(lines) > height {
 					height = len(lines)
 				}

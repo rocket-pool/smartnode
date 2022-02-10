@@ -9,6 +9,9 @@ type PocketConfig struct {
 	// Common parameters that Pocket doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
+	// Compatible consensus clients
+	CompatibleConsensusClients []ConsensusClient
+
 	// The Pocket gateway ID
 	GatewayID Parameter
 }
@@ -17,6 +20,12 @@ type PocketConfig struct {
 func NewPocketConfig(config *MasterConfig) *PocketConfig {
 	return &PocketConfig{
 		UnsupportedCommonParams: []string{ecWsPortID},
+
+		CompatibleConsensusClients: []ConsensusClient{
+			ConsensusClient_Lighthouse,
+			ConsensusClient_Prysm,
+			ConsensusClient_Teku,
+		},
 
 		GatewayID: Parameter{
 			ID:          "gatewayID",

@@ -17,6 +17,9 @@ type GethConfig struct {
 	// Common parameters that Geth doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
+	// Compatible consensus clients
+	CompatibleConsensusClients []ConsensusClient
+
 	// Size of Geth's Cache
 	CacheSize Parameter
 
@@ -43,6 +46,13 @@ type GethConfig struct {
 func NewGethConfig(config *MasterConfig) *GethConfig {
 	return &GethConfig{
 		UnsupportedCommonParams: []string{},
+
+		CompatibleConsensusClients: []ConsensusClient{
+			ConsensusClient_Lighthouse,
+			ConsensusClient_Nimbus,
+			ConsensusClient_Prysm,
+			ConsensusClient_Teku,
+		},
 
 		CacheSize: Parameter{
 			ID:                   "cache",

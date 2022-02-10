@@ -5,6 +5,9 @@ type InfuraConfig struct {
 	// Common parameters that Infura doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
+	// Compatible consensus clients
+	CompatibleConsensusClients []ConsensusClient
+
 	// The Infura project ID
 	ProjectID Parameter
 }
@@ -12,6 +15,13 @@ type InfuraConfig struct {
 // Generates a new Infura configuration
 func NewInfuraConfig(config *MasterConfig) *InfuraConfig {
 	return &InfuraConfig{
+		CompatibleConsensusClients: []ConsensusClient{
+			ConsensusClient_Lighthouse,
+			ConsensusClient_Nimbus,
+			ConsensusClient_Prysm,
+			ConsensusClient_Teku,
+		},
+
 		ProjectID: Parameter{
 			ID:                   "projectID",
 			Name:                 "Project ID",

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -38,7 +39,6 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 	wiz.createFallbackExecutionModal()
 	wiz.createFallbackInfuraModal()
 	wiz.createConsensusModeModal()
-	wiz.createLocalConsensusModal()
 	//wiz.createExternalConsensusModal()
 	wiz.createFinishedModal()
 
@@ -306,15 +306,20 @@ func (wiz *newUserWizard) createFallbackExecutionModal() {
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
 			wiz.md.config.UseFallbackExecutionClient.Value = false
+			wiz.md.setPage(wiz.consensusModeModal.page)
+			wiz.consensusModeModal.focus(0)
 		} else {
 			wiz.md.config.UseFallbackExecutionClient.Value = true
-			selectedClient := clients[buttonIndex].Value.(config.ExecutionClient)
-			wiz.md.config.ExecutionClient.Value = selectedClient
+			selectedClient := clients[buttonIndex-1].Value.(config.ExecutionClient)
+			wiz.md.config.FallbackExecutionClient.Value = selectedClient
 			switch selectedClient {
 			case config.ExecutionClient_Infura:
 				// Switch to the Infura dialog
 				wiz.md.setPage(wiz.fallbackInfuraModal.page)
 				wiz.fallbackInfuraModal.focus()
+			default:
+				wiz.md.setPage(wiz.consensusModeModal.page)
+				wiz.consensusModeModal.focus(0)
 			}
 		}
 	}
@@ -387,6 +392,7 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 		wiz.md.config.ConsensusClientMode.Value = modes[buttonIndex].Value
 		switch modes[buttonIndex].Value {
 		case config.Mode_Local:
+			wiz.createLocalConsensusModal()
 			wiz.md.setPage(wiz.consensusLocalModal.page)
 			wiz.consensusLocalModal.focus(0)
 		case config.Mode_External:
@@ -409,21 +415,29 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 // =========================================
 func (wiz *newUserWizard) createLocalConsensusModal() {
 
+	// Get the list of clients
+	goodClients, badClients := wiz.md.config.GetCompatibleConsensusClients()
+
 	// Create the button names and descriptions from the config
 	clients := wiz.md.config.ConsensusClient.Options
 	clientNames := []string{}
 	clientDescriptions := []string{}
-	for _, client := range clients {
+	for _, client := range goodClients {
 		clientNames = append(clientNames, client.Name)
 		clientDescriptions = append(clientDescriptions, client.Description)
+	}
+
+	incompatibleClientWarning := ""
+	if len(badClients) > 0 {
+		incompatibleClientWarning = fmt.Sprintf("\n\n[orange]NOTE: The following clients are incompatible with your choice of Execution and/or fallback Execution clients: %s", strings.Join(badClients, ", "))
 	}
 
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
 		76,
-		"Please select the Consensus client you would like to use.\n\n"+
-			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.",
+		fmt.Sprintf("Please select the Consensus client you would like to use.\n\n"+
+			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.%s", incompatibleClientWarning),
 		clientNames,
 		clientDescriptions,
 		DirectionalModalVertical)
