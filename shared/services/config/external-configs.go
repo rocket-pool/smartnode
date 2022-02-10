@@ -2,9 +2,6 @@ package config
 
 // Configuration for external Execution clients
 type ExternalExecutionConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter
 
@@ -14,18 +11,12 @@ type ExternalExecutionConfig struct {
 
 // Configuration for external Consensus clients
 type ExternalConsensusConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter
 }
 
 // Configuration for external Consensus clients
 type ExternalPrysmConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// The URL of the gRPC (REST) endpoint for the Beacon API
 	HttpUrl Parameter
 
@@ -36,8 +27,6 @@ type ExternalPrysmConfig struct {
 // Generates a new ExternalExecutionConfig configuration
 func NewExternalExecutionConfig(config *MasterConfig) *ExternalExecutionConfig {
 	return &ExternalExecutionConfig{
-		MasterConfig: config,
-
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
 			Name:                 "HTTP URL",
@@ -67,8 +56,6 @@ func NewExternalExecutionConfig(config *MasterConfig) *ExternalExecutionConfig {
 // Generates a new ExternalConsensusClient configuration
 func NewExternalConsensusConfig(config *MasterConfig) *ExternalConsensusConfig {
 	return &ExternalConsensusConfig{
-		MasterConfig: config,
-
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
 			Name:                 "HTTP URL",
@@ -86,8 +73,6 @@ func NewExternalConsensusConfig(config *MasterConfig) *ExternalConsensusConfig {
 // Generates a new ExternalPrysmConfig configuration
 func NewExternalPrysmConfig(config *MasterConfig) *ExternalPrysmConfig {
 	return &ExternalPrysmConfig{
-		MasterConfig: config,
-
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
 			Name:                 "HTTP URL",
@@ -112,4 +97,21 @@ func NewExternalPrysmConfig(config *MasterConfig) *ExternalPrysmConfig {
 			OverwriteOnUpgrade:   false,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *ExternalExecutionConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.HttpUrl, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.WsUrl, oldNetwork, newNetwork)
+}
+
+// Handle a network change on all of the parameters
+func (config *ExternalConsensusConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.HttpUrl, oldNetwork, newNetwork)
+}
+
+// Handle a network change on all of the parameters
+func (config *ExternalPrysmConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.HttpUrl, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.JsonRpcUrl, oldNetwork, newNetwork)
 }

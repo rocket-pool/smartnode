@@ -4,32 +4,27 @@ const tekuTag string = "consensys/teku:22.1.1"
 
 // Configuration for Teku
 type TekuConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Common parameters that Teku doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
 	// The Docker Hub tag for Lighthouse
-	ContainerTag *Parameter
+	ContainerTag Parameter
 
 	// Custom command line flags for the BN
-	AdditionalBnFlags *Parameter
+	AdditionalBnFlags Parameter
 
 	// Custom command line flags for the VC
-	AdditionalVcFlags *Parameter
+	AdditionalVcFlags Parameter
 }
 
 // Generates a new Teku configuration
 func NewTekuConfig(config *MasterConfig) *TekuConfig {
 	return &TekuConfig{
-		MasterConfig: config,
-
 		UnsupportedCommonParams: []string{
 			doppelgangerDetectionID,
 		},
 
-		ContainerTag: &Parameter{
+		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Teku container you want to use on Docker Hub.",
@@ -41,7 +36,7 @@ func NewTekuConfig(config *MasterConfig) *TekuConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalBnFlags: &Parameter{
+		AdditionalBnFlags: Parameter{
 			ID:                   "additionalBnFlags",
 			Name:                 "Additional Beacon Node Flags",
 			Description:          "Additional custom command line flags you want to pass Teku's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
@@ -53,7 +48,7 @@ func NewTekuConfig(config *MasterConfig) *TekuConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		AdditionalVcFlags: &Parameter{
+		AdditionalVcFlags: Parameter{
 			ID:                   "additionalVcFlags",
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Teku's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
@@ -65,4 +60,11 @@ func NewTekuConfig(config *MasterConfig) *TekuConfig {
 			OverwriteOnUpgrade:   false,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *TekuConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.AdditionalBnFlags, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.AdditionalVcFlags, oldNetwork, newNetwork)
 }

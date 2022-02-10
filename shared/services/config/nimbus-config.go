@@ -4,25 +4,20 @@ const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.6.0"
 
 // Configuration for Nimbus
 type NimbusConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
 	// The Docker Hub tag for Nimbus
-	ContainerName *Parameter
+	ContainerName Parameter
 
 	// Custom command line flags for Nimbus
-	AdditionalFlags *Parameter
+	AdditionalFlags Parameter
 }
 
 // Generates a new Nimbus configuration
 func NewNimbusConfig(config *MasterConfig) *NimbusConfig {
 	return &NimbusConfig{
-		MasterConfig: config,
-
-		ContainerName: &Parameter{
+		ContainerName: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Nimbus container you want to use on Docker Hub.",
@@ -34,7 +29,7 @@ func NewNimbusConfig(config *MasterConfig) *NimbusConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalFlags: &Parameter{
+		AdditionalFlags: Parameter{
 			ID:                   "additionalFlags",
 			Name:                 "Additional Flags",
 			Description:          "Additional custom command line flags you want to pass to Nimbus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
@@ -46,4 +41,10 @@ func NewNimbusConfig(config *MasterConfig) *NimbusConfig {
 			OverwriteOnUpgrade:   false,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *NimbusConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.ContainerName, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.AdditionalFlags, oldNetwork, newNetwork)
 }

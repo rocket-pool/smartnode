@@ -4,28 +4,23 @@ const lighthouseTag string = "sigp/lighthouse:v2.1.2"
 
 // Configuration for Lighthouse
 type LighthouseConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Common parameters that Lighthouse doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
 	// The Docker Hub tag for Lighthouse
-	ContainerTag *Parameter
+	ContainerTag Parameter
 
 	// Custom command line flags for the BN
-	AdditionalBnFlags *Parameter
+	AdditionalBnFlags Parameter
 
 	// Custom command line flags for the VC
-	AdditionalVcFlags *Parameter
+	AdditionalVcFlags Parameter
 }
 
 // Generates a new Lighthouse configuration
 func NewLighthouseConfig(config *MasterConfig) *LighthouseConfig {
 	return &LighthouseConfig{
-		MasterConfig: config,
-
-		ContainerTag: &Parameter{
+		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Lighthouse container you want to use from Docker Hub.",
@@ -37,7 +32,7 @@ func NewLighthouseConfig(config *MasterConfig) *LighthouseConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalBnFlags: &Parameter{
+		AdditionalBnFlags: Parameter{
 			ID:                   "additionalBnFlags",
 			Name:                 "Additional Beacon Client Flags",
 			Description:          "Additional custom command line flags you want to pass Lighthouse's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
@@ -49,7 +44,7 @@ func NewLighthouseConfig(config *MasterConfig) *LighthouseConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		AdditionalVcFlags: &Parameter{
+		AdditionalVcFlags: Parameter{
 			ID:                   "additionalVcFlags",
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
@@ -61,4 +56,11 @@ func NewLighthouseConfig(config *MasterConfig) *LighthouseConfig {
 			OverwriteOnUpgrade:   false,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *LighthouseConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.AdditionalBnFlags, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.AdditionalVcFlags, oldNetwork, newNetwork)
 }

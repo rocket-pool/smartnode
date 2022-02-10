@@ -2,22 +2,17 @@ package config
 
 // Configuration for Infura
 type InfuraConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Common parameters that Infura doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
 	// The Infura project ID
-	ProjectID *Parameter
+	ProjectID Parameter
 }
 
 // Generates a new Infura configuration
 func NewInfuraConfig(config *MasterConfig) *InfuraConfig {
 	return &InfuraConfig{
-		MasterConfig: config,
-
-		ProjectID: &Parameter{
+		ProjectID: Parameter{
 			ID:                   "projectID",
 			Name:                 "Project ID",
 			Description:          "The ID of your `Ethereum` project in Infura. Note: This is your Project ID, not your Project Secret!",
@@ -29,4 +24,9 @@ func NewInfuraConfig(config *MasterConfig) *InfuraConfig {
 			OverwriteOnUpgrade:   false,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *InfuraConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.ProjectID, oldNetwork, newNetwork)
 }

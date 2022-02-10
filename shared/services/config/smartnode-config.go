@@ -12,9 +12,6 @@ const defaultProjectName string = "rocketpool"
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Docker container prefix
 	ProjectName Parameter
 
@@ -44,8 +41,6 @@ type SmartnodeConfig struct {
 func NewSmartnodeConfig(config *MasterConfig) *SmartnodeConfig {
 
 	return &SmartnodeConfig{
-		MasterConfig: config,
-
 		ProjectName: Parameter{
 			ID:                   "projectName",
 			Name:                 "Project Name",
@@ -155,4 +150,16 @@ func NewSmartnodeConfig(config *MasterConfig) *SmartnodeConfig {
 		},
 	}
 
+}
+
+// Handle a network change on all of the parameters
+func (config *SmartnodeConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.ProjectName, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.DataPath, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ValidatorRestartCommand, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.Network, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ManualMaxFee, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.PriorityFee, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.RplClaimGasThreshold, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.MinipoolStakeGasThreshold, oldNetwork, newNetwork)
 }

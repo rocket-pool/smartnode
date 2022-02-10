@@ -14,41 +14,36 @@ const defaultPrysmOpenRpcPort bool = false
 
 // Configuration for Prysm
 type PrysmConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Common parameters that Prysm doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
 	// The RPC port for BN / VC connections
-	RpcPort *Parameter
+	RpcPort Parameter
 
 	// Toggle for forwarding the RPC API outside of Docker
-	OpenRpcPort *Parameter
+	OpenRpcPort Parameter
 
 	// The Docker Hub tag for the Prysm BN
-	BnContainerTag *Parameter
+	BnContainerTag Parameter
 
 	// The Docker Hub tag for the Prysm VC
-	VcContainerTag *Parameter
+	VcContainerTag Parameter
 
 	// Custom command line flags for the BN
-	AdditionalBnFlags *Parameter
+	AdditionalBnFlags Parameter
 
 	// Custom command line flags for the VC
-	AdditionalVcFlags *Parameter
+	AdditionalVcFlags Parameter
 }
 
 // Generates a new Prysm configuration
 func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
 	return &PrysmConfig{
-		MasterConfig: config,
-
 		UnsupportedCommonParams: []string{
 			checkpointSyncUrlID,
 		},
 
-		RpcPort: &Parameter{
+		RpcPort: Parameter{
 			ID:                   "rpcPort",
 			Name:                 "RPC Port",
 			Description:          "The port Prysm should run its JSON-RPC API on.",
@@ -60,7 +55,7 @@ func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		OpenRpcPort: &Parameter{
+		OpenRpcPort: Parameter{
 			ID:                   "openRpcPort",
 			Name:                 "Open RPC Port",
 			Description:          "Enable this to open Prysm's API ports to your local network, so other machines can access it too.",
@@ -72,7 +67,7 @@ func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		BnContainerTag: &Parameter{
+		BnContainerTag: Parameter{
 			ID:                   "bnContainerTag",
 			Name:                 "Beacon Node Container Tag",
 			Description:          "The tag name of the Prysm Beacon Node container you want to use on Docker Hub.",
@@ -84,7 +79,7 @@ func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
-		VcContainerTag: &Parameter{
+		VcContainerTag: Parameter{
 			ID:                   "vcContainerTag",
 			Name:                 "Validator Client Container Tag",
 			Description:          "The tag name of the Prysm Validator Client container you want to use on Docker Hub.",
@@ -96,7 +91,7 @@ func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalBnFlags: &Parameter{
+		AdditionalBnFlags: Parameter{
 			ID:                   "additionalBnFlags",
 			Name:                 "Additional Beacon Node Flags",
 			Description:          "Additional custom command line flags you want to pass Prysm's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
@@ -108,7 +103,7 @@ func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		AdditionalVcFlags: &Parameter{
+		AdditionalVcFlags: Parameter{
 			ID:                   "additionalVcFlags",
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
@@ -142,4 +137,14 @@ func getPrysmVcTag() string {
 	} else {
 		panic(fmt.Sprint("Prysm doesn't support architecture %s", runtime.GOARCH))
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *PrysmConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.RpcPort, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.OpenRpcPort, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.BnContainerTag, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.VcContainerTag, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.AdditionalBnFlags, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.AdditionalVcFlags, oldNetwork, newNetwork)
 }

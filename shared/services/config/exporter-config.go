@@ -9,25 +9,20 @@ const defaultExporterPort uint16 = 9103
 
 // Configuration for Exporter
 type ExporterConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
-	RootFs *Parameter
+	RootFs Parameter
 
 	// The port to serve metrics on
-	Port *Parameter
+	Port Parameter
 
 	// The Docker Hub tag for Prometheus
-	ContainerTag *Parameter
+	ContainerTag Parameter
 }
 
 // Generates a new Exporter config
 func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 	return &ExporterConfig{
-		MasterConfig: config,
-
-		RootFs: &Parameter{
+		RootFs: Parameter{
 			ID:                   "enableRootFs",
 			Name:                 "Allow Root Filesystem Access",
 			Description:          "Give the exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
@@ -39,7 +34,7 @@ func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		Port: &Parameter{
+		Port: Parameter{
 			ID:                   "port",
 			Name:                 "API Port",
 			Description:          "The port the Exporter should make its statistics available on.",
@@ -51,7 +46,7 @@ func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		ContainerTag: &Parameter{
+		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Exporter container you want to use on Docker Hub.",
@@ -63,4 +58,11 @@ func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 			OverwriteOnUpgrade:   true,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *ExporterConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.RootFs, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.Port, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
 }

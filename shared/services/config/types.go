@@ -90,3 +90,28 @@ type ParameterOption struct {
 	Description string
 	Value       interface{}
 }
+
+type Config interface {
+	changeNetwork(oldNetwork Network, newNetwork Network)
+}
+
+// Apply a network change to a parameter
+func changeNetworkForParameter(parameter *Parameter, oldNetwork Network, newNetwork Network) {
+
+	// Get the current value and the defaults per-network
+	currentValue := parameter.Value
+	oldDefault, exists := parameter.Default[oldNetwork]
+	if !exists {
+		oldDefault = parameter.Default[Network_All]
+	}
+	newDefault, exists := parameter.Default[newNetwork]
+	if !exists {
+		newDefault = parameter.Default[Network_All]
+	}
+
+	// If the old value matches the old default, replace it with the new default
+	if currentValue == oldDefault {
+		parameter.Value = newDefault
+	}
+
+}

@@ -8,22 +8,17 @@ const defaultGrafanaPort uint16 = 3100
 
 // Configuration for Grafana
 type GrafanaConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// The HTTP port to serve on
-	Port *Parameter
+	Port Parameter
 
 	// The Docker Hub tag for Grafana
-	ContainerTag *Parameter
+	ContainerTag Parameter
 }
 
 // Generates a new Grafana config
 func NewGrafanaConfig(config *MasterConfig) *GrafanaConfig {
 	return &GrafanaConfig{
-		MasterConfig: config,
-
-		Port: &Parameter{
+		Port: Parameter{
 			ID:                   "port",
 			Name:                 "HTTP Port",
 			Description:          "The port Grafana should run its HTTP server on - this is the port you will connect to in your browser.",
@@ -35,7 +30,7 @@ func NewGrafanaConfig(config *MasterConfig) *GrafanaConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		ContainerTag: &Parameter{
+		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Grafana container you want to use on Docker Hub.",
@@ -47,4 +42,10 @@ func NewGrafanaConfig(config *MasterConfig) *GrafanaConfig {
 			OverwriteOnUpgrade:   true,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *GrafanaConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.Port, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
 }

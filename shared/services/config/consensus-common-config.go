@@ -15,37 +15,32 @@ const defaultDoppelgangerDetection bool = true
 
 // Common parameters shared by all of the Beacon Clients
 type ConsensusCommonConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Custom proposal graffiti
-	Graffiti *Parameter
+	Graffiti Parameter
 
 	// The checkpoint sync URL if used
-	CheckpointSyncProvider *Parameter
+	CheckpointSyncProvider Parameter
 
 	// The max number of P2P peers to connect to
-	MaxPeers *Parameter
+	MaxPeers Parameter
 
 	// The port to use for gossip traffic
-	P2pPort *Parameter
+	P2pPort Parameter
 
 	// The port to expose the HTTP API on
-	ApiPort *Parameter
+	ApiPort Parameter
 
 	// Toggle for forwarding the HTTP API port outside of Docker
-	OpenApiPort *Parameter
+	OpenApiPort Parameter
 
 	// Toggle for enabling doppelganger detection
-	DoppelgangerDetection *Parameter
+	DoppelgangerDetection Parameter
 }
 
 // Create a new ConsensusCommonParams struct
 func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 	return &ConsensusCommonConfig{
-		MasterConfig: config,
-
-		Graffiti: &Parameter{
+		Graffiti: Parameter{
 			ID:                   "graffiti",
 			Name:                 "Custom Graffiti",
 			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
@@ -57,7 +52,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		CheckpointSyncProvider: &Parameter{
+		CheckpointSyncProvider: Parameter{
 			ID:   checkpointSyncUrlID,
 			Name: "Checkpoint Sync URL",
 			Description: "If you would like to instantly sync using an existing Beacon node, enter its URL.\n" +
@@ -71,7 +66,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		MaxPeers: &Parameter{
+		MaxPeers: Parameter{
 			ID:                   "maxPeers",
 			Name:                 "Max Peers",
 			Description:          "The maximum number of peers %s should try to maintain. You can try lowering this if you have a low-resource system or a constrained network, but try to keep it above 25 or you may run into attestation issues.",
@@ -83,7 +78,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		P2pPort: &Parameter{
+		P2pPort: Parameter{
 			ID:                   "p2pPort",
 			Name:                 "P2P Port",
 			Description:          "The port to use for P2P (blockchain) traffic.",
@@ -95,7 +90,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		ApiPort: &Parameter{
+		ApiPort: Parameter{
 			ID:                   "apiPort",
 			Name:                 "HTTP API Port",
 			Description:          "The port %s should run its HTTP API on.",
@@ -107,7 +102,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		OpenApiPort: &Parameter{
+		OpenApiPort: Parameter{
 			ID:                   "openApiPort",
 			Name:                 "Open API Port",
 			Description:          "Enable this to open %s's API port to your local network, so other machines can access it too.",
@@ -119,7 +114,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		DoppelgangerDetection: &Parameter{
+		DoppelgangerDetection: Parameter{
 			ID:                   doppelgangerDetectionID,
 			Name:                 "Enable Doppelgänger Detection",
 			Description:          "If enabled, %s will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, %s will disable validation duties for them to prevent you from being slashed.",
@@ -133,6 +128,13 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 	}
 }
 
-func (config *ConsensusCommonConfig) HandleNetworkChange(newNetwork Network) {
-
+// Handle a network change on all of the parameters
+func (config *ConsensusCommonConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.Graffiti, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.CheckpointSyncProvider, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.MaxPeers, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.P2pPort, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ApiPort, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.OpenApiPort, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.DoppelgangerDetection, oldNetwork, newNetwork)
 }

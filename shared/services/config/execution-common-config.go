@@ -11,26 +11,21 @@ const defaultEcWsPort uint16 = 8546
 const defaultOpenEcApiPort bool = false
 
 // Configuration for the Execution client
-type ExecutionCommonParams struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
+type ExecutionCommonConfig struct {
 	// The HTTP API port
-	HttpPort *Parameter
+	HttpPort Parameter
 
 	// The Websocket API port
-	WsPort *Parameter
+	WsPort Parameter
 
 	// Toggle for forwarding the HTTP and Websocket API ports outside of Docker
-	OpenRpcPorts *Parameter
+	OpenRpcPorts Parameter
 }
 
-// Create a new ExecutionCommonParams struct
-func NewExecutionCommonParams(config *MasterConfig) *ExecutionCommonParams {
-	return &ExecutionCommonParams{
-		MasterConfig: config,
-
-		HttpPort: &Parameter{
+// Create a new ExecutionCommonConfig struct
+func NewExecutionCommonConfig(config *MasterConfig) *ExecutionCommonConfig {
+	return &ExecutionCommonConfig{
+		HttpPort: Parameter{
 			ID:                   ecHttpPortID,
 			Name:                 "HTTP Port",
 			Description:          "The port %s should use for its HTTP RPC endpoint.",
@@ -42,7 +37,7 @@ func NewExecutionCommonParams(config *MasterConfig) *ExecutionCommonParams {
 			OverwriteOnUpgrade:   false,
 		},
 
-		WsPort: &Parameter{
+		WsPort: Parameter{
 			ID:                   ecWsPortID,
 			Name:                 "Websocket Port",
 			Description:          "The port %s should use for its Websocket RPC endpoint.",
@@ -54,7 +49,7 @@ func NewExecutionCommonParams(config *MasterConfig) *ExecutionCommonParams {
 			OverwriteOnUpgrade:   false,
 		},
 
-		OpenRpcPorts: &Parameter{
+		OpenRpcPorts: Parameter{
 			ID:                   ecOpenRpcPortsID,
 			Name:                 "Open RPC Ports",
 			Description:          "Open the HTTP and Websocket RPC ports to your local network, so other local machines can access your Execution Client's RPC endpoint.",
@@ -66,4 +61,11 @@ func NewExecutionCommonParams(config *MasterConfig) *ExecutionCommonParams {
 			OverwriteOnUpgrade:   false,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *ExecutionCommonConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.HttpPort, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.WsPort, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.OpenRpcPorts, oldNetwork, newNetwork)
 }

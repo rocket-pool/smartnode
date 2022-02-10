@@ -1,7 +1,5 @@
 package config
 
-import "reflect"
-
 // The master configuration struct
 type MasterConfig struct {
 
@@ -15,7 +13,7 @@ type MasterConfig struct {
 	ExecutionClient Parameter
 
 	// Execution client configurations
-	ExecutionCommon   *ExecutionCommonParams
+	ExecutionCommon   *ExecutionCommonConfig
 	Geth              *GethConfig
 	Infura            *InfuraConfig
 	Pocket            *PocketConfig
@@ -29,7 +27,7 @@ type MasterConfig struct {
 	FallbackExecutionClient Parameter
 
 	// Fallback Execution client configurations
-	FallbackExecutionCommon   *ExecutionCommonParams
+	FallbackExecutionCommon   *ExecutionCommonConfig
 	FallbackInfura            *InfuraConfig
 	FallbackPocket            *PocketConfig
 	FallbackExternalExecution *ExternalExecutionConfig
@@ -273,12 +271,12 @@ func NewMasterConfig() *MasterConfig {
 	config.ConsensusClientMode.Default[Network_All] = config.ConsensusClientMode.Options[0]
 
 	config.Smartnode = NewSmartnodeConfig(config)
-	config.ExecutionCommon = NewExecutionCommonParams(config)
+	config.ExecutionCommon = NewExecutionCommonConfig(config)
 	config.Geth = NewGethConfig(config)
 	config.Infura = NewInfuraConfig(config)
 	config.Pocket = NewPocketConfig(config)
 	config.ExternalExecution = NewExternalExecutionConfig(config)
-	config.FallbackExecutionCommon = NewExecutionCommonParams(config)
+	config.FallbackExecutionCommon = NewExecutionCommonConfig(config)
 	config.FallbackInfura = NewInfuraConfig(config)
 	config.FallbackPocket = NewPocketConfig(config)
 	config.FallbackExternalExecution = NewExternalExecutionConfig(config)
@@ -296,49 +294,48 @@ func NewMasterConfig() *MasterConfig {
 	return config
 }
 
-// Triggers when a network change occurs
+// Handle a network change on all of the parameters
 func (config *MasterConfig) ChangeNetwork(newNetwork Network) {
-	currentNetwork, ok := config.Smartnode.Network.Value.(Network)
+
+	// Get the current network
+	oldNetwork, ok := config.Smartnode.Network.Value.(Network)
 	if !ok {
-		currentNetwork = Network_Unknown
+		oldNetwork = Network_Unknown
 	}
-	if currentNetwork != newNetwork {
-		changeNetworkImpl(config, currentNetwork, newNetwork)
-	}
-	config.Smartnode.Network.Value = newNetwork
-}
-
-// Reflectively go through a type and apply a network change to all of its parameters and children
-func changeNetworkImpl(object interface{}, oldNetwork Network, newNetwork Network) {
-
-	configValue := reflect.ValueOf(object)
-	numberOfFields := configValue.NumField()
-
-	for i := 0; i < numberOfFields; i++ {
-		field := configValue.Field(i)
-		if field.Kind() == reflect.Struct {
-			// This is a struct, so recurse into it
-			changeNetworkImpl(field, oldNetwork, newNetwork)
-		} else {
-			fieldAsParam, ok := field.Interface().(Parameter)
-			if ok {
-				// This is a Parameter - get the defaults and the current value
-				currentValue := fieldAsParam.Value
-				oldDefault, exists := fieldAsParam.Default[oldNetwork]
-				if !exists {
-					oldDefault = fieldAsParam.Default[Network_All]
-				}
-				newDefault, exists := fieldAsParam.Default[newNetwork]
-				if !exists {
-					newDefault = fieldAsParam.Default[Network_All]
-				}
-
-				// If the old value matches the old default, replace it with the new default
-				if currentValue == oldDefault {
-					fieldAsParam.Value = newDefault
-				}
-			}
-		}
+	if oldNetwork == newNetwork {
+		return
 	}
 
+	// Update the master parameters
+	changeNetworkForParameter(&config.ExecutionClientMode, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ExecutionClient, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.UseFallbackExecutionClient, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.FallbackExecutionClientMode, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.FallbackExecutionClient, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ConsensusClientMode, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ConsensusClient, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.ExternalConsensusClient, oldNetwork, newNetwork)
+	changeNetworkForParameter(&config.EnableMetrics, oldNetwork, newNetwork)
+
+	// Update all of the child config objects
+	config.Smartnode.changeNetwork(oldNetwork, newNetwork)
+	config.ExecutionCommon.changeNetwork(oldNetwork, newNetwork)
+	config.Geth.changeNetwork(oldNetwork, newNetwork)
+	config.Infura.changeNetwork(oldNetwork, newNetwork)
+	config.Pocket.changeNetwork(oldNetwork, newNetwork)
+	config.ExternalExecution.changeNetwork(oldNetwork, newNetwork)
+	config.FallbackExecutionCommon.changeNetwork(oldNetwork, newNetwork)
+	config.FallbackInfura.changeNetwork(oldNetwork, newNetwork)
+	config.FallbackPocket.changeNetwork(oldNetwork, newNetwork)
+	config.FallbackExternalExecution.changeNetwork(oldNetwork, newNetwork)
+	config.ConsensusCommon.changeNetwork(oldNetwork, newNetwork)
+	config.Lighthouse.changeNetwork(oldNetwork, newNetwork)
+	config.Nimbus.changeNetwork(oldNetwork, newNetwork)
+	config.Prysm.changeNetwork(oldNetwork, newNetwork)
+	config.Teku.changeNetwork(oldNetwork, newNetwork)
+	config.ExternalConsensus.changeNetwork(oldNetwork, newNetwork)
+	config.ExternalPrysm.changeNetwork(oldNetwork, newNetwork)
+	config.Grafana.changeNetwork(oldNetwork, newNetwork)
+	config.Prometheus.changeNetwork(oldNetwork, newNetwork)
+	config.Exporter.changeNetwork(oldNetwork, newNetwork)
 }

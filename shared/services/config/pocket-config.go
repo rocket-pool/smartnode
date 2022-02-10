@@ -6,24 +6,19 @@ const defaultPocketGatewayPrater string = "lb/6126b4a783e49000343a3a47"
 
 // Configuration for Pocket
 type PocketConfig struct {
-	// The master configuration this belongs to
-	MasterConfig *MasterConfig
-
 	// Common parameters that Pocket doesn't support and should be hidden
 	UnsupportedCommonParams []string
 
 	// The Pocket gateway ID
-	GatewayID *Parameter
+	GatewayID Parameter
 }
 
 // Generates a new Pocket configuration
 func NewPocketConfig(config *MasterConfig) *PocketConfig {
 	return &PocketConfig{
-		MasterConfig: config,
-
 		UnsupportedCommonParams: []string{ecWsPortID},
 
-		GatewayID: &Parameter{
+		GatewayID: Parameter{
 			ID:          "gatewayID",
 			Name:        "Gateway ID",
 			Description: "If you would like to use a custom gateway for Pocket instead of the default Rocket Pool gateway, enter it here.",
@@ -38,4 +33,9 @@ func NewPocketConfig(config *MasterConfig) *PocketConfig {
 			OverwriteOnUpgrade:   false,
 		},
 	}
+}
+
+// Handle a network change on all of the parameters
+func (config *PocketConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
+	changeNetworkForParameter(&config.GatewayID, oldNetwork, newNetwork)
 }
