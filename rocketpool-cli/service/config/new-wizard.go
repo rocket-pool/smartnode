@@ -29,7 +29,8 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 	wiz.createWelcomeModal()
 	wiz.createNetworkModal()
 	wiz.createExecutionModeModal()
-	wiz.createExecutionDockerModal()
+	wiz.createLocalExecutionModal()
+	wiz.createExternalExecutionModal()
 	wiz.createConsensusDockerModal()
 	wiz.createFinishedModal()
 
@@ -155,7 +156,7 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 // ========================================
 // === 4a: Select Local Exection Client ===
 // ========================================
-func (wiz *newUserWizard) createExecutionDockerModal() {
+func (wiz *newUserWizard) createLocalExecutionModal() {
 
 	// Create the button names and descriptions from the config
 	clients := wiz.md.config.ExecutionClient.Options
@@ -194,7 +195,7 @@ func (wiz *newUserWizard) createExecutionDockerModal() {
 
 	// Create the page
 	wiz.executionLocalModal = modal
-	page := newPage(nil, "new-user-execution-local", "New User Wizard > [4/8] Execution Client", "", modal.borderGrid)
+	page := newPage(nil, "new-user-execution-local", "New User Wizard > [4/8] Execution Client (Local)", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -212,8 +213,8 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
-		76,
-		"Please enter the URL of the HTTP-based RPC API for your existing Execution client and the URL of the Websocket-based RPC API for your existing client.\n\n"+
+		70,
+		"Please enter the URL of the HTTP-based RPC API and the URL of the Websocket-based RPC API for your existing client.\n\n"+
 			"For example: `http://192.168.1.45:8545` and `ws://192.168.1.45:8546`",
 		[]string{httpLabel, wsLabel},
 		[]string{})
@@ -226,7 +227,7 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 
 	// Create the page
 	wiz.executionExternalModal = modal
-	page := newPage(nil, "new-user-execution-external", "New User Wizard > [4/8] Execution Client", "", modal.borderGrid)
+	page := newPage(nil, "new-user-execution-external", "New User Wizard > [4/8] Execution Client (External)", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 

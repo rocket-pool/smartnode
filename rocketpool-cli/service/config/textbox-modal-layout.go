@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -15,7 +16,7 @@ type textBoxModalLayout struct {
 
 	borderGrid  *tview.Grid
 	contentGrid *tview.Grid
-	buttonGrid  *tview.Grid
+	controlGrid *tview.Grid
 	done        func(text map[string]string)
 
 	firstTextbox *tview.InputField
@@ -28,8 +29,9 @@ type textBoxModalLayout struct {
 func newTextBoxModalLayout(app *tview.Application, width int, text string, labels []string, defaultValues []string) *textBoxModalLayout {
 
 	layout := &textBoxModalLayout{
-		app:   app,
-		width: width,
+		app:       app,
+		width:     width,
+		textboxes: map[string]*tview.InputField{},
 	}
 
 	// Create the button grid
@@ -55,7 +57,7 @@ func newTextBoxModalLayout(app *tview.Application, width int, text string, label
 		SetRows(0, 1, height, 1).
 		AddItem(textView, 0, 0, 1, 1, 0, 0, false).
 		AddItem(spacer1, 1, 0, 1, 1, 0, 0, false).
-		AddItem(layout.buttonGrid, 2, 0, 1, 1, 0, 0, true).
+		AddItem(layout.controlGrid, 2, 0, 1, 1, 0, 0, true).
 		AddItem(spacer2, 3, 0, 1, 1, 0, 0, false)
 	contentGrid.
 		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
@@ -67,7 +69,7 @@ func newTextBoxModalLayout(app *tview.Application, width int, text string, label
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
 	// Get the total content height, including spacers and borders
-	lines := tview.WordWrap(text, width)
+	lines := tview.WordWrap(text, width-4)
 	textViewHeight := len(lines) + 2
 	borderGrid.SetRows(0, textViewHeight+height+2, 0, 1)
 
@@ -112,14 +114,16 @@ func newTextBoxModalLayout(app *tview.Application, width int, text string, label
 func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValues []string) int {
 
 	controlGrid := tview.NewGrid().
-		SetRows(1)
+		SetRows(0).
+		SetColumns(-1, -3, -1)
 	controlGrid.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 
 	// Create the form for the controls
 	form := tview.NewForm().
 		SetButtonsAlign(tview.AlignCenter).
 		SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
-		SetButtonTextColor(tview.Styles.PrimaryTextColor)
+		SetButtonTextColor(tview.Styles.PrimaryTextColor).
+		SetFieldBackgroundColor(tcell.ColorBlack)
 	form.
 		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
 		SetBorderPadding(0, 0, 0, 0)
@@ -127,10 +131,16 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValu
 	// Create the controls and add listeners
 	for i := 0; i < len(labels); i++ {
 		textbox := tview.NewInputField().
-			SetLabel(labels[i]).
-			SetText(defaultValues[i])
+			SetLabel(labels[i])
+		if len(defaultValues) > i {
+			textbox.SetText(defaultValues[i])
+		}
 		form.AddFormItem(textbox)
 		layout.textboxes[labels[i]] = textbox
+
+		if layout.firstTextbox == nil {
+			layout.firstTextbox = textbox
+		}
 	}
 	form.AddButton("Next", func() {
 		if layout.done != nil {
@@ -149,8 +159,9 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValu
 		AddItem(leftSpacer, 0, 0, 1, 1, 0, 0, false).
 		AddItem(form, 0, 1, 1, 1, 0, 0, true).
 		AddItem(rightSpacer, 0, 2, 1, 1, 0, 0, false)
+	layout.controlGrid = controlGrid
 
-	return len(labels)*2 - 1
+	return len(labels)*3 - 1
 }
 
 // Focuses the textbox

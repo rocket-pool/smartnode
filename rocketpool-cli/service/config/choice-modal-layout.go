@@ -223,6 +223,7 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 						}
 						layout.app.SetFocus(layout.forms[nextSelection])
 						layout.selected = nextSelection
+						return tcell.NewEventKey(tcell.KeyDown, 0, 0)
 					case tcell.KeyUp, tcell.KeyLeft, tcell.KeyBacktab:
 						var nextSelection int
 						if layout.selected == 0 {
@@ -235,8 +236,10 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 						}
 						layout.app.SetFocus(layout.forms[nextSelection])
 						layout.selected = nextSelection
+						return tcell.NewEventKey(tcell.KeyUp, 0, 0)
+					default:
+						return event
 					}
-					return event
 				})
 
 				// Add the form to the layout's list of forms
