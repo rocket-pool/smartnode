@@ -1,7 +1,12 @@
 package config
 
 // Param IDs
+const GraffitiID string = "graffiti"
 const CheckpointSyncUrlID string = "checkpointSyncUrl"
+const MaxPeersID string = "maxPeers"
+const P2pPortID string = "p2pPort"
+const ApiPortID string = "apiPort"
+const OpenApiPortID string = "openApiPort"
 const DoppelgangerDetectionID string = "doppelgangerDetection"
 
 // Defaults
@@ -41,7 +46,7 @@ type ConsensusCommonConfig struct {
 func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 	return &ConsensusCommonConfig{
 		Graffiti: Parameter{
-			ID:                   "graffiti",
+			ID:                   GraffitiID,
 			Name:                 "Custom Graffiti",
 			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
 			Type:                 ParameterType_String,
@@ -67,7 +72,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 		},
 
 		MaxPeers: Parameter{
-			ID:                   "maxPeers",
+			ID:                   MaxPeersID,
 			Name:                 "Max Peers",
 			Description:          "The maximum number of peers %s should try to maintain. You can try lowering this if you have a low-resource system or a constrained network, but try to keep it above 25 or you may run into attestation issues.",
 			Type:                 ParameterType_Uint16,
@@ -79,7 +84,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 		},
 
 		P2pPort: Parameter{
-			ID:                   "p2pPort",
+			ID:                   P2pPortID,
 			Name:                 "P2P Port",
 			Description:          "The port to use for P2P (blockchain) traffic.",
 			Type:                 ParameterType_Uint16,
@@ -91,7 +96,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 		},
 
 		ApiPort: Parameter{
-			ID:                   "apiPort",
+			ID:                   ApiPortID,
 			Name:                 "HTTP API Port",
 			Description:          "The port %s should run its HTTP API on.",
 			Type:                 ParameterType_Uint16,
@@ -103,7 +108,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 		},
 
 		OpenApiPort: Parameter{
-			ID:                   "openApiPort",
+			ID:                   OpenApiPortID,
 			Name:                 "Open API Port",
 			Description:          "Enable this to open %s's API port to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
@@ -137,4 +142,18 @@ func (config *ConsensusCommonConfig) changeNetwork(oldNetwork Network, newNetwor
 	changeNetworkForParameter(&config.ApiPort, oldNetwork, newNetwork)
 	changeNetworkForParameter(&config.OpenApiPort, oldNetwork, newNetwork)
 	changeNetworkForParameter(&config.DoppelgangerDetection, oldNetwork, newNetwork)
+}
+
+// Serialize the config into a map of settings
+func (config *ConsensusCommonConfig) Serialize() map[string]string {
+	settings := map[string]string{}
+	config.Graffiti.serialize(settings)
+	config.CheckpointSyncProvider.serialize(settings)
+	config.MaxPeers.serialize(settings)
+	config.P2pPort.serialize(settings)
+	config.ApiPort.serialize(settings)
+	config.OpenApiPort.serialize(settings)
+	config.DoppelgangerDetection.serialize(settings)
+
+	return settings
 }
