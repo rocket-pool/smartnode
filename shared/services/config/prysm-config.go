@@ -40,7 +40,7 @@ type PrysmConfig struct {
 func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
 	return &PrysmConfig{
 		UnsupportedCommonParams: []string{
-			checkpointSyncUrlID,
+			CheckpointSyncUrlID,
 		},
 
 		RpcPort: Parameter{
@@ -147,4 +147,9 @@ func (config *PrysmConfig) changeNetwork(oldNetwork Network, newNetwork Network)
 	changeNetworkForParameter(&config.VcContainerTag, oldNetwork, newNetwork)
 	changeNetworkForParameter(&config.AdditionalBnFlags, oldNetwork, newNetwork)
 	changeNetworkForParameter(&config.AdditionalVcFlags, oldNetwork, newNetwork)
+}
+
+// Get the common params that this client doesn't support
+func (config *PrysmConfig) GetUnsupportedCommonParams() []string {
+	return config.UnsupportedCommonParams
 }

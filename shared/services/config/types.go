@@ -115,3 +115,8 @@ func changeNetworkForParameter(parameter *Parameter, oldNetwork Network, newNetw
 	}
 
 }
+
+// Interface for Consensus configurations
+type ConsensusConfig interface {
+	GetUnsupportedCommonParams() []string
+}

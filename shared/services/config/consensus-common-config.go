@@ -1,8 +1,8 @@
 package config
 
 // Param IDs
-const checkpointSyncUrlID string = "checkpointSyncUrl"
-const doppelgangerDetectionID string = "doppelgangerDetection"
+const CheckpointSyncUrlID string = "checkpointSyncUrl"
+const DoppelgangerDetectionID string = "doppelgangerDetection"
 
 // Defaults
 const defaultGraffiti string = ""
@@ -53,7 +53,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 		},
 
 		CheckpointSyncProvider: Parameter{
-			ID:   checkpointSyncUrlID,
+			ID:   CheckpointSyncUrlID,
 			Name: "Checkpoint Sync URL",
 			Description: "If you would like to instantly sync using an existing Beacon node, enter its URL.\n" +
 				"Example: https://<project ID>:<secret>@eth2-beacon-prater.infura.io\n" +
@@ -115,7 +115,7 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 		},
 
 		DoppelgangerDetection: Parameter{
-			ID:                   doppelgangerDetectionID,
+			ID:                   DoppelgangerDetectionID,
 			Name:                 "Enable Doppelgänger Detection",
 			Description:          "If enabled, %s will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, %s will disable validation duties for them to prevent you from being slashed.",
 			Type:                 ParameterType_Bool,

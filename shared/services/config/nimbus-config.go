@@ -48,3 +48,8 @@ func (config *NimbusConfig) changeNetwork(oldNetwork Network, newNetwork Network
 	changeNetworkForParameter(&config.ContainerName, oldNetwork, newNetwork)
 	changeNetworkForParameter(&config.AdditionalFlags, oldNetwork, newNetwork)
 }
+
+// Get the common params that this client doesn't support
+func (config *NimbusConfig) GetUnsupportedCommonParams() []string {
+	return config.UnsupportedCommonParams
+}

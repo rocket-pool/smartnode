@@ -64,3 +64,8 @@ func (config *LighthouseConfig) changeNetwork(oldNetwork Network, newNetwork Net
 	changeNetworkForParameter(&config.AdditionalBnFlags, oldNetwork, newNetwork)
 	changeNetworkForParameter(&config.AdditionalVcFlags, oldNetwork, newNetwork)
 }
+
+// Get the common params that this client doesn't support
+func (config *LighthouseConfig) GetUnsupportedCommonParams() []string {
+	return config.UnsupportedCommonParams
+}

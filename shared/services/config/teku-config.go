@@ -21,7 +21,7 @@ type TekuConfig struct {
 func NewTekuConfig(config *MasterConfig) *TekuConfig {
 	return &TekuConfig{
 		UnsupportedCommonParams: []string{
-			doppelgangerDetectionID,
+			DoppelgangerDetectionID,
 		},
 
 		ContainerTag: Parameter{
@@ -67,4 +67,9 @@ func (config *TekuConfig) changeNetwork(oldNetwork Network, newNetwork Network) 
 	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
 	changeNetworkForParameter(&config.AdditionalBnFlags, oldNetwork, newNetwork)
 	changeNetworkForParameter(&config.AdditionalVcFlags, oldNetwork, newNetwork)
+}
+
+// Get the common params that this client doesn't support
+func (config *TekuConfig) GetUnsupportedCommonParams() []string {
+	return config.UnsupportedCommonParams
 }

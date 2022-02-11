@@ -1,5 +1,7 @@
 package config
 
+import "fmt"
+
 // The master configuration struct
 type MasterConfig struct {
 
@@ -413,4 +415,21 @@ func (config *MasterConfig) GetCompatibleConsensusClients() ([]ParameterOption, 
 
 	return goodClients, badClients
 
+}
+
+// Get the configuration for the selected client
+func (config *MasterConfig) GetSelectedConsensusClientConfig() (ConsensusConfig, error) {
+	client := config.ConsensusClient.Value.(ConsensusClient)
+	switch client {
+	case ConsensusClient_Lighthouse:
+		return config.Lighthouse, nil
+	case ConsensusClient_Nimbus:
+		return config.Nimbus, nil
+	case ConsensusClient_Prysm:
+		return config.Prysm, nil
+	case ConsensusClient_Teku:
+		return config.Teku, nil
+	default:
+		return nil, fmt.Errorf("unknown consensus client [%d] selected", client)
+	}
 }
