@@ -44,8 +44,10 @@ func NewGrafanaConfig(config *MasterConfig) *GrafanaConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *GrafanaConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.Port, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *GrafanaConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.Port,
+		&config.ContainerTag,
+	}
 }

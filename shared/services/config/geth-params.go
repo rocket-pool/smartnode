@@ -169,13 +169,15 @@ func calculateGethPeers() int {
 	return 50
 }
 
-// Handle a network change on all of the parameters
-func (config *GethConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.CacheSize, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.MaxPeers, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.P2pPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.EthstatsLabel, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.EthstatsLogin, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.AdditionalFlags, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *GethConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.CacheSize,
+		&config.MaxPeers,
+		&config.P2pPort,
+		&config.EthstatsLabel,
+		&config.EthstatsLogin,
+		&config.ContainerTag,
+		&config.AdditionalFlags,
+	}
 }

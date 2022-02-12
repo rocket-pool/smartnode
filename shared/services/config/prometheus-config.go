@@ -60,9 +60,11 @@ func NewPrometheusConfig(config *MasterConfig) *PrometheusConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *PrometheusConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.Port, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.OpenPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *PrometheusConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.Port,
+		&config.OpenPort,
+		&config.ContainerTag,
+	}
 }

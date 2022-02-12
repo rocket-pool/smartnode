@@ -2,6 +2,9 @@ package config
 
 import "fmt"
 
+// Constants
+const rootConfigName string = "root"
+
 // The master configuration struct
 type MasterConfig struct {
 
@@ -298,6 +301,47 @@ func NewMasterConfig() *MasterConfig {
 	return config
 }
 
+// Get the parameters for this config
+func (config *MasterConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.ExecutionClientMode,
+		&config.ExecutionClient,
+		&config.UseFallbackExecutionClient,
+		&config.FallbackExecutionClientMode,
+		&config.FallbackExecutionClient,
+		&config.ConsensusClientMode,
+		&config.ConsensusClient,
+		&config.ExternalConsensusClient,
+		&config.EnableMetrics,
+	}
+}
+
+// Get the subconfigurations for this config
+func (config *MasterConfig) GetSubconfigs() map[string]Config {
+	return map[string]Config{
+		"smartnode":                 config.Smartnode,
+		"executionCommon":           config.ExecutionCommon,
+		"geth":                      config.Geth,
+		"infura":                    config.Infura,
+		"pocket":                    config.Pocket,
+		"externalExecution":         config.ExternalExecution,
+		"fallbackExecutionCommon":   config.FallbackExecutionCommon,
+		"fallbackInfura":            config.FallbackInfura,
+		"fallbackPocket":            config.FallbackPocket,
+		"fallbackExternalExecution": config.FallbackExternalExecution,
+		"consensusCommon":           config.ConsensusCommon,
+		"lighthouse":                config.Lighthouse,
+		"nimbus":                    config.Nimbus,
+		"prysm":                     config.Prysm,
+		"teku":                      config.Teku,
+		"externalConsensus":         config.ExternalConsensus,
+		"externalPrysm":             config.ExternalPrysm,
+		"grafana":                   config.Grafana,
+		"prometheus":                config.Prometheus,
+		"exporter":                  config.Exporter,
+	}
+}
+
 // Handle a network change on all of the parameters
 func (config *MasterConfig) ChangeNetwork(newNetwork Network) {
 
@@ -311,37 +355,19 @@ func (config *MasterConfig) ChangeNetwork(newNetwork Network) {
 	}
 
 	// Update the master parameters
-	changeNetworkForParameter(&config.ExecutionClientMode, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ExecutionClient, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.UseFallbackExecutionClient, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.FallbackExecutionClientMode, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.FallbackExecutionClient, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ConsensusClientMode, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ConsensusClient, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ExternalConsensusClient, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.EnableMetrics, oldNetwork, newNetwork)
+	rootParams := config.GetParameters()
+	for _, param := range rootParams {
+		param.changeNetwork(oldNetwork, newNetwork)
+	}
 
 	// Update all of the child config objects
-	config.Smartnode.changeNetwork(oldNetwork, newNetwork)
-	config.ExecutionCommon.changeNetwork(oldNetwork, newNetwork)
-	config.Geth.changeNetwork(oldNetwork, newNetwork)
-	config.Infura.changeNetwork(oldNetwork, newNetwork)
-	config.Pocket.changeNetwork(oldNetwork, newNetwork)
-	config.ExternalExecution.changeNetwork(oldNetwork, newNetwork)
-	config.FallbackExecutionCommon.changeNetwork(oldNetwork, newNetwork)
-	config.FallbackInfura.changeNetwork(oldNetwork, newNetwork)
-	config.FallbackPocket.changeNetwork(oldNetwork, newNetwork)
-	config.FallbackExternalExecution.changeNetwork(oldNetwork, newNetwork)
-	config.ConsensusCommon.changeNetwork(oldNetwork, newNetwork)
-	config.Lighthouse.changeNetwork(oldNetwork, newNetwork)
-	config.Nimbus.changeNetwork(oldNetwork, newNetwork)
-	config.Prysm.changeNetwork(oldNetwork, newNetwork)
-	config.Teku.changeNetwork(oldNetwork, newNetwork)
-	config.ExternalConsensus.changeNetwork(oldNetwork, newNetwork)
-	config.ExternalPrysm.changeNetwork(oldNetwork, newNetwork)
-	config.Grafana.changeNetwork(oldNetwork, newNetwork)
-	config.Prometheus.changeNetwork(oldNetwork, newNetwork)
-	config.Exporter.changeNetwork(oldNetwork, newNetwork)
+	subconfigs := config.GetSubconfigs()
+	for _, subconfig := range subconfigs {
+		for _, param := range subconfig.GetParameters() {
+			param.changeNetwork(oldNetwork, newNetwork)
+		}
+	}
+
 }
 
 // Get the Consensus clients compatible with the config's EC and fallback EC selection
@@ -432,4 +458,60 @@ func (config *MasterConfig) GetSelectedConsensusClientConfig() (ConsensusConfig,
 	default:
 		return nil, fmt.Errorf("unknown consensus client [%d] selected", client)
 	}
+}
+
+// Serializes the configuration into a map of maps, compatible with a settings file
+func (config *MasterConfig) Serialize() map[string]map[string]string {
+
+	masterMap := map[string]map[string]string{}
+
+	// Serialize root params
+	rootParams := map[string]string{}
+	for _, param := range config.GetParameters() {
+		param.serialize(rootParams)
+	}
+	masterMap[rootConfigName] = rootParams
+
+	// Serialize the subconfigs
+	for name, subconfig := range config.GetSubconfigs() {
+		subconfigParams := map[string]string{}
+		for _, param := range subconfig.GetParameters() {
+			param.serialize(subconfigParams)
+		}
+		masterMap[name] = subconfigParams
+	}
+
+	return masterMap
+}
+
+// Deserializes a settings file into this config
+func (config *MasterConfig) Deserialize(masterMap map[string]map[string]string) error {
+
+	// Deserialize root params
+	rootParams, exists := masterMap[rootConfigName]
+	if !exists {
+		return fmt.Errorf("missing config section [%s]", rootConfigName)
+	}
+	for _, param := range config.GetParameters() {
+		err := param.deserialize(rootParams)
+		if err != nil {
+			return fmt.Errorf("error deserializing root config: %w", err)
+		}
+	}
+
+	// Deserialize the subconfigs
+	for name, subconfig := range config.GetSubconfigs() {
+		subconfigParams, exists := masterMap[name]
+		if !exists {
+			return fmt.Errorf("missing config section [%s]", name)
+		}
+		for _, param := range subconfig.GetParameters() {
+			err := param.deserialize(subconfigParams)
+			if err != nil {
+				return fmt.Errorf("error deserializing [name]: %w", err)
+			}
+		}
+	}
+
+	return nil
 }

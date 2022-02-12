@@ -99,19 +99,25 @@ func NewExternalPrysmConfig(config *MasterConfig) *ExternalPrysmConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *ExternalExecutionConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.HttpUrl, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.WsUrl, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *ExternalExecutionConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.HttpUrl,
+		&config.WsUrl,
+	}
 }
 
-// Handle a network change on all of the parameters
-func (config *ExternalConsensusConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.HttpUrl, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *ExternalConsensusConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.HttpUrl,
+	}
 }
 
-// Handle a network change on all of the parameters
-func (config *ExternalPrysmConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.HttpUrl, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.JsonRpcUrl, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *ExternalPrysmConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.HttpUrl,
+		&config.JsonRpcUrl,
+	}
 }

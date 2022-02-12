@@ -68,9 +68,7 @@ const (
 )
 
 type Config interface {
-	changeNetwork(oldNetwork Network, newNetwork Network)
-	Serialize() map[string]string
-	Deserialize(map[string]string)
+	GetParameters() []*Parameter
 }
 
 // Interface for Consensus configurations

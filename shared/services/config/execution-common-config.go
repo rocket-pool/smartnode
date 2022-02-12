@@ -63,9 +63,11 @@ func NewExecutionCommonConfig(config *MasterConfig) *ExecutionCommonConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *ExecutionCommonConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.HttpPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.WsPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.OpenRpcPorts, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *ExecutionCommonConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.HttpPort,
+		&config.WsPort,
+		&config.OpenRpcPorts,
+	}
 }

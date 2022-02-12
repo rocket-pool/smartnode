@@ -62,11 +62,13 @@ func NewTekuConfig(config *MasterConfig) *TekuConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *TekuConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.AdditionalBnFlags, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.AdditionalVcFlags, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *TekuConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.ContainerTag,
+		&config.AdditionalBnFlags,
+		&config.AdditionalVcFlags,
+	}
 }
 
 // Get the common params that this client doesn't support

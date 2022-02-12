@@ -152,14 +152,16 @@ func NewSmartnodeConfig(config *MasterConfig) *SmartnodeConfig {
 
 }
 
-// Handle a network change on all of the parameters
-func (config *SmartnodeConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.ProjectName, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.DataPath, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ValidatorRestartCommand, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.Network, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ManualMaxFee, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.PriorityFee, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.RplClaimGasThreshold, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.MinipoolStakeGasThreshold, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *SmartnodeConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.ProjectName,
+		&config.DataPath,
+		&config.ValidatorRestartCommand,
+		&config.Network,
+		&config.ManualMaxFee,
+		&config.PriorityFee,
+		&config.RplClaimGasThreshold,
+		&config.MinipoolStakeGasThreshold,
+	}
 }

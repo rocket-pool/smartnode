@@ -60,9 +60,11 @@ func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *ExporterConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.RootFs, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.Port, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ContainerTag, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *ExporterConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.RootFs,
+		&config.Port,
+		&config.ContainerTag,
+	}
 }

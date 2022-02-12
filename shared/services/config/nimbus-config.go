@@ -8,7 +8,7 @@ type NimbusConfig struct {
 	UnsupportedCommonParams []string
 
 	// The Docker Hub tag for Nimbus
-	ContainerName Parameter
+	ContainerTag Parameter
 
 	// Custom command line flags for Nimbus
 	AdditionalFlags Parameter
@@ -17,7 +17,7 @@ type NimbusConfig struct {
 // Generates a new Nimbus configuration
 func NewNimbusConfig(config *MasterConfig) *NimbusConfig {
 	return &NimbusConfig{
-		ContainerName: Parameter{
+		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Nimbus container you want to use on Docker Hub.",
@@ -43,10 +43,12 @@ func NewNimbusConfig(config *MasterConfig) *NimbusConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *NimbusConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.ContainerName, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.AdditionalFlags, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *NimbusConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.ContainerTag,
+		&config.AdditionalFlags,
+	}
 }
 
 // Get the common params that this client doesn't support

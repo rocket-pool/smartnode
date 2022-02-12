@@ -36,7 +36,9 @@ func NewInfuraConfig(config *MasterConfig) *InfuraConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *InfuraConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.ProjectID, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *InfuraConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.ProjectID,
+	}
 }

@@ -133,27 +133,15 @@ func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *ConsensusCommonConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.Graffiti, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.CheckpointSyncProvider, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.MaxPeers, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.P2pPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.ApiPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.OpenApiPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.DoppelgangerDetection, oldNetwork, newNetwork)
-}
-
-// Serialize the config into a map of settings
-func (config *ConsensusCommonConfig) Serialize() map[string]string {
-	settings := map[string]string{}
-	config.Graffiti.serialize(settings)
-	config.CheckpointSyncProvider.serialize(settings)
-	config.MaxPeers.serialize(settings)
-	config.P2pPort.serialize(settings)
-	config.ApiPort.serialize(settings)
-	config.OpenApiPort.serialize(settings)
-	config.DoppelgangerDetection.serialize(settings)
-
-	return settings
+// Get the parameters for this config
+func (config *ConsensusCommonConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.Graffiti,
+		&config.CheckpointSyncProvider,
+		&config.MaxPeers,
+		&config.P2pPort,
+		&config.ApiPort,
+		&config.OpenApiPort,
+		&config.DoppelgangerDetection,
+	}
 }

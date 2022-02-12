@@ -31,22 +31,22 @@ type ParameterOption struct {
 }
 
 // Apply a network change to a parameter
-func changeNetworkForParameter(parameter *Parameter, oldNetwork Network, newNetwork Network) {
+func (param *Parameter) changeNetwork(oldNetwork Network, newNetwork Network) {
 
 	// Get the current value and the defaults per-network
-	currentValue := parameter.Value
-	oldDefault, exists := parameter.Default[oldNetwork]
+	currentValue := param.Value
+	oldDefault, exists := param.Default[oldNetwork]
 	if !exists {
-		oldDefault = parameter.Default[Network_All]
+		oldDefault = param.Default[Network_All]
 	}
-	newDefault, exists := parameter.Default[newNetwork]
+	newDefault, exists := param.Default[newNetwork]
 	if !exists {
-		newDefault = parameter.Default[Network_All]
+		newDefault = param.Default[Network_All]
 	}
 
 	// If the old value matches the old default, replace it with the new default
 	if currentValue == oldDefault {
-		parameter.Value = newDefault
+		param.Value = newDefault
 	}
 
 }

@@ -44,7 +44,9 @@ func NewPocketConfig(config *MasterConfig) *PocketConfig {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *PocketConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.GatewayID, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *PocketConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.GatewayID,
+	}
 }

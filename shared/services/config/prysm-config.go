@@ -139,14 +139,16 @@ func getPrysmVcTag() string {
 	}
 }
 
-// Handle a network change on all of the parameters
-func (config *PrysmConfig) changeNetwork(oldNetwork Network, newNetwork Network) {
-	changeNetworkForParameter(&config.RpcPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.OpenRpcPort, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.BnContainerTag, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.VcContainerTag, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.AdditionalBnFlags, oldNetwork, newNetwork)
-	changeNetworkForParameter(&config.AdditionalVcFlags, oldNetwork, newNetwork)
+// Get the parameters for this config
+func (config *PrysmConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.RpcPort,
+		&config.OpenRpcPort,
+		&config.BnContainerTag,
+		&config.VcContainerTag,
+		&config.AdditionalBnFlags,
+		&config.AdditionalVcFlags,
+	}
 }
 
 // Get the common params that this client doesn't support
