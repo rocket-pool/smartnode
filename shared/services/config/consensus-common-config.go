@@ -21,25 +21,25 @@ const defaultDoppelgangerDetection bool = true
 // Common parameters shared by all of the Beacon Clients
 type ConsensusCommonConfig struct {
 	// Custom proposal graffiti
-	Graffiti Parameter
+	Graffiti Parameter `yaml:"graffiti,omitempty"`
 
 	// The checkpoint sync URL if used
-	CheckpointSyncProvider Parameter
+	CheckpointSyncProvider Parameter `yaml:"checkpointSyncProvider,omitempty"`
 
 	// The max number of P2P peers to connect to
-	MaxPeers Parameter
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// The port to use for gossip traffic
-	P2pPort Parameter
+	P2pPort Parameter `yaml:"p2pPort,omitempty"`
 
 	// The port to expose the HTTP API on
-	ApiPort Parameter
+	ApiPort Parameter `yaml:"apiPort,omitempty"`
 
 	// Toggle for forwarding the HTTP API port outside of Docker
-	OpenApiPort Parameter
+	OpenApiPort Parameter `yaml:"openApiPort,omitempty"`
 
 	// Toggle for enabling doppelganger detection
-	DoppelgangerDetection Parameter
+	DoppelgangerDetection Parameter `yaml:"doppelgangerDetection,omitempty"`
 }
 
 // Create a new ConsensusCommonParams struct

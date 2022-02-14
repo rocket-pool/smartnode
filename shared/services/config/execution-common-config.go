@@ -13,13 +13,13 @@ const defaultOpenEcApiPort bool = false
 // Configuration for the Execution client
 type ExecutionCommonConfig struct {
 	// The HTTP API port
-	HttpPort Parameter
+	HttpPort Parameter `yaml:"httpPort,omitempty"`
 
 	// The Websocket API port
-	WsPort Parameter
+	WsPort Parameter `yaml:"wsPort,omitempty"`
 
 	// Toggle for forwarding the HTTP and Websocket API ports outside of Docker
-	OpenRpcPorts Parameter
+	OpenRpcPorts Parameter `yaml:"openRpcPorts,omitempty"`
 }
 
 // Create a new ExecutionCommonConfig struct

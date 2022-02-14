@@ -147,7 +147,7 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValu
 		if layout.done != nil {
 			text := map[string]string{}
 			for label, textbox := range layout.textboxes {
-				text[label] = textbox.GetLabel()
+				text[label] = textbox.GetText()
 			}
 			layout.done(text)
 		}

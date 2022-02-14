@@ -10,13 +10,13 @@ const defaultPrometheusOpenPort bool = false
 // Configuration for Prometheus
 type PrometheusConfig struct {
 	// The port to serve metrics on
-	Port Parameter
+	Port Parameter `yaml:"port,omitempty"`
 
 	// Toggle for forwarding the API port outside of Docker
-	OpenPort Parameter
+	OpenPort Parameter `yaml:"openPort,omitempty"`
 
 	// The Docker Hub tag for Prometheus
-	ContainerTag Parameter
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 }
 
 // Generates a new Prometheus config

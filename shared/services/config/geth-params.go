@@ -15,31 +15,31 @@ const defaultGethP2pPort uint16 = 30303
 // Configuration for Geth
 type GethConfig struct {
 	// Common parameters that Geth doesn't support and should be hidden
-	UnsupportedCommonParams []string
+	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []ConsensusClient
+	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
 
 	// Size of Geth's Cache
-	CacheSize Parameter
+	CacheSize Parameter `yaml:"cacheSize,omitempty"`
 
 	// Max number of P2P peers to connect to
-	MaxPeers Parameter
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// P2P traffic port
-	P2pPort Parameter
+	P2pPort Parameter `yaml:"p2pPort,omitempty"`
 
 	// Label for Ethstats
-	EthstatsLabel Parameter
+	EthstatsLabel Parameter `yaml:"ethstatsLabel,omitempty"`
 
 	// Login info for Ethstats
-	EthstatsLogin Parameter
+	EthstatsLogin Parameter `yaml:"ethstatsLogin,omitempty"`
 
 	// The Docker Hub tag for Geth
-	ContainerTag Parameter
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags
-	AdditionalFlags Parameter
+	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
 }
 
 // Generates a new Geth configuration

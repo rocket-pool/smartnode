@@ -13,28 +13,28 @@ const defaultProjectName string = "rocketpool"
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
 	// Docker container prefix
-	ProjectName Parameter
+	ProjectName Parameter `yaml:"projectName,omitempty"`
 
 	// The path of the data folder where everything is stored
-	DataPath Parameter
+	DataPath Parameter `yaml:"dataPath,omitempty"`
 
 	// The command for restarting the validator container in native mode
-	ValidatorRestartCommand Parameter
+	ValidatorRestartCommand Parameter `yaml:"validatorRestartCommand,omitempty"`
 
 	// Which network we're on
-	Network Parameter
+	Network Parameter `yaml:"network,omitempty"`
 
 	// Manual max fee override
-	ManualMaxFee Parameter
+	ManualMaxFee Parameter `yaml:"manualMaxFee,omitempty"`
 
 	// Manual priority fee override
-	PriorityFee Parameter
+	PriorityFee Parameter `yaml:"priorityFee,omitempty"`
 
 	// Threshold for auto RPL claims
-	RplClaimGasThreshold Parameter
+	RplClaimGasThreshold Parameter `yaml:"rplClaimGasThreshold,omitempty"`
 
 	// Threshold for auto minipool stakes
-	MinipoolStakeGasThreshold Parameter
+	MinipoolStakeGasThreshold Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
 }
 
 // Generates a new Smartnode configuration

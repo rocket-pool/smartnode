@@ -9,10 +9,10 @@ const defaultGrafanaPort uint16 = 3100
 // Configuration for Grafana
 type GrafanaConfig struct {
 	// The HTTP port to serve on
-	Port Parameter
+	Port Parameter `yaml:"port,omitempty"`
 
 	// The Docker Hub tag for Grafana
-	ContainerTag Parameter
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 }
 
 // Generates a new Grafana config

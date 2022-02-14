@@ -10,13 +10,13 @@ const defaultExporterPort uint16 = 9103
 // Configuration for Exporter
 type ExporterConfig struct {
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
-	RootFs Parameter
+	RootFs Parameter `yaml:"rootFs,omitempty"`
 
 	// The port to serve metrics on
-	Port Parameter
+	Port Parameter `yaml:"port,omitempty"`
 
 	// The Docker Hub tag for Prometheus
-	ContainerTag Parameter
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 }
 
 // Generates a new Exporter config

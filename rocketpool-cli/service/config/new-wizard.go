@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/rocket-pool/smartnode/shared"
@@ -745,9 +746,15 @@ func (wiz *newUserWizard) createFinishedModal() {
 			finalConfig := wiz.md.config.Serialize()
 			bytes, err := yaml.Marshal(finalConfig)
 			if err != nil {
+				fmt.Printf("Error serializing settings: %s", err.Error())
+			}
+			ioutil.WriteFile("settings.yml", bytes, 0)
+
+			bytes, err = yaml.Marshal(wiz.md.config)
+			if err != nil {
 				fmt.Printf("Error serializing config: %s", err.Error())
 			}
-			fmt.Println(string(bytes))
+			ioutil.WriteFile("config.yml", bytes, 0)
 		}
 	}
 

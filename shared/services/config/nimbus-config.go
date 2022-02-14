@@ -5,13 +5,13 @@ const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.6.0"
 // Configuration for Nimbus
 type NimbusConfig struct {
 	// Common parameters that Nimbus doesn't support and should be hidden
-	UnsupportedCommonParams []string
+	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
 	// The Docker Hub tag for Nimbus
-	ContainerTag Parameter
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags for Nimbus
-	AdditionalFlags Parameter
+	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
 }
 
 // Generates a new Nimbus configuration

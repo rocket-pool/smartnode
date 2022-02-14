@@ -3,13 +3,13 @@ package config
 // Configuration for Infura
 type InfuraConfig struct {
 	// Common parameters that Infura doesn't support and should be hidden
-	UnsupportedCommonParams []string
+	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []ConsensusClient
+	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
 
 	// The Infura project ID
-	ProjectID Parameter
+	ProjectID Parameter `yaml:"projectID,omitempty"`
 }
 
 // Generates a new Infura configuration

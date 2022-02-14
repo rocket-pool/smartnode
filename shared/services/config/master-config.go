@@ -9,57 +9,57 @@ const rootConfigName string = "root"
 type MasterConfig struct {
 
 	// The Smartnode configuration
-	Smartnode *SmartnodeConfig
+	Smartnode *SmartnodeConfig `yaml:"smartnode"`
 
 	// Toggle for external Execution clients
-	ExecutionClientMode Parameter
+	ExecutionClientMode Parameter `yaml:"executionClientMode"`
 
 	// Local Execution client, if selected
-	ExecutionClient Parameter
+	ExecutionClient Parameter `yaml:"executionClient"`
 
 	// Execution client configurations
-	ExecutionCommon   *ExecutionCommonConfig
-	Geth              *GethConfig
-	Infura            *InfuraConfig
-	Pocket            *PocketConfig
-	ExternalExecution *ExternalExecutionConfig
+	ExecutionCommon   *ExecutionCommonConfig   `yaml:"executionCommon,omitempty"`
+	Geth              *GethConfig              `yaml:"geth,omitempty"`
+	Infura            *InfuraConfig            `yaml:"infura,omitempty"`
+	Pocket            *PocketConfig            `yaml:"pocket,omitempty"`
+	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
 
 	// Toggles for a fallback Execution client and client mode
-	UseFallbackExecutionClient  Parameter
-	FallbackExecutionClientMode Parameter
+	UseFallbackExecutionClient  Parameter `yaml:"useFallbackExecutionClient,omitempty"`
+	FallbackExecutionClientMode Parameter `yaml:"fallbackExecutionClientMode,omitempty"`
 
 	// Fallback Execution client, if enabled
-	FallbackExecutionClient Parameter
+	FallbackExecutionClient Parameter `yaml:"fallbackExecutionClient,omitempty"`
 
 	// Fallback Execution client configurations
-	FallbackExecutionCommon   *ExecutionCommonConfig
-	FallbackInfura            *InfuraConfig
-	FallbackPocket            *PocketConfig
-	FallbackExternalExecution *ExternalExecutionConfig
+	FallbackExecutionCommon   *ExecutionCommonConfig   `yaml:"fallbackExecutionCommon,omitempty"`
+	FallbackInfura            *InfuraConfig            `yaml:"fallbackInfura,omitempty"`
+	FallbackPocket            *PocketConfig            `yaml:"fallbackPocket,omitempty"`
+	FallbackExternalExecution *ExternalExecutionConfig `yaml:"fallbackExternalExecution,omitempty"`
 
 	// Toggle for external Consensus clients
-	ConsensusClientMode Parameter
+	ConsensusClientMode Parameter `yaml:"consensusClientMode,omitempty"`
 
 	// Selected Consensus client
-	ConsensusClient         Parameter
-	ExternalConsensusClient Parameter
+	ConsensusClient         Parameter `yaml:"consensusClient,omitempty"`
+	ExternalConsensusClient Parameter `yaml:"externalConsensusClient,omitempty"`
 
 	// Consensus client configurations
-	ConsensusCommon   *ConsensusCommonConfig
-	Lighthouse        *LighthouseConfig
-	Nimbus            *NimbusConfig
-	Prysm             *PrysmConfig
-	Teku              *TekuConfig
-	ExternalConsensus *ExternalConsensusConfig
-	ExternalPrysm     *ExternalPrysmConfig
+	ConsensusCommon   *ConsensusCommonConfig   `yaml:"consensusCommon,omitempty"`
+	Lighthouse        *LighthouseConfig        `yaml:"lighthouse,omitempty"`
+	Nimbus            *NimbusConfig            `yaml:"nimbus,omitempty"`
+	Prysm             *PrysmConfig             `yaml:"prysm,omitempty"`
+	Teku              *TekuConfig              `yaml:"teku,omitempty"`
+	ExternalConsensus *ExternalConsensusConfig `yaml:"externalConsensus,omitempty"`
+	ExternalPrysm     *ExternalPrysmConfig     `yaml:"externalPrysm,omitempty"`
 
 	// Toggle for metrics
-	EnableMetrics Parameter
+	EnableMetrics Parameter `yaml:"enableMetrics,omitempty"`
 
 	// Metrics
-	Grafana    *GrafanaConfig
-	Prometheus *PrometheusConfig
-	Exporter   *ExporterConfig
+	Grafana    *GrafanaConfig    `yaml:"grafana,omitempty"`
+	Prometheus *PrometheusConfig `yaml:"prometheus,omitempty"`
+	Exporter   *ExporterConfig   `yaml:"exporter,omitempty"`
 }
 
 // Creates a new master Configuration instance
@@ -273,9 +273,9 @@ func NewMasterConfig() *MasterConfig {
 	}
 
 	// Set the defaults for choices
-	config.ExecutionClientMode.Default[Network_All] = config.ExecutionClientMode.Options[0]
-	config.FallbackExecutionClientMode.Default[Network_All] = config.FallbackExecutionClientMode.Options[0]
-	config.ConsensusClientMode.Default[Network_All] = config.ConsensusClientMode.Options[0]
+	config.ExecutionClientMode.Default[Network_All] = config.ExecutionClientMode.Options[0].Value
+	config.FallbackExecutionClientMode.Default[Network_All] = config.FallbackExecutionClientMode.Options[0].Value
+	config.ConsensusClientMode.Default[Network_All] = config.ConsensusClientMode.Options[0].Value
 
 	config.Smartnode = NewSmartnodeConfig(config)
 	config.ExecutionCommon = NewExecutionCommonConfig(config)
@@ -297,6 +297,9 @@ func NewMasterConfig() *MasterConfig {
 	config.Grafana = NewGrafanaConfig(config)
 	config.Prometheus = NewPrometheusConfig(config)
 	config.Exporter = NewExporterConfig(config)
+
+	// Apply the default values for mainnet
+	config.applyAllDefaults(Network_Mainnet)
 
 	return config
 }
@@ -509,6 +512,27 @@ func (config *MasterConfig) Deserialize(masterMap map[string]map[string]string) 
 			err := param.deserialize(subconfigParams)
 			if err != nil {
 				return fmt.Errorf("error deserializing [name]: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Applies all of the defaults to all of the settings that have them defined
+func (config *MasterConfig) applyAllDefaults(network Network) error {
+	for _, param := range config.GetParameters() {
+		err := param.setToDefault(network)
+		if err != nil {
+			return fmt.Errorf("error setting root parameter default: %w", err)
+		}
+	}
+
+	for name, subconfig := range config.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			err := param.setToDefault(network)
+			if err != nil {
+				return fmt.Errorf("error setting parameter default for %s: %w", name, err)
 			}
 		}
 	}

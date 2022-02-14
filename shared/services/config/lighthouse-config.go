@@ -5,16 +5,16 @@ const lighthouseTag string = "sigp/lighthouse:v2.1.2"
 // Configuration for Lighthouse
 type LighthouseConfig struct {
 	// Common parameters that Lighthouse doesn't support and should be hidden
-	UnsupportedCommonParams []string
+	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
 	// The Docker Hub tag for Lighthouse
-	ContainerTag Parameter
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags for the BN
-	AdditionalBnFlags Parameter
+	AdditionalBnFlags Parameter `yaml:"additionalBnFlags,omitempty"`
 
 	// Custom command line flags for the VC
-	AdditionalVcFlags Parameter
+	AdditionalVcFlags Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
 // Generates a new Lighthouse configuration

@@ -3,25 +3,25 @@ package config
 // Configuration for external Execution clients
 type ExternalExecutionConfig struct {
 	// The URL of the HTTP endpoint
-	HttpUrl Parameter
+	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
 
 	// The URL of the websocket endpoint
-	WsUrl Parameter
+	WsUrl Parameter `yaml:"wsUrl,omitempty"`
 }
 
 // Configuration for external Consensus clients
 type ExternalConsensusConfig struct {
 	// The URL of the HTTP endpoint
-	HttpUrl Parameter
+	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
 }
 
 // Configuration for external Consensus clients
 type ExternalPrysmConfig struct {
 	// The URL of the gRPC (REST) endpoint for the Beacon API
-	HttpUrl Parameter
+	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
 
 	// The URL of the JSON-RPC endpoint for the Validator client
-	JsonRpcUrl Parameter
+	JsonRpcUrl Parameter `yaml:"jsonRpcUrl,omitempty"`
 }
 
 // Generates a new ExternalExecutionConfig configuration

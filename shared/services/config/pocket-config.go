@@ -7,13 +7,13 @@ const defaultPocketGatewayPrater string = "lb/6126b4a783e49000343a3a47"
 // Configuration for Pocket
 type PocketConfig struct {
 	// Common parameters that Pocket doesn't support and should be hidden
-	UnsupportedCommonParams []string
+	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []ConsensusClient
+	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
 
 	// The Pocket gateway ID
-	GatewayID Parameter
+	GatewayID Parameter `yaml:"gatewayID,omitempty"`
 }
 
 // Generates a new Pocket configuration

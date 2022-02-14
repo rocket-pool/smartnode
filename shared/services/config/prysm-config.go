@@ -15,25 +15,25 @@ const defaultPrysmOpenRpcPort bool = false
 // Configuration for Prysm
 type PrysmConfig struct {
 	// Common parameters that Prysm doesn't support and should be hidden
-	UnsupportedCommonParams []string
+	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
 	// The RPC port for BN / VC connections
-	RpcPort Parameter
+	RpcPort Parameter `yaml:"rpcPort,omitempty"`
 
 	// Toggle for forwarding the RPC API outside of Docker
-	OpenRpcPort Parameter
+	OpenRpcPort Parameter `yaml:"openRpcPort,omitempty"`
 
 	// The Docker Hub tag for the Prysm BN
-	BnContainerTag Parameter
+	BnContainerTag Parameter `yaml:"bnContainerTag,omitempty"`
 
 	// The Docker Hub tag for the Prysm VC
-	VcContainerTag Parameter
+	VcContainerTag Parameter `yaml:"vcContainerTag,omitempty"`
 
 	// Custom command line flags for the BN
-	AdditionalBnFlags Parameter
+	AdditionalBnFlags Parameter `yaml:"additionalBnFlags,omitempty"`
 
 	// Custom command line flags for the VC
-	AdditionalVcFlags Parameter
+	AdditionalVcFlags Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
 // Generates a new Prysm configuration

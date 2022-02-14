@@ -8,26 +8,26 @@ import (
 
 // A parameter that can be configured by the user
 type Parameter struct {
-	ID                   string
-	Name                 string
-	Description          string
-	Type                 ParameterType
-	Default              map[Network]interface{}
-	Advanced             bool
-	AffectsContainers    []ContainerID
-	EnvironmentVariables []string
-	CanBeBlank           bool
-	OverwriteOnUpgrade   bool
-	Options              []ParameterOption
-	Value                interface{}
+	ID                   string                  `yaml:"id,omitempty"`
+	Name                 string                  `yaml:"name,omitempty"`
+	Description          string                  `yaml:"description,omitempty"`
+	Type                 ParameterType           `yaml:"type,omitempty"`
+	Default              map[Network]interface{} `yaml:"default,omitempty"`
+	Advanced             bool                    `yaml:"advanced,omitempty"`
+	AffectsContainers    []ContainerID           `yaml:"affectsContainers,omitempty"`
+	EnvironmentVariables []string                `yaml:"environmentVariables,omitempty"`
+	CanBeBlank           bool                    `yaml:"canBeBlank,omitempty"`
+	OverwriteOnUpgrade   bool                    `yaml:"overwriteOnUpgrade,omitempty"`
+	Options              []ParameterOption       `yaml:"options,omitempty"`
+	Value                interface{}             `yaml:"-"`
 }
 
 // A single option in a choice parameter
 type ParameterOption struct {
-	ID          string
-	Name        string
-	Description string
-	Value       interface{}
+	ID          string      `yaml:"id,omitempty"`
+	Name        string      `yaml:"name,omitempty"`
+	Description string      `yaml:"description,omitempty"`
+	Value       interface{} `yaml:"value,omitempty"`
 }
 
 // Apply a network change to a parameter
@@ -101,5 +101,19 @@ func (param *Parameter) deserialize(serializedParams map[string]string) error {
 	if err != nil {
 		return fmt.Errorf("cannot deserialize parameter [%s]: %w", param.ID, err)
 	}
+	return nil
+}
+
+// Set the value to the default for the provided network
+func (param *Parameter) setToDefault(network Network) error {
+	defaultSetting, exists := param.Default[network]
+	if !exists {
+		defaultSetting, exists = param.Default[Network_All]
+		if !exists {
+			return fmt.Errorf("%s doesn't have a default for network %s or all networks", param.ID, network)
+		}
+	}
+
+	param.Value = defaultSetting
 	return nil
 }
