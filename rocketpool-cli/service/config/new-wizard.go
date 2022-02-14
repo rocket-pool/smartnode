@@ -6,6 +6,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"gopkg.in/yaml.v2"
 )
 
 type newUserWizard struct {
@@ -741,6 +742,12 @@ func (wiz *newUserWizard) createFinishedModal() {
 			wiz.md.setPage(wiz.md.settingsHome.homePage)
 		} else {
 			wiz.md.app.Stop()
+			finalConfig := wiz.md.config.Serialize()
+			bytes, err := yaml.Marshal(finalConfig)
+			if err != nil {
+				fmt.Printf("Error serializing config: %s", err.Error())
+			}
+			fmt.Println(string(bytes))
 		}
 	}
 
