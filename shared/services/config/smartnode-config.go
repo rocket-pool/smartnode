@@ -82,7 +82,7 @@ func NewSmartnodeConfig(config *MasterConfig) *SmartnodeConfig {
 			Name:                 "Network",
 			Description:          "The Ethereum network you want to use - select Prater Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
 			Type:                 ParameterType_Choice,
-			Default:              map[Network]interface{}{Network_All: ""},
+			Default:              map[Network]interface{}{Network_All: Network_Mainnet},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,

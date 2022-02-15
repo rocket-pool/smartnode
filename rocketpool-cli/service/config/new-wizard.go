@@ -748,13 +748,13 @@ func (wiz *newUserWizard) createFinishedModal() {
 			if err != nil {
 				fmt.Printf("Error serializing settings: %s", err.Error())
 			}
-			ioutil.WriteFile("settings.yml", bytes, 0)
+			ioutil.WriteFile("settings.yml", bytes, 0664)
 
 			bytes, err = yaml.Marshal(wiz.md.config)
 			if err != nil {
 				fmt.Printf("Error serializing config: %s", err.Error())
 			}
-			ioutil.WriteFile("config.yml", bytes, 0)
+			ioutil.WriteFile("config.yml", bytes, 0664)
 		}
 	}
 

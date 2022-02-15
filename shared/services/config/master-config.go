@@ -8,14 +8,25 @@ const rootConfigName string = "root"
 // The master configuration struct
 type MasterConfig struct {
 
+	// Execution client settings
+	ExecutionClientMode Parameter `yaml:"executionClientMode"`
+	ExecutionClient     Parameter `yaml:"executionClient"`
+
+	// Fallback execution client settings
+	UseFallbackExecutionClient  Parameter `yaml:"useFallbackExecutionClient,omitempty"`
+	FallbackExecutionClientMode Parameter `yaml:"fallbackExecutionClientMode,omitempty"`
+	FallbackExecutionClient     Parameter `yaml:"fallbackExecutionClient,omitempty"`
+
+	// Consensus client settings
+	ConsensusClientMode     Parameter `yaml:"consensusClientMode,omitempty"`
+	ConsensusClient         Parameter `yaml:"consensusClient,omitempty"`
+	ExternalConsensusClient Parameter `yaml:"externalConsensusClient,omitempty"`
+
+	// Metrics settings
+	EnableMetrics Parameter `yaml:"enableMetrics,omitempty"`
+
 	// The Smartnode configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode"`
-
-	// Toggle for external Execution clients
-	ExecutionClientMode Parameter `yaml:"executionClientMode"`
-
-	// Local Execution client, if selected
-	ExecutionClient Parameter `yaml:"executionClient"`
 
 	// Execution client configurations
 	ExecutionCommon   *ExecutionCommonConfig   `yaml:"executionCommon,omitempty"`
@@ -24,25 +35,11 @@ type MasterConfig struct {
 	Pocket            *PocketConfig            `yaml:"pocket,omitempty"`
 	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
 
-	// Toggles for a fallback Execution client and client mode
-	UseFallbackExecutionClient  Parameter `yaml:"useFallbackExecutionClient,omitempty"`
-	FallbackExecutionClientMode Parameter `yaml:"fallbackExecutionClientMode,omitempty"`
-
-	// Fallback Execution client, if enabled
-	FallbackExecutionClient Parameter `yaml:"fallbackExecutionClient,omitempty"`
-
 	// Fallback Execution client configurations
 	FallbackExecutionCommon   *ExecutionCommonConfig   `yaml:"fallbackExecutionCommon,omitempty"`
 	FallbackInfura            *InfuraConfig            `yaml:"fallbackInfura,omitempty"`
 	FallbackPocket            *PocketConfig            `yaml:"fallbackPocket,omitempty"`
 	FallbackExternalExecution *ExternalExecutionConfig `yaml:"fallbackExternalExecution,omitempty"`
-
-	// Toggle for external Consensus clients
-	ConsensusClientMode Parameter `yaml:"consensusClientMode,omitempty"`
-
-	// Selected Consensus client
-	ConsensusClient         Parameter `yaml:"consensusClient,omitempty"`
-	ExternalConsensusClient Parameter `yaml:"externalConsensusClient,omitempty"`
 
 	// Consensus client configurations
 	ConsensusCommon   *ConsensusCommonConfig   `yaml:"consensusCommon,omitempty"`
@@ -52,9 +49,6 @@ type MasterConfig struct {
 	Teku              *TekuConfig              `yaml:"teku,omitempty"`
 	ExternalConsensus *ExternalConsensusConfig `yaml:"externalConsensus,omitempty"`
 	ExternalPrysm     *ExternalPrysmConfig     `yaml:"externalPrysm,omitempty"`
-
-	// Toggle for metrics
-	EnableMetrics Parameter `yaml:"enableMetrics,omitempty"`
 
 	// Metrics
 	Grafana    *GrafanaConfig    `yaml:"grafana,omitempty"`
@@ -299,7 +293,8 @@ func NewMasterConfig() *MasterConfig {
 	config.Exporter = NewExporterConfig(config)
 
 	// Apply the default values for mainnet
-	config.applyAllDefaults(Network_Mainnet)
+	config.Smartnode.Network.Value = config.Smartnode.Network.Options[0].Value
+	config.applyAllDefaults()
 
 	return config
 }
@@ -520,9 +515,9 @@ func (config *MasterConfig) Deserialize(masterMap map[string]map[string]string) 
 }
 
 // Applies all of the defaults to all of the settings that have them defined
-func (config *MasterConfig) applyAllDefaults(network Network) error {
+func (config *MasterConfig) applyAllDefaults() error {
 	for _, param := range config.GetParameters() {
-		err := param.setToDefault(network)
+		err := param.setToDefault(config)
 		if err != nil {
 			return fmt.Errorf("error setting root parameter default: %w", err)
 		}
@@ -530,7 +525,7 @@ func (config *MasterConfig) applyAllDefaults(network Network) error {
 
 	for name, subconfig := range config.GetSubconfigs() {
 		for _, param := range subconfig.GetParameters() {
-			err := param.setToDefault(network)
+			err := param.setToDefault(config)
 			if err != nil {
 				return fmt.Errorf("error setting parameter default for %s: %w", name, err)
 			}

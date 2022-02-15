@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -27,11 +26,12 @@ func newStandardLayout() *standardLayout {
 	// Create the description box
 	descriptionBox := tview.NewTextView()
 	descriptionBox.SetBorder(true)
-	descriptionBox.SetBorderPadding(1, 0, 0, 0)
+	descriptionBox.SetBorderPadding(0, 0, 1, 1)
 	descriptionBox.SetTitle(" Description ")
 	descriptionBox.SetWordWrap(true)
-	descriptionBox.SetBorderColor(tcell.ColorDeepSkyBlue)
-	descriptionBox.SetTextColor(tcell.ColorDeepSkyBlue)
+	descriptionBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	//descriptionBox.SetBorderColor(tcell.ColorDeepSkyBlue)
+	//descriptionBox.SetTextColor(tcell.ColorDeepSkyBlue)
 
 	grid.AddItem(descriptionBox, 0, 2, 1, 1, 0, 0, false)
 
@@ -48,8 +48,9 @@ func (layout *standardLayout) setContent(content tview.Primitive, contentBox *tv
 
 	// Set the standard properties for the content (border and title)
 	contentBox.SetBorder(true)
+	contentBox.SetBorderPadding(1, 1, 1, 1)
 	contentBox.SetTitle(fmt.Sprintf(" %s ", title))
-	contentBox.SetBorderColor(tcell.ColorGreen)
+	//contentBox.SetBorderColor(tcell.ColorGreen)
 
 	// Add the content to the grid
 	layout.content = content
