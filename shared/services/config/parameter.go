@@ -105,8 +105,8 @@ func (param *Parameter) deserialize(serializedParams map[string]string) error {
 }
 
 // Set the value to the default for the provided config's network
-func (param *Parameter) setToDefault(config *MasterConfig) error {
-	defaultSetting, err := param.GetDefault(config)
+func (param *Parameter) setToDefault(network Network) error {
+	defaultSetting, err := param.GetDefault(network)
 	if err != nil {
 		return err
 	}
@@ -114,14 +114,13 @@ func (param *Parameter) setToDefault(config *MasterConfig) error {
 	return nil
 }
 
-// Get the default value based on the provided configuration's current network
-func (param *Parameter) GetDefault(config *MasterConfig) (interface{}, error) {
-	currentNetwork := config.Smartnode.Network.Value.(Network)
-	defaultSetting, exists := param.Default[currentNetwork]
+// Get the default value for the provided network
+func (param *Parameter) GetDefault(network Network) (interface{}, error) {
+	defaultSetting, exists := param.Default[network]
 	if !exists {
 		defaultSetting, exists = param.Default[Network_All]
 		if !exists {
-			return nil, fmt.Errorf("%s doesn't have a default for network %s or all networks", param.ID, currentNetwork)
+			return nil, fmt.Errorf("%s doesn't have a default for network %s or all networks", param.ID, network)
 		}
 	}
 

@@ -517,7 +517,7 @@ func (config *MasterConfig) Deserialize(masterMap map[string]map[string]string) 
 // Applies all of the defaults to all of the settings that have them defined
 func (config *MasterConfig) applyAllDefaults() error {
 	for _, param := range config.GetParameters() {
-		err := param.setToDefault(config)
+		err := param.setToDefault(config.Smartnode.Network.Value.(Network))
 		if err != nil {
 			return fmt.Errorf("error setting root parameter default: %w", err)
 		}
@@ -525,7 +525,7 @@ func (config *MasterConfig) applyAllDefaults() error {
 
 	for name, subconfig := range config.GetSubconfigs() {
 		for _, param := range subconfig.GetParameters() {
-			err := param.setToDefault(config)
+			err := param.setToDefault(config.Smartnode.Network.Value.(Network))
 			if err != nil {
 				return fmt.Errorf("error setting parameter default for %s: %w", name, err)
 			}

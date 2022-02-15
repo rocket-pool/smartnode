@@ -139,6 +139,9 @@ func (f *Form) SetFocus(index int) *Form {
 	} else {
 		f.focusedElement = index
 	}
+	if f.changed != nil {
+		f.changed(f.focusedElement)
+	}
 	return f
 }
 
