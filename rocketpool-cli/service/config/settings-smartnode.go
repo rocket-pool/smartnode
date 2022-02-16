@@ -2,26 +2,24 @@ package config
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
+// The page wrapper for the Smartnode config
 type SmartnodeConfigPage struct {
-	home     *settingsHome
-	page     *page
-	layout   *standardLayout
-	paramMap map[string]tview.FormItem
+	home   *settingsHome
+	page   *page
+	layout *standardLayout
 }
 
 // Creates a new page for the Smartnode settings
 func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 
 	configPage := &SmartnodeConfigPage{
-		home:     home,
-		paramMap: map[string]tview.FormItem{},
+		home: home,
 	}
 
-	configPage.createSettingSmartnodeContent()
+	configPage.createContent()
 	configPage.page = newPage(
 		home.homePage,
 		"settings-smartnode",
@@ -35,7 +33,7 @@ func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 }
 
 // Creates the content for the Smartnode settings page
-func (configPage *SmartnodeConfigPage) createSettingSmartnodeContent() {
+func (configPage *SmartnodeConfigPage) createContent() {
 
 	// Create the layout
 	masterConfig := configPage.home.md.config

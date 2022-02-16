@@ -31,9 +31,10 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 
 	// Create the settings subpages
 	smartnodePage := NewSmartnodeConfigPage(home)
+	ecPage := NewExecutionConfigPage(home)
 	settingsSubpages := []*page{
 		smartnodePage.page,
-		createSettingExecutionPage(home),
+		ecPage.page,
 		createSettingExecutionFallbackPage(home),
 		createSettingConsensusPage(home),
 		createSettingStatsPage(home),
@@ -58,11 +59,12 @@ func (home *settingsHome) createContent() {
 
 	// Create the category list
 	categoryList := tview.NewList().
-		SetMainTextColor(tcell.ColorGreen).
+		//SetMainTextColor(tcell.ColorGreen).
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 			layout.descriptionBox.SetText(home.settingsSubpages[index].description)
 		})
-	categoryList.SetBorderPadding(1, 1, 1, 1)
+	categoryList.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	categoryList.SetBorderPadding(0, 0, 1, 1)
 	home.categoryList = categoryList
 
 	// Set tab to switch to the save and quit buttons

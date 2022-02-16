@@ -69,10 +69,6 @@ func createSettingStatsContent(home *settingsHome) tview.Primitive {
 	layout.setContent(form, form.Box, "Execution Client (Eth1) Settings")
 	layout.descriptionBox.SetText(paramDescriptions[0])
 
-	// Make the footer
-	//footer, height := createSettingFooter()
-	//layout.setFooter(footer, height)
-
 	// Return the standard layout's grid
 	return layout.grid
 

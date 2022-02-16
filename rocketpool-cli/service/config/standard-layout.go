@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -37,8 +36,6 @@ func newStandardLayout() *standardLayout {
 	descriptionBox.SetTitle(" Description ")
 	descriptionBox.SetWordWrap(true)
 	descriptionBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	//descriptionBox.SetBorderColor(tcell.ColorDeepSkyBlue)
-	//descriptionBox.SetTextColor(tcell.ColorDeepSkyBlue)
 
 	grid.AddItem(descriptionBox, 0, 2, 1, 1, 0, 0, false)
 
@@ -57,7 +54,6 @@ func (layout *standardLayout) setContent(content tview.Primitive, contentBox *tv
 	contentBox.SetBorder(true)
 	contentBox.SetBorderPadding(1, 1, 1, 1)
 	contentBox.SetTitle(fmt.Sprintf(" %s ", title))
-	//contentBox.SetBorderColor(tcell.ColorGreen)
 
 	// Add the content to the grid
 	layout.content = content
@@ -104,144 +100,16 @@ func (layout *standardLayout) createFormForConfig(cfg config.Config, network con
 	})
 
 	// Set up the form items
-	for _, param := range params {
-		var item tview.FormItem
-		switch param.Type {
-		case config.ParameterType_Bool:
-			item = layout.createCheckbox(param, network)
-		case config.ParameterType_Int:
-			item = layout.createIntField(param, network)
-		case config.ParameterType_Uint:
-			item = layout.createUintField(param, network)
-		case config.ParameterType_Uint16:
-			item = layout.createUint16Field(param, network)
-		case config.ParameterType_String:
-			item = layout.createStringField(param, network)
-		case config.ParameterType_Choice:
-			item = layout.createChoiceDropDown(param, network)
-		}
-
-		form.AddFormItem(item)
-		layout.formItems[param.ID] = item
-
+	formItems := createParameterizedFormItems(params, layout.descriptionBox)
+	for _, formItem := range formItems {
+		form.AddFormItem(formItem.item)
+		layout.formItems[formItem.parameter.ID] = formItem.item
 	}
 
 	layout.form = form
 	layout.setContent(form, form.Box, title)
 	layout.createSettingFooter()
 	layout.refresh(network)
-}
-
-// Create a standard form checkbox
-func (layout *standardLayout) createCheckbox(param *config.Parameter, network config.Network) *tview.Checkbox {
-	item := tview.NewCheckbox().
-		SetLabel(param.Name).
-		SetChecked(param.Value == true).
-		SetChangedFunc(func(checked bool) {
-			param.Value = checked
-		})
-	return item
-}
-
-// Create a standard int field
-func (layout *standardLayout) createIntField(param *config.Parameter, network config.Network) *tview.InputField {
-	item := tview.NewInputField().
-		SetLabel(param.Name).
-		SetAcceptanceFunc(tview.InputFieldInteger)
-	item.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEscape {
-			item.SetText("")
-		} else {
-			value, err := strconv.ParseInt(item.GetText(), 0, 0)
-			if err != nil {
-				// TODO: show error modal?
-				item.SetText("")
-			} else {
-				param.Value = int(value)
-			}
-		}
-	})
-	return item
-}
-
-// Create a standard uint field
-func (layout *standardLayout) createUintField(param *config.Parameter, network config.Network) *tview.InputField {
-	item := tview.NewInputField().
-		SetLabel(param.Name).
-		SetAcceptanceFunc(tview.InputFieldInteger)
-	item.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEscape {
-			item.SetText("")
-		} else {
-			value, err := strconv.ParseUint(item.GetText(), 0, 0)
-			if err != nil {
-				// TODO: show error modal?
-				item.SetText("")
-			} else {
-				param.Value = uint(value)
-			}
-		}
-	})
-	return item
-}
-
-// Create a standard uint16 field
-func (layout *standardLayout) createUint16Field(param *config.Parameter, network config.Network) *tview.InputField {
-	item := tview.NewInputField().
-		SetLabel(param.Name).
-		SetAcceptanceFunc(tview.InputFieldInteger)
-	item.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEscape {
-			item.SetText("")
-		} else {
-			value, err := strconv.ParseUint(item.GetText(), 0, 16)
-			if err != nil {
-				// TODO: show error modal?
-				item.SetText("")
-			} else {
-				param.Value = uint(value)
-			}
-		}
-	})
-	return item
-}
-
-// Create a standard string field
-func (layout *standardLayout) createStringField(param *config.Parameter, network config.Network) *tview.InputField {
-	item := tview.NewInputField().
-		SetLabel(param.Name).
-		SetAcceptanceFunc(tview.InputFieldInteger)
-	item.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEscape {
-			item.SetText("")
-		} else {
-			param.Value = item.GetText()
-		}
-	})
-	return item
-}
-
-// Create a standard choice field
-func (layout *standardLayout) createChoiceDropDown(param *config.Parameter, network config.Network) *DropDown {
-	// Create the list of options
-	options := []string{}
-	descriptions := []string{}
-	values := []interface{}{}
-	for _, option := range param.Options {
-		options = append(options, option.Name)
-		descriptions = append(descriptions, option.Description)
-		values = append(values, option.Value)
-	}
-	item := NewDropDown().
-		SetLabel(param.Name).
-		SetOptions(options, func(text string, index int) {
-			param.Value = values[index]
-		}).
-		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-			layout.descriptionBox.SetText(descriptions[index])
-		})
-	item.SetTextOptions(" ", " ", "", "", "")
-	return item
 }
 
 // Refreshes all of the form items to show the current configured values
