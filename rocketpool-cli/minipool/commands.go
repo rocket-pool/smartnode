@@ -308,6 +308,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "node-address, n",
 						Usage: "The node address to search for (leave blank to use the local node)",
 					},
+					cli.StringFlag{
+						Name:  "amount, a",
+						Usage: "The amount of ETH you will deposit: 16 or 32, (impacts vanity address generation)",
+					},
 				},
 				Action: func(c *cli.Context) error {
 
