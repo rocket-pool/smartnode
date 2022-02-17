@@ -32,10 +32,11 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	// Create the settings subpages
 	smartnodePage := NewSmartnodeConfigPage(home)
 	ecPage := NewExecutionConfigPage(home)
+	fallbackECPage := NewFallbackExecutionConfigPage(home)
 	settingsSubpages := []*page{
 		smartnodePage.page,
 		ecPage.page,
-		createSettingExecutionFallbackPage(home),
+		fallbackECPage.page,
 		createSettingConsensusPage(home),
 		createSettingStatsPage(home),
 	}

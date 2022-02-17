@@ -527,7 +527,7 @@ func (wiz *newUserWizard) createGraffitiModal() {
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
 		70,
-		"If you would like to add a short custom message to each block that your minipools propose (called the block's \"graffiti\"), please enter it here. [yellow]The graffiti is limited to 16 characters max.",
+		"If you would like to add a short custom message to each block that your minipools propose (called the block's \"graffiti\"), please enter it here. The graffiti is limited to 16 characters max.",
 		[]string{graffitiLabel},
 		[]string{})
 

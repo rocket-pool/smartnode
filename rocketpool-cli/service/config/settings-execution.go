@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 // The page wrapper for the EC config
@@ -38,7 +37,7 @@ func (configPage *ExecutionConfigPage) createContent() {
 	// Create the layout
 	masterConfig := configPage.home.md.config
 	layout := newStandardLayout()
-	layout.createFormForConfig(masterConfig.ExecutionCommon, masterConfig.Smartnode.Network.Value.(config.Network), "Execution Client (Eth1) Settings")
+	layout.createForm(&masterConfig.Smartnode.Network, "Execution Client (Eth1) Settings")
 
 	// Return to the home page after pressing Escape
 	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {

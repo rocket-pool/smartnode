@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 // The page wrapper for the Smartnode config
@@ -38,7 +37,7 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	// Create the layout
 	masterConfig := configPage.home.md.config
 	layout := newStandardLayout()
-	layout.createFormForConfig(masterConfig.Smartnode, masterConfig.Smartnode.Network.Value.(config.Network), "Smartnode and TX Fee Settings")
+	layout.createForm(&masterConfig.Smartnode.Network, "Smartnode and TX Fee Settings")
 
 	// Return to the home page after pressing Escape
 	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -52,4 +51,14 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	// Return the standard layout's grid
 	configPage.layout = layout
 
+	// Set up the form items
+	formItems := createParameterizedFormItems(masterConfig.Smartnode.GetParameters(), layout.descriptionBox)
+	for _, formItem := range formItems {
+		layout.form.AddFormItem(formItem.item)
+		layout.parameters[formItem.item] = formItem
+	}
+	layout.refresh()
+
 }
+
+//func (configPage *SmartnodeConfigPage)

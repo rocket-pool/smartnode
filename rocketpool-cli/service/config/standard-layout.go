@@ -15,9 +15,8 @@ type standardLayout struct {
 	descriptionBox *tview.TextView
 	footer         tview.Primitive
 	form           *Form
+	parameters     map[tview.FormItem]*parameterizedFormItem
 	cfg            config.Config
-	defaults       []string
-	formItems      map[string]tview.FormItem
 }
 
 // Creates a new StandardLayout instance, which includes the grid and description box preconstructed.
@@ -74,10 +73,10 @@ func (layout *standardLayout) setFooter(footer tview.Primitive, height int) {
 
 }
 
-func (layout *standardLayout) createFormForConfig(cfg config.Config, network config.Network, title string) {
+// Create a standard form for this layout (for settings pages)
+func (layout *standardLayout) createForm(networkParam *config.Parameter, title string) {
 
-	layout.cfg = cfg
-	layout.formItems = map[string]tview.FormItem{}
+	layout.parameters = map[tview.FormItem]*parameterizedFormItem{}
 
 	// Create the form
 	form := NewForm().
@@ -87,59 +86,41 @@ func (layout *standardLayout) createFormForConfig(cfg config.Config, network con
 		SetBorderPadding(0, 0, 0, 0)
 
 	// Set up the selected parameter change callback to update the description box
-	params := layout.cfg.GetParameters()
-	paramDescriptions := []string{}
-	for _, param := range params {
-		paramDescriptions = append(paramDescriptions, param.Description)
-		layout.descriptionBox.ScrollToBeginning()
-	}
 	form.SetChangedFunc(func(index int) {
-		descriptionText := fmt.Sprintf("Default: %s\n\n%s", layout.defaults[index], paramDescriptions[index])
-		layout.descriptionBox.SetText(descriptionText)
-		layout.descriptionBox.ScrollToBeginning()
+		if index < form.GetFormItemCount() {
+			formItem := form.GetFormItem(index)
+			param := layout.parameters[formItem].parameter
+			defaultValue, _ := param.GetDefault(networkParam.Value.(config.Network))
+			descriptionText := fmt.Sprintf("Default: %v\n\n%s", defaultValue, param.Description)
+			layout.descriptionBox.SetText(descriptionText)
+			layout.descriptionBox.ScrollToBeginning()
+		}
 	})
-
-	// Set up the form items
-	formItems := createParameterizedFormItems(params, layout.descriptionBox)
-	for _, formItem := range formItems {
-		form.AddFormItem(formItem.item)
-		layout.formItems[formItem.parameter.ID] = formItem.item
-	}
 
 	layout.form = form
 	layout.setContent(form, form.Box, title)
 	layout.createSettingFooter()
-	layout.refresh(network)
 }
 
 // Refreshes all of the form items to show the current configured values
-func (layout *standardLayout) refresh(network config.Network) {
+func (layout *standardLayout) refresh() {
 
-	layout.defaults = []string{}
-	params := layout.cfg.GetParameters()
-	for _, param := range params {
-		// Recreate the default text for this parameter
-		defaultValue, _ := param.GetDefault(network)
-		defaultValueString := fmt.Sprint(defaultValue)
+	for i := 0; i < layout.form.GetFormItemCount(); i++ {
+		formItem := layout.form.GetFormItem(i)
+		param := layout.parameters[formItem].parameter
 
 		// Set the form item to the current value
-		formItem := layout.formItems[param.ID]
 		switch param.Type {
 		case config.ParameterType_Bool:
 			formItem.(*tview.Checkbox).SetChecked(param.Value == true)
-			layout.defaults = append(layout.defaults, defaultValueString)
 
 		case config.ParameterType_Int, config.ParameterType_Uint, config.ParameterType_Uint16, config.ParameterType_String:
 			formItem.(*tview.InputField).SetText(fmt.Sprint(param.Value))
-			layout.defaults = append(layout.defaults, defaultValueString)
 
 		case config.ParameterType_Choice:
 			for i := 0; i < len(param.Options); i++ {
 				if param.Options[i].Value == param.Value {
 					formItem.(*DropDown).SetCurrentOption(i)
-				}
-				if param.Options[i].Value == defaultValue {
-					layout.defaults = append(layout.defaults, param.Options[i].Name)
 				}
 			}
 		}

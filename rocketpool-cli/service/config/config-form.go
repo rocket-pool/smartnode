@@ -14,43 +14,20 @@ type parameterizedFormItem struct {
 	item      tview.FormItem
 }
 
-/*
-type configSubForm struct {
-	subforms    map[*DropDown]configSubForm
-	commonItems []*parameterizedFormItem
+func registerEnableCheckbox(param *config.Parameter, checkbox *tview.Checkbox, form *Form, items []*parameterizedFormItem) {
+	checkbox.SetChangedFunc(func(checked bool) {
+		param.Value = checked
+
+		if !checked {
+			form.Clear(true)
+			form.AddFormItem(checkbox)
+		} else {
+			for _, item := range items {
+				form.AddFormItem(item.item)
+			}
+		}
+	})
 }
-
-type configForm struct {
-	enableCheckbox *parameterView
-	subformTrigger *DropDown
-	subforms       []*configSubForm
-	form           *Form
-	commonItems    []*parameterView
-}
-
-func idk(cfg *config.MasterConfig) {
-	enable := &parameterView{
-		parameter: &cfg.UseFallbackExecutionClient,
-		formItem:  tview.NewCheckbox(),
-	}
-
-	infuraSubform := &configSubForm{
-		subforms:    map[*DropDown]configSubForm{},
-		commonItems: []*parameterView{},
-	}
-
-	configForm := &configForm{
-		enableCheckbox: enable,
-		subforms:       map[*DropDown]configSubForm{},
-	}
-
-	//infuraSubform.commonItems
-}
-
-func newConfigSubForm(*DropDown) *configSubForm {
-
-}
-*/
 
 // Create a list of form items based on a set of parameters
 func createParameterizedFormItems(params []*config.Parameter, descriptionBox *tview.TextView) []*parameterizedFormItem {

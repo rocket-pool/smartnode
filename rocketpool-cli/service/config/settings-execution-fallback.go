@@ -2,78 +2,53 @@ package config
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 )
 
+// The page wrapper for the EC config
+type FallbackExecutionConfigPage struct {
+	home   *settingsHome
+	page   *page
+	layout *standardLayout
+}
+
 // Creates a new page for the fallback Execution client settings
-func createSettingExecutionFallbackPage(home *settingsHome) *page {
+func NewFallbackExecutionConfigPage(home *settingsHome) *FallbackExecutionConfigPage {
 
-	content := createSettingExecutionFallbackContent(home)
+	configPage := &FallbackExecutionConfigPage{
+		home: home,
+	}
+	configPage.createContent()
 
-	return newPage(
+	configPage.page = newPage(
 		home.homePage,
 		"settings-execution-fallback",
 		"Execution Backup (Eth1 Fallback)",
 		"Select this to choose your fallback / backup Execution Client (formerly called \"ETH1 fallback client\") that the Smartnode and Beacon client will use if your main Execution client ever goes offline.",
-		content,
+		configPage.layout.grid,
 	)
+
+	return configPage
 
 }
 
 // Creates the content for the fallback Execution client settings page
-func createSettingExecutionFallbackContent(home *settingsHome) tview.Primitive {
+func (configPage *FallbackExecutionConfigPage) createContent() {
 
+	// Create the layout
+	masterConfig := configPage.home.md.config
 	layout := newStandardLayout()
+	layout.createForm(&masterConfig.Smartnode.Network, "Execution Client (Eth1) Settings")
 
-	// PLACEHOLDER
-	paramDescriptions := []string{
-		"The Execution client you'd like to use. Probably have to describe each one when you open this dropdown and hover over them.",
-		"Select this if you have an external Execution client that you want the Smartnode to use, instead of managing its own (\"Hybrid Mode\").",
-		"Enter Geth's cache size, in MB.",
-	}
-
-	// Create the settings form
-	form := tview.NewForm()
-	a := tview.NewDropDown().
-		SetLabel("Client").
-		SetOptions([]string{"Geth", "Infura", "Pocket", "Custom"}, nil)
-	a.SetFocusFunc(func() {
-		layout.descriptionBox.SetText(paramDescriptions[0])
-	})
-	form.AddFormItem(a)
-
-	b := tview.NewCheckbox().
-		SetLabel("Externally managed?")
-	b.SetFocusFunc(func() {
-		layout.descriptionBox.SetText(paramDescriptions[1])
-	})
-	form.AddFormItem(b)
-
-	c := tview.NewInputField().
-		SetLabel("Geth Cache (MB)").
-		SetText("1024")
-	c.SetFocusFunc(func() {
-		layout.descriptionBox.SetText(paramDescriptions[2])
-	})
-	form.AddFormItem(c)
-
-	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	// Return to the home page after pressing Escape
+	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
-			home.md.setPage(home.homePage)
+			configPage.home.md.setPage(configPage.home.homePage)
 			return nil
 		}
 		return event
 	})
 
-	// Make it the content of the layout and set the default description text
-	layout.setContent(form, form.Box, "Execution Client (Eth1) Settings")
-	layout.descriptionBox.SetText(paramDescriptions[0])
-
-	// Make the footer
-	//footer, height := createSettingFooter()
-	//layout.setFooter(footer, height)
-
 	// Return the standard layout's grid
-	return layout.grid
+	configPage.layout = layout
 
 }
