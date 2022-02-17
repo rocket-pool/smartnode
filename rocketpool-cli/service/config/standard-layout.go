@@ -165,3 +165,35 @@ func (layout *standardLayout) createSettingFooter() {
 	layout.setFooter(navBar, 2)
 
 }
+
+// Add a collection of "common" and "specific" form items to this layout's form, where some of the common
+// items may not be valid and should be excluded
+func (layout *standardLayout) addFormItemsWithCommonParams(commonParams []*parameterizedFormItem, specificParams []*parameterizedFormItem, unsupportedCommonParams []string) {
+
+	// Add the common params if they aren't in the unsupported list
+	for _, commonParam := range commonParams {
+		isSupported := true
+		for _, unsupportedParam := range unsupportedCommonParams {
+			if commonParam.parameter.ID == unsupportedParam {
+				isSupported = false
+				break
+			}
+		}
+
+		if isSupported {
+			layout.form.AddFormItem(commonParam.item)
+		}
+	}
+
+	// Add all of the specific params
+	for _, specificParam := range specificParams {
+		layout.form.AddFormItem(specificParam.item)
+	}
+
+}
+
+func (layout *standardLayout) mapParameterizedFormItems(params ...*parameterizedFormItem) {
+	for _, param := range params {
+		layout.parameters[param.item] = param
+	}
+}

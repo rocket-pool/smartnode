@@ -37,6 +37,7 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	// Create the layout
 	masterConfig := configPage.home.md.config
 	layout := newStandardLayout()
+	configPage.layout = layout
 	layout.createForm(&masterConfig.Smartnode.Network, "Smartnode and TX Fee Settings")
 
 	// Return to the home page after pressing Escape
@@ -48,9 +49,6 @@ func (configPage *SmartnodeConfigPage) createContent() {
 		return event
 	})
 
-	// Return the standard layout's grid
-	configPage.layout = layout
-
 	// Set up the form items
 	formItems := createParameterizedFormItems(masterConfig.Smartnode.GetParameters(), layout.descriptionBox)
 	for _, formItem := range formItems {
@@ -60,5 +58,3 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	layout.refresh()
 
 }
-
-//func (configPage *SmartnodeConfigPage)
