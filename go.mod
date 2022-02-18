@@ -18,6 +18,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/ethereum/go-ethereum v1.10.15
 	github.com/fatih/color v1.13.0
+	github.com/ferranbt/fastssz v0.0.0-20220103083642-bc5fefefa28b
 	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
@@ -27,7 +28,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
 	github.com/rocket-pool/rocketpool-go v1.1.2
 	github.com/sethvargo/go-password v0.2.0

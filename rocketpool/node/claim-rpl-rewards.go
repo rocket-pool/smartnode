@@ -123,6 +123,15 @@ func (t *claimRplRewards) run() error {
 		return nil
 	}
 
+	// Don't claim unless the oDAO has claimed first (prevent known issue yet to be patched in smart contracts)
+	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(t.rp, nil)
+	if err != nil {
+		return err
+	}
+	if trustedNodeClaimed.Cmp(big.NewInt(0)) == 0 {
+		return nil
+	}
+
 	// Log
 	rewardsAmount := math.RoundDown(eth.WeiToEth(rewardsAmountWei), 6)
 	t.log.Printlnf("%.6f RPL is available to claim...", rewardsAmount)
