@@ -51,8 +51,8 @@ func (configPage *ExecutionConfigPage) createContent() {
 	})
 
 	// Set up the form items
-	ecModeDropdown := createParameterizedFormItems([]*config.Parameter{&masterConfig.ExecutionClientMode}, layout.descriptionBox)[0]
-	ecDropdown := createParameterizedFormItems([]*config.Parameter{&masterConfig.ExecutionClient}, layout.descriptionBox)[0]
+	ecModeDropdown := createParameterizedDropDown(&masterConfig.ExecutionClientMode, layout.descriptionBox)
+	ecDropdown := createParameterizedDropDown(&masterConfig.ExecutionClient, layout.descriptionBox)
 	ecCommonItems := createParameterizedFormItems(masterConfig.ExecutionCommon.GetParameters(), layout.descriptionBox)
 	gethItems := createParameterizedFormItems(masterConfig.Geth.GetParameters(), layout.descriptionBox)
 	infuraItems := createParameterizedFormItems(masterConfig.Infura.GetParameters(), layout.descriptionBox)
@@ -67,13 +67,15 @@ func (configPage *ExecutionConfigPage) createContent() {
 	layout.mapParameterizedFormItems(externalECItems...)
 
 	ecModeDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		// TEMP, MAKE 2 CALLBACKS THAT GET TRIGGERED INSTEAD OF DOING THIS
+		if masterConfig.ExecutionClientMode.Value == masterConfig.ExecutionClientMode.Options[index].Value {
+			return
+		}
 		masterConfig.ExecutionClientMode.Value = masterConfig.ExecutionClientMode.Options[index].Value
 
 		layout.form.Clear(true)
 		layout.form.AddFormItem(ecModeDropdown.item)
 
-		selectedMode := masterConfig.ExecutionClientMode.Options[index].Value.(config.Mode)
+		selectedMode := masterConfig.ExecutionClientMode.Value.(config.Mode)
 		switch selectedMode {
 
 		// Local (Docker mode)
@@ -96,9 +98,14 @@ func (configPage *ExecutionConfigPage) createContent() {
 				layout.form.AddFormItem(param.item)
 			}
 		}
+
+		layout.refresh()
 	})
 
 	ecDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if masterConfig.ExecutionClient.Value == masterConfig.ExecutionClient.Options[index].Value {
+			return
+		}
 		masterConfig.ExecutionClient.Value = masterConfig.ExecutionClient.Options[index].Value
 		layout.form.Clear(true)
 		layout.form.AddFormItem(ecModeDropdown.item)
@@ -113,9 +120,10 @@ func (configPage *ExecutionConfigPage) createContent() {
 		case config.ExecutionClient_Pocket:
 			layout.addFormItemsWithCommonParams(ecCommonItems, pocketItems, masterConfig.Pocket.UnsupportedCommonParams)
 		}
+
+		layout.refresh()
 	})
 
-	// TEMP
 	layout.form.Clear(true)
 	layout.form.AddFormItem(ecModeDropdown.item)
 
