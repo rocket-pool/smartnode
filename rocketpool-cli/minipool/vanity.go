@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -74,11 +73,9 @@ func findVanitySalt(c *cli.Context) error {
 	if c.String("amount") != "" {
 
 		// Parse amount
-		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
-		if err != nil {
-			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
+		if amount, err = cliutils.ValidateDepositEthAmount("deposit", c.String("amount")); err != nil {
+			return err
 		}
-		amount = depositAmount
 
 	} else {
 
