@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/urfave/cli"
 
@@ -44,6 +45,15 @@ func canNodeClaimRpl(c *cli.Context) (*api.CanNodeClaimRplResponse, error) {
 		return nil, fmt.Errorf("Error getting RPL rewards amount: %w", err)
 	}
 	response.RplAmount = rewardsAmountWei
+
+	// Don't claim unless the oDAO has claimed first (prevent known issue yet to be patched in smart contracts)
+	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking if trusted node has already minted RPL: %w", err)
+	}
+	if trustedNodeClaimed.Cmp(big.NewInt(0)) == 0 {
+		response.RplAmount = big.NewInt(0)
+	}
 
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
