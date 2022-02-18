@@ -161,8 +161,9 @@ func findVanitySalt(c *cli.Context) error {
 func runWorker(report bool, stop *bool, targetPrefix *big.Int, nodeAddress []byte, minipoolManagerAddress common.Address, initHash []byte, salt *big.Int, increment int64, shiftAmount uint) (*big.Int, common.Address) {
 	saltBytes := [32]byte{}
 	hashInt := big.NewInt(0)
-	zero := big.NewInt(0)
 	incrementInt := big.NewInt(increment)
+	hasher := crypto.NewKeccakState()
+	nodeSalt := common.Hash{}
 
 	// Set up the reporting ticker if requested
 	var ticker *time.Ticker
@@ -197,19 +198,20 @@ func runWorker(report bool, stop *bool, targetPrefix *big.Int, nodeAddress []byt
 		}
 
 		salt.FillBytes(saltBytes[:])
-		nodeSalt := crypto.Keccak256Hash(nodeAddress, saltBytes[:])
+		hasher.Write(nodeAddress)
+		hasher.Write(saltBytes[:])
+		hasher.Read(nodeSalt[:])
+		hasher.Reset()
 
 		address := crypto.CreateAddress2(minipoolManagerAddress, nodeSalt, initHash)
 		hashInt.SetBytes(address.Bytes())
 		hashInt.Rsh(hashInt, shiftAmount*4)
-		hashInt.Xor(hashInt, targetPrefix)
-		if hashInt.Cmp(zero) == 0 {
+		if hashInt.Cmp(targetPrefix) == 0 {
 			if report {
 				close(tickerChan)
 			}
 			return salt, address
-		} else {
-			salt.Add(salt, incrementInt)
 		}
+		salt.Add(salt, incrementInt)
 	}
 }
