@@ -18,6 +18,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/ethereum/go-ethereum v1.10.15
 	github.com/fatih/color v1.13.0
+	github.com/ferranbt/fastssz v0.0.0-20220103083642-bc5fefefa28b
 	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1 // indirect
 	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e
 	github.com/google/uuid v1.3.0
@@ -30,7 +31,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
 	github.com/rivo/tview v0.0.0-20220106183741-90d72bc664f5 // indirect
 	github.com/rocket-pool/rocketpool-go v1.1.2
