@@ -161,6 +161,7 @@ func runWorker(report bool, stop *bool, targetPrefix *big.Int, nodeAddress []byt
 	incrementInt := big.NewInt(increment)
 	hasher := crypto.NewKeccakState()
 	nodeSalt := common.Hash{}
+	addressResult := common.Hash{}
 
 	// Set up the reporting ticker if requested
 	var ticker *time.Ticker
@@ -194,19 +195,34 @@ func runWorker(report bool, stop *bool, targetPrefix *big.Int, nodeAddress []byt
 			return nil, common.Address{}
 		}
 
+		// Some speed optimizations -
+		// This block is the fast way to do `nodeSalt := crypto.Keccak256Hash(nodeAddress, saltBytes)`
 		salt.FillBytes(saltBytes[:])
 		hasher.Write(nodeAddress)
 		hasher.Write(saltBytes[:])
 		hasher.Read(nodeSalt[:])
 		hasher.Reset()
 
-		address := crypto.CreateAddress2(minipoolManagerAddress, nodeSalt, initHash)
-		hashInt.SetBytes(address.Bytes())
+		// This block is the fast way to do `crypto.CreateAddress2(minipoolManagerAddress, nodeSalt, initHash)`
+		// except instead of capturing the returned value as an address, we keep it as bytes. The first 12 bytes
+		// are ignored, since they are not part of the resulting address.
+		//
+		// Because we didn't call CreateAddress2 here, we have to call common.BytesToAddress below, but we can
+		// postpone that until we find the correct salt.
+		hasher.Write([]byte{0xff})
+		hasher.Write(minipoolManagerAddress.Bytes())
+		hasher.Write(nodeSalt[:])
+		hasher.Write(initHash)
+		hasher.Read(addressResult[:])
+		hasher.Reset()
+
+		hashInt.SetBytes(addressResult[12:])
 		hashInt.Rsh(hashInt, shiftAmount*4)
 		if hashInt.Cmp(targetPrefix) == 0 {
 			if report {
 				close(tickerChan)
 			}
+			address := common.BytesToAddress(addressResult[12:])
 			return salt, address
 		}
 		salt.Add(salt, incrementInt)
