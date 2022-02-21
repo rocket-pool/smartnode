@@ -230,7 +230,7 @@ func NewMasterConfig() *MasterConfig {
 			Name:                 "Consensus Client",
 			Description:          "Select which Consensus client your externally managed client is.",
 			Type:                 ParameterType_Choice,
-			Default:              map[Network]interface{}{Network_All: nil},
+			Default:              map[Network]interface{}{Network_All: ConsensusClient_Lighthouse},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,

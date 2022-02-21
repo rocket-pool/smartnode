@@ -8,13 +8,8 @@ import (
 
 // The page wrapper for the fallback EC config
 type FallbackExecutionConfigPage struct {
-	home   *settingsHome
-	page   *page
-	layout *standardLayout
-}
-
-// A manager for handling changes to the fallback EC layout
-type fallbackExecutionClientLayoutManager struct {
+	home                    *settingsHome
+	page                    *page
 	layout                  *standardLayout
 	masterConfig            *config.MasterConfig
 	useFallbackEcBox        *parameterizedFormItem
@@ -30,7 +25,8 @@ type fallbackExecutionClientLayoutManager struct {
 func NewFallbackExecutionConfigPage(home *settingsHome) *FallbackExecutionConfigPage {
 
 	configPage := &FallbackExecutionConfigPage{
-		home: home,
+		home:         home,
+		masterConfig: home.md.config,
 	}
 	configPage.createContent()
 
@@ -50,13 +46,11 @@ func NewFallbackExecutionConfigPage(home *settingsHome) *FallbackExecutionConfig
 func (configPage *FallbackExecutionConfigPage) createContent() {
 
 	// Create the layout
-	masterConfig := configPage.home.md.config
-	layout := newStandardLayout()
-	configPage.layout = layout
-	layout.createForm(&masterConfig.Smartnode.Network, "Execution Client (Eth1) Settings")
+	configPage.layout = newStandardLayout()
+	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Fallback Execution Client (Eth1) Settings")
 
 	// Return to the home page after pressing Escape
-	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
 			configPage.home.md.setPage(configPage.home.homePage)
 			return nil
@@ -65,106 +59,95 @@ func (configPage *FallbackExecutionConfigPage) createContent() {
 	})
 
 	// Set up the form items
-	useFallbackEcBox := createParameterizedCheckbox(&masterConfig.UseFallbackExecutionClient)
-	fallbackEcModeDropdown := createParameterizedDropDown(&masterConfig.FallbackExecutionClientMode, layout.descriptionBox)
-	fallbackEcDropdown := createParameterizedDropDown(&masterConfig.FallbackExecutionClient, layout.descriptionBox)
-	fallbackEcCommonItems := createParameterizedFormItems(masterConfig.FallbackExecutionCommon.GetParameters(), layout.descriptionBox)
-	fallbackInfuraItems := createParameterizedFormItems(masterConfig.FallbackInfura.GetParameters(), layout.descriptionBox)
-	fallbackPocketItems := createParameterizedFormItems(masterConfig.FallbackPocket.GetParameters(), layout.descriptionBox)
-	fallbackExternalECItems := createParameterizedFormItems(masterConfig.FallbackExternalExecution.GetParameters(), layout.descriptionBox)
+	configPage.useFallbackEcBox = createParameterizedCheckbox(&configPage.masterConfig.UseFallbackExecutionClient)
+	configPage.fallbackEcModeDropdown = createParameterizedDropDown(&configPage.masterConfig.FallbackExecutionClientMode, configPage.layout.descriptionBox)
+	configPage.fallbackEcDropdown = createParameterizedDropDown(&configPage.masterConfig.FallbackExecutionClient, configPage.layout.descriptionBox)
+	configPage.fallbackEcCommonItems = createParameterizedFormItems(configPage.masterConfig.FallbackExecutionCommon.GetParameters(), configPage.layout.descriptionBox)
+	configPage.fallbackInfuraItems = createParameterizedFormItems(configPage.masterConfig.FallbackInfura.GetParameters(), configPage.layout.descriptionBox)
+	configPage.fallbackPocketItems = createParameterizedFormItems(configPage.masterConfig.FallbackPocket.GetParameters(), configPage.layout.descriptionBox)
+	configPage.fallbackExternalECItems = createParameterizedFormItems(configPage.masterConfig.FallbackExternalExecution.GetParameters(), configPage.layout.descriptionBox)
 
-	layout.mapParameterizedFormItems(useFallbackEcBox, fallbackEcModeDropdown, fallbackEcDropdown)
-	layout.mapParameterizedFormItems(fallbackEcCommonItems...)
-	layout.mapParameterizedFormItems(fallbackInfuraItems...)
-	layout.mapParameterizedFormItems(fallbackPocketItems...)
-	layout.mapParameterizedFormItems(fallbackExternalECItems...)
+	// Map the parameters to the form items in the layout
+	configPage.layout.mapParameterizedFormItems(configPage.useFallbackEcBox, configPage.fallbackEcModeDropdown, configPage.fallbackEcDropdown)
+	configPage.layout.mapParameterizedFormItems(configPage.fallbackEcCommonItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.fallbackInfuraItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.fallbackPocketItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.fallbackExternalECItems...)
 
-	manager := &fallbackExecutionClientLayoutManager{
-		layout:                  layout,
-		masterConfig:            masterConfig,
-		useFallbackEcBox:        useFallbackEcBox,
-		fallbackEcModeDropdown:  fallbackEcModeDropdown,
-		fallbackEcDropdown:      fallbackEcDropdown,
-		fallbackEcCommonItems:   fallbackEcCommonItems,
-		fallbackInfuraItems:     fallbackInfuraItems,
-		fallbackPocketItems:     fallbackPocketItems,
-		fallbackExternalECItems: fallbackExternalECItems,
-	}
-
-	useFallbackEcBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
-		if masterConfig.UseFallbackExecutionClient.Value == checked {
+	// Set up the setting callbacks
+	configPage.useFallbackEcBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
+		if configPage.masterConfig.UseFallbackExecutionClient.Value == checked {
 			return
 		}
-		masterConfig.UseFallbackExecutionClient.Value = checked
-		manager.handleUseFallbackEcChanged()
+		configPage.masterConfig.UseFallbackExecutionClient.Value = checked
+		configPage.handleUseFallbackEcChanged()
 	})
-
-	fallbackEcModeDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		if masterConfig.FallbackExecutionClientMode.Value == masterConfig.FallbackExecutionClientMode.Options[index].Value {
+	configPage.fallbackEcModeDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if configPage.masterConfig.FallbackExecutionClientMode.Value == configPage.masterConfig.FallbackExecutionClientMode.Options[index].Value {
 			return
 		}
-		masterConfig.FallbackExecutionClientMode.Value = masterConfig.FallbackExecutionClientMode.Options[index].Value
-		manager.handleFallbackEcModeChanged()
+		configPage.masterConfig.FallbackExecutionClientMode.Value = configPage.masterConfig.FallbackExecutionClientMode.Options[index].Value
+		configPage.handleFallbackEcModeChanged()
 	})
-
-	fallbackEcDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		if masterConfig.FallbackExecutionClient.Value == masterConfig.FallbackExecutionClient.Options[index].Value {
+	configPage.fallbackEcDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if configPage.masterConfig.FallbackExecutionClient.Value == configPage.masterConfig.FallbackExecutionClient.Options[index].Value {
 			return
 		}
-		masterConfig.FallbackExecutionClient.Value = masterConfig.FallbackExecutionClient.Options[index].Value
-		manager.handleLocalFallbackEcChanged()
+		configPage.masterConfig.FallbackExecutionClient.Value = configPage.masterConfig.FallbackExecutionClient.Options[index].Value
+		configPage.handleLocalFallbackEcChanged()
 	})
 
-	manager.handleUseFallbackEcChanged()
+	// Do the initial draw
+	configPage.handleUseFallbackEcChanged()
 }
 
 // Handle all of the form changes when the Use Fallback EC box has changed
-func (manager *fallbackExecutionClientLayoutManager) handleUseFallbackEcChanged() {
-	manager.layout.form.Clear(true)
-	manager.layout.form.AddFormItem(manager.useFallbackEcBox.item)
+func (configPage *FallbackExecutionConfigPage) handleUseFallbackEcChanged() {
+	configPage.layout.form.Clear(true)
+	configPage.layout.form.AddFormItem(configPage.useFallbackEcBox.item)
 
 	// Only add the supporting stuff if external clients are enabled
-	if manager.masterConfig.UseFallbackExecutionClient.Value == false {
+	if configPage.masterConfig.UseFallbackExecutionClient.Value == false {
 		return
 	}
-	manager.handleFallbackEcModeChanged()
+	configPage.handleFallbackEcModeChanged()
 }
 
 // Handle all of the form changes when the fallback EC mode has changed
-func (manager *fallbackExecutionClientLayoutManager) handleFallbackEcModeChanged() {
-	manager.layout.form.Clear(true)
-	manager.layout.form.AddFormItem(manager.useFallbackEcBox.item)
-	manager.layout.form.AddFormItem(manager.fallbackEcModeDropdown.item)
+func (configPage *FallbackExecutionConfigPage) handleFallbackEcModeChanged() {
+	configPage.layout.form.Clear(true)
+	configPage.layout.form.AddFormItem(configPage.useFallbackEcBox.item)
+	configPage.layout.form.AddFormItem(configPage.fallbackEcModeDropdown.item)
 
-	selectedMode := manager.masterConfig.FallbackExecutionClientMode.Value.(config.Mode)
+	selectedMode := configPage.masterConfig.FallbackExecutionClientMode.Value.(config.Mode)
 	switch selectedMode {
 	case config.Mode_Local:
 		// Local (Docker mode)
-		manager.handleLocalFallbackEcChanged()
+		configPage.handleLocalFallbackEcChanged()
 
 	case config.Mode_External:
 		// External (Hybrid mode)
-		for _, param := range manager.fallbackExternalECItems {
-			manager.layout.form.AddFormItem(param.item)
+		for _, param := range configPage.fallbackExternalECItems {
+			configPage.layout.form.AddFormItem(param.item)
 		}
-		manager.layout.refresh()
+		configPage.layout.refresh()
 	}
 }
 
 // Handle all of the form changes when the fallback EC has changed
-func (manager *fallbackExecutionClientLayoutManager) handleLocalFallbackEcChanged() {
-	manager.layout.form.Clear(true)
-	manager.layout.form.AddFormItem(manager.useFallbackEcBox.item)
-	manager.layout.form.AddFormItem(manager.fallbackEcModeDropdown.item)
-	manager.layout.form.AddFormItem(manager.fallbackEcDropdown.item)
-	selectedEc := manager.masterConfig.FallbackExecutionClient.Value.(config.ExecutionClient)
+func (configPage *FallbackExecutionConfigPage) handleLocalFallbackEcChanged() {
+	configPage.layout.form.Clear(true)
+	configPage.layout.form.AddFormItem(configPage.useFallbackEcBox.item)
+	configPage.layout.form.AddFormItem(configPage.fallbackEcModeDropdown.item)
+	configPage.layout.form.AddFormItem(configPage.fallbackEcDropdown.item)
+	selectedEc := configPage.masterConfig.FallbackExecutionClient.Value.(config.ExecutionClient)
 
 	switch selectedEc {
 	case config.ExecutionClient_Infura:
-		manager.layout.addFormItemsWithCommonParams(manager.fallbackEcCommonItems, manager.fallbackInfuraItems, manager.masterConfig.FallbackInfura.UnsupportedCommonParams)
+		configPage.layout.addFormItemsWithCommonParams(configPage.fallbackEcCommonItems, configPage.fallbackInfuraItems, configPage.masterConfig.FallbackInfura.UnsupportedCommonParams)
 	case config.ExecutionClient_Pocket:
-		manager.layout.addFormItemsWithCommonParams(manager.fallbackEcCommonItems, manager.fallbackPocketItems, manager.masterConfig.FallbackPocket.UnsupportedCommonParams)
+		configPage.layout.addFormItemsWithCommonParams(configPage.fallbackEcCommonItems, configPage.fallbackPocketItems, configPage.masterConfig.FallbackPocket.UnsupportedCommonParams)
 	}
 
-	manager.layout.refresh()
+	configPage.layout.refresh()
 }

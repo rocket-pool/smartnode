@@ -7,13 +7,8 @@ import (
 
 // The page wrapper for the EC config
 type ExecutionConfigPage struct {
-	home   *settingsHome
-	page   *page
-	layout *standardLayout
-}
-
-// A manager for handling changes to the EC layout
-type executionClientLayoutManager struct {
+	home            *settingsHome
+	page            *page
 	layout          *standardLayout
 	masterConfig    *config.MasterConfig
 	ecModeDropdown  *parameterizedFormItem
@@ -25,11 +20,17 @@ type executionClientLayoutManager struct {
 	externalEcItems []*parameterizedFormItem
 }
 
+// A manager for handling changes to the EC layout
+type executionClientLayoutManager struct {
+	layout *standardLayout
+}
+
 // Creates a new page for the Execution client settings
 func NewExecutionConfigPage(home *settingsHome) *ExecutionConfigPage {
 
 	configPage := &ExecutionConfigPage{
-		home: home,
+		home:         home,
+		masterConfig: home.md.config,
 	}
 	configPage.createContent()
 
@@ -49,13 +50,11 @@ func NewExecutionConfigPage(home *settingsHome) *ExecutionConfigPage {
 func (configPage *ExecutionConfigPage) createContent() {
 
 	// Create the layout
-	masterConfig := configPage.home.md.config
-	layout := newStandardLayout()
-	configPage.layout = layout
-	layout.createForm(&masterConfig.Smartnode.Network, "Execution Client (Eth1) Settings")
+	configPage.layout = newStandardLayout()
+	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Execution Client (Eth1) Settings")
 
 	// Return to the home page after pressing Escape
-	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
 			configPage.home.md.setPage(configPage.home.homePage)
 			return nil
@@ -64,88 +63,78 @@ func (configPage *ExecutionConfigPage) createContent() {
 	})
 
 	// Set up the form items
-	ecModeDropdown := createParameterizedDropDown(&masterConfig.ExecutionClientMode, layout.descriptionBox)
-	ecDropdown := createParameterizedDropDown(&masterConfig.ExecutionClient, layout.descriptionBox)
-	ecCommonItems := createParameterizedFormItems(masterConfig.ExecutionCommon.GetParameters(), layout.descriptionBox)
-	gethItems := createParameterizedFormItems(masterConfig.Geth.GetParameters(), layout.descriptionBox)
-	infuraItems := createParameterizedFormItems(masterConfig.Infura.GetParameters(), layout.descriptionBox)
-	pocketItems := createParameterizedFormItems(masterConfig.Pocket.GetParameters(), layout.descriptionBox)
-	externalEcItems := createParameterizedFormItems(masterConfig.ExternalExecution.GetParameters(), layout.descriptionBox)
+	configPage.ecModeDropdown = createParameterizedDropDown(&configPage.masterConfig.ExecutionClientMode, configPage.layout.descriptionBox)
+	configPage.ecDropdown = createParameterizedDropDown(&configPage.masterConfig.ExecutionClient, configPage.layout.descriptionBox)
+	configPage.ecCommonItems = createParameterizedFormItems(configPage.masterConfig.ExecutionCommon.GetParameters(), configPage.layout.descriptionBox)
+	configPage.gethItems = createParameterizedFormItems(configPage.masterConfig.Geth.GetParameters(), configPage.layout.descriptionBox)
+	configPage.infuraItems = createParameterizedFormItems(configPage.masterConfig.Infura.GetParameters(), configPage.layout.descriptionBox)
+	configPage.pocketItems = createParameterizedFormItems(configPage.masterConfig.Pocket.GetParameters(), configPage.layout.descriptionBox)
+	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecution.GetParameters(), configPage.layout.descriptionBox)
 
-	layout.mapParameterizedFormItems(ecModeDropdown, ecDropdown)
-	layout.mapParameterizedFormItems(ecCommonItems...)
-	layout.mapParameterizedFormItems(gethItems...)
-	layout.mapParameterizedFormItems(infuraItems...)
-	layout.mapParameterizedFormItems(pocketItems...)
-	layout.mapParameterizedFormItems(externalEcItems...)
+	// Map the parameters to the form items in the layout
+	configPage.layout.mapParameterizedFormItems(configPage.ecModeDropdown, configPage.ecDropdown)
+	configPage.layout.mapParameterizedFormItems(configPage.ecCommonItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.gethItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.infuraItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.pocketItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.externalEcItems...)
 
-	manager := &executionClientLayoutManager{
-		layout:          layout,
-		masterConfig:    masterConfig,
-		ecModeDropdown:  ecModeDropdown,
-		ecDropdown:      ecDropdown,
-		ecCommonItems:   ecCommonItems,
-		gethItems:       gethItems,
-		infuraItems:     infuraItems,
-		pocketItems:     pocketItems,
-		externalEcItems: externalEcItems,
-	}
-
-	ecModeDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		if masterConfig.ExecutionClientMode.Value == masterConfig.ExecutionClientMode.Options[index].Value {
+	// Set up the setting callbacks
+	configPage.ecModeDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if configPage.masterConfig.ExecutionClientMode.Value == configPage.masterConfig.ExecutionClientMode.Options[index].Value {
 			return
 		}
-		masterConfig.ExecutionClientMode.Value = masterConfig.ExecutionClientMode.Options[index].Value
-		manager.handleEcModeChanged()
+		configPage.masterConfig.ExecutionClientMode.Value = configPage.masterConfig.ExecutionClientMode.Options[index].Value
+		configPage.handleEcModeChanged()
 	})
-
-	ecDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
-		if masterConfig.ExecutionClient.Value == masterConfig.ExecutionClient.Options[index].Value {
+	configPage.ecDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
+		if configPage.masterConfig.ExecutionClient.Value == configPage.masterConfig.ExecutionClient.Options[index].Value {
 			return
 		}
-		masterConfig.ExecutionClient.Value = masterConfig.ExecutionClient.Options[index].Value
-		manager.handleLocalEcChanged()
+		configPage.masterConfig.ExecutionClient.Value = configPage.masterConfig.ExecutionClient.Options[index].Value
+		configPage.handleLocalEcChanged()
 	})
 
-	manager.handleEcModeChanged()
+	// Do the initial draw
+	configPage.handleEcModeChanged()
 
 }
 
 // Handle all of the form changes when the EC mode has changed
-func (manager *executionClientLayoutManager) handleEcModeChanged() {
-	manager.layout.form.Clear(true)
-	manager.layout.form.AddFormItem(manager.ecModeDropdown.item)
+func (configPage *ExecutionConfigPage) handleEcModeChanged() {
+	configPage.layout.form.Clear(true)
+	configPage.layout.form.AddFormItem(configPage.ecModeDropdown.item)
 
-	selectedMode := manager.masterConfig.ExecutionClientMode.Value.(config.Mode)
+	selectedMode := configPage.masterConfig.ExecutionClientMode.Value.(config.Mode)
 	switch selectedMode {
 	case config.Mode_Local:
 		// Local (Docker mode)
-		manager.handleLocalEcChanged()
+		configPage.handleLocalEcChanged()
 
 	case config.Mode_External:
 		// External (Hybrid mode)
-		for _, param := range manager.externalEcItems {
-			manager.layout.form.AddFormItem(param.item)
+		for _, param := range configPage.externalEcItems {
+			configPage.layout.form.AddFormItem(param.item)
 		}
-		manager.layout.refresh()
+		configPage.layout.refresh()
 	}
 }
 
 // Handle all of the form changes when the EC has changed
-func (manager *executionClientLayoutManager) handleLocalEcChanged() {
-	manager.layout.form.Clear(true)
-	manager.layout.form.AddFormItem(manager.ecModeDropdown.item)
-	manager.layout.form.AddFormItem(manager.ecDropdown.item)
-	selectedEc := manager.masterConfig.ExecutionClient.Value.(config.ExecutionClient)
+func (configPage *ExecutionConfigPage) handleLocalEcChanged() {
+	configPage.layout.form.Clear(true)
+	configPage.layout.form.AddFormItem(configPage.ecModeDropdown.item)
+	configPage.layout.form.AddFormItem(configPage.ecDropdown.item)
+	selectedEc := configPage.masterConfig.ExecutionClient.Value.(config.ExecutionClient)
 
 	switch selectedEc {
 	case config.ExecutionClient_Geth:
-		manager.layout.addFormItemsWithCommonParams(manager.ecCommonItems, manager.gethItems, manager.masterConfig.Geth.UnsupportedCommonParams)
+		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.gethItems, configPage.masterConfig.Geth.UnsupportedCommonParams)
 	case config.ExecutionClient_Infura:
-		manager.layout.addFormItemsWithCommonParams(manager.ecCommonItems, manager.infuraItems, manager.masterConfig.Infura.UnsupportedCommonParams)
+		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.infuraItems, configPage.masterConfig.Infura.UnsupportedCommonParams)
 	case config.ExecutionClient_Pocket:
-		manager.layout.addFormItemsWithCommonParams(manager.ecCommonItems, manager.pocketItems, manager.masterConfig.Pocket.UnsupportedCommonParams)
+		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.pocketItems, configPage.masterConfig.Pocket.UnsupportedCommonParams)
 	}
 
-	manager.layout.refresh()
+	configPage.layout.refresh()
 }

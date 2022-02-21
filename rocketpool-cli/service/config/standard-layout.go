@@ -166,6 +166,13 @@ func (layout *standardLayout) createSettingFooter() {
 
 }
 
+// Add a collection of form items to this layout's form
+func (layout *standardLayout) addFormItems(params []*parameterizedFormItem) {
+	for _, param := range params {
+		layout.form.AddFormItem(param.item)
+	}
+}
+
 // Add a collection of "common" and "specific" form items to this layout's form, where some of the common
 // items may not be valid and should be excluded
 func (layout *standardLayout) addFormItemsWithCommonParams(commonParams []*parameterizedFormItem, specificParams []*parameterizedFormItem, unsupportedCommonParams []string) {
