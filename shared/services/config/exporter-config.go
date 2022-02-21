@@ -25,7 +25,7 @@ func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 		RootFs: Parameter{
 			ID:                   "enableRootFs",
 			Name:                 "Allow Root Filesystem Access",
-			Description:          "Give the exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
+			Description:          "Give Prometheus's Node Exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: defaultExporterRootFs},
 			AffectsContainers:    []ContainerID{ContainerID_Exporter},
@@ -36,8 +36,8 @@ func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 
 		Port: Parameter{
 			ID:                   "port",
-			Name:                 "API Port",
-			Description:          "The port the Exporter should make its statistics available on.",
+			Name:                 "Exporter Port",
+			Description:          "The port Prometheus's Node Exporter should make its statistics available on.",
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultExporterPort},
 			AffectsContainers:    []ContainerID{ContainerID_Exporter},
@@ -48,8 +48,8 @@ func NewExporterConfig(config *MasterConfig) *ExporterConfig {
 
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Exporter container you want to use on Docker Hub.",
+			Name:                 "Exporter Container Tag",
+			Description:          "The tag name of the Prometheus Node Exporter container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: exporterTag},
 			AffectsContainers:    []ContainerID{ContainerID_Exporter},

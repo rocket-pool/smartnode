@@ -20,11 +20,6 @@ type ExecutionConfigPage struct {
 	externalEcItems []*parameterizedFormItem
 }
 
-// A manager for handling changes to the EC layout
-type executionClientLayoutManager struct {
-	layout *standardLayout
-}
-
 // Creates a new page for the Execution client settings
 func NewExecutionConfigPage(home *settingsHome) *ExecutionConfigPage {
 

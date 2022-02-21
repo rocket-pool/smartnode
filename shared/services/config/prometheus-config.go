@@ -24,7 +24,7 @@ func NewPrometheusConfig(config *MasterConfig) *PrometheusConfig {
 	return &PrometheusConfig{
 		Port: Parameter{
 			ID:                   "port",
-			Name:                 "API Port",
+			Name:                 "Prometheus Port",
 			Description:          "The port Prometheus should make its statistics available on.",
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultPrometheusPort},
@@ -36,7 +36,7 @@ func NewPrometheusConfig(config *MasterConfig) *PrometheusConfig {
 
 		OpenPort: Parameter{
 			ID:                   "openPort",
-			Name:                 "Open Port",
+			Name:                 "Open Prometheus Port",
 			Description:          "Enable this to open Prometheus's port to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: defaultPrometheusOpenPort},
@@ -48,7 +48,7 @@ func NewPrometheusConfig(config *MasterConfig) *PrometheusConfig {
 
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
-			Name:                 "Container Tag",
+			Name:                 "Prometheus Container Tag",
 			Description:          "The tag name of the Prometheus container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: prometheusTag},

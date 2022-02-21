@@ -20,7 +20,7 @@ func NewGrafanaConfig(config *MasterConfig) *GrafanaConfig {
 	return &GrafanaConfig{
 		Port: Parameter{
 			ID:                   "port",
-			Name:                 "HTTP Port",
+			Name:                 "Grafana Port",
 			Description:          "The port Grafana should run its HTTP server on - this is the port you will connect to in your browser.",
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultGrafanaPort},
@@ -32,7 +32,7 @@ func NewGrafanaConfig(config *MasterConfig) *GrafanaConfig {
 
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
-			Name:                 "Container Tag",
+			Name:                 "Grafana Container Tag",
 			Description:          "The tag name of the Grafana container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: grafanaTag},
