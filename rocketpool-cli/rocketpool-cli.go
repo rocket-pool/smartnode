@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/mitchellh/go-homedir"
@@ -146,7 +145,7 @@ ______           _        _    ______           _
 	}
 
 	// Get and parse the config file
-	configFile := fmt.Sprintf("%s/%s", configPath, rocketpool.GlobalConfigFile)
+	configFile := fmt.Sprintf("%s/%s", configPath, rocketpool.SettingsFile)
 	expandedPath, err := homedir.Expand(configFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to get the global config file path: %s\n", err.Error())
@@ -155,19 +154,14 @@ ______           _        _    ______           _
 	// Stop if the config file doesn't exist yet
 	_, err = os.Stat(expandedPath)
 	if !os.IsNotExist(err) {
-		configBytes, err := ioutil.ReadFile(expandedPath)
+		cfg, err := config.LoadFromFile(expandedPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to load the global config file: %s\n", err.Error())
 			os.Exit(1)
 		}
-		cfg, err := config.Parse(configBytes)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to parse the global config file: %s\n", err.Error())
-			os.Exit(1)
-		}
 
 		// Add the faucet if we're on a testnet and it has a contract address
-		if cfg.Rocketpool.RPLFaucetAddress != "" {
+		if cfg.Smartnode.GetRplFaucetAddress() != "" {
 			faucet.RegisterCommands(app, "faucet", []string{"f"})
 		}
 	}

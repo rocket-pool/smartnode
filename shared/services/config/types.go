@@ -48,6 +48,7 @@ const (
 	ParameterType_String  ParameterType = "string"
 	ParameterType_Bool    ParameterType = "bool"
 	ParameterType_Choice  ParameterType = "choice"
+	ParameterType_Float   ParameterType = "float"
 )
 
 // Enum to describe the Execution client options

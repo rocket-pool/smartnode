@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gdamore/tcell/v2"
@@ -47,6 +48,10 @@ func createParameterizedFormItems(params []*config.Parameter, descriptionBox *tv
 			item = createParameterizedStringField(param)
 		case config.ParameterType_Choice:
 			item = createParameterizedDropDown(param, descriptionBox)
+		case config.ParameterType_Float:
+			item = createParameterizedStringField(param)
+		default:
+			panic(fmt.Sprintf("Unknown parameter type %v", param))
 		}
 		formItems = append(formItems, item)
 	}

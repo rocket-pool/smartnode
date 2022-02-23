@@ -113,9 +113,9 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 	// Log & return
 	if !c.Bool("force") {
 		stakeUrl := ""
-		config, err := rp.LoadGlobalConfig()
+		config, err := rp.LoadConfig()
 		if err == nil {
-			stakeUrl = config.Smartnode.StakeUrl
+			stakeUrl = config.Smartnode.GetStakeUrl()
 		}
 		if stakeUrl != "" {
 			fmt.Printf("The node's withdrawal address update to %s is now pending.\n"+
