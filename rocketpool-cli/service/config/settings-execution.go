@@ -10,7 +10,7 @@ type ExecutionConfigPage struct {
 	home            *settingsHome
 	page            *page
 	layout          *standardLayout
-	masterConfig    *config.MasterConfig
+	masterConfig    *config.RocketPoolConfig
 	ecModeDropdown  *parameterizedFormItem
 	ecDropdown      *parameterizedFormItem
 	ecCommonItems   []*parameterizedFormItem

@@ -3,6 +3,7 @@ package config
 // Constants
 const defaultPocketGatewayMainnet string = "lb/613bb4ae8c124d00353c40a1"
 const defaultPocketGatewayPrater string = "lb/6126b4a783e49000343a3a47"
+const pocketEventLogInterval int = 25000
 
 // Configuration for Pocket
 type PocketConfig struct {
@@ -12,12 +13,15 @@ type PocketConfig struct {
 	// Compatible consensus clients
 	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
 
+	// The max number of events to query in a single event log query
+	EventLogInterval int `yaml:"eventLogInterval,omitempty"`
+
 	// The Pocket gateway ID
 	GatewayID Parameter `yaml:"gatewayID,omitempty"`
 }
 
 // Generates a new Pocket configuration
-func NewPocketConfig(config *MasterConfig) *PocketConfig {
+func NewPocketConfig(config *RocketPoolConfig) *PocketConfig {
 	return &PocketConfig{
 		UnsupportedCommonParams: []string{ecWsPortID},
 
@@ -26,6 +30,8 @@ func NewPocketConfig(config *MasterConfig) *PocketConfig {
 			ConsensusClient_Prysm,
 			ConsensusClient_Teku,
 		},
+
+		EventLogInterval: pocketEventLogInterval,
 
 		GatewayID: Parameter{
 			ID:          "gatewayID",

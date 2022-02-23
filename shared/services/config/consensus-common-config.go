@@ -43,7 +43,7 @@ type ConsensusCommonConfig struct {
 }
 
 // Create a new ConsensusCommonParams struct
-func NewConsensusCommonConfig(config *MasterConfig) *ConsensusCommonConfig {
+func NewConsensusCommonConfig(config *RocketPoolConfig) *ConsensusCommonConfig {
 	return &ConsensusCommonConfig{
 		Graffiti: Parameter{
 			ID:                   GraffitiID,

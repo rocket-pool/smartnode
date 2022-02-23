@@ -37,7 +37,7 @@ type PrysmConfig struct {
 }
 
 // Generates a new Prysm configuration
-func NewPrysmConfig(config *MasterConfig) *PrysmConfig {
+func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 	return &PrysmConfig{
 		UnsupportedCommonParams: []string{
 			CheckpointSyncUrlID,

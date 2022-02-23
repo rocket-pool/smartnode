@@ -18,7 +18,7 @@ type TekuConfig struct {
 }
 
 // Generates a new Teku configuration
-func NewTekuConfig(config *MasterConfig) *TekuConfig {
+func NewTekuConfig(config *RocketPoolConfig) *TekuConfig {
 	return &TekuConfig{
 		UnsupportedCommonParams: []string{
 			DoppelgangerDetectionID,

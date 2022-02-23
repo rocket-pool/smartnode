@@ -20,7 +20,7 @@ type PrometheusConfig struct {
 }
 
 // Generates a new Prometheus config
-func NewPrometheusConfig(config *MasterConfig) *PrometheusConfig {
+func NewPrometheusConfig(config *RocketPoolConfig) *PrometheusConfig {
 	return &PrometheusConfig{
 		Port: Parameter{
 			ID:                   "port",

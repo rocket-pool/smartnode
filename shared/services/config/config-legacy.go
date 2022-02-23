@@ -15,7 +15,7 @@ import (
 )
 
 // Rocket Pool config
-type RocketPoolConfig struct {
+type LegacyRocketPoolConfig struct {
 	Rocketpool struct {
 		StorageAddress       string `yaml:"storageAddress,omitempty"`
 		OneInchOracleAddress string `yaml:"oneInchOracleAddress,omitempty"`
@@ -96,13 +96,13 @@ type Metrics struct {
 }
 
 // Get the selected clients from a config
-func (config *RocketPoolConfig) GetSelectedEth1Client() *ClientOption {
+func (config *LegacyRocketPoolConfig) GetSelectedEth1Client() *ClientOption {
 	return config.Chains.Eth1.GetSelectedClient()
 }
-func (config *RocketPoolConfig) GetSelectedEth1FallbackClient() *ClientOption {
+func (config *LegacyRocketPoolConfig) GetSelectedEth1FallbackClient() *ClientOption {
 	return config.Chains.Eth1.GetClientById(config.Chains.Eth1Fallback.Client.Selected)
 }
-func (config *RocketPoolConfig) GetSelectedEth2Client() *ClientOption {
+func (config *LegacyRocketPoolConfig) GetSelectedEth2Client() *ClientOption {
 	return config.Chains.Eth2.GetSelectedClient()
 }
 func (chain *Chain) GetSelectedClient() *ClientOption {
@@ -165,7 +165,7 @@ func (client *ClientOption) GetValidatorImage() string {
 }
 
 // Serialize a config to yaml bytes
-func (config *RocketPoolConfig) Serialize() ([]byte, error) {
+func (config *LegacyRocketPoolConfig) Serialize() ([]byte, error) {
 	bytes, err := yaml.Marshal(config)
 	if err != nil {
 		return []byte{}, fmt.Errorf("Could not serialize config: %w", err)
@@ -174,21 +174,21 @@ func (config *RocketPoolConfig) Serialize() ([]byte, error) {
 }
 
 // Parse a config from yaml bytes
-func Parse(bytes []byte) (RocketPoolConfig, error) {
-	var config RocketPoolConfig
+func Parse(bytes []byte) (LegacyRocketPoolConfig, error) {
+	var config LegacyRocketPoolConfig
 	if err := yaml.Unmarshal(bytes, &config); err != nil {
-		return RocketPoolConfig{}, fmt.Errorf("Could not parse config: %w", err)
+		return LegacyRocketPoolConfig{}, fmt.Errorf("Could not parse config: %w", err)
 	}
 
 	// Validate the defaults
 	if err := ValidateDefaults(config.Chains.Eth1, "eth1"); err != nil {
-		return RocketPoolConfig{}, err
+		return LegacyRocketPoolConfig{}, err
 	}
 	if err := ValidateDefaults(config.Chains.Eth2, "eth2"); err != nil {
-		return RocketPoolConfig{}, err
+		return LegacyRocketPoolConfig{}, err
 	}
 	if err := ValidateMetricDefaults(config.Metrics.Params); err != nil {
-		return RocketPoolConfig{}, err
+		return LegacyRocketPoolConfig{}, err
 	}
 
 	return config, nil
@@ -257,27 +257,27 @@ func ValidateMetricDefaults(Params []ClientParam) error {
 }
 
 // Merge configs
-func Merge(configs ...*RocketPoolConfig) (RocketPoolConfig, error) {
-	var merged RocketPoolConfig
+func Merge(configs ...*LegacyRocketPoolConfig) (LegacyRocketPoolConfig, error) {
+	var merged LegacyRocketPoolConfig
 	for i := len(configs) - 1; i >= 0; i-- {
 		if err := mergo.Merge(&merged, configs[i]); err != nil {
-			return RocketPoolConfig{}, fmt.Errorf("Could not merge configs: %w", err)
+			return LegacyRocketPoolConfig{}, fmt.Errorf("Could not merge configs: %w", err)
 		}
 	}
 	return merged, nil
 }
 
 // Load merged config from files
-func Load(c *cli.Context) (RocketPoolConfig, error) {
+func Load(c *cli.Context) (LegacyRocketPoolConfig, error) {
 
 	// Load configs
 	globalConfig, err := loadFile(os.ExpandEnv(c.GlobalString("config")), true)
 	if err != nil {
-		return RocketPoolConfig{}, err
+		return LegacyRocketPoolConfig{}, err
 	}
 	userConfig, err := loadFile(os.ExpandEnv(c.GlobalString("settings")), true)
 	if err != nil {
-		return RocketPoolConfig{}, err
+		return LegacyRocketPoolConfig{}, err
 	}
 	cliConfig := getCliConfig(c)
 
@@ -287,22 +287,22 @@ func Load(c *cli.Context) (RocketPoolConfig, error) {
 }
 
 // Load config from a file
-func loadFile(path string, required bool) (RocketPoolConfig, error) {
+func loadFile(path string, required bool) (LegacyRocketPoolConfig, error) {
 
 	// Read file; squelch not found errors if file is optional
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		if required {
-			return RocketPoolConfig{}, fmt.Errorf("Could not find config file at %s: %w", path, err)
+			return LegacyRocketPoolConfig{}, fmt.Errorf("Could not find config file at %s: %w", path, err)
 		} else {
-			return RocketPoolConfig{}, nil
+			return LegacyRocketPoolConfig{}, nil
 		}
 	}
 
 	// Parse config
-	var config RocketPoolConfig
+	var config LegacyRocketPoolConfig
 	if err := yaml.Unmarshal(bytes, &config); err != nil {
-		return RocketPoolConfig{}, fmt.Errorf("Could not parse config file at %s: %w", path, err)
+		return LegacyRocketPoolConfig{}, fmt.Errorf("Could not parse config file at %s: %w", path, err)
 	}
 
 	// Return
@@ -311,8 +311,8 @@ func loadFile(path string, required bool) (RocketPoolConfig, error) {
 }
 
 // Create config from CLI arguments
-func getCliConfig(c *cli.Context) RocketPoolConfig {
-	var config RocketPoolConfig
+func getCliConfig(c *cli.Context) LegacyRocketPoolConfig {
+	var config LegacyRocketPoolConfig
 	config.Rocketpool.StorageAddress = c.GlobalString("storageAddress")
 	config.Rocketpool.OneInchOracleAddress = c.GlobalString("oneInchOracleAddress")
 	config.Rocketpool.RplTokenAddress = c.GlobalString("rplTokenAddress")
@@ -329,7 +329,7 @@ func getCliConfig(c *cli.Context) RocketPoolConfig {
 }
 
 // Parse and return the max fee in wei
-func (config *RocketPoolConfig) GetMaxFee() (*big.Int, error) {
+func (config *LegacyRocketPoolConfig) GetMaxFee() (*big.Int, error) {
 
 	// No gas price specified
 	if config.Smartnode.MaxFee == 0 {
@@ -342,7 +342,7 @@ func (config *RocketPoolConfig) GetMaxFee() (*big.Int, error) {
 }
 
 // Parse and return the max priority fee in wei
-func (config *RocketPoolConfig) GetMaxPriorityFee() (*big.Int, error) {
+func (config *LegacyRocketPoolConfig) GetMaxPriorityFee() (*big.Int, error) {
 
 	// No gas price specified
 	if config.Smartnode.MaxPriorityFee == 0 {
@@ -355,7 +355,7 @@ func (config *RocketPoolConfig) GetMaxPriorityFee() (*big.Int, error) {
 }
 
 // Parse and return the gas limit
-func (config *RocketPoolConfig) GetGasLimit() (uint64, error) {
+func (config *LegacyRocketPoolConfig) GetGasLimit() (uint64, error) {
 
 	// No gas limit specified
 	if config.Smartnode.GasLimit == 0 {

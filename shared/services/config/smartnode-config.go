@@ -12,6 +12,11 @@ const defaultProjectName string = "rocketpool"
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
+
+	////////////////////////////
+	// User-editable settings //
+	////////////////////////////
+
 	// Docker container prefix
 	ProjectName Parameter `yaml:"projectName,omitempty"`
 
@@ -35,10 +40,44 @@ type SmartnodeConfig struct {
 
 	// Threshold for auto minipool stakes
 	MinipoolStakeGasThreshold Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
+
+	///////////////////////////
+	// Non-editable settings //
+	///////////////////////////
+
+	// The URL to provide the user so they can follow pending transactions
+	txWatchUrl map[Network]string `yaml:"txWatchUrl,omitempty"`
+
+	// The URL to use for staking rETH
+	stakeUrl map[Network]string `yaml:"stakeUrl,omitempty"`
+
+	// The map of networks to execution chain IDs
+	chainID map[Network]uint `yaml:"chainID"`
+
+	// The path within the daemon Docker container of the wallet file
+	walletPath string `yaml:"walletPath"`
+
+	// The path within the daemon Docker container of the wallet's password file
+	passwordPath string `yaml:"passwordPath"`
+
+	// The path within the daemon Docker container of the validator key folder
+	validatorKeychainPath string `yaml:"validatorKeychainPath"`
+
+	// The contract address of RocketStorage
+	storageAddress map[Network]string `yaml:"storageAddress"`
+
+	// The contract address of the 1inch oracle
+	oneInchOracleAddress map[Network]string `yaml:"oneInchOracleAddress"`
+
+	// The contract address of the RPL token
+	rplTokenAddress map[Network]string `yaml:"rplTokenAddress"`
+
+	// The contract address of the RPL faucet
+	rplFaucetAddress map[Network]string `yaml:"rplFaucetAddress"`
 }
 
 // Generates a new Smartnode configuration
-func NewSmartnodeConfig(config *MasterConfig) *SmartnodeConfig {
+func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 	return &SmartnodeConfig{
 		ProjectName: Parameter{
@@ -88,12 +127,10 @@ func NewSmartnodeConfig(config *MasterConfig) *SmartnodeConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				ID:          "mainnet",
 				Name:        "Ethereum Mainnet",
 				Description: "This is the real Ethereum main network, using real ETH and real RPL to make real validators.",
 				Value:       Network_Mainnet,
 			}, {
-				ID:          "prater",
 				Name:        "Prater Testnet",
 				Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to mainnet.",
 				Value:       Network_Prater,
@@ -148,6 +185,47 @@ func NewSmartnodeConfig(config *MasterConfig) *SmartnodeConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
+
+		txWatchUrl: map[Network]string{
+			Network_Mainnet: "https://etherscan.io/tx",
+			Network_Prater:  "https://goerli.etherscan.io/tx",
+		},
+
+		stakeUrl: map[Network]string{
+			Network_Mainnet: "https://stake.rocketpool.net",
+			Network_Prater:  "https://testnet.rocketpool.net",
+		},
+
+		chainID: map[Network]uint{
+			Network_Mainnet: 1, // Mainnet
+			Network_Prater:  5, // Goerli
+		},
+
+		walletPath: "/.rocketpool/data/wallet",
+
+		passwordPath: "/.rocketpool/data/password",
+
+		validatorKeychainPath: "/.rocketpool/data/validators",
+
+		storageAddress: map[Network]string{
+			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
+			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
+		},
+
+		oneInchOracleAddress: map[Network]string{
+			Network_Mainnet: "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb",
+			Network_Prater:  "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
+		},
+
+		rplTokenAddress: map[Network]string{
+			Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
+			Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
+		},
+
+		rplFaucetAddress: map[Network]string{
+			Network_Mainnet: "",
+			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
+		},
 	}
 
 }
@@ -164,4 +242,46 @@ func (config *SmartnodeConfig) GetParameters() []*Parameter {
 		&config.RplClaimGasThreshold,
 		&config.MinipoolStakeGasThreshold,
 	}
+}
+
+// Getters for the non-editable parameters
+
+func (config *SmartnodeConfig) GetTxWatchUrl() string {
+	return config.txWatchUrl[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetStakeUrl() string {
+	return config.stakeUrl[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetChainID() uint {
+	return config.chainID[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetWalletPath() string {
+	return config.walletPath
+}
+
+func (config *SmartnodeConfig) GetPasswordPath() string {
+	return config.passwordPath
+}
+
+func (config *SmartnodeConfig) GetValidatorKeychainPath() string {
+	return config.validatorKeychainPath
+}
+
+func (config *SmartnodeConfig) GetStorageAddress() string {
+	return config.storageAddress[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetOneInchOracleAddress() string {
+	return config.oneInchOracleAddress[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetRplTokenAddress() string {
+	return config.rplTokenAddress[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetRplFaucetAddress() string {
+	return config.rplFaucetAddress[config.Network.Value.(Network)]
 }

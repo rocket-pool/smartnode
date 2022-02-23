@@ -56,9 +56,9 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 }
 
 // Print a TX's details to the logger and waits for it to be mined.
-func PrintAndWaitForTransaction(config config.RocketPoolConfig, hash common.Hash, ec *client.EthClientProxy, logger log.ColorLogger) error {
+func PrintAndWaitForTransaction(cfg config.RocketPoolConfig, hash common.Hash, ec *client.EthClientProxy, logger log.ColorLogger) error {
 
-	txWatchUrl := config.Smartnode.TxWatchUrl
+	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
 	hashString := hash.String()
 
 	logger.Printlnf("Transaction has been submitted with hash %s.", hashString)
@@ -82,13 +82,27 @@ func GetEventLogInterval(cfg config.RocketPoolConfig) (*big.Int, error) {
 
 	// Get event log interval
 	var eventLogInterval *big.Int = nil
-	eth1Client := cfg.GetSelectedEth1Client()
-	if eth1Client != nil && eth1Client.EventLogInterval != "" {
-		var success bool
-		eventLogInterval, success = big.NewInt(0).SetString(eth1Client.EventLogInterval, 0)
-		if !success {
-			return nil, fmt.Errorf("Cannot parse event log interval of [%s]", eth1Client.EventLogInterval)
+	ecMode := cfg.ExecutionClientMode.Value
+
+	switch ecMode {
+	case config.Mode_External:
+		// Use the Geth limit for external clients
+		eventLogInterval = big.NewInt(int64(cfg.Geth.EventLogInterval))
+
+	case config.Mode_Local:
+		switch cfg.ExecutionClient.Value {
+		case config.ExecutionClient_Geth:
+			eventLogInterval = big.NewInt(int64(cfg.Geth.EventLogInterval))
+		case config.ExecutionClient_Infura:
+			eventLogInterval = big.NewInt(int64(cfg.Infura.EventLogInterval))
+		case config.ExecutionClient_Pocket:
+			eventLogInterval = big.NewInt(int64(cfg.Pocket.EventLogInterval))
+		default:
+			return nil, fmt.Errorf("unknown execution client selected: %v", cfg.ExecutionClient.Value)
 		}
+
+	default:
+		return nil, fmt.Errorf("unknown execution client mode selected: %v", ecMode)
 	}
 
 	return eventLogInterval, nil

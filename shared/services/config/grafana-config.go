@@ -16,7 +16,7 @@ type GrafanaConfig struct {
 }
 
 // Generates a new Grafana config
-func NewGrafanaConfig(config *MasterConfig) *GrafanaConfig {
+func NewGrafanaConfig(config *RocketPoolConfig) *GrafanaConfig {
 	return &GrafanaConfig{
 		Port: Parameter{
 			ID:                   "port",

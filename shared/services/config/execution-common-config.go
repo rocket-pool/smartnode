@@ -23,7 +23,7 @@ type ExecutionCommonConfig struct {
 }
 
 // Create a new ExecutionCommonConfig struct
-func NewExecutionCommonConfig(config *MasterConfig) *ExecutionCommonConfig {
+func NewExecutionCommonConfig(config *RocketPoolConfig) *ExecutionCommonConfig {
 	return &ExecutionCommonConfig{
 		HttpPort: Parameter{
 			ID:                   ecHttpPortID,

@@ -8,6 +8,7 @@ import (
 
 // Constants
 const gethTag string = "ethereum/client-go:v1.10.15"
+const gethEventLogInterval int = 25000
 
 // Defaults
 const defaultGethP2pPort uint16 = 30303
@@ -19,6 +20,9 @@ type GethConfig struct {
 
 	// Compatible consensus clients
 	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
+
+	// The max number of events to query in a single event log query
+	EventLogInterval int `yaml:"eventLogInterval,omitempty"`
 
 	// Size of Geth's Cache
 	CacheSize Parameter `yaml:"cacheSize,omitempty"`
@@ -43,7 +47,7 @@ type GethConfig struct {
 }
 
 // Generates a new Geth configuration
-func NewGethConfig(config *MasterConfig) *GethConfig {
+func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 	return &GethConfig{
 		UnsupportedCommonParams: []string{},
 
@@ -53,6 +57,8 @@ func NewGethConfig(config *MasterConfig) *GethConfig {
 			ConsensusClient_Prysm,
 			ConsensusClient_Teku,
 		},
+
+		EventLogInterval: gethEventLogInterval,
 
 		CacheSize: Parameter{
 			ID:                   "cache",

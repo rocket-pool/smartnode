@@ -29,11 +29,16 @@ import (
 )
 
 // Config
-const DockerAPIVersion = "1.40"
+const (
+	DockerAPIVersion        string = "1.40"
+	EcContainerName         string = "eth1"
+	FallbackEcContainerName string = "eth1-fallback"
+	BnContainerName         string = "eth2"
+)
 
 // Service instances & initializers
 var (
-	cfg             config.RocketPoolConfig
+	cfg             *config.RocketPoolConfig
 	passwordManager *passwords.PasswordManager
 	nodeWallet      *wallet.Wallet
 	ethClientProxy  *uc.EthClientProxy
@@ -58,7 +63,7 @@ var (
 // Service providers
 //
 
-func GetConfig(c *cli.Context) (config.RocketPoolConfig, error) {
+func GetConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
 	return getConfig(c)
 }
 
@@ -144,47 +149,39 @@ func GetDocker(c *cli.Context) (*client.Client, error) {
 // Service instance getters
 //
 
-func getConfig(c *cli.Context) (config.RocketPoolConfig, error) {
+func getConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
 	var err error
 	initCfg.Do(func() {
-		cfg, err = config.Load(c)
+		settingsFile := os.ExpandEnv(c.GlobalString("settings"))
+		cfg, err = config.LoadFromFile(settingsFile)
 	})
 	return cfg, err
 }
 
-func getPasswordManager(cfg config.RocketPoolConfig) *passwords.PasswordManager {
+func getPasswordManager(cfg *config.RocketPoolConfig) *passwords.PasswordManager {
 	initPasswordManager.Do(func() {
-		passwordManager = passwords.NewPasswordManager(os.ExpandEnv(cfg.Smartnode.PasswordPath))
+		passwordManager = passwords.NewPasswordManager(os.ExpandEnv(cfg.Smartnode.GetPasswordPath()))
 	})
 	return passwordManager
 }
 
-func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
+func getWallet(cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
 	var err error
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
 		var maxPriorityFee *big.Int
-		var gasLimit uint64
-		maxFee, err = cfg.GetMaxFee()
+		maxFee = big.NewInt(int64(cfg.Smartnode.ManualMaxFee.Value.(uint)))
+		maxPriorityFee = big.NewInt(int64(cfg.Smartnode.PriorityFee.Value.(uint)))
+		chainId := cfg.Smartnode.GetChainID()
+
+		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm)
 		if err != nil {
 			return
 		}
-		maxPriorityFee, err = cfg.GetMaxPriorityFee()
-		if err != nil {
-			return
-		}
-		gasLimit, err = cfg.GetGasLimit()
-		if err != nil {
-			return
-		}
-		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.WalletPath), cfg.Chains.Eth1.ChainID, maxFee, maxPriorityFee, gasLimit, pm)
-		if err != nil {
-			return
-		}
-		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-		nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-		prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
-		tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.ValidatorKeychainPath), pm)
+		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
+		nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
+		prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
+		tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
 		nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
 		nodeWallet.AddKeystore("nimbus", nimbusKeystore)
 		nodeWallet.AddKeystore("prysm", prysmKeystore)
@@ -193,61 +190,98 @@ func getWallet(cfg config.RocketPoolConfig, pm *passwords.PasswordManager) (*wal
 	return nodeWallet, err
 }
 
-func getEthClientProxy(cfg config.RocketPoolConfig) (*uc.EthClientProxy, error) {
+func getEthClientProxy(cfg *config.RocketPoolConfig) (*uc.EthClientProxy, error) {
 	var err error
 	initEthClientProxy.Do(func() {
-		reconnectDelay, err := time.ParseDuration(cfg.Chains.Eth1.ReconnectDelay)
+		reconnectDelay, err := time.ParseDuration(cfg.ReconnectDelay.Value.(string))
 		if err != nil {
 			return
 		}
-		if cfg.Chains.Eth1Fallback.Client.Selected == "" {
-			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, cfg.Chains.Eth1.Provider)
+
+		// Get the provider URL of the primary execution client
+		var primaryProvider string
+		if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+			primaryProvider = fmt.Sprintf("http://%s:%d", EcContainerName, cfg.ExecutionCommon.HttpPort.Value.(uint16))
 		} else {
-			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, cfg.Chains.Eth1.Provider, cfg.Chains.Eth1.FallbackProvider)
+			primaryProvider = cfg.ExternalExecution.HttpUrl.Value.(string)
+		}
+
+		if cfg.UseFallbackExecutionClient.Value == false {
+			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, primaryProvider)
+		} else {
+			// Get the provider URL of the fallback execution client
+			var fallbackProvider string
+			if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+				fallbackProvider = fmt.Sprintf("http://%s:%d", FallbackEcContainerName, cfg.FallbackExecutionCommon.HttpPort.Value.(uint16))
+			} else {
+				fallbackProvider = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
+			}
+
+			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, primaryProvider, fallbackProvider)
 		}
 	})
 	return ethClientProxy, err
 }
 
-func getRocketPool(cfg config.RocketPoolConfig, client *uc.EthClientProxy) (*rocketpool.RocketPool, error) {
+func getRocketPool(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (*rocketpool.RocketPool, error) {
 	var err error
 	initRocketPool.Do(func() {
-		rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Rocketpool.StorageAddress))
+		rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))
 	})
 	return rocketPool, err
 }
 
-func getOneInchOracle(cfg config.RocketPoolConfig, client *uc.EthClientProxy) (*contracts.OneInchOracle, error) {
+func getOneInchOracle(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (*contracts.OneInchOracle, error) {
 	var err error
 	initOneInchOracle.Do(func() {
-		oneInchOracle, err = contracts.NewOneInchOracle(common.HexToAddress(cfg.Rocketpool.OneInchOracleAddress), client)
+		oneInchOracle, err = contracts.NewOneInchOracle(common.HexToAddress(cfg.Smartnode.GetOneInchOracleAddress()), client)
 	})
 	return oneInchOracle, err
 }
 
-func getRplFaucet(cfg config.RocketPoolConfig, client *uc.EthClientProxy) (*contracts.RPLFaucet, error) {
+func getRplFaucet(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (*contracts.RPLFaucet, error) {
 	var err error
 	initRplFaucet.Do(func() {
-		rplFaucet, err = contracts.NewRPLFaucet(common.HexToAddress(cfg.Rocketpool.RPLFaucetAddress), client)
+		rplFaucet, err = contracts.NewRPLFaucet(common.HexToAddress(cfg.Smartnode.GetRplFaucetAddress()), client)
 	})
 	return rplFaucet, err
 }
 
-func getBeaconClient(cfg config.RocketPoolConfig) (beacon.Client, error) {
+func getBeaconClient(cfg *config.RocketPoolConfig) (beacon.Client, error) {
 	var err error
 	initBeaconClient.Do(func() {
-		switch cfg.Chains.Eth2.Client.Selected {
-		case "lighthouse":
-			beaconClient = lighthouse.NewClient(cfg.Chains.Eth2.Provider)
-		case "nimbus":
-			beaconClient = nimbus.NewClient(cfg.Chains.Eth2.Provider)
-		case "prysm":
-			beaconClient = prysm.NewClient(cfg.Chains.Eth2.Provider)
-		case "teku":
-			beaconClient = teku.NewClient(cfg.Chains.Eth2.Provider)
-		default:
-			err = fmt.Errorf("Unknown Eth 2.0 client '%s' selected", cfg.Chains.Eth2.Client.Selected)
+		if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+			provider := fmt.Sprintf("http://%s:%d", BnContainerName, cfg.ConsensusCommon.ApiPort.Value.(uint16))
+			switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
+			case config.ConsensusClient_Lighthouse:
+				beaconClient = lighthouse.NewClient(provider)
+			case config.ConsensusClient_Nimbus:
+				beaconClient = nimbus.NewClient(provider)
+			case config.ConsensusClient_Prysm:
+				beaconClient = prysm.NewClient(provider)
+			case config.ConsensusClient_Teku:
+				beaconClient = teku.NewClient(provider)
+			default:
+				err = fmt.Errorf("Unknown Consensus client '%v' selected", cfg.ConsensusClient.Value)
+			}
+		} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External {
+			provider := cfg.ExternalConsensus.HttpUrl.Value.(string)
+			switch cfg.ExternalConsensusClient.Value.(config.ConsensusClient) {
+			case config.ConsensusClient_Lighthouse:
+				beaconClient = lighthouse.NewClient(provider)
+			case config.ConsensusClient_Nimbus:
+				beaconClient = nimbus.NewClient(provider)
+			case config.ConsensusClient_Prysm:
+				beaconClient = prysm.NewClient(provider)
+			case config.ConsensusClient_Teku:
+				beaconClient = teku.NewClient(provider)
+			default:
+				err = fmt.Errorf("Unknown Consensus client '%v' selected", cfg.ExternalConsensusClient.Value)
+			}
+		} else {
+			err = fmt.Errorf("Unknown Consensus client mode '%v'", cfg.ConsensusClientMode.Value)
 		}
+
 	})
 	return beaconClient, err
 }

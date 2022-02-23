@@ -9,7 +9,7 @@ import (
 func ConfigureService(c *cli.Context) error {
 
 	app := tview.NewApplication()
-	config := config.NewMasterConfig()
+	config := config.NewRocketPoolConfig()
 	newMainDisplay(app, config)
 	err := app.Run()
 	return err

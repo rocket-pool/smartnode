@@ -1,12 +1,18 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"io/ioutil"
+
+	"github.com/alessio/shellescape"
+	"gopkg.in/yaml.v2"
+)
 
 // Constants
 const rootConfigName string = "root"
 
 // The master configuration struct
-type MasterConfig struct {
+type RocketPoolConfig struct {
 
 	// Execution client settings
 	ExecutionClientMode Parameter `yaml:"executionClientMode"`
@@ -16,6 +22,7 @@ type MasterConfig struct {
 	UseFallbackExecutionClient  Parameter `yaml:"useFallbackExecutionClient,omitempty"`
 	FallbackExecutionClientMode Parameter `yaml:"fallbackExecutionClientMode,omitempty"`
 	FallbackExecutionClient     Parameter `yaml:"fallbackExecutionClient,omitempty"`
+	ReconnectDelay              Parameter `yaml:"reconnectDelay,omitempty"`
 
 	// Consensus client settings
 	ConsensusClientMode     Parameter `yaml:"consensusClientMode,omitempty"`
@@ -56,10 +63,10 @@ type MasterConfig struct {
 	Exporter   *ExporterConfig   `yaml:"exporter,omitempty"`
 }
 
-// Creates a new master Configuration instance
-func NewMasterConfig() *MasterConfig {
+// Creates a new Rocket Pool configuration instance
+func NewRocketPoolConfig() *RocketPoolConfig {
 
-	config := &MasterConfig{
+	config := &RocketPoolConfig{
 		ExecutionClientMode: Parameter{
 			ID:                   "executionClientMode",
 			Name:                 "Execution Client Mode",
@@ -71,12 +78,10 @@ func NewMasterConfig() *MasterConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				ID:          "local",
 				Name:        "Locally Managed",
 				Description: "Allow the Smartnode to manage an Execution client for you (Docker Mode)",
 				Value:       Mode_Local,
 			}, {
-				ID:          "external",
 				Name:        "Externally Managed",
 				Description: "Use an existing Execution client that you manage on your own (Hybrid Mode)",
 				Value:       Mode_External,
@@ -94,17 +99,14 @@ func NewMasterConfig() *MasterConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				ID:          "geth",
 				Name:        "Geth",
 				Description: "Geth is one of the three original implementations of the Ethereum protocol. It is written in Go, fully open source and licensed under the GNU LGPL v3.",
 				Value:       ExecutionClient_Geth,
 			}, {
-				ID:          "infura",
 				Name:        "Infura",
 				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
 				Value:       ExecutionClient_Infura,
 			}, {
-				ID:          "pocket",
 				Name:        "Pocket",
 				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
 				Value:       ExecutionClient_Pocket,
@@ -134,12 +136,10 @@ func NewMasterConfig() *MasterConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				ID:          "local",
 				Name:        "Locally Managed",
 				Description: "Allow the Smartnode to manage a fallback Execution client for you (Docker Mode)",
 				Value:       Mode_Local,
 			}, {
-				ID:          "external",
 				Name:        "Externally Managed",
 				Description: "Use an existing fallback Execution client that you manage on your own (Hybrid Mode)",
 				Value:       Mode_External,
@@ -157,16 +157,26 @@ func NewMasterConfig() *MasterConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				ID:          "infura",
 				Name:        "Infura",
 				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
 				Value:       ExecutionClient_Infura,
 			}, {
-				ID:          "pocket",
 				Name:        "Pocket",
 				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
 				Value:       ExecutionClient_Pocket,
 			}},
+		},
+
+		ReconnectDelay: Parameter{
+			ID:                   "reconnectDelay",
+			Name:                 "Reconnect Delay",
+			Description:          "The delay to wait after the primary Execution client fails before trying to reconnect to it. The format is \"10h20m30s\".",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: "60s"},
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
 		},
 
 		ConsensusClientMode: Parameter{
@@ -180,12 +190,10 @@ func NewMasterConfig() *MasterConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				ID:          "local",
 				Name:        "Locally Managed",
 				Description: "Allow the Smartnode to manage a Consensus client for you (Docker Mode)",
 				Value:       Mode_Local,
 			}, {
-				ID:          "external",
 				Name:        "Externally Managed",
 				Description: "Use an existing Consensus client that you manage on your own (Hybrid Mode)",
 				Value:       Mode_External,
@@ -203,22 +211,18 @@ func NewMasterConfig() *MasterConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				ID:          "lighthouse",
 				Name:        "Lighthouse",
 				Description: "Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
 				Value:       ConsensusClient_Lighthouse,
 			}, {
-				ID:          "nimbus",
 				Name:        "Nimbus",
 				Description: "Nimbus is a Consensus client implementation that strives to be as lightweight as possible in terms of resources used. This allows it to perform well on embedded systems, resource-restricted devices -- including Raspberry Pis and mobile devices -- and multi-purpose servers.",
 				Value:       ConsensusClient_Nimbus,
 			}, {
-				ID:          "prysm",
 				Name:        "Prysm",
 				Description: "Prysm is a Go implementation of Ethereum Consensus protocol with a focus on usability, security, and reliability. Prysm is developed by Prysmatic Labs, a company with the sole focus on the development of their client. Prysm is written in Go and released under a GPL-3.0 license.",
 				Value:       ConsensusClient_Prysm,
 			}, {
-				ID:          "teku",
 				Name:        "Teku",
 				Description: "PegaSys Teku (formerly known as Artemis) is a Java-based Ethereum 2.0 client designed & built to meet institutional needs and security requirements. PegaSys is an arm of ConsenSys dedicated to building enterprise-ready clients and tools for interacting with the core Ethereum platform. Teku is Apache 2 licensed and written in Java, a language notable for its maturity & ubiquity.",
 				Value:       ConsensusClient_Teku,
@@ -236,19 +240,16 @@ func NewMasterConfig() *MasterConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				ID:          "lighthouse",
 				Name:        "Lighthouse",
-				Description: "Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
+				Description: "Select this if you will use Lighthouse as your Consensus client.",
 				Value:       ConsensusClient_Lighthouse,
 			}, {
-				ID:          "prysm",
 				Name:        "Prysm",
-				Description: "Prysm is a Go implementation of Ethereum Consensus protocol with a focus on usability, security, and reliability. Prysm is developed by Prysmatic Labs, a company with the sole focus on the development of their client. Prysm is written in Go and released under a GPL-3.0 license.",
+				Description: "Select this if you will use Prysm as your Consensus client.",
 				Value:       ConsensusClient_Prysm,
 			}, {
-				ID:          "teku",
 				Name:        "Teku",
-				Description: "PegaSys Teku (formerly known as Artemis) is a Java-based Ethereum 2.0 client designed & built to meet institutional needs and security requirements. PegaSys is an arm of ConsenSys dedicated to building enterprise-ready clients and tools for interacting with the core Ethereum platform. Teku is Apache 2 licensed and written in Java, a language notable for its maturity & ubiquity.",
+				Description: "Select this if you will use Teku as your Consensus client.",
 				Value:       ConsensusClient_Teku,
 			}},
 		},
@@ -300,13 +301,14 @@ func NewMasterConfig() *MasterConfig {
 }
 
 // Get the parameters for this config
-func (config *MasterConfig) GetParameters() []*Parameter {
+func (config *RocketPoolConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.ExecutionClientMode,
 		&config.ExecutionClient,
 		&config.UseFallbackExecutionClient,
 		&config.FallbackExecutionClientMode,
 		&config.FallbackExecutionClient,
+		&config.ReconnectDelay,
 		&config.ConsensusClientMode,
 		&config.ConsensusClient,
 		&config.ExternalConsensusClient,
@@ -315,7 +317,7 @@ func (config *MasterConfig) GetParameters() []*Parameter {
 }
 
 // Get the subconfigurations for this config
-func (config *MasterConfig) GetSubconfigs() map[string]Config {
+func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 	return map[string]Config{
 		"smartnode":                 config.Smartnode,
 		"executionCommon":           config.ExecutionCommon,
@@ -341,7 +343,7 @@ func (config *MasterConfig) GetSubconfigs() map[string]Config {
 }
 
 // Handle a network change on all of the parameters
-func (config *MasterConfig) ChangeNetwork(newNetwork Network) {
+func (config *RocketPoolConfig) ChangeNetwork(newNetwork Network) {
 
 	// Get the current network
 	oldNetwork, ok := config.Smartnode.Network.Value.(Network)
@@ -369,7 +371,7 @@ func (config *MasterConfig) ChangeNetwork(newNetwork Network) {
 }
 
 // Get the Consensus clients compatible with the config's EC and fallback EC selection
-func (config *MasterConfig) GetCompatibleConsensusClients() ([]ParameterOption, []string) {
+func (config *RocketPoolConfig) GetCompatibleConsensusClients() ([]ParameterOption, []string) {
 
 	// Get the compatible clients based on the EC choice
 	var compatibleConsensusClients []ConsensusClient
@@ -442,7 +444,7 @@ func (config *MasterConfig) GetCompatibleConsensusClients() ([]ParameterOption, 
 }
 
 // Get the configuration for the selected client
-func (config *MasterConfig) GetSelectedConsensusClientConfig() (ConsensusConfig, error) {
+func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusConfig, error) {
 	client := config.ConsensusClient.Value.(ConsensusClient)
 	switch client {
 	case ConsensusClient_Lighthouse:
@@ -454,12 +456,12 @@ func (config *MasterConfig) GetSelectedConsensusClientConfig() (ConsensusConfig,
 	case ConsensusClient_Teku:
 		return config.Teku, nil
 	default:
-		return nil, fmt.Errorf("unknown consensus client [%d] selected", client)
+		return nil, fmt.Errorf("unknown consensus client [%v] selected", client)
 	}
 }
 
 // Serializes the configuration into a map of maps, compatible with a settings file
-func (config *MasterConfig) Serialize() map[string]map[string]string {
+func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 
 	masterMap := map[string]map[string]string{}
 
@@ -483,7 +485,7 @@ func (config *MasterConfig) Serialize() map[string]map[string]string {
 }
 
 // Deserializes a settings file into this config
-func (config *MasterConfig) Deserialize(masterMap map[string]map[string]string) error {
+func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string) error {
 
 	// Deserialize root params
 	rootParams, exists := masterMap[rootConfigName]
@@ -515,7 +517,7 @@ func (config *MasterConfig) Deserialize(masterMap map[string]map[string]string) 
 }
 
 // Applies all of the defaults to all of the settings that have them defined
-func (config *MasterConfig) applyAllDefaults() error {
+func (config *RocketPoolConfig) applyAllDefaults() error {
 	for _, param := range config.GetParameters() {
 		err := param.setToDefault(config.Smartnode.Network.Value.(Network))
 		if err != nil {
@@ -533,4 +535,29 @@ func (config *MasterConfig) applyAllDefaults() error {
 	}
 
 	return nil
+}
+
+// Load configuration settings from a file
+func LoadFromFile(path string) (*RocketPoolConfig, error) {
+
+	// Read the file
+	configBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not read Rocket Pool settings file at %s: %w", shellescape.Quote(path), err)
+	}
+
+	// Attempt to parse it out into a settings map
+	var settings map[string]map[string]string
+	if err := yaml.Unmarshal(configBytes, &settings); err != nil {
+		return nil, fmt.Errorf("could not parse settings file: %w", err)
+	}
+
+	// Deserialize it into a config object
+	cfg := NewRocketPoolConfig()
+	err = cfg.Deserialize(settings)
+	if err != nil {
+		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
+	}
+	return cfg, nil
+
 }

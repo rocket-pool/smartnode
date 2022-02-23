@@ -25,7 +25,7 @@ type ExternalPrysmConfig struct {
 }
 
 // Generates a new ExternalExecutionConfig configuration
-func NewExternalExecutionConfig(config *MasterConfig) *ExternalExecutionConfig {
+func NewExternalExecutionConfig(config *RocketPoolConfig) *ExternalExecutionConfig {
 	return &ExternalExecutionConfig{
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
@@ -54,7 +54,7 @@ func NewExternalExecutionConfig(config *MasterConfig) *ExternalExecutionConfig {
 }
 
 // Generates a new ExternalConsensusClient configuration
-func NewExternalConsensusConfig(config *MasterConfig) *ExternalConsensusConfig {
+func NewExternalConsensusConfig(config *RocketPoolConfig) *ExternalConsensusConfig {
 	return &ExternalConsensusConfig{
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
@@ -71,7 +71,7 @@ func NewExternalConsensusConfig(config *MasterConfig) *ExternalConsensusConfig {
 }
 
 // Generates a new ExternalPrysmConfig configuration
-func NewExternalPrysmConfig(config *MasterConfig) *ExternalPrysmConfig {
+func NewExternalPrysmConfig(config *RocketPoolConfig) *ExternalPrysmConfig {
 	return &ExternalPrysmConfig{
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",

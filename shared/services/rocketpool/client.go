@@ -19,6 +19,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 	kh "golang.org/x/crypto/ssh/knownhosts"
+	"gopkg.in/yaml.v2"
 
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
@@ -30,19 +31,15 @@ import (
 
 // Config
 const (
-	InstallerURL     = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
-	UpdateTrackerURL = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install-update-tracker.sh"
+	InstallerURL     string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
+	UpdateTrackerURL string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install-update-tracker.sh"
 
-	GlobalConfigFile    = "config.yml"
-	UserConfigFile      = "settings.yml"
-	ComposeFile         = "docker-compose.yml"
-	MetricsComposeFile  = "docker-compose-metrics.yml"
-	FallbackComposeFile = "docker-compose-fallback.yml"
-	PrometheusTemplate  = "prometheus.tmpl"
-	PrometheusFile      = "prometheus.yml"
+	SettingsFile       string = "user-settings.yml"
+	PrometheusTemplate string = "prometheus.tmpl"
+	PrometheusFile     string = "prometheus.yml"
 
-	APIContainerSuffix = "_api"
-	APIBinPath         = "/go/bin/rocketpool"
+	APIContainerSuffix string = "_api"
+	APIBinPath         string = "/go/bin/rocketpool"
 
 	DebugColor = color.FgYellow
 )
@@ -180,16 +177,8 @@ func (c *Client) Close() {
 }
 
 // Load the global config
-func (c *Client) LoadGlobalConfig() (config.RocketPoolConfig, error) {
-	return c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile))
-}
-
-// Load/save the user config
-func (c *Client) LoadUserConfig() (config.RocketPoolConfig, error) {
-	return c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, UserConfigFile))
-}
-func (c *Client) SaveUserConfig(cfg config.RocketPoolConfig) error {
-	return c.saveConfig(cfg, fmt.Sprintf("%s/%s", c.configPath, UserConfigFile))
+func (c *Client) LoadConfig() (*config.RocketPoolConfig, error) {
+	return c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
 }
 
 // Load the Prometheus template, do an environment variable substitution, and save it
@@ -233,19 +222,6 @@ func (c *Client) UpdatePrometheusConfiguration(settings []config.UserParam) erro
 	}
 
 	return nil
-}
-
-// Load the merged global & user config
-func (c *Client) LoadMergedConfig() (config.RocketPoolConfig, error) {
-	globalConfig, err := c.LoadGlobalConfig()
-	if err != nil {
-		return config.RocketPoolConfig{}, err
-	}
-	userConfig, err := c.LoadUserConfig()
-	if err != nil {
-		return config.RocketPoolConfig{}, err
-	}
-	return config.Merge(&globalConfig, &userConfig)
 }
 
 // Install the Rocket Pool service
@@ -642,28 +618,27 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 }
 
 // Load a config file
-func (c *Client) loadConfig(path string) (config.RocketPoolConfig, error) {
+func (c *Client) loadConfig(path string) (*config.RocketPoolConfig, error) {
 	expandedPath, err := homedir.Expand(path)
 	if err != nil {
-		return config.RocketPoolConfig{}, err
+		return nil, err
 	}
-	configBytes, err := ioutil.ReadFile(expandedPath)
-	if err != nil {
-		return config.RocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %s: %w", shellescape.Quote(path), err)
-	}
-	return config.Parse(configBytes)
+	return config.LoadFromFile(expandedPath)
 }
 
 // Save a config file
-func (c *Client) saveConfig(cfg config.RocketPoolConfig, path string) error {
-	configBytes, err := cfg.Serialize()
-	if err != nil {
-		return err
-	}
+func (c *Client) saveConfig(cfg *config.RocketPoolConfig, path string) error {
 	expandedPath, err := homedir.Expand(path)
 	if err != nil {
 		return err
 	}
+
+	settings := cfg.Serialize()
+	configBytes, err := yaml.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("Could not serialize settings file: %w", err)
+	}
+
 	if err := ioutil.WriteFile(expandedPath, configBytes, 0); err != nil {
 		return fmt.Errorf("Could not write Rocket Pool config to %s: %w", shellescape.Quote(expandedPath), err)
 	}
@@ -679,7 +654,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Load config
-	cfg, err := c.LoadMergedConfig()
+	cfg, err := c.LoadConfig()
 	if err != nil {
 		return "", err
 	}
@@ -893,10 +868,9 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		}
 		cmd = fmt.Sprintf("docker exec %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), c.getGasOpts(), c.getCustomNonce(), args)
 	} else {
-		cmd = fmt.Sprintf("%s --config %s --settings %s %s %s api %s",
+		cmd = fmt.Sprintf("%s --settings %s %s %s api %s",
 			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, GlobalConfigFile)),
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, UserConfigFile)),
+			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
 			c.getGasOpts(),
 			c.getCustomNonce(),
 			args)
@@ -930,14 +904,14 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 
 // Get the API container name
 func (c *Client) getAPIContainerName() (string, error) {
-	cfg, err := c.LoadMergedConfig()
+	cfg, err := c.LoadConfig()
 	if err != nil {
 		return "", err
 	}
-	if cfg.Smartnode.ProjectName == "" {
+	if cfg.Smartnode.ProjectName.Value == "" {
 		return "", errors.New("Rocket Pool docker project name not set")
 	}
-	return cfg.Smartnode.ProjectName + APIContainerSuffix, nil
+	return cfg.Smartnode.ProjectName.Value.(string) + APIContainerSuffix, nil
 }
 
 // Get gas price & limit flags

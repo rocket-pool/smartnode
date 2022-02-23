@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
@@ -46,11 +47,11 @@ func printTransactionHashImpl(rp *rocketpool.Client, hash common.Hash, finalMess
 
 	txWatchUrl := ""
 
-	config, err := rp.LoadGlobalConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
 	} else {
-		txWatchUrl = config.Smartnode.TxWatchUrl
+		txWatchUrl = cfg.Smartnode.GetTxWatchUrl()
 	}
 
 	hashString := hash.String()
@@ -126,17 +127,19 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 
 // Prints what network you're currently on
 func PrintNetwork(rp *rocketpool.Client) error {
-	cfg, err := rp.LoadGlobalConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading global config: %w", err)
 	}
 
-	if cfg.Chains.Eth1.ChainID == "5" {
-		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", colorLightBlue, colorReset)
-	} else if cfg.Chains.Eth1.ChainID == "1" {
+	currentNetwork := cfg.Smartnode.Network.Value.(config.Network)
+	switch currentNetwork {
+	case config.Network_Mainnet:
 		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
-	} else {
-		fmt.Printf("%sYou are on an unexpected network with ID %s.%s\n\n", colorYellow, cfg.Chains.Eth1.ChainID, colorReset)
+	case config.Network_Prater:
+		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", colorLightBlue, colorReset)
+	default:
+		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", colorYellow, currentNetwork, colorReset)
 	}
 
 	return nil

@@ -18,7 +18,7 @@ type LighthouseConfig struct {
 }
 
 // Generates a new Lighthouse configuration
-func NewLighthouseConfig(config *MasterConfig) *LighthouseConfig {
+func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 	return &LighthouseConfig{
 		ContainerTag: Parameter{
 			ID:                   "containerTag",

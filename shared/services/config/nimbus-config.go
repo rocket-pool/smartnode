@@ -15,7 +15,7 @@ type NimbusConfig struct {
 }
 
 // Generates a new Nimbus configuration
-func NewNimbusConfig(config *MasterConfig) *NimbusConfig {
+func NewNimbusConfig(config *RocketPoolConfig) *NimbusConfig {
 	return &NimbusConfig{
 		ContainerTag: Parameter{
 			ID:                   "containerTag",

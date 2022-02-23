@@ -1,5 +1,8 @@
 package config
 
+// Constants
+const infuraEventLogInterval int = 25000
+
 // Configuration for Infura
 type InfuraConfig struct {
 	// Common parameters that Infura doesn't support and should be hidden
@@ -8,12 +11,15 @@ type InfuraConfig struct {
 	// Compatible consensus clients
 	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
 
+	// The max number of events to query in a single event log query
+	EventLogInterval int `yaml:"eventLogInterval,omitempty"`
+
 	// The Infura project ID
 	ProjectID Parameter `yaml:"projectID,omitempty"`
 }
 
 // Generates a new Infura configuration
-func NewInfuraConfig(config *MasterConfig) *InfuraConfig {
+func NewInfuraConfig(config *RocketPoolConfig) *InfuraConfig {
 	return &InfuraConfig{
 		CompatibleConsensusClients: []ConsensusClient{
 			ConsensusClient_Lighthouse,
@@ -21,6 +27,8 @@ func NewInfuraConfig(config *MasterConfig) *InfuraConfig {
 			ConsensusClient_Prysm,
 			ConsensusClient_Teku,
 		},
+
+		EventLogInterval: infuraEventLogInterval,
 
 		ProjectID: Parameter{
 			ID:                   "projectID",

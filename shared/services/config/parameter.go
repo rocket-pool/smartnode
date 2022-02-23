@@ -19,12 +19,11 @@ type Parameter struct {
 	CanBeBlank           bool                    `yaml:"canBeBlank,omitempty"`
 	OverwriteOnUpgrade   bool                    `yaml:"overwriteOnUpgrade,omitempty"`
 	Options              []ParameterOption       `yaml:"options,omitempty"`
-	Value                interface{}             `yaml:"-"`
+	Value                interface{}             `yaml:"value,omitempty"`
 }
 
 // A single option in a choice parameter
 type ParameterOption struct {
-	ID          string      `yaml:"id,omitempty"`
 	Name        string      `yaml:"name,omitempty"`
 	Description string      `yaml:"description,omitempty"`
 	Value       interface{} `yaml:"value,omitempty"`

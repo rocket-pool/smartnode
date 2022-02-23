@@ -11,8 +11,9 @@ type FallbackExecutionConfigPage struct {
 	home                    *settingsHome
 	page                    *page
 	layout                  *standardLayout
-	masterConfig            *config.MasterConfig
+	masterConfig            *config.RocketPoolConfig
 	useFallbackEcBox        *parameterizedFormItem
+	reconnectDelay          *parameterizedFormItem
 	fallbackEcModeDropdown  *parameterizedFormItem
 	fallbackEcDropdown      *parameterizedFormItem
 	fallbackEcCommonItems   []*parameterizedFormItem
@@ -60,6 +61,7 @@ func (configPage *FallbackExecutionConfigPage) createContent() {
 
 	// Set up the form items
 	configPage.useFallbackEcBox = createParameterizedCheckbox(&configPage.masterConfig.UseFallbackExecutionClient)
+	configPage.reconnectDelay = createParameterizedStringField(&configPage.masterConfig.ReconnectDelay)
 	configPage.fallbackEcModeDropdown = createParameterizedDropDown(&configPage.masterConfig.FallbackExecutionClientMode, configPage.layout.descriptionBox)
 	configPage.fallbackEcDropdown = createParameterizedDropDown(&configPage.masterConfig.FallbackExecutionClient, configPage.layout.descriptionBox)
 	configPage.fallbackEcCommonItems = createParameterizedFormItems(configPage.masterConfig.FallbackExecutionCommon.GetParameters(), configPage.layout.descriptionBox)
@@ -68,7 +70,7 @@ func (configPage *FallbackExecutionConfigPage) createContent() {
 	configPage.fallbackExternalECItems = createParameterizedFormItems(configPage.masterConfig.FallbackExternalExecution.GetParameters(), configPage.layout.descriptionBox)
 
 	// Map the parameters to the form items in the layout
-	configPage.layout.mapParameterizedFormItems(configPage.useFallbackEcBox, configPage.fallbackEcModeDropdown, configPage.fallbackEcDropdown)
+	configPage.layout.mapParameterizedFormItems(configPage.useFallbackEcBox, configPage.reconnectDelay, configPage.fallbackEcModeDropdown, configPage.fallbackEcDropdown)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackEcCommonItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackInfuraItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackPocketItems...)
@@ -110,6 +112,7 @@ func (configPage *FallbackExecutionConfigPage) handleUseFallbackEcChanged() {
 	if configPage.masterConfig.UseFallbackExecutionClient.Value == false {
 		return
 	}
+	configPage.layout.form.AddFormItem(configPage.reconnectDelay.item)
 	configPage.handleFallbackEcModeChanged()
 }
 
@@ -117,6 +120,7 @@ func (configPage *FallbackExecutionConfigPage) handleUseFallbackEcChanged() {
 func (configPage *FallbackExecutionConfigPage) handleFallbackEcModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.useFallbackEcBox.item)
+	configPage.layout.form.AddFormItem(configPage.reconnectDelay.item)
 	configPage.layout.form.AddFormItem(configPage.fallbackEcModeDropdown.item)
 
 	selectedMode := configPage.masterConfig.FallbackExecutionClientMode.Value.(config.Mode)
@@ -138,6 +142,7 @@ func (configPage *FallbackExecutionConfigPage) handleFallbackEcModeChanged() {
 func (configPage *FallbackExecutionConfigPage) handleLocalFallbackEcChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.useFallbackEcBox.item)
+	configPage.layout.form.AddFormItem(configPage.reconnectDelay.item)
 	configPage.layout.form.AddFormItem(configPage.fallbackEcModeDropdown.item)
 	configPage.layout.form.AddFormItem(configPage.fallbackEcDropdown.item)
 	selectedEc := configPage.masterConfig.FallbackExecutionClient.Value.(config.ExecutionClient)

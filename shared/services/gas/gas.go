@@ -20,7 +20,7 @@ const colorBlue string = "\033[36m"
 
 func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) error {
 
-	cfg, err := rp.LoadGlobalConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
 	}
@@ -30,10 +30,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 
 	// Get the max fee - prioritize the CLI arguments, default to the config file setting
 	if maxFeeGwei == 0 {
-		maxFee, err := cfg.GetMaxFee()
-		if err != nil {
-			return err
-		}
+		maxFee := big.NewInt(int64(cfg.Smartnode.ManualMaxFee.Value.(uint)))
 		if maxFee != nil && maxFee.Uint64() != 0 {
 			maxFeeGwei = eth.WeiToGwei(maxFee)
 		}
@@ -41,25 +38,12 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 
 	// Get the priority fee - prioritize the CLI arguments, default to the config file setting
 	if maxPriorityFeeGwei == 0 {
-		maxPriorityFee, err := cfg.GetMaxPriorityFee()
-		if err != nil {
-			fmt.Printf("%sWARNING: Couldn't get max priority fee - %w\n", colorYellow, err.Error())
-			fmt.Printf("Defaulting to a max priority fee of 2 gwei\n%s", colorReset)
-			maxPriorityFeeGwei = 2
-		}
+		maxPriorityFee := big.NewInt(int64(cfg.Smartnode.PriorityFee.Value.(uint)))
 		if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
 			fmt.Printf("%sNOTE: max priority fee not set or set to 0, defaulting to 2 gwei%s\n", colorYellow, colorReset)
 			maxPriorityFeeGwei = 2
 		} else {
 			maxPriorityFeeGwei = eth.WeiToGwei(maxPriorityFee)
-		}
-	}
-
-	// Get the user gas limit
-	if gasLimit == 0 {
-		gasLimit, err = cfg.GetGasLimit()
-		if err != nil {
-			return err
 		}
 	}
 

@@ -20,7 +20,7 @@ type ExporterConfig struct {
 }
 
 // Generates a new Exporter config
-func NewExporterConfig(config *MasterConfig) *ExporterConfig {
+func NewExporterConfig(config *RocketPoolConfig) *ExporterConfig {
 	return &ExporterConfig{
 		RootFs: Parameter{
 			ID:                   "enableRootFs",
