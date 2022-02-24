@@ -55,3 +55,8 @@ func (config *NimbusConfig) GetParameters() []*Parameter {
 func (config *NimbusConfig) GetUnsupportedCommonParams() []string {
 	return config.UnsupportedCommonParams
 }
+
+// Get the Docker container name of the validator client
+func (config *NimbusConfig) GetValidatorImage() string {
+	return config.ContainerTag.Value.(string)
+}

@@ -75,3 +75,8 @@ func (config *TekuConfig) GetParameters() []*Parameter {
 func (config *TekuConfig) GetUnsupportedCommonParams() []string {
 	return config.UnsupportedCommonParams
 }
+
+// Get the Docker container name of the validator client
+func (config *TekuConfig) GetValidatorImage() string {
+	return config.ContainerTag.Value.(string)
+}

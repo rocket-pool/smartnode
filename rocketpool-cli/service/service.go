@@ -196,13 +196,13 @@ func startService(c *cli.Context) error {
 	defer rp.Close()
 
 	// Update the Prometheus template with the assigned ports
-	userConfig, err := rp.LoadUserConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading user settings: %w", err)
 	}
-	metricsEnabled := userConfig.Metrics.Enabled
+	metricsEnabled := cfg.EnableMetrics.Value.(bool)
 	if metricsEnabled {
-		err := rp.UpdatePrometheusConfiguration(userConfig.Metrics.Settings)
+		err := rp.UpdatePrometheusConfiguration(cfg.GenerateEnvironmentVariables())
 		if err != nil {
 			return err
 		}
@@ -210,7 +210,7 @@ func startService(c *cli.Context) error {
 
 	if !c.Bool("ignore-slash-timer") {
 		// Do the client swap check
-		err := checkForValidatorChange(rp, userConfig)
+		err := checkForValidatorChange(rp, cfg)
 		if err != nil {
 			fmt.Printf("%sWarning: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
 			fmt.Println("If you are changing to a different ETH2 client, it may resubmit an attestation you have already submitted.")
@@ -231,7 +231,7 @@ func startService(c *cli.Context) error {
 
 }
 
-func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPoolConfig) error {
+func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig) error {
 
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)
@@ -251,16 +251,11 @@ func checkForValidatorChange(rp *rocketpool.Client, userConfig config.RocketPool
 	}
 
 	// Get the new validator client according to the settings file
-	globalConfig, err := rp.LoadGlobalConfig()
+	selectedConsensusClientConfig, err := cfg.GetSelectedConsensusClientConfig()
 	if err != nil {
-		return fmt.Errorf("Error loading global settings: %w", err)
+		return fmt.Errorf("Error getting selected consensus client config: %w", err)
 	}
-	newClient := globalConfig.Chains.Eth2.GetClientById(userConfig.Chains.Eth2.Client.Selected)
-	if newClient == nil {
-		return fmt.Errorf("Error getting selected client - either it does not exist (user has not run `rocketpool service config` yet) or the selected client is invalid.")
-	}
-	pendingValidatorImageString := newClient.GetValidatorImage()
-	pendingValidatorName, err := getDockerImageName(pendingValidatorImageString)
+	pendingValidatorName, err := getDockerImageName(selectedConsensusClientConfig.GetValidatorImage())
 	if err != nil {
 		return fmt.Errorf("Error getting pending validator image name: %w", err)
 	}
@@ -390,12 +385,12 @@ func getDockerImageName(imageString string) (string, error) {
 // Gets the prefix specified for Rocket Pool's Docker containers
 func getContainerPrefix(rp *rocketpool.Client) (string, error) {
 
-	cfg, err := rp.LoadGlobalConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		return "", err
 	}
 
-	return cfg.Smartnode.ProjectName, nil
+	return cfg.Smartnode.ProjectName.Value.(string), nil
 }
 
 // Prepares the execution client for pruning
@@ -409,7 +404,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	defer rp.Close()
 
 	// Get the config
-	cfg, err := rp.LoadMergedConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		return err
 	}

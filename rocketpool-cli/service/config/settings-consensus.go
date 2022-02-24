@@ -7,20 +7,21 @@ import (
 
 // The page wrapper for the EC config
 type ConsensusConfigPage struct {
-	home               *settingsHome
-	page               *page
-	layout             *standardLayout
-	masterConfig       *config.RocketPoolConfig
-	ccModeDropdown     *parameterizedFormItem
-	ccDropdown         *parameterizedFormItem
-	externalCcDropdown *parameterizedFormItem
-	ccCommonItems      []*parameterizedFormItem
-	lighthouseItems    []*parameterizedFormItem
-	nimbusItems        []*parameterizedFormItem
-	prysmItems         []*parameterizedFormItem
-	tekuItems          []*parameterizedFormItem
-	externalCcItems    []*parameterizedFormItem
-	externalPrysmItems []*parameterizedFormItem
+	home                    *settingsHome
+	page                    *page
+	layout                  *standardLayout
+	masterConfig            *config.RocketPoolConfig
+	ccModeDropdown          *parameterizedFormItem
+	ccDropdown              *parameterizedFormItem
+	externalCcDropdown      *parameterizedFormItem
+	ccCommonItems           []*parameterizedFormItem
+	lighthouseItems         []*parameterizedFormItem
+	nimbusItems             []*parameterizedFormItem
+	prysmItems              []*parameterizedFormItem
+	tekuItems               []*parameterizedFormItem
+	externalLighthouseItems []*parameterizedFormItem
+	externalPrysmItems      []*parameterizedFormItem
+	externalTekuItems       []*parameterizedFormItem
 }
 
 // Creates a new page for the Consensus client settings
@@ -69,8 +70,9 @@ func (configPage *ConsensusConfigPage) createContent() {
 	configPage.nimbusItems = createParameterizedFormItems(configPage.masterConfig.Nimbus.GetParameters(), configPage.layout.descriptionBox)
 	configPage.prysmItems = createParameterizedFormItems(configPage.masterConfig.Prysm.GetParameters(), configPage.layout.descriptionBox)
 	configPage.tekuItems = createParameterizedFormItems(configPage.masterConfig.Teku.GetParameters(), configPage.layout.descriptionBox)
-	configPage.externalCcItems = createParameterizedFormItems(configPage.masterConfig.ExternalConsensus.GetParameters(), configPage.layout.descriptionBox)
+	configPage.externalLighthouseItems = createParameterizedFormItems(configPage.masterConfig.ExternalLighthouse.GetParameters(), configPage.layout.descriptionBox)
 	configPage.externalPrysmItems = createParameterizedFormItems(configPage.masterConfig.ExternalPrysm.GetParameters(), configPage.layout.descriptionBox)
+	configPage.externalTekuItems = createParameterizedFormItems(configPage.masterConfig.ExternalTeku.GetParameters(), configPage.layout.descriptionBox)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.ccModeDropdown, configPage.ccDropdown, configPage.externalCcDropdown)
@@ -79,8 +81,9 @@ func (configPage *ConsensusConfigPage) createContent() {
 	configPage.layout.mapParameterizedFormItems(configPage.nimbusItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.prysmItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.tekuItems...)
-	configPage.layout.mapParameterizedFormItems(configPage.externalCcItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.externalLighthouseItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalPrysmItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.externalTekuItems...)
 
 	// Set up the setting callbacks
 	configPage.ccModeDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
@@ -156,10 +159,12 @@ func (configPage *ConsensusConfigPage) handleExternalCcChanged() {
 	selectedCc := configPage.masterConfig.ExternalConsensusClient.Value.(config.ConsensusClient)
 
 	switch selectedCc {
+	case config.ConsensusClient_Lighthouse:
+		configPage.layout.addFormItems(configPage.externalLighthouseItems)
 	case config.ConsensusClient_Prysm:
 		configPage.layout.addFormItems(configPage.externalPrysmItems)
-	default:
-		configPage.layout.addFormItems(configPage.externalCcItems)
+	case config.ConsensusClient_Teku:
+		configPage.layout.addFormItems(configPage.externalTekuItems)
 	}
 
 	configPage.layout.refresh()

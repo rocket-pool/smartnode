@@ -72,7 +72,17 @@ type Config interface {
 	GetParameters() []*Parameter
 }
 
-// Interface for Consensus configurations
+// Interface for common Consensus configurations
 type ConsensusConfig interface {
+	GetValidatorImage() string
+}
+
+// Interface for Local Consensus configurations
+type LocalConsensusConfig interface {
 	GetUnsupportedCommonParams() []string
+}
+
+// Interface for External Consensus configurations
+type ExternalConsensusConfig interface {
+	GetApiUrl() string
 }

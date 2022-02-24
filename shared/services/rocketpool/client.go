@@ -182,7 +182,7 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, error) {
 }
 
 // Load the Prometheus template, do an environment variable substitution, and save it
-func (c *Client) UpdatePrometheusConfiguration(settings []config.UserParam) error {
+func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error {
 	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusTemplate))
 	if err != nil {
 		return fmt.Errorf("Error expanding Prometheus template path: %w", err)
@@ -195,9 +195,9 @@ func (c *Client) UpdatePrometheusConfiguration(settings []config.UserParam) erro
 
 	// Set the environment variables defined in the user settings for metrics
 	oldValues := map[string]string{}
-	for _, setting := range settings {
-		oldValues[setting.Env] = os.Getenv(setting.Env)
-		os.Setenv(setting.Env, setting.Value)
+	for varName, varValue := range settings {
+		oldValues[varName] = os.Getenv(varName)
+		os.Setenv(varName, varValue)
 	}
 
 	// Read and substitute the template

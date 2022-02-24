@@ -265,7 +265,12 @@ func getBeaconClient(cfg *config.RocketPoolConfig) (beacon.Client, error) {
 				err = fmt.Errorf("Unknown Consensus client '%v' selected", cfg.ConsensusClient.Value)
 			}
 		} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External {
-			provider := cfg.ExternalConsensus.HttpUrl.Value.(string)
+			var selectedConsensusConfig config.ConsensusConfig
+			selectedConsensusConfig, err = cfg.GetSelectedConsensusClientConfig()
+			if err != nil {
+				return
+			}
+			provider := selectedConsensusConfig.(config.ExternalConsensusConfig).GetApiUrl()
 			switch cfg.ExternalConsensusClient.Value.(config.ConsensusClient) {
 			case config.ConsensusClient_Lighthouse:
 				beaconClient = lighthouse.NewClient(provider)

@@ -1,6 +1,6 @@
 package config
 
-const lighthouseTag string = "sigp/lighthouse:v2.1.2"
+const lighthouseTag string = "sigp/lighthouse:v2.1.3"
 
 // Configuration for Lighthouse
 type LighthouseConfig struct {
@@ -70,4 +70,9 @@ func (config *LighthouseConfig) GetParameters() []*Parameter {
 // Get the common params that this client doesn't support
 func (config *LighthouseConfig) GetUnsupportedCommonParams() []string {
 	return config.UnsupportedCommonParams
+}
+
+// Get the Docker container name of the validator client
+func (config *LighthouseConfig) GetValidatorImage() string {
+	return config.ContainerTag.Value.(string)
 }

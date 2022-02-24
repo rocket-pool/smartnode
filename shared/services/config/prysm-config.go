@@ -155,3 +155,8 @@ func (config *PrysmConfig) GetParameters() []*Parameter {
 func (config *PrysmConfig) GetUnsupportedCommonParams() []string {
 	return config.UnsupportedCommonParams
 }
+
+// Get the Docker container name of the validator client
+func (config *PrysmConfig) GetValidatorImage() string {
+	return config.VcContainerTag.Value.(string)
+}

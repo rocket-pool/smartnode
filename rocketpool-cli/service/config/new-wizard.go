@@ -11,24 +11,25 @@ import (
 )
 
 type newUserWizard struct {
-	md                                     *mainDisplay
-	welcomeModal                           *page
-	networkModal                           *choiceModalLayout
-	executionModeModal                     *choiceModalLayout
-	executionLocalModal                    *choiceModalLayout
-	executionExternalModal                 *textBoxModalLayout
-	infuraModal                            *textBoxModalLayout
-	fallbackInfuraModal                    *textBoxModalLayout
-	fallbackExecutionModal                 *choiceModalLayout
-	consensusModeModal                     *choiceModalLayout
-	consensusLocalModal                    *choiceModalLayout
-	consensusExternalSelectModal           *choiceModalLayout
-	graffitiModal                          *textBoxModalLayout
-	checkpointSyncProviderModal            *textBoxModalLayout
-	doppelgangerDetectionModal             *choiceModalLayout
-	standardConsensusExternalSettingsModal *textBoxModalLayout
-	prysmExternalSettingsModal             *textBoxModalLayout
-	finishedModal                          *page
+	md                              *mainDisplay
+	welcomeModal                    *page
+	networkModal                    *choiceModalLayout
+	executionModeModal              *choiceModalLayout
+	executionLocalModal             *choiceModalLayout
+	executionExternalModal          *textBoxModalLayout
+	infuraModal                     *textBoxModalLayout
+	fallbackInfuraModal             *textBoxModalLayout
+	fallbackExecutionModal          *choiceModalLayout
+	consensusModeModal              *choiceModalLayout
+	consensusLocalModal             *choiceModalLayout
+	consensusExternalSelectModal    *choiceModalLayout
+	graffitiModal                   *textBoxModalLayout
+	checkpointSyncProviderModal     *textBoxModalLayout
+	doppelgangerDetectionModal      *choiceModalLayout
+	lighthouseExternalSettingsModal *textBoxModalLayout
+	prysmExternalSettingsModal      *textBoxModalLayout
+	tekuExternalSettingsModal       *textBoxModalLayout
+	finishedModal                   *page
 }
 
 func newNewUserWizard(md *mainDisplay) *newUserWizard {
@@ -50,8 +51,9 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 	wiz.createGraffitiModal()
 	wiz.createCheckpointSyncProviderModal()
 	wiz.createDoppelgangerModal()
-	wiz.createStandardConsensusExternalSettingsModal()
+	wiz.createLighthouseExternalSettingsModal()
 	wiz.createPrysmExternalSettingsModal()
+	wiz.createTekuExternalSettingsModal()
 	wiz.createFinishedModal()
 
 	return wiz
@@ -498,12 +500,15 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 		selectedClient := clients[buttonIndex].Value.(config.ConsensusClient)
 		wiz.md.config.ExternalConsensusClient.Value = selectedClient
 		switch selectedClient {
+		case config.ConsensusClient_Lighthouse:
+			wiz.md.setPage(wiz.lighthouseExternalSettingsModal.page)
+			wiz.lighthouseExternalSettingsModal.focus()
 		case config.ConsensusClient_Prysm:
 			wiz.md.setPage(wiz.prysmExternalSettingsModal.page)
 			wiz.prysmExternalSettingsModal.focus()
-		default:
-			wiz.md.setPage(wiz.standardConsensusExternalSettingsModal.page)
-			wiz.standardConsensusExternalSettingsModal.focus()
+		case config.ConsensusClient_Teku:
+			wiz.md.setPage(wiz.tekuExternalSettingsModal.page)
+			wiz.tekuExternalSettingsModal.focus()
 		}
 	}
 
@@ -542,7 +547,7 @@ func (wiz *newUserWizard) createGraffitiModal() {
 		}
 
 		// Check to see if it supports checkpoint sync or doppelganger detection
-		unsupportedParams := client.GetUnsupportedCommonParams()
+		unsupportedParams := client.(config.LocalConsensusConfig).GetUnsupportedCommonParams()
 		supportsCheckpointSync := true
 		supportsDoppelganger := true
 		for _, param := range unsupportedParams {
@@ -602,7 +607,7 @@ func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 		}
 
 		// Check to see if it supports doppelganger detection
-		unsupportedParams := client.GetUnsupportedCommonParams()
+		unsupportedParams := client.(config.LocalConsensusConfig).GetUnsupportedCommonParams()
 		supportsDoppelganger := true
 		for _, param := range unsupportedParams {
 			if param == config.DoppelgangerDetectionID {
@@ -662,31 +667,31 @@ func (wiz *newUserWizard) createDoppelgangerModal() {
 
 }
 
-// ============================================
-// === 7f: External Consensus Standard View ===
-// ============================================
-func (wiz *newUserWizard) createStandardConsensusExternalSettingsModal() {
+// ===============================
+// === 7f: External Lighthouse ===
+// ===============================
+func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 
 	// Create the labels
-	httpUrlLabel := wiz.md.config.ExternalConsensus.HttpUrl.Name
+	httpUrlLabel := wiz.md.config.ExternalLighthouse.HttpUrl.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
 		70,
-		"Please provide the URL of your Consensus client's HTTP API (for example: `http://192.168.1.40:5052`).\n\nNote that if you're running it on the same machine as the Smartnode, you cannot use `localhost` or `127.0.0.1`; you must use your machine's LAN IP address.",
+		"Please provide the URL of your Lighthouse client's HTTP API (for example: `http://192.168.1.40:5052`).\n\nNote that if you're running it on the same machine as the Smartnode, you cannot use `localhost` or `127.0.0.1`; you must use your machine's LAN IP address.",
 		[]string{httpUrlLabel},
 		[]string{})
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.ExternalConsensus.HttpUrl.Value = text[httpUrlLabel]
+		wiz.md.config.ExternalLighthouse.HttpUrl.Value = text[httpUrlLabel]
 		wiz.md.setPage(wiz.finishedModal)
 	}
 
 	// Create the page
-	wiz.standardConsensusExternalSettingsModal = modal
-	page := newPage(nil, "new-user-consensus-external-standard", "New User Wizard > [7/8] Consensus Client (External) > Settings", "", modal.borderGrid)
+	wiz.lighthouseExternalSettingsModal = modal
+	page := newPage(nil, "new-user-consensus-external-lighthouse", "New User Wizard > [7/8] Consensus Client (External) > Settings", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -719,6 +724,36 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 	// Create the page
 	wiz.prysmExternalSettingsModal = modal
 	page := newPage(nil, "new-user-consensus-external-prysm", "New User Wizard > [7/8] Consensus Client (External) > Settings", "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
+
+}
+
+// =========================
+// === 7f: External Teku ===
+// =========================
+func (wiz *newUserWizard) createTekuExternalSettingsModal() {
+
+	// Create the labels
+	httpUrlLabel := wiz.md.config.ExternalTeku.HttpUrl.Name
+
+	// Create the modal
+	modal := newTextBoxModalLayout(
+		wiz.md.app,
+		70,
+		"Please provide the URL of your Teku client's HTTP API (for example: `http://192.168.1.40:5052`).\n\nNote that if you're running it on the same machine as the Smartnode, you cannot use `localhost` or `127.0.0.1`; you must use your machine's LAN IP address.",
+		[]string{httpUrlLabel},
+		[]string{})
+
+	// Set up the callbacks
+	modal.done = func(text map[string]string) {
+		wiz.md.config.ExternalTeku.HttpUrl.Value = text[httpUrlLabel]
+		wiz.md.setPage(wiz.finishedModal)
+	}
+
+	// Create the page
+	wiz.tekuExternalSettingsModal = modal
+	page := newPage(nil, "new-user-consensus-external-teku", "New User Wizard > [7/8] Consensus Client (External) > Settings", "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 

@@ -49,18 +49,44 @@ type RocketPoolConfig struct {
 	FallbackExternalExecution *ExternalExecutionConfig `yaml:"fallbackExternalExecution,omitempty"`
 
 	// Consensus client configurations
-	ConsensusCommon   *ConsensusCommonConfig   `yaml:"consensusCommon,omitempty"`
-	Lighthouse        *LighthouseConfig        `yaml:"lighthouse,omitempty"`
-	Nimbus            *NimbusConfig            `yaml:"nimbus,omitempty"`
-	Prysm             *PrysmConfig             `yaml:"prysm,omitempty"`
-	Teku              *TekuConfig              `yaml:"teku,omitempty"`
-	ExternalConsensus *ExternalConsensusConfig `yaml:"externalConsensus,omitempty"`
-	ExternalPrysm     *ExternalPrysmConfig     `yaml:"externalPrysm,omitempty"`
+	ConsensusCommon    *ConsensusCommonConfig    `yaml:"consensusCommon,omitempty"`
+	Lighthouse         *LighthouseConfig         `yaml:"lighthouse,omitempty"`
+	Nimbus             *NimbusConfig             `yaml:"nimbus,omitempty"`
+	Prysm              *PrysmConfig              `yaml:"prysm,omitempty"`
+	Teku               *TekuConfig               `yaml:"teku,omitempty"`
+	ExternalLighthouse *ExternalLighthouseConfig `yaml:"externalLighthouse,omitempty"`
+	ExternalPrysm      *ExternalPrysmConfig      `yaml:"externalPrysm,omitempty"`
+	ExternalTeku       *ExternalTekuConfig       `yaml:"externalTeku,omitempty"`
 
 	// Metrics
 	Grafana    *GrafanaConfig    `yaml:"grafana,omitempty"`
 	Prometheus *PrometheusConfig `yaml:"prometheus,omitempty"`
 	Exporter   *ExporterConfig   `yaml:"exporter,omitempty"`
+}
+
+// Load configuration settings from a file
+func LoadFromFile(path string) (*RocketPoolConfig, error) {
+
+	// Read the file
+	configBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not read Rocket Pool settings file at %s: %w", shellescape.Quote(path), err)
+	}
+
+	// Attempt to parse it out into a settings map
+	var settings map[string]map[string]string
+	if err := yaml.Unmarshal(configBytes, &settings); err != nil {
+		return nil, fmt.Errorf("could not parse settings file: %w", err)
+	}
+
+	// Deserialize it into a config object
+	cfg := NewRocketPoolConfig()
+	err = cfg.Deserialize(settings)
+	if err != nil {
+		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
+	}
+	return cfg, nil
+
 }
 
 // Creates a new Rocket Pool configuration instance
@@ -287,8 +313,9 @@ func NewRocketPoolConfig() *RocketPoolConfig {
 	config.Nimbus = NewNimbusConfig(config)
 	config.Prysm = NewPrysmConfig(config)
 	config.Teku = NewTekuConfig(config)
-	config.ExternalConsensus = NewExternalConsensusConfig(config)
+	config.ExternalLighthouse = NewExternalLighthouseConfig(config)
 	config.ExternalPrysm = NewExternalPrysmConfig(config)
+	config.ExternalTeku = NewExternalTekuConfig(config)
 	config.Grafana = NewGrafanaConfig(config)
 	config.Prometheus = NewPrometheusConfig(config)
 	config.Exporter = NewExporterConfig(config)
@@ -334,8 +361,9 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"nimbus":                    config.Nimbus,
 		"prysm":                     config.Prysm,
 		"teku":                      config.Teku,
-		"externalConsensus":         config.ExternalConsensus,
+		"externalLighthouse":        config.ExternalLighthouse,
 		"externalPrysm":             config.ExternalPrysm,
+		"externalTeku":              config.ExternalTeku,
 		"grafana":                   config.Grafana,
 		"prometheus":                config.Prometheus,
 		"exporter":                  config.Exporter,
@@ -445,18 +473,38 @@ func (config *RocketPoolConfig) GetCompatibleConsensusClients() ([]ParameterOpti
 
 // Get the configuration for the selected client
 func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusConfig, error) {
-	client := config.ConsensusClient.Value.(ConsensusClient)
-	switch client {
-	case ConsensusClient_Lighthouse:
-		return config.Lighthouse, nil
-	case ConsensusClient_Nimbus:
-		return config.Nimbus, nil
-	case ConsensusClient_Prysm:
-		return config.Prysm, nil
-	case ConsensusClient_Teku:
-		return config.Teku, nil
+	mode := config.ConsensusClientMode.Value.(Mode)
+	switch mode {
+	case Mode_Local:
+		client := config.ConsensusClient.Value.(ConsensusClient)
+		switch client {
+		case ConsensusClient_Lighthouse:
+			return config.Lighthouse, nil
+		case ConsensusClient_Nimbus:
+			return config.Nimbus, nil
+		case ConsensusClient_Prysm:
+			return config.Prysm, nil
+		case ConsensusClient_Teku:
+			return config.Teku, nil
+		default:
+			return nil, fmt.Errorf("unknown consensus client [%v] selected", client)
+		}
+
+	case Mode_External:
+		client := config.ExternalConsensusClient.Value.(ConsensusClient)
+		switch client {
+		case ConsensusClient_Lighthouse:
+			return config.ExternalLighthouse, nil
+		case ConsensusClient_Prysm:
+			return config.ExternalPrysm, nil
+		case ConsensusClient_Teku:
+			return config.ExternalTeku, nil
+		default:
+			return nil, fmt.Errorf("unknown external consensus client [%v] selected", client)
+		}
+
 	default:
-		return nil, fmt.Errorf("unknown consensus client [%v] selected", client)
+		return nil, fmt.Errorf("unknown consensus client mode [%v]", mode)
 	}
 }
 
@@ -516,6 +564,29 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 	return nil
 }
 
+// Generates a collection of environment variables based on this config's settings
+func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
+
+	envVars := map[string]string{}
+
+	for _, param := range config.GetParameters() {
+		for _, envVar := range param.EnvironmentVariables {
+			envVars[envVar] = fmt.Sprint(param.Value)
+		}
+	}
+
+	for _, subconfig := range config.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			for _, envVar := range param.EnvironmentVariables {
+				envVars[envVar] = fmt.Sprint(param.Value)
+			}
+		}
+	}
+
+	return envVars
+
+}
+
 // Applies all of the defaults to all of the settings that have them defined
 func (config *RocketPoolConfig) applyAllDefaults() error {
 	for _, param := range config.GetParameters() {
@@ -535,29 +606,4 @@ func (config *RocketPoolConfig) applyAllDefaults() error {
 	}
 
 	return nil
-}
-
-// Load configuration settings from a file
-func LoadFromFile(path string) (*RocketPoolConfig, error) {
-
-	// Read the file
-	configBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("could not read Rocket Pool settings file at %s: %w", shellescape.Quote(path), err)
-	}
-
-	// Attempt to parse it out into a settings map
-	var settings map[string]map[string]string
-	if err := yaml.Unmarshal(configBytes, &settings); err != nil {
-		return nil, fmt.Errorf("could not parse settings file: %w", err)
-	}
-
-	// Deserialize it into a config object
-	cfg := NewRocketPoolConfig()
-	err = cfg.Deserialize(settings)
-	if err != nil {
-		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
-	}
-	return cfg, nil
-
 }
