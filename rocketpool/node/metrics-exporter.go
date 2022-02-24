@@ -37,7 +37,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	}
 
 	// Return if metrics are disabled
-	if !cfg.Metrics.Enabled {
+	if cfg.EnableMetrics.Value == false {
 		return nil
 	}
 

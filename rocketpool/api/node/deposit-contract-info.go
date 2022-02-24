@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/urfave/cli"
 
@@ -32,12 +31,7 @@ func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, e
 	if err != nil {
 		return nil, fmt.Errorf("Error getting configuration: %w", err)
 	}
-	rpNetwork, err := strconv.ParseUint(config.Chains.Eth1.ChainID, 0, 64)
-	if err != nil {
-		return nil, fmt.Errorf("%s is not a valid ETH1 chain ID (in the config file): %w",
-			config.Chains.Eth1.ChainID, err)
-	}
-	response.RPNetwork = rpNetwork
+	response.RPNetwork = uint64(config.Smartnode.GetChainID())
 
 	// Get the deposit contract address Rocket Pool will deposit to
 	rpDepositContract, err := rp.GetContract("casperDeposit")

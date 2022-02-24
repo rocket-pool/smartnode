@@ -23,7 +23,7 @@ import (
 type claimRplRewards struct {
 	c              *cli.Context
 	log            log.ColorLogger
-	cfg            config.RocketPoolConfig
+	cfg            *config.RocketPoolConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	gasThreshold   float64
@@ -50,31 +50,28 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 	}
 
 	// Check if auto-claiming is disabled
-	gasThreshold := cfg.Smartnode.RplClaimGasThreshold
+	gasThreshold := cfg.Smartnode.RplClaimGasThreshold.Value.(float64)
 	if gasThreshold == 0 {
 		logger.Println("RPL claim gas threshold is set to 0, automatic claims will be disabled.")
 	}
 
 	// Get the user-requested max fee
-	maxFee, err := cfg.GetMaxFee()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting max fee in configuration: %w", err)
+	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
+	var maxFee *big.Int
+	if maxFeeGwei == 0 {
+		maxFee = nil
+	} else {
+		maxFee = eth.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested max fee
-	maxPriorityFee, err := cfg.GetMaxPriorityFee()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting max priority fee in configuration: %w", err)
-	}
-	if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
+	var priorityFee *big.Int
+	if priorityFeeGwei == 0 {
 		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		maxPriorityFee = big.NewInt(2)
-	}
-
-	// Get the user-requested gas limit
-	gasLimit, err := cfg.GetGasLimit()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting gas limit in configuration: %w", err)
+		priorityFee = eth.GweiToWei(2)
+	} else {
+		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
 
 	// Return task
@@ -86,8 +83,8 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 		rp:             rp,
 		gasThreshold:   gasThreshold,
 		maxFee:         maxFee,
-		maxPriorityFee: maxPriorityFee,
-		gasLimit:       gasLimit,
+		maxPriorityFee: priorityFee,
+		gasLimit:       0,
 	}, nil
 
 }

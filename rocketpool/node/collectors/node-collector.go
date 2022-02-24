@@ -82,7 +82,7 @@ type NodeCollector struct {
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg config.RocketPoolConfig) *NodeCollector {
+func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig) *NodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := api.GetEventLogInterval(cfg)

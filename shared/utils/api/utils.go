@@ -56,7 +56,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 }
 
 // Print a TX's details to the logger and waits for it to be mined.
-func PrintAndWaitForTransaction(cfg config.RocketPoolConfig, hash common.Hash, ec *client.EthClientProxy, logger log.ColorLogger) error {
+func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, ec *client.EthClientProxy, logger log.ColorLogger) error {
 
 	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
 	hashString := hash.String()
@@ -78,7 +78,7 @@ func PrintAndWaitForTransaction(cfg config.RocketPoolConfig, hash common.Hash, e
 }
 
 // Gets the event log interval supported by the selected eth1 client
-func GetEventLogInterval(cfg config.RocketPoolConfig) (*big.Int, error) {
+func GetEventLogInterval(cfg *config.RocketPoolConfig) (*big.Int, error) {
 
 	// Get event log interval
 	var eventLogInterval *big.Int = nil

@@ -6,6 +6,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -20,7 +21,7 @@ import (
 type respondChallenges struct {
 	c              *cli.Context
 	log            log.ColorLogger
-	cfg            config.RocketPoolConfig
+	cfg            *config.RocketPoolConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	maxFee         *big.Int
@@ -46,25 +47,22 @@ func newRespondChallenges(c *cli.Context, logger log.ColorLogger) (*respondChall
 	}
 
 	// Get the user-requested max fee
-	maxFee, err := cfg.GetMaxFee()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting max fee in configuration: %w", err)
+	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
+	var maxFee *big.Int
+	if maxFeeGwei == 0 {
+		maxFee = nil
+	} else {
+		maxFee = eth.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested max fee
-	maxPriorityFee, err := cfg.GetMaxPriorityFee()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting max priority fee in configuration: %w", err)
-	}
-	if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
+	var priorityFee *big.Int
+	if priorityFeeGwei == 0 {
 		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		maxPriorityFee = big.NewInt(2)
-	}
-
-	// Get the user-requested gas limit
-	gasLimit, err := cfg.GetGasLimit()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting gas limit in configuration: %w", err)
+		priorityFee = eth.GweiToWei(2)
+	} else {
+		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
 
 	// Return task
@@ -75,8 +73,8 @@ func newRespondChallenges(c *cli.Context, logger log.ColorLogger) (*respondChall
 		w:              w,
 		rp:             rp,
 		maxFee:         maxFee,
-		maxPriorityFee: maxPriorityFee,
-		gasLimit:       gasLimit,
+		maxPriorityFee: priorityFee,
+		gasLimit:       0,
 	}, nil
 
 }

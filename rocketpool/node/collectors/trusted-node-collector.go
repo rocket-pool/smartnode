@@ -61,7 +61,7 @@ type TrustedNodeCollector struct {
 }
 
 // Create a new NodeCollector instance
-func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg config.RocketPoolConfig) *TrustedNodeCollector {
+func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig) *TrustedNodeCollector {
 
 	// Get the event log interval
 	eventLogInterval, err := api.GetEventLogInterval(cfg)

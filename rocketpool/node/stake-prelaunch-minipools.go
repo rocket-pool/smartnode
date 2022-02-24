@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -39,7 +40,7 @@ var validatorRestartTimeout, _ = time.ParseDuration("5s")
 type stakePrelaunchMinipools struct {
 	c              *cli.Context
 	log            log.ColorLogger
-	cfg            config.RocketPoolConfig
+	cfg            *config.RocketPoolConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	bc             beacon.Client
@@ -76,28 +77,25 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
 	}
 
 	// Check if auto-staking is disabled
-	gasThreshold := cfg.Smartnode.MinipoolStakeGasThreshold
+	gasThreshold := cfg.Smartnode.MinipoolStakeGasThreshold.Value.(float64)
 
 	// Get the user-requested max fee
-	maxFee, err := cfg.GetMaxFee()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting max fee in configuration: %w", err)
+	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
+	var maxFee *big.Int
+	if maxFeeGwei == 0 {
+		maxFee = nil
+	} else {
+		maxFee = eth.GweiToWei(maxFeeGwei)
 	}
 
 	// Get the user-requested max fee
-	maxPriorityFee, err := cfg.GetMaxPriorityFee()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting max priority fee in configuration: %w", err)
-	}
-	if maxPriorityFee == nil || maxPriorityFee.Uint64() == 0 {
+	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
+	var priorityFee *big.Int
+	if priorityFeeGwei == 0 {
 		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		maxPriorityFee = big.NewInt(2)
-	}
-
-	// Get the user-requested gas limit
-	gasLimit, err := cfg.GetGasLimit()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting gas limit in configuration: %w", err)
+		priorityFee = eth.GweiToWei(2)
+	} else {
+		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
 
 	// Return task
@@ -111,8 +109,8 @@ func newStakePrelaunchMinipools(c *cli.Context, logger log.ColorLogger) (*stakeP
 		d:              d,
 		gasThreshold:   gasThreshold,
 		maxFee:         maxFee,
-		maxPriorityFee: maxPriorityFee,
-		gasLimit:       gasLimit,
+		maxPriorityFee: priorityFee,
+		gasLimit:       0,
 	}, nil
 
 }
@@ -367,15 +365,15 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
 		// Get validator container name & client type label
 		var containerName string
 		var clientTypeLabel string
-		if t.cfg.Smartnode.ProjectName == "" {
+		if t.cfg.Smartnode.ProjectName.Value == "" {
 			return errors.New("Rocket Pool docker project name not set")
 		}
 		switch clientType := t.bc.GetClientType(); clientType {
 		case beacon.SplitProcess:
-			containerName = t.cfg.Smartnode.ProjectName + ValidatorContainerSuffix
+			containerName = t.cfg.Smartnode.ProjectName.Value.(string) + ValidatorContainerSuffix
 			clientTypeLabel = "validator"
 		case beacon.SingleProcess:
-			containerName = t.cfg.Smartnode.ProjectName + BeaconContainerSuffix
+			containerName = t.cfg.Smartnode.ProjectName.Value.(string) + BeaconContainerSuffix
 			clientTypeLabel = "beacon"
 		default:
 			return fmt.Errorf("Can't restart the validator, unknown client type '%d'", clientType)
@@ -411,7 +409,7 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
 	} else {
 
 		// Get validator restart command
-		restartCommand := os.ExpandEnv(t.cfg.Smartnode.ValidatorRestartCommand)
+		restartCommand := os.ExpandEnv(t.cfg.Smartnode.ValidatorRestartCommand.Value.(string))
 
 		// Log
 		t.log.Printlnf("Restarting validator process with command '%s'...", restartCommand)

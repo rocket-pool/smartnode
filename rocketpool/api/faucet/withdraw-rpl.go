@@ -224,7 +224,7 @@ func estimateWithdrawGas(c *cli.Context, client *client.EthClientProxy, faucet *
 	if err != nil {
 		return response, err
 	}
-	faucetAddress := common.HexToAddress(config.Rocketpool.RPLFaucetAddress)
+	faucetAddress := common.HexToAddress(config.Smartnode.GetRplFaucetAddress())
 
 	// Create a contract for the faucet
 	faucetAbi, err := abi.JSON(strings.NewReader(contracts.RPLFaucetABI))
