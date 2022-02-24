@@ -95,6 +95,8 @@ func (param *Parameter) deserialize(serializedParams map[string]string) error {
 				param.Value = reflect.ValueOf(value).Convert(paramType)
 			}
 		}
+	case ParameterType_Float:
+		param.Value, err = strconv.ParseFloat(value, 64)
 	}
 
 	if err != nil {

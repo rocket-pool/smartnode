@@ -114,7 +114,7 @@ func (layout *standardLayout) refresh() {
 		case config.ParameterType_Bool:
 			formItem.(*tview.Checkbox).SetChecked(param.Value == true)
 
-		case config.ParameterType_Int, config.ParameterType_Uint, config.ParameterType_Uint16, config.ParameterType_String:
+		case config.ParameterType_Int, config.ParameterType_Uint, config.ParameterType_Uint16, config.ParameterType_String, config.ParameterType_Float:
 			formItem.(*tview.InputField).SetText(fmt.Sprint(param.Value))
 
 		case config.ParameterType_Choice:
