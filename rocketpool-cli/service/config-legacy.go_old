@@ -27,12 +27,8 @@ func configureServiceLegacy(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Load configs
-	globalConfig, err := rp.LoadGlobalConfig()
-	if err != nil {
-		return err
-	}
-	userConfig, err := rp.LoadUserConfig()
+	// Load config
+	userConfig, err := rp.LoadConfig()
 	if err != nil {
 		return err
 	}
