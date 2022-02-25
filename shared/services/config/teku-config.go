@@ -80,3 +80,8 @@ func (config *TekuConfig) GetUnsupportedCommonParams() []string {
 func (config *TekuConfig) GetValidatorImage() string {
 	return config.ContainerTag.Value.(string)
 }
+
+// Get the name of the client
+func (config *TekuConfig) GetName() string {
+	return "Teku"
+}

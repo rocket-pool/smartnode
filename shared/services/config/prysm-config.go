@@ -160,3 +160,8 @@ func (config *PrysmConfig) GetUnsupportedCommonParams() []string {
 func (config *PrysmConfig) GetValidatorImage() string {
 	return config.VcContainerTag.Value.(string)
 }
+
+// Get the name of the client
+func (config *PrysmConfig) GetName() string {
+	return "Prysm"
+}

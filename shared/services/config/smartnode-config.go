@@ -285,3 +285,15 @@ func (config *SmartnodeConfig) GetRplTokenAddress() string {
 func (config *SmartnodeConfig) GetRplFaucetAddress() string {
 	return config.rplFaucetAddress[config.Network.Value.(Network)]
 }
+
+func (config *SmartnodeConfig) GetSmartnodeContainerTag() string {
+	return smartnodeTag
+}
+
+func (config *SmartnodeConfig) GetPowProxyContainerTag() string {
+	return powProxyTag
+}
+
+func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
+	return pruneProvisionerTag
+}

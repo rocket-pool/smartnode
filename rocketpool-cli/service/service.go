@@ -412,10 +412,10 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Println("This will shut down your main ETH1 client and prune its database, freeing up disk space.")
 	fmt.Println("Once pruning is complete, your ETH1 client will restart automatically.\n")
 
-	if cfg.Chains.Eth1Fallback.Client.Selected == "" {
+	if cfg.UseFallbackExecutionClient.Value == false {
 		fmt.Printf("%sYou do not have a fallback ETH1 client configured.\nYou will continue attesting while ETH1 prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 	} else {
-		fmt.Printf("You have a fallback ETH1 client configured (%s). Rocket Pool (and your ETH2 client) will use that while the main client is pruning.\n", cfg.Chains.Eth1Fallback.Client.Selected)
+		fmt.Printf("You have a fallback ETH1 client configured (%v). Rocket Pool (and your ETH2 client) will use that while the main client is pruning.\n", cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
 	}
 
 	// Get the container prefix
@@ -425,7 +425,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	// Prompt for stopping the node container if using Infura to prevent people from hitting the rate limit
-	if cfg.Chains.Eth1Fallback.Client.Selected == "infura" {
+	if cfg.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura {
 		fmt.Printf("\n%s=== NOTE ===\n\n", colorYellow)
 		fmt.Printf("If you are using Infura's free tier, you may hit its rate limit if pruning takes a long time.\n")
 		fmt.Printf("If this happens, you should temporarily disable the `%s` container until pruning is complete. This will:\n", prefix+NodeContainerSuffix)
@@ -442,10 +442,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	// Get the prune provisioner image
-	pruneProvisioner := cfg.Chains.Eth1.PruneProvisioner
-	if pruneProvisioner == "" {
-		return fmt.Errorf("Prune provisioner was not found in your configuration; are you running an old version of Rocket Pool?")
-	}
+	pruneProvisioner := cfg.Smartnode.GetPruneProvisionerContainerTag()
 
 	// Check for enough free space
 	executionContainerName := prefix + ExecutionContainerSuffix
@@ -614,38 +611,76 @@ func serviceVersion(c *cli.Context) error {
 	}
 
 	// Get config
-	cfg, err := rp.LoadMergedConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		return err
 	}
-	eth1Client := cfg.GetSelectedEth1Client()
-	eth2Client := cfg.GetSelectedEth2Client()
 
-	// Get client versions
-	var eth1ClientVersion string
-	var eth2ClientVersion string
-	var eth2ClientImage string
-	if eth1Client != nil {
-		eth1ClientVersion = fmt.Sprintf("%s (%s)", eth1Client.Name, eth1Client.Image)
-	} else {
-		eth1ClientVersion = "(none)"
-	}
-	if eth2Client != nil {
-		if eth2Client.Image != "" {
-			eth2ClientImage = eth2Client.Image
-		} else {
-			eth2ClientImage = eth2Client.BeaconImage
+	// Get the execution client string
+	var eth1ClientString string
+	eth1ClientMode := cfg.ExecutionClientMode.Value.(config.Mode)
+	switch eth1ClientMode {
+	case config.Mode_Local:
+		eth1Client := cfg.ExecutionClient.Value.(config.ExecutionClient)
+		switch eth1Client {
+		case config.ExecutionClient_Geth:
+			eth1ClientString = fmt.Sprintf("Geth (Locally managed)\n\tImage: %s", cfg.Geth.ContainerTag.Value.(string))
+		case config.ExecutionClient_Infura:
+			eth1ClientString = fmt.Sprintf("Infura (Locally managed)\n\tImage: %s", cfg.Smartnode.GetPowProxyContainerTag())
+		case config.ExecutionClient_Pocket:
+			eth1ClientString = fmt.Sprintf("Pocket (Locally managed)\n\tImage: %s", cfg.Smartnode.GetPowProxyContainerTag())
+		default:
+			return fmt.Errorf("unknown local execution client [%v]", eth1Client)
 		}
-		eth2ClientVersion = fmt.Sprintf("%s (%s)", eth2Client.Name, eth2ClientImage)
-	} else {
-		eth2ClientVersion = "(none)"
+
+	case config.Mode_External:
+		eth1ClientString = "Externally managed"
+
+	default:
+		return fmt.Errorf("unknown execution client mode [%v]", eth1ClientMode)
+	}
+
+	// Get the consensus client string
+	var eth2ClientString string
+	eth2ClientMode := cfg.ConsensusClientMode.Value.(config.Mode)
+	switch eth2ClientMode {
+	case config.Mode_Local:
+		eth2Client := cfg.ConsensusClient.Value.(config.ConsensusClient)
+		switch eth2Client {
+		case config.ConsensusClient_Lighthouse:
+			eth2ClientString = fmt.Sprintf("Lighthouse (Locally managed)\n\tImage: %s", cfg.Lighthouse.ContainerTag.Value.(string))
+		case config.ConsensusClient_Nimbus:
+			eth2ClientString = fmt.Sprintf("Nimbus (Locally managed)\n\tImage: %s", cfg.Nimbus.ContainerTag.Value.(string))
+		case config.ConsensusClient_Prysm:
+			eth2ClientString = fmt.Sprintf("Prysm (Locally managed)\n\tBN image: %s\n\tVC image: %s", cfg.Prysm.BnContainerTag.Value.(string), cfg.Prysm.VcContainerTag.Value.(string))
+		case config.ConsensusClient_Teku:
+			eth2ClientString = fmt.Sprintf("Teku (Locally managed)\n\tImage: %s", cfg.Teku.ContainerTag.Value.(string))
+		default:
+			return fmt.Errorf("unknown local consensus client [%v]", eth2Client)
+		}
+
+	case config.Mode_External:
+		eth2Client := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+		switch eth2Client {
+		case config.ConsensusClient_Lighthouse:
+			eth2ClientString = fmt.Sprintf("Lighthouse (Externally managed)\n\tVC Image: %s", cfg.ExternalLighthouse.ContainerTag.Value.(string))
+		case config.ConsensusClient_Prysm:
+			eth2ClientString = fmt.Sprintf("Prysm (Externally managed)\n\tVC image: %s", cfg.ExternalPrysm.ContainerTag.Value.(string))
+		case config.ConsensusClient_Teku:
+			eth2ClientString = fmt.Sprintf("Teku (Locally managed)\n\tImage: %s", cfg.ExternalTeku.ContainerTag.Value.(string))
+		default:
+			return fmt.Errorf("unknown external consensus client [%v]", eth2Client)
+		}
+
+	default:
+		return fmt.Errorf("unknown consensus client mode [%v]", eth2ClientMode)
 	}
 
 	// Print version info
 	fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
 	fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
-	fmt.Printf("Selected Eth 1.0 client: %s\n", eth1ClientVersion)
-	fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientVersion)
+	fmt.Printf("Selected Eth 1.0 client: %s\n", eth1ClientString)
+	fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientString)
 	return nil
 
 }
@@ -666,7 +701,7 @@ func resyncEth1(c *cli.Context) error {
 	defer rp.Close()
 
 	// Get the config
-	cfg, err := rp.LoadMergedConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -674,11 +709,11 @@ func resyncEth1(c *cli.Context) error {
 	fmt.Println("This will delete the chain data of your primary ETH1 client and resync it from scratch.")
 	fmt.Printf("%sYou should only do this if your ETH1 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n", colorYellow, colorReset)
 
-	if cfg.Chains.Eth1Fallback.Client.Selected == "" {
+	if cfg.UseFallbackExecutionClient.Value == false {
 		fmt.Printf("%sYou do not have a fallback ETH1 client configured.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 		return nil
 	} else {
-		fmt.Printf("You have a fallback ETH1 client configured (%s). Rocket Pool (and your ETH2 client) will use that while the main client is resyncing.\n", cfg.Chains.Eth1Fallback.Client.Selected)
+		fmt.Printf("You have a fallback ETH1 client configured (%v). Rocket Pool (and your ETH2 client) will use that while the main client is resyncing.\n", cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
 	}
 
 	// Get the container prefix
@@ -688,7 +723,7 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	// Prompt for stopping the node container if using Infura to prevent people from hitting the rate limit
-	if cfg.Chains.Eth1Fallback.Client.Selected == "infura" {
+	if cfg.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura {
 		fmt.Printf("\n%s=== NOTE ===\n\n", colorYellow)
 		fmt.Printf("If you are using Infura's free tier, you will very likely hit its rate limit while resyncing.\n")
 		fmt.Printf("You should temporarily disable the `%s` container until resyncing is complete. This will:\n", prefix+NodeContainerSuffix)
@@ -765,7 +800,7 @@ func resyncEth2(c *cli.Context) error {
 	defer rp.Close()
 
 	// Get the merged config
-	cfg, err := rp.LoadMergedConfig()
+	cfg, err := rp.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -773,25 +808,39 @@ func resyncEth2(c *cli.Context) error {
 	fmt.Println("This will delete the chain data of your ETH2 client and resync it from scratch.")
 	fmt.Printf("%sYou should only do this if your ETH2 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n\n", colorYellow, colorReset)
 
+	// Get the parameters that the selected client doesn't support
+	var unsupportedParams []string
+	var clientName string
+	eth2ClientMode := cfg.ConsensusClientMode.Value.(config.Mode)
+	switch eth2ClientMode {
+	case config.Mode_Local:
+		selectedClientConfig, err := cfg.GetSelectedConsensusClientConfig()
+		if err != nil {
+			return fmt.Errorf("error getting selected consensus client config: %w", err)
+		}
+		unsupportedParams = selectedClientConfig.(config.LocalConsensusConfig).GetUnsupportedCommonParams()
+		clientName = selectedClientConfig.GetName()
+
+	case config.Mode_External:
+		fmt.Println("You use an externally-managed Consensus client. Rocket Pool cannot resync it for you.")
+		return nil
+
+	default:
+		return fmt.Errorf("unknown consensus client mode [%v]", eth2ClientMode)
+	}
+
 	// Check if the selected client supports checkpoint sync
-	supportsCheckpointSync := false
-	for _, param := range cfg.GetSelectedEth2Client().Params {
-		if param.Env == checkpointSyncSetting {
-			supportsCheckpointSync = true
-			break
+	supportsCheckpointSync := true
+	for _, param := range unsupportedParams {
+		if param == config.CheckpointSyncUrlID {
+			supportsCheckpointSync = false
 		}
 	}
 	if !supportsCheckpointSync {
-		fmt.Printf("%sYour ETH2 client (%s) does not support checkpoint sync.\nIf you have active validators, they %swill be considered offline and will leak ETH%s%s while the client is syncing.%s\n\n", colorRed, cfg.GetSelectedEth2Client().Name, colorBold, colorReset, colorRed, colorReset)
+		fmt.Printf("%sYour ETH2 client (%s) does not support checkpoint sync.\nIf you have active validators, they %swill be considered offline and will leak ETH%s%s while the client is syncing.%s\n\n", colorRed, clientName, colorBold, colorReset, colorRed, colorReset)
 	} else {
 		// Get the current checkpoint sync URL
-		checkpointSyncUrl := ""
-		for _, param := range cfg.Chains.Eth2.Client.Params {
-			if param.Env == checkpointSyncSetting {
-				checkpointSyncUrl = param.Value
-				break
-			}
-		}
+		checkpointSyncUrl := cfg.ConsensusCommon.CheckpointSyncProvider.Value.(string)
 		if checkpointSyncUrl == "" {
 			fmt.Printf("%sYou do not have a checkpoint sync provider configured.\nIf you have active validators, they %swill be considered offline and will lose ETH%s%s until your ETH2 client finishes syncing.\nWe strongly recommend you configure a checkpoint sync provider with `rocketpool service config` so it syncs instantly before running this.%s\n\n", colorRed, colorBold, colorReset, colorRed, colorReset)
 		} else {

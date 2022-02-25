@@ -76,3 +76,8 @@ func (config *LighthouseConfig) GetUnsupportedCommonParams() []string {
 func (config *LighthouseConfig) GetValidatorImage() string {
 	return config.ContainerTag.Value.(string)
 }
+
+// Get the name of the client
+func (config *LighthouseConfig) GetName() string {
+	return "Lighthouse"
+}

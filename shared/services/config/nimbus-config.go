@@ -60,3 +60,8 @@ func (config *NimbusConfig) GetUnsupportedCommonParams() []string {
 func (config *NimbusConfig) GetValidatorImage() string {
 	return config.ContainerTag.Value.(string)
 }
+
+// Get the name of the client
+func (config *NimbusConfig) GetName() string {
+	return "Nimbus"
+}

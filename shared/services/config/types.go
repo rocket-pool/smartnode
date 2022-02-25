@@ -75,6 +75,7 @@ type Config interface {
 // Interface for common Consensus configurations
 type ConsensusConfig interface {
 	GetValidatorImage() string
+	GetName() string
 }
 
 // Interface for Local Consensus configurations

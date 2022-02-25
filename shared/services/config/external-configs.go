@@ -277,3 +277,18 @@ func (config *ExternalPrysmConfig) GetApiUrl() string {
 func (config *ExternalTekuConfig) GetApiUrl() string {
 	return config.HttpUrl.Value.(string)
 }
+
+// Get the name of the client
+func (config *ExternalLighthouseConfig) GetName() string {
+	return "Lighthouse"
+}
+
+// Get the name of the client
+func (config *ExternalPrysmConfig) GetName() string {
+	return "Prysm"
+}
+
+// Get the name of the client
+func (config *ExternalTekuConfig) GetName() string {
+	return "Teku"
+}
