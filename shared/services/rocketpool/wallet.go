@@ -39,6 +39,25 @@ func (c *Client) SetPassword(password string) (api.SetPasswordResponse, error) {
 	return response, nil
 }
 
+// Remove wallet
+func (c *Client) RemoveWallet() error {
+	responseBytes, err := c.callAPI("wallet remove")
+	if err != nil {
+		return fmt.Errorf("Could not remove wallet: %w", err)
+	}
+
+	var response api.RemoveWalletResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return fmt.Errorf("Could not decode remove wallet response: %w", err)
+	}
+
+	if response.Error != "" {
+		return fmt.Errorf("Could not remove wallet: %s", response.Error)
+	}
+
+	return nil
+}
+
 // Initialize wallet
 func (c *Client) InitWallet() (api.InitWalletResponse, error) {
 	responseBytes, err := c.callAPI("wallet init")

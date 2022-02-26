@@ -64,20 +64,26 @@ func printMnemonic(mnemonic string) {
 	fmt.Println("")
 	fmt.Println("==============================================================================================================================================")
 	fmt.Println("")
+	for !cliutils.Confirm("Have you written down your mnemonic? The screen will be cleared if you continue.") {
+	}
 }
 
 // Confirm a recovery mnemonic phrase
-func confirmMnemonic(mnemonic string) {
+func confirmMnemonic(mnemonic string) bool {
 	for {
 		confirmation := cliutils.Prompt("Please enter your recorded mnemonic phrase to confirm it is correct:", "^.*$", "")
 		if mnemonic == confirmation {
-			return
+			return true
 		}
 
 		if strings.Contains(confirmation, UTF8_EMPTY_SPACE) {
 			fmt.Println(colorYellow + "It seems like you copy pasted your mnemonic phrase. Please write it down and enter it by hand." + colorReset)
-		} else {
-			fmt.Println("The mnemonic phrase you entered does not match your recovery phrase. Please try again.")
+			fmt.Println("")
+			continue
+		}
+
+		if !cliutils.Confirm("The mnemonic phrase you entered does not match your recovery phrase. Would you like to try again?") {
+			return false
 		}
 		fmt.Println("")
 	}

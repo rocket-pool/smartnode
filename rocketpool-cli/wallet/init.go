@@ -57,8 +57,19 @@ func initWallet(c *cli.Context) error {
 	// Print mnemonic
 	printMnemonic(response.Mnemonic)
 
+	// Clear terminal output
+	_ = term.Clear()
+
 	// Confirm mnemonic
-	confirmMnemonic(response.Mnemonic)
+	if !confirmMnemonic(response.Mnemonic) {
+		// The user was unable to confirm the mnemonic, so remove the wallet and force them to restart the process.
+		if err := rp.RemoveWallet(); err != nil {
+			return err
+		}
+
+		fmt.Println("Wallet not initialized. Please try again.")
+		return nil
+	}
 
 	// Clear terminal output
 	_ = term.Clear()
