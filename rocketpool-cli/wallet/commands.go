@@ -42,10 +42,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "password, p",
 						Usage: "The password to secure the wallet with (if not already set)",
 					},
-					cli.BoolFlag{
-						Name:  "confirm-mnemonic, c",
-						Usage: "Automatically confirm the mnemonic phrase",
-					},
 				},
 				Action: func(c *cli.Context) error {
 

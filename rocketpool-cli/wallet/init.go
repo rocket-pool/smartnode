@@ -58,9 +58,7 @@ func initWallet(c *cli.Context) error {
 	printMnemonic(response.Mnemonic)
 
 	// Confirm mnemonic
-	if !c.Bool("confirm-mnemonic") {
-		confirmMnemonic(response.Mnemonic)
-	}
+	confirmMnemonic(response.Mnemonic)
 
 	// Clear terminal output
 	_ = term.Clear()
