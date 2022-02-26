@@ -59,7 +59,7 @@ func initWallet(c *cli.Context) error {
 	fmt.Println("Record this phrase somewhere secure and private. Do not share it with anyone as it will give them control of your node account and validators.")
 	fmt.Println("==============================================================================================================================================")
 	fmt.Println("")
-	fmt.Println(response.Mnemonic)
+	printMnemonic(response.Mnemonic)
 	fmt.Println("")
 	fmt.Println("==============================================================================================================================================")
 	fmt.Println("")
