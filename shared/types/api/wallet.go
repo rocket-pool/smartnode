@@ -25,6 +25,11 @@ type InitWalletResponse struct {
 	AccountAddress common.Address `json:"accountAddress"`
 }
 
+type RemoveWalletResponse struct {
+	Status         string         `json:"status"`
+	Error          string         `json:"error"`
+}
+
 type RecoverWalletResponse struct {
 	Status         string                  `json:"status"`
 	Error          string                  `json:"error"`

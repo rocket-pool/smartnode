@@ -136,6 +136,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "remove",
+				Aliases:   []string{"rm"},
+				Usage:     "Deletes existing node wallet",
+				UsageText: "rocketpool api wallet remove",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(removeWallet(c))
+					return nil
+				},
+			},
 		},
 	})
 }

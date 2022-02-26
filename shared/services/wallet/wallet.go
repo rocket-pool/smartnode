@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"os"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
@@ -224,6 +225,11 @@ func (w *Wallet) Save() error {
 func (w *Wallet) Reload() error {
 	_, err := w.loadStore()
 	return err
+}
+
+// Remove the wallet store from disk
+func (w *Wallet) Remove() error {
+	return os.Remove(w.walletPath)
 }
 
 // Load the wallet store from disk and decrypt it
