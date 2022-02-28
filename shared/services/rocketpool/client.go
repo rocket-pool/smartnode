@@ -644,164 +644,6 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 	c.gasLimit = gasLimit
 }
 
-// Deploys all of the appropriate docker-compose template files and provisions them based on the provided configuration
-func (c *Client) DeployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string) error {
-
-	// Check for the folders
-	runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir)
-	_, err := os.Stat(runtimeFolder)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("runtime folder [%s] does not exist", runtimeFolder)
-	}
-	templatesFolder := filepath.Join(rocketpoolDir, templatesDir)
-	_, err = os.Stat(templatesFolder)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("templates folder [%s] does not exist", templatesFolder)
-	}
-	overrideFolder := filepath.Join(rocketpoolDir, overrideDir)
-	_, err = os.Stat(overrideFolder)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("override folder [%s] does not exist", overrideFolder)
-	}
-
-	// Clear out the runtime folder and remake it
-	err = os.RemoveAll(runtimeFolder)
-	if err != nil {
-		return fmt.Errorf("error deleting runtime folder [%s]: %w", runtimeFolder, err)
-	}
-	err = os.Mkdir(runtimeFolder, 0775)
-	if err != nil {
-		return fmt.Errorf("error creating runtime folder [%s]: %w", runtimeFolder, err)
-	}
-
-	// Set the environment variables based on the config
-	settings := cfg.GenerateEnvironmentVariables()
-	oldValues := map[string]string{}
-	for varName, varValue := range settings {
-		oldValues[varName] = os.Getenv(varName)
-		os.Setenv(varName, varValue)
-	}
-	defer func() {
-		// Unset the env vars
-		for name, value := range oldValues {
-			os.Setenv(name, value)
-		}
-	}()
-
-	// Read and substitute the templates
-
-	// API
-	contents, err := envsubst.ReadFile(filepath.Join(templatesDir, apiTemplate))
-	if err != nil {
-		return fmt.Errorf("error reading and substituting API container template: %w", err)
-	}
-	err = ioutil.WriteFile(filepath.Join(runtimeDir, apiComposeFile), contents, 0664)
-	if err != nil {
-		return fmt.Errorf("could not write API container file to %s: %w", filepath.Join(runtimeDir, apiComposeFile), err)
-	}
-
-	// Node
-	contents, err = envsubst.ReadFile(filepath.Join(templatesDir, nodeTemplate))
-	if err != nil {
-		return fmt.Errorf("error reading and substituting node container template: %w", err)
-	}
-	err = ioutil.WriteFile(filepath.Join(runtimeDir, nodeComposeFile), contents, 0664)
-	if err != nil {
-		return fmt.Errorf("could not write node container file to %s: %w", filepath.Join(runtimeDir, nodeComposeFile), err)
-	}
-
-	// Watchtower
-	contents, err = envsubst.ReadFile(filepath.Join(templatesDir, watchtowerTemplate))
-	if err != nil {
-		return fmt.Errorf("error reading and substituting watchtower container template: %w", err)
-	}
-	err = ioutil.WriteFile(filepath.Join(runtimeDir, watchtowerComposeFile), contents, 0664)
-	if err != nil {
-		return fmt.Errorf("could not write watchtower container file to %s: %w", filepath.Join(runtimeDir, watchtowerComposeFile), err)
-	}
-
-	// Validator
-	contents, err = envsubst.ReadFile(filepath.Join(templatesDir, validatorTemplate))
-	if err != nil {
-		return fmt.Errorf("error reading and substituting validator container template: %w", err)
-	}
-	err = ioutil.WriteFile(filepath.Join(runtimeDir, validatorComposeFile), contents, 0664)
-	if err != nil {
-		return fmt.Errorf("could not write validator container file to %s: %w", filepath.Join(runtimeDir, validatorComposeFile), err)
-	}
-
-	// Check the EC mode to see if it needs to be deployed
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, eth1Template))
-		if err != nil {
-			return fmt.Errorf("error reading and substituting execution client container template: %w", err)
-		}
-		err = ioutil.WriteFile(filepath.Join(runtimeDir, eth1ComposeFile), contents, 0664)
-		if err != nil {
-			return fmt.Errorf("could not write execution client container file to %s: %w", filepath.Join(runtimeDir, eth1ComposeFile), err)
-		}
-	}
-
-	// Check the Fallback EC mode
-	if cfg.UseFallbackExecutionClient.Value == true && cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, eth1FallbackTemplate))
-		if err != nil {
-			return fmt.Errorf("error reading and substituting fallback execution client container template: %w", err)
-		}
-		err = ioutil.WriteFile(filepath.Join(runtimeDir, eth1FallbackComposeFile), contents, 0664)
-		if err != nil {
-			return fmt.Errorf("could not write fallback execution client container file to %s: %w", filepath.Join(runtimeDir, eth1FallbackComposeFile), err)
-		}
-	}
-
-	// Check the Consensus mode
-	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, eth2Template))
-		if err != nil {
-			return fmt.Errorf("error reading and substituting consensus client container template: %w", err)
-		}
-		err = ioutil.WriteFile(filepath.Join(runtimeDir, eth2ComposeFile), contents, 0664)
-		if err != nil {
-			return fmt.Errorf("could not write consensus client container file to %s: %w", filepath.Join(runtimeDir, eth2ComposeFile), err)
-		}
-	}
-
-	// Check the metrics containers
-	if cfg.EnableMetrics.Value == true {
-		// Grafana
-		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, grafanaTemplate))
-		if err != nil {
-			return fmt.Errorf("error reading and substituting Grafana container template: %w", err)
-		}
-		err = ioutil.WriteFile(filepath.Join(runtimeDir, grafanaComposeFile), contents, 0664)
-		if err != nil {
-			return fmt.Errorf("could not write Grafana container file to %s: %w", filepath.Join(runtimeDir, grafanaComposeFile), err)
-		}
-
-		// Node exporter
-		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, exporterTemplate))
-		if err != nil {
-			return fmt.Errorf("error reading and substituting Node Exporter container template: %w", err)
-		}
-		err = ioutil.WriteFile(filepath.Join(runtimeDir, exporterComposeFile), contents, 0664)
-		if err != nil {
-			return fmt.Errorf("could not write Node Exporter container file to %s: %w", filepath.Join(runtimeDir, exporterComposeFile), err)
-		}
-
-		// Prometheus
-		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, prometheusTemplate))
-		if err != nil {
-			return fmt.Errorf("error reading and substituting Prometheus container template: %w", err)
-		}
-		err = ioutil.WriteFile(filepath.Join(runtimeDir, prometheusComposeFile), contents, 0664)
-		if err != nil {
-			return fmt.Errorf("could not write Prometheus container file to %s: %w", filepath.Join(runtimeDir, prometheusComposeFile), err)
-		}
-	}
-
-	return nil
-}
-
 // Load a config file
 func (c *Client) loadConfig(path string) (*config.RocketPoolConfig, error) {
 	expandedPath, err := homedir.Expand(path)
@@ -835,7 +677,13 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	// Cancel if running in non-docker mode
 	if c.daemonPath != "" {
-		return "", errors.New("Command unavailable with '--daemon-path' option specified.")
+		return "", errors.New("Command unavailable in Native Mode (with '--daemon-path' option specified).")
+	}
+
+	// Get the expanded config path
+	expandedConfigPath, err := homedir.Expand(c.configPath)
+	if err != nil {
+		return "", err
 	}
 
 	// Load config
@@ -845,49 +693,23 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Check config
-	eth1Client := cfg.GetSelectedEth1Client()
-	eth1FallbackClient := cfg.GetSelectedEth1FallbackClient()
-	eth2Client := cfg.GetSelectedEth2Client()
-	if eth1Client == nil {
-		return "", errors.New("No Eth 1.0 client selected. Please run 'rocketpool service config' and try again.")
+	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Unknown {
+		return "", fmt.Errorf("You haven't selected local or external mode for your Execution (ETH1) client.\nPlease run 'rocketpool service config' before running this command.")
+	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ExecutionClientMode.Value.(config.ExecutionClient) == config.ExecutionClient_Unknown {
+		return "", errors.New("No Execution (ETH1) client selected. Please run 'rocketpool service config' before running this command.")
 	}
-	if eth2Client == nil {
-		return "", errors.New("No Eth 2.0 client selected. Please run 'rocketpool service config' and try again.")
-	}
-
-	// Make sure the selected eth2 is compatible with the selected eth1
-	isCompatible := false
-	if eth1Client.CompatibleEth2Clients == "" {
-		isCompatible = true
-	} else {
-		compatibleEth2ClientIds := strings.Split(eth1Client.CompatibleEth2Clients, ";")
-		for _, id := range compatibleEth2ClientIds {
-			if id == eth2Client.ID {
-				isCompatible = true
-				break
-			}
-		}
-	}
-	if !isCompatible {
-		return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 client [%s].\nPlease run 'rocketpool service config' and select compatible clients.", eth2Client.Name, eth1Client.Name)
+	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Unknown {
+		return "", fmt.Errorf("You haven't selected local or external mode for your Consensus (ETH2) client.\nPlease run 'rocketpool service config' before running this command.")
+	} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClientMode.Value.(config.ConsensusClient) == config.ConsensusClient_Unknown {
+		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
-	// Make sure the selected eth2 is compatible with the selected eth1 fallback
-	if eth1FallbackClient != nil {
-		isCompatible = false
-		if eth1FallbackClient.CompatibleEth2Clients == "" {
-			isCompatible = true
-		} else {
-			compatibleEth2ClientIds := strings.Split(eth1FallbackClient.CompatibleEth2Clients, ";")
-			for _, id := range compatibleEth2ClientIds {
-				if id == eth2Client.ID {
-					isCompatible = true
-					break
-				}
-			}
-		}
-		if !isCompatible {
-			return "", fmt.Errorf("Eth 2.0 client [%s] is incompatible with Eth 1.0 fallback client [%s].\nPlease run 'rocketpool service config' and select compatible clients.", eth2Client.Name, eth1FallbackClient.Name)
+	// Make sure the selected CC is compatible with the selected EC
+	consensusClientString := fmt.Sprint(cfg.ConsensusClient.Value.(config.ConsensusClient))
+	_, badClients := cfg.GetCompatibleConsensusClients()
+	for _, badClient := range badClients {
+		if consensusClientString == badClient {
+			return "", fmt.Errorf("Consensus client [%s] is incompatible with your selected Execution for Fallback Execution client choice.\nPlease run 'rocketpool service config' and select compatible clients.", consensusClientString)
 		}
 	}
 
@@ -903,128 +725,305 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Set environment variables from config
-	env := []string{
-		fmt.Sprintf("COMPOSE_PROJECT_NAME=%s", shellescape.Quote(cfg.Smartnode.ProjectName)),
-		fmt.Sprintf("ROCKET_POOL_VERSION=%s", shellescape.Quote(cfg.Smartnode.GraffitiVersion)),
-		fmt.Sprintf("SMARTNODE_IMAGE=%s", shellescape.Quote(cfg.Smartnode.Image)),
-		fmt.Sprintf("ETH1_CLIENT=%s", shellescape.Quote(cfg.GetSelectedEth1Client().ID)),
-		fmt.Sprintf("ETH1_IMAGE=%s", shellescape.Quote(cfg.GetSelectedEth1Client().Image)),
-		fmt.Sprintf("ETH2_CLIENT=%s", shellescape.Quote(cfg.GetSelectedEth2Client().ID)),
-		fmt.Sprintf("ETH2_IMAGE=%s", shellescape.Quote(cfg.GetSelectedEth2Client().GetBeaconImage())),
-		fmt.Sprintf("VALIDATOR_CLIENT=%s", shellescape.Quote(cfg.GetSelectedEth2Client().ID)),
-		fmt.Sprintf("VALIDATOR_IMAGE=%s", shellescape.Quote(cfg.GetSelectedEth2Client().GetValidatorImage())),
-		fmt.Sprintf("ETH1_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.Provider)),
-		fmt.Sprintf("ETH1_WS_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.WsProvider)),
-		fmt.Sprintf("ETH2_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth2.Provider)),
-		fmt.Sprintf("EXTERNAL_IP=%s", shellescape.Quote(externalIP)),
-	}
+	/*
+		env := []string{
+			fmt.Sprintf("COMPOSE_PROJECT_NAME=%s", shellescape.Quote(cfg.Smartnode.ProjectName)),
+			fmt.Sprintf("ROCKET_POOL_VERSION=%s", shellescape.Quote(cfg.Smartnode.GraffitiVersion)),
+			fmt.Sprintf("SMARTNODE_IMAGE=%s", shellescape.Quote(cfg.Smartnode.Image)),
+			fmt.Sprintf("ETH1_CLIENT=%s", shellescape.Quote(cfg.GetSelectedEth1Client().ID)),
+			fmt.Sprintf("ETH1_IMAGE=%s", shellescape.Quote(cfg.GetSelectedEth1Client().Image)),
+			fmt.Sprintf("ETH2_CLIENT=%s", shellescape.Quote(cfg.GetSelectedEth2Client().ID)),
+			fmt.Sprintf("ETH2_IMAGE=%s", shellescape.Quote(cfg.GetSelectedEth2Client().GetBeaconImage())),
+			fmt.Sprintf("VALIDATOR_CLIENT=%s", shellescape.Quote(cfg.GetSelectedEth2Client().ID)),
+			fmt.Sprintf("VALIDATOR_IMAGE=%s", shellescape.Quote(cfg.GetSelectedEth2Client().GetValidatorImage())),
+			fmt.Sprintf("ETH1_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.Provider)),
+			fmt.Sprintf("ETH1_WS_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.WsProvider)),
+			fmt.Sprintf("ETH2_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth2.Provider)),
+			fmt.Sprintf("EXTERNAL_IP=%s", shellescape.Quote(externalIP)),
+		}
 
-	if cfg.Chains.Eth1Fallback.Client.Selected != "" {
-		env = append(env, fmt.Sprintf("ETH1_FALLBACK_CLIENT=%s", shellescape.Quote(cfg.GetSelectedEth1FallbackClient().ID)))
-		env = append(env, fmt.Sprintf("ETH1_FALLBACK_IMAGE=%s", shellescape.Quote(cfg.GetSelectedEth1FallbackClient().Image)))
-		env = append(env, fmt.Sprintf("ETH1_FALLBACK_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.FallbackProvider)))
-		env = append(env, fmt.Sprintf("ETH1_FALLBACK_WS_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.FallbackWsProvider)))
-	}
+		if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+			env = append(env, fmt.Sprintf("ETH1_FALLBACK_CLIENT=%s", shellescape.Quote(cfg.GetSelectedEth1FallbackClient().ID)))
+			env = append(env, fmt.Sprintf("ETH1_FALLBACK_IMAGE=%s", shellescape.Quote(cfg.GetSelectedEth1FallbackClient().Image)))
+			env = append(env, fmt.Sprintf("ETH1_FALLBACK_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.FallbackProvider)))
+			env = append(env, fmt.Sprintf("ETH1_FALLBACK_WS_PROVIDER=%s", shellescape.Quote(cfg.Chains.Eth1.FallbackWsProvider)))
+		}
 
-	if cfg.Metrics.Enabled {
-		env = append(env, "ENABLE_METRICS=1")
-	} else {
-		env = append(env, "ENABLE_METRICS=0")
-	}
+		if cfg.Metrics.Enabled {
+			env = append(env, "ENABLE_METRICS=1")
+		} else {
+			env = append(env, "ENABLE_METRICS=0")
+		}
 
-	paramsSet := map[string]bool{}
-	for _, param := range cfg.Chains.Eth1.Client.Params {
-		env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
-		paramsSet[param.Env] = true
-	}
-	for _, param := range cfg.Chains.Eth2.Client.Params {
-		env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
-		paramsSet[param.Env] = true
-	}
-	for _, setting := range cfg.Metrics.Settings {
-		env = append(env, fmt.Sprintf("%s=%s", setting.Env, shellescape.Quote(setting.Value)))
-		paramsSet[setting.Env] = true
-	}
-
-	if cfg.Chains.Eth1Fallback.Client.Selected != "" {
-		for _, param := range cfg.Chains.Eth1Fallback.Client.Params {
-			env = append(env, fmt.Sprintf("FALLBACK_%s=%s", param.Env, shellescape.Quote(param.Value)))
+		paramsSet := map[string]bool{}
+		for _, param := range cfg.Chains.Eth1.Client.Params {
+			env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
 			paramsSet[param.Env] = true
 		}
-	}
+		for _, param := range cfg.Chains.Eth2.Client.Params {
+			env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Value)))
+			paramsSet[param.Env] = true
+		}
+		for _, setting := range cfg.Metrics.Settings {
+			env = append(env, fmt.Sprintf("%s=%s", setting.Env, shellescape.Quote(setting.Value)))
+			paramsSet[setting.Env] = true
+		}
 
-	// Set default values from client config
-	for _, param := range cfg.GetSelectedEth1Client().Params {
-		if _, ok := paramsSet[param.Env]; ok {
-			continue
+		if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+			for _, param := range cfg.Chains.Eth1Fallback.Client.Params {
+				env = append(env, fmt.Sprintf("FALLBACK_%s=%s", param.Env, shellescape.Quote(param.Value)))
+				paramsSet[param.Env] = true
+			}
 		}
-		if param.Default == "" {
-			continue
-		}
-		env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
-	}
-	for _, param := range cfg.GetSelectedEth2Client().Params {
-		if _, ok := paramsSet[param.Env]; ok {
-			continue
-		}
-		if param.Default == "" {
-			continue
-		}
-		env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
-	}
-	for _, param := range cfg.Metrics.Params {
-		if _, ok := paramsSet[param.Env]; ok {
-			continue
-		}
-		if param.Default == "" {
-			continue
-		}
-		env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
-	}
 
-	// How many built-in compose files are we using
-	builtInFileCount := 1
-	if cfg.Metrics.Enabled {
-		builtInFileCount++
-	}
-	if cfg.Chains.Eth1Fallback.Client.Selected != "" {
-		builtInFileCount++
-	}
+		// Set default values from client config
+		for _, param := range cfg.GetSelectedEth1Client().Params {
+			if _, ok := paramsSet[param.Env]; ok {
+				continue
+			}
+			if param.Default == "" {
+				continue
+			}
+			env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
+		}
+		for _, param := range cfg.GetSelectedEth2Client().Params {
+			if _, ok := paramsSet[param.Env]; ok {
+				continue
+			}
+			if param.Default == "" {
+				continue
+			}
+			env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
+		}
+		for _, param := range cfg.Metrics.Params {
+			if _, ok := paramsSet[param.Env]; ok {
+				continue
+			}
+			if param.Default == "" {
+				continue
+			}
+			env = append(env, fmt.Sprintf("%s=%s", param.Env, shellescape.Quote(param.Default)))
+		}
 
-	// Set compose file flags
-	composeFileFlags := make([]string, len(composeFiles)+builtInFileCount)
-	expandedConfigPath, err := homedir.Expand(c.configPath)
+		// How many built-in compose files are we using
+		builtInFileCount := 1
+		if cfg.Metrics.Enabled {
+			builtInFileCount++
+		}
+		if cfg.Chains.Eth1Fallback.Client.Selected != "" {
+			builtInFileCount++
+		}
+	*/
+
+	// Set up environment variables and deploy the template config files
+	settings := cfg.GenerateEnvironmentVariables()
+	settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
+	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error deploying Docker templates: %w", err)
 	}
 
-	// Add the default docker-compose.yml
-	index := 0
-	composeFileFlags[index] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, ComposeFile))))
-	index++
-
-	// Add docker-compose-metrics.yml if metrics are enabled
-	if cfg.Metrics.Enabled {
-		composeFileFlags[index] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, MetricsComposeFile))))
-		index++
+	env := []string{}
+	for key, value := range settings {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
 	}
 
-	// Add docker-compose-fallback.yml if fallback is enabled
-	if cfg.Chains.Eth1Fallback.Client.Selected != "" {
-		composeFileFlags[index] = fmt.Sprintf("-f %s", shellescape.Quote((fmt.Sprintf("%s/%s", expandedConfigPath, FallbackComposeFile))))
-		index++
-	}
-
-	for fi, composeFile := range composeFiles {
-		expandedFile, err := homedir.Expand(composeFile)
-		if err != nil {
-			return "", err
-		}
-		composeFileFlags[fi+builtInFileCount] = fmt.Sprintf("-f %s", shellescape.Quote(expandedFile))
+	composeFileFlags := []string{}
+	for _, container := range deployedContainers {
+		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
 	}
 
 	// Return command
 	return fmt.Sprintf("%s docker-compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+
+}
+
+// Deploys all of the appropriate docker-compose template files and provisions them based on the provided configuration
+func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string, settings map[string]string) ([]string, error) {
+
+	// Check for the folders
+	runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir)
+	_, err := os.Stat(runtimeFolder)
+	if os.IsNotExist(err) {
+		return []string{}, fmt.Errorf("runtime folder [%s] does not exist", runtimeFolder)
+	}
+	templatesFolder := filepath.Join(rocketpoolDir, templatesDir)
+	_, err = os.Stat(templatesFolder)
+	if os.IsNotExist(err) {
+		return []string{}, fmt.Errorf("templates folder [%s] does not exist", templatesFolder)
+	}
+	overrideFolder := filepath.Join(rocketpoolDir, overrideDir)
+	_, err = os.Stat(overrideFolder)
+	if os.IsNotExist(err) {
+		return []string{}, fmt.Errorf("override folder [%s] does not exist", overrideFolder)
+	}
+
+	// Clear out the runtime folder and remake it
+	err = os.RemoveAll(runtimeFolder)
+	if err != nil {
+		return []string{}, fmt.Errorf("error deleting runtime folder [%s]: %w", runtimeFolder, err)
+	}
+	err = os.Mkdir(runtimeFolder, 0775)
+	if err != nil {
+		return []string{}, fmt.Errorf("error creating runtime folder [%s]: %w", runtimeFolder, err)
+	}
+
+	// Set the environment variables for substitution
+	oldValues := map[string]string{}
+	for varName, varValue := range settings {
+		oldValues[varName] = os.Getenv(varName)
+		os.Setenv(varName, varValue)
+	}
+	defer func() {
+		// Unset the env vars
+		for name, value := range oldValues {
+			os.Setenv(name, value)
+		}
+	}()
+
+	// Read and substitute the templates
+	deployedContainers := []string{}
+
+	// API
+	contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, apiTemplate))
+	if err != nil {
+		return []string{}, fmt.Errorf("error reading and substituting API container template: %w", err)
+	}
+	apiComposePath := filepath.Join(runtimeFolder, apiComposeFile)
+	err = ioutil.WriteFile(apiComposePath, contents, 0664)
+	if err != nil {
+		return []string{}, fmt.Errorf("could not write API container file to %s: %w", apiComposePath, err)
+	}
+	deployedContainers = append(deployedContainers, apiComposePath)
+	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, apiComposeFile))
+
+	// Node
+	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, nodeTemplate))
+	if err != nil {
+		return []string{}, fmt.Errorf("error reading and substituting node container template: %w", err)
+	}
+	nodeComposePath := filepath.Join(runtimeFolder, nodeComposeFile)
+	err = ioutil.WriteFile(nodeComposePath, contents, 0664)
+	if err != nil {
+		return []string{}, fmt.Errorf("could not write node container file to %s: %w", nodeComposePath, err)
+	}
+	deployedContainers = append(deployedContainers, nodeComposePath)
+	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, nodeComposeFile))
+
+	// Watchtower
+	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, watchtowerTemplate))
+	if err != nil {
+		return []string{}, fmt.Errorf("error reading and substituting watchtower container template: %w", err)
+	}
+	watchtowerComposePath := filepath.Join(runtimeFolder, watchtowerComposeFile)
+	err = ioutil.WriteFile(watchtowerComposePath, contents, 0664)
+	if err != nil {
+		return []string{}, fmt.Errorf("could not write watchtower container file to %s: %w", watchtowerComposePath, err)
+	}
+	deployedContainers = append(deployedContainers, watchtowerComposePath)
+	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, watchtowerComposeFile))
+
+	// Validator
+	contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, validatorTemplate))
+	if err != nil {
+		return []string{}, fmt.Errorf("error reading and substituting validator container template: %w", err)
+	}
+	validatorComposePath := filepath.Join(runtimeFolder, validatorComposeFile)
+	err = ioutil.WriteFile(validatorComposePath, contents, 0664)
+	if err != nil {
+		return []string{}, fmt.Errorf("could not write validator container file to %s: %w", validatorComposePath, err)
+	}
+	deployedContainers = append(deployedContainers, validatorComposePath)
+	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, validatorComposeFile))
+
+	// Check the EC mode to see if it needs to be deployed
+	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, eth1Template))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting execution client container template: %w", err)
+		}
+		eth1ComposePath := filepath.Join(runtimeFolder, eth1ComposeFile)
+		err = ioutil.WriteFile(eth1ComposePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write execution client container file to %s: %w", eth1ComposePath, err)
+		}
+		deployedContainers = append(deployedContainers, eth1ComposePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, eth1ComposeFile))
+	}
+
+	// Check the Fallback EC mode
+	if cfg.UseFallbackExecutionClient.Value == true && cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, eth1FallbackTemplate))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting fallback execution client container template: %w", err)
+		}
+		eth1FallbackComposePath := filepath.Join(runtimeFolder, eth1FallbackComposeFile)
+		err = ioutil.WriteFile(eth1FallbackComposePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write fallback execution client container file to %s: %w", eth1FallbackComposePath, err)
+		}
+		deployedContainers = append(deployedContainers, eth1FallbackComposePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, eth1FallbackComposeFile))
+	}
+
+	// Check the Consensus mode
+	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, eth2Template))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting consensus client container template: %w", err)
+		}
+		eth2ComposePath := filepath.Join(runtimeFolder, eth2ComposeFile)
+		err = ioutil.WriteFile(eth2ComposePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write consensus client container file to %s: %w", eth2ComposePath, err)
+		}
+		deployedContainers = append(deployedContainers, eth2ComposePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, eth2ComposeFile))
+	}
+
+	// Check the metrics containers
+	if cfg.EnableMetrics.Value == true {
+		// Grafana
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, grafanaTemplate))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting Grafana container template: %w", err)
+		}
+		grafanaComposePath := filepath.Join(runtimeFolder, grafanaComposeFile)
+		err = ioutil.WriteFile(grafanaComposePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write Grafana container file to %s: %w", grafanaComposePath, err)
+		}
+		deployedContainers = append(deployedContainers, grafanaComposePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, grafanaComposeFile))
+
+		// Node exporter
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, exporterTemplate))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting Node Exporter container template: %w", err)
+		}
+		exporterComposePath := filepath.Join(runtimeFolder, exporterComposeFile)
+		err = ioutil.WriteFile(exporterComposePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write Node Exporter container file to %s: %w", exporterComposePath, err)
+		}
+		deployedContainers = append(deployedContainers, exporterComposePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, exporterComposeFile))
+
+		// Prometheus
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, prometheusTemplate))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting Prometheus container template: %w", err)
+		}
+		prometheusComposePath := filepath.Join(runtimeFolder, prometheusComposeFile)
+		err = ioutil.WriteFile(prometheusComposePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write Prometheus container file to %s: %w", prometheusComposePath, err)
+		}
+		deployedContainers = append(deployedContainers, prometheusComposePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, prometheusComposeFile))
+	}
+
+	return deployedContainers, nil
 
 }
 
