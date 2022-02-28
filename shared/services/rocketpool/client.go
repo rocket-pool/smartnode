@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"os"
 	osUser "os/user"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -34,12 +35,38 @@ const (
 	InstallerURL     string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
 	UpdateTrackerURL string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install-update-tracker.sh"
 
-	SettingsFile       string = "user-settings.yml"
-	PrometheusTemplate string = "prometheus.tmpl"
-	PrometheusFile     string = "prometheus.yml"
+	SettingsFile             string = "user-settings.yml"
+	PrometheusConfigTemplate string = "prometheus.tmpl"
+	PrometheusFile           string = "prometheus.yml"
 
 	APIContainerSuffix string = "_api"
 	APIBinPath         string = "/go/bin/rocketpool"
+
+	templatesDir string = "templates"
+	overrideDir  string = "override"
+	runtimeDir   string = "runtime"
+
+	apiTemplate          string = "api.tmpl"
+	eth1Template         string = "eth1.tmpl"
+	eth1FallbackTemplate string = "eth1-fallback.tmpl"
+	eth2Template         string = "eth2.tmpl"
+	exporterTemplate     string = "exporter.tmpl"
+	grafanaTemplate      string = "grafana.tmpl"
+	nodeTemplate         string = "node.tmpl"
+	prometheusTemplate   string = "prometheus.tmpl"
+	validatorTemplate    string = "validator.tmpl"
+	watchtowerTemplate   string = "watchtower.tmpl"
+
+	apiComposeFile          string = "api.yml"
+	eth1ComposeFile         string = "eth1.yml"
+	eth1FallbackComposeFile string = "eth1-fallback.yml"
+	eth2ComposeFile         string = "eth2.yml"
+	exporterComposeFile     string = "exporter.yml"
+	grafanaComposeFile      string = "grafana.yml"
+	nodeComposeFile         string = "node.yml"
+	prometheusComposeFile   string = "prometheus.yml"
+	validatorComposeFile    string = "validator.yml"
+	watchtowerComposeFile   string = "watchtower.yml"
 
 	DebugColor = color.FgYellow
 )
@@ -183,7 +210,7 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, error) {
 
 // Load the Prometheus template, do an environment variable substitution, and save it
 func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error {
-	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusTemplate))
+	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusConfigTemplate))
 	if err != nil {
 		return fmt.Errorf("Error expanding Prometheus template path: %w", err)
 	}
@@ -615,6 +642,164 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 	c.maxFee = maxFee
 	c.maxPrioFee = maxPrioFee
 	c.gasLimit = gasLimit
+}
+
+// Deploys all of the appropriate docker-compose template files and provisions them based on the provided configuration
+func (c *Client) DeployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string) error {
+
+	// Check for the folders
+	runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir)
+	_, err := os.Stat(runtimeFolder)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("runtime folder [%s] does not exist", runtimeFolder)
+	}
+	templatesFolder := filepath.Join(rocketpoolDir, templatesDir)
+	_, err = os.Stat(templatesFolder)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("templates folder [%s] does not exist", templatesFolder)
+	}
+	overrideFolder := filepath.Join(rocketpoolDir, overrideDir)
+	_, err = os.Stat(overrideFolder)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("override folder [%s] does not exist", overrideFolder)
+	}
+
+	// Clear out the runtime folder and remake it
+	err = os.RemoveAll(runtimeFolder)
+	if err != nil {
+		return fmt.Errorf("error deleting runtime folder [%s]: %w", runtimeFolder, err)
+	}
+	err = os.Mkdir(runtimeFolder, 0775)
+	if err != nil {
+		return fmt.Errorf("error creating runtime folder [%s]: %w", runtimeFolder, err)
+	}
+
+	// Set the environment variables based on the config
+	settings := cfg.GenerateEnvironmentVariables()
+	oldValues := map[string]string{}
+	for varName, varValue := range settings {
+		oldValues[varName] = os.Getenv(varName)
+		os.Setenv(varName, varValue)
+	}
+	defer func() {
+		// Unset the env vars
+		for name, value := range oldValues {
+			os.Setenv(name, value)
+		}
+	}()
+
+	// Read and substitute the templates
+
+	// API
+	contents, err := envsubst.ReadFile(filepath.Join(templatesDir, apiTemplate))
+	if err != nil {
+		return fmt.Errorf("error reading and substituting API container template: %w", err)
+	}
+	err = ioutil.WriteFile(filepath.Join(runtimeDir, apiComposeFile), contents, 0664)
+	if err != nil {
+		return fmt.Errorf("could not write API container file to %s: %w", filepath.Join(runtimeDir, apiComposeFile), err)
+	}
+
+	// Node
+	contents, err = envsubst.ReadFile(filepath.Join(templatesDir, nodeTemplate))
+	if err != nil {
+		return fmt.Errorf("error reading and substituting node container template: %w", err)
+	}
+	err = ioutil.WriteFile(filepath.Join(runtimeDir, nodeComposeFile), contents, 0664)
+	if err != nil {
+		return fmt.Errorf("could not write node container file to %s: %w", filepath.Join(runtimeDir, nodeComposeFile), err)
+	}
+
+	// Watchtower
+	contents, err = envsubst.ReadFile(filepath.Join(templatesDir, watchtowerTemplate))
+	if err != nil {
+		return fmt.Errorf("error reading and substituting watchtower container template: %w", err)
+	}
+	err = ioutil.WriteFile(filepath.Join(runtimeDir, watchtowerComposeFile), contents, 0664)
+	if err != nil {
+		return fmt.Errorf("could not write watchtower container file to %s: %w", filepath.Join(runtimeDir, watchtowerComposeFile), err)
+	}
+
+	// Validator
+	contents, err = envsubst.ReadFile(filepath.Join(templatesDir, validatorTemplate))
+	if err != nil {
+		return fmt.Errorf("error reading and substituting validator container template: %w", err)
+	}
+	err = ioutil.WriteFile(filepath.Join(runtimeDir, validatorComposeFile), contents, 0664)
+	if err != nil {
+		return fmt.Errorf("could not write validator container file to %s: %w", filepath.Join(runtimeDir, validatorComposeFile), err)
+	}
+
+	// Check the EC mode to see if it needs to be deployed
+	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, eth1Template))
+		if err != nil {
+			return fmt.Errorf("error reading and substituting execution client container template: %w", err)
+		}
+		err = ioutil.WriteFile(filepath.Join(runtimeDir, eth1ComposeFile), contents, 0664)
+		if err != nil {
+			return fmt.Errorf("could not write execution client container file to %s: %w", filepath.Join(runtimeDir, eth1ComposeFile), err)
+		}
+	}
+
+	// Check the Fallback EC mode
+	if cfg.UseFallbackExecutionClient.Value == true && cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, eth1FallbackTemplate))
+		if err != nil {
+			return fmt.Errorf("error reading and substituting fallback execution client container template: %w", err)
+		}
+		err = ioutil.WriteFile(filepath.Join(runtimeDir, eth1FallbackComposeFile), contents, 0664)
+		if err != nil {
+			return fmt.Errorf("could not write fallback execution client container file to %s: %w", filepath.Join(runtimeDir, eth1FallbackComposeFile), err)
+		}
+	}
+
+	// Check the Consensus mode
+	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, eth2Template))
+		if err != nil {
+			return fmt.Errorf("error reading and substituting consensus client container template: %w", err)
+		}
+		err = ioutil.WriteFile(filepath.Join(runtimeDir, eth2ComposeFile), contents, 0664)
+		if err != nil {
+			return fmt.Errorf("could not write consensus client container file to %s: %w", filepath.Join(runtimeDir, eth2ComposeFile), err)
+		}
+	}
+
+	// Check the metrics containers
+	if cfg.EnableMetrics.Value == true {
+		// Grafana
+		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, grafanaTemplate))
+		if err != nil {
+			return fmt.Errorf("error reading and substituting Grafana container template: %w", err)
+		}
+		err = ioutil.WriteFile(filepath.Join(runtimeDir, grafanaComposeFile), contents, 0664)
+		if err != nil {
+			return fmt.Errorf("could not write Grafana container file to %s: %w", filepath.Join(runtimeDir, grafanaComposeFile), err)
+		}
+
+		// Node exporter
+		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, exporterTemplate))
+		if err != nil {
+			return fmt.Errorf("error reading and substituting Node Exporter container template: %w", err)
+		}
+		err = ioutil.WriteFile(filepath.Join(runtimeDir, exporterComposeFile), contents, 0664)
+		if err != nil {
+			return fmt.Errorf("could not write Node Exporter container file to %s: %w", filepath.Join(runtimeDir, exporterComposeFile), err)
+		}
+
+		// Prometheus
+		contents, err = envsubst.ReadFile(filepath.Join(templatesDir, prometheusTemplate))
+		if err != nil {
+			return fmt.Errorf("error reading and substituting Prometheus container template: %w", err)
+		}
+		err = ioutil.WriteFile(filepath.Join(runtimeDir, prometheusComposeFile), contents, 0664)
+		if err != nil {
+			return fmt.Errorf("could not write Prometheus container file to %s: %w", filepath.Join(runtimeDir, prometheusComposeFile), err)
+		}
+	}
+
+	return nil
 }
 
 // Load a config file
