@@ -1,6 +1,6 @@
 package config
 
-const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.6.0"
+const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.7.0"
 
 // Configuration for Nimbus
 type NimbusConfig struct {

@@ -18,11 +18,12 @@ type mainDisplay struct {
 	mainGrid      *tview.Grid
 	newUserWizard *newUserWizard
 	settingsHome  *settingsHome
-	config        *config.RocketPoolConfig
+	Config        *config.RocketPoolConfig
+	ShouldSave    bool
 }
 
 // Creates a new MainDisplay instance.
-func newMainDisplay(app *tview.Application, config *config.RocketPoolConfig) *mainDisplay {
+func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig) *mainDisplay {
 
 	// Create the main grid
 	grid := tview.NewGrid().
@@ -53,7 +54,7 @@ func newMainDisplay(app *tview.Application, config *config.RocketPoolConfig) *ma
 		app:       app,
 		content:   grid.Box,
 		mainGrid:  grid,
-		config:    config,
+		Config:    config,
 	}
 
 	// Create all of the child elements

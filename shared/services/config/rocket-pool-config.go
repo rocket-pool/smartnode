@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/alessio/shellescape"
 	"gopkg.in/yaml.v2"
@@ -91,6 +92,12 @@ type RocketPoolConfig struct {
 
 // Load configuration settings from a file
 func LoadFromFile(path string) (*RocketPoolConfig, error) {
+
+	// Return nil if the file doesn't exist
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
 
 	// Read the file
 	configBytes, err := ioutil.ReadFile(path)

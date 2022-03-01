@@ -35,7 +35,7 @@ func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 func (configPage *SmartnodeConfigPage) createContent() {
 
 	// Create the layout
-	masterConfig := configPage.home.md.config
+	masterConfig := configPage.home.md.Config
 	layout := newStandardLayout()
 	configPage.layout = layout
 	layout.createForm(&masterConfig.Smartnode.Network, "Smartnode and TX Fee Settings")

@@ -144,7 +144,7 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 		return event
 	})
 	saveButton.SetSelectedFunc(func() {
-		// TODO: SAVE
+		home.md.ShouldSave = true
 		home.md.app.Stop()
 	})
 
@@ -165,6 +165,7 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 			AddButtons([]string{"Quit", "Cancel"}).
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				if buttonIndex == 0 {
+					home.md.ShouldSave = false
 					home.md.app.Stop()
 				} else if buttonIndex == 1 {
 					home.md.app.SetRoot(home.md.pages, true)

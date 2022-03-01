@@ -29,7 +29,7 @@ func NewConsensusConfigPage(home *settingsHome) *ConsensusConfigPage {
 
 	configPage := &ConsensusConfigPage{
 		home:         home,
-		masterConfig: home.md.config,
+		masterConfig: home.md.Config,
 	}
 	configPage.createContent()
 

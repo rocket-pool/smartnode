@@ -28,7 +28,7 @@ func NewMetricsConfigPage(home *settingsHome) *MetricsConfigPage {
 
 	configPage := &MetricsConfigPage{
 		home:         home,
-		masterConfig: home.md.config,
+		masterConfig: home.md.Config,
 	}
 	configPage.createContent()
 

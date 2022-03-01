@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rivo/tview"
 	"github.com/urfave/cli"
 
 	"github.com/dustin/go-humanize"
+	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -183,6 +185,38 @@ func serviceStatus(c *cli.Context) error {
 	// Print service status
 	return rp.PrintServiceStatus(getComposeFiles(c))
 
+}
+
+// Configure the service
+func configureService(c *cli.Context) error {
+
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
+
+	app := tview.NewApplication()
+	cfg, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading user settings: %w", err)
+	}
+	md := cliconfig.NewMainDisplay(app, cfg)
+	err = app.Run()
+	if err != nil {
+		return err
+	}
+
+	// Deal with saving the config and printing the changes
+	if md.ShouldSave {
+		rp.SaveConfig(md.Config)
+		fmt.Println("Your changes have been saved!")
+	} else {
+		fmt.Println("Your changes have not been saved. Your Smartnode configuration is the same as it was before.")
+	}
+
+	return err
 }
 
 // Start the Rocket Pool service

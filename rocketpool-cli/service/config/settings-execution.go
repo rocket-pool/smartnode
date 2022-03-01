@@ -25,7 +25,7 @@ func NewExecutionConfigPage(home *settingsHome) *ExecutionConfigPage {
 
 	configPage := &ExecutionConfigPage{
 		home:         home,
-		masterConfig: home.md.config,
+		masterConfig: home.md.Config,
 	}
 	configPage.createContent()
 

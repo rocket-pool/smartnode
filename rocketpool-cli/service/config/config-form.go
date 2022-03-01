@@ -67,6 +67,16 @@ func createParameterizedCheckbox(param *config.Parameter) *parameterizedFormItem
 		SetChangedFunc(func(checked bool) {
 			param.Value = checked
 		})
+	item.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyDown, tcell.KeyTab:
+			return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+		case tcell.KeyUp, tcell.KeyBacktab:
+			return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
+		default:
+			return event
+		}
+	})
 
 	return &parameterizedFormItem{
 		parameter: param,
@@ -90,6 +100,16 @@ func createParameterizedIntField(param *config.Parameter) *parameterizedFormItem
 			} else {
 				param.Value = int(value)
 			}
+		}
+	})
+	item.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyDown, tcell.KeyTab:
+			return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+		case tcell.KeyUp, tcell.KeyBacktab:
+			return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
+		default:
+			return event
 		}
 	})
 
@@ -117,6 +137,16 @@ func createParameterizedUintField(param *config.Parameter) *parameterizedFormIte
 			}
 		}
 	})
+	item.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyDown, tcell.KeyTab:
+			return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+		case tcell.KeyUp, tcell.KeyBacktab:
+			return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
+		default:
+			return event
+		}
+	})
 
 	return &parameterizedFormItem{
 		parameter: param,
@@ -142,6 +172,16 @@ func createParameterizedUint16Field(param *config.Parameter) *parameterizedFormI
 			}
 		}
 	})
+	item.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyDown, tcell.KeyTab:
+			return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+		case tcell.KeyUp, tcell.KeyBacktab:
+			return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
+		default:
+			return event
+		}
+	})
 
 	return &parameterizedFormItem{
 		parameter: param,
@@ -159,6 +199,16 @@ func createParameterizedStringField(param *config.Parameter) *parameterizedFormI
 			item.SetText("")
 		} else {
 			param.Value = item.GetText()
+		}
+	})
+	item.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyDown, tcell.KeyTab:
+			return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+		case tcell.KeyUp, tcell.KeyBacktab:
+			return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
+		default:
+			return event
 		}
 	})
 
@@ -188,6 +238,16 @@ func createParameterizedDropDown(param *config.Parameter, descriptionBox *tview.
 			descriptionBox.SetText(descriptions[index])
 		})
 	item.SetTextOptions(" ", " ", "", "", "")
+	item.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyDown, tcell.KeyTab:
+			return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+		case tcell.KeyUp, tcell.KeyBacktab:
+			return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
+		default:
+			return event
+		}
+	})
 
 	return &parameterizedFormItem{
 		parameter: param,

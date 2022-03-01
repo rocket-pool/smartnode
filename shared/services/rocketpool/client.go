@@ -185,9 +185,22 @@ func (c *Client) Close() {
 	}
 }
 
-// Load the global config
+// Load the config
 func (c *Client) LoadConfig() (*config.RocketPoolConfig, error) {
-	return c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
+	cfg, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg == nil {
+		cfg = config.NewRocketPoolConfig()
+	}
+	return cfg, nil
+}
+
+// Save the config
+func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
+	return c.saveConfig(cfg, fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
 }
 
 // Load the Prometheus template, do an environment variable substitution, and save it
@@ -645,11 +658,11 @@ func (c *Client) saveConfig(cfg *config.RocketPoolConfig, path string) error {
 	settings := cfg.Serialize()
 	configBytes, err := yaml.Marshal(settings)
 	if err != nil {
-		return fmt.Errorf("Could not serialize settings file: %w", err)
+		return fmt.Errorf("could not serialize settings file: %w", err)
 	}
 
-	if err := ioutil.WriteFile(expandedPath, configBytes, 0); err != nil {
-		return fmt.Errorf("Could not write Rocket Pool config to %s: %w", shellescape.Quote(expandedPath), err)
+	if err := ioutil.WriteFile(expandedPath, configBytes, 0664); err != nil {
+		return fmt.Errorf("could not write Rocket Pool config to %s: %w", shellescape.Quote(expandedPath), err)
 	}
 	return nil
 }
@@ -659,7 +672,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	// Cancel if running in non-docker mode
 	if c.daemonPath != "" {
-		return "", errors.New("Command unavailable in Native Mode (with '--daemon-path' option specified).")
+		return "", errors.New("command unavailable in Native Mode (with '--daemon-path' option specified)")
 	}
 
 	// Get the expanded config path

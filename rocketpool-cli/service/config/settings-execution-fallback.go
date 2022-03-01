@@ -27,7 +27,7 @@ func NewFallbackExecutionConfigPage(home *settingsHome) *FallbackExecutionConfig
 
 	configPage := &FallbackExecutionConfigPage{
 		home:         home,
-		masterConfig: home.md.config,
+		masterConfig: home.md.Config,
 	}
 	configPage.createContent()
 

@@ -135,14 +135,14 @@ func (layout *standardLayout) refresh() {
 func (layout *standardLayout) createSettingFooter() {
 
 	// Nav bar
-	navString1 := "Tab: Next Setting   Shift-Tab: Previous Setting"
+	navString1 := "Arrow keys: Navigate   Space/Enter: Change Setting"
 	navTextView1 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
 	fmt.Fprint(navTextView1, navString1)
 
-	navString2 := "Space/Enter: Change Setting   Esc: Done, Return to Categories"
+	navString2 := "Esc: Done, Return to Categories"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).

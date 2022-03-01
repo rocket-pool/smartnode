@@ -92,7 +92,7 @@ func (param *Parameter) deserialize(serializedParams map[string]string) error {
 			if !valueType.ConvertibleTo(paramType) {
 				err = fmt.Errorf("value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
 			} else {
-				param.Value = reflect.ValueOf(value).Convert(paramType)
+				param.Value = reflect.ValueOf(value).Convert(paramType).Interface()
 			}
 		}
 	case ParameterType_Float:

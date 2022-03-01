@@ -2,12 +2,10 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"gopkg.in/yaml.v2"
 )
 
 type newUserWizard struct {
@@ -96,7 +94,7 @@ func (wiz *newUserWizard) createWelcomeModal() {
 func (wiz *newUserWizard) createNetworkModal() {
 
 	// Create the button names and descriptions from the config
-	networks := wiz.md.config.Smartnode.Network.Options
+	networks := wiz.md.Config.Smartnode.Network.Options
 	networkNames := []string{}
 	networkDescriptions := []string{}
 	for _, network := range networks {
@@ -116,7 +114,7 @@ func (wiz *newUserWizard) createNetworkModal() {
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		newNetwork := networks[buttonIndex].Value.(config.Network)
-		wiz.md.config.ChangeNetwork(newNetwork)
+		wiz.md.Config.ChangeNetwork(newNetwork)
 		wiz.md.setPage(wiz.executionModeModal.page)
 		wiz.executionModeModal.focus(0)
 	}
@@ -134,7 +132,7 @@ func (wiz *newUserWizard) createNetworkModal() {
 func (wiz *newUserWizard) createExecutionModeModal() {
 
 	// Create the button names and descriptions from the config
-	modes := wiz.md.config.ExecutionClientMode.Options
+	modes := wiz.md.Config.ExecutionClientMode.Options
 	modeNames := []string{}
 	modeDescriptions := []string{}
 	for _, mode := range modes {
@@ -155,7 +153,7 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
-		wiz.md.config.ExecutionClientMode.Value = modes[buttonIndex].Value
+		wiz.md.Config.ExecutionClientMode.Value = modes[buttonIndex].Value
 		switch modes[buttonIndex].Value {
 		case config.Mode_Local:
 			wiz.md.setPage(wiz.executionLocalModal.page)
@@ -181,7 +179,7 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 func (wiz *newUserWizard) createLocalExecutionModal() {
 
 	// Create the button names and descriptions from the config
-	clients := wiz.md.config.ExecutionClient.Options
+	clients := wiz.md.Config.ExecutionClient.Options
 	clientNames := []string{}
 	clientDescriptions := []string{}
 	for _, client := range clients {
@@ -202,7 +200,7 @@ func (wiz *newUserWizard) createLocalExecutionModal() {
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		selectedClient := clients[buttonIndex].Value.(config.ExecutionClient)
-		wiz.md.config.ExecutionClient.Value = selectedClient
+		wiz.md.Config.ExecutionClient.Value = selectedClient
 		switch selectedClient {
 		case config.ExecutionClient_Geth:
 			// Geth doesn't have any required parameters so move on
@@ -233,8 +231,8 @@ func (wiz *newUserWizard) createLocalExecutionModal() {
 func (wiz *newUserWizard) createExternalExecutionModal() {
 
 	// Create the labels
-	httpLabel := wiz.md.config.ExternalExecution.HttpUrl.Name
-	wsLabel := wiz.md.config.ExternalExecution.WsUrl.Name
+	httpLabel := wiz.md.Config.ExternalExecution.HttpUrl.Name
+	wsLabel := wiz.md.Config.ExternalExecution.WsUrl.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
@@ -247,8 +245,8 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.ExternalExecution.HttpUrl.Value = text[httpLabel]
-		wiz.md.config.ExternalExecution.WsUrl.Value = text[wsLabel]
+		wiz.md.Config.ExternalExecution.HttpUrl.Value = text[httpLabel]
+		wiz.md.Config.ExternalExecution.WsUrl.Value = text[wsLabel]
 		wiz.md.setPage(wiz.fallbackExecutionModal.page)
 		wiz.fallbackExecutionModal.focus(0)
 	}
@@ -267,7 +265,7 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 func (wiz *newUserWizard) createInfuraModal() {
 
 	// Create the labels
-	projectIdLabel := wiz.md.config.Infura.ProjectID.Name
+	projectIdLabel := wiz.md.Config.Infura.ProjectID.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
@@ -279,7 +277,7 @@ func (wiz *newUserWizard) createInfuraModal() {
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.Infura.ProjectID.Value = text[projectIdLabel]
+		wiz.md.Config.Infura.ProjectID.Value = text[projectIdLabel]
 		wiz.md.setPage(wiz.fallbackExecutionModal.page)
 		wiz.fallbackExecutionModal.focus(0)
 	}
@@ -298,7 +296,7 @@ func (wiz *newUserWizard) createInfuraModal() {
 func (wiz *newUserWizard) createFallbackExecutionModal() {
 
 	// Create the button names and descriptions from the config
-	clients := wiz.md.config.FallbackExecutionClient.Options
+	clients := wiz.md.Config.FallbackExecutionClient.Options
 	clientNames := []string{"None"}
 	clientDescriptions := []string{"Do not use a fallback client."}
 	for _, client := range clients {
@@ -319,13 +317,13 @@ func (wiz *newUserWizard) createFallbackExecutionModal() {
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
-			wiz.md.config.UseFallbackExecutionClient.Value = false
+			wiz.md.Config.UseFallbackExecutionClient.Value = false
 			wiz.md.setPage(wiz.consensusModeModal.page)
 			wiz.consensusModeModal.focus(0)
 		} else {
-			wiz.md.config.UseFallbackExecutionClient.Value = true
+			wiz.md.Config.UseFallbackExecutionClient.Value = true
 			selectedClient := clients[buttonIndex-1].Value.(config.ExecutionClient)
-			wiz.md.config.FallbackExecutionClient.Value = selectedClient
+			wiz.md.Config.FallbackExecutionClient.Value = selectedClient
 			switch selectedClient {
 			case config.ExecutionClient_Infura:
 				// Switch to the Infura dialog
@@ -352,7 +350,7 @@ func (wiz *newUserWizard) createFallbackExecutionModal() {
 func (wiz *newUserWizard) createFallbackInfuraModal() {
 
 	// Create the labels
-	projectIdLabel := wiz.md.config.FallbackInfura.ProjectID.Name
+	projectIdLabel := wiz.md.Config.FallbackInfura.ProjectID.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
@@ -364,8 +362,8 @@ func (wiz *newUserWizard) createFallbackInfuraModal() {
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.FallbackInfura.ProjectID.Value = text[projectIdLabel]
-		wiz.md.setPage(wiz.fallbackExecutionModal.page)
+		wiz.md.Config.FallbackInfura.ProjectID.Value = text[projectIdLabel]
+		wiz.md.setPage(wiz.consensusModeModal.page)
 	}
 
 	// Create the page
@@ -382,7 +380,7 @@ func (wiz *newUserWizard) createFallbackInfuraModal() {
 func (wiz *newUserWizard) createConsensusModeModal() {
 
 	// Create the button names and descriptions from the config
-	modes := wiz.md.config.ConsensusClientMode.Options
+	modes := wiz.md.Config.ConsensusClientMode.Options
 	modeNames := []string{}
 	modeDescriptions := []string{}
 	for _, mode := range modes {
@@ -403,7 +401,7 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
-		wiz.md.config.ConsensusClientMode.Value = modes[buttonIndex].Value
+		wiz.md.Config.ConsensusClientMode.Value = modes[buttonIndex].Value
 		switch modes[buttonIndex].Value {
 		case config.Mode_Local:
 			wiz.createLocalConsensusModal()
@@ -430,10 +428,10 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 func (wiz *newUserWizard) createLocalConsensusModal() {
 
 	// Get the list of clients
-	goodClients, badClients := wiz.md.config.GetCompatibleConsensusClients()
+	goodClients, badClients := wiz.md.Config.GetCompatibleConsensusClients()
 
 	// Create the button names and descriptions from the config
-	clients := wiz.md.config.ConsensusClient.Options
+	clients := wiz.md.Config.ConsensusClient.Options
 	clientNames := []string{}
 	clientDescriptions := []string{}
 	for _, client := range goodClients {
@@ -459,7 +457,7 @@ func (wiz *newUserWizard) createLocalConsensusModal() {
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		selectedClient := clients[buttonIndex].Value.(config.ConsensusClient)
-		wiz.md.config.ConsensusClient.Value = selectedClient
+		wiz.md.Config.ConsensusClient.Value = selectedClient
 		wiz.md.setPage(wiz.graffitiModal.page)
 		wiz.graffitiModal.focus()
 	}
@@ -478,7 +476,7 @@ func (wiz *newUserWizard) createLocalConsensusModal() {
 func (wiz *newUserWizard) createExternalConsensusModal() {
 
 	// Create the button names and descriptions from the config
-	clients := wiz.md.config.ExternalConsensusClient.Options
+	clients := wiz.md.Config.ExternalConsensusClient.Options
 	clientNames := []string{}
 	clientDescriptions := []string{}
 	for _, client := range clients {
@@ -498,7 +496,7 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		selectedClient := clients[buttonIndex].Value.(config.ConsensusClient)
-		wiz.md.config.ExternalConsensusClient.Value = selectedClient
+		wiz.md.Config.ExternalConsensusClient.Value = selectedClient
 		switch selectedClient {
 		case config.ConsensusClient_Lighthouse:
 			wiz.md.setPage(wiz.lighthouseExternalSettingsModal.page)
@@ -526,7 +524,7 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 func (wiz *newUserWizard) createGraffitiModal() {
 
 	// Create the labels
-	graffitiLabel := wiz.md.config.ConsensusCommon.Graffiti.Name
+	graffitiLabel := wiz.md.Config.ConsensusCommon.Graffiti.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
@@ -538,9 +536,9 @@ func (wiz *newUserWizard) createGraffitiModal() {
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.ConsensusCommon.Graffiti.Value = text[graffitiLabel]
+		wiz.md.Config.ConsensusCommon.Graffiti.Value = text[graffitiLabel]
 		// Get the selected client
-		client, err := wiz.md.config.GetSelectedConsensusClientConfig()
+		client, err := wiz.md.Config.GetSelectedConsensusClientConfig()
 		if err != nil {
 			wiz.md.app.Stop()
 			fmt.Printf("Error setting the consensus client graffiti: %s", err.Error())
@@ -584,7 +582,7 @@ func (wiz *newUserWizard) createGraffitiModal() {
 func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 
 	// Create the labels
-	checkpointSyncLabel := wiz.md.config.ConsensusCommon.CheckpointSyncProvider.Name
+	checkpointSyncLabel := wiz.md.Config.ConsensusCommon.CheckpointSyncProvider.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
@@ -598,9 +596,9 @@ func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.ConsensusCommon.CheckpointSyncProvider.Value = text[checkpointSyncLabel]
+		wiz.md.Config.ConsensusCommon.CheckpointSyncProvider.Value = text[checkpointSyncLabel]
 		// Get the selected client
-		client, err := wiz.md.config.GetSelectedConsensusClientConfig()
+		client, err := wiz.md.Config.GetSelectedConsensusClientConfig()
 		if err != nil {
 			wiz.md.app.Stop()
 			fmt.Printf("Error setting the consensus client checkpoint sync provider: %s", err.Error())
@@ -651,9 +649,9 @@ func (wiz *newUserWizard) createDoppelgangerModal() {
 	// Set up the callbacks
 	modal.done = func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
-			wiz.md.config.ConsensusCommon.DoppelgangerDetection.Value = true
+			wiz.md.Config.ConsensusCommon.DoppelgangerDetection.Value = true
 		} else {
-			wiz.md.config.ConsensusCommon.DoppelgangerDetection.Value = false
+			wiz.md.Config.ConsensusCommon.DoppelgangerDetection.Value = false
 		}
 		wiz.md.setPage(wiz.finishedModal)
 		wiz.doppelgangerDetectionModal.focus(0)
@@ -673,7 +671,7 @@ func (wiz *newUserWizard) createDoppelgangerModal() {
 func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 
 	// Create the labels
-	httpUrlLabel := wiz.md.config.ExternalLighthouse.HttpUrl.Name
+	httpUrlLabel := wiz.md.Config.ExternalLighthouse.HttpUrl.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
@@ -685,7 +683,7 @@ func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.ExternalLighthouse.HttpUrl.Value = text[httpUrlLabel]
+		wiz.md.Config.ExternalLighthouse.HttpUrl.Value = text[httpUrlLabel]
 		wiz.md.setPage(wiz.finishedModal)
 	}
 
@@ -703,8 +701,8 @@ func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 
 	// Create the labels
-	httpUrlLabel := wiz.md.config.ExternalPrysm.HttpUrl.Name
-	jsonRpcUrlLabel := wiz.md.config.ExternalPrysm.JsonRpcUrl.Name
+	httpUrlLabel := wiz.md.Config.ExternalPrysm.HttpUrl.Name
+	jsonRpcUrlLabel := wiz.md.Config.ExternalPrysm.JsonRpcUrl.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
@@ -716,8 +714,8 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.ExternalPrysm.HttpUrl.Value = text[httpUrlLabel]
-		wiz.md.config.ExternalPrysm.JsonRpcUrl.Value = text[jsonRpcUrlLabel]
+		wiz.md.Config.ExternalPrysm.HttpUrl.Value = text[httpUrlLabel]
+		wiz.md.Config.ExternalPrysm.JsonRpcUrl.Value = text[jsonRpcUrlLabel]
 		wiz.md.setPage(wiz.finishedModal)
 	}
 
@@ -735,7 +733,7 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 
 	// Create the labels
-	httpUrlLabel := wiz.md.config.ExternalTeku.HttpUrl.Name
+	httpUrlLabel := wiz.md.Config.ExternalTeku.HttpUrl.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
@@ -747,7 +745,7 @@ func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
-		wiz.md.config.ExternalTeku.HttpUrl.Value = text[httpUrlLabel]
+		wiz.md.Config.ExternalTeku.HttpUrl.Value = text[httpUrlLabel]
 		wiz.md.setPage(wiz.finishedModal)
 	}
 
@@ -777,19 +775,8 @@ func (wiz *newUserWizard) createFinishedModal() {
 		if buttonIndex == 0 {
 			wiz.md.setPage(wiz.md.settingsHome.homePage)
 		} else {
+			wiz.md.ShouldSave = true
 			wiz.md.app.Stop()
-			finalConfig := wiz.md.config.Serialize()
-			bytes, err := yaml.Marshal(finalConfig)
-			if err != nil {
-				fmt.Printf("Error serializing settings: %s", err.Error())
-			}
-			ioutil.WriteFile("settings.yml", bytes, 0664)
-
-			bytes, err = yaml.Marshal(wiz.md.config)
-			if err != nil {
-				fmt.Printf("Error serializing config: %s", err.Error())
-			}
-			ioutil.WriteFile("config.yml", bytes, 0664)
 		}
 	}
 
