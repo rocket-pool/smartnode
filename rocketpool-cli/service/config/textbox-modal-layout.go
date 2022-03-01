@@ -26,7 +26,7 @@ type textBoxModalLayout struct {
 }
 
 // Creates a new TextBoxModalLayout instance
-func newTextBoxModalLayout(app *tview.Application, width int, text string, labels []string, defaultValues []string) *textBoxModalLayout {
+func newTextBoxModalLayout(app *tview.Application, title string, width int, text string, labels []string, defaultValues []string) *textBoxModalLayout {
 
 	layout := &textBoxModalLayout{
 		app:       app,
@@ -52,17 +52,21 @@ func newTextBoxModalLayout(app *tview.Application, width int, text string, label
 		SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	spacer2 := tview.NewBox().
 		SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	spacer3 := tview.NewBox().
+		SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 
 	// The main content grid
 	contentGrid := tview.NewGrid().
-		SetRows(0, 1, height, 1).
-		AddItem(textView, 0, 0, 1, 1, 0, 0, false).
-		AddItem(spacer1, 1, 0, 1, 1, 0, 0, false).
-		AddItem(layout.controlGrid, 2, 0, 1, 1, 0, 0, true).
-		AddItem(spacer2, 3, 0, 1, 1, 0, 0, false)
+		SetRows(1, 0, 1, height, 1).
+		AddItem(spacer1, 0, 0, 1, 1, 0, 0, false).
+		AddItem(textView, 1, 0, 1, 1, 0, 0, false).
+		AddItem(spacer2, 2, 0, 1, 1, 0, 0, false).
+		AddItem(layout.controlGrid, 3, 0, 1, 1, 0, 0, true).
+		AddItem(spacer3, 4, 0, 1, 1, 0, 0, false)
 	contentGrid.
 		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
-		SetBorder(true)
+		SetBorder(true).
+		SetTitle(" " + title + " ")
 
 	// A grid with variable spaced borders that surrounds the fixed-size content grid
 	borderGrid := tview.NewGrid().
@@ -75,14 +79,14 @@ func newTextBoxModalLayout(app *tview.Application, width int, text string, label
 	borderGrid.SetRows(0, textViewHeight+height+2, 0, 1)
 
 	// Create the nav footer text view
-	navString1 := "Arrow keys: Navigate   Space/Enter: Select"
+	navString1 := "Arrow keys: Navigate     Space/Enter: Select"
 	navTextView1 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
 	fmt.Fprint(navTextView1, navString1)
 
-	navString2 := "Esc: Quit without Saving"
+	navString2 := "Esc: Go Back     Ctrl+C: Quit without Saving"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).

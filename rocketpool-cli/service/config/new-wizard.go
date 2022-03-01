@@ -63,8 +63,10 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 // ========================
 func (wiz *newUserWizard) createWelcomeModal() {
 
+	title := "[1/8] Welcome"
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		60,
 		shared.Logo+"\n\n"+
 
@@ -81,7 +83,7 @@ func (wiz *newUserWizard) createWelcomeModal() {
 		}
 	}
 
-	page := newPage(nil, "new-user-welcome", "New User Wizard > [1/8] Welcome", "", modal.borderGrid)
+	page := newPage(nil, "new-user-welcome", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 
 	wiz.welcomeModal = page
@@ -92,6 +94,8 @@ func (wiz *newUserWizard) createWelcomeModal() {
 // === 2: Select Network ===
 // =========================
 func (wiz *newUserWizard) createNetworkModal() {
+
+	title := "[2/8] Network"
 
 	// Create the button names and descriptions from the config
 	networks := wiz.md.Config.Smartnode.Network.Options
@@ -105,6 +109,7 @@ func (wiz *newUserWizard) createNetworkModal() {
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"Let's start by choosing which network you'd like to use.\n\n",
 		networkNames,
@@ -121,7 +126,7 @@ func (wiz *newUserWizard) createNetworkModal() {
 
 	// Create the page
 	wiz.networkModal = modal
-	page := newPage(nil, "new-user-network", "New User Wizard > [2/8] Network", "", modal.borderGrid)
+	page := newPage(nil, "new-user-network", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 }
@@ -130,6 +135,8 @@ func (wiz *newUserWizard) createNetworkModal() {
 // === 3: Select Execution Mode ===
 // ================================
 func (wiz *newUserWizard) createExecutionModeModal() {
+
+	title := "[3/8] Execution Client Mode"
 
 	// Create the button names and descriptions from the config
 	modes := wiz.md.Config.ExecutionClientMode.Options
@@ -143,6 +150,7 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		76,
 		"Now let's decide which mode you'd like to use for the Execution client (formerly eth1 client).\n\n"+
 			"Would you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (also known as \"Hybrid Mode\")?",
@@ -167,7 +175,7 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 
 	// Create the page
 	wiz.executionModeModal = modal
-	page := newPage(nil, "new-user-execution-mode", "New User Wizard > [3/8] Execution Client Mode", "", modal.borderGrid)
+	page := newPage(nil, "new-user-execution-mode", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -177,6 +185,8 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 // === 4a: Select Local Exection Client ===
 // ========================================
 func (wiz *newUserWizard) createLocalExecutionModal() {
+
+	title := "[4/8] Execution Client > Selection"
 
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.ExecutionClient.Options
@@ -190,6 +200,7 @@ func (wiz *newUserWizard) createLocalExecutionModal() {
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		76,
 		"Please select the Execution client you would like to use.\n\n"+
 			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth1-clients to learn more about them.",
@@ -219,7 +230,7 @@ func (wiz *newUserWizard) createLocalExecutionModal() {
 
 	// Create the page
 	wiz.executionLocalModal = modal
-	page := newPage(nil, "new-user-execution-local", "New User Wizard > [4/8] Execution Client > Selection", "", modal.borderGrid)
+	page := newPage(nil, "new-user-execution-local", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -230,6 +241,8 @@ func (wiz *newUserWizard) createLocalExecutionModal() {
 // ==========================================
 func (wiz *newUserWizard) createExternalExecutionModal() {
 
+	title := "[4/8] Execution Client (External)"
+
 	// Create the labels
 	httpLabel := wiz.md.Config.ExternalExecution.HttpUrl.Name
 	wsLabel := wiz.md.Config.ExternalExecution.WsUrl.Name
@@ -237,6 +250,7 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"Please enter the URL of the HTTP-based RPC API and the URL of the Websocket-based RPC API for your existing client.\n\n"+
 			"For example: `http://192.168.1.45:8545` and `ws://192.168.1.45:8546`",
@@ -253,7 +267,7 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 
 	// Create the page
 	wiz.executionExternalModal = modal
-	page := newPage(nil, "new-user-execution-external", "New User Wizard > [4/8] Execution Client (External)", "", modal.borderGrid)
+	page := newPage(nil, "new-user-execution-external", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -264,12 +278,15 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 // ========================
 func (wiz *newUserWizard) createInfuraModal() {
 
+	title := "[4/8] Execution Client > Infura"
+
 	// Create the labels
 	projectIdLabel := wiz.md.Config.Infura.ProjectID.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"Please enter the Project ID for your Infura Ethereum project. You can find this on the Infura website, in your Ethereum project settings.",
 		[]string{projectIdLabel},
@@ -284,7 +301,7 @@ func (wiz *newUserWizard) createInfuraModal() {
 
 	// Create the page
 	wiz.infuraModal = modal
-	page := newPage(nil, "new-user-execution-infura", "New User Wizard > [4/8] Execution Client > Infura", "", modal.borderGrid)
+	page := newPage(nil, "new-user-execution-infura", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -294,6 +311,8 @@ func (wiz *newUserWizard) createInfuraModal() {
 // === 5a: Fallback Execution Client ===
 // =====================================
 func (wiz *newUserWizard) createFallbackExecutionModal() {
+
+	title := "[5/8] Fallback Execution Client"
 
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.FallbackExecutionClient.Options
@@ -307,6 +326,7 @@ func (wiz *newUserWizard) createFallbackExecutionModal() {
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"If you would like to add a fallback Execution client, please choose it below.\n\nThe Smartnode will temporarily use this instead of your main Execution client if the main client ever fails.\nIt will switch back to the main client when it starts working again.",
 		clientNames,
@@ -338,7 +358,7 @@ func (wiz *newUserWizard) createFallbackExecutionModal() {
 
 	// Create the page
 	wiz.fallbackExecutionModal = modal
-	page := newPage(nil, "new-user-fallback-execution", "New User Wizard > [5/8] Fallback Execution Client", "", modal.borderGrid)
+	page := newPage(nil, "new-user-fallback-execution", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -349,12 +369,15 @@ func (wiz *newUserWizard) createFallbackExecutionModal() {
 // ===========================
 func (wiz *newUserWizard) createFallbackInfuraModal() {
 
+	title := "[5/8] Fallback Execution Client > Infura"
+
 	// Create the labels
 	projectIdLabel := wiz.md.Config.FallbackInfura.ProjectID.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"Please enter the Project ID for your Infura Ethereum project. You can find this on the Infura website, in your Ethereum project settings.",
 		[]string{projectIdLabel},
@@ -368,7 +391,7 @@ func (wiz *newUserWizard) createFallbackInfuraModal() {
 
 	// Create the page
 	wiz.fallbackInfuraModal = modal
-	page := newPage(nil, "new-user-fallback-execution-infura", "New User Wizard > [5/8] Fallback Execution Client > Infura", "", modal.borderGrid)
+	page := newPage(nil, "new-user-fallback-execution-infura", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -378,6 +401,8 @@ func (wiz *newUserWizard) createFallbackInfuraModal() {
 // === 6: Select Consensus Mode ===
 // ================================
 func (wiz *newUserWizard) createConsensusModeModal() {
+
+	title := "[6/8] Consensus Client Mode"
 
 	// Create the button names and descriptions from the config
 	modes := wiz.md.Config.ConsensusClientMode.Options
@@ -391,6 +416,7 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		76,
 		"Next, let's decide which mode you'd like to use for the Consensus client (formerly eth2 client).\n\n"+
 			"Would you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (also known as \"Hybrid Mode\")?",
@@ -416,7 +442,7 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 
 	// Create the page
 	wiz.consensusModeModal = modal
-	page := newPage(nil, "new-user-consensus-mode", "New User Wizard > [6/8] Consensus Client Mode", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-mode", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -426,6 +452,8 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 // === 7a: Select Local Consensus Client ===
 // =========================================
 func (wiz *newUserWizard) createLocalConsensusModal() {
+
+	title := "[7/8] Consensus Client > Selection"
 
 	// Get the list of clients
 	goodClients, badClients := wiz.md.Config.GetCompatibleConsensusClients()
@@ -447,6 +475,7 @@ func (wiz *newUserWizard) createLocalConsensusModal() {
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		76,
 		fmt.Sprintf("Please select the Consensus client you would like to use.\n\n"+
 			"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.%s", incompatibleClientWarning),
@@ -464,7 +493,7 @@ func (wiz *newUserWizard) createLocalConsensusModal() {
 
 	// Create the page
 	wiz.consensusLocalModal = modal
-	page := newPage(nil, "new-user-consensus-local", "New User Wizard > [7/8] Consensus Client > Selection", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-local", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -474,6 +503,8 @@ func (wiz *newUserWizard) createLocalConsensusModal() {
 // === 7b: Select External Consensus Client ===
 // ============================================
 func (wiz *newUserWizard) createExternalConsensusModal() {
+
+	title := "[7/8] Consensus Client (External) > Selection"
 
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.ExternalConsensusClient.Options
@@ -487,6 +518,7 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"Which Consensus client are you externally managing? Each of them has small behavioral differences, so we'll need to know which one you're using in order to connect to it properly.\n\n[orange]Note: if your client is not listed here, it isn't compatible with external management mode (Hybrid Mode).",
 		clientNames,
@@ -512,7 +544,7 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 
 	// Create the page
 	wiz.consensusExternalSelectModal = modal
-	page := newPage(nil, "new-user-consensus-external", "New User Wizard > [7/8] Consensus Client (External) > Selection", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-external", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -523,12 +555,15 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 // ====================
 func (wiz *newUserWizard) createGraffitiModal() {
 
+	title := "[7/8] Consensus Client > Graffiti"
+
 	// Create the labels
 	graffitiLabel := wiz.md.Config.ConsensusCommon.Graffiti.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"If you would like to add a short custom message to each block that your minipools propose (called the block's \"graffiti\"), please enter it here. The graffiti is limited to 16 characters max.",
 		[]string{graffitiLabel},
@@ -570,7 +605,7 @@ func (wiz *newUserWizard) createGraffitiModal() {
 
 	// Create the page
 	wiz.graffitiModal = modal
-	page := newPage(nil, "new-user-consensus-fallback", "New User Wizard > [7/8] Consensus Client > Graffiti", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-fallback", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -581,12 +616,15 @@ func (wiz *newUserWizard) createGraffitiModal() {
 // ===========================
 func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 
+	title := "[7/8] Consensus Client > Checkpoint Sync"
+
 	// Create the labels
 	checkpointSyncLabel := wiz.md.Config.ConsensusCommon.CheckpointSyncProvider.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
+		title,
 		76,
 		"Your client supports Checkpoint Sync. This powerful feature allows it to copy the most recent state from a separate Consensus client that you trust, so you don't have to wait for it to sync from scratch - you can start using it instantly!\n\n"+
 			"Take a look at our documentation for an example of how to use it:\nhttps://docs.rocketpool.net/guides/node/docker.html#eth2-checkpoint-syncing-with-infura\n\n"+
@@ -624,7 +662,7 @@ func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 
 	// Create the page
 	wiz.checkpointSyncProviderModal = modal
-	page := newPage(nil, "new-user-consensus-checkpoint", "New User Wizard > [7/8] Consensus Client > Checkpoint Sync", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-checkpoint", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -635,9 +673,12 @@ func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 // ==================================
 func (wiz *newUserWizard) createDoppelgangerModal() {
 
+	title := "[7/8] Consensus Client > Doppelganger Protection"
+
 	// Create the modal
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		76,
 		"Your client supports Doppelganger Protection. This feature can prevent your minipools from being slashed (penalized for a lot of ETH and removed from the Beacon Chain) if you accidentally run your validator keys on multiple machines at the same time.\n\n"+
 			"If enabled, whenever your validator client restarts, it will intentionally miss 2-3 attestations (for each minipool). If all of them are missed successfully, you can be confident that you are safe to start attesting.\n\n"+
@@ -659,7 +700,7 @@ func (wiz *newUserWizard) createDoppelgangerModal() {
 
 	// Create the page
 	wiz.doppelgangerDetectionModal = modal
-	page := newPage(nil, "new-user-consensus-doppelganger", "New User Wizard > [7/8] Consensus Client > Doppelganger Protection", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-doppelganger", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -670,12 +711,15 @@ func (wiz *newUserWizard) createDoppelgangerModal() {
 // ===============================
 func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 
+	title := "[7/8] Consensus Client (External) > Settings"
+
 	// Create the labels
 	httpUrlLabel := wiz.md.Config.ExternalLighthouse.HttpUrl.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"Please provide the URL of your Lighthouse client's HTTP API (for example: `http://192.168.1.40:5052`).\n\nNote that if you're running it on the same machine as the Smartnode, you cannot use `localhost` or `127.0.0.1`; you must use your machine's LAN IP address.",
 		[]string{httpUrlLabel},
@@ -689,7 +733,7 @@ func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 
 	// Create the page
 	wiz.lighthouseExternalSettingsModal = modal
-	page := newPage(nil, "new-user-consensus-external-lighthouse", "New User Wizard > [7/8] Consensus Client (External) > Settings", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-external-lighthouse", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -700,6 +744,8 @@ func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 // ==========================
 func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 
+	title := "[7/8] Consensus Client (External) > Settings"
+
 	// Create the labels
 	httpUrlLabel := wiz.md.Config.ExternalPrysm.HttpUrl.Name
 	jsonRpcUrlLabel := wiz.md.Config.ExternalPrysm.JsonRpcUrl.Name
@@ -707,6 +753,7 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"Please provide the URL of your Prysm client's HTTP API (for example: `http://192.168.1.40:5052`) and the URL of its JSON RPC API (e.g., `http://192.168.1.40:5053`).\n\nNote that if you're running it on the same machine as the Smartnode, you cannot use `localhost` or `127.0.0.1`; you must use your machine's LAN IP address.",
 		[]string{httpUrlLabel, jsonRpcUrlLabel},
@@ -721,7 +768,7 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 
 	// Create the page
 	wiz.prysmExternalSettingsModal = modal
-	page := newPage(nil, "new-user-consensus-external-prysm", "New User Wizard > [7/8] Consensus Client (External) > Settings", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-external-prysm", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -732,12 +779,15 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 // =========================
 func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 
+	title := "[7/8] Consensus Client (External) > Settings"
+
 	// Create the labels
 	httpUrlLabel := wiz.md.Config.ExternalTeku.HttpUrl.Name
 
 	// Create the modal
 	modal := newTextBoxModalLayout(
 		wiz.md.app,
+		title,
 		70,
 		"Please provide the URL of your Teku client's HTTP API (for example: `http://192.168.1.40:5052`).\n\nNote that if you're running it on the same machine as the Smartnode, you cannot use `localhost` or `127.0.0.1`; you must use your machine's LAN IP address.",
 		[]string{httpUrlLabel},
@@ -751,7 +801,7 @@ func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 
 	// Create the page
 	wiz.tekuExternalSettingsModal = modal
-	page := newPage(nil, "new-user-consensus-external-teku", "New User Wizard > [7/8] Consensus Client (External) > Settings", "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-external-teku", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -760,8 +810,11 @@ func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 // Create the finished modal
 func (wiz *newUserWizard) createFinishedModal() {
 
+	title := "[8/8] Finished"
+
 	modal := newChoiceModalLayout(
 		wiz.md.app,
+		title,
 		40,
 		"All done! You're ready to run.\n\n"+
 			"If you'd like, you can review and change all of the Smartnode and client settings next or just save and exit.",
@@ -780,7 +833,7 @@ func (wiz *newUserWizard) createFinishedModal() {
 		}
 	}
 
-	page := newPage(nil, "new-user-finished", "New User Wizard > [8/8] Finished", "", modal.borderGrid)
+	page := newPage(nil, "new-user-finished", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 
 	wiz.finishedModal = page
