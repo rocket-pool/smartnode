@@ -14,6 +14,12 @@ type ExternalLighthouseConfig struct {
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
 
+	// Custom proposal graffiti
+	Graffiti Parameter `yaml:"graffiti,omitempty"`
+
+	// Toggle for enabling doppelganger detection
+	DoppelgangerDetection Parameter `yaml:"doppelgangerDetection,omitempty"`
+
 	// The Docker Hub tag for Lighthouse
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
@@ -25,6 +31,12 @@ type ExternalLighthouseConfig struct {
 type ExternalPrysmConfig struct {
 	// The URL of the gRPC (REST) endpoint for the Beacon API
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
+
+	// Custom proposal graffiti
+	Graffiti Parameter `yaml:"graffiti,omitempty"`
+
+	// Toggle for enabling doppelganger detection
+	DoppelgangerDetection Parameter `yaml:"doppelgangerDetection,omitempty"`
 
 	// The URL of the JSON-RPC endpoint for the Validator client
 	JsonRpcUrl Parameter `yaml:"jsonRpcUrl,omitempty"`
@@ -40,6 +52,12 @@ type ExternalPrysmConfig struct {
 type ExternalTekuConfig struct {
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
+
+	// Custom proposal graffiti
+	Graffiti Parameter `yaml:"graffiti,omitempty"`
+
+	// Toggle for enabling doppelganger detection
+	DoppelgangerDetection Parameter `yaml:"doppelgangerDetection,omitempty"`
 
 	// The Docker Hub tag for Teku
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
@@ -58,7 +76,7 @@ func NewExternalExecutionConfig(config *RocketPoolConfig) *ExternalExecutionConf
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"EC_EXTERNAL_HTTP_URL"},
+			EnvironmentVariables: []string{"EC_HTTP_ENDPOINT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -70,7 +88,7 @@ func NewExternalExecutionConfig(config *RocketPoolConfig) *ExternalExecutionConf
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"EC_EXTERNAL_WS_URL"},
+			EnvironmentVariables: []string{"EC_WS_ENDPOINT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -87,7 +105,31 @@ func NewExternalLighthouseConfig(config *RocketPoolConfig) *ExternalLighthouseCo
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"CC_EXTERNAL_HTTP_URL"},
+			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		Graffiti: Parameter{
+			ID:                   GraffitiID,
+			Name:                 "Custom Graffiti",
+			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: defaultGraffiti},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"CUSTOM_GRAFFITI"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		DoppelgangerDetection: Parameter{
+			ID:                   DoppelgangerDetectionID,
+			Name:                 "Enable Doppelgänger Detection",
+			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:                 ParameterType_Bool,
+			Default:              map[Network]interface{}{Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -128,7 +170,7 @@ func NewExternalPrysmConfig(config *RocketPoolConfig) *ExternalPrysmConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"CC_EXTERNAL_HTTP_URL"},
+			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -140,7 +182,31 @@ func NewExternalPrysmConfig(config *RocketPoolConfig) *ExternalPrysmConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"CC_EXTERNAL_JSON_RPC_URL"},
+			EnvironmentVariables: []string{"CC_RPC_ENDPOINT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		Graffiti: Parameter{
+			ID:                   GraffitiID,
+			Name:                 "Custom Graffiti",
+			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: defaultGraffiti},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"CUSTOM_GRAFFITI"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		DoppelgangerDetection: Parameter{
+			ID:                   DoppelgangerDetectionID,
+			Name:                 "Enable Doppelgänger Detection",
+			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:                 ParameterType_Bool,
+			Default:              map[Network]interface{}{Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -181,7 +247,31 @@ func NewExternalTekuConfig(config *RocketPoolConfig) *ExternalTekuConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"CC_EXTERNAL_HTTP_URL"},
+			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		Graffiti: Parameter{
+			ID:                   GraffitiID,
+			Name:                 "Custom Graffiti",
+			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: defaultGraffiti},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"CUSTOM_GRAFFITI"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		DoppelgangerDetection: Parameter{
+			ID:                   DoppelgangerDetectionID,
+			Name:                 "Enable Doppelgänger Detection",
+			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:                 ParameterType_Bool,
+			Default:              map[Network]interface{}{Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -224,6 +314,8 @@ func (config *ExternalExecutionConfig) GetParameters() []*Parameter {
 func (config *ExternalLighthouseConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.HttpUrl,
+		&config.Graffiti,
+		&config.DoppelgangerDetection,
 		&config.ContainerTag,
 		&config.AdditionalVcFlags,
 	}
@@ -234,6 +326,8 @@ func (config *ExternalPrysmConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.HttpUrl,
 		&config.JsonRpcUrl,
+		&config.Graffiti,
+		&config.DoppelgangerDetection,
 		&config.ContainerTag,
 		&config.AdditionalVcFlags,
 	}
@@ -243,6 +337,8 @@ func (config *ExternalPrysmConfig) GetParameters() []*Parameter {
 func (config *ExternalTekuConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.HttpUrl,
+		&config.Graffiti,
+		&config.DoppelgangerDetection,
 		&config.ContainerTag,
 		&config.AdditionalVcFlags,
 	}

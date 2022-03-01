@@ -23,16 +23,22 @@ type ExecutionCommonConfig struct {
 }
 
 // Create a new ExecutionCommonConfig struct
-func NewExecutionCommonConfig(config *RocketPoolConfig) *ExecutionCommonConfig {
+func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *ExecutionCommonConfig {
+
+	prefix := ""
+	if isFallback {
+		prefix = "FALLBACK_"
+	}
+
 	return &ExecutionCommonConfig{
 		HttpPort: Parameter{
 			ID:                   ecHttpPortID,
 			Name:                 "HTTP Port",
-			Description:          "The port %s should use for its HTTP RPC endpoint.",
+			Description:          "The port your Execution client should use for its HTTP RPC endpoint.",
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultEcHttpPort},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariables: []string{"EC_HTTP_PORT"},
+			EnvironmentVariables: []string{prefix + "EC_HTTP_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -40,11 +46,11 @@ func NewExecutionCommonConfig(config *RocketPoolConfig) *ExecutionCommonConfig {
 		WsPort: Parameter{
 			ID:                   ecWsPortID,
 			Name:                 "Websocket Port",
-			Description:          "The port %s should use for its Websocket RPC endpoint.",
+			Description:          "The port your Execution client should use for its Websocket RPC endpoint.",
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultEcWsPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariables: []string{"EC_WS_PORT"},
+			EnvironmentVariables: []string{prefix + "EC_WS_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},

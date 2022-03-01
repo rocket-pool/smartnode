@@ -9,7 +9,27 @@ import (
 )
 
 // Constants
-const rootConfigName string = "root"
+const (
+	rootConfigName string = "root"
+
+	ApiContainerName          string = "api"
+	Eth1ContainerName         string = "eth1"
+	Eth1FallbackContainerName string = "eth1-fallback"
+	Eth2ContainerName         string = "eth2"
+	ExporterContainerName     string = "exporter"
+	GrafanaContainerName      string = "grafana"
+	NodeContainerName         string = "node"
+	PrometheusContainerName   string = "prometheus"
+	ValidatorContainerName    string = "validator"
+	WatchtowerContainerName   string = "watchtower"
+)
+
+// Defaults
+const defaultBnMetricsPort uint16 = 9100
+const defaultVcMetricsPort uint16 = 9101
+const defaultNodeMetricsPort uint16 = 9102
+const defaultExporterMetricsPort uint16 = 9103
+const defaultWatchtowerMetricsPort uint16 = 9104
 
 // The master configuration struct
 type RocketPoolConfig struct {
@@ -30,7 +50,12 @@ type RocketPoolConfig struct {
 	ExternalConsensusClient Parameter `yaml:"externalConsensusClient,omitempty"`
 
 	// Metrics settings
-	EnableMetrics Parameter `yaml:"enableMetrics,omitempty"`
+	EnableMetrics         Parameter `yaml:"enableMetrics,omitempty"`
+	BnMetricsPort         Parameter `yaml:"bnMetricsPort,omitempty"`
+	VcMetricsPort         Parameter `yaml:"vcMetricsPort,omitempty"`
+	NodeMetricsPort       Parameter `yaml:"nodeMetricsPort,omitempty"`
+	ExporterMetricsPort   Parameter `yaml:"exporterMetricsPort,omitempty"`
+	WatchtowerMetricsPort Parameter `yaml:"watchtowerMetricsPort,omitempty"`
 
 	// The Smartnode configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode"`
@@ -291,6 +316,66 @@ func NewRocketPoolConfig() *RocketPoolConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
+
+		BnMetricsPort: Parameter{
+			ID:                   "bnMetricsPort",
+			Name:                 "Beacon Node Metrics Port",
+			Description:          "The port your Consensus client's Beacon Node should expose its metrics on.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultBnMetricsPort},
+			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Prometheus},
+			EnvironmentVariables: []string{"BN_METRICS_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		VcMetricsPort: Parameter{
+			ID:                   "vcMetricsPort",
+			Name:                 "Validator Client Metrics Port",
+			Description:          "The port your validator client should expose its metrics on.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultVcMetricsPort},
+			AffectsContainers:    []ContainerID{ContainerID_Validator, ContainerID_Prometheus},
+			EnvironmentVariables: []string{"VC_METRICS_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		NodeMetricsPort: Parameter{
+			ID:                   "nodeMetricsPort",
+			Name:                 "Node Metrics Port",
+			Description:          "The port your Node container should expose its metrics on.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultNodeMetricsPort},
+			AffectsContainers:    []ContainerID{ContainerID_Node, ContainerID_Prometheus},
+			EnvironmentVariables: []string{"NODE_METRICS_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		ExporterMetricsPort: Parameter{
+			ID:                   "exporterMetricsPort",
+			Name:                 "Exporter Metrics Port",
+			Description:          "The port that Prometheus's Node Exporter should expose its metrics on.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultExporterMetricsPort},
+			AffectsContainers:    []ContainerID{ContainerID_Exporter, ContainerID_Prometheus},
+			EnvironmentVariables: []string{"EXPORTER_METRICS_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		WatchtowerMetricsPort: Parameter{
+			ID:                   "watchtowerMetricsPort",
+			Name:                 "Watchtower Metrics Port",
+			Description:          "The port your Watchtower container should expose its metrics on.\nThis is only relevant for Oracle Nodes.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultWatchtowerMetricsPort},
+			AffectsContainers:    []ContainerID{ContainerID_Watchtower, ContainerID_Prometheus},
+			EnvironmentVariables: []string{"WATCHTOWER_METRICS_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
 	}
 
 	// Set the defaults for choices
@@ -299,14 +384,14 @@ func NewRocketPoolConfig() *RocketPoolConfig {
 	config.ConsensusClientMode.Default[Network_All] = config.ConsensusClientMode.Options[0].Value
 
 	config.Smartnode = NewSmartnodeConfig(config)
-	config.ExecutionCommon = NewExecutionCommonConfig(config)
-	config.Geth = NewGethConfig(config)
-	config.Infura = NewInfuraConfig(config)
-	config.Pocket = NewPocketConfig(config)
+	config.ExecutionCommon = NewExecutionCommonConfig(config, false)
+	config.Geth = NewGethConfig(config, false)
+	config.Infura = NewInfuraConfig(config, false)
+	config.Pocket = NewPocketConfig(config, false)
 	config.ExternalExecution = NewExternalExecutionConfig(config)
-	config.FallbackExecutionCommon = NewExecutionCommonConfig(config)
-	config.FallbackInfura = NewInfuraConfig(config)
-	config.FallbackPocket = NewPocketConfig(config)
+	config.FallbackExecutionCommon = NewExecutionCommonConfig(config, true)
+	config.FallbackInfura = NewInfuraConfig(config, true)
+	config.FallbackPocket = NewPocketConfig(config, true)
 	config.FallbackExternalExecution = NewExternalExecutionConfig(config)
 	config.ConsensusCommon = NewConsensusCommonConfig(config)
 	config.Lighthouse = NewLighthouseConfig(config)
@@ -340,6 +425,11 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 		&config.ConsensusClient,
 		&config.ExternalConsensusClient,
 		&config.EnableMetrics,
+		&config.BnMetricsPort,
+		&config.VcMetricsPort,
+		&config.NodeMetricsPort,
+		&config.ExporterMetricsPort,
+		&config.WatchtowerMetricsPort,
 	}
 }
 
@@ -569,18 +659,131 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 
 	envVars := map[string]string{}
 
-	for _, param := range config.GetParameters() {
-		for _, envVar := range param.EnvironmentVariables {
-			envVars[envVar] = fmt.Sprint(param.Value)
+	// Basic variables and root parameters
+	envVars["SMARTNODE_IMAGE"] = config.Smartnode.GetSmartnodeContainerTag()
+	envVars["NETWORK"] = fmt.Sprint(config.Smartnode.Network.Value)
+	addParametersToEnvVars(config.GetParameters(), envVars)
+
+	// EC parameters
+	envVars["EC_CLIENT"] = fmt.Sprint(config.ExecutionClient.Value)
+	if config.ExecutionClientMode.Value.(Mode) == Mode_Local {
+		envVars["EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, config.ExecutionCommon.HttpPort.Value)
+		envVars["EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, config.ExecutionCommon.WsPort.Value)
+
+		// Handle open API ports
+		if config.ExecutionCommon.OpenRpcPorts.Value == true {
+			ecHttpPort := config.ExecutionCommon.HttpPort.Value.(uint16)
+			ecWsPort := config.ExecutionCommon.WsPort.Value.(uint16)
+			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\" ]", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+		}
+
+		// Common params
+		addParametersToEnvVars(config.ExecutionCommon.GetParameters(), envVars)
+
+		// Client-specific params
+		switch config.ExecutionClient.Value.(ExecutionClient) {
+		case ExecutionClient_Geth:
+			addParametersToEnvVars(config.Geth.GetParameters(), envVars)
+		case ExecutionClient_Infura:
+			addParametersToEnvVars(config.Infura.GetParameters(), envVars)
+		case ExecutionClient_Pocket:
+			addParametersToEnvVars(config.Pocket.GetParameters(), envVars)
+		}
+	} else {
+		addParametersToEnvVars(config.ExternalExecution.GetParameters(), envVars)
+	}
+
+	// Fallback EC parameters
+	envVars["FALLBACK_EC_CLIENT"] = fmt.Sprint(config.FallbackExecutionClient.Value)
+	if config.UseFallbackExecutionClient.Value == true {
+		if config.FallbackExecutionClientMode.Value.(Mode) == Mode_Local {
+			envVars["FALLBACK_EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, config.FallbackExecutionCommon.HttpPort.Value)
+			envVars["FALLBACK_EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, config.FallbackExecutionCommon.WsPort.Value)
+
+			// Handle open API ports
+			if config.FallbackExecutionCommon.OpenRpcPorts.Value == true {
+				ecHttpPort := config.FallbackExecutionCommon.HttpPort.Value.(uint16)
+				ecWsPort := config.FallbackExecutionCommon.WsPort.Value.(uint16)
+				envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\" ]", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+			}
+
+			// Common params
+			addParametersToEnvVars(config.FallbackExecutionCommon.GetParameters(), envVars)
+
+			// Client-specific params
+			switch config.FallbackExecutionClient.Value.(ExecutionClient) {
+			case ExecutionClient_Infura:
+				addParametersToEnvVars(config.FallbackInfura.GetParameters(), envVars)
+			case ExecutionClient_Pocket:
+				addParametersToEnvVars(config.FallbackPocket.GetParameters(), envVars)
+			}
+		} else {
+			envVars["FALLBACK_EC_HTTP_ENDPOINT"] = fmt.Sprint(config.FallbackExternalExecution.HttpUrl.Value)
+			envVars["FALLBACK_EC_WS_ENDPOINT"] = fmt.Sprint(config.FallbackExternalExecution.WsUrl.Value)
+			addParametersToEnvVars(config.FallbackExternalExecution.GetParameters(), envVars)
 		}
 	}
 
-	for _, subconfig := range config.GetSubconfigs() {
-		for _, param := range subconfig.GetParameters() {
-			for _, envVar := range param.EnvironmentVariables {
-				envVars[envVar] = fmt.Sprint(param.Value)
-			}
+	// CC parameters
+	if config.ConsensusClientMode.Value.(Mode) == Mode_Local {
+		envVars["CC_CLIENT"] = fmt.Sprint(config.ConsensusClient.Value)
+		envVars["CC_API_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth2ContainerName, config.ConsensusCommon.ApiPort.Value)
+
+		// Handle open API ports
+		bnOpenPorts := ""
+		if config.ConsensusCommon.OpenApiPort.Value == true {
+			ccApiPort := config.ConsensusCommon.ApiPort.Value.(uint16)
+			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\" ]", ccApiPort, ccApiPort)
 		}
+		if config.ConsensusClient.Value.(ConsensusClient) == ConsensusClient_Prysm && config.Prysm.OpenRpcPort.Value == true {
+			prysmRpcPort := config.Prysm.RpcPort.Value.(uint16)
+			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\" ]", prysmRpcPort, prysmRpcPort)
+		}
+		envVars["BN_OPEN_PORTS"] = bnOpenPorts
+
+		// Common params
+		addParametersToEnvVars(config.ConsensusCommon.GetParameters(), envVars)
+
+		// Client-specific params
+		switch config.ConsensusClient.Value.(ConsensusClient) {
+		case ConsensusClient_Lighthouse:
+			addParametersToEnvVars(config.Lighthouse.GetParameters(), envVars)
+		case ConsensusClient_Nimbus:
+			addParametersToEnvVars(config.Nimbus.GetParameters(), envVars)
+		case ConsensusClient_Prysm:
+			addParametersToEnvVars(config.Prysm.GetParameters(), envVars)
+			envVars["CC_RPC_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth2ContainerName, config.Prysm.RpcPort.Value)
+		case ConsensusClient_Teku:
+			addParametersToEnvVars(config.Teku.GetParameters(), envVars)
+		}
+	} else {
+		envVars["CC_CLIENT"] = fmt.Sprint(config.ExternalConsensusClient.Value)
+
+		switch config.ExternalConsensusClient.Value.(ConsensusClient) {
+		case ConsensusClient_Lighthouse:
+			addParametersToEnvVars(config.ExternalLighthouse.GetParameters(), envVars)
+		case ConsensusClient_Prysm:
+			addParametersToEnvVars(config.ExternalPrysm.GetParameters(), envVars)
+		case ConsensusClient_Teku:
+			addParametersToEnvVars(config.ExternalTeku.GetParameters(), envVars)
+		}
+	}
+
+	// Metrics
+	if config.EnableMetrics.Value == true {
+		addParametersToEnvVars(config.Exporter.GetParameters(), envVars)
+		addParametersToEnvVars(config.Prometheus.GetParameters(), envVars)
+		addParametersToEnvVars(config.Grafana.GetParameters(), envVars)
+
+		if config.Exporter.RootFs.Value == true {
+			envVars["EXPORTER_ROOTFS_COMMAND"] = ", \"--path.rootfs=/rootfs\""
+			envVars["EXPORTER_ROOTFS_VOLUME"] = ", /:/rootfs:ro"
+		}
+
+		if config.Prometheus.OpenPort.Value == true {
+			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf("%d:%d/tcp", config.Prometheus.Port.Value, config.Prometheus.Port.Value)
+		}
+
 	}
 
 	return envVars
@@ -606,4 +809,15 @@ func (config *RocketPoolConfig) applyAllDefaults() error {
 	}
 
 	return nil
+}
+
+// Add the parameters to the collection of environment variabes
+func addParametersToEnvVars(params []*Parameter, envVars map[string]string) {
+	for _, param := range params {
+		for _, envVar := range param.EnvironmentVariables {
+			if envVar != "" {
+				envVars[envVar] = fmt.Sprint(param.Value)
+			}
+		}
+	}
 }

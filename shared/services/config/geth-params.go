@@ -47,7 +47,13 @@ type GethConfig struct {
 }
 
 // Generates a new Geth configuration
-func NewGethConfig(config *RocketPoolConfig) *GethConfig {
+func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
+
+	prefix := ""
+	if isFallback {
+		prefix = "FALLBACK_"
+	}
+
 	return &GethConfig{
 		UnsupportedCommonParams: []string{},
 
@@ -67,7 +73,7 @@ func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 			Type:                 ParameterType_Uint,
 			Default:              map[Network]interface{}{Network_All: calculateGethCache()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"GETH_CACHE_SIZE"},
+			EnvironmentVariables: []string{prefix + "EC_CACHE_SIZE"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -79,7 +85,7 @@ func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: calculateGethPeers()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"GETH_MAX_PEERS"},
+			EnvironmentVariables: []string{prefix + "EC_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -91,7 +97,7 @@ func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultGethP2pPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"GETH_P2P_PORT"},
+			EnvironmentVariables: []string{prefix + "EC_P2P_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -103,7 +109,7 @@ func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"ETHSTATS_LABEL"},
+			EnvironmentVariables: []string{prefix + "ETHSTATS_LABEL"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
@@ -115,7 +121,7 @@ func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"ETHSTATS_LOGIN"},
+			EnvironmentVariables: []string{prefix + "ETHSTATS_LOGIN"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
@@ -127,7 +133,7 @@ func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: gethTag},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"GETH_CONTAINER_TAG"},
+			EnvironmentVariables: []string{prefix + "EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
@@ -139,7 +145,7 @@ func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"GETH_ADDITIONAL_FLAGS"},
+			EnvironmentVariables: []string{prefix + "EC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},

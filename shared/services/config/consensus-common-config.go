@@ -12,7 +12,7 @@ const DoppelgangerDetectionID string = "doppelgangerDetection"
 // Defaults
 const defaultGraffiti string = ""
 const defaultCheckpointSyncProvider string = ""
-const defaultMaxPeers uint16 = 50
+const defaultMaxPeers uint16 = 100
 const defaultP2pPort uint16 = 9001
 const defaultBnApiPort uint16 = 5052
 const defaultOpenBnApiPort bool = false
@@ -74,7 +74,7 @@ func NewConsensusCommonConfig(config *RocketPoolConfig) *ConsensusCommonConfig {
 		MaxPeers: Parameter{
 			ID:                   MaxPeersID,
 			Name:                 "Max Peers",
-			Description:          "The maximum number of peers %s should try to maintain. You can try lowering this if you have a low-resource system or a constrained network, but try to keep it above 25 or you may run into attestation issues.",
+			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultMaxPeers},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
@@ -98,7 +98,7 @@ func NewConsensusCommonConfig(config *RocketPoolConfig) *ConsensusCommonConfig {
 		ApiPort: Parameter{
 			ID:                   ApiPortID,
 			Name:                 "HTTP API Port",
-			Description:          "The port %s should run its HTTP API on.",
+			Description:          "The port your Consensus client should run its HTTP API on.",
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultBnApiPort},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Validator, ContainerID_Prometheus},
@@ -110,7 +110,7 @@ func NewConsensusCommonConfig(config *RocketPoolConfig) *ConsensusCommonConfig {
 		OpenApiPort: Parameter{
 			ID:                   OpenApiPortID,
 			Name:                 "Open API Port",
-			Description:          "Enable this to open %s's API port to your local network, so other machines can access it too.",
+			Description:          "Enable this to open your Consensus client's API port to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: defaultOpenBnApiPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
@@ -122,7 +122,7 @@ func NewConsensusCommonConfig(config *RocketPoolConfig) *ConsensusCommonConfig {
 		DoppelgangerDetection: Parameter{
 			ID:                   DoppelgangerDetectionID,
 			Name:                 "Enable Doppelgänger Detection",
-			Description:          "If enabled, %s will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, %s will disable validation duties for them to prevent you from being slashed.",
+			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: defaultDoppelgangerDetection},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
