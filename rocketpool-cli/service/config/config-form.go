@@ -192,8 +192,7 @@ func createParameterizedUint16Field(param *config.Parameter) *parameterizedFormI
 // Create a standard string field
 func createParameterizedStringField(param *config.Parameter) *parameterizedFormItem {
 	item := tview.NewInputField().
-		SetLabel(param.Name).
-		SetAcceptanceFunc(tview.InputFieldInteger)
+		SetLabel(param.Name)
 	item.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEscape {
 			item.SetText("")
