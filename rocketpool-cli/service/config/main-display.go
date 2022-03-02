@@ -61,27 +61,33 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig) *ma
 	md.settingsHome = newSettingsHome(md)
 	md.newUserWizard = newNewUserWizard(md)
 
-	// TODO: some logic to decide which one to set first
-	modal := NewDirectionalModal(DirectionalModalVertical, app).
-		SetText("[DEBUG MENU, NOT REAL]\nChoose your Destiny:").
-		AddButtons([]string{
-			"New User Wizard",
-			"Migration Wizard",
-			"Straight to Settings",
-		}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonIndex == 0 {
-				md.setPage(md.newUserWizard.welcomeModal)
-				app.SetRoot(grid, true)
-			} else if buttonIndex == 1 {
+	/*
+		// TODO: some logic to decide which one to set first
+		modal := NewDirectionalModal(DirectionalModalVertical, app).
+			SetText("[DEBUG MENU, NOT REAL]\nChoose your Destiny:").
+			AddButtons([]string{
+				"New User Wizard",
+				"Migration Wizard",
+				"Straight to Settings",
+			}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				if buttonIndex == 0 {
+					md.setPage(md.newUserWizard.welcomeModal)
+					app.SetRoot(grid, true)
+				} else if buttonIndex == 1 {
 
-			} else if buttonIndex == 2 {
-				md.setPage(md.settingsHome.homePage)
-				app.SetRoot(grid, true)
-			}
-		})
+				} else if buttonIndex == 2 {
+					md.setPage(md.settingsHome.homePage)
+					app.SetRoot(grid, true)
+				}
+			})
 
-	app.SetRoot(modal, true)
+		app.SetRoot(modal, true)
+	*/
+
+	//md.setPage(md.newUserWizard.welcomeModal)
+	md.setPage(md.settingsHome.homePage)
+	app.SetRoot(grid, true)
 	return md
 
 }

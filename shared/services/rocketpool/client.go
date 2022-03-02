@@ -690,12 +690,12 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	// Check config
 	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Unknown {
 		return "", fmt.Errorf("You haven't selected local or external mode for your Execution (ETH1) client.\nPlease run 'rocketpool service config' before running this command.")
-	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ExecutionClientMode.Value.(config.ExecutionClient) == config.ExecutionClient_Unknown {
+	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Unknown {
 		return "", errors.New("No Execution (ETH1) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Unknown {
 		return "", fmt.Errorf("You haven't selected local or external mode for your Consensus (ETH2) client.\nPlease run 'rocketpool service config' before running this command.")
-	} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClientMode.Value.(config.ConsensusClient) == config.ConsensusClient_Unknown {
+	} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Unknown {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
