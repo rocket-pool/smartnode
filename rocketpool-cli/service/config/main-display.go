@@ -23,7 +23,7 @@ type mainDisplay struct {
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig) *mainDisplay {
+func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isNew bool) *mainDisplay {
 
 	// Create the main grid
 	grid := tview.NewGrid().
@@ -85,8 +85,11 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig) *ma
 		app.SetRoot(modal, true)
 	*/
 
-	//md.setPage(md.newUserWizard.welcomeModal)
-	md.setPage(md.settingsHome.homePage)
+	if isNew {
+		md.setPage(md.newUserWizard.welcomeModal)
+	} else {
+		md.setPage(md.settingsHome.homePage)
+	}
 	app.SetRoot(grid, true)
 	return md
 

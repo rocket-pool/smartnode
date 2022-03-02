@@ -20,9 +20,12 @@ const colorBlue string = "\033[36m"
 
 func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) error {
 
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
+	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	// Get the current settings from the CLI arguments

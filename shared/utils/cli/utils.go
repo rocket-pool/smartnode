@@ -47,11 +47,16 @@ func printTransactionHashImpl(rp *rocketpool.Client, hash common.Hash, finalMess
 
 	txWatchUrl := ""
 
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
+		return
 	} else {
 		txWatchUrl = cfg.Smartnode.GetTxWatchUrl()
+	}
+	if isNew {
+		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return
 	}
 
 	hashString := hash.String()
@@ -127,9 +132,12 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 
 // Prints what network you're currently on
 func PrintNetwork(rp *rocketpool.Client) error {
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading global config: %w", err)
+	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	currentNetwork := cfg.Smartnode.Network.Value.(config.Network)

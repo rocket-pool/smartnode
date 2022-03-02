@@ -198,11 +198,11 @@ func configureService(c *cli.Context) error {
 	defer rp.Close()
 
 	app := tview.NewApplication()
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading user settings: %w", err)
 	}
-	md := cliconfig.NewMainDisplay(app, cfg)
+	md := cliconfig.NewMainDisplay(app, cfg, isNew)
 	err = app.Run()
 	if err != nil {
 		return err
@@ -230,10 +230,14 @@ func startService(c *cli.Context) error {
 	defer rp.Close()
 
 	// Update the Prometheus template with the assigned ports
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading user settings: %w", err)
 	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+	}
+
 	metricsEnabled := cfg.EnableMetrics.Value.(bool)
 	if metricsEnabled {
 		err := rp.UpdatePrometheusConfiguration(cfg.GenerateEnvironmentVariables())
@@ -419,9 +423,12 @@ func getDockerImageName(imageString string) (string, error) {
 // Gets the prefix specified for Rocket Pool's Docker containers
 func getContainerPrefix(rp *rocketpool.Client) (string, error) {
 
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return "", err
+	}
+	if isNew {
+		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	return cfg.Smartnode.ProjectName.Value.(string), nil
@@ -438,9 +445,12 @@ func pruneExecutionClient(c *cli.Context) error {
 	defer rp.Close()
 
 	// Get the config
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return err
+	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	fmt.Println("This will shut down your main ETH1 client and prune its database, freeing up disk space.")
@@ -645,9 +655,12 @@ func serviceVersion(c *cli.Context) error {
 	}
 
 	// Get config
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return err
+	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	// Get the execution client string
@@ -735,9 +748,12 @@ func resyncEth1(c *cli.Context) error {
 	defer rp.Close()
 
 	// Get the config
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return err
+	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	fmt.Println("This will delete the chain data of your primary ETH1 client and resync it from scratch.")
@@ -834,9 +850,12 @@ func resyncEth2(c *cli.Context) error {
 	defer rp.Close()
 
 	// Get the merged config
-	cfg, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return err
+	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	fmt.Println("This will delete the chain data of your ETH2 client and resync it from scratch.")

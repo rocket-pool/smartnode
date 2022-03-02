@@ -113,7 +113,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 	// Log & return
 	if !c.Bool("force") {
 		stakeUrl := ""
-		config, err := rp.LoadConfig()
+		config, _, err := rp.LoadConfig()
 		if err == nil {
 			stakeUrl = config.Smartnode.GetStakeUrl()
 		}

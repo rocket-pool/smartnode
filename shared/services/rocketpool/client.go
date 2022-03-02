@@ -186,16 +186,18 @@ func (c *Client) Close() {
 }
 
 // Load the config
-func (c *Client) LoadConfig() (*config.RocketPoolConfig, error) {
+func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	cfg, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
+	isNew := false
 	if cfg == nil {
 		cfg = config.NewRocketPoolConfig()
+		isNew = true
 	}
-	return cfg, nil
+	return cfg, isNew, nil
 }
 
 // Save the config
@@ -682,9 +684,13 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Load config
-	cfg, err := c.LoadConfig()
+	cfg, isNew, err := c.LoadConfig()
 	if err != nil {
 		return "", err
+	}
+
+	if isNew {
+		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode before starting it.")
 	}
 
 	// Check config
@@ -997,7 +1003,7 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 
 // Get the API container name
 func (c *Client) getAPIContainerName() (string, error) {
-	cfg, err := c.LoadConfig()
+	cfg, _, err := c.LoadConfig()
 	if err != nil {
 		return "", err
 	}

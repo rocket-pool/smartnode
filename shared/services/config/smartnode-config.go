@@ -3,8 +3,8 @@ package config
 import "github.com/rocket-pool/smartnode/shared"
 
 // Constants
-const smartnodeTag string = "rocketpool/smartnode:" + shared.RocketPoolVersion
-const powProxyTag string = "rocketpool/smartnode-pow-proxy:" + shared.RocketPoolVersion
+const smartnodeTag string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
+const powProxyTag string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
 const pruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
 
 // Defaults
@@ -123,7 +123,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Type:                 ParameterType_Choice,
 			Default:              map[Network]interface{}{Network_All: Network_Mainnet},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2, ContainerID_Validator},
-			EnvironmentVariables: []string{},
+			EnvironmentVariables: []string{"NETWORK"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
