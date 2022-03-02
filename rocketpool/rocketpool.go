@@ -46,14 +46,9 @@ func main() {
 	// Set application flags
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "config, c",
-			Usage: "Rocket Pool service global config absolute `path`",
-			Value: "/.rocketpool/config.yml",
-		},
-		cli.StringFlag{
 			Name:  "settings, s",
 			Usage: "Rocket Pool service user config absolute `path`",
-			Value: "/.rocketpool/settings.yml",
+			Value: "/.rocketpool/user-settings.yml",
 		},
 		cli.StringFlag{
 			Name:  "storageAddress, a",
