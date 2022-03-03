@@ -113,6 +113,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 					if buttonIndex == 1 {
 						md.ShouldSave = true
 						md.ChangeNetworks = true
+						md.ContainersToRestart = containersToRestart
 						md.app.Stop()
 					} else if buttonIndex == 0 {
 						md.setPage(md.settingsHome.homePage)
@@ -231,14 +232,14 @@ func getChangedSettingsMap(oldConfig *config.RocketPoolConfig, newConfig *config
 	// Root settings
 	oldRootParams := oldConfig.GetParameters()
 	newRootParams := newConfig.GetParameters()
-	changedSettings[oldConfig.Title] = getChangedSettings(oldRootParams, newRootParams)
+	changedSettings[oldConfig.Title] = getChangedSettings(oldRootParams, newRootParams, newConfig)
 
 	// Subconfig settings
 	oldSubconfigs := oldConfig.GetSubconfigs()
 	for name, subConfig := range newConfig.GetSubconfigs() {
 		oldParams := oldSubconfigs[name].GetParameters()
 		newParams := subConfig.GetParameters()
-		changedSettings[subConfig.GetConfigTitle()] = getChangedSettings(oldParams, newParams)
+		changedSettings[subConfig.GetConfigTitle()] = getChangedSettings(oldParams, newParams, newConfig)
 	}
 
 	return changedSettings
@@ -247,7 +248,7 @@ func getChangedSettingsMap(oldConfig *config.RocketPoolConfig, newConfig *config
 // Get all of the settings that have changed between the given parameter lists.
 // Assumes the parameter lists represent identical parameters (e.g. they have the same number of elements and
 // each element has the same ID).
-func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Parameter) []SettingsPair {
+func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Parameter, newConfig *config.RocketPoolConfig) []SettingsPair {
 	changedSettings := []SettingsPair{}
 
 	for i, param := range newParams {
@@ -258,10 +259,25 @@ func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Param
 				Name:               param.Name,
 				OldValue:           oldValString,
 				NewValue:           newValString,
-				AffectedContainers: param.AffectsContainers,
+				AffectedContainers: getAffectedContainers(param, newConfig),
 			})
 		}
 	}
 
 	return changedSettings
+}
+
+// Handles custom container overrides
+func getAffectedContainers(param *config.Parameter, cfg *config.RocketPoolConfig) []config.ContainerID {
+
+	// Nimbus doesn't operate in split mode, so all of the common VC parameters need to get redirected to the BN instead
+	if (param.ID == config.GraffitiID || param.ID == config.DoppelgangerDetectionID) &&
+		cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local &&
+		cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Nimbus {
+
+		return []config.ContainerID{config.ContainerID_Eth2}
+	}
+
+	return param.AffectsContainers
+
 }

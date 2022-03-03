@@ -4,7 +4,7 @@ const lighthouseTag string = "sigp/lighthouse:v2.1.3"
 
 // Configuration for Lighthouse
 type LighthouseConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// Common parameters that Lighthouse doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`

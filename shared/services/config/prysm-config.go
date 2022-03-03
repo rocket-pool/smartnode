@@ -14,7 +14,7 @@ const defaultPrysmOpenRpcPort bool = false
 
 // Configuration for Prysm
 type PrysmConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// Common parameters that Prysm doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`

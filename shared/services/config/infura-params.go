@@ -5,7 +5,7 @@ const infuraEventLogInterval int = 25000
 
 // Configuration for Infura
 type InfuraConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// Common parameters that Infura doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`

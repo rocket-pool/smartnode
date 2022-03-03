@@ -18,7 +18,7 @@ type mainDisplay struct {
 	mainGrid            *tview.Grid
 	newUserWizard       *newUserWizard
 	settingsHome        *settingsHome
-	previousConfig      *config.RocketPoolConfig
+	PreviousConfig      *config.RocketPoolConfig
 	Config              *config.RocketPoolConfig
 	ShouldSave          bool
 	ContainersToRestart []config.ContainerID
@@ -60,7 +60,7 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 		app:            app,
 		content:        grid.Box,
 		mainGrid:       grid,
-		previousConfig: previousConfig,
+		PreviousConfig: previousConfig,
 		Config:         config,
 	}
 

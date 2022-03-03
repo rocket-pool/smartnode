@@ -12,7 +12,7 @@ const defaultProjectName string = "rocketpool"
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	////////////////////////////
 	// User-editable settings //

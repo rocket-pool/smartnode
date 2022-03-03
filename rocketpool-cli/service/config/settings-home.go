@@ -146,7 +146,7 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 	})
 	saveButton.SetSelectedFunc(func() {
 		home.md.pages.RemovePage(reviewPageID)
-		reviewPage := NewReviewPage(home.md, home.md.previousConfig, home.md.Config)
+		reviewPage := NewReviewPage(home.md, home.md.PreviousConfig, home.md.Config)
 		home.md.pages.AddAndSwitchToPage(reviewPage.page.id, reviewPage.page.content, true)
 	})
 

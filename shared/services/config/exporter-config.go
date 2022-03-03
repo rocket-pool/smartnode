@@ -9,7 +9,7 @@ const defaultExporterPort uint16 = 9103
 
 // Configuration for Exporter
 type ExporterConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
 	RootFs Parameter `yaml:"rootFs,omitempty"`

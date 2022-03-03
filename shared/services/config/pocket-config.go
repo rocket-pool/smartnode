@@ -7,7 +7,7 @@ const pocketEventLogInterval int = 25000
 
 // Configuration for Pocket
 type PocketConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// Common parameters that Pocket doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`

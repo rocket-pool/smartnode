@@ -12,7 +12,7 @@ const defaultOpenEcApiPort bool = false
 
 // Configuration for the Execution client
 type ExecutionCommonConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// The HTTP API port
 	HttpPort Parameter `yaml:"httpPort,omitempty"`

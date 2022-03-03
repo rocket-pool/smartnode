@@ -212,8 +212,37 @@ func configureService(c *cli.Context) error {
 	if md.ShouldSave {
 		rp.SaveConfig(md.Config)
 		fmt.Println("Your changes have been saved!")
+
+		if len(md.ContainersToRestart) > 0 {
+			prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
+			fmt.Println("The following containers must be restarted for the changes to take effect:")
+			for _, container := range md.ContainersToRestart {
+				fmt.Printf("\t%s_%s\n", prefix, container)
+			}
+
+			fmt.Println()
+			for _, container := range md.ContainersToRestart {
+				fullName := fmt.Sprintf("%s_%s", prefix, container)
+				fmt.Printf("Stopping %s... ", fullName)
+				output, err := rp.StopContainer(fullName)
+				if err != nil {
+					fmt.Printf("%sfailed: %s%s\n", colorRed, err.Error(), colorReset)
+					return nil
+				}
+				if output != fullName {
+					fmt.Printf("%sfailed with unexpected output: %s%s\n", colorRed, output, colorReset)
+					return nil
+				}
+				fmt.Print("done!\n")
+			}
+
+			fmt.Println()
+			fmt.Println("Applying changes and restarting containers...")
+			return startService(c)
+		}
 	} else {
 		fmt.Println("Your changes have not been saved. Your Smartnode configuration is the same as it was before.")
+		return nil
 	}
 
 	return err
@@ -797,7 +826,7 @@ func resyncEth1(c *cli.Context) error {
 		fmt.Printf("%sWARNING: Stopping main ETH1 container failed: %s%s\n", colorYellow, err.Error(), colorReset)
 	}
 	if result != executionContainerName {
-		fmt.Printf("%sWARNING: Unexpected output while stopping main ETH1 container: %s%s\n", colorYellow, err.Error(), colorReset)
+		fmt.Printf("%sWARNING: Unexpected output while stopping main ETH1 container: %s%s\n", colorYellow, result, colorReset)
 	}
 
 	// Get ETH1 volume name
@@ -921,7 +950,7 @@ func resyncEth2(c *cli.Context) error {
 		fmt.Printf("%sWARNING: Stopping ETH2 container failed: %s%s\n", colorYellow, err.Error(), colorReset)
 	}
 	if result != beaconContainerName {
-		fmt.Printf("%sWARNING: Unexpected output while stopping ETH2 container: %s%s\n", colorYellow, err.Error(), colorReset)
+		fmt.Printf("%sWARNING: Unexpected output while stopping ETH2 container: %s%s\n", colorYellow, result, colorReset)
 	}
 
 	// Get ETH2 volume name

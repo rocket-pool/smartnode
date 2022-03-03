@@ -2,7 +2,7 @@ package config
 
 // Configuration for external Execution clients
 type ExternalExecutionConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
@@ -13,7 +13,7 @@ type ExternalExecutionConfig struct {
 
 // Configuration for external Consensus clients
 type ExternalLighthouseConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
@@ -33,7 +33,7 @@ type ExternalLighthouseConfig struct {
 
 // Configuration for an external Prysm clients
 type ExternalPrysmConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// The URL of the gRPC (REST) endpoint for the Beacon API
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
@@ -56,7 +56,7 @@ type ExternalPrysmConfig struct {
 
 // Configuration for an external Teku client
 type ExternalTekuConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`

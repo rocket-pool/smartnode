@@ -15,7 +15,7 @@ const defaultGethP2pPort uint16 = 30303
 
 // Configuration for Geth
 type GethConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// Common parameters that Geth doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`

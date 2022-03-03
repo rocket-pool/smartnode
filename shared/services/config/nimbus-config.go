@@ -4,7 +4,7 @@ const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.7.0"
 
 // Configuration for Nimbus
 type NimbusConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`

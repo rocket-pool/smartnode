@@ -4,7 +4,7 @@ const tekuTag string = "consensys/teku:22.1.1"
 
 // Configuration for Teku
 type TekuConfig struct {
-	Title string `yaml:"title`
+	Title string `yaml:"title,omitempty"`
 
 	// Common parameters that Teku doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
