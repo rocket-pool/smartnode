@@ -4,6 +4,8 @@ const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.7.0"
 
 // Configuration for Nimbus
 type NimbusConfig struct {
+	Title string `yaml:"title`
+
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
@@ -17,6 +19,8 @@ type NimbusConfig struct {
 // Generates a new Nimbus configuration
 func NewNimbusConfig(config *RocketPoolConfig) *NimbusConfig {
 	return &NimbusConfig{
+		Title: "Nimbus Settings",
+
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
@@ -64,4 +68,9 @@ func (config *NimbusConfig) GetValidatorImage() string {
 // Get the name of the client
 func (config *NimbusConfig) GetName() string {
 	return "Nimbus"
+}
+
+// The the title for the config
+func (config *NimbusConfig) GetConfigTitle() string {
+	return config.Title
 }

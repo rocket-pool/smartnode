@@ -9,6 +9,8 @@ const defaultExporterPort uint16 = 9103
 
 // Configuration for Exporter
 type ExporterConfig struct {
+	Title string `yaml:"title`
+
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
 	RootFs Parameter `yaml:"rootFs,omitempty"`
 
@@ -22,6 +24,8 @@ type ExporterConfig struct {
 // Generates a new Exporter config
 func NewExporterConfig(config *RocketPoolConfig) *ExporterConfig {
 	return &ExporterConfig{
+		Title: "Node Exporter Settings",
+
 		RootFs: Parameter{
 			ID:                   "enableRootFs",
 			Name:                 "Allow Root Filesystem Access",
@@ -67,4 +71,9 @@ func (config *ExporterConfig) GetParameters() []*Parameter {
 		&config.Port,
 		&config.ContainerTag,
 	}
+}
+
+// The the title for the config
+func (config *ExporterConfig) GetConfigTitle() string {
+	return config.Title
 }

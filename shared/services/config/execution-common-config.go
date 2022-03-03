@@ -12,6 +12,8 @@ const defaultOpenEcApiPort bool = false
 
 // Configuration for the Execution client
 type ExecutionCommonConfig struct {
+	Title string `yaml:"title`
+
 	// The HTTP API port
 	HttpPort Parameter `yaml:"httpPort,omitempty"`
 
@@ -30,7 +32,14 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 		prefix = "FALLBACK_"
 	}
 
+	title := "Common Execution Client Settings"
+	if isFallback {
+		title = "Common Fallback Execution Client Settings"
+	}
+
 	return &ExecutionCommonConfig{
+		Title: title,
+
 		HttpPort: Parameter{
 			ID:                   ecHttpPortID,
 			Name:                 "HTTP Port",
@@ -76,4 +85,9 @@ func (config *ExecutionCommonConfig) GetParameters() []*Parameter {
 		&config.WsPort,
 		&config.OpenRpcPorts,
 	}
+}
+
+// The the title for the config
+func (config *ExecutionCommonConfig) GetConfigTitle() string {
+	return config.Title
 }

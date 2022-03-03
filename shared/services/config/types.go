@@ -69,6 +69,7 @@ const (
 )
 
 type Config interface {
+	GetConfigTitle() string
 	GetParameters() []*Parameter
 }
 

@@ -2,6 +2,8 @@ package config
 
 // Configuration for external Execution clients
 type ExternalExecutionConfig struct {
+	Title string `yaml:"title`
+
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
 
@@ -11,6 +13,8 @@ type ExternalExecutionConfig struct {
 
 // Configuration for external Consensus clients
 type ExternalLighthouseConfig struct {
+	Title string `yaml:"title`
+
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
 
@@ -29,6 +33,8 @@ type ExternalLighthouseConfig struct {
 
 // Configuration for an external Prysm clients
 type ExternalPrysmConfig struct {
+	Title string `yaml:"title`
+
 	// The URL of the gRPC (REST) endpoint for the Beacon API
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
 
@@ -50,6 +56,8 @@ type ExternalPrysmConfig struct {
 
 // Configuration for an external Teku client
 type ExternalTekuConfig struct {
+	Title string `yaml:"title`
+
 	// The URL of the HTTP endpoint
 	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
 
@@ -69,6 +77,8 @@ type ExternalTekuConfig struct {
 // Generates a new ExternalExecutionConfig configuration
 func NewExternalExecutionConfig(config *RocketPoolConfig) *ExternalExecutionConfig {
 	return &ExternalExecutionConfig{
+		Title: "External Execution Client Settings",
+
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
 			Name:                 "HTTP URL",
@@ -98,6 +108,8 @@ func NewExternalExecutionConfig(config *RocketPoolConfig) *ExternalExecutionConf
 // Generates a new ExternalLighthouseClient configuration
 func NewExternalLighthouseConfig(config *RocketPoolConfig) *ExternalLighthouseConfig {
 	return &ExternalLighthouseConfig{
+		Title: "External Lighthouse Settings",
+
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
 			Name:                 "HTTP URL",
@@ -163,6 +175,8 @@ func NewExternalLighthouseConfig(config *RocketPoolConfig) *ExternalLighthouseCo
 // Generates a new ExternalPrysmConfig configuration
 func NewExternalPrysmConfig(config *RocketPoolConfig) *ExternalPrysmConfig {
 	return &ExternalPrysmConfig{
+		Title: "External Prysm Settings",
+
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
 			Name:                 "HTTP URL",
@@ -240,6 +254,8 @@ func NewExternalPrysmConfig(config *RocketPoolConfig) *ExternalPrysmConfig {
 // Generates a new ExternalTekuClient configuration
 func NewExternalTekuConfig(config *RocketPoolConfig) *ExternalTekuConfig {
 	return &ExternalTekuConfig{
+		Title: "External Teku Settings",
+
 		HttpUrl: Parameter{
 			ID:                   "httpUrl",
 			Name:                 "HTTP URL",
@@ -387,4 +403,24 @@ func (config *ExternalPrysmConfig) GetName() string {
 // Get the name of the client
 func (config *ExternalTekuConfig) GetName() string {
 	return "Teku"
+}
+
+// The the title for the config
+func (config *ExternalExecutionConfig) GetConfigTitle() string {
+	return config.Title
+}
+
+// The the title for the config
+func (config *ExternalLighthouseConfig) GetConfigTitle() string {
+	return config.Title
+}
+
+// The the title for the config
+func (config *ExternalPrysmConfig) GetConfigTitle() string {
+	return config.Title
+}
+
+// The the title for the config
+func (config *ExternalTekuConfig) GetConfigTitle() string {
+	return config.Title
 }

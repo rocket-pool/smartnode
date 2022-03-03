@@ -4,6 +4,8 @@ const lighthouseTag string = "sigp/lighthouse:v2.1.3"
 
 // Configuration for Lighthouse
 type LighthouseConfig struct {
+	Title string `yaml:"title`
+
 	// Common parameters that Lighthouse doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
@@ -20,6 +22,8 @@ type LighthouseConfig struct {
 // Generates a new Lighthouse configuration
 func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 	return &LighthouseConfig{
+		Title: "Lighthouse Settings",
+
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
@@ -80,4 +84,9 @@ func (config *LighthouseConfig) GetValidatorImage() string {
 // Get the name of the client
 func (config *LighthouseConfig) GetName() string {
 	return "Lighthouse"
+}
+
+// The the title for the config
+func (config *LighthouseConfig) GetConfigTitle() string {
+	return config.Title
 }

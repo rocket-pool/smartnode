@@ -5,6 +5,8 @@ const infuraEventLogInterval int = 25000
 
 // Configuration for Infura
 type InfuraConfig struct {
+	Title string `yaml:"title`
+
 	// Common parameters that Infura doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
@@ -32,7 +34,14 @@ func NewInfuraConfig(config *RocketPoolConfig, isFallback bool) *InfuraConfig {
 		prefix = "FALLBACK_"
 	}
 
+	title := "Infura Settings"
+	if isFallback {
+		title = "Fallback Infura Settings"
+	}
+
 	return &InfuraConfig{
+		Title: title,
+
 		CompatibleConsensusClients: []ConsensusClient{
 			ConsensusClient_Lighthouse,
 			ConsensusClient_Nimbus,
@@ -87,4 +96,9 @@ func (config *InfuraConfig) GetParameters() []*Parameter {
 		&config.ContainerTag,
 		&config.AdditionalFlags,
 	}
+}
+
+// The the title for the config
+func (config *InfuraConfig) GetConfigTitle() string {
+	return config.Title
 }

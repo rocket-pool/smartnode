@@ -7,6 +7,8 @@ const pocketEventLogInterval int = 25000
 
 // Configuration for Pocket
 type PocketConfig struct {
+	Title string `yaml:"title`
+
 	// Common parameters that Pocket doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
@@ -34,7 +36,14 @@ func NewPocketConfig(config *RocketPoolConfig, isFallback bool) *PocketConfig {
 		prefix = "FALLBACK_"
 	}
 
+	title := "Pocket Settings"
+	if isFallback {
+		title = "Fallback Pocket Settings"
+	}
+
 	return &PocketConfig{
+		Title: title,
+
 		UnsupportedCommonParams: []string{ecWsPortID},
 
 		CompatibleConsensusClients: []ConsensusClient{
@@ -93,4 +102,9 @@ func (config *PocketConfig) GetParameters() []*Parameter {
 		&config.ContainerTag,
 		&config.AdditionalFlags,
 	}
+}
+
+// The the title for the config
+func (config *PocketConfig) GetConfigTitle() string {
+	return config.Title
 }

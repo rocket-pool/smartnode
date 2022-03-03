@@ -15,6 +15,8 @@ const defaultGethP2pPort uint16 = 30303
 
 // Configuration for Geth
 type GethConfig struct {
+	Title string `yaml:"title`
+
 	// Common parameters that Geth doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
@@ -54,7 +56,14 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 		prefix = "FALLBACK_"
 	}
 
+	title := "Geth Settings"
+	if isFallback {
+		title = "Fallback Geth Settings"
+	}
+
 	return &GethConfig{
+		Title: title,
+
 		UnsupportedCommonParams: []string{},
 
 		CompatibleConsensusClients: []ConsensusClient{
@@ -192,4 +201,9 @@ func (config *GethConfig) GetParameters() []*Parameter {
 		&config.ContainerTag,
 		&config.AdditionalFlags,
 	}
+}
+
+// The the title for the config
+func (config *GethConfig) GetConfigTitle() string {
+	return config.Title
 }

@@ -62,7 +62,6 @@ func (home *settingsHome) createContent() {
 
 	// Create the category list
 	categoryList := tview.NewList().
-		//SetMainTextColor(tcell.ColorGreen).
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 			layout.descriptionBox.SetText(home.settingsSubpages[index].description)
 		})
@@ -160,18 +159,23 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 		return event
 	})
 	quitButton.SetSelectedFunc(func() {
-		modal := tview.NewModal().
-			SetText("Are you sure you want to quit?").
-			AddButtons([]string{"Quit", "Cancel"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				if buttonIndex == 0 {
-					home.md.ShouldSave = false
-					home.md.app.Stop()
-				} else if buttonIndex == 1 {
-					home.md.app.SetRoot(home.md.pages, true)
-				}
-			})
-		home.md.app.SetRoot(modal, true)
+		home.md.pages.RemovePage(reviewPageID)
+		reviewPage := NewReviewPage(home.md, home.md.previousConfig, home.md.Config)
+		home.md.pages.AddAndSwitchToPage(reviewPage.page.id, reviewPage.page.content, true)
+		/*
+			modal := tview.NewModal().
+				SetText("Are you sure you want to quit?").
+				AddButtons([]string{"Quit", "Cancel"}).
+				SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+					if buttonIndex == 0 {
+						home.md.ShouldSave = false
+						home.md.app.Stop()
+					} else if buttonIndex == 1 {
+						home.md.app.SetRoot(home.md.pages, true)
+					}
+				})
+			home.md.app.SetRoot(modal, true)
+		*/
 	})
 
 	// Create overall layout for the footer

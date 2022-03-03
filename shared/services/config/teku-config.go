@@ -4,6 +4,8 @@ const tekuTag string = "consensys/teku:22.1.1"
 
 // Configuration for Teku
 type TekuConfig struct {
+	Title string `yaml:"title`
+
 	// Common parameters that Teku doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
@@ -20,6 +22,8 @@ type TekuConfig struct {
 // Generates a new Teku configuration
 func NewTekuConfig(config *RocketPoolConfig) *TekuConfig {
 	return &TekuConfig{
+		Title: "Teku Settings",
+
 		UnsupportedCommonParams: []string{
 			DoppelgangerDetectionID,
 		},
@@ -84,4 +88,9 @@ func (config *TekuConfig) GetValidatorImage() string {
 // Get the name of the client
 func (config *TekuConfig) GetName() string {
 	return "Teku"
+}
+
+// The the title for the config
+func (config *TekuConfig) GetConfigTitle() string {
+	return config.Title
 }

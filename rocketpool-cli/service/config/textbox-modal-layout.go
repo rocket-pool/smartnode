@@ -45,7 +45,6 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 		SetTextAlign(tview.AlignCenter).
 		SetWordWrap(true).
 		SetTextColor(tview.Styles.PrimaryTextColor)
-		//SetDynamicColors(true)
 	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	textView.SetBorderPadding(0, 0, 1, 1)
 

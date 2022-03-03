@@ -20,6 +20,8 @@ const defaultDoppelgangerDetection bool = true
 
 // Common parameters shared by all of the Beacon Clients
 type ConsensusCommonConfig struct {
+	Title string `yaml:"title`
+
 	// Custom proposal graffiti
 	Graffiti Parameter `yaml:"graffiti,omitempty"`
 
@@ -45,6 +47,8 @@ type ConsensusCommonConfig struct {
 // Create a new ConsensusCommonParams struct
 func NewConsensusCommonConfig(config *RocketPoolConfig) *ConsensusCommonConfig {
 	return &ConsensusCommonConfig{
+		Title: "Common Consensus Client Settings",
+
 		Graffiti: Parameter{
 			ID:                   GraffitiID,
 			Name:                 "Custom Graffiti",
@@ -144,4 +148,9 @@ func (config *ConsensusCommonConfig) GetParameters() []*Parameter {
 		&config.OpenApiPort,
 		&config.DoppelgangerDetection,
 	}
+}
+
+// The the title for the config
+func (config *ConsensusCommonConfig) GetConfigTitle() string {
+	return config.Title
 }

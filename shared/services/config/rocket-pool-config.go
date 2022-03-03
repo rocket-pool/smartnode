@@ -34,6 +34,7 @@ const defaultWatchtowerMetricsPort uint16 = 9104
 
 // The master configuration struct
 type RocketPoolConfig struct {
+	Title string `yaml:"title`
 
 	// Execution client settings
 	ExecutionClientMode Parameter `yaml:"executionClientMode"`
@@ -125,6 +126,8 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 func NewRocketPoolConfig() *RocketPoolConfig {
 
 	config := &RocketPoolConfig{
+		Title: "Top-level Settings",
+
 		ExecutionClientMode: Parameter{
 			ID:                   "executionClientMode",
 			Name:                 "Execution Client Mode",
@@ -417,6 +420,26 @@ func NewRocketPoolConfig() *RocketPoolConfig {
 	config.applyAllDefaults()
 
 	return config
+}
+
+// Create a copy of this configuration.
+func (config *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
+	newConfig := NewRocketPoolConfig()
+
+	newParams := newConfig.GetParameters()
+	for i, param := range config.GetParameters() {
+		newParams[i].Value = param.Value
+	}
+
+	newSubconfigs := newConfig.GetSubconfigs()
+	for name, subConfig := range config.GetSubconfigs() {
+		newParams := newSubconfigs[name].GetParameters()
+		for i, param := range subConfig.GetParameters() {
+			newParams[i].Value = param.Value
+		}
+	}
+
+	return newConfig
 }
 
 // Get the parameters for this config
@@ -827,4 +850,9 @@ func addParametersToEnvVars(params []*Parameter, envVars map[string]string) {
 			}
 		}
 	}
+}
+
+// The the title for the config
+func (config *RocketPoolConfig) GetConfigTitle() string {
+	return config.Title
 }

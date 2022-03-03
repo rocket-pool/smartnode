@@ -9,6 +9,8 @@ const defaultPrometheusOpenPort bool = false
 
 // Configuration for Prometheus
 type PrometheusConfig struct {
+	Title string `yaml:"title`
+
 	// The port to serve metrics on
 	Port Parameter `yaml:"port,omitempty"`
 
@@ -22,6 +24,8 @@ type PrometheusConfig struct {
 // Generates a new Prometheus config
 func NewPrometheusConfig(config *RocketPoolConfig) *PrometheusConfig {
 	return &PrometheusConfig{
+		Title: "Prometheus Settings",
+
 		Port: Parameter{
 			ID:                   "port",
 			Name:                 "Prometheus Port",
@@ -67,4 +71,9 @@ func (config *PrometheusConfig) GetParameters() []*Parameter {
 		&config.OpenPort,
 		&config.ContainerTag,
 	}
+}
+
+// The the title for the config
+func (config *PrometheusConfig) GetConfigTitle() string {
+	return config.Title
 }

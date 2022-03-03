@@ -14,6 +14,8 @@ const defaultPrysmOpenRpcPort bool = false
 
 // Configuration for Prysm
 type PrysmConfig struct {
+	Title string `yaml:"title`
+
 	// Common parameters that Prysm doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
@@ -39,6 +41,8 @@ type PrysmConfig struct {
 // Generates a new Prysm configuration
 func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 	return &PrysmConfig{
+		Title: "Prysm Settings",
+
 		UnsupportedCommonParams: []string{
 			CheckpointSyncUrlID,
 		},
@@ -164,4 +168,9 @@ func (config *PrysmConfig) GetValidatorImage() string {
 // Get the name of the client
 func (config *PrysmConfig) GetName() string {
 	return "Prysm"
+}
+
+// The the title for the config
+func (config *PrysmConfig) GetConfigTitle() string {
+	return config.Title
 }

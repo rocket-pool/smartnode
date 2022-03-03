@@ -12,6 +12,7 @@ const defaultProjectName string = "rocketpool"
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
+	Title string `yaml:"title`
 
 	////////////////////////////
 	// User-editable settings //
@@ -80,6 +81,8 @@ type SmartnodeConfig struct {
 func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 	return &SmartnodeConfig{
+		Title: "Smartnode Settings",
+
 		ProjectName: Parameter{
 			ID:                   "projectName",
 			Name:                 "Project Name",
@@ -296,4 +299,9 @@ func (config *SmartnodeConfig) GetPowProxyContainerTag() string {
 
 func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 	return pruneProvisionerTag
+}
+
+// The the title for the config
+func (config *SmartnodeConfig) GetConfigTitle() string {
+	return config.Title
 }

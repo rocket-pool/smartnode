@@ -8,6 +8,8 @@ const defaultGrafanaPort uint16 = 3100
 
 // Configuration for Grafana
 type GrafanaConfig struct {
+	Title string `yaml:"title`
+
 	// The HTTP port to serve on
 	Port Parameter `yaml:"port,omitempty"`
 
@@ -18,6 +20,8 @@ type GrafanaConfig struct {
 // Generates a new Grafana config
 func NewGrafanaConfig(config *RocketPoolConfig) *GrafanaConfig {
 	return &GrafanaConfig{
+		Title: "Grafana Settings",
+
 		Port: Parameter{
 			ID:                   "port",
 			Name:                 "Grafana Port",
@@ -50,4 +54,9 @@ func (config *GrafanaConfig) GetParameters() []*Parameter {
 		&config.Port,
 		&config.ContainerTag,
 	}
+}
+
+// The the title for the config
+func (config *GrafanaConfig) GetConfigTitle() string {
+	return config.Title
 }
