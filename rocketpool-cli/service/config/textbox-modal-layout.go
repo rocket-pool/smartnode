@@ -18,6 +18,8 @@ type textBoxModalLayout struct {
 	contentGrid *tview.Grid
 	controlGrid *tview.Grid
 	done        func(text map[string]string)
+	back        func()
+	form        *tview.Form
 
 	firstTextbox *tview.InputField
 	textboxes    map[string]*tview.InputField
@@ -67,6 +69,19 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
 		SetBorder(true).
 		SetTitle(" " + title + " ")
+	layout.controlGrid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyEscape:
+			if layout.back != nil {
+				layout.back()
+				return nil
+			} else {
+				return event
+			}
+		default:
+			return event
+		}
+	})
 
 	// A grid with variable spaced borders that surrounds the fixed-size content grid
 	borderGrid := tview.NewGrid().
@@ -132,6 +147,7 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValu
 	form.
 		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
 		SetBorderPadding(0, 0, 0, 0)
+	layout.form = form
 
 	// Create the controls and add listeners
 	for i := 0; i < len(labels); i++ {
@@ -172,4 +188,5 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValu
 // Focuses the textbox
 func (layout *textBoxModalLayout) focus() {
 	layout.app.SetFocus(layout.firstTextbox)
+	layout.form.SetFocus(0)
 }

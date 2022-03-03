@@ -19,6 +19,7 @@ type choiceModalLayout struct {
 	contentGrid *tview.Grid
 	buttonGrid  *tview.Grid
 	done        func(buttonIndex int, buttonLabel string)
+	back        func()
 
 	// The forms embedded in the modal's frame for the buttons.
 	forms []*tview.Form
@@ -75,6 +76,19 @@ func newChoiceModalLayout(app *tview.Application, title string, width int, text 
 		SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
 		SetBorder(true).
 		SetTitle(" " + title + " ")
+	layout.buttonGrid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyEscape:
+			if layout.back != nil {
+				layout.back()
+				return nil
+			} else {
+				return event
+			}
+		default:
+			return event
+		}
+	})
 
 	// A grid with variable spaced borders that surrounds the fixed-size content grid
 	borderGrid := tview.NewGrid().

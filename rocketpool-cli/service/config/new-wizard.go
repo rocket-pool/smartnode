@@ -123,6 +123,9 @@ func (wiz *newUserWizard) createNetworkModal() {
 		wiz.md.setPage(wiz.executionModeModal.page)
 		wiz.executionModeModal.focus(0)
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.welcomeModal)
+	}
 
 	// Create the page
 	wiz.networkModal = modal
@@ -168,9 +171,14 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 			wiz.executionLocalModal.focus(0)
 		case config.Mode_External:
 			wiz.md.setPage(wiz.executionExternalModal.page)
+			wiz.executionExternalModal.focus()
 		default:
 			panic(fmt.Sprintf("Unknown execution client mode %s", modes[buttonIndex].Value))
 		}
+	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.networkModal.page)
+		wiz.networkModal.focus(0)
 	}
 
 	// Create the page
@@ -227,6 +235,10 @@ func (wiz *newUserWizard) createLocalExecutionModal() {
 			wiz.fallbackExecutionModal.focus(0)
 		}
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.executionModeModal.page)
+		wiz.executionModeModal.focus(0)
+	}
 
 	// Create the page
 	wiz.executionLocalModal = modal
@@ -264,6 +276,10 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 		wiz.md.setPage(wiz.fallbackExecutionModal.page)
 		wiz.fallbackExecutionModal.focus(0)
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.executionModeModal.page)
+		wiz.executionModeModal.focus(0)
+	}
 
 	// Create the page
 	wiz.executionExternalModal = modal
@@ -297,6 +313,10 @@ func (wiz *newUserWizard) createInfuraModal() {
 		wiz.md.Config.Infura.ProjectID.Value = text[projectIdLabel]
 		wiz.md.setPage(wiz.fallbackExecutionModal.page)
 		wiz.fallbackExecutionModal.focus(0)
+	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.executionLocalModal.page)
+		wiz.executionLocalModal.focus(0)
 	}
 
 	// Create the page
@@ -355,6 +375,10 @@ func (wiz *newUserWizard) createFallbackExecutionModal() {
 			}
 		}
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.executionModeModal.page)
+		wiz.executionModeModal.focus(0)
+	}
 
 	// Create the page
 	wiz.fallbackExecutionModal = modal
@@ -387,6 +411,10 @@ func (wiz *newUserWizard) createFallbackInfuraModal() {
 	modal.done = func(text map[string]string) {
 		wiz.md.Config.FallbackInfura.ProjectID.Value = text[projectIdLabel]
 		wiz.md.setPage(wiz.consensusModeModal.page)
+	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.fallbackExecutionModal.page)
+		wiz.fallbackExecutionModal.focus(0)
 	}
 
 	// Create the page
@@ -439,6 +467,10 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 			panic(fmt.Sprintf("Unknown execution client mode %s", modes[buttonIndex].Value))
 		}
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.fallbackExecutionModal.page)
+		wiz.fallbackExecutionModal.focus(0)
+	}
 
 	// Create the page
 	wiz.consensusModeModal = modal
@@ -490,6 +522,10 @@ func (wiz *newUserWizard) createLocalConsensusModal() {
 		wiz.md.setPage(wiz.graffitiModal.page)
 		wiz.graffitiModal.focus()
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.consensusModeModal.page)
+		wiz.consensusModeModal.focus(0)
+	}
 
 	// Create the page
 	wiz.consensusLocalModal = modal
@@ -509,10 +545,8 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.ExternalConsensusClient.Options
 	clientNames := []string{}
-	clientDescriptions := []string{}
 	for _, client := range clients {
 		clientNames = append(clientNames, client.Name)
-		clientDescriptions = append(clientDescriptions, client.Description)
 	}
 
 	// Create the modal
@@ -540,6 +574,10 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 			wiz.md.setPage(wiz.tekuExternalSettingsModal.page)
 			wiz.tekuExternalSettingsModal.focus()
 		}
+	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.consensusModeModal.page)
+		wiz.consensusModeModal.focus(0)
 	}
 
 	// Create the page
@@ -602,6 +640,10 @@ func (wiz *newUserWizard) createGraffitiModal() {
 			wiz.md.setPage(wiz.finishedModal)
 		}
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.consensusModeModal.page)
+		wiz.consensusModeModal.focus(0)
+	}
 
 	// Create the page
 	wiz.graffitiModal = modal
@@ -659,6 +701,10 @@ func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 			wiz.md.setPage(wiz.finishedModal)
 		}
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.graffitiModal.page)
+		wiz.graffitiModal.focus()
+	}
 
 	// Create the page
 	wiz.checkpointSyncProviderModal = modal
@@ -697,6 +743,10 @@ func (wiz *newUserWizard) createDoppelgangerModal() {
 		wiz.md.setPage(wiz.finishedModal)
 		wiz.doppelgangerDetectionModal.focus(0)
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.graffitiModal.page)
+		wiz.graffitiModal.focus()
+	}
 
 	// Create the page
 	wiz.doppelgangerDetectionModal = modal
@@ -729,6 +779,10 @@ func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 	modal.done = func(text map[string]string) {
 		wiz.md.Config.ExternalLighthouse.HttpUrl.Value = text[httpUrlLabel]
 		wiz.md.setPage(wiz.finishedModal)
+	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.consensusModeModal.page)
+		wiz.consensusModeModal.focus(0)
 	}
 
 	// Create the page
@@ -765,6 +819,10 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 		wiz.md.Config.ExternalPrysm.JsonRpcUrl.Value = text[jsonRpcUrlLabel]
 		wiz.md.setPage(wiz.finishedModal)
 	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.consensusModeModal.page)
+		wiz.consensusModeModal.focus(0)
+	}
 
 	// Create the page
 	wiz.prysmExternalSettingsModal = modal
@@ -797,6 +855,10 @@ func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 	modal.done = func(text map[string]string) {
 		wiz.md.Config.ExternalTeku.HttpUrl.Value = text[httpUrlLabel]
 		wiz.md.setPage(wiz.finishedModal)
+	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.consensusModeModal.page)
+		wiz.consensusModeModal.focus(0)
 	}
 
 	// Create the page
