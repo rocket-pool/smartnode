@@ -728,7 +728,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	// Set up environment variables and deploy the template config files
 	settings := cfg.GenerateEnvironmentVariables()
 	settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
-	settings["ROCKET_POOL_VERSION"] = shared.RocketPoolVersion
+	settings["ROCKET_POOL_VERSION"] = shellescape.Quote(shared.RocketPoolVersion)
 
 	// Deploy the templates and run environment variable substitution on them
 	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
@@ -739,7 +739,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	// Set up all of the environment variables to pass to the run command
 	env := []string{}
 	for key, value := range settings {
-		env = append(env, fmt.Sprintf("%s=%s", key, value))
+		env = append(env, fmt.Sprintf("%s=%s", key, shellescape.Quote(value)))
 	}
 
 	// Include all of the relevant docker compose definition files

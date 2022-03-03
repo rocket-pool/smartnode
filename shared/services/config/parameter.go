@@ -76,7 +76,9 @@ func (param *Parameter) deserialize(serializedParams map[string]string) error {
 	case ParameterType_Uint:
 		param.Value, err = strconv.ParseUint(value, 0, 0)
 	case ParameterType_Uint16:
-		param.Value, err = strconv.ParseUint(value, 0, 16)
+		var result uint64
+		result, err = strconv.ParseUint(value, 0, 16)
+		param.Value = uint16(result)
 	case ParameterType_Bool:
 		param.Value, err = strconv.ParseBool(value)
 	case ParameterType_String:

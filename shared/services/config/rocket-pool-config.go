@@ -704,7 +704,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		if config.ExecutionCommon.OpenRpcPorts.Value == true {
 			ecHttpPort := config.ExecutionCommon.HttpPort.Value.(uint16)
 			ecWsPort := config.ExecutionCommon.WsPort.Value.(uint16)
-			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\" ]", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
 		}
 
 		// Common params
@@ -734,7 +734,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			if config.FallbackExecutionCommon.OpenRpcPorts.Value == true {
 				ecHttpPort := config.FallbackExecutionCommon.HttpPort.Value.(uint16)
 				ecWsPort := config.FallbackExecutionCommon.WsPort.Value.(uint16)
-				envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\" ]", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+				envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
 			}
 
 			// Common params
@@ -763,11 +763,11 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		bnOpenPorts := ""
 		if config.ConsensusCommon.OpenApiPort.Value == true {
 			ccApiPort := config.ConsensusCommon.ApiPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\" ]", ccApiPort, ccApiPort)
+			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", ccApiPort, ccApiPort)
 		}
 		if config.ConsensusClient.Value.(ConsensusClient) == ConsensusClient_Prysm && config.Prysm.OpenRpcPort.Value == true {
 			prysmRpcPort := config.Prysm.RpcPort.Value.(uint16)
-			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\" ]", prysmRpcPort, prysmRpcPort)
+			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", prysmRpcPort, prysmRpcPort)
 		}
 		envVars["BN_OPEN_PORTS"] = bnOpenPorts
 
