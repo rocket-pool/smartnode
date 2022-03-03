@@ -11,7 +11,7 @@ import (
 type settingsHome struct {
 	homePage         *page
 	saveButton       *tview.Button
-	quitButton       *tview.Button
+	wizardButton     *tview.Button
 	categoryList     *tview.List
 	settingsSubpages []*page
 	content          tview.Primitive
@@ -71,7 +71,7 @@ func (home *settingsHome) createContent() {
 
 	// Set tab to switch to the save and quit buttons
 	categoryList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyTab {
+		if event.Key() == tcell.KeyTab || event.Key() == tcell.KeyBacktab {
 			home.md.app.SetFocus(home.saveButton)
 			return nil
 		}
@@ -103,7 +103,7 @@ func (home *settingsHome) createContent() {
 func (home *settingsHome) createFooter() (tview.Primitive, int) {
 
 	// Nav bar
-	navString1 := "Arrow keys: Navigate   Space/Enter: Select"
+	navString1 := "Arrow keys: Navigate             Space/Enter: Select"
 	navTextView1 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
@@ -114,7 +114,7 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 		AddItem(nil, 0, 1, false)
 	fmt.Fprint(navTextView1, navString1)
 
-	navString2 := "Tab: Go to Save / Exit Buttons"
+	navString2 := "Tab: Go to the Buttons   Ctrl+C: Quit without Saving"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
@@ -126,64 +126,53 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 	fmt.Fprint(navTextView2, navString2)
 
 	// Save and Quit buttons
-	saveButton := tview.NewButton("Save and Exit")
-	quitButton := tview.NewButton("Quit without Saving")
+	saveButton := tview.NewButton("Review Changes and Save")
+	wizardButton := tview.NewButton("Open the Config Wizard")
 	home.saveButton = saveButton
-	home.quitButton = quitButton
+	home.wizardButton = wizardButton
 
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyTab {
+		if event.Key() == tcell.KeyTab || event.Key() == tcell.KeyBacktab {
 			home.md.app.SetFocus(home.categoryList)
 			return nil
 		} else if event.Key() == tcell.KeyRight ||
-			event.Key() == tcell.KeyLeft {
-			home.md.app.SetFocus(quitButton)
+			event.Key() == tcell.KeyLeft ||
+			event.Key() == tcell.KeyUp ||
+			event.Key() == tcell.KeyDown {
+			home.md.app.SetFocus(wizardButton)
 			return nil
 		}
 		return event
 	})
 	saveButton.SetSelectedFunc(func() {
-		home.md.ShouldSave = true
-		home.md.app.Stop()
+		home.md.pages.RemovePage(reviewPageID)
+		reviewPage := NewReviewPage(home.md, home.md.previousConfig, home.md.Config)
+		home.md.pages.AddAndSwitchToPage(reviewPage.page.id, reviewPage.page.content, true)
 	})
 
-	quitButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyTab {
+	wizardButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyTab || event.Key() == tcell.KeyBacktab {
 			home.md.app.SetFocus(home.categoryList)
 			return nil
 		} else if event.Key() == tcell.KeyRight ||
-			event.Key() == tcell.KeyLeft {
+			event.Key() == tcell.KeyLeft ||
+			event.Key() == tcell.KeyUp ||
+			event.Key() == tcell.KeyDown {
 			home.md.app.SetFocus(saveButton)
 			return nil
 		}
 		return event
 	})
-	quitButton.SetSelectedFunc(func() {
-		home.md.pages.RemovePage(reviewPageID)
-		reviewPage := NewReviewPage(home.md, home.md.previousConfig, home.md.Config)
-		home.md.pages.AddAndSwitchToPage(reviewPage.page.id, reviewPage.page.content, true)
-		/*
-			modal := tview.NewModal().
-				SetText("Are you sure you want to quit?").
-				AddButtons([]string{"Quit", "Cancel"}).
-				SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-					if buttonIndex == 0 {
-						home.md.ShouldSave = false
-						home.md.app.Stop()
-					} else if buttonIndex == 1 {
-						home.md.app.SetRoot(home.md.pages, true)
-					}
-				})
-			home.md.app.SetRoot(modal, true)
-		*/
+	wizardButton.SetSelectedFunc(func() {
+		home.md.setPage(home.md.newUserWizard.welcomeModal)
 	})
 
 	// Create overall layout for the footer
 	buttonBar := tview.NewFlex().
 		AddItem(nil, 0, 3, false).
-		AddItem(saveButton, 21, 1, false).
+		AddItem(saveButton, 25, 1, false).
 		AddItem(nil, 0, 1, false).
-		AddItem(quitButton, 21, 1, false).
+		AddItem(wizardButton, 24, 1, false).
 		AddItem(nil, 0, 3, false)
 
 	footer := tview.NewFlex().SetDirection(tview.FlexRow).

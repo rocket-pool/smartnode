@@ -11,16 +11,17 @@ import (
 
 // This represents the primary TUI for the configuration command
 type mainDisplay struct {
-	navHeader      *tview.TextView
-	pages          *tview.Pages
-	app            *tview.Application
-	content        *tview.Box
-	mainGrid       *tview.Grid
-	newUserWizard  *newUserWizard
-	settingsHome   *settingsHome
-	previousConfig *config.RocketPoolConfig
-	Config         *config.RocketPoolConfig
-	ShouldSave     bool
+	navHeader           *tview.TextView
+	pages               *tview.Pages
+	app                 *tview.Application
+	content             *tview.Box
+	mainGrid            *tview.Grid
+	newUserWizard       *newUserWizard
+	settingsHome        *settingsHome
+	previousConfig      *config.RocketPoolConfig
+	Config              *config.RocketPoolConfig
+	ShouldSave          bool
+	ContainersToRestart []config.ContainerID
 }
 
 // Creates a new MainDisplay instance.

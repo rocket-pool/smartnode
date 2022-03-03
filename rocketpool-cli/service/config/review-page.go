@@ -59,12 +59,14 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		}
 	}
 
+	containersToRestart := []config.ContainerID{}
 	if changeString == "" {
 		changeString = "<No changes>"
 	} else {
 		changeString += "The following containers will be restarted for these changes to take effect:"
 		for container, _ := range totalAffectedContainers {
 			changeString += fmt.Sprintf("\n\t%v", container)
+			containersToRestart = append(containersToRestart, container)
 		}
 	}
 	changeBox.SetText(changeString)
@@ -95,7 +97,9 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		}
 	})
 	saveButton.SetSelectedFunc(func() {
-		md.ShouldSave = false
+		// Save when selected
+		md.ShouldSave = true
+		md.ContainersToRestart = containersToRestart
 		md.app.Stop()
 	})
 
@@ -154,7 +158,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	borderGrid.AddItem(contentGrid, 1, 1, 1, 1, 0, 0, true)
 
 	// Get the total content height, including spacers and borders
-	borderGrid.SetRows(1, 0, 1, 1)
+	borderGrid.SetRows(1, 0, 1, 1, 1)
 
 	// Create the nav footer text view
 	navString1 := "Arrow keys: Navigate     Space/Enter: Select"
