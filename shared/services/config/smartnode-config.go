@@ -236,10 +236,10 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 // Get the parameters for this config
 func (config *SmartnodeConfig) GetParameters() []*Parameter {
 	return []*Parameter{
+		&config.Network,
 		&config.ProjectName,
 		&config.DataPath,
 		&config.ValidatorRestartCommand,
-		&config.Network,
 		&config.ManualMaxFee,
 		&config.PriorityFee,
 		&config.RplClaimGasThreshold,

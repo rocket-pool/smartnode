@@ -22,6 +22,7 @@ type mainDisplay struct {
 	Config              *config.RocketPoolConfig
 	ShouldSave          bool
 	ContainersToRestart []config.ContainerID
+	ChangeNetworks      bool
 }
 
 // Creates a new MainDisplay instance.

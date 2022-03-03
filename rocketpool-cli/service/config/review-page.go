@@ -32,6 +32,12 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	// Get the map of changed settings by category
 	changedSettings := getChangedSettingsMap(oldConfig, newConfig)
 
+	// Handle network changes (because it's a special case)
+	changeNetworks := false
+	if oldConfig.Smartnode.Network.Value != newConfig.Smartnode.Network.Value {
+		changeNetworks = true
+	}
+
 	// Create a list of all of the container IDs that need to be restarted
 	totalAffectedContainers := map[config.ContainerID]bool{}
 	for _, settingList := range changedSettings {
@@ -96,11 +102,29 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 			return event
 		}
 	})
+	// Save when selected
 	saveButton.SetSelectedFunc(func() {
-		// Save when selected
-		md.ShouldSave = true
-		md.ContainersToRestart = containersToRestart
-		md.app.Stop()
+		if changeNetworks {
+			// Network changes need to be handled specially
+			modal := tview.NewModal().
+				SetText("WARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted once you save and run these changes!").
+				AddButtons([]string{"Cancel!", "Ok, I'm Ready"}).
+				SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+					if buttonIndex == 1 {
+						md.ShouldSave = true
+						md.ChangeNetworks = true
+						md.app.Stop()
+					} else if buttonIndex == 0 {
+						md.setPage(md.settingsHome.homePage)
+						md.app.SetRoot(md.mainGrid, true)
+					}
+				})
+			md.app.SetRoot(modal, true)
+		} else {
+			md.ShouldSave = true
+			md.ContainersToRestart = containersToRestart
+			md.app.Stop()
+		}
 	})
 
 	buttonGrid := tview.NewFlex().
