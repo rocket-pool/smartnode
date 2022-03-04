@@ -27,6 +27,8 @@ type newUserWizard struct {
 	lighthouseExternalSettingsModal *textBoxModalLayout
 	prysmExternalSettingsModal      *textBoxModalLayout
 	tekuExternalSettingsModal       *textBoxModalLayout
+	externalGraffitiModal           *textBoxModalLayout
+	metricsModal                    *choiceModalLayout
 	finishedModal                   *page
 }
 
@@ -52,6 +54,8 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 	wiz.createLighthouseExternalSettingsModal()
 	wiz.createPrysmExternalSettingsModal()
 	wiz.createTekuExternalSettingsModal()
+	wiz.createExternalGraffitiModal()
+	wiz.createMetricsModal()
 	wiz.createFinishedModal()
 
 	return wiz
@@ -63,7 +67,7 @@ func newNewUserWizard(md *mainDisplay) *newUserWizard {
 // ========================
 func (wiz *newUserWizard) createWelcomeModal() {
 
-	title := "[1/8] Welcome"
+	title := "[1/9] Welcome"
 	modal := newChoiceModalLayout(
 		wiz.md.app,
 		title,
@@ -95,7 +99,7 @@ func (wiz *newUserWizard) createWelcomeModal() {
 // =========================
 func (wiz *newUserWizard) createNetworkModal() {
 
-	title := "[2/8] Network"
+	title := "[2/9] Network"
 
 	// Create the button names and descriptions from the config
 	networks := wiz.md.Config.Smartnode.Network.Options
@@ -139,7 +143,7 @@ func (wiz *newUserWizard) createNetworkModal() {
 // ================================
 func (wiz *newUserWizard) createExecutionModeModal() {
 
-	title := "[3/8] Execution Client Mode"
+	title := "[3/9] Execution Client Mode"
 
 	// Create the button names and descriptions from the config
 	modes := wiz.md.Config.ExecutionClientMode.Options
@@ -194,7 +198,7 @@ func (wiz *newUserWizard) createExecutionModeModal() {
 // ========================================
 func (wiz *newUserWizard) createLocalExecutionModal() {
 
-	title := "[4/8] Execution Client > Selection"
+	title := "[4/9] Execution Client > Selection"
 
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.ExecutionClient.Options
@@ -253,7 +257,7 @@ func (wiz *newUserWizard) createLocalExecutionModal() {
 // ==========================================
 func (wiz *newUserWizard) createExternalExecutionModal() {
 
-	title := "[4/8] Execution Client (External)"
+	title := "[4/9] Execution Client (External)"
 
 	// Create the labels
 	httpLabel := wiz.md.Config.ExternalExecution.HttpUrl.Name
@@ -294,7 +298,7 @@ func (wiz *newUserWizard) createExternalExecutionModal() {
 // ========================
 func (wiz *newUserWizard) createInfuraModal() {
 
-	title := "[4/8] Execution Client > Infura"
+	title := "[4/9] Execution Client > Infura"
 
 	// Create the labels
 	projectIdLabel := wiz.md.Config.Infura.ProjectID.Name
@@ -332,7 +336,7 @@ func (wiz *newUserWizard) createInfuraModal() {
 // =====================================
 func (wiz *newUserWizard) createFallbackExecutionModal() {
 
-	title := "[5/8] Fallback Execution Client"
+	title := "[5/9] Fallback Execution Client"
 
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.FallbackExecutionClient.Options
@@ -393,7 +397,7 @@ func (wiz *newUserWizard) createFallbackExecutionModal() {
 // ===========================
 func (wiz *newUserWizard) createFallbackInfuraModal() {
 
-	title := "[5/8] Fallback Execution Client > Infura"
+	title := "[5/9] Fallback Execution Client > Infura"
 
 	// Create the labels
 	projectIdLabel := wiz.md.Config.FallbackInfura.ProjectID.Name
@@ -430,7 +434,7 @@ func (wiz *newUserWizard) createFallbackInfuraModal() {
 // ================================
 func (wiz *newUserWizard) createConsensusModeModal() {
 
-	title := "[6/8] Consensus Client Mode"
+	title := "[6/9] Consensus Client Mode"
 
 	// Create the button names and descriptions from the config
 	modes := wiz.md.Config.ConsensusClientMode.Options
@@ -485,7 +489,7 @@ func (wiz *newUserWizard) createConsensusModeModal() {
 // =========================================
 func (wiz *newUserWizard) createLocalConsensusModal() {
 
-	title := "[7/8] Consensus Client > Selection"
+	title := "[7/9] Consensus Client > Selection"
 
 	// Get the list of clients
 	goodClients, badClients := wiz.md.Config.GetCompatibleConsensusClients()
@@ -540,7 +544,7 @@ func (wiz *newUserWizard) createLocalConsensusModal() {
 // ============================================
 func (wiz *newUserWizard) createExternalConsensusModal() {
 
-	title := "[7/8] Consensus Client (External) > Selection"
+	title := "[7/9] Consensus Client (External) > Selection"
 
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.ExternalConsensusClient.Options
@@ -593,7 +597,7 @@ func (wiz *newUserWizard) createExternalConsensusModal() {
 // ====================
 func (wiz *newUserWizard) createGraffitiModal() {
 
-	title := "[7/8] Consensus Client > Graffiti"
+	title := "[7/9] Consensus Client > Graffiti"
 
 	// Create the labels
 	graffitiLabel := wiz.md.Config.ConsensusCommon.Graffiti.Name
@@ -637,7 +641,7 @@ func (wiz *newUserWizard) createGraffitiModal() {
 			wiz.md.setPage(wiz.doppelgangerDetectionModal.page)
 			wiz.doppelgangerDetectionModal.focus(0)
 		} else {
-			wiz.md.setPage(wiz.finishedModal)
+			wiz.md.setPage(wiz.metricsModal.page)
 		}
 	}
 	modal.back = func() {
@@ -647,7 +651,7 @@ func (wiz *newUserWizard) createGraffitiModal() {
 
 	// Create the page
 	wiz.graffitiModal = modal
-	page := newPage(nil, "new-user-consensus-fallback", "New User Wizard > "+title, "", modal.borderGrid)
+	page := newPage(nil, "new-user-consensus-graffiti", "New User Wizard > "+title, "", modal.borderGrid)
 	wiz.md.pages.AddPage(page.id, page.content, true, false)
 	modal.page = page
 
@@ -658,7 +662,7 @@ func (wiz *newUserWizard) createGraffitiModal() {
 // ===========================
 func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 
-	title := "[7/8] Consensus Client > Checkpoint Sync"
+	title := "[7/9] Consensus Client > Checkpoint Sync"
 
 	// Create the labels
 	checkpointSyncLabel := wiz.md.Config.ConsensusCommon.CheckpointSyncProvider.Name
@@ -698,7 +702,7 @@ func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 			wiz.md.setPage(wiz.doppelgangerDetectionModal.page)
 			wiz.doppelgangerDetectionModal.focus(0)
 		} else {
-			wiz.md.setPage(wiz.finishedModal)
+			wiz.md.setPage(wiz.metricsModal.page)
 		}
 	}
 	modal.back = func() {
@@ -719,7 +723,7 @@ func (wiz *newUserWizard) createCheckpointSyncProviderModal() {
 // ==================================
 func (wiz *newUserWizard) createDoppelgangerModal() {
 
-	title := "[7/8] Consensus Client > Doppelganger Protection"
+	title := "[7/9] Consensus Client > Doppelganger Protection"
 
 	// Create the modal
 	modal := newChoiceModalLayout(
@@ -740,8 +744,7 @@ func (wiz *newUserWizard) createDoppelgangerModal() {
 		} else {
 			wiz.md.Config.ConsensusCommon.DoppelgangerDetection.Value = false
 		}
-		wiz.md.setPage(wiz.finishedModal)
-		wiz.doppelgangerDetectionModal.focus(0)
+		wiz.md.setPage(wiz.metricsModal.page)
 	}
 	modal.back = func() {
 		wiz.md.setPage(wiz.graffitiModal.page)
@@ -761,7 +764,7 @@ func (wiz *newUserWizard) createDoppelgangerModal() {
 // ===============================
 func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 
-	title := "[7/8] Consensus Client (External) > Settings"
+	title := "[7/9] Consensus Client (External) > Settings"
 
 	// Create the labels
 	httpUrlLabel := wiz.md.Config.ExternalLighthouse.HttpUrl.Name
@@ -778,7 +781,7 @@ func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
 		wiz.md.Config.ExternalLighthouse.HttpUrl.Value = text[httpUrlLabel]
-		wiz.md.setPage(wiz.finishedModal)
+		wiz.md.setPage(wiz.externalGraffitiModal.page)
 	}
 	modal.back = func() {
 		wiz.md.setPage(wiz.consensusModeModal.page)
@@ -798,7 +801,7 @@ func (wiz *newUserWizard) createLighthouseExternalSettingsModal() {
 // ==========================
 func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 
-	title := "[7/8] Consensus Client (External) > Settings"
+	title := "[7/9] Consensus Client (External) > Settings"
 
 	// Create the labels
 	httpUrlLabel := wiz.md.Config.ExternalPrysm.HttpUrl.Name
@@ -817,7 +820,7 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 	modal.done = func(text map[string]string) {
 		wiz.md.Config.ExternalPrysm.HttpUrl.Value = text[httpUrlLabel]
 		wiz.md.Config.ExternalPrysm.JsonRpcUrl.Value = text[jsonRpcUrlLabel]
-		wiz.md.setPage(wiz.finishedModal)
+		wiz.md.setPage(wiz.externalGraffitiModal.page)
 	}
 	modal.back = func() {
 		wiz.md.setPage(wiz.consensusModeModal.page)
@@ -837,7 +840,7 @@ func (wiz *newUserWizard) createPrysmExternalSettingsModal() {
 // =========================
 func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 
-	title := "[7/8] Consensus Client (External) > Settings"
+	title := "[7/9] Consensus Client (External) > Settings"
 
 	// Create the labels
 	httpUrlLabel := wiz.md.Config.ExternalTeku.HttpUrl.Name
@@ -854,7 +857,7 @@ func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 	// Set up the callbacks
 	modal.done = func(text map[string]string) {
 		wiz.md.Config.ExternalTeku.HttpUrl.Value = text[httpUrlLabel]
-		wiz.md.setPage(wiz.finishedModal)
+		wiz.md.setPage(wiz.externalGraffitiModal.page)
 	}
 	modal.back = func() {
 		wiz.md.setPage(wiz.consensusModeModal.page)
@@ -869,10 +872,97 @@ func (wiz *newUserWizard) createTekuExternalSettingsModal() {
 
 }
 
-// Create the finished modal
+// =============================
+// === 7g: External Graffiti ===
+// =============================
+func (wiz *newUserWizard) createExternalGraffitiModal() {
+
+	title := "[7/9] Consensus Client (External) > Graffiti"
+
+	// Create the labels - use the vanilla graffiti name
+	graffitiLabel := wiz.md.Config.ConsensusCommon.Graffiti.Name
+
+	// Create the modal
+	modal := newTextBoxModalLayout(
+		wiz.md.app,
+		title,
+		70,
+		"If you would like to add a short custom message to each block that your minipools propose (called the block's \"graffiti\"), please enter it here. The graffiti is limited to 16 characters max.",
+		[]string{graffitiLabel},
+		[]string{})
+
+	// Set up the callbacks
+	modal.done = func(text map[string]string) {
+		// Get the selected client
+		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
+		case config.ConsensusClient_Lighthouse:
+			wiz.md.Config.ExternalLighthouse.Graffiti.Value = text[graffitiLabel]
+		case config.ConsensusClient_Prysm:
+			wiz.md.Config.ExternalPrysm.Graffiti.Value = text[graffitiLabel]
+		case config.ConsensusClient_Teku:
+			wiz.md.Config.ExternalTeku.Graffiti.Value = text[graffitiLabel]
+		}
+		wiz.md.setPage(wiz.metricsModal.page)
+		wiz.metricsModal.focus(0)
+	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.consensusModeModal.page)
+		wiz.consensusModeModal.focus(0)
+	}
+
+	// Create the page
+	wiz.externalGraffitiModal = modal
+	page := newPage(nil, "new-user-consensus-external-graffiti", "New User Wizard > "+title, "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
+
+}
+
+// ==================
+// === 8: Metrics ===
+// ==================
+func (wiz *newUserWizard) createMetricsModal() {
+
+	title := "[8/9] Metrics"
+
+	// Create the modal
+	modal := newChoiceModalLayout(
+		wiz.md.app,
+		title,
+		76,
+		"Would you like to enable the Smartnode's metrics monitoring system? This will monitor things such as hardware stats (CPU usage, RAM usage, free disk space), your minipool stats, stats about your node such as total RPL and ETH rewards, and much more. It also enables the Grafana dashboard to quickly and easily view these metrics (see https://docs.rocketpool.net/guides/node/grafana.html for an example).\n\nNone of this information will be sent to any remote servers for collection an analysis; this is purely for your own usage on your node.",
+		[]string{"Yes", "No"},
+		[]string{},
+		DirectionalModalHorizontal)
+
+	// Set up the callbacks
+	modal.done = func(buttonIndex int, buttonLabel string) {
+		if buttonIndex == 0 {
+			wiz.md.Config.EnableMetrics.Value = true
+		} else {
+			wiz.md.Config.EnableMetrics.Value = false
+		}
+		wiz.md.setPage(wiz.finishedModal)
+	}
+	modal.back = func() {
+		wiz.md.setPage(wiz.consensusModeModal.page)
+		wiz.consensusModeModal.focus(0)
+	}
+
+	// Create the page
+	wiz.metricsModal = modal
+	page := newPage(nil, "new-user-metrics", "New User Wizard > "+title, "", modal.borderGrid)
+	wiz.md.pages.AddPage(page.id, page.content, true, false)
+	modal.page = page
+
+}
+
+// ===================
+// === 9: Finished ===
+// ===================
 func (wiz *newUserWizard) createFinishedModal() {
 
-	title := "[8/8] Finished"
+	title := "[9/9] Finished"
 
 	modal := newChoiceModalLayout(
 		wiz.md.app,
