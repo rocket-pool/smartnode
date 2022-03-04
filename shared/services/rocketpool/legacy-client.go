@@ -19,25 +19,22 @@ const (
 )
 
 // Load the global config
-func (c *Client) LoadGlobalConfig_Legacy() (config.LegacyRocketPoolConfig, error) {
-	return c.loadConfig_Legacy(fmt.Sprintf("%s/%s", c.configPath, LegacyGlobalConfigFile))
+func (c *Client) LoadGlobalConfig_Legacy(globalConfigPath string) (config.LegacyRocketPoolConfig, error) {
+	return c.loadConfig_Legacy(globalConfigPath)
 }
 
 // Load/save the user config
-func (c *Client) LoadUserConfig_Legacy() (config.LegacyRocketPoolConfig, error) {
+func (c *Client) LoadUserConfig_Legacy(userConfigPath string) (config.LegacyRocketPoolConfig, error) {
 	return c.loadConfig_Legacy(fmt.Sprintf("%s/%s", c.configPath, LegacyUserConfigFile))
-}
-func (c *Client) SaveUserConfig_Legacy(cfg config.LegacyRocketPoolConfig) error {
-	return c.saveConfig_Legacy(cfg, fmt.Sprintf("%s/%s", c.configPath, LegacyUserConfigFile))
 }
 
 // Load the merged global & user config
-func (c *Client) LoadMergedConfig_Legacy() (config.LegacyRocketPoolConfig, error) {
-	globalConfig, err := c.LoadGlobalConfig_Legacy()
+func (c *Client) LoadMergedConfig_Legacy(globalConfigPath string, userConfigPath string) (config.LegacyRocketPoolConfig, error) {
+	globalConfig, err := c.LoadGlobalConfig_Legacy(globalConfigPath)
 	if err != nil {
 		return config.LegacyRocketPoolConfig{}, err
 	}
-	userConfig, err := c.LoadUserConfig_Legacy()
+	userConfig, err := c.LoadUserConfig_Legacy(userConfigPath)
 	if err != nil {
 		return config.LegacyRocketPoolConfig{}, err
 	}
@@ -55,20 +52,4 @@ func (c *Client) loadConfig_Legacy(path string) (config.LegacyRocketPoolConfig, 
 		return config.LegacyRocketPoolConfig{}, fmt.Errorf("Could not read Rocket Pool config at %s: %w", shellescape.Quote(path), err)
 	}
 	return config.Parse(configBytes)
-}
-
-// Save a config file
-func (c *Client) saveConfig_Legacy(cfg config.LegacyRocketPoolConfig, path string) error {
-	configBytes, err := cfg.Serialize()
-	if err != nil {
-		return err
-	}
-	expandedPath, err := homedir.Expand(path)
-	if err != nil {
-		return err
-	}
-	if err := ioutil.WriteFile(expandedPath, configBytes, 0); err != nil {
-		return fmt.Errorf("Could not write Rocket Pool config to %s: %w", shellescape.Quote(expandedPath), err)
-	}
-	return nil
 }

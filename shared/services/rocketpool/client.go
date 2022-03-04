@@ -8,9 +8,11 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"net/url"
 	"os"
 	osUser "os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -246,6 +248,102 @@ func (c *Client) UpdatePrometheusConfiguration(settings map[string]string) error
 	}
 
 	return nil
+}
+
+// Migrate a legacy configuration (pre-v1.3) to a modern post-v1.3 one
+func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettingsFilePath string) (*config.RocketPoolConfig, error) {
+
+	// Check if the files exist
+	_, err := os.Stat(legacyConfigFilePath)
+	if os.IsNotExist(err) {
+		return nil, fmt.Errorf("Legacy configuration file [%s] does not exist or is not accessible.", legacyConfigFilePath)
+	}
+	_, err = os.Stat(legacySettingsFilePath)
+	if os.IsNotExist(err) {
+		return nil, fmt.Errorf("Legacy settings file [%s] does not exist or is not accessible.", legacySettingsFilePath)
+	}
+
+	// Load the legacy config
+	legacyCfg, err := c.LoadMergedConfig_Legacy(legacyConfigFilePath, legacySettingsFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error loading legacy configuration: %w", err)
+	}
+	cfg := config.NewRocketPoolConfig()
+
+	// Do the conversion
+
+	// EC provider
+	eth1Provider, err := url.Parse(legacyCfg.Chains.Eth1.Provider)
+	eth1WsProvider, err := url.Parse(legacyCfg.Chains.Eth1.WsProvider)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing eth1 provider: %w", err)
+	}
+	if eth1Provider.Hostname() == "eth1" {
+		// This is Docker mode
+		cfg.ExecutionClientMode.Value = config.Mode_Local
+
+		portString := eth1Provider.Port()
+		parsedPort, err := strconv.ParseUint(portString, 0, 16)
+		if err != nil {
+			return nil, fmt.Errorf("invalid port [%s] in eth1 provider [%s]", portString, eth1Provider.String())
+		}
+		cfg.ExecutionCommon.HttpPort.Value = uint16(parsedPort)
+
+		wsPortString := eth1WsProvider.Port()
+		parsedWsPort, err := strconv.ParseUint(wsPortString, 0, 16)
+		if err != nil {
+			return nil, fmt.Errorf("invalid port [%s] in eth1 websocket provider [%s]", wsPortString, eth1WsProvider.String())
+		}
+		cfg.ExecutionCommon.HttpPort.Value = uint16(parsedPort)
+		cfg.ExecutionCommon.WsPort.Value = uint16(parsedWsPort)
+	} else {
+		// This is Hybrid mode
+		cfg.ExecutionClientMode.Value = config.Mode_External
+		cfg.ExternalExecution.HttpUrl.Value = eth1Provider.String()
+		cfg.ExternalExecution.WsUrl.Value = eth1WsProvider.String()
+	}
+
+	// EC Selection
+	switch legacyCfg.Chains.Eth1.Client.Selected {
+	case "geth":
+		cfg.ExecutionClient.Value = config.ExecutionClient_Geth
+	case "infura":
+		cfg.ExecutionClient.Value = config.ExecutionClient_Infura
+	case "pocket":
+		cfg.ExecutionClient.Value = config.ExecutionClient_Pocket
+	case "custom":
+		cfg.ExecutionClientMode.Value = config.Mode_External
+		for _, param := range legacyCfg.Chains.Eth1.Client.Params {
+			if param.Env == "HTTP_PROVIDER_URL" {
+				cfg.ExternalExecution.HttpUrl.Value = param.Value
+			} else if param.Env == "WS_PROVIDER_URL" {
+				cfg.ExternalExecution.WsUrl.Value = param.Value
+			}
+		}
+	}
+	// TODO
+
+	// Network
+	chainID := legacyCfg.Chains.Eth1.ChainID
+	switch chainID {
+	case "1":
+		cfg.Smartnode.Network.Value = config.Network_Mainnet
+	case "5":
+		cfg.Smartnode.Network.Value = config.Network_Prater
+	default:
+		return nil, fmt.Errorf("legacy config had an unknown chain ID [%s]", chainID)
+	}
+
+	// Smartnode settings
+	cfg.Smartnode.ProjectName.Value = legacyCfg.Smartnode.ProjectName
+	cfg.Smartnode.ValidatorRestartCommand.Value = legacyCfg.Smartnode.ValidatorRestartCommand
+	cfg.Smartnode.ManualMaxFee.Value = legacyCfg.Smartnode.MaxFee
+	cfg.Smartnode.PriorityFee.Value = legacyCfg.Smartnode.MaxPriorityFee
+	cfg.Smartnode.RplClaimGasThreshold.Value = legacyCfg.Smartnode.RplClaimGasThreshold
+	cfg.Smartnode.MinipoolStakeGasThreshold.Value = legacyCfg.Smartnode.MinipoolStakeGasThreshold
+
+	return cfg, nil
+
 }
 
 // Install the Rocket Pool service
