@@ -35,12 +35,14 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	fallbackECPage := NewFallbackExecutionConfigPage(home)
 	ccPage := NewConsensusConfigPage(home)
 	metricsPage := NewMetricsConfigPage(home)
+	addonsPage := NewAddonsPage(home.md)
 	settingsSubpages := []*page{
 		smartnodePage.page,
 		ecPage.page,
 		fallbackECPage.page,
 		ccPage.page,
 		metricsPage.page,
+		addonsPage.page,
 	}
 	home.settingsSubpages = settingsSubpages
 
@@ -147,7 +149,8 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 	saveButton.SetSelectedFunc(func() {
 		home.md.pages.RemovePage(reviewPageID)
 		reviewPage := NewReviewPage(home.md, home.md.PreviousConfig, home.md.Config)
-		home.md.pages.AddAndSwitchToPage(reviewPage.page.id, reviewPage.page.content, true)
+		home.md.pages.AddPage(reviewPage.page.id, reviewPage.page.content, true, true)
+		home.md.setPage(reviewPage.page)
 	})
 
 	wizardButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
