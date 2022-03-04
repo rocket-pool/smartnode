@@ -586,9 +586,9 @@ func (c *Client) DeleteVolume(volume string) (string, error) {
 }
 
 // Gets the absolute file path of the client volume
-func (c *Client) GetClientVolumeSource(container string) (string, error) {
+func (c *Client) GetClientVolumeSource(container string, volumeTarget string) (string, error) {
 
-	cmd := fmt.Sprintf("docker container inspect --format='{{range .Mounts}}{{if eq \"/ethclient\" .Destination}}{{.Source}}{{end}}{{end}}' %s", container)
+	cmd := fmt.Sprintf("docker container inspect --format='{{range .Mounts}}{{if eq \"%s\" .Destination}}{{.Source}}{{end}}{{end}}' %s", volumeTarget, container)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return "", err
@@ -597,9 +597,9 @@ func (c *Client) GetClientVolumeSource(container string) (string, error) {
 }
 
 // Gets the name of the client volume
-func (c *Client) GetClientVolumeName(container string) (string, error) {
+func (c *Client) GetClientVolumeName(container string, volumeTarget string) (string, error) {
 
-	cmd := fmt.Sprintf("docker container inspect --format='{{range .Mounts}}{{if eq \"/ethclient\" .Destination}}{{.Name}}{{end}}{{end}}' %s", container)
+	cmd := fmt.Sprintf("docker container inspect --format='{{range .Mounts}}{{if eq \"%s\" .Destination}}{{.Name}}{{end}}{{end}}' %s", volumeTarget, container)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return "", err

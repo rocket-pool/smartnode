@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -19,22 +21,28 @@ import (
 )
 
 // Settings
-const ExporterContainerSuffix = "_exporter"
-const ValidatorContainerSuffix = "_validator"
-const BeaconContainerSuffix = "_eth2"
-const ExecutionContainerSuffix = "_eth1"
-const NodeContainerSuffix = "_node"
-const PruneProvisionerContainerSuffix = "_prune_provisioner"
-const checkpointSyncSetting = "ETH2_CHECKPOINT_SYNC_URL"
-const PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
-const dockerImageRegex string = ".*/(?P<image>.*):.*"
-const colorReset string = "\033[0m"
-const colorBold string = "\033[1m"
-const colorRed string = "\033[31m"
-const colorYellow string = "\033[33m"
-const colorGreen string = "\033[32m"
-const colorLightBlue string = "\033[36m"
-const clearLine string = "\033[2K"
+const (
+	ExporterContainerSuffix         string = "_exporter"
+	ValidatorContainerSuffix        string = "_validator"
+	BeaconContainerSuffix           string = "_eth2"
+	ExecutionContainerSuffix        string = "_eth1"
+	NodeContainerSuffix             string = "_node"
+	ApiContainerSuffix              string = "_api"
+	PruneProvisionerContainerSuffix string = "_prune_provisioner"
+	//checkpointSyncSetting           string = "ETH2_CHECKPOINT_SYNC_URL"
+	clientDataVolumeName string = "/ethclient"
+	dataFolderVolumeName string = "/.rocketpool/data"
+
+	PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
+	dockerImageRegex       string = ".*/(?P<image>.*):.*"
+	colorReset             string = "\033[0m"
+	colorBold              string = "\033[1m"
+	colorRed               string = "\033[31m"
+	colorYellow            string = "\033[33m"
+	colorGreen             string = "\033[32m"
+	colorLightBlue         string = "\033[36m"
+	clearLine              string = "\033[2K"
+)
 
 // Install the Rocket Pool service
 func installService(c *cli.Context) error {
@@ -213,8 +221,18 @@ func configureService(c *cli.Context) error {
 		rp.SaveConfig(md.Config)
 		fmt.Println("Your changes have been saved!")
 
+		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
+
+		// Deal with network changes
+		if md.ChangeNetworks {
+			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
+			if err != nil {
+				fmt.Printf("%s%s%s\nThe Smartnode could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).\n", colorRed, err.Error(), colorReset)
+			}
+			return nil
+		}
+
 		if len(md.ContainersToRestart) > 0 {
-			prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 			fmt.Println("The following containers must be restarted for the changes to take effect:")
 			for _, container := range md.ContainersToRestart {
 				fmt.Printf("\t%s_%s\n", prefix, container)
@@ -246,6 +264,71 @@ func configureService(c *cli.Context) error {
 	}
 
 	return err
+}
+
+// Handle a network change by terminating the service, deleting everything, and starting over
+func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName string) error {
+
+	// Stop all of the containers
+	fmt.Print("Stopping containers... ")
+	err := rp.PauseService(getComposeFiles(c))
+	if err != nil {
+		return fmt.Errorf("error stopping service: %w", err)
+	}
+	fmt.Println("done")
+
+	// Restart the API container
+	fmt.Print("Starting API container... ")
+	output, err := rp.StartContainer(apiContainerName)
+	if err != nil {
+		return fmt.Errorf("error starting API container: %w", err)
+	}
+	if output != apiContainerName {
+		return fmt.Errorf("starting API container had unexpected output: %s", output)
+	}
+	fmt.Println("done")
+
+	// Get the path of the user's data folder
+	fmt.Print("Retrieving data folder path... ")
+	volumePath, err := rp.GetClientVolumeSource(apiContainerName, dataFolderVolumeName)
+	if err != nil {
+		return fmt.Errorf("error getting data folder path: %w", err)
+	}
+	fmt.Printf("done, data folder = %s\n", volumePath)
+
+	// Delete the data folder
+	fmt.Print("Removing data folder... ")
+	_, err = rp.TerminateDataFolder()
+	if err != nil {
+		return err
+	}
+	fmt.Println("done")
+
+	// Terminate the current setup
+	fmt.Print("Removing old installation... ")
+	err = rp.StopService(getComposeFiles(c))
+	if err != nil {
+		return fmt.Errorf("error terminating old installation: %w", err)
+	}
+	fmt.Println("done")
+
+	// Create new validator folder
+	fmt.Print("Recreating data folder... ")
+	err = os.MkdirAll(filepath.Join(volumePath, "validators"), 0775)
+	if err != nil {
+		return fmt.Errorf("error recreating data folder: %w", err)
+	}
+
+	// Start the service
+	fmt.Print("Starting Rocket Pool... ")
+	err = rp.StartService(getComposeFiles(c))
+	if err != nil {
+		return fmt.Errorf("error starting service: %w", err)
+	}
+	fmt.Println("done")
+
+	return nil
+
 }
 
 // Start the Rocket Pool service
@@ -519,7 +602,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Check for enough free space
 	executionContainerName := prefix + ExecutionContainerSuffix
-	volumePath, err := rp.GetClientVolumeSource(executionContainerName)
+	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting ETH1 volume source path: %w", err)
 	}
@@ -558,7 +641,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	// Get the ETH1 volume name
-	volume, err := rp.GetClientVolumeName(executionContainerName)
+	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting ETH1 volume name: %w", err)
 	}
@@ -830,7 +913,7 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	// Get ETH1 volume name
-	volume, err := rp.GetClientVolumeName(executionContainerName)
+	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting ETH1 volume name: %w", err)
 	}
@@ -954,7 +1037,7 @@ func resyncEth2(c *cli.Context) error {
 	}
 
 	// Get ETH2 volume name
-	volume, err := rp.GetClientVolumeName(beaconContainerName)
+	volume, err := rp.GetClientVolumeName(beaconContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting ETH2 volume name: %w", err)
 	}

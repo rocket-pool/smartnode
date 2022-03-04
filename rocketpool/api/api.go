@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/odao"
 	"github.com/rocket-pool/smartnode/rocketpool/api/queue"
+	apiservice "github.com/rocket-pool/smartnode/rocketpool/api/service"
 	"github.com/rocket-pool/smartnode/rocketpool/api/wallet"
 	"github.com/rocket-pool/smartnode/shared/services"
 	apitypes "github.com/rocket-pool/smartnode/shared/types/api"
@@ -65,6 +66,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	odao.RegisterSubcommands(&command, "odao", []string{"o"})
 	queue.RegisterSubcommands(&command, "queue", []string{"q"})
 	wallet.RegisterSubcommands(&command, "wallet", []string{"w"})
+	apiservice.RegisterSubcommands(&command, "service", []string{"s"})
 	debug.RegisterSubcommands(&command, "debug", []string{"d"})
 
 	// Append a genral wait-for-transaction command to support async operations
