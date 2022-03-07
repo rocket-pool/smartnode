@@ -25,7 +25,7 @@ func (c *Client) LoadGlobalConfig_Legacy(globalConfigPath string) (config.Legacy
 
 // Load/save the user config
 func (c *Client) LoadUserConfig_Legacy(userConfigPath string) (config.LegacyRocketPoolConfig, error) {
-	return c.loadConfig_Legacy(fmt.Sprintf("%s/%s", c.configPath, LegacyUserConfigFile))
+	return c.loadConfig_Legacy(userConfigPath)
 }
 
 // Load the merged global & user config

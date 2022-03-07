@@ -273,7 +273,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	// Do the conversion
 
 	// Migrate the EC
-	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1, "eth1", &cfg.ExecutionClientMode, &cfg.ExecutionCommon.HttpPort, &cfg.ExecutionCommon.WsPort, &cfg.ExternalExecution.HttpUrl, &cfg.ExternalExecution.WsUrl)
+	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.Provider, legacyCfg.Chains.Eth1.WsProvider, "eth1", &cfg.ExecutionClientMode, &cfg.ExecutionCommon.HttpPort, &cfg.ExecutionCommon.WsPort, &cfg.ExternalExecution.HttpUrl, &cfg.ExternalExecution.WsUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating eth1 provider info: %w", err)
 	}
@@ -283,13 +283,13 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
 	}
 
 	// Migrate the fallback EC
-	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1Fallback, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExternalExecution.HttpUrl, &cfg.FallbackExternalExecution.WsUrl)
+	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.FallbackProvider, legacyCfg.Chains.Eth1.FallbackWsProvider, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExternalExecution.HttpUrl, &cfg.FallbackExternalExecution.WsUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating fallback eth1 provider info: %w", err)
 	}
@@ -299,7 +299,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating fallback eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
 	}
@@ -367,9 +367,14 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 				cfg.ExternalPrysm.DoppelgangerDetection.Value = false
 			}
 		case "ETH2_RPC_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 RPC port [%s]", param.Value)
+			var port uint64
+			if param.Value == "" {
+				port = uint64(cfg.Prysm.RpcPort.Default[config.Network_All].(uint16))
+			} else {
+				port, err = strconv.ParseUint(param.Value, 0, 16)
+				if err != nil {
+					return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 RPC port [%s]", param.Value)
+				}
 			}
 			cfg.Prysm.RpcPort.Value = uint16(port)
 			externalPrysmUrl := strings.Replace(ccProvider, fmt.Sprintf(":%d", ccPort), fmt.Sprintf(":%d", port), 1)
@@ -855,10 +860,9 @@ func (c *Client) loadConfig(path string) (*config.RocketPoolConfig, error) {
 }
 
 // Get the provider mode and port from a legacy config's provider URL
-func (c *Client) migrateProviderInfo(chain config.Chain, localHostname string, clientMode *config.Parameter, httpPortParam *config.Parameter, wsPortParam *config.Parameter, externalHttpUrlParam *config.Parameter, externalWsUrlParam *config.Parameter) error {
+func (c *Client) migrateProviderInfo(provider string, wsProvider string, localHostname string, clientMode *config.Parameter, httpPortParam *config.Parameter, wsPortParam *config.Parameter, externalHttpUrlParam *config.Parameter, externalWsUrlParam *config.Parameter) error {
 
 	// Get HTTP provider
-	provider := chain.Provider
 	mode, port, err := c.getLegacyProviderInfo(provider, localHostname)
 	if err != nil {
 		return fmt.Errorf("error parsing %s provider: %w", localHostname, err)
@@ -873,7 +877,6 @@ func (c *Client) migrateProviderInfo(chain config.Chain, localHostname string, c
 	}
 
 	// Get the websocket provider
-	wsProvider := chain.WsProvider
 	if wsProvider != "" {
 		_, wsPort, err := c.getLegacyProviderInfo(wsProvider, localHostname)
 		if err != nil {
@@ -971,7 +974,7 @@ func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *config
 }
 
 // Migrates the parameters from a legacy eth1 config to a modern one
-func (c *Client) migrateEth1Params(params []config.UserParam, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
+func (c *Client) migrateEth1Params(client string, params []config.UserParam, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
 	for _, param := range params {
 		switch param.Env {
 		case "ETHSTATS_LABEL":
@@ -1011,9 +1014,13 @@ func (c *Client) migrateEth1Params(params []config.UserParam, geth *config.GethC
 		case "POCKET_PROJECT_ID":
 			pocket.GatewayID.Value = param.Value
 		case "HTTP_PROVIDER_URL":
-			externalEc.HttpUrl.Value = param.Value
+			if client == "custom" {
+				externalEc.HttpUrl.Value = param.Value
+			}
 		case "WS_PROVIDER_URL":
-			externalEc.WsUrl.Value = param.Value
+			if client == "custom" {
+				externalEc.WsUrl.Value = param.Value
+			}
 		}
 	}
 
