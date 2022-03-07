@@ -64,9 +64,6 @@ type ExternalTekuConfig struct {
 	// Custom proposal graffiti
 	Graffiti Parameter `yaml:"graffiti,omitempty"`
 
-	// Toggle for enabling doppelganger detection
-	DoppelgangerDetection Parameter `yaml:"doppelgangerDetection,omitempty"`
-
 	// The Docker Hub tag for Teku
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
@@ -280,18 +277,6 @@ func NewExternalTekuConfig(config *RocketPoolConfig) *ExternalTekuConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		DoppelgangerDetection: Parameter{
-			ID:                   DoppelgangerDetectionID,
-			Name:                 "Enable Doppelgänger Detection",
-			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
-			Type:                 ParameterType_Bool,
-			Default:              map[Network]interface{}{Network_All: defaultDoppelgangerDetection},
-			AffectsContainers:    []ContainerID{ContainerID_Validator},
-			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
@@ -354,7 +339,6 @@ func (config *ExternalTekuConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.HttpUrl,
 		&config.Graffiti,
-		&config.DoppelgangerDetection,
 		&config.ContainerTag,
 		&config.AdditionalVcFlags,
 	}

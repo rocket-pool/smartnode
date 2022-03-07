@@ -272,56 +272,162 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 
 	// Do the conversion
 
-	// EC provider
-	eth1Provider, err := url.Parse(legacyCfg.Chains.Eth1.Provider)
-	eth1WsProvider, err := url.Parse(legacyCfg.Chains.Eth1.WsProvider)
+	// Migrate the EC
+	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1, "eth1", &cfg.ExecutionClientMode, &cfg.ExecutionCommon.HttpPort, &cfg.ExecutionCommon.WsPort, &cfg.ExternalExecution.HttpUrl, &cfg.ExternalExecution.WsUrl)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing eth1 provider: %w", err)
+		return nil, fmt.Errorf("error migrating eth1 provider info: %w", err)
 	}
-	if eth1Provider.Hostname() == "eth1" {
-		// This is Docker mode
-		cfg.ExecutionClientMode.Value = config.Mode_Local
 
-		portString := eth1Provider.Port()
-		parsedPort, err := strconv.ParseUint(portString, 0, 16)
-		if err != nil {
-			return nil, fmt.Errorf("invalid port [%s] in eth1 provider [%s]", portString, eth1Provider.String())
-		}
-		cfg.ExecutionCommon.HttpPort.Value = uint16(parsedPort)
+	err = c.migrateEcSelection(legacyCfg.Chains.Eth1.Client.Selected, &cfg.ExecutionClient, &cfg.ExecutionClientMode)
+	if err != nil {
+		return nil, fmt.Errorf("error migrating eth1 client selection: %w", err)
+	}
 
-		wsPortString := eth1WsProvider.Port()
-		parsedWsPort, err := strconv.ParseUint(wsPortString, 0, 16)
-		if err != nil {
-			return nil, fmt.Errorf("invalid port [%s] in eth1 websocket provider [%s]", wsPortString, eth1WsProvider.String())
-		}
-		cfg.ExecutionCommon.HttpPort.Value = uint16(parsedPort)
-		cfg.ExecutionCommon.WsPort.Value = uint16(parsedWsPort)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	if err != nil {
+		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
+	}
+
+	// Migrate the fallback EC
+	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1Fallback, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExternalExecution.HttpUrl, &cfg.FallbackExternalExecution.WsUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error migrating fallback eth1 provider info: %w", err)
+	}
+
+	err = c.migrateEcSelection(legacyCfg.Chains.Eth1Fallback.Client.Selected, &cfg.FallbackExecutionClient, &cfg.FallbackExecutionClientMode)
+	if err != nil {
+		return nil, fmt.Errorf("error migrating fallback eth1 client selection: %w", err)
+	}
+
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	if err != nil {
+		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
+	}
+
+	if legacyCfg.Chains.Eth1Fallback.Client.Selected != "" {
+		cfg.UseFallbackExecutionClient.Value = true
 	} else {
-		// This is Hybrid mode
-		cfg.ExecutionClientMode.Value = config.Mode_External
-		cfg.ExternalExecution.HttpUrl.Value = eth1Provider.String()
-		cfg.ExternalExecution.WsUrl.Value = eth1WsProvider.String()
+		cfg.UseFallbackExecutionClient.Value = false
 	}
 
-	// EC Selection
-	switch legacyCfg.Chains.Eth1.Client.Selected {
-	case "geth":
-		cfg.ExecutionClient.Value = config.ExecutionClient_Geth
-	case "infura":
-		cfg.ExecutionClient.Value = config.ExecutionClient_Infura
-	case "pocket":
-		cfg.ExecutionClient.Value = config.ExecutionClient_Pocket
-	case "custom":
-		cfg.ExecutionClientMode.Value = config.Mode_External
-		for _, param := range legacyCfg.Chains.Eth1.Client.Params {
-			if param.Env == "HTTP_PROVIDER_URL" {
-				cfg.ExternalExecution.HttpUrl.Value = param.Value
-			} else if param.Env == "WS_PROVIDER_URL" {
-				cfg.ExternalExecution.WsUrl.Value = param.Value
+	// Migrate the CC
+	ccProvider := legacyCfg.Chains.Eth2.Provider
+	ccMode, ccPort, err := c.getLegacyProviderInfo(ccProvider, "eth2")
+	if err != nil {
+		return nil, fmt.Errorf("error migrating eth2 provider info: %w", err)
+	}
+	cfg.ConsensusClientMode.Value = ccMode
+
+	selectedCC := legacyCfg.Chains.Eth2.Client.Selected
+	if ccMode == config.Mode_Local {
+		err = c.migrateCcSelection(selectedCC, &cfg.ConsensusClient)
+		if err != nil {
+			return nil, fmt.Errorf("error migrating local eth2 client selection: %w", err)
+		}
+		cfg.ConsensusCommon.ApiPort.Value = ccPort
+	} else {
+		err = c.migrateCcSelection(selectedCC, &cfg.ExternalConsensusClient)
+		if err != nil {
+			return nil, fmt.Errorf("error migrating external eth2 client selection: %w", err)
+		}
+		cfg.ExternalLighthouse.HttpUrl.Value = ccProvider
+		cfg.ExternalPrysm.HttpUrl.Value = ccProvider
+		cfg.ExternalTeku.HttpUrl.Value = ccProvider
+	}
+
+	for _, param := range legacyCfg.Chains.Eth2.Client.Params {
+		switch param.Env {
+		case "CUSTOM_GRAFFITI":
+			cfg.ConsensusCommon.Graffiti.Value = param.Value
+			cfg.ExternalLighthouse.Graffiti.Value = param.Value
+			cfg.ExternalPrysm.Graffiti.Value = param.Value
+			cfg.ExternalTeku.Graffiti.Value = param.Value
+		case "ETH2_MAX_PEERS":
+			peers, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 max peers [%s]", param.Value)
 			}
+			cfg.ConsensusCommon.MaxPeers.Value = uint16(peers)
+		case "ETH2_P2P_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 P2P port [%s]", param.Value)
+			}
+			cfg.ConsensusCommon.P2pPort.Value = uint16(port)
+		case "ETH2_CHECKPOINT_SYNC_URL":
+			cfg.ConsensusCommon.CheckpointSyncProvider.Value = param.Value
+		case "ETH2_DOPPELGANGER_DETECTION":
+			if param.Value == "y" {
+				cfg.ConsensusCommon.DoppelgangerDetection.Value = true
+				cfg.ExternalLighthouse.DoppelgangerDetection.Value = true
+				cfg.ExternalPrysm.DoppelgangerDetection.Value = true
+			} else {
+				cfg.ConsensusCommon.DoppelgangerDetection.Value = false
+				cfg.ExternalLighthouse.DoppelgangerDetection.Value = false
+				cfg.ExternalPrysm.DoppelgangerDetection.Value = false
+			}
+		case "ETH2_RPC_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 RPC port [%s]", param.Value)
+			}
+			cfg.Prysm.RpcPort.Value = uint16(port)
+			externalPrysmUrl := strings.Replace(ccProvider, fmt.Sprintf(":%d", ccPort), fmt.Sprintf(":%d", port), 1)
+			cfg.ExternalPrysm.JsonRpcUrl.Value = externalPrysmUrl
 		}
 	}
-	// TODO
+
+	// Migrate metrics
+	cfg.EnableMetrics.Value = legacyCfg.Metrics.Enabled
+	for _, param := range legacyCfg.Metrics.Settings {
+		switch param.Env {
+		case "ETH2_METRICS_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating metrics configuration: invalid eth2 metrics port [%s]", param.Value)
+			}
+			cfg.BnMetricsPort.Value = uint16(port)
+		case "VALIDATOR_METRICS_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating metrics configuration: invalid validator metrics port [%s]", param.Value)
+			}
+			cfg.VcMetricsPort.Value = uint16(port)
+		case "NODE_METRICS_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating metrics configuration: invalid node metrics port [%s]", param.Value)
+			}
+			cfg.NodeMetricsPort.Value = uint16(port)
+		case "EXPORTER_METRICS_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating metrics configuration: invalid exporter metrics port [%s]", param.Value)
+			}
+			cfg.ExporterMetricsPort.Value = uint16(port)
+		case "WATCHTOWER_METRICS_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating metrics configuration: invalid watchtower metrics port [%s]", param.Value)
+			}
+			cfg.WatchtowerMetricsPort.Value = uint16(port)
+		case "PROMETHEUS_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating metrics configuration: invalid prometheus port [%s]", param.Value)
+			}
+			cfg.Prometheus.Port.Value = uint16(port)
+		case "GRAFANA_PORT":
+			port, err := strconv.ParseUint(param.Value, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("error migrating metrics configuration: invalid grafana port [%s]", param.Value)
+			}
+			cfg.Grafana.Port.Value = uint16(port)
+		}
+	}
+
+	// Top-level parameters
+	cfg.ReconnectDelay.Value = legacyCfg.Chains.Eth1.ReconnectDelay
 
 	// Network
 	chainID := legacyCfg.Chains.Eth1.ChainID
@@ -746,6 +852,172 @@ func (c *Client) loadConfig(path string) (*config.RocketPoolConfig, error) {
 		return nil, err
 	}
 	return config.LoadFromFile(expandedPath)
+}
+
+// Get the provider mode and port from a legacy config's provider URL
+func (c *Client) migrateProviderInfo(chain config.Chain, localHostname string, clientMode *config.Parameter, httpPortParam *config.Parameter, wsPortParam *config.Parameter, externalHttpUrlParam *config.Parameter, externalWsUrlParam *config.Parameter) error {
+
+	// Get HTTP provider
+	provider := chain.Provider
+	mode, port, err := c.getLegacyProviderInfo(provider, localHostname)
+	if err != nil {
+		return fmt.Errorf("error parsing %s provider: %w", localHostname, err)
+	}
+
+	// Set the mode, provider, port, and/or URL
+	clientMode.Value = mode
+	if mode == config.Mode_Local {
+		httpPortParam.Value = port
+	} else {
+		externalHttpUrlParam.Value = provider
+	}
+
+	// Get the websocket provider
+	wsProvider := chain.WsProvider
+	if wsProvider != "" {
+		_, wsPort, err := c.getLegacyProviderInfo(wsProvider, localHostname)
+		if err != nil {
+			return fmt.Errorf("error parsing %s websocket provider: %w", localHostname, err)
+		}
+		if mode == config.Mode_Local {
+			wsPortParam.Value = wsPort
+		} else {
+			externalWsUrlParam.Value = wsProvider
+		}
+	}
+
+	return nil
+
+}
+
+// Get the provider mode and port from a legacy config's provider URL
+func (c *Client) getLegacyProviderInfo(provider string, localHostname string) (config.Mode, uint16, error) {
+
+	providerUrl, err := url.Parse(provider)
+	if err != nil {
+		return config.Mode_Unknown, 0, fmt.Errorf("error parsing %s provider: %w", localHostname, err)
+	}
+
+	var mode config.Mode
+	if providerUrl.Hostname() == localHostname {
+		// This is Docker mode
+		mode = config.Mode_Local
+	} else {
+		// This is Hybrid mode
+		mode = config.Mode_External
+	}
+
+	var port uint16
+	portString := providerUrl.Port()
+	if portString == "" {
+		switch providerUrl.Scheme {
+		case "http", "ws":
+			port = 80
+		case "https", "wss":
+			port = 443
+		default:
+			return config.Mode_Unknown, 0, fmt.Errorf("provider [%s] doesn't provide port info and it can't be inferred from the scheme", provider)
+		}
+	} else {
+		parsedPort, err := strconv.ParseUint(portString, 0, 16)
+		if err != nil {
+			return config.Mode_Unknown, 0, fmt.Errorf("invalid port [%s] in %s provider [%s]", portString, localHostname, provider)
+		}
+		port = uint16(parsedPort)
+	}
+
+	return mode, port, nil
+
+}
+
+// Sets a modern config's selected EC / mode based on a legacy config
+func (c *Client) migrateEcSelection(legacySelectedClient string, ecParam *config.Parameter, ecModeParam *config.Parameter) error {
+	// EC selection
+	switch legacySelectedClient {
+	case "geth":
+		ecParam.Value = config.ExecutionClient_Geth
+	case "infura":
+		ecParam.Value = config.ExecutionClient_Infura
+	case "pocket":
+		ecParam.Value = config.ExecutionClient_Pocket
+	case "custom":
+		ecModeParam.Value = config.Mode_External
+	case "":
+		break
+	default:
+		return fmt.Errorf("unknown eth1 client [%s]", legacySelectedClient)
+	}
+
+	return nil
+}
+
+// Sets a modern config's selected CC / mode based on a legacy config
+func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *config.Parameter) error {
+	// CC selection
+	switch legacySelectedClient {
+	case "lighthouse":
+		ccParam.Value = config.ConsensusClient_Lighthouse
+	case "nimbus":
+		ccParam.Value = config.ConsensusClient_Nimbus
+	case "prysm":
+		ccParam.Value = config.ConsensusClient_Prysm
+	case "teku":
+		ccParam.Value = config.ConsensusClient_Teku
+	default:
+		return fmt.Errorf("unknown eth2 client [%s]", legacySelectedClient)
+	}
+
+	return nil
+}
+
+// Migrates the parameters from a legacy eth1 config to a modern one
+func (c *Client) migrateEth1Params(params []config.UserParam, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
+	for _, param := range params {
+		switch param.Env {
+		case "ETHSTATS_LABEL":
+			if geth != nil {
+				geth.EthstatsLabel.Value = param.Value
+			}
+		case "ETHSTATS_LOGIN":
+			if geth != nil {
+				geth.EthstatsLogin.Value = param.Value
+			}
+		case "GETH_CACHE_SIZE":
+			if geth != nil {
+				size, err := strconv.ParseUint(param.Value, 0, 0)
+				if err != nil {
+					return fmt.Errorf("invalid geth cache size [%s]", param.Value)
+				}
+				geth.CacheSize.Value = uint(size)
+			}
+		case "GETH_MAX_PEERS":
+			if geth != nil {
+				peers, err := strconv.ParseUint(param.Value, 0, 16)
+				if err != nil {
+					return fmt.Errorf("invalid geth max peers [%s]", param.Value)
+				}
+				geth.MaxPeers.Value = uint16(peers)
+			}
+		case "ETH1_P2P_PORT":
+			if geth != nil {
+				port, err := strconv.ParseUint(param.Value, 0, 16)
+				if err != nil {
+					return fmt.Errorf("invalid geth port [%s]", param.Value)
+				}
+				geth.P2pPort.Value = uint16(port)
+			}
+		case "INFURA_PROJECT_ID":
+			infura.ProjectID.Value = param.Value
+		case "POCKET_PROJECT_ID":
+			pocket.GatewayID.Value = param.Value
+		case "HTTP_PROVIDER_URL":
+			externalEc.HttpUrl.Value = param.Value
+		case "WS_PROVIDER_URL":
+			externalEc.WsUrl.Value = param.Value
+		}
+	}
+
+	return nil
 }
 
 // Save a config file

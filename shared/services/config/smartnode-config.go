@@ -96,13 +96,13 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		DataPath: Parameter{
-			ID:                   "passwordPath",
-			Name:                 "Password Path",
+			ID:                   "dataPath",
+			Name:                 "Data Path",
 			Description:          "The absolute path of the `data` folder that contains your node wallet's encrypted file, the password for your node wallet, and all of the validator keys for your minipools. You may use environment variables in this string.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/data"},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Validator},
-			EnvironmentVariables: []string{},
+			EnvironmentVariables: []string{"ROCKETPOOL_DATA_FOLDER"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},

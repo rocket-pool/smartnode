@@ -2,14 +2,17 @@ package service
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/alessio/shellescape"
 	"github.com/rivo/tview"
 	"github.com/urfave/cli"
+	"gopkg.in/yaml.v2"
 
 	"github.com/dustin/go-humanize"
 	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
@@ -1073,4 +1076,32 @@ func resyncEth2(c *cli.Context) error {
 
 	return nil
 
+}
+
+// Migrate a legacy configuration to a new one
+func migrateConfig(c *cli.Context, oldConfig string, oldSettings string, newConfig string) error {
+
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
+
+	newCfg, err := rp.MigrateLegacyConfig(oldConfig, oldSettings)
+	if err != nil {
+		return err
+	}
+
+	settings := newCfg.Serialize()
+	configBytes, err := yaml.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("could not serialize settings file: %w", err)
+	}
+
+	if err := ioutil.WriteFile(newConfig, configBytes, 0664); err != nil {
+		return fmt.Errorf("could not write Rocket Pool config to %s: %w", shellescape.Quote(newConfig), err)
+	}
+
+	return nil
 }

@@ -346,6 +346,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "migrate-config",
+				Usage:     "<DEBUG FUNCTION> Migrate a legacy RP config to a new config.",
+				UsageText: "rocketpool service migrate-config",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+					oldConfig := c.Args().Get(0)
+					oldSettings := c.Args().Get(1)
+					newConfig := c.Args().Get(2)
+
+					// Run command
+					return migrateConfig(c, oldConfig, oldSettings, newConfig)
+
+				},
+			},
 		},
 	})
 }
