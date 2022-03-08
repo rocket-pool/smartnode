@@ -20,6 +20,8 @@ type mainDisplay struct {
 	settingsHome        *settingsHome
 	isNew               bool
 	isMigration         bool
+	previousWidth       int
+	previousHeight      int
 	PreviousConfig      *config.RocketPoolConfig
 	Config              *config.RocketPoolConfig
 	ShouldSave          bool
@@ -53,20 +55,16 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 
 	// Create the page collection
 	pages := tview.NewPages()
-	grid.AddItem(pages, 0, 0, 0, 0, 0, 0, true)
-	grid.AddItem(pages, 3, 1, 1, 1, 30, 108, true)
+	grid.AddItem(pages, 3, 1, 1, 1, 0, 0, true)
 
 	// Create the resize warning
-	descriptionText := "Your terminal is too small to run the service configuration app.\n\nPlease resize your terminal window and make it larger to see the app properly."
-	textView := tview.NewTextView().
-		SetText(descriptionText).
+	resizeWarning := tview.NewTextView().
+		SetText("Your terminal is too small to run the service configuration app.\n\nPlease resize your terminal window and make it larger to see the app properly.").
 		SetTextAlign(tview.AlignCenter).
 		SetWordWrap(true).
 		SetTextColor(tview.Styles.PrimaryTextColor)
-	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	textView.SetBorderPadding(0, 0, 1, 1)
-	grid.AddItem(textView, 3, 1, 1, 1, 0, 0, false)
-	grid.AddItem(textView, 0, 0, 0, 0, 29, 107, false)
+	resizeWarning.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	resizeWarning.SetBorderPadding(0, 0, 1, 1)
 
 	// Create the main display object
 	md := &mainDisplay{
@@ -84,6 +82,21 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 	// Create all of the child elements
 	md.settingsHome = newSettingsHome(md)
 	md.newUserWizard = newWizard(md)
+	md.app.SetAfterDrawFunc(func(screen tcell.Screen) {
+		x, y := screen.Size()
+		if x == md.previousWidth && y == md.previousHeight {
+			return
+		}
+		if x < 108 || y < 30 {
+			grid.RemoveItem(pages)
+			grid.AddItem(resizeWarning, 3, 1, 1, 1, 0, 0, false)
+		} else {
+			grid.RemoveItem(resizeWarning)
+			grid.AddItem(pages, 3, 1, 1, 1, 0, 0, true)
+		}
+		md.previousWidth = x
+		md.previousHeight = y
+	})
 
 	if isNew || isMigration {
 		md.newUserWizard.welcomeModal.show()

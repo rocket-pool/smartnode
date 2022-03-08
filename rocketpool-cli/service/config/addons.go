@@ -10,7 +10,7 @@ import (
 // Constants
 const addonPageID string = "addons"
 
-// The changed settings review page
+// The addons page
 type AddonsPage struct {
 	md   *mainDisplay
 	page *page
