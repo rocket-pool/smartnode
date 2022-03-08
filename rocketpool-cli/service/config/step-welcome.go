@@ -25,7 +25,11 @@ func createWelcomeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		wiz.networkModal.show()
+		if buttonIndex == 0 {
+			wiz.networkModal.show()
+		} else {
+			wiz.md.app.Stop()
+		}
 	}
 
 	back := func() {

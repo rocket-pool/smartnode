@@ -53,7 +53,20 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 
 	// Create the page collection
 	pages := tview.NewPages()
-	grid.AddItem(pages, 3, 1, 1, 1, 0, 0, true)
+	grid.AddItem(pages, 0, 0, 0, 0, 0, 0, true)
+	grid.AddItem(pages, 3, 1, 1, 1, 30, 108, true)
+
+	// Create the resize warning
+	descriptionText := "Your terminal is too small to run the service configuration app.\n\nPlease resize your terminal window and make it larger to see the app properly."
+	textView := tview.NewTextView().
+		SetText(descriptionText).
+		SetTextAlign(tview.AlignCenter).
+		SetWordWrap(true).
+		SetTextColor(tview.Styles.PrimaryTextColor)
+	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	textView.SetBorderPadding(0, 0, 1, 1)
+	grid.AddItem(textView, 3, 1, 1, 1, 0, 0, false)
+	grid.AddItem(textView, 0, 0, 0, 0, 29, 107, false)
 
 	// Create the main display object
 	md := &mainDisplay{

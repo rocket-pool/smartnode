@@ -2,8 +2,10 @@ package config
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
+	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
@@ -16,11 +18,11 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 
 	// Create the button names and descriptions from the config
 	clients := wiz.md.Config.ConsensusClient.Options
-	clientNames := []string{}
-	clientDescriptions := []string{}
+	clientNames := []string{"Random (Recommended)"}
+	clientDescriptions := []string{"Select a client randomly to help promote the diversity of the Beacon Chain. We recommend you do this unless you have a strong reason to pick a specific client. To learn more about why client diversity is important, please visit https://clientdiversity.org for an explanation."}
 	for _, client := range goodClients {
 		clientNames = append(clientNames, client.Name)
-		clientDescriptions = append(clientDescriptions, client.Description)
+		clientDescriptions = append(clientDescriptions, getAugmentedDescription(client.Value.(config.ConsensusClient), client.Description))
 	}
 
 	incompatibleClientWarning := ""
@@ -44,8 +46,12 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		selectedClient := clients[buttonIndex].Value.(config.ConsensusClient)
-		wiz.md.Config.ConsensusClient.Value = selectedClient
+		if buttonIndex == 0 {
+			// TODO: Pick a random client
+		} else {
+			selectedClient := clients[buttonIndex+1].Value.(config.ConsensusClient)
+			wiz.md.Config.ConsensusClient.Value = selectedClient
+		}
 		wiz.graffitiModal.show()
 	}
 
@@ -60,7 +66,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		helperText,
 		clientNames,
 		clientDescriptions,
-		76,
+		100,
 		"Consensus Client > Selection",
 		DirectionalModalVertical,
 		show,
@@ -68,5 +74,21 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		back,
 		localCcStepID,
 	)
+
+}
+
+func getAugmentedDescription(client config.ConsensusClient, originalDescription string) string {
+
+	switch client {
+	case config.ConsensusClient_Prysm:
+		return fmt.Sprintf("%s\n\n[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more.", originalDescription)
+	case config.ConsensusClient_Teku:
+		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+		if runtime.GOARCH == "arm64" || totalMemoryGB < 16 {
+			return fmt.Sprintf("%s\n\n[orange]WARNING: Teku is a resource-heavy client and will likely not perform well on your system given your CPU power or amount of available RAM. We recommend you pick a lighter client instead.", originalDescription)
+		}
+	}
+
+	return originalDescription
 
 }

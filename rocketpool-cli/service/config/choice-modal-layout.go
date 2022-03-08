@@ -288,7 +288,8 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 		} else {
 			// If this layout comes with button descriptions, include the description box
 			layout.descriptionBox = tview.NewTextView().
-				SetWordWrap(true)
+				SetWordWrap(true).
+				SetDynamicColors(true)
 			layout.descriptionBox.SetBorder(true)
 			layout.descriptionBox.SetBorderPadding(0, 0, 1, 1)
 			layout.descriptionBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
