@@ -167,7 +167,7 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 		return event
 	})
 	wizardButton.SetSelectedFunc(func() {
-		home.md.setPage(home.md.newUserWizard.welcomeModal)
+		home.md.newUserWizard.welcomeModal.show()
 	})
 
 	// Create overall layout for the footer

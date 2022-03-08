@@ -1,0 +1,63 @@
+package config
+
+import (
+	"github.com/rocket-pool/smartnode/shared/services/config"
+)
+
+func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
+
+	// Create the button names and descriptions from the config
+	clients := wiz.md.Config.ExternalConsensusClient.Options
+	clientNames := []string{}
+	for _, client := range clients {
+		clientNames = append(clientNames, client.Name)
+	}
+
+	helperText := "Which Consensus client are you externally managing? Each of them has small behavioral differences, so we'll need to know which one you're using in order to connect to it properly.\n\n[orange]Note: if your client is not listed here, it isn't compatible with external management mode (Hybrid Mode)."
+
+	show := func(modal *choiceModalLayout) {
+		wiz.md.setPage(modal.page)
+		modal.focus(0) // Catch-all for safety
+
+		for i, option := range wiz.md.Config.ExternalConsensusClient.Options {
+			if option.Value == wiz.md.Config.ExternalConsensusClient.Value {
+				modal.focus(i)
+				break
+			}
+		}
+	}
+
+	done := func(buttonIndex int, buttonLabel string) {
+		selectedClient := clients[buttonIndex].Value.(config.ConsensusClient)
+		wiz.md.Config.ExternalConsensusClient.Value = selectedClient
+		switch selectedClient {
+		case config.ConsensusClient_Lighthouse:
+			wiz.lighthouseExternalSettingsModal.show()
+		case config.ConsensusClient_Prysm:
+			wiz.prysmExternalSettingsModal.show()
+		case config.ConsensusClient_Teku:
+			wiz.tekuExternalSettingsModal.show()
+		}
+	}
+
+	back := func() {
+		wiz.consensusModeModal.show()
+	}
+
+	return newChoiceStep(
+		wiz,
+		currentStep,
+		totalSteps,
+		helperText,
+		clientNames,
+		[]string{},
+		70,
+		"Consensus Client (External) > Selection",
+		DirectionalModalVertical,
+		show,
+		done,
+		back,
+		"step-external-cc",
+	)
+
+}

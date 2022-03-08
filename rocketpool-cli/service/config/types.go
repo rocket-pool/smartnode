@@ -8,3 +8,7 @@ type settingsPage struct {
 	pageId      string
 	content     *tview.Box
 }
+
+type wizardStep interface {
+	show()
+}

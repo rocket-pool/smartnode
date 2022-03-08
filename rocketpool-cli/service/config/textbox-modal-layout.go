@@ -28,7 +28,7 @@ type textBoxModalLayout struct {
 }
 
 // Creates a new TextBoxModalLayout instance
-func newTextBoxModalLayout(app *tview.Application, title string, width int, text string, labels []string, defaultValues []string) *textBoxModalLayout {
+func newTextBoxModalLayout(app *tview.Application, title string, width int, text string, labels []string) *textBoxModalLayout {
 
 	layout := &textBoxModalLayout{
 		app:       app,
@@ -37,7 +37,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 	}
 
 	// Create the button grid
-	height := layout.createControlGrid(labels, defaultValues)
+	height := layout.createControlGrid(labels)
 
 	// Create the main text view
 	textView := tview.NewTextView().
@@ -130,7 +130,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 }
 
 // Creates the grid for the layout's controls
-func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValues []string) int {
+func (layout *textBoxModalLayout) createControlGrid(labels []string) int {
 
 	controlGrid := tview.NewGrid().
 		SetRows(0).
@@ -152,9 +152,6 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, defaultValu
 	for i := 0; i < len(labels); i++ {
 		textbox := tview.NewInputField().
 			SetLabel(labels[i])
-		if len(defaultValues) > i {
-			textbox.SetText(defaultValues[i])
-		}
 		form.AddFormItem(textbox)
 		layout.textboxes[labels[i]] = textbox
 

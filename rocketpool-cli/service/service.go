@@ -213,7 +213,11 @@ func configureService(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error loading user settings: %w", err)
 	}
-	md := cliconfig.NewMainDisplay(app, cfg, isNew)
+
+	// TODO: MIGRATION
+	isMigration := true
+
+	md := cliconfig.NewMainDisplay(app, cfg, isNew, isMigration)
 	err = app.Run()
 	if err != nil {
 		return err

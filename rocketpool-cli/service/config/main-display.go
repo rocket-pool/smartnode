@@ -16,8 +16,10 @@ type mainDisplay struct {
 	app                 *tview.Application
 	content             *tview.Box
 	mainGrid            *tview.Grid
-	newUserWizard       *newUserWizard
+	newUserWizard       *wizard
 	settingsHome        *settingsHome
+	isNew               bool
+	isMigration         bool
 	PreviousConfig      *config.RocketPoolConfig
 	Config              *config.RocketPoolConfig
 	ShouldSave          bool
@@ -26,7 +28,7 @@ type mainDisplay struct {
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isNew bool) *mainDisplay {
+func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isNew bool, isMigration bool) *mainDisplay {
 
 	// Create a copy of the original config for comparison purposes
 	previousConfig := config.CreateCopy()
@@ -60,16 +62,18 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 		app:            app,
 		content:        grid.Box,
 		mainGrid:       grid,
+		isNew:          isNew,
+		isMigration:    isMigration,
 		PreviousConfig: previousConfig,
 		Config:         config,
 	}
 
 	// Create all of the child elements
 	md.settingsHome = newSettingsHome(md)
-	md.newUserWizard = newNewUserWizard(md)
+	md.newUserWizard = newWizard(md)
 
-	if isNew {
-		md.setPage(md.newUserWizard.welcomeModal)
+	if isNew || isMigration {
+		md.newUserWizard.welcomeModal.show()
 	} else {
 		md.setPage(md.settingsHome.homePage)
 	}
