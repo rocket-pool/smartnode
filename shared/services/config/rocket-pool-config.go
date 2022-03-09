@@ -36,6 +36,8 @@ const defaultWatchtowerMetricsPort uint16 = 9104
 type RocketPoolConfig struct {
 	Title string `yaml:"title,omitempty"`
 
+	RocketPoolDirectory string `yaml:"rocketPoolDirectory,omitempty"`
+
 	// Execution client settings
 	ExecutionClientMode Parameter `yaml:"executionClientMode"`
 	ExecutionClient     Parameter `yaml:"executionClient"`
@@ -113,7 +115,7 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 	}
 
 	// Deserialize it into a config object
-	cfg := NewRocketPoolConfig()
+	cfg := NewRocketPoolConfig("")
 	err = cfg.Deserialize(settings)
 	if err != nil {
 		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
@@ -123,10 +125,11 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 }
 
 // Creates a new Rocket Pool configuration instance
-func NewRocketPoolConfig() *RocketPoolConfig {
+func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 
 	config := &RocketPoolConfig{
-		Title: "Top-level Settings",
+		Title:               "Top-level Settings",
+		RocketPoolDirectory: rpDir,
 
 		ExecutionClientMode: Parameter{
 			ID:                   "executionClientMode",
@@ -424,7 +427,7 @@ func NewRocketPoolConfig() *RocketPoolConfig {
 
 // Create a copy of this configuration.
 func (config *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
-	newConfig := NewRocketPoolConfig()
+	newConfig := NewRocketPoolConfig(config.RocketPoolDirectory)
 
 	newParams := newConfig.GetParameters()
 	for i, param := range config.GetParameters() {
@@ -639,6 +642,7 @@ func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 		param.serialize(rootParams)
 	}
 	masterMap[rootConfigName] = rootParams
+	masterMap[rootConfigName]["rpDir"] = config.RocketPoolDirectory
 
 	// Serialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {
@@ -666,6 +670,7 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 			return fmt.Errorf("error deserializing root config: %w", err)
 		}
 	}
+	config.RocketPoolDirectory = masterMap[rootConfigName]["rpDir"]
 
 	// Deserialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {

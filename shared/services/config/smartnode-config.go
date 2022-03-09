@@ -1,6 +1,10 @@
 package config
 
-import "github.com/rocket-pool/smartnode/shared"
+import (
+	"path/filepath"
+
+	"github.com/rocket-pool/smartnode/shared"
+)
 
 // Constants
 const smartnodeTag string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
@@ -100,7 +104,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Name:                 "Data Path",
 			Description:          "The absolute path of the `data` folder that contains your node wallet's encrypted file, the password for your node wallet, and all of the validator keys for your minipools. You may use environment variables in this string.",
 			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/data"},
+			Default:              map[Network]interface{}{Network_All: getDefaultDataDir(config)},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Validator},
 			EnvironmentVariables: []string{"ROCKETPOOL_DATA_FOLDER"},
 			CanBeBlank:           false,
@@ -112,7 +116,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Name:                 "Validator Restart Command",
 			Description:          "The absolute path to a custom script that will be invoked when Rocket Pool needs to restart your validator container to load the new key after a minipool is staked. **For Native mode only.**",
 			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/chains/eth2/restart-validator.sh"},
+			Default:              map[Network]interface{}{Network_All: getDefaultValidatorRestartCommand(config)},
 			AffectsContainers:    []ContainerID{ContainerID_Node},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -304,4 +308,12 @@ func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 // The the title for the config
 func (config *SmartnodeConfig) GetConfigTitle() string {
 	return config.Title
+}
+
+func getDefaultDataDir(config *RocketPoolConfig) string {
+	return filepath.Join(config.RocketPoolDirectory, "data")
+}
+
+func getDefaultValidatorRestartCommand(config *RocketPoolConfig) string {
+	return filepath.Join(config.RocketPoolDirectory, "scripts", "restart-validator.sh")
 }

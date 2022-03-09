@@ -199,7 +199,7 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 
 	isNew := false
 	if cfg == nil {
-		cfg = config.NewRocketPoolConfig()
+		cfg = config.NewRocketPoolConfig(c.configPath)
 		isNew = true
 	}
 	return cfg, isNew, nil
@@ -301,7 +301,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	if err != nil {
 		return nil, fmt.Errorf("error loading legacy configuration: %w", err)
 	}
-	cfg := config.NewRocketPoolConfig()
+	cfg := config.NewRocketPoolConfig(c.configPath)
 
 	// Do the conversion
 
