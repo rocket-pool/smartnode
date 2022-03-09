@@ -22,6 +22,10 @@ type wizard struct {
 	externalGraffitiModal           *textBoxWizardStep
 	metricsModal                    *choiceWizardStep
 	finishedModal                   *choiceWizardStep
+	consensusLocalRandomModal       *choiceWizardStep
+	consensusLocalRandomPrysmModal  *choiceWizardStep
+	consensusLocalPrysmWarning      *choiceWizardStep
+	consensusLocalTekuWarning       *choiceWizardStep
 }
 
 func newWizard(md *mainDisplay) *wizard {
@@ -42,6 +46,8 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.fallbackInfuraModal = createFallbackInfuraStep(wiz, 5, totalSteps)
 	wiz.consensusModeModal = createCcModeStep(wiz, 6, totalSteps)
 	wiz.consensusExternalSelectModal = createExternalCcStep(wiz, 7, totalSteps)
+	wiz.consensusLocalPrysmWarning = createPrysmWarningStep(wiz, 7, totalSteps)
+	wiz.consensusLocalTekuWarning = createTekuWarningStep(wiz, 7, totalSteps)
 	wiz.graffitiModal = createGraffitiStep(wiz, 7, totalSteps)
 	wiz.checkpointSyncProviderModal = createCheckpointSyncStep(wiz, 7, totalSteps)
 	wiz.doppelgangerDetectionModal = createDoppelgangerStep(wiz, 7, totalSteps)

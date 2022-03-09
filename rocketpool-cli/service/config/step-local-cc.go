@@ -2,14 +2,18 @@ package config
 
 import (
 	"fmt"
+	"math/rand"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 const localCcStepID string = "step-local-cc"
+
+const supermajorityWeight float64 = 0.05
 
 func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
@@ -37,22 +41,38 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		wiz.md.setPage(modal.page)
 		modal.focus(0) // Catch-all for safety
 
-		for i, option := range wiz.md.Config.ConsensusClient.Options {
-			if option.Value == wiz.md.Config.ConsensusClient.Value {
-				modal.focus(i)
-				break
+		if !wiz.md.isNew {
+			for i, option := range wiz.md.Config.ConsensusClient.Options {
+				if option.Value == wiz.md.Config.ConsensusClient.Value {
+					modal.focus(i + 1)
+					break
+				}
 			}
 		}
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
-			// TODO: Pick a random client
+			wiz.md.pages.RemovePage(randomCcPrysmID)
+			wiz.md.pages.RemovePage(randomCcID)
+			selectRandomClient(goodClients, true, wiz, currentStep, totalSteps)
 		} else {
-			selectedClient := clients[buttonIndex+1].Value.(config.ConsensusClient)
+			selectedClient := clients[buttonIndex-1].Value.(config.ConsensusClient)
 			wiz.md.Config.ConsensusClient.Value = selectedClient
+			switch selectedClient {
+			case config.ConsensusClient_Prysm:
+				wiz.consensusLocalPrysmWarning.show()
+			case config.ConsensusClient_Teku:
+				totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+				if runtime.GOARCH == "arm64" || totalMemoryGB < 16 {
+					wiz.consensusLocalTekuWarning.show()
+				} else {
+					wiz.graffitiModal.show()
+				}
+			default:
+				wiz.graffitiModal.show()
+			}
 		}
-		wiz.graffitiModal.show()
 	}
 
 	back := func() {
@@ -77,6 +97,48 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 
 }
 
+// Get a random client compatible with the user's hardware and EC choices.
+func selectRandomClient(goodOptions []config.ParameterOption, includeSupermajority bool, wiz *wizard, currentStep int, totalSteps int) {
+
+	// Get system specs
+	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+	isLowPower := (totalMemoryGB < 16 || runtime.GOARCH == "arm64")
+
+	// Filter out the clients based on system specs
+	filteredClients := []config.ConsensusClient{}
+	for _, clientOption := range goodOptions {
+		client := clientOption.Value.(config.ConsensusClient)
+		switch client {
+		case config.ConsensusClient_Teku:
+			if !isLowPower {
+				filteredClients = append(filteredClients, client)
+			}
+		case config.ConsensusClient_Prysm:
+			if includeSupermajority {
+				filteredClients = append(filteredClients, client)
+			}
+		default:
+			filteredClients = append(filteredClients, client)
+		}
+	}
+
+	// Select a random client
+	rand.Seed(time.Now().UnixNano())
+	selectedClient := filteredClients[rand.Intn(len(filteredClients))]
+	wiz.md.Config.ConsensusClient.Value = selectedClient
+
+	// Show the selection page
+	if selectedClient == config.ConsensusClient_Prysm {
+		wiz.consensusLocalRandomPrysmModal = createRandomPrysmStep(wiz, currentStep, totalSteps, goodOptions)
+		wiz.consensusLocalRandomPrysmModal.show()
+	} else {
+		wiz.consensusLocalRandomModal = createRandomStep(wiz, currentStep, totalSteps, goodOptions)
+		wiz.consensusLocalRandomModal.show()
+	}
+
+}
+
+// Get a more verbose client description, including warnings
 func getAugmentedDescription(client config.ConsensusClient, originalDescription string) string {
 
 	switch client {

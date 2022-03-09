@@ -7,6 +7,8 @@ import (
 	"github.com/rivo/tview"
 )
 
+const settingsHomeID string = "settings-home"
+
 // This is a container for the primary settings category selection home screen.
 type settingsHome struct {
 	homePage         *page
@@ -21,7 +23,7 @@ type settingsHome struct {
 // Creates a new SettingsHome instance and adds (and its subpages) it to the main display.
 func newSettingsHome(md *mainDisplay) *settingsHome {
 
-	homePage := newPage(nil, "settings-home", "Categories", "", nil)
+	homePage := newPage(nil, settingsHomeID, "Categories", "", nil)
 
 	// Create the page and return it
 	home := &settingsHome{

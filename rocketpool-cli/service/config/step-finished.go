@@ -11,6 +11,8 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
+			wiz.md.pages.RemovePage(settingsHomeID)
+			wiz.md.settingsHome = newSettingsHome(wiz.md)
 			wiz.md.setPage(wiz.md.settingsHome.homePage)
 		} else {
 			wiz.md.ShouldSave = true

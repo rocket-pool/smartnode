@@ -57,7 +57,7 @@ func createGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWi
 	}
 
 	back := func() {
-		wiz.consensusModeModal.show()
+		wiz.consensusLocalModal.show()
 	}
 
 	return newTextBoxWizardStep(
