@@ -807,7 +807,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 
 		if config.Exporter.RootFs.Value == true {
 			envVars["EXPORTER_ROOTFS_COMMAND"] = ", \"--path.rootfs=/rootfs\""
-			envVars["EXPORTER_ROOTFS_VOLUME"] = ", /:/rootfs:ro"
+			envVars["EXPORTER_ROOTFS_VOLUME"] = ", \"/:/rootfs:ro\""
 		}
 
 		if config.Prometheus.OpenPort.Value == true {

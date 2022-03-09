@@ -85,11 +85,12 @@ func installService(c *cli.Context) error {
 
 	printPatchNotes(c)
 
-	if c.GlobalString("host") == "" {
-		fmt.Printf("%sNOTE:\nIf this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
-		fmt.Println("This is necessary for your user account to have permissions to use Docker.")
-		fmt.Printf("If you have installed Rocket Pool previously and are just upgrading, you can safely ignore this message.%s", colorReset)
+	_, isNew, _ := rp.LoadConfig()
+	if isNew {
+		fmt.Printf("%sNOTE:\nSince this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
+		fmt.Printf("This is necessary for your user account to have permissions to use Docker.%s", colorReset)
 	}
+
 	return nil
 
 }
@@ -110,18 +111,15 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== Manual Minipool Staking ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now call `rocketpool minipool stake` if you want to manually perform the `stake` operation on a new minipool once it has passed the scrub check, which will trigger the second 16 ETH deposit and move it from `prelaunch` to `staking` status.")
-	fmt.Println("This will still be done automatically by the `rocketpool_node` container, but now you can do it manually too in case you want to submit it with a low max fee or overwrite an existing nonce.\n")
+	fmt.Printf("%s=== New Configuration System ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode's configuration system has undergone some massive changes based on community feedback! Here are the updates:\n")
+	fmt.Println("- The text-based `rocketpool service config` interview process, along with the old `config.yml` file, have been replaced with a shiny, easy-to-use new UI. You can now simply browse through and change any of the settings.`\n")
+	fmt.Println("- All of your settings will now persist across Smartnode updates - you don't need to redo the changes anymore after updating!\n")
+	fmt.Println("- First-class support for Hybrid mode (externally-managed clients)! No more need to mess with the Docker files.\n")
+	fmt.Println("- Advanced users who customize their Docker compose files can now do so with special files in the `override` folder - these will replace any settings in the original Docker compose files, and will persist across updates so you only need to create them once.\n")
 
-	fmt.Printf("%s=== Doppelgänger Detection ===%s\n", colorGreen, colorReset)
-	fmt.Printf("The Smartnode now lets you enable doppelgänger detection - a special feature supported by %sLighthouse, Nimbus, and Prysm%s.\n", colorLightBlue, colorReset)
-	fmt.Println("This will cause the validator client (or the Beacon client in Nimbus's case) to intentionally miss 1 or 2 attestations when it restarts.")
-	fmt.Println("While doing this, it will listen to the network to see if some other machine is attesting with your validator keys.")
-	fmt.Println("If someone is attesting with your keys, the client will shut down immediately to prevent you from attesting twice and being slashed!\n")
-
-	fmt.Println("This is disabled by default, but you can enable it via `rocketpool service config`.")
-	fmt.Printf("%s**IN A FUTURE RELEASE, THIS WILL BE ENABLED BY DEFAULT TO ENSURE MAXIMUM SAFETY.**%s\n\n", colorLightBlue, colorReset)
+	fmt.Printf("%s=== Restoring from Backup ===%s\n", colorGreen, colorReset)
+	fmt.Println("All of your previous configuration files and settings have been backed up. Please see <link I have yet to write> for a walkthrough of how to restore them if you need to revert to the previous version.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -362,8 +360,24 @@ func startService(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("Error loading user settings: %w", err)
 	}
+
+	isMigration := false
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		// Look for a legacy config to migrate
+		migratedConfig, err := rp.LoadLegacyConfigFromBackup()
+		if err != nil {
+			return err
+		}
+		if migratedConfig != nil {
+			cfg = migratedConfig
+			isMigration = true
+		}
+	}
+
+	if isMigration {
+		return fmt.Errorf("You must upgrade your configuration before starting the Smartnode. Please run `rocketpool service config` to confirm your settings were migrated correctly, and enjoy the new configuration UI!")
+	} else if isNew {
+		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smartnode before running it.")
 	}
 
 	metricsEnabled := cfg.EnableMetrics.Value.(bool)

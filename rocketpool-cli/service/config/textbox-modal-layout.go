@@ -90,7 +90,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 	// Get the total content height, including spacers and borders
 	lines := tview.WordWrap(text, width-4)
 	textViewHeight := len(lines) + 4
-	borderGrid.SetRows(0, textViewHeight+height+2, 0, 1)
+	borderGrid.SetRows(0, textViewHeight+height+2, 0, 2)
 
 	// Create the nav footer text view
 	navString1 := "Arrow keys: Navigate     Space/Enter: Select"

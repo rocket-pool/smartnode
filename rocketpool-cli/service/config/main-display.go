@@ -89,7 +89,7 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 		if x == md.previousWidth && y == md.previousHeight {
 			return
 		}
-		if x < 108 || y < 30 {
+		if x < 112 || y < 32 {
 			grid.RemoveItem(pages)
 			grid.AddItem(resizeWarning, 3, 1, 1, 1, 0, 0, false)
 		} else {
