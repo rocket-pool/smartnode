@@ -82,6 +82,8 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 	// Create all of the child elements
 	md.settingsHome = newSettingsHome(md)
 	md.newUserWizard = newWizard(md)
+
+	// Set up the resize warning
 	md.app.SetAfterDrawFunc(func(screen tcell.Screen) {
 		x, y := screen.Size()
 		if x == md.previousWidth && y == md.previousHeight {

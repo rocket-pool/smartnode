@@ -38,7 +38,10 @@ const (
 	InstallerURL     string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
 	UpdateTrackerURL string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install-update-tracker.sh"
 
+	LegacyBackupFolder       string = "old_config_backup"
 	SettingsFile             string = "user-settings.yml"
+	LegacyConfigFile         string = "config.yml"
+	LegacySettingsFile       string = "settings.yml"
 	PrometheusConfigTemplate string = "prometheus.tmpl"
 	PrometheusFile           string = "prometheus.yml"
 
@@ -205,6 +208,36 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
 	return c.saveConfig(cfg, fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
+}
+
+// Load the legacy config if one exists
+func (c *Client) LoadLegacyConfigFromBackup() (*config.RocketPoolConfig, error) {
+	// Check if the backup config file exists
+	configPath, err := homedir.Expand(filepath.Join(c.configPath, LegacyBackupFolder, LegacyConfigFile))
+	if err != nil {
+		return nil, fmt.Errorf("Error expanding legacy config file path: %w", err)
+	}
+	_, err = os.Stat(configPath)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	// The backup config file exists, try loading the settings file
+	settingsPath, err := homedir.Expand(filepath.Join(c.configPath, LegacyBackupFolder, LegacySettingsFile))
+	if err != nil {
+		return nil, fmt.Errorf("Error expanding legacy settings file path: %w", err)
+	}
+	_, err = os.Stat(settingsPath)
+	if os.IsNotExist(err) {
+		return nil, fmt.Errorf("Found a legacy config.yml file in the backup directory but not a legacy settings.yml file.")
+	}
+
+	// Migrate the old config to a new one
+	newCfg, err := c.MigrateLegacyConfig(configPath, settingsPath)
+	if err != nil {
+		return nil, fmt.Errorf("Error migrating legacy config from a previous installation: %w", err)
+	}
+	return newCfg, nil
 }
 
 // Load the Prometheus template, do an environment variable substitution, and save it

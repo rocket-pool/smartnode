@@ -32,9 +32,8 @@ const (
 	NodeContainerSuffix             string = "_node"
 	ApiContainerSuffix              string = "_api"
 	PruneProvisionerContainerSuffix string = "_prune_provisioner"
-	//checkpointSyncSetting           string = "ETH2_CHECKPOINT_SYNC_URL"
-	clientDataVolumeName string = "/ethclient"
-	dataFolderVolumeName string = "/.rocketpool/data"
+	clientDataVolumeName            string = "/ethclient"
+	dataFolderVolumeName            string = "/.rocketpool/data"
 
 	PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
 	dockerImageRegex       string = ".*/(?P<image>.*):.*"
@@ -214,8 +213,18 @@ func configureService(c *cli.Context) error {
 		return fmt.Errorf("error loading user settings: %w", err)
 	}
 
-	// TODO: MIGRATION
-	isMigration := true
+	isMigration := false
+	if isNew {
+		// Look for a legacy config to migrate
+		migratedConfig, err := rp.LoadLegacyConfigFromBackup()
+		if err != nil {
+			return err
+		}
+		if migratedConfig != nil {
+			cfg = migratedConfig
+			isMigration = true
+		}
+	}
 
 	md := cliconfig.NewMainDisplay(app, cfg, isNew, isMigration)
 	err = app.Run()
