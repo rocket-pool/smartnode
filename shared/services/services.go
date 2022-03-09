@@ -173,8 +173,8 @@ func getWallet(cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wa
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
 		var maxPriorityFee *big.Int
-		maxFee = big.NewInt(int64(cfg.Smartnode.ManualMaxFee.Value.(uint)))
-		maxPriorityFee = big.NewInt(int64(cfg.Smartnode.PriorityFee.Value.(uint)))
+		maxFee = big.NewInt(int64(cfg.Smartnode.ManualMaxFee.Value.(float64)))
+		maxPriorityFee = big.NewInt(int64(cfg.Smartnode.PriorityFee.Value.(float64)))
 		chainId := cfg.Smartnode.GetChainID()
 
 		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm)
