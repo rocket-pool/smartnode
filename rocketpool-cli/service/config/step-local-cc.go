@@ -64,7 +64,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 				wiz.consensusLocalPrysmWarning.show()
 			case config.ConsensusClient_Teku:
 				totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
-				if runtime.GOARCH == "arm64" || totalMemoryGB < 16 {
+				if runtime.GOARCH == "arm64" || totalMemoryGB < 15 {
 					wiz.consensusLocalTekuWarning.show()
 				} else {
 					wiz.graffitiModal.show()
@@ -102,7 +102,7 @@ func selectRandomClient(goodOptions []config.ParameterOption, includeSupermajori
 
 	// Get system specs
 	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
-	isLowPower := (totalMemoryGB < 16 || runtime.GOARCH == "arm64")
+	isLowPower := (totalMemoryGB < 15 || runtime.GOARCH == "arm64")
 
 	// Filter out the clients based on system specs
 	filteredClients := []config.ConsensusClient{}
@@ -146,7 +146,7 @@ func getAugmentedDescription(client config.ConsensusClient, originalDescription 
 		return fmt.Sprintf("%s\n\n[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more.", originalDescription)
 	case config.ConsensusClient_Teku:
 		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
-		if runtime.GOARCH == "arm64" || totalMemoryGB < 16 {
+		if runtime.GOARCH == "arm64" || totalMemoryGB < 15 {
 			return fmt.Sprintf("%s\n\n[orange]WARNING: Teku is a resource-heavy client and will likely not perform well on your system given your CPU power or amount of available RAM. We recommend you pick a lighter client instead.", originalDescription)
 		}
 	}

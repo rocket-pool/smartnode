@@ -625,7 +625,7 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "up -d")
+	cmd, err := c.compose(composeFiles, "up -d --remove-orphans")
 	if err != nil {
 		return err
 	}
