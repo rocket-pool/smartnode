@@ -12,107 +12,99 @@ import (
 
 // Estimate the gas of Join
 func EstimateJoinGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return rocketpool.GasInfo{}, err
-    }
-    return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionJoin")
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionJoin")
 }
-
 
 // Join the trusted node DAO
 // Requires an executed invite proposal
 func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return common.Hash{}, err
-    }
-    hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionJoin")
-    if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not join the trusted node DAO: %w", err)
-    }
-    return hash, nil
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionJoin")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not join the trusted node DAO: %w", err)
+	}
+	return hash, nil
 }
-
 
 // Estimate the gas of Leave
 func EstimateLeaveGas(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return rocketpool.GasInfo{}, err
-    }
-    return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionLeave", rplBondRefundAddress)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionLeave", rplBondRefundAddress)
 }
-
 
 // Leave the trusted node DAO
 // Requires an executed leave proposal
 func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return common.Hash{}, err
-    }
-    hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", rplBondRefundAddress)
-    if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not leave the trusted node DAO: %w", err)
-    }
-    return hash, nil
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", rplBondRefundAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not leave the trusted node DAO: %w", err)
+	}
+	return hash, nil
 }
-
 
 // Estimate the gas of MakeChallenge
 func EstimateMakeChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return rocketpool.GasInfo{}, err
-    }
-    return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionChallengeMake", memberAddress)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionChallengeMake", memberAddress)
 }
-
 
 // Make a challenge against a node
 func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return common.Hash{}, err
-    }
-    hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeMake", memberAddress)
-    if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not challenge trusted node DAO member %s: %w", memberAddress.Hex(), err)
-    }
-    return hash, nil
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeMake", memberAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not challenge trusted node DAO member %s: %w", memberAddress.Hex(), err)
+	}
+	return hash, nil
 }
-
 
 // Estimate the gas of DecideChallenge
 func EstimateDecideChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return rocketpool.GasInfo{}, err
-    }
-    return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionChallengeDecide", memberAddress)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDAONodeTrustedActions.GetTransactionGasInfo(opts, "actionChallengeDecide", memberAddress)
 }
-
 
 // Decide a challenge against a node
 func DecideChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-    rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
-    if err != nil {
-        return common.Hash{}, err
-    }
-    hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeDecide", memberAddress)
-    if err != nil {
-        return common.Hash{}, fmt.Errorf("Could not decide the challenge against trusted node DAO member %s: %w", memberAddress.Hex(), err)
-    }
-    return hash, nil
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeDecide", memberAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not decide the challenge against trusted node DAO member %s: %w", memberAddress.Hex(), err)
+	}
+	return hash, nil
 }
-
 
 // Get contracts
 var rocketDAONodeTrustedActionsLock sync.Mutex
-func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
-    rocketDAONodeTrustedActionsLock.Lock()
-    defer rocketDAONodeTrustedActionsLock.Unlock()
-    return rp.GetContract("rocketDAONodeTrustedActions")
-}
 
+func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+	rocketDAONodeTrustedActionsLock.Lock()
+	defer rocketDAONodeTrustedActionsLock.Unlock()
+	return rp.GetContract("rocketDAONodeTrustedActions")
+}

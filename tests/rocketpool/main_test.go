@@ -13,25 +13,24 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tests"
 )
 
-
 var (
-    client *uc.EthClientProxy
-    rp *rocketpool.RocketPool
+	client *uc.EthClientProxy
+	rp     *rocketpool.RocketPool
 )
 
-
 func TestMain(m *testing.M) {
-    var err error
+	var err error
 
-    // Initialize eth client
-    client = uc.NewEth1ClientProxy(0, tests.Eth1ProviderAddress)
+	// Initialize eth client
+	client = uc.NewEth1ClientProxy(0, tests.Eth1ProviderAddress)
 
-    // Initialize contract manager
-    rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))
-    if err != nil { log.Fatal(err) }
+	// Initialize contract manager
+	rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Run tests
-    os.Exit(m.Run())
+	// Run tests
+	os.Exit(m.Run())
 
 }
-

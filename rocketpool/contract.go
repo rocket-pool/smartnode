@@ -18,213 +18,206 @@ import (
 
 // Transaction settings
 const (
-    GasLimitMultiplier float64 = 1.5
-    MaxGasLimit = 12000000
+	GasLimitMultiplier float64 = 1.5
+	MaxGasLimit                = 12000000
 )
-
 
 // Contract type wraps go-ethereum bound contract
 type Contract struct {
-    Contract *bind.BoundContract
-    Address *common.Address
-    ABI *abi.ABI
-    Client *client.EthClientProxy
+	Contract *bind.BoundContract
+	Address  *common.Address
+	ABI      *abi.ABI
+	Client   *client.EthClientProxy
 }
-
 
 // Response for gas limits from network and from user request
 type GasInfo struct {
-    EstGasLimit uint64              `json:"estGasLimit"`
-    SafeGasLimit uint64             `json:"safeGasLimit"`
+	EstGasLimit  uint64 `json:"estGasLimit"`
+	SafeGasLimit uint64 `json:"safeGasLimit"`
 }
-
 
 // Call a contract method
 func (c *Contract) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-    results := make([]interface{}, 1)
-    results[0] = result
-    return c.Contract.Call(opts, &results, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return c.Contract.Call(opts, &results, method, params...)
 }
-
 
 // Get Gas Limit for transaction
 func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string, params ...interface{}) (GasInfo, error) {
 
-    response := GasInfo{}
+	response := GasInfo{}
 
-    // Pack transaction Info
-    input, err := c.ABI.Pack(method, params...)
-    if err != nil {
-        return response, fmt.Errorf("Error getting transaction gas info: Could not encode input data: %w", err)
-    }
+	// Pack transaction Info
+	input, err := c.ABI.Pack(method, params...)
+	if err != nil {
+		return response, fmt.Errorf("Error getting transaction gas info: Could not encode input data: %w", err)
+	}
 
-    // Estimate gas limit
-    estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, input)
+	// Estimate gas limit
+	estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, input)
 
-    if err != nil {
-        return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas limit: %w", err)
-    }
-    response.EstGasLimit = estGasLimit
-    response.SafeGasLimit = safeGasLimit
+	if err != nil {
+		return response, fmt.Errorf("Error getting transaction gas info: could not estimate gas limit: %w", err)
+	}
+	response.EstGasLimit = estGasLimit
+	response.SafeGasLimit = safeGasLimit
 
-    return response, err
+	return response, err
 }
-
 
 // Transact on a contract method and wait for a receipt
 func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (common.Hash, error) {
 
-    // Estimate gas limit
-    if opts.GasLimit == 0 {
-        input, err := c.ABI.Pack(method, params...)
-        if err != nil {
-            return common.Hash{}, fmt.Errorf("Could not encode input data: %w", err)
-        }
-        _, safeGasLimit, err := c.estimateGasLimit(opts, input)
-        if err != nil {
-            return common.Hash{}, err
-        }
-        opts.GasLimit = safeGasLimit
-    }
+	// Estimate gas limit
+	if opts.GasLimit == 0 {
+		input, err := c.ABI.Pack(method, params...)
+		if err != nil {
+			return common.Hash{}, fmt.Errorf("Could not encode input data: %w", err)
+		}
+		_, safeGasLimit, err := c.estimateGasLimit(opts, input)
+		if err != nil {
+			return common.Hash{}, err
+		}
+		opts.GasLimit = safeGasLimit
+	}
 
-    // Send transaction
-    tx, err := c.Contract.Transact(opts, method, params...)
-    if err != nil {
-        return common.Hash{}, err
-    }
+	// Send transaction
+	tx, err := c.Contract.Transact(opts, method, params...)
+	if err != nil {
+		return common.Hash{}, err
+	}
 
-    return tx.Hash(), nil
+	return tx.Hash(), nil
 
 }
-
 
 // Get gas limit for a transfer call
 func (c *Contract) GetTransferGasInfo(opts *bind.TransactOpts) (GasInfo, error) {
 
-    response := GasInfo {}
+	response := GasInfo{}
 
-    // Estimate gas limit
-    estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, []byte{})
-    if err != nil {
-        return response, fmt.Errorf("Error getting transfer gas info: could not estimate gas limit: %w", err)
-    }
-    response.EstGasLimit = estGasLimit
-    response.SafeGasLimit = safeGasLimit
+	// Estimate gas limit
+	estGasLimit, safeGasLimit, err := c.estimateGasLimit(opts, []byte{})
+	if err != nil {
+		return response, fmt.Errorf("Error getting transfer gas info: could not estimate gas limit: %w", err)
+	}
+	response.EstGasLimit = estGasLimit
+	response.SafeGasLimit = safeGasLimit
 
-    return response, nil
+	return response, nil
 }
-
 
 // Transfer ETH to a contract and wait for a receipt
 func (c *Contract) Transfer(opts *bind.TransactOpts) (common.Hash, error) {
 
-    // Estimate gas limit
-    if opts.GasLimit == 0 {
-        _, safeGasLimit, err := c.estimateGasLimit(opts, []byte{})
-        if err != nil {
-            return common.Hash{}, err
-        }
-        opts.GasLimit = safeGasLimit
-    }
+	// Estimate gas limit
+	if opts.GasLimit == 0 {
+		_, safeGasLimit, err := c.estimateGasLimit(opts, []byte{})
+		if err != nil {
+			return common.Hash{}, err
+		}
+		opts.GasLimit = safeGasLimit
+	}
 
-    // Send transaction
-    tx, err := c.Contract.Transfer(opts)
-    if err != nil {
-        return common.Hash{}, err
-    }
+	// Send transaction
+	tx, err := c.Contract.Transfer(opts)
+	if err != nil {
+		return common.Hash{}, err
+	}
 
-    return tx.Hash(), nil
+	return tx.Hash(), nil
 
 }
-
 
 // Estimate the expected and safe gas limits for a contract transaction
 func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint64, uint64, error) {
 
-    // Estimate gas limit
-    gasLimit, err := c.Client.EstimateGas(context.Background(), ethereum.CallMsg{
-        From: opts.From,
-        To: c.Address,
-        GasPrice: big.NewInt(0), // use 0 gwei for simulation
-        Value: opts.Value,
-        Data: input,
-    })
-    
-    if err != nil {
-        return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", err)
-    }
+	// Estimate gas limit
+	gasLimit, err := c.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+		From:     opts.From,
+		To:       c.Address,
+		GasPrice: big.NewInt(0), // use 0 gwei for simulation
+		Value:    opts.Value,
+		Data:     input,
+	})
 
-    // Pad and return gas limit
-    safeGasLimit := uint64(float64(gasLimit) * GasLimitMultiplier)
-    if gasLimit > MaxGasLimit { gasLimit = MaxGasLimit }
-    if safeGasLimit > MaxGasLimit { safeGasLimit = MaxGasLimit }
-    return gasLimit, safeGasLimit, nil
+	if err != nil {
+		return 0, 0, fmt.Errorf("Could not estimate gas needed: %w", err)
+	}
+
+	// Pad and return gas limit
+	safeGasLimit := uint64(float64(gasLimit) * GasLimitMultiplier)
+	if gasLimit > MaxGasLimit {
+		gasLimit = MaxGasLimit
+	}
+	if safeGasLimit > MaxGasLimit {
+		safeGasLimit = MaxGasLimit
+	}
+	return gasLimit, safeGasLimit, nil
 
 }
-
 
 // Wait for a transaction to be mined and get a tx receipt
 func (c *Contract) getTransactionReceipt(tx *types.Transaction) (*types.Receipt, error) {
 
-    // Wait for transaction to be mined
-    txReceipt, err := bind.WaitMined(context.Background(), c.Client, tx)
-    if err != nil {
-        return nil, err
-    }
+	// Wait for transaction to be mined
+	txReceipt, err := bind.WaitMined(context.Background(), c.Client, tx)
+	if err != nil {
+		return nil, err
+	}
 
-    // Check transaction status
-    if txReceipt.Status == 0 {
-        return txReceipt, errors.New("Transaction failed with status 0")
-    }
+	// Check transaction status
+	if txReceipt.Status == 0 {
+		return txReceipt, errors.New("Transaction failed with status 0")
+	}
 
-    // Return
-    return txReceipt, nil
+	// Return
+	return txReceipt, nil
 
 }
-
 
 // Get contract events from a transaction
 // eventPrototype must be an event struct type
 // Returns a slice of untyped values; assert returned events to event struct type
 func (c *Contract) GetTransactionEvents(txReceipt *types.Receipt, eventName string, eventPrototype interface{}) ([]interface{}, error) {
 
-    // Get event type
-    eventType := reflect.TypeOf(eventPrototype)
-    if eventType.Kind() != reflect.Struct {
-        return nil, errors.New("Invalid event type")
-    }
+	// Get event type
+	eventType := reflect.TypeOf(eventPrototype)
+	if eventType.Kind() != reflect.Struct {
+		return nil, errors.New("Invalid event type")
+	}
 
-    // Get ABI event
-    abiEvent, ok := c.ABI.Events[eventName]
-    if !ok {
-        return nil, fmt.Errorf("Event '%s' does not exist on contract", eventName)
-    }
+	// Get ABI event
+	abiEvent, ok := c.ABI.Events[eventName]
+	if !ok {
+		return nil, fmt.Errorf("Event '%s' does not exist on contract", eventName)
+	}
 
-    // Process transaction receipt logs
-    events := make([]interface{}, 0)
-    for _, log := range txReceipt.Logs {
+	// Process transaction receipt logs
+	events := make([]interface{}, 0)
+	for _, log := range txReceipt.Logs {
 
-        // Check log address matches contract address
-        if !bytes.Equal(log.Address.Bytes(), c.Address.Bytes()) {
-            continue
-        }
+		// Check log address matches contract address
+		if !bytes.Equal(log.Address.Bytes(), c.Address.Bytes()) {
+			continue
+		}
 
-        // Check log first topic matches event ID
-        if len(log.Topics) == 0 || !bytes.Equal(log.Topics[0].Bytes(), abiEvent.ID.Bytes()) {
-            continue
-        }
+		// Check log first topic matches event ID
+		if len(log.Topics) == 0 || !bytes.Equal(log.Topics[0].Bytes(), abiEvent.ID.Bytes()) {
+			continue
+		}
 
-        // Unpack event
-        event := reflect.New(eventType)
-        if err := c.Contract.UnpackLog(event.Interface(), eventName, *log); err != nil {
-            return nil, fmt.Errorf("Could not unpack event data: %w", err)
-        }
-        events = append(events, reflect.Indirect(event).Interface())
+		// Unpack event
+		event := reflect.New(eventType)
+		if err := c.Contract.UnpackLog(event.Interface(), eventName, *log); err != nil {
+			return nil, fmt.Errorf("Could not unpack event data: %w", err)
+		}
+		events = append(events, reflect.Indirect(event).Interface())
 
-    }
+	}
 
-    // Return events
-    return events, nil
+	// Return events
+	return events, nil
 
 }
-

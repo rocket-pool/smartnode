@@ -14,37 +14,42 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
 )
 
-
 var (
-    client *uc.EthClientProxy
-    rp *rocketpool.RocketPool
+	client *uc.EthClientProxy
+	rp     *rocketpool.RocketPool
 
-    ownerAccount *accounts.Account
-    nodeAccount *accounts.Account
-    userAccount *accounts.Account
+	ownerAccount *accounts.Account
+	nodeAccount  *accounts.Account
+	userAccount  *accounts.Account
 )
 
-
 func TestMain(m *testing.M) {
-    var err error
+	var err error
 
-    // Initialize eth client
-    client = uc.NewEth1ClientProxy(0, tests.Eth1ProviderAddress)
+	// Initialize eth client
+	client = uc.NewEth1ClientProxy(0, tests.Eth1ProviderAddress)
 
-    // Initialize contract manager
-    rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))
-    if err != nil { log.Fatal(err) }
+	// Initialize contract manager
+	rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Initialize accounts
-    ownerAccount, err = accounts.GetAccount(0)
-    if err != nil { log.Fatal(err) }
-    nodeAccount, err = accounts.GetAccount(1)
-    if err != nil { log.Fatal(err) }
-    userAccount, err = accounts.GetAccount(9)
-    if err != nil { log.Fatal(err) }
+	// Initialize accounts
+	ownerAccount, err = accounts.GetAccount(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	nodeAccount, err = accounts.GetAccount(1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	userAccount, err = accounts.GetAccount(9)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Run tests
-    os.Exit(m.Run())
+	// Run tests
+	os.Exit(m.Run())
 
 }
-

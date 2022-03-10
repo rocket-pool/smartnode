@@ -43,9 +43,8 @@ func FilterContractLogs(rp *rocketpool.RocketPool, contractName string, q Filter
 	}
 	addresses = append(addresses, *currentAddress)
 	// Perform the desired getLogs call and return results
-	return GetLogs(rp, addresses, q.Topics, intervalSize, q.FromBlock, q.ToBlock, q.BlockHash);
+	return GetLogs(rp, addresses, q.Topics, intervalSize, q.FromBlock, q.ToBlock, q.BlockHash)
 }
-
 
 // Gets the logs for a particular log request, breaking the calls into batches if necessary
 func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFilter [][]common.Hash, intervalSize, fromBlock, toBlock *big.Int, blockHash *common.Hash) ([]types.Log, error) {
@@ -65,9 +64,9 @@ func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFil
 		// Handle unlimited intervals with a single call
 		logs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
 			Addresses: addressFilter,
-			Topics: topicFilter,
+			Topics:    topicFilter,
 			FromBlock: fromBlock,
-			ToBlock: toBlock,
+			ToBlock:   toBlock,
 			BlockHash: blockHash,
 		})
 		if err != nil {
@@ -96,9 +95,9 @@ func GetLogs(rp *rocketpool.RocketPool, addressFilter []common.Address, topicFil
 			// Get the logs using the current interval
 			newLogs, err := rp.Client.FilterLogs(context.Background(), ethereum.FilterQuery{
 				Addresses: addressFilter,
-				Topics: topicFilter,
+				Topics:    topicFilter,
 				FromBlock: start,
-				ToBlock: end,
+				ToBlock:   end,
 				BlockHash: blockHash,
 			})
 			if err != nil {
