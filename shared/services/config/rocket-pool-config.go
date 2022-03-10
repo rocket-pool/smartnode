@@ -733,8 +733,8 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	envVars["FALLBACK_EC_CLIENT"] = fmt.Sprint(config.FallbackExecutionClient.Value)
 	if config.UseFallbackExecutionClient.Value == true {
 		if config.FallbackExecutionClientMode.Value.(Mode) == Mode_Local {
-			envVars["FALLBACK_EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, config.FallbackExecutionCommon.HttpPort.Value)
-			envVars["FALLBACK_EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, config.FallbackExecutionCommon.WsPort.Value)
+			envVars["FALLBACK_EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1FallbackContainerName, config.FallbackExecutionCommon.HttpPort.Value)
+			envVars["FALLBACK_EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1FallbackContainerName, config.FallbackExecutionCommon.WsPort.Value)
 
 			// Handle open API ports
 			if config.FallbackExecutionCommon.OpenRpcPorts.Value == true {

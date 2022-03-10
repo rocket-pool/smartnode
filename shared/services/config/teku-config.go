@@ -1,6 +1,6 @@
 package config
 
-const tekuTag string = "consensys/teku:22.1.1"
+const tekuTag string = "consensys/teku:22.3.0"
 
 // Configuration for Teku
 type TekuConfig struct {
