@@ -15,7 +15,7 @@ import (
 
 // Settings
 const (
-    MinipoolPrelaunchBatchSize = 750
+    MinipoolPrelaunchBatchSize = 250
     MinipoolAddressBatchSize = 50
     MinipoolDetailsBatchSize = 20
 )
