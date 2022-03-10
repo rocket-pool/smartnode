@@ -325,7 +325,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: false},
 			AffectsContainers:    []ContainerID{ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Grafana, ContainerID_Prometheus, ContainerID_Exporter},
-			EnvironmentVariables: []string{},
+			EnvironmentVariables: []string{"ENABLE_METRICS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
