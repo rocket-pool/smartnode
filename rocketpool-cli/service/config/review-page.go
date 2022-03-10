@@ -16,7 +16,7 @@ type SettingsPair struct {
 	Name               string
 	OldValue           string
 	NewValue           string
-	AffectedContainers []config.ContainerID
+	AffectedContainers map[config.ContainerID]bool
 }
 
 // The changed settings review page
@@ -42,7 +42,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	totalAffectedContainers := map[config.ContainerID]bool{}
 	for _, settingList := range changedSettings {
 		for _, setting := range settingList {
-			for _, container := range setting.AffectedContainers {
+			for container := range setting.AffectedContainers {
 				totalAffectedContainers[container] = true
 			}
 		}
@@ -268,16 +268,23 @@ func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Param
 }
 
 // Handles custom container overrides
-func getAffectedContainers(param *config.Parameter, cfg *config.RocketPoolConfig) []config.ContainerID {
+func getAffectedContainers(param *config.Parameter, cfg *config.RocketPoolConfig) map[config.ContainerID]bool {
 
-	// Nimbus doesn't operate in split mode, so all of the common VC parameters need to get redirected to the BN instead
-	if (param.ID == config.GraffitiID || param.ID == config.DoppelgangerDetectionID) &&
-		cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local &&
-		cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Nimbus {
+	affectedContainers := map[config.ContainerID]bool{}
 
-		return []config.ContainerID{config.ContainerID_Eth2}
+	for _, container := range param.AffectsContainers {
+		affectedContainers[container] = true
 	}
 
-	return param.AffectsContainers
+	// Nimbus doesn't operate in split mode, so all of the VC parameters need to get redirected to the BN instead
+	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local &&
+		cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Nimbus {
+		for _, container := range param.AffectsContainers {
+			if container == config.ContainerID_Validator {
+				affectedContainers[config.ContainerID_Eth2] = true
+			}
+		}
+	}
+	return affectedContainers
 
 }
