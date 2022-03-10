@@ -740,7 +740,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			if config.FallbackExecutionCommon.OpenRpcPorts.Value == true {
 				ecHttpPort := config.FallbackExecutionCommon.HttpPort.Value.(uint16)
 				ecWsPort := config.FallbackExecutionCommon.WsPort.Value.(uint16)
-				envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+				envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf("\"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
 			}
 
 			// Common params
