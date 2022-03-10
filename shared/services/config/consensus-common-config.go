@@ -3,7 +3,6 @@ package config
 // Param IDs
 const GraffitiID string = "graffiti"
 const CheckpointSyncUrlID string = "checkpointSyncUrl"
-const MaxPeersID string = "maxPeers"
 const P2pPortID string = "p2pPort"
 const ApiPortID string = "apiPort"
 const OpenApiPortID string = "openApiPort"
@@ -12,7 +11,6 @@ const DoppelgangerDetectionID string = "doppelgangerDetection"
 // Defaults
 const defaultGraffiti string = ""
 const defaultCheckpointSyncProvider string = ""
-const defaultMaxPeers uint16 = 100
 const defaultP2pPort uint16 = 9001
 const defaultBnApiPort uint16 = 5052
 const defaultOpenBnApiPort bool = false
@@ -27,9 +25,6 @@ type ConsensusCommonConfig struct {
 
 	// The checkpoint sync URL if used
 	CheckpointSyncProvider Parameter `yaml:"checkpointSyncProvider,omitempty"`
-
-	// The max number of P2P peers to connect to
-	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// The port to use for gossip traffic
 	P2pPort Parameter `yaml:"p2pPort,omitempty"`
@@ -72,18 +67,6 @@ func NewConsensusCommonConfig(config *RocketPoolConfig) *ConsensusCommonConfig {
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"CHECKPOINT_SYNC_URL"},
 			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
-		},
-
-		MaxPeers: Parameter{
-			ID:                   MaxPeersID,
-			Name:                 "Max Peers",
-			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                 ParameterType_Uint16,
-			Default:              map[Network]interface{}{Network_All: defaultMaxPeers},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2},
-			EnvironmentVariables: []string{"BN_MAX_PEERS"},
-			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
@@ -142,7 +125,6 @@ func (config *ConsensusCommonConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.Graffiti,
 		&config.CheckpointSyncProvider,
-		&config.MaxPeers,
 		&config.P2pPort,
 		&config.ApiPort,
 		&config.OpenApiPort,

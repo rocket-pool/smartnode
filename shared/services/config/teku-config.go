@@ -1,10 +1,14 @@
 package config
 
 const tekuTag string = "consensys/teku:22.3.0"
+const defaultTekuMaxPeers uint16 = 74
 
 // Configuration for Teku
 type TekuConfig struct {
 	Title string `yaml:"title,omitempty"`
+
+	// The max number of P2P peers to connect to
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// Common parameters that Teku doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
@@ -26,6 +30,18 @@ func NewTekuConfig(config *RocketPoolConfig) *TekuConfig {
 
 		UnsupportedCommonParams: []string{
 			DoppelgangerDetectionID,
+		},
+
+		MaxPeers: Parameter{
+			ID:                   "maxPeers",
+			Name:                 "Max Peers",
+			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultTekuMaxPeers},
+			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			EnvironmentVariables: []string{"BN_MAX_PEERS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
 		},
 
 		ContainerTag: Parameter{

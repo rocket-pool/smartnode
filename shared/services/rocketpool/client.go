@@ -380,7 +380,16 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 			if err != nil {
 				return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 max peers [%s]", param.Value)
 			}
-			cfg.ConsensusCommon.MaxPeers.Value = uint16(peers)
+			switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
+			case config.ConsensusClient_Lighthouse:
+				cfg.Lighthouse.MaxPeers.Value = uint16(peers)
+			case config.ConsensusClient_Nimbus:
+				cfg.Nimbus.MaxPeers.Value = uint16(peers)
+			case config.ConsensusClient_Prysm:
+				cfg.Prysm.MaxPeers.Value = uint16(peers)
+			case config.ConsensusClient_Teku:
+				cfg.Teku.MaxPeers.Value = uint16(peers)
+			}
 		case "ETH2_P2P_PORT":
 			port, err := strconv.ParseUint(param.Value, 0, 16)
 			if err != nil {

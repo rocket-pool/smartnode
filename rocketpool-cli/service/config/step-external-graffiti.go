@@ -29,12 +29,14 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
 		case config.ConsensusClient_Lighthouse:
 			wiz.md.Config.ExternalLighthouse.Graffiti.Value = text[graffitiLabel]
+			wiz.externalDoppelgangerModal.show()
 		case config.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.Graffiti.Value = text[graffitiLabel]
+			wiz.externalDoppelgangerModal.show()
 		case config.ConsensusClient_Teku:
 			wiz.md.Config.ExternalTeku.Graffiti.Value = text[graffitiLabel]
+			wiz.metricsModal.show()
 		}
-		wiz.metricsModal.show()
 	}
 
 	back := func() {

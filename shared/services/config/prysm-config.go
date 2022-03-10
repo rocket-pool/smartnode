@@ -11,6 +11,7 @@ const prysmVcTagAmd64 string = "prysmaticlabs/prysm-validator:HEAD-e26cde-debug"
 const prysmTagArm64 string = "rocketpool/prysm:v2.0.6"
 const defaultPrysmRpcPort uint16 = 5053
 const defaultPrysmOpenRpcPort bool = false
+const defaultPrysmMaxPeers uint16 = 45
 
 // Configuration for Prysm
 type PrysmConfig struct {
@@ -18,6 +19,9 @@ type PrysmConfig struct {
 
 	// Common parameters that Prysm doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
+
+	// The max number of P2P peers to connect to
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// The RPC port for BN / VC connections
 	RpcPort Parameter `yaml:"rpcPort,omitempty"`
@@ -45,6 +49,18 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 
 		UnsupportedCommonParams: []string{
 			CheckpointSyncUrlID,
+		},
+
+		MaxPeers: Parameter{
+			ID:                   "maxPeers",
+			Name:                 "Max Peers",
+			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultPrysmMaxPeers},
+			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			EnvironmentVariables: []string{"BN_MAX_PEERS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
 		},
 
 		RpcPort: Parameter{
@@ -146,6 +162,7 @@ func getPrysmVcTag() string {
 // Get the parameters for this config
 func (config *PrysmConfig) GetParameters() []*Parameter {
 	return []*Parameter{
+		&config.MaxPeers,
 		&config.RpcPort,
 		&config.OpenRpcPort,
 		&config.BnContainerTag,

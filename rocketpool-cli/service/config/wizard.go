@@ -26,6 +26,7 @@ type wizard struct {
 	consensusLocalRandomPrysmModal  *choiceWizardStep
 	consensusLocalPrysmWarning      *choiceWizardStep
 	consensusLocalTekuWarning       *choiceWizardStep
+	externalDoppelgangerModal       *choiceWizardStep
 }
 
 func newWizard(md *mainDisplay) *wizard {
@@ -55,6 +56,7 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.prysmExternalSettingsModal = createExternalPrysmStep(wiz, 7, totalSteps)
 	wiz.tekuExternalSettingsModal = createExternalTekuStep(wiz, 7, totalSteps)
 	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 7, totalSteps)
+	wiz.externalDoppelgangerModal = createExternalDoppelgangerStep(wiz, 7, totalSteps)
 	wiz.metricsModal = createMetricsStep(wiz, 8, totalSteps)
 	wiz.finishedModal = createFinishedStep(wiz, 9, totalSteps)
 
