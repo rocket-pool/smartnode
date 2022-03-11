@@ -2,6 +2,7 @@ package beacon
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -83,4 +84,5 @@ type Client interface {
 	ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
 	Close() error
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, error)
+	GenerateFeeRecipientFile(rp *rocketpool.RocketPool, nodeAddress common.Address) ([]byte, error)
 }
