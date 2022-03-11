@@ -102,8 +102,8 @@ func refundMinipools(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -116,6 +116,7 @@ func refundMinipools(c *cli.Context) error {
 
 	// Refund minipools
 	for _, minipool := range selectedMinipools {
+		g.Assign(rp)
 		response, err := rp.RefundMinipool(minipool.Address)
 		if err != nil {
 			fmt.Printf("Could not refund ETH from minipool %s: %s.\n", minipool.Address.Hex(), err)

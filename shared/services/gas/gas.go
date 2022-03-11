@@ -18,14 +18,34 @@ const colorReset string = "\033[0m"
 const colorYellow string = "\033[33m"
 const colorBlue string = "\033[36m"
 
+type Gas struct {
+	maxFeeGwei float64
+	maxPriorityFeeGwei float64
+	gasLimit uint64
+}
+
 func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) error {
+	g, err := GetMaxFeeAndLimit(gasInfo, rp, headless)
+	if err != nil {
+		return err
+	}
+	g.Assign(rp)
+	return nil
+}
+
+func (g *Gas) Assign(rp *rpsvc.Client) {
+	rp.AssignGasSettings(g.maxFeeGwei, g.maxPriorityFeeGwei, g.gasLimit)
+	return
+}
+
+func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) (Gas, error) {
 
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
+		return Gas{}, fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return Gas{}, fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	// Get the current settings from the CLI arguments
@@ -69,7 +89,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 		if headless {
 			maxFeeWei, err := GetHeadlessMaxFeeWei()
 			if err != nil {
-				return err
+				return Gas{}, err
 			}
 			maxFeeGwei = eth.WeiToGwei(maxFeeWei)
 		} else {
@@ -87,7 +107,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 					// Print the Etherscan data and ask for an amount
 					maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasLimit)
 				} else {
-					return fmt.Errorf("Error getting gas price suggestions: %w", err)
+					return Gas{}, fmt.Errorf("Error getting gas price suggestions: %w", err)
 				}
 			}
 		}
@@ -100,10 +120,9 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 	}
 
 	if maxPriorityFeeGwei > maxFeeGwei {
-		return fmt.Errorf("Priority fee cannot be greater than max fee.")
+		return Gas{}, fmt.Errorf("Priority fee cannot be greater than max fee.")
 	}
-	rp.AssignGasSettings(maxFeeGwei, maxPriorityFeeGwei, gasLimit)
-	return nil
+	return Gas{maxFeeGwei, maxPriorityFeeGwei, gasLimit}, nil
 
 }
 
