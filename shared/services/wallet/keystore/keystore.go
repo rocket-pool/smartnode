@@ -20,4 +20,5 @@ func GenerateRandomPassword() (string, error) {
 // Validator keystore interface
 type Keystore interface {
 	StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPath string) error
+	GetKeystoreDir() string
 }
