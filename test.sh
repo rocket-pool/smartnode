@@ -22,7 +22,7 @@ fi
 
 # Rocket Pool settings
 rp_repo_url="git@ssh.dev.azure.com:v3/rocket-pool/RocketPool/rocketpool"
-rp_repo_branch="minipool-approval"
+rp_repo_branch="merge-ready"
 
 # Dependencies
 rp_dependencies=(
@@ -90,7 +90,7 @@ start_ganache() {
 # Migrate Rocket Pool contracts
 migrate_rp() {
     cd "$rp_path"
-    node_modules/.bin/truffle migrate
+    node_modules/.bin/truffle migrate --network localhost
     cd - > /dev/null
 }
 
