@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
@@ -184,6 +185,32 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 	}
 
 	// Return
+	return nil
+
+}
+
+// Store the fee recipient file for this wallet's validators
+func (w *Wallet) StoreFeeRecipientFile(rp *rocketpool.RocketPool) error {
+
+	// Check wallet is initialized
+	if !w.IsInitialized() {
+		return errors.New("Wallet is not initialized")
+	}
+
+	// Get the node account
+	account, err := w.GetNodeAccount()
+	if err != nil {
+		return fmt.Errorf("error getting node account: %w", err)
+	}
+
+	// Store the files
+	for name, fm := range w.feeRecipientManagers {
+		err = fm.StoreFeeRecipientFile(rp, account.Address)
+		if err != nil {
+			return fmt.Errorf("error storing fee recipients for %s: %w", name, err)
+		}
+	}
+
 	return nil
 
 }

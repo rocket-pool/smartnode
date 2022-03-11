@@ -31,6 +31,9 @@ type SmartnodeConfig struct {
 	// The command for restarting the validator container in native mode
 	ValidatorRestartCommand Parameter `yaml:"validatorRestartCommand,omitempty"`
 
+	// The command for stopping the validator container in native mode
+	ValidatorStopCommand Parameter `yaml:"validatorStopCommand,omitempty"`
+
 	// Which network we're on
 	Network Parameter `yaml:"network,omitempty"`
 
@@ -117,6 +120,18 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Description:          "The absolute path to a custom script that will be invoked when Rocket Pool needs to restart your validator container to load the new key after a minipool is staked. **For Native mode only.**",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: getDefaultValidatorRestartCommand(config)},
+			AffectsContainers:    []ContainerID{ContainerID_Node},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		ValidatorStopCommand: Parameter{
+			ID:                   "validatorStopCommand",
+			Name:                 "Validator Stop Command",
+			Description:          "The absolute path to a custom script that will be invoked when Rocket Pool needs to stop your validator container in case of emergency. **For Native mode only.**",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: getDefaultValidatorStopCommand(config)},
 			AffectsContainers:    []ContainerID{ContainerID_Node},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -244,6 +259,7 @@ func (config *SmartnodeConfig) GetParameters() []*Parameter {
 		&config.ProjectName,
 		&config.DataPath,
 		&config.ValidatorRestartCommand,
+		&config.ValidatorStopCommand,
 		&config.ManualMaxFee,
 		&config.PriorityFee,
 		&config.RplClaimGasThreshold,
@@ -316,4 +332,8 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 
 func getDefaultValidatorRestartCommand(config *RocketPoolConfig) string {
 	return filepath.Join(config.RocketPoolDirectory, "scripts", "restart-validator.sh")
+}
+
+func getDefaultValidatorStopCommand(config *RocketPoolConfig) string {
+	return filepath.Join(config.RocketPoolDirectory, "scripts", "stop-validator.sh")
 }
