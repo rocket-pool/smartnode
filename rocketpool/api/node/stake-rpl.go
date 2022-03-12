@@ -265,7 +265,7 @@ func stakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplStakeRespons
 	}
 
 	// Save the fee recipient file
-	err = w.StoreFeeRecipientFile(rp)
+	_, err = w.StoreFeeRecipientFile(rp)
 	if err != nil {
 		// If the fee recipient file couldn't be saved, we have to stop the VC out of safety.
 		builder := strings.Builder{}

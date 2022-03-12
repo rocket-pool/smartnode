@@ -26,8 +26,8 @@ func NewFeeRecipientManager(keystore keystore.Keystore) *FeeRecipientManager {
 }
 
 // Creates a fee recipient file that points all of this node's validators to the node distributor address.
-func (fm *FeeRecipientManager) StoreFeeRecipientFile(rp *rocketpool.RocketPool, nodeAddress common.Address) error {
+func (fm *FeeRecipientManager) StoreFeeRecipientFile(rp *rocketpool.RocketPool, nodeAddress common.Address) (common.Address, error) {
 
-	return fmt.Errorf("Nimbus currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
+	return common.Address{}, fmt.Errorf("Nimbus currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
 
 }

@@ -161,7 +161,7 @@ func (t *stakePrelaunchMinipools) run() error {
 
 	// Restart validator process if any minipools were staked successfully
 	if successCount > 0 {
-		err = t.w.StoreFeeRecipientFile(t.rp)
+		_, err = t.w.StoreFeeRecipientFile(t.rp)
 		if err != nil {
 			// If the fee recipient file couldn't be saved, we have to stop the VC out of safety.
 			builder := strings.Builder{}

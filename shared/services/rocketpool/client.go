@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/a8m/envsubst"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
@@ -638,12 +639,12 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 func (c *Client) StartService(composeFiles []string, rp *rocketpool.RocketPool, w *wallet.Wallet) error {
 
 	// Regenerate the fee recipient file
-	err := w.StoreFeeRecipientFile(rp)
+	distributor, err := w.StoreFeeRecipientFile(rp)
 	if err != nil {
 		return fmt.Errorf("error regenerating fee recipient file: %w", err)
 	}
 
-	cmd, err := c.compose(composeFiles, "up -d --remove-orphans")
+	cmd, err := c.compose(composeFiles, "up -d --remove-orphans", &distributor)
 	if err != nil {
 		return err
 	}
@@ -652,7 +653,7 @@ func (c *Client) StartService(composeFiles []string, rp *rocketpool.RocketPool, 
 
 // Pause the Rocket Pool service
 func (c *Client) PauseService(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "stop")
+	cmd, err := c.compose(composeFiles, "stop", nil)
 	if err != nil {
 		return err
 	}
@@ -661,7 +662,7 @@ func (c *Client) PauseService(composeFiles []string) error {
 
 // Stop the Rocket Pool service
 func (c *Client) StopService(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "down -v")
+	cmd, err := c.compose(composeFiles, "down -v", nil)
 	if err != nil {
 		return err
 	}
@@ -670,7 +671,7 @@ func (c *Client) StopService(composeFiles []string) error {
 
 // Print the Rocket Pool service status
 func (c *Client) PrintServiceStatus(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "ps")
+	cmd, err := c.compose(composeFiles, "ps", nil)
 	if err != nil {
 		return err
 	}
@@ -683,7 +684,7 @@ func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNam
 	for i, serviceName := range serviceNames {
 		sanitizedStrings[i] = fmt.Sprintf("%s", shellescape.Quote(serviceName))
 	}
-	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
+	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")), nil)
 	if err != nil {
 		return err
 	}
@@ -694,7 +695,7 @@ func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNam
 func (c *Client) PrintServiceStats(composeFiles []string) error {
 
 	// Get service container IDs
-	cmd, err := c.compose(composeFiles, "ps -q")
+	cmd, err := c.compose(composeFiles, "ps -q", nil)
 	if err != nil {
 		return err
 	}
@@ -1098,7 +1099,7 @@ func (c *Client) saveConfig(cfg *config.RocketPoolConfig, path string) error {
 }
 
 // Build a docker-compose command
-func (c *Client) compose(composeFiles []string, args string) (string, error) {
+func (c *Client) compose(composeFiles []string, args string, nodeDistributorAddress *common.Address) (string, error) {
 
 	// Cancel if running in non-docker mode
 	if c.daemonPath != "" {
@@ -1157,6 +1158,9 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	settings := cfg.GenerateEnvironmentVariables()
 	settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
 	settings["ROCKET_POOL_VERSION"] = shellescape.Quote(shared.RocketPoolVersion)
+	if nodeDistributorAddress != nil {
+		settings["NODE_FEE_RECIPIENT"] = nodeDistributorAddress.Hex()
+	}
 
 	// Deploy the templates and run environment variable substitution on them
 	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)

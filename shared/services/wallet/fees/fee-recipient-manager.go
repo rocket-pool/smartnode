@@ -6,5 +6,5 @@ import (
 )
 
 type FeeRecipientManager interface {
-	StoreFeeRecipientFile(rp *rocketpool.RocketPool, nodeAddress common.Address) error
+	StoreFeeRecipientFile(rp *rocketpool.RocketPool, nodeAddress common.Address) (common.Address, error)
 }
