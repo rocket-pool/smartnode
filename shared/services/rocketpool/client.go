@@ -28,8 +28,10 @@ import (
 	"github.com/blang/semver/v4"
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/net"
 )
 
@@ -633,7 +635,14 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 }
 
 // Start the Rocket Pool service
-func (c *Client) StartService(composeFiles []string) error {
+func (c *Client) StartService(composeFiles []string, rp *rocketpool.RocketPool, w *wallet.Wallet) error {
+
+	// Regenerate the fee recipient file
+	err := w.StoreFeeRecipientFile(rp)
+	if err != nil {
+		return fmt.Errorf("error regenerating fee recipient file: %w", err)
+	}
+
 	cmd, err := c.compose(composeFiles, "up -d --remove-orphans")
 	if err != nil {
 		return err

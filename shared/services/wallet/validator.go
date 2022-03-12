@@ -194,7 +194,7 @@ func (w *Wallet) StoreFeeRecipientFile(rp *rocketpool.RocketPool) error {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
-		return errors.New("Wallet is not initialized")
+		return nil
 	}
 
 	// Get the node account

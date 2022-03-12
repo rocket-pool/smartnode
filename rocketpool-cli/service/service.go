@@ -17,6 +17,7 @@ import (
 	"github.com/dustin/go-humanize"
 	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -275,9 +276,21 @@ func configureService(c *cli.Context) error {
 // Handle a network change by terminating the service, deleting everything, and starting over
 func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName string) error {
 
+	// Get the RP binding
+	rpLib, err := services.GetRocketPool(c)
+	if err != nil {
+		return err
+	}
+
+	// Get wallet
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return err
+	}
+
 	// Stop all of the containers
 	fmt.Print("Stopping containers... ")
-	err := rp.PauseService(getComposeFiles(c))
+	err = rp.PauseService(getComposeFiles(c))
 	if err != nil {
 		return fmt.Errorf("error stopping service: %w", err)
 	}
@@ -327,7 +340,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 
 	// Start the service
 	fmt.Print("Starting Rocket Pool... ")
-	err = rp.StartService(getComposeFiles(c))
+	err = rp.StartService(getComposeFiles(c), rpLib, w)
 	if err != nil {
 		return fmt.Errorf("error starting service: %w", err)
 	}
@@ -346,6 +359,18 @@ func startService(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Get the RP binding
+	rpLib, err := services.GetRocketPool(c)
+	if err != nil {
+		return err
+	}
+
+	// Get wallet
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return err
+	}
 
 	// Update the Prometheus template with the assigned ports
 	cfg, isNew, err := rp.LoadConfig()
@@ -399,7 +424,7 @@ func startService(c *cli.Context) error {
 	}
 
 	// Start service
-	return rp.StartService(getComposeFiles(c))
+	return rp.StartService(getComposeFiles(c), rpLib, w)
 
 }
 

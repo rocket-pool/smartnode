@@ -59,7 +59,7 @@ func rebuildWallet(c *cli.Context) (*api.RebuildWalletResponse, error) {
 	// Regenerate the fee recipient file
 	err = w.StoreFeeRecipientFile(rp)
 	if err != nil {
-		return nil, fmt.Errorf("error regenerating fee recipient file: %w")
+		return nil, fmt.Errorf("error regenerating fee recipient file: %w", err)
 	}
 
 	// Return response
