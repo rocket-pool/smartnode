@@ -11,13 +11,14 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
 // Config
 const (
-	FeeRecipientFilename string      = "rp-fee-recipients.json"
-	FileMode             fs.FileMode = 0600
+	//FeeRecipientFilename string      = "rp-fee-recipients.json"
+	FileMode fs.FileMode = 0600
 )
 
 type FeeRecipientManager struct {
@@ -82,7 +83,7 @@ func (fm *FeeRecipientManager) StoreFeeRecipientFile(rp *rocketpool.RocketPool, 
 	}
 
 	// Write the contents out to the file
-	path := filepath.Join(fm.keystore.GetKeystoreDir(), FeeRecipientFilename)
+	path := filepath.Join(fm.keystore.GetKeystoreDir(), config.TekuFeeRecipientFilename)
 	err = ioutil.WriteFile(path, bytes, FileMode)
 	if err != nil {
 		return fmt.Errorf("error writing fee recipient file: %w", err)

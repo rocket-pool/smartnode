@@ -784,13 +784,17 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		switch config.ConsensusClient.Value.(ConsensusClient) {
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.Lighthouse.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
 		case ConsensusClient_Nimbus:
 			addParametersToEnvVars(config.Nimbus.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = NimbusFeeRecipientFilename
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.Prysm.GetParameters(), envVars)
 			envVars["CC_RPC_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth2ContainerName, config.Prysm.RpcPort.Value)
+			envVars["FEE_RECIPIENT_FILE"] = PrysmFeeRecipientFilename
 		case ConsensusClient_Teku:
 			addParametersToEnvVars(config.Teku.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = TekuFeeRecipientFilename
 		}
 	} else {
 		envVars["CC_CLIENT"] = fmt.Sprint(config.ExternalConsensusClient.Value)
@@ -798,10 +802,13 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		switch config.ExternalConsensusClient.Value.(ConsensusClient) {
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.ExternalLighthouse.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.ExternalPrysm.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = PrysmFeeRecipientFilename
 		case ConsensusClient_Teku:
 			addParametersToEnvVars(config.ExternalTeku.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = TekuFeeRecipientFilename
 		}
 	}
 

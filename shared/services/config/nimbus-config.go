@@ -2,9 +2,12 @@ package config
 
 import "runtime"
 
-const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.7.0"
-const defaultNimbusMaxPeersArm uint16 = 100
-const defaultNimbusMaxPeersAmd uint16 = 160
+const (
+	nimbusTag                  string = "statusim/nimbus-eth2:multiarch-v1.7.0"
+	defaultNimbusMaxPeersArm   uint16 = 100
+	defaultNimbusMaxPeersAmd   uint16 = 160
+	NimbusFeeRecipientFilename string = ""
+)
 
 // Configuration for Nimbus
 type NimbusConfig struct {

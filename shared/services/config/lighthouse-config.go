@@ -1,7 +1,10 @@
 package config
 
-const lighthouseTag string = "sigp/lighthouse:v2.1.3"
-const defaultLhMaxPeers uint16 = 80
+const (
+	lighthouseTag                  string = "sigp/lighthouse:v2.1.3"
+	defaultLhMaxPeers              uint16 = 80
+	LighthouseFeeRecipientFilename string = "rp-fee-recipients.txt"
+)
 
 // Configuration for Lighthouse
 type LighthouseConfig struct {

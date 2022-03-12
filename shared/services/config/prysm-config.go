@@ -6,12 +6,15 @@ import (
 )
 
 // v2.0.6
-const prysmBnTagAmd64 string = "prysmaticlabs/prysm-beacon-chain:HEAD-e26cde-debug"
-const prysmVcTagAmd64 string = "prysmaticlabs/prysm-validator:HEAD-e26cde-debug"
-const prysmTagArm64 string = "rocketpool/prysm:v2.0.6"
-const defaultPrysmRpcPort uint16 = 5053
-const defaultPrysmOpenRpcPort bool = false
-const defaultPrysmMaxPeers uint16 = 45
+const (
+	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-e26cde-debug"
+	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-e26cde-debug"
+	prysmTagArm64             string = "rocketpool/prysm:v2.0.6"
+	defaultPrysmRpcPort       uint16 = 5053
+	defaultPrysmOpenRpcPort   bool   = false
+	defaultPrysmMaxPeers      uint16 = 45
+	PrysmFeeRecipientFilename string = "rp-fee-recipients.json"
+)
 
 // Configuration for Prysm
 type PrysmConfig struct {

@@ -11,8 +11,7 @@ import (
 
 // Config
 const (
-	FeeRecipientFilename string      = ""
-	FileMode             fs.FileMode = 0600
+	FileMode fs.FileMode = 0600
 )
 
 type FeeRecipientManager struct {
