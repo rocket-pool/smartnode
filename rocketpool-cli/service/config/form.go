@@ -50,6 +50,12 @@ type Form struct {
 	// The color of the button text.
 	buttonTextColor tcell.Color
 
+	// The background color of the buttons when activated.
+	buttonBackgroundActivatedColor tcell.Color
+
+	// The color of the button text when activated.
+	buttonTextActivatedColor tcell.Color
+
 	// An optional function which is called when the user hits Escape.
 	cancel func()
 
@@ -125,6 +131,18 @@ func (f *Form) SetButtonBackgroundColor(color tcell.Color) *Form {
 // SetButtonTextColor sets the color of the button texts.
 func (f *Form) SetButtonTextColor(color tcell.Color) *Form {
 	f.buttonTextColor = color
+	return f
+}
+
+// SetButtonBackgroundColor sets the background color of the buttons when activated.
+func (f *Form) SetButtonBackgroundActivatedColor(color tcell.Color) *Form {
+	f.buttonBackgroundActivatedColor = color
+	return f
+}
+
+// SetButtonTextColor sets the color of the button texts when activated.
+func (f *Form) SetButtonTextActivatedColor(color tcell.Color) *Form {
+	f.buttonTextActivatedColor = color
 	return f
 }
 
@@ -468,9 +486,19 @@ func (f *Form) Draw(screen tcell.Screen) {
 			buttonWidth = space
 		}
 		button.SetLabelColor(f.buttonTextColor).
-			SetLabelColorActivated(f.buttonBackgroundColor).
-			SetBackgroundColorActivated(f.buttonTextColor).
 			SetBackgroundColor(f.buttonBackgroundColor)
+
+		if f.buttonBackgroundActivatedColor == 0 {
+			button.SetBackgroundColorActivated(f.buttonTextColor)
+		} else {
+			button.SetBackgroundColorActivated(f.buttonBackgroundActivatedColor)
+		}
+
+		if f.buttonTextActivatedColor == 0 {
+			button.SetLabelColorActivated(f.buttonBackgroundColor)
+		} else {
+			button.SetLabelColorActivated(f.buttonTextActivatedColor)
+		}
 
 		buttonIndex := index + len(f.items)
 		positions[buttonIndex].x = x

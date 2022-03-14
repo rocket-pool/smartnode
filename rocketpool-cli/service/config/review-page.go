@@ -127,6 +127,8 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 			md.app.Stop()
 		}
 	})
+	saveButton.SetBackgroundColorActivated(tcell.ColorLightGreen)
+	saveButton.SetLabelColorActivated(tcell.ColorDarkGreen)
 
 	buttonGrid := tview.NewFlex().
 		SetDirection(tview.FlexColumn).

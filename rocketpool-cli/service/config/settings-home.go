@@ -160,6 +160,8 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 		home.md.pages.AddPage(reviewPage.page.id, reviewPage.page.content, true, true)
 		home.md.setPage(reviewPage.page)
 	})
+	saveButton.SetBackgroundColorActivated(tcell.ColorLightGreen)
+	saveButton.SetLabelColorActivated(tcell.ColorDarkGreen)
 
 	wizardButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyTab || event.Key() == tcell.KeyBacktab {
@@ -177,6 +179,8 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 	wizardButton.SetSelectedFunc(func() {
 		home.md.newUserWizard.welcomeModal.show()
 	})
+	wizardButton.SetBackgroundColorActivated(tcell.ColorLightGreen)
+	wizardButton.SetLabelColorActivated(tcell.ColorDarkGreen)
 
 	// Create overall layout for the footer
 	buttonBar := tview.NewFlex().

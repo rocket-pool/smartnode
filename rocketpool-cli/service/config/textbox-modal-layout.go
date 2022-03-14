@@ -19,7 +19,7 @@ type textBoxModalLayout struct {
 	controlGrid *tview.Grid
 	done        func(text map[string]string)
 	back        func()
-	form        *tview.Form
+	form        *Form
 
 	firstTextbox *tview.InputField
 	textboxes    map[string]*tview.InputField
@@ -138,7 +138,7 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, maxLengths 
 	controlGrid.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 
 	// Create the form for the controls
-	form := tview.NewForm().
+	form := NewForm().
 		SetButtonsAlign(tview.AlignCenter).
 		SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
 		SetButtonTextColor(tview.Styles.PrimaryTextColor).
@@ -177,7 +177,10 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, maxLengths 
 			}
 			layout.done(text)
 		}
-	})
+	}).
+		SetButtonTextColor(tcell.ColorLightGray).
+		SetButtonBackgroundActivatedColor(tcell.ColorLightGreen).
+		SetButtonTextActivatedColor(tcell.ColorDarkGreen)
 
 	// Create the columns, including the left and right spacers
 	leftSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)

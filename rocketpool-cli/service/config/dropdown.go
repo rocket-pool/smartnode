@@ -157,6 +157,11 @@ func (d *DropDown) SetTextOptions(prefix, suffix, currentPrefix, currentSuffix, 
 	return d
 }
 
+// Get the underlying list.
+func (d *DropDown) GetList() *tview.List {
+	return d.list
+}
+
 // SetLabel sets the text to be displayed before the input area.
 func (d *DropDown) SetLabel(label string) *DropDown {
 	d.label = label

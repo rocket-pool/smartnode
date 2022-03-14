@@ -22,7 +22,7 @@ type choiceModalLayout struct {
 	back        func()
 
 	// The forms embedded in the modal's frame for the buttons.
-	forms []*tview.Form
+	forms []*Form
 
 	// The currently selected form (for vertical layouts)
 	selected int
@@ -152,10 +152,12 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 	if direction == DirectionalModalHorizontal {
 
 		// Create the form for the buttons
-		form := tview.NewForm().
+		form := NewForm().
 			SetButtonsAlign(tview.AlignCenter).
 			SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
-			SetButtonTextColor(tview.Styles.PrimaryTextColor)
+			SetButtonTextColor(tcell.ColorLightGray).
+			SetButtonBackgroundActivatedColor(tcell.ColorLightGreen).
+			SetButtonTextActivatedColor(tcell.ColorDarkGreen)
 		form.
 			SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
 			SetBorderPadding(0, 0, 0, 0)
@@ -215,10 +217,12 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 			func(i int, l string) {
 
 				// Create a new form for this button
-				form := tview.NewForm().
+				form := NewForm().
 					SetButtonsAlign(tview.AlignCenter).
 					SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
-					SetButtonTextColor(tview.Styles.PrimaryTextColor)
+					SetButtonTextColor(tcell.ColorLightGray).
+					SetButtonBackgroundActivatedColor(tcell.ColorLightGreen).
+					SetButtonTextActivatedColor(tcell.ColorDarkGreen)
 				form.SetBackgroundColor(tview.Styles.ContrastBackgroundColor).SetBorderPadding(0, 0, 0, 0)
 				form.AddButton(label, func() {
 					if layout.done != nil {
