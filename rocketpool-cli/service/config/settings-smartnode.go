@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/gdamore/tcell/v2"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 // The page wrapper for the Smartnode config
@@ -54,6 +55,14 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	for _, formItem := range formItems {
 		layout.form.AddFormItem(formItem.item)
 		layout.parameters[formItem.item] = formItem
+		if formItem.parameter.ID == config.NetworkID {
+			dropDown := formItem.item.(*DropDown)
+			dropDown.SetSelectedFunc(func(text string, index int) {
+				newNetwork := configPage.home.md.Config.Smartnode.Network.Options[index].Value.(config.Network)
+				configPage.home.md.Config.ChangeNetwork(newNetwork)
+				configPage.home.refresh()
+			})
+		}
 	}
 	layout.refresh()
 

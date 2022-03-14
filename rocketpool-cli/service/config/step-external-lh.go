@@ -40,6 +40,8 @@ func createExternalLhStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 		70,
 		"Consensus Client (External) > Settings",
 		[]string{httpUrlLabel},
+		[]int{wiz.md.Config.ExternalLighthouse.HttpUrl.MaxLength},
+		[]string{wiz.md.Config.ExternalLighthouse.HttpUrl.Regex},
 		show,
 		done,
 		back,

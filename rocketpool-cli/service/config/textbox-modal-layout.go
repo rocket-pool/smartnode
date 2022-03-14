@@ -28,7 +28,7 @@ type textBoxModalLayout struct {
 }
 
 // Creates a new TextBoxModalLayout instance
-func newTextBoxModalLayout(app *tview.Application, title string, width int, text string, labels []string) *textBoxModalLayout {
+func newTextBoxModalLayout(app *tview.Application, title string, width int, text string, labels []string, maxLengths []int, regexes []string) *textBoxModalLayout {
 
 	layout := &textBoxModalLayout{
 		app:       app,
@@ -37,7 +37,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 	}
 
 	// Create the button grid
-	height := layout.createControlGrid(labels)
+	height := layout.createControlGrid(labels, maxLengths, regexes)
 
 	// Create the main text view
 	textView := tview.NewTextView().
@@ -130,7 +130,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 }
 
 // Creates the grid for the layout's controls
-func (layout *textBoxModalLayout) createControlGrid(labels []string) int {
+func (layout *textBoxModalLayout) createControlGrid(labels []string, maxLengths []int, regexes []string) int {
 
 	controlGrid := tview.NewGrid().
 		SetRows(0).
@@ -152,6 +152,16 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string) int {
 	for i := 0; i < len(labels); i++ {
 		textbox := tview.NewInputField().
 			SetLabel(labels[i])
+		maxLength := maxLengths[i]
+		textbox.SetAcceptanceFunc(func(textToCheck string, lastChar rune) bool {
+			if maxLength > 0 {
+				if len(textToCheck) > maxLength {
+					return false
+				}
+			}
+			// TODO: regex support
+			return true
+		})
 		form.AddFormItem(textbox)
 		layout.textboxes[labels[i]] = textbox
 

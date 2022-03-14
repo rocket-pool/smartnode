@@ -14,6 +14,12 @@ type settingsHome struct {
 	homePage         *page
 	saveButton       *tview.Button
 	wizardButton     *tview.Button
+	smartnodePage    *SmartnodeConfigPage
+	ecPage           *ExecutionConfigPage
+	fallbackEcPage   *FallbackExecutionConfigPage
+	ccPage           *ConsensusConfigPage
+	metricsPage      *MetricsConfigPage
+	addonsPage       *AddonsPage
 	categoryList     *tview.List
 	settingsSubpages []*page
 	content          tview.Primitive
@@ -32,19 +38,19 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	}
 
 	// Create the settings subpages
-	smartnodePage := NewSmartnodeConfigPage(home)
-	ecPage := NewExecutionConfigPage(home)
-	fallbackECPage := NewFallbackExecutionConfigPage(home)
-	ccPage := NewConsensusConfigPage(home)
-	metricsPage := NewMetricsConfigPage(home)
-	addonsPage := NewAddonsPage(home.md)
+	home.smartnodePage = NewSmartnodeConfigPage(home)
+	home.ecPage = NewExecutionConfigPage(home)
+	home.fallbackEcPage = NewFallbackExecutionConfigPage(home)
+	home.ccPage = NewConsensusConfigPage(home)
+	home.metricsPage = NewMetricsConfigPage(home)
+	home.addonsPage = NewAddonsPage(home.md)
 	settingsSubpages := []*page{
-		smartnodePage.page,
-		ecPage.page,
-		fallbackECPage.page,
-		ccPage.page,
-		metricsPage.page,
-		addonsPage.page,
+		home.smartnodePage.page,
+		home.ecPage.page,
+		home.fallbackEcPage.page,
+		home.ccPage.page,
+		home.metricsPage.page,
+		home.addonsPage.page,
 	}
 	home.settingsSubpages = settingsSubpages
 
@@ -188,4 +194,28 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 
 	return footer, footer.GetItemCount()
 
+}
+
+// Refreshes the settings on all of the config pages to match the config's values
+func (home *settingsHome) refresh() {
+	/*
+		if home.smartnodePage != nil {
+			home.smartnodePage.layout.refresh()
+		}*/
+
+	if home.ecPage != nil {
+		home.ecPage.layout.refresh()
+	}
+
+	if home.fallbackEcPage != nil {
+		home.fallbackEcPage.layout.refresh()
+	}
+
+	if home.ccPage != nil {
+		home.ccPage.layout.refresh()
+	}
+
+	if home.metricsPage != nil {
+		home.metricsPage.layout.refresh()
+	}
 }

@@ -51,6 +51,8 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 		70,
 		"Consensus Client (External) > Graffiti",
 		[]string{graffitiLabel},
+		[]int{wiz.md.Config.ConsensusCommon.Graffiti.MaxLength},
+		[]string{wiz.md.Config.ConsensusCommon.Graffiti.Regex},
 		show,
 		done,
 		back,

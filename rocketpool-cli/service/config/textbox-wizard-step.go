@@ -8,7 +8,7 @@ type textBoxWizardStep struct {
 	showImpl func(*textBoxModalLayout)
 }
 
-func newTextBoxWizardStep(wiz *wizard, currentStep int, totalSteps int, helperText string, width int, title string, labels []string, showImpl func(*textBoxModalLayout), done func(map[string]string), back func(), pageID string) *textBoxWizardStep {
+func newTextBoxWizardStep(wiz *wizard, currentStep int, totalSteps int, helperText string, width int, title string, labels []string, maxLengths []int, regexes []string, showImpl func(*textBoxModalLayout), done func(map[string]string), back func(), pageID string) *textBoxWizardStep {
 
 	step := &textBoxWizardStep{
 		wiz:      wiz,
@@ -24,6 +24,8 @@ func newTextBoxWizardStep(wiz *wizard, currentStep int, totalSteps int, helperTe
 		width,
 		helperText,
 		labels,
+		maxLengths,
+		regexes,
 	)
 
 	modal.done = done

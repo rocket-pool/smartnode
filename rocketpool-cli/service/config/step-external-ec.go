@@ -42,6 +42,8 @@ func createExternalEcStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 		70,
 		"Execution Client (External)",
 		[]string{httpLabel, wsLabel},
+		[]int{wiz.md.Config.ExternalExecution.HttpUrl.MaxLength, wiz.md.Config.ExternalExecution.WsUrl.MaxLength},
+		[]string{wiz.md.Config.ExternalExecution.HttpUrl.Regex, wiz.md.Config.ExternalExecution.WsUrl.Regex},
 		show,
 		done,
 		back,

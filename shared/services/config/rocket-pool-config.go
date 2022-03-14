@@ -504,6 +504,7 @@ func (config *RocketPoolConfig) ChangeNetwork(newNetwork Network) {
 	if oldNetwork == newNetwork {
 		return
 	}
+	config.Smartnode.Network.Value = newNetwork
 
 	// Update the master parameters
 	rootParams := config.GetParameters()

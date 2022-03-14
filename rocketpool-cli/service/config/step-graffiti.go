@@ -68,6 +68,8 @@ func createGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWi
 		70,
 		"Consensus Client > Graffiti",
 		[]string{graffitiLabel},
+		[]int{wiz.md.Config.ConsensusCommon.Graffiti.MaxLength},
+		[]string{wiz.md.Config.ConsensusCommon.Graffiti.Regex},
 		show,
 		done,
 		back,

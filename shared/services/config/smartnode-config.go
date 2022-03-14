@@ -7,9 +7,12 @@ import (
 )
 
 // Constants
-const smartnodeTag string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-const powProxyTag string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
-const pruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
+const (
+	smartnodeTag        string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
+	powProxyTag         string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
+	pruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
+	NetworkID           string = "network"
+)
 
 // Defaults
 const defaultProjectName string = "rocketpool"
@@ -124,7 +127,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		Network: Parameter{
-			ID:                   "network",
+			ID:                   NetworkID,
 			Name:                 "Network",
 			Description:          "The Ethereum network you want to use - select Prater Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
 			Type:                 ParameterType_Choice,

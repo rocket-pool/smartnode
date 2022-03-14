@@ -57,6 +57,7 @@ func NewInfuraConfig(config *RocketPoolConfig, isFallback bool) *InfuraConfig {
 			Description:          "The ID of your `Ethereum` project in Infura. Note: This is your Project ID, not your Project Secret!",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
+			Regex:                "^[0-9a-fA-F]{32}$",
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{prefix + "INFURA_PROJECT_ID"},
 			CanBeBlank:           false,
