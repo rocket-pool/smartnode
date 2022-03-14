@@ -26,6 +26,7 @@ import (
 	nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 	tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -153,7 +154,7 @@ func getConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
 	var err error
 	initCfg.Do(func() {
 		settingsFile := os.ExpandEnv(c.GlobalString("settings"))
-		cfg, err = config.LoadFromFile(settingsFile)
+		cfg, err = rp.LoadAndUpgradeConfigFromFile(settingsFile)
 		if cfg == nil && err == nil {
 			err = fmt.Errorf("Settings file [%s] not found.", settingsFile)
 		}

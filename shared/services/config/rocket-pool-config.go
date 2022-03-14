@@ -94,7 +94,7 @@ type RocketPoolConfig struct {
 }
 
 // Load configuration settings from a file
-func LoadFromFile(path string) (*RocketPoolConfig, error) {
+func LoadFromFile(path string, updateDefaults bool) (*RocketPoolConfig, error) {
 
 	// Return nil if the file doesn't exist
 	_, err := os.Stat(path)
@@ -120,6 +120,35 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
 	}
+
+	// Update all of the overwriteable parameters with the default values if requested
+	if updateDefaults {
+		// Update the root params
+		currentNetwork := cfg.Smartnode.Network.Value.(Network)
+		for _, param := range cfg.GetParameters() {
+			defaultValue, err := param.GetDefault(currentNetwork)
+			if err != nil {
+				return nil, fmt.Errorf("error getting defaults for root param [%s] on network [%v]: %w", param.ID, currentNetwork, err)
+			}
+			if param.OverwriteOnUpgrade {
+				param.Value = defaultValue
+			}
+		}
+
+		// Update the subconfigs
+		for subconfigName, subconfig := range cfg.GetSubconfigs() {
+			for _, param := range subconfig.GetParameters() {
+				defaultValue, err := param.GetDefault(currentNetwork)
+				if err != nil {
+					return nil, fmt.Errorf("error getting defaults for %s param [%s] on network [%v]: %w", subconfigName, param.ID, currentNetwork, err)
+				}
+				if param.OverwriteOnUpgrade {
+					param.Value = defaultValue
+				}
+			}
+		}
+	}
+
 	return cfg, nil
 
 }

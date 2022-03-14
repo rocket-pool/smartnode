@@ -17,9 +17,9 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Run
@@ -154,7 +154,7 @@ ______           _        _    ______           _
 	// Stop if the config file doesn't exist yet
 	_, err = os.Stat(expandedPath)
 	if !os.IsNotExist(err) {
-		cfg, err := config.LoadFromFile(expandedPath)
+		cfg, err := rp.LoadAndUpgradeConfigFromFile(expandedPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to load the global config file: %s\n", err.Error())
 			os.Exit(1)

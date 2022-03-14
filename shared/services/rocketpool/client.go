@@ -22,7 +22,6 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 	kh "golang.org/x/crypto/ssh/knownhosts"
-	"gopkg.in/yaml.v2"
 
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
@@ -31,6 +30,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/net"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -898,7 +898,7 @@ func (c *Client) loadConfig(path string) (*config.RocketPoolConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	return config.LoadFromFile(expandedPath)
+	return rp.LoadAndUpgradeConfigFromFile(expandedPath)
 }
 
 // Get the provider mode and port from a legacy config's provider URL
@@ -1075,17 +1075,7 @@ func (c *Client) saveConfig(cfg *config.RocketPoolConfig, path string) error {
 	if err != nil {
 		return err
 	}
-
-	settings := cfg.Serialize()
-	configBytes, err := yaml.Marshal(settings)
-	if err != nil {
-		return fmt.Errorf("could not serialize settings file: %w", err)
-	}
-
-	if err := ioutil.WriteFile(expandedPath, configBytes, 0664); err != nil {
-		return fmt.Errorf("could not write Rocket Pool config to %s: %w", shellescape.Quote(expandedPath), err)
-	}
-	return nil
+	return rp.SaveConfig(cfg, expandedPath)
 }
 
 // Build a docker-compose command
