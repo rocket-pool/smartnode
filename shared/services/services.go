@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	uc "github.com/rocket-pool/rocketpool-go/utils/client"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -82,7 +83,7 @@ func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
 		return nil, err
 	}
 	pm := getPasswordManager(cfg)
-	return getWallet(cfg, pm)
+	return getWallet(c, cfg, pm)
 }
 
 func GetEthClientProxy(c *cli.Context) (*uc.EthClientProxy, error) {
@@ -169,13 +170,27 @@ func getPasswordManager(cfg *config.RocketPoolConfig) *passwords.PasswordManager
 	return passwordManager
 }
 
-func getWallet(cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
+func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
 	var err error
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
+		maxFeeFloat := c.GlobalFloat64("maxFee")
+		if maxFeeFloat == 0 {
+			maxFeeFloat = cfg.Smartnode.ManualMaxFee.Value.(float64)
+		}
+		if maxFeeFloat != 0 {
+			maxFee = eth.GweiToWei(maxFeeFloat)
+		}
+
 		var maxPriorityFee *big.Int
-		maxFee = big.NewInt(int64(cfg.Smartnode.ManualMaxFee.Value.(float64)))
-		maxPriorityFee = big.NewInt(int64(cfg.Smartnode.PriorityFee.Value.(float64)))
+		maxPriorityFeeFloat := c.GlobalFloat64("maxPrioFee")
+		if maxPriorityFeeFloat == 0 {
+			maxPriorityFeeFloat = cfg.Smartnode.PriorityFee.Value.(float64)
+		}
+		if maxPriorityFeeFloat != 0 {
+			maxPriorityFee = eth.GweiToWei(maxPriorityFeeFloat)
+		}
+
 		chainId := cfg.Smartnode.GetChainID()
 
 		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm)
