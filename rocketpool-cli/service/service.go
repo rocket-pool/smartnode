@@ -217,7 +217,6 @@ func configureService(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	app := tview.NewApplication()
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading user settings: %w", err)
@@ -236,6 +235,12 @@ func configureService(c *cli.Context) error {
 		}
 	}
 
+	// Save the config and exit in headless mode
+	if c.Bool("headless") {
+		return rp.SaveConfig(cfg)
+	}
+
+	app := tview.NewApplication()
 	md := cliconfig.NewMainDisplay(app, cfg, isNew, isMigration)
 	err = app.Run()
 	if err != nil {

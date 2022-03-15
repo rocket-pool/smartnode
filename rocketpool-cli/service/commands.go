@@ -76,8 +76,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool service config",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
-						Name:  "advanced, a",
-						Usage: "Show all settings during configuration for advanced users",
+						Name:  "headless",
+						Usage: "Create a config file without going through the TUI for 3rd-party post-processing",
 					},
 				},
 				Action: func(c *cli.Context) error {
