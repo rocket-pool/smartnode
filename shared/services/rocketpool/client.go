@@ -10,7 +10,6 @@ import (
 	"math/big"
 	"net/url"
 	"os"
-	osUser "os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -21,7 +20,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
-	kh "golang.org/x/crypto/ssh/knownhosts"
 
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
@@ -29,7 +27,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/utils/net"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -78,11 +75,6 @@ type Client struct {
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
 	return NewClient(c.GlobalString("config-path"),
 		c.GlobalString("daemon-path"),
-		c.GlobalString("host"),
-		c.GlobalString("user"),
-		c.GlobalString("key"),
-		c.GlobalString("passphrase"),
-		c.GlobalString("known-hosts"),
 		c.GlobalFloat64("maxFee"),
 		c.GlobalFloat64("maxPrioFee"),
 		c.GlobalUint64("gasLimit"),
@@ -91,73 +83,10 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
 }
 
 // Create new Rocket Pool client
-func NewClient(configPath string, daemonPath string, hostAddress string, user string, keyPath string, passphrasePath string, knownhostsFile string, maxFee float64, maxPrioFee float64, gasLimit uint64, customNonce string, debug bool) (*Client, error) {
+func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee float64, gasLimit uint64, customNonce string, debug bool) (*Client, error) {
 
 	// Initialize SSH client if configured for SSH
 	var sshClient *ssh.Client
-	if hostAddress != "" {
-
-		// Check parameters
-		if user == "" {
-			return nil, errors.New("The SSH user (--user) must be specified.")
-		}
-		if keyPath == "" {
-			return nil, errors.New("The SSH private key path (--key) must be specified.")
-		}
-
-		// Read private key
-		keyBytes, err := ioutil.ReadFile(os.ExpandEnv(keyPath))
-		if err != nil {
-			return nil, fmt.Errorf("Could not read SSH private key at %s: %w", keyPath, err)
-		}
-
-		// Read passphrase
-		var passphrase []byte
-		if passphrasePath != "" {
-			passphrase, err = ioutil.ReadFile(os.ExpandEnv(passphrasePath))
-			if err != nil {
-				return nil, fmt.Errorf("Could not read SSH passphrase at %s: %w", passphrasePath, err)
-			}
-		}
-
-		// Parse private key
-		var key ssh.Signer
-		if passphrase == nil {
-			key, err = ssh.ParsePrivateKey(keyBytes)
-		} else {
-			key, err = ssh.ParsePrivateKeyWithPassphrase(keyBytes, passphrase)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("Could not parse SSH private key at %s: %w", keyPath, err)
-		}
-
-		// Prepare the server host key callback function
-		if knownhostsFile == "" {
-			// Default to using the current users known_hosts file if one wasn't provided
-			usr, err := osUser.Current()
-			if err != nil {
-				return nil, fmt.Errorf("Could not get current user: %w", err)
-			}
-			knownhostsFile = fmt.Sprintf("%s/.ssh/known_hosts", usr.HomeDir)
-		}
-
-		hostKeyCallback, err := kh.New(knownhostsFile)
-		if err != nil {
-			return nil, fmt.Errorf("Could not create hostKeyCallback function: %w", err)
-		}
-
-		// Initialise client
-		sshClient, err = ssh.Dial("tcp", net.DefaultPort(hostAddress, "22"), &ssh.ClientConfig{
-			User:            user,
-			Auth:            []ssh.AuthMethod{ssh.PublicKeys(key)},
-			HostKeyCallback: hostKeyCallback,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("Could not connect to %s as %s: %w", hostAddress, user, err)
-		}
-
-	}
-
 	var customNonceBigInt *big.Int = nil
 	var success bool
 	if customNonce != "" {

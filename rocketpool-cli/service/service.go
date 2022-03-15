@@ -49,22 +49,14 @@ const (
 // Install the Rocket Pool service
 func installService(c *cli.Context) error {
 
-	// Get install location
-	var location string
-	if c.GlobalString("host") == "" {
-		location = "locally"
-	} else {
-		location = fmt.Sprintf("at %s", c.GlobalString("host"))
-	}
-
 	if c.String("network") != "" {
 		fmt.Printf("%sNOTE: The --network flag is deprecated. You no longer need to specify it.%s\n\n", colorLightBlue, colorReset)
 	}
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-		"The Rocket Pool service will be installed %s --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your and modifications will be migrated automatically.%s\nAre you sure you want to continue?",
-		location, c.String("version"), colorGreen, colorReset,
+		"The Rocket Pool service will be installed --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your and modifications will be migrated automatically.%s\nAre you sure you want to continue?",
+		c.String("version"), colorGreen, colorReset,
 	))) {
 		fmt.Println("Cancelled.")
 		return nil
@@ -85,7 +77,7 @@ func installService(c *cli.Context) error {
 
 	// Print success message & return
 	fmt.Println("")
-	fmt.Printf("The Rocket Pool service was successfully installed %s!\n", location)
+	fmt.Println("The Rocket Pool service was successfully installed!")
 
 	printPatchNotes(c)
 
@@ -154,14 +146,6 @@ ______           _        _    ______           _
 // Install the Rocket Pool update tracker for the metrics dashboard
 func installUpdateTracker(c *cli.Context) error {
 
-	// Get install location
-	var location string
-	if c.GlobalString("host") == "" {
-		location = "locally"
-	} else {
-		location = fmt.Sprintf("at %s", c.GlobalString("host"))
-	}
-
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(
 		"This will add the ability to display any available Operating System updates or new Rocket Pool versions on the metrics dashboard. "+
@@ -193,12 +177,10 @@ func installUpdateTracker(c *cli.Context) error {
 	colorReset := "\033[0m"
 	colorYellow := "\033[33m"
 	fmt.Println("")
-	fmt.Printf("The Rocket Pool update tracker service was successfully installed %s!\n", location)
-	if c.GlobalString("host") == "" {
-		fmt.Println("")
-		fmt.Printf("%sNOTE:\nPlease run 'docker restart %s%s' to enable update tracking on the metrics dashboard.%s\n", colorYellow, prefix, ExporterContainerSuffix, colorReset)
-		fmt.Println("")
-	}
+	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
+	fmt.Println("")
+	fmt.Printf("%sNOTE:\nPlease run 'docker restart %s%s' to enable update tracking on the metrics dashboard.%s\n", colorYellow, prefix, ExporterContainerSuffix, colorReset)
+	fmt.Println("")
 	return nil
 
 }
