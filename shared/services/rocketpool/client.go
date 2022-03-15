@@ -40,6 +40,7 @@ const (
 
 	LegacyBackupFolder       string = "old_config_backup"
 	SettingsFile             string = "user-settings.yml"
+	BackupSettingsFile       string = "user-settings-backup.yml"
 	LegacyConfigFile         string = "config.yml"
 	LegacySettingsFile       string = "settings.yml"
 	PrometheusConfigTemplate string = "prometheus.tmpl"
@@ -192,7 +193,7 @@ func (c *Client) Close() {
 
 // Load the config
 func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
-	cfg, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
+	cfg, err := c.loadAndUpgradeConfig(fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
 	if err != nil {
 		return nil, false, err
 	}
@@ -205,9 +206,29 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	return cfg, isNew, nil
 }
 
+// Load the backup config
+func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
+	cfg, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, BackupSettingsFile))
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
 	return c.saveConfig(cfg, fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
+}
+
+// Returns whether or not this is the first run of the configurator since a previous installation
+func (c *Client) IsFirstRun() bool {
+	return rp.IsFirstRun(c.configPath)
+}
+
+// Removes the first run indicator after a new installation
+func (c *Client) RemoveUpgradeFlagFile() error {
+	return rp.RemoveUpgradeFlagFile(c.configPath)
 }
 
 // Load the legacy config if one exists
@@ -852,12 +873,21 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 }
 
 // Load a config file
-func (c *Client) loadConfig(path string) (*config.RocketPoolConfig, error) {
+func (c *Client) loadAndUpgradeConfig(path string) (*config.RocketPoolConfig, error) {
 	expandedPath, err := homedir.Expand(path)
 	if err != nil {
 		return nil, err
 	}
 	return rp.LoadAndUpgradeConfigFromFile(expandedPath)
+}
+
+// Load a config file
+func (c *Client) loadConfig(path string) (*config.RocketPoolConfig, error) {
+	expandedPath, err := homedir.Expand(path)
+	if err != nil {
+		return nil, err
+	}
+	return rp.LoadConfigFromFile(expandedPath)
 }
 
 // Get the provider mode and port from a legacy config's provider URL

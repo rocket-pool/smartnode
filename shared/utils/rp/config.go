@@ -11,7 +11,24 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const upgradeFlagFile string = ".firstrun"
+const (
+	upgradeFlagFile string = ".firstrun"
+)
+
+// Loads a config without updating it if it exists
+func LoadConfigFromFile(path string) (*config.RocketPoolConfig, error) {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil, nil
+	} else {
+		cfg, err := config.LoadFromFile(path, false)
+		if err != nil {
+			return nil, err
+		}
+
+		return cfg, nil
+	}
+}
 
 // Loads a config, handling setting upgrades if necessary
 func LoadAndUpgradeConfigFromFile(path string) (*config.RocketPoolConfig, error) {
@@ -33,7 +50,7 @@ func LoadAndUpgradeConfigFromFile(path string) (*config.RocketPoolConfig, error)
 	}
 }
 
-// Saves a config, removing the upgrade flag file if present.
+// Saves a config
 func SaveConfig(cfg *config.RocketPoolConfig, path string) error {
 
 	settings := cfg.Serialize()
@@ -46,10 +63,29 @@ func SaveConfig(cfg *config.RocketPoolConfig, path string) error {
 		return fmt.Errorf("could not write Rocket Pool config to %s: %w", shellescape.Quote(path), err)
 	}
 
-	// Check for the upgrade flag file
-	configDir := filepath.Dir(path)
+	return nil
+
+}
+
+// Checks if this is the first run of the configurator after an install
+func IsFirstRun(configDir string) bool {
 	upgradeFilePath := filepath.Join(configDir, upgradeFlagFile)
-	_, err = os.Stat(upgradeFilePath)
+
+	// Load the config normally if the upgrade flag file isn't there
+	_, err := os.Stat(upgradeFilePath)
+	if os.IsNotExist(err) {
+		return false
+	}
+
+	return true
+}
+
+// Removes the upgrade flag file if present
+func RemoveUpgradeFlagFile(configDir string) error {
+
+	// Check for the upgrade flag file
+	upgradeFilePath := filepath.Join(configDir, upgradeFlagFile)
+	_, err := os.Stat(upgradeFilePath)
 	if os.IsNotExist(err) {
 		return nil
 	}

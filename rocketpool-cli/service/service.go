@@ -86,7 +86,7 @@ func installService(c *cli.Context) error {
 	printPatchNotes(c)
 
 	// Load the config, which will upgrade it
-	_, isNew, err := rp.LoadConfig()
+	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading new configuration: %w", err)
 	}
@@ -99,8 +99,15 @@ func installService(c *cli.Context) error {
 			return err
 		}
 		if migratedConfig != nil {
+			cfg = migratedConfig
 			isMigration = true
 		}
+	}
+
+	// Save the upgraded config
+	err = rp.SaveConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("error saving upgraded configuration: %w", err)
 	}
 
 	// Print the docker permissions notice
@@ -241,13 +248,21 @@ func configureService(c *cli.Context) error {
 		}
 	}
 
+	var oldCfg *config.RocketPoolConfig
+	if rp.IsFirstRun() {
+		oldCfg, err = rp.LoadBackupConfig()
+		if err != nil {
+			return fmt.Errorf("error loading user settings: %w", err)
+		}
+	}
+
 	// Save the config and exit in headless mode
 	if c.Bool("headless") {
 		return rp.SaveConfig(cfg)
 	}
 
 	app := tview.NewApplication()
-	md := cliconfig.NewMainDisplay(app, cfg, isNew, isMigration)
+	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isMigration)
 	err = app.Run()
 	if err != nil {
 		return err
@@ -255,12 +270,20 @@ func configureService(c *cli.Context) error {
 
 	// Deal with saving the config and printing the changes
 	if md.ShouldSave {
+		// Remove the upgrade flag
+		if oldCfg != nil {
+			err = rp.RemoveUpgradeFlagFile()
+			if err != nil {
+				return fmt.Errorf("error removing upgrade flag file prior to saving: %w", err)
+			}
+		}
+
+		// Save the config
 		rp.SaveConfig(md.Config)
 		fmt.Println("Your changes have been saved!")
 
-		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
-
 		// Deal with network changes
+		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 		if md.ChangeNetworks {
 			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
 			if err != nil {

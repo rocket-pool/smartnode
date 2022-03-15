@@ -30,10 +30,12 @@ type mainDisplay struct {
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isNew bool, isMigration bool) *mainDisplay {
+func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isMigration bool) *mainDisplay {
 
 	// Create a copy of the original config for comparison purposes
-	previousConfig := config.CreateCopy()
+	if previousConfig == nil {
+		previousConfig = config.CreateCopy()
+	}
 
 	// Create the main grid
 	grid := tview.NewGrid().
