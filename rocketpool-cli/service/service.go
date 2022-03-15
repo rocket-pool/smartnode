@@ -230,11 +230,23 @@ func configureService(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Load the config, checking to see if it's new (hasn't been installed before)
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading user settings: %w", err)
 	}
 
+	// Check to see if there is an existing backup config from a previous version after an update
+	var oldCfg *config.RocketPoolConfig
+	isUpdate := rp.IsFirstRun()
+	if isUpdate {
+		oldCfg, err = rp.LoadBackupConfig()
+		if err != nil {
+			return fmt.Errorf("error loading user settings: %w", err)
+		}
+	}
+
+	// Check to see if this is a migration from a legacy config
 	isMigration := false
 	if isNew {
 		// Look for a legacy config to migrate
@@ -243,16 +255,15 @@ func configureService(c *cli.Context) error {
 			return err
 		}
 		if migratedConfig != nil {
-			cfg = migratedConfig
+			oldCfg = migratedConfig
 			isMigration = true
-		}
-	}
+			cfg = oldCfg.CreateCopy()
 
-	var oldCfg *config.RocketPoolConfig
-	if rp.IsFirstRun() {
-		oldCfg, err = rp.LoadBackupConfig()
-		if err != nil {
-			return fmt.Errorf("error loading user settings: %w", err)
+			// Update the config
+			err = cfg.UpdateDefaults()
+			if err != nil {
+				return fmt.Errorf("error updating legacy configuration to with new settings: %w", err)
+			}
 		}
 	}
 
@@ -262,7 +273,7 @@ func configureService(c *cli.Context) error {
 	}
 
 	app := tview.NewApplication()
-	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isMigration)
+	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isMigration, isUpdate)
 	err = app.Run()
 	if err != nil {
 		return err

@@ -123,29 +123,9 @@ func LoadFromFile(path string, updateDefaults bool) (*RocketPoolConfig, error) {
 
 	// Update all of the overwriteable parameters with the default values if requested
 	if updateDefaults {
-		// Update the root params
-		currentNetwork := cfg.Smartnode.Network.Value.(Network)
-		for _, param := range cfg.GetParameters() {
-			defaultValue, err := param.GetDefault(currentNetwork)
-			if err != nil {
-				return nil, fmt.Errorf("error getting defaults for root param [%s] on network [%v]: %w", param.ID, currentNetwork, err)
-			}
-			if param.OverwriteOnUpgrade {
-				param.Value = defaultValue
-			}
-		}
-
-		// Update the subconfigs
-		for subconfigName, subconfig := range cfg.GetSubconfigs() {
-			for _, param := range subconfig.GetParameters() {
-				defaultValue, err := param.GetDefault(currentNetwork)
-				if err != nil {
-					return nil, fmt.Errorf("error getting defaults for %s param [%s] on network [%v]: %w", subconfigName, param.ID, currentNetwork, err)
-				}
-				if param.OverwriteOnUpgrade {
-					param.Value = defaultValue
-				}
-			}
+		err = cfg.UpdateDefaults()
+		if err != nil {
+			return nil, fmt.Errorf("error updating overwrite-on-upgrade settings: %w", err)
 		}
 	}
 
@@ -891,4 +871,34 @@ func addParametersToEnvVars(params []*Parameter, envVars map[string]string) {
 // The the title for the config
 func (config *RocketPoolConfig) GetConfigTitle() string {
 	return config.Title
+}
+
+// Update the default settings for all overwrite-on-upgrade parameters
+func (config *RocketPoolConfig) UpdateDefaults() error {
+	// Update the root params
+	currentNetwork := config.Smartnode.Network.Value.(Network)
+	for _, param := range config.GetParameters() {
+		defaultValue, err := param.GetDefault(currentNetwork)
+		if err != nil {
+			return fmt.Errorf("error getting defaults for root param [%s] on network [%v]: %w", param.ID, currentNetwork, err)
+		}
+		if param.OverwriteOnUpgrade {
+			param.Value = defaultValue
+		}
+	}
+
+	// Update the subconfigs
+	for subconfigName, subconfig := range config.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			defaultValue, err := param.GetDefault(currentNetwork)
+			if err != nil {
+				return fmt.Errorf("error getting defaults for %s param [%s] on network [%v]: %w", subconfigName, param.ID, currentNetwork, err)
+			}
+			if param.OverwriteOnUpgrade {
+				param.Value = defaultValue
+			}
+		}
+	}
+
+	return nil
 }

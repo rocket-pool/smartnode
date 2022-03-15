@@ -20,6 +20,7 @@ type mainDisplay struct {
 	settingsHome        *settingsHome
 	isNew               bool
 	isMigration         bool
+	isUpdate            bool
 	previousWidth       int
 	previousHeight      int
 	PreviousConfig      *config.RocketPoolConfig
@@ -30,7 +31,7 @@ type mainDisplay struct {
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isMigration bool) *mainDisplay {
+func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isMigration bool, isUpdate bool) *mainDisplay {
 
 	// Create a copy of the original config for comparison purposes
 	if previousConfig == nil {
@@ -77,6 +78,7 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 		mainGrid:       grid,
 		isNew:          isNew,
 		isMigration:    isMigration,
+		isUpdate:       isUpdate,
 		PreviousConfig: previousConfig,
 		Config:         config,
 	}

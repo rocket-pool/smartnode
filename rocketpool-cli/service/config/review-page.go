@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
@@ -54,28 +56,43 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	changeBox.SetBorder(true)
 	changeBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	changeBox.SetBorderPadding(0, 0, 1, 1)
-	changeString := ""
+	builder := strings.Builder{}
+
+	if md.isUpdate || md.isMigration {
+		totalAffectedContainers[config.ContainerID_Api] = true
+		totalAffectedContainers[config.ContainerID_Node] = true
+		totalAffectedContainers[config.ContainerID_Watchtower] = true
+
+		if newConfig.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && newConfig.ExecutionClient.Value.(config.ExecutionClient) != config.ExecutionClient_Geth {
+			totalAffectedContainers[config.ContainerID_Eth1] = true
+		}
+		if newConfig.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+			totalAffectedContainers[config.ContainerID_Eth1Fallback] = true
+		}
+		builder.WriteString(fmt.Sprintf("Updated to Smartnode v%s (will affect several containers)\n\n", shared.RocketPoolVersion))
+	}
+
 	for categoryName, changedSettingsList := range changedSettings {
 		if len(changedSettingsList) > 0 {
-			changeString += fmt.Sprintf("%s\n", categoryName)
+			builder.WriteString(fmt.Sprintf("%s\n", categoryName))
 			for _, pair := range changedSettingsList {
-				changeString += fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue)
+				builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
 			}
-			changeString += "\n"
+			builder.WriteString("\n")
 		}
 	}
 
 	containersToRestart := []config.ContainerID{}
-	if changeString == "" {
-		changeString = "<No changes>"
+	if builder.String() == "" {
+		builder.WriteString("<No changes>")
 	} else {
-		changeString += "The following containers will be restarted for these changes to take effect:"
+		builder.WriteString("The following containers will be restarted for these changes to take effect:")
 		for container, _ := range totalAffectedContainers {
-			changeString += fmt.Sprintf("\n\t%v", container)
+			builder.WriteString(fmt.Sprintf("\n\t%v", container))
 			containersToRestart = append(containersToRestart, container)
 		}
 	}
-	changeBox.SetText(changeString)
+	changeBox.SetText(builder.String())
 
 	// Create the layout
 	width := 86

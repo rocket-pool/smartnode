@@ -475,6 +475,29 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	cfg.Smartnode.RplClaimGasThreshold.Value = legacyCfg.Smartnode.RplClaimGasThreshold
 	cfg.Smartnode.MinipoolStakeGasThreshold.Value = legacyCfg.Smartnode.MinipoolStakeGasThreshold
 
+	// Docker images
+	for _, option := range legacyCfg.Chains.Eth1.Client.Options {
+		if option.ID == "geth" {
+			cfg.Geth.ContainerTag.Value = option.Image
+		}
+	}
+	for _, option := range legacyCfg.Chains.Eth2.Client.Options {
+		switch option.ID {
+		case "lighthouse":
+			cfg.Lighthouse.ContainerTag.Value = option.Image
+			cfg.ExternalLighthouse.ContainerTag.Value = option.Image
+		case "nimbus":
+			cfg.Nimbus.ContainerTag.Value = option.Image
+		case "prysm":
+			cfg.Prysm.BnContainerTag.Value = option.BeaconImage
+			cfg.Prysm.VcContainerTag.Value = option.ValidatorImage
+			cfg.ExternalPrysm.ContainerTag.Value = option.ValidatorImage
+		case "teku":
+			cfg.Teku.ContainerTag.Value = option.Image
+			cfg.ExternalTeku.ContainerTag.Value = option.Image
+		}
+	}
+
 	return cfg, nil
 
 }
