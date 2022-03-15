@@ -305,6 +305,19 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 
 	// Do the conversion
 
+	// Network
+	chainID := legacyCfg.Chains.Eth1.ChainID
+	var network config.Network
+	switch chainID {
+	case "1":
+		network = config.Network_Mainnet
+	case "5":
+		network = config.Network_Prater
+	default:
+		return nil, fmt.Errorf("legacy config had an unknown chain ID [%s]", chainID)
+	}
+	cfg.Smartnode.Network.Value = network
+
 	// Migrate the EC
 	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.Provider, legacyCfg.Chains.Eth1.WsProvider, "eth1", &cfg.ExecutionClientMode, &cfg.ExecutionCommon.HttpPort, &cfg.ExecutionCommon.WsPort, &cfg.ExternalExecution.HttpUrl, &cfg.ExternalExecution.WsUrl)
 	if err != nil {
@@ -316,7 +329,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
 	}
@@ -332,7 +345,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating fallback eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
 	}
@@ -376,26 +389,18 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 			cfg.ExternalPrysm.Graffiti.Value = param.Value
 			cfg.ExternalTeku.Graffiti.Value = param.Value
 		case "ETH2_MAX_PEERS":
-			peers, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 max peers [%s]", param.Value)
-			}
 			switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
 			case config.ConsensusClient_Lighthouse:
-				cfg.Lighthouse.MaxPeers.Value = uint16(peers)
+				convertUintParam(param, &cfg.Lighthouse.MaxPeers, network, 16)
 			case config.ConsensusClient_Nimbus:
-				cfg.Nimbus.MaxPeers.Value = uint16(peers)
+				convertUintParam(param, &cfg.Nimbus.MaxPeers, network, 16)
 			case config.ConsensusClient_Prysm:
-				cfg.Prysm.MaxPeers.Value = uint16(peers)
+				convertUintParam(param, &cfg.Prysm.MaxPeers, network, 16)
 			case config.ConsensusClient_Teku:
-				cfg.Teku.MaxPeers.Value = uint16(peers)
+				convertUintParam(param, &cfg.Teku.MaxPeers, network, 16)
 			}
 		case "ETH2_P2P_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 P2P port [%s]", param.Value)
-			}
-			cfg.ConsensusCommon.P2pPort.Value = uint16(port)
+			convertUintParam(param, &cfg.ConsensusCommon.P2pPort, network, 16)
 		case "ETH2_CHECKPOINT_SYNC_URL":
 			cfg.ConsensusCommon.CheckpointSyncProvider.Value = param.Value
 		case "ETH2_DOPPELGANGER_DETECTION":
@@ -409,15 +414,8 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 				cfg.ExternalPrysm.DoppelgangerDetection.Value = false
 			}
 		case "ETH2_RPC_PORT":
-			var port uint64
-			if param.Value == "" {
-				port = uint64(cfg.Prysm.RpcPort.Default[config.Network_All].(uint16))
-			} else {
-				port, err = strconv.ParseUint(param.Value, 0, 16)
-				if err != nil {
-					return nil, fmt.Errorf("error migrating local eth2 configuration: invalid eth2 RPC port [%s]", param.Value)
-				}
-			}
+			convertUintParam(param, &cfg.Prysm.RpcPort, network, 16)
+			port := cfg.Prysm.RpcPort.Value.(uint16)
 			cfg.Prysm.RpcPort.Value = uint16(port)
 			externalPrysmUrl := strings.Replace(ccProvider, fmt.Sprintf(":%d", ccPort), fmt.Sprintf(":%d", port), 1)
 			cfg.ExternalPrysm.JsonRpcUrl.Value = externalPrysmUrl
@@ -429,63 +427,24 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	for _, param := range legacyCfg.Metrics.Settings {
 		switch param.Env {
 		case "ETH2_METRICS_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating metrics configuration: invalid eth2 metrics port [%s]", param.Value)
-			}
-			cfg.BnMetricsPort.Value = uint16(port)
+			convertUintParam(param, &cfg.BnMetricsPort, network, 16)
 		case "VALIDATOR_METRICS_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating metrics configuration: invalid validator metrics port [%s]", param.Value)
-			}
-			cfg.VcMetricsPort.Value = uint16(port)
+			convertUintParam(param, &cfg.VcMetricsPort, network, 16)
 		case "NODE_METRICS_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating metrics configuration: invalid node metrics port [%s]", param.Value)
-			}
-			cfg.NodeMetricsPort.Value = uint16(port)
+			convertUintParam(param, &cfg.NodeMetricsPort, network, 16)
 		case "EXPORTER_METRICS_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating metrics configuration: invalid exporter metrics port [%s]", param.Value)
-			}
-			cfg.ExporterMetricsPort.Value = uint16(port)
+			convertUintParam(param, &cfg.ExporterMetricsPort, network, 16)
 		case "WATCHTOWER_METRICS_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating metrics configuration: invalid watchtower metrics port [%s]", param.Value)
-			}
-			cfg.WatchtowerMetricsPort.Value = uint16(port)
+			convertUintParam(param, &cfg.WatchtowerMetricsPort, network, 16)
 		case "PROMETHEUS_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating metrics configuration: invalid prometheus port [%s]", param.Value)
-			}
-			cfg.Prometheus.Port.Value = uint16(port)
+			convertUintParam(param, &cfg.Prometheus.Port, network, 16)
 		case "GRAFANA_PORT":
-			port, err := strconv.ParseUint(param.Value, 0, 16)
-			if err != nil {
-				return nil, fmt.Errorf("error migrating metrics configuration: invalid grafana port [%s]", param.Value)
-			}
-			cfg.Grafana.Port.Value = uint16(port)
+			convertUintParam(param, &cfg.Grafana.Port, network, 16)
 		}
 	}
 
 	// Top-level parameters
 	cfg.ReconnectDelay.Value = legacyCfg.Chains.Eth1.ReconnectDelay
-
-	// Network
-	chainID := legacyCfg.Chains.Eth1.ChainID
-	switch chainID {
-	case "1":
-		cfg.Smartnode.Network.Value = config.Network_Mainnet
-	case "5":
-		cfg.Smartnode.Network.Value = config.Network_Prater
-	default:
-		return nil, fmt.Errorf("legacy config had an unknown chain ID [%s]", chainID)
-	}
 
 	// Smartnode settings
 	cfg.Smartnode.ProjectName.Value = legacyCfg.Smartnode.ProjectName
@@ -1016,7 +975,7 @@ func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *config
 }
 
 // Migrates the parameters from a legacy eth1 config to a modern one
-func (c *Client) migrateEth1Params(client string, params []config.UserParam, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
+func (c *Client) migrateEth1Params(client string, network config.Network, params []config.UserParam, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
 	for _, param := range params {
 		switch param.Env {
 		case "ETHSTATS_LABEL":
@@ -1028,29 +987,11 @@ func (c *Client) migrateEth1Params(client string, params []config.UserParam, get
 				geth.EthstatsLogin.Value = param.Value
 			}
 		case "GETH_CACHE_SIZE":
-			if geth != nil {
-				size, err := strconv.ParseUint(param.Value, 0, 0)
-				if err != nil {
-					return fmt.Errorf("invalid geth cache size [%s]", param.Value)
-				}
-				geth.CacheSize.Value = uint(size)
-			}
+			convertUintParam(param, &geth.CacheSize, network, 0)
 		case "GETH_MAX_PEERS":
-			if geth != nil {
-				peers, err := strconv.ParseUint(param.Value, 0, 16)
-				if err != nil {
-					return fmt.Errorf("invalid geth max peers [%s]", param.Value)
-				}
-				geth.MaxPeers.Value = uint16(peers)
-			}
+			convertUintParam(param, &geth.MaxPeers, network, 16)
 		case "ETH1_P2P_PORT":
-			if geth != nil {
-				port, err := strconv.ParseUint(param.Value, 0, 16)
-				if err != nil {
-					return fmt.Errorf("invalid geth port [%s]", param.Value)
-				}
-				geth.P2pPort.Value = uint16(port)
-			}
+			convertUintParam(param, &geth.P2pPort, network, 16)
 		case "INFURA_PROJECT_ID":
 			infura.ProjectID.Value = param.Value
 		case "POCKET_PROJECT_ID":
@@ -1063,6 +1004,40 @@ func (c *Client) migrateEth1Params(client string, params []config.UserParam, get
 			if client == "custom" {
 				externalEc.WsUrl.Value = param.Value
 			}
+		}
+	}
+
+	return nil
+}
+
+// Stores a legacy parameter's value in a new parameter, replacing blank values with the appropriate default.
+func convertUintParam(oldParam config.UserParam, newParam *config.Parameter, network config.Network, bitsize int) error {
+	if newParam == nil {
+		return nil
+	}
+
+	if oldParam.Value == "" {
+		valIface, err := newParam.GetDefault(network)
+		if err != nil {
+			return fmt.Errorf("failed to get default for param [%s] on network [%v]: %w", newParam.ID, network, err)
+		}
+		newParam.Value = valIface
+	} else {
+		value, err := strconv.ParseUint(oldParam.Value, 0, bitsize)
+		if err != nil {
+			return fmt.Errorf("invalid legacy setting [%s] for param [%s]: %w", oldParam.Value, newParam.ID, err)
+		}
+		switch bitsize {
+		case 0:
+			newParam.Value = uint(value)
+		case 16:
+			newParam.Value = uint16(value)
+		case 32:
+			newParam.Value = uint32(value)
+		case 64:
+			newParam.Value = value
+		default:
+			return fmt.Errorf("unexpected bitsize %d", bitsize)
 		}
 	}
 
