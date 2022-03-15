@@ -345,9 +345,9 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating fallback eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1Fallback.Client.Selected, network, legacyCfg.Chains.Eth1Fallback.Client.Params, nil, cfg.FallbackInfura, cfg.FallbackPocket, cfg.FallbackExternalExecution)
 	if err != nil {
-		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
+		return nil, fmt.Errorf("error migrating fallback eth1 params: %w", err)
 	}
 
 	if legacyCfg.Chains.Eth1Fallback.Client.Selected != "" {
@@ -987,11 +987,17 @@ func (c *Client) migrateEth1Params(client string, network config.Network, params
 				geth.EthstatsLogin.Value = param.Value
 			}
 		case "GETH_CACHE_SIZE":
-			convertUintParam(param, &geth.CacheSize, network, 0)
+			if geth != nil {
+				convertUintParam(param, &geth.CacheSize, network, 0)
+			}
 		case "GETH_MAX_PEERS":
-			convertUintParam(param, &geth.MaxPeers, network, 16)
+			if geth != nil {
+				convertUintParam(param, &geth.MaxPeers, network, 16)
+			}
 		case "ETH1_P2P_PORT":
-			convertUintParam(param, &geth.P2pPort, network, 16)
+			if geth != nil {
+				convertUintParam(param, &geth.P2pPort, network, 16)
+			}
 		case "INFURA_PROJECT_ID":
 			infura.ProjectID.Value = param.Value
 		case "POCKET_PROJECT_ID":

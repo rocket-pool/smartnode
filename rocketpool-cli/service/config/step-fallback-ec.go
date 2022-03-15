@@ -25,7 +25,7 @@ func createFallbackEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 			// Focus the selected option
 			for i, option := range wiz.md.Config.FallbackExecutionClient.Options {
 				if option.Value == wiz.md.Config.FallbackExecutionClient.Value {
-					modal.focus(i)
+					modal.focus(i + 1)
 					break
 				}
 			}

@@ -86,19 +86,25 @@ func installService(c *cli.Context) error {
 	printPatchNotes(c)
 
 	// Load the config, which will upgrade it
-	cfg, isNew, err := rp.LoadConfig()
+	_, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading new configuration: %w", err)
 	}
 
-	// Save the upgraded config
-	err = rp.SaveConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("error saving upgraded configuration: %w", err)
+	isMigration := false
+	if isNew {
+		// Look for a legacy config to migrate
+		migratedConfig, err := rp.LoadLegacyConfigFromBackup()
+		if err != nil {
+			return err
+		}
+		if migratedConfig != nil {
+			isMigration = true
+		}
 	}
 
 	// Print the docker permissions notice
-	if isNew {
+	if isNew && !isMigration {
 		fmt.Printf("%sNOTE:\nSince this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
 		fmt.Printf("This is necessary for your user account to have permissions to use Docker.%s", colorReset)
 	}

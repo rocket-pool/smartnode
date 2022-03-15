@@ -711,7 +711,7 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 		for _, param := range subconfig.GetParameters() {
 			err := param.deserialize(subconfigParams)
 			if err != nil {
-				return fmt.Errorf("error deserializing [name]: %w", err)
+				return fmt.Errorf("error deserializing [%s]: %w", name, err)
 			}
 		}
 	}
