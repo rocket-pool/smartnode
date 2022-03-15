@@ -57,10 +57,14 @@ func installService(c *cli.Context) error {
 		location = fmt.Sprintf("at %s", c.GlobalString("host"))
 	}
 
+	if c.String("network") != "" {
+		fmt.Printf("%sNOTE: The --network flag is deprecated. You no longer need to specify it.%s\n\n", colorLightBlue, colorReset)
+	}
+
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-		"The Rocket Pool service will be installed %s --\nNetwork: %s\nVersion: %s\n\nAny existing configuration will be overwritten.\nAre you sure you want to continue?",
-		location, c.String("network"), c.String("version"),
+		"The Rocket Pool service will be installed %s --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your and modifications will be migrated automatically.%s\nAre you sure you want to continue?",
+		location, c.String("version"), colorGreen, colorReset,
 	))) {
 		fmt.Println("Cancelled.")
 		return nil
