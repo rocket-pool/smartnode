@@ -162,6 +162,15 @@ func (d *DropDown) GetList() *tview.List {
 	return d.list
 }
 
+// Closes a list, reverting the selected index.
+func (d *DropDown) CloseList(app *tview.Application) {
+	d.open = false
+	d.list.SetCurrentItem(d.currentOption)
+	d.closeList(func(p tview.Primitive) {
+		app.SetFocus(p)
+	})
+}
+
 // SetLabel sets the text to be displayed before the input area.
 func (d *DropDown) SetLabel(label string) *DropDown {
 	d.label = label

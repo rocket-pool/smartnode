@@ -53,6 +53,16 @@ func (configPage *MetricsConfigPage) createContent() {
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Close all dropdowns and break if one was open
+		for _, param := range configPage.layout.parameters {
+			dropDown, ok := param.item.(*DropDown)
+			if ok && dropDown.open {
+				dropDown.CloseList(configPage.home.md.app)
+				return nil
+			}
+		}
+
+		// Return to the home page
 		if event.Key() == tcell.KeyEsc {
 			configPage.home.md.setPage(configPage.home.homePage)
 			return nil
