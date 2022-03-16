@@ -257,8 +257,8 @@ func createParameterizedDropDown(param *config.Parameter, descriptionBox *tview.
 		}
 	})
 	list := item.GetList()
-	list.SetSelectedBackgroundColor(tcell.ColorLightGreen)
-	list.SetSelectedTextColor(tcell.ColorDarkGreen)
+	list.SetSelectedBackgroundColor(tcell.Color46)
+	list.SetSelectedTextColor(tcell.ColorBlack)
 	list.SetBackgroundColor(tcell.ColorBlack)
 	list.SetMainTextColor(tcell.ColorLightGray)
 

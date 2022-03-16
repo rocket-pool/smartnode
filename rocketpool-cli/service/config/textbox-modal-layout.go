@@ -179,8 +179,8 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, maxLengths 
 		}
 	}).
 		SetButtonTextColor(tcell.ColorLightGray).
-		SetButtonBackgroundActivatedColor(tcell.ColorLightGreen).
-		SetButtonTextActivatedColor(tcell.ColorDarkGreen)
+		SetButtonBackgroundActivatedColor(tcell.Color46).
+		SetButtonTextActivatedColor(tcell.ColorBlack)
 
 	// Create the columns, including the left and right spacers
 	leftSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
