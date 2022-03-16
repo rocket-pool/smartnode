@@ -48,6 +48,7 @@ func NewPocketConfig(config *RocketPoolConfig, isFallback bool) *PocketConfig {
 
 		CompatibleConsensusClients: []ConsensusClient{
 			ConsensusClient_Lighthouse,
+			ConsensusClient_Nimbus,
 			ConsensusClient_Prysm,
 			ConsensusClient_Teku,
 		},
