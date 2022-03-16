@@ -84,6 +84,7 @@ func installService(c *cli.Context) error {
 		return fmt.Errorf("error loading new configuration: %w", err)
 	}
 
+	// Check if this is a migration
 	isMigration := false
 	if isNew {
 		// Look for a legacy config to migrate
@@ -95,6 +96,10 @@ func installService(c *cli.Context) error {
 			isMigration = true
 		}
 	}
+
+	// Report next steps
+	fmt.Printf("%s\n=== Next Steps v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
+	fmt.Println("Run 'rocketpool service config' to continue setting up your node.\n")
 
 	// Print the docker permissions notice
 	if isNew && !isMigration {

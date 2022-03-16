@@ -46,7 +46,7 @@ func (configPage *ExecutionConfigPage) createContent() {
 
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Execution Client (Eth1) Settings")
+	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Execution Client (ETH1) Settings")
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {

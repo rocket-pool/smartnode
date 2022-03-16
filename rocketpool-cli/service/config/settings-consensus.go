@@ -36,7 +36,7 @@ func NewConsensusConfigPage(home *settingsHome) *ConsensusConfigPage {
 	configPage.page = newPage(
 		home.homePage,
 		"settings-consensus",
-		"Consensus Client (Eth2)",
+		"Consensus Client (ETH2)",
 		"Select this to choose your Consensus client (formerly called \"ETH2 client\") and configure its settings.",
 		configPage.layout.grid,
 	)
@@ -50,7 +50,7 @@ func (configPage *ConsensusConfigPage) createContent() {
 
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Consensus Client (Eth2) Settings")
+	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Consensus Client (ETH2) Settings")
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {

@@ -34,7 +34,7 @@ func NewFallbackExecutionConfigPage(home *settingsHome) *FallbackExecutionConfig
 	configPage.page = newPage(
 		home.homePage,
 		"settings-execution-fallback",
-		"Execution Backup (Eth1 Fallback)",
+		"Execution Backup (ETH1 Fallback)",
 		"Select this to choose your fallback / backup Execution Client (formerly called \"ETH1 fallback client\") that the Smartnode and Beacon client will use if your main Execution client ever goes offline.",
 		configPage.layout.grid,
 	)
@@ -48,7 +48,7 @@ func (configPage *FallbackExecutionConfigPage) createContent() {
 
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Fallback Execution Client (Eth1) Settings")
+	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "Fallback Execution Client (ETH1) Settings")
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
