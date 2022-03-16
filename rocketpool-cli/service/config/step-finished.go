@@ -11,6 +11,11 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
+			// If this is a new installation, reset it with the current settings as the new ones
+			if wiz.md.isNew {
+				wiz.md.PreviousConfig = wiz.md.Config.CreateCopy()
+			}
+
 			wiz.md.pages.RemovePage(settingsHomeID)
 			wiz.md.settingsHome = newSettingsHome(wiz.md)
 			wiz.md.setPage(wiz.md.settingsHome.homePage)
