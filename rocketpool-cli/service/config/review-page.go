@@ -121,7 +121,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	})
 	// Save when selected
 	saveButton.SetSelectedFunc(func() {
-		if changeNetworks {
+		if changeNetworks && !md.isNew {
 			// Network changes need to be handled specially
 			modal := tview.NewModal().
 				SetText("WARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted once you save and run these changes!").
