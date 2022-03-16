@@ -130,7 +130,7 @@ ______           _        _    ______           _
 	// Stop if the config file doesn't exist yet
 	_, err = os.Stat(expandedPath)
 	if !os.IsNotExist(err) {
-		cfg, err := rp.LoadAndUpgradeConfigFromFile(expandedPath)
+		cfg, err := rp.LoadConfigFromFile(expandedPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to load the global config file: %s\n", err.Error())
 			os.Exit(1)

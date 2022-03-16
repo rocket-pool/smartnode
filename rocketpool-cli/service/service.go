@@ -82,7 +82,7 @@ func installService(c *cli.Context) error {
 	printPatchNotes(c)
 
 	// Load the config, which will upgrade it
-	cfg, isNew, err := rp.LoadConfig()
+	_, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading new configuration: %w", err)
 	}
@@ -95,15 +95,8 @@ func installService(c *cli.Context) error {
 			return err
 		}
 		if migratedConfig != nil {
-			cfg = migratedConfig
 			isMigration = true
 		}
-	}
-
-	// Save the upgraded config
-	err = rp.SaveConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("error saving upgraded configuration: %w", err)
 	}
 
 	// Print the docker permissions notice
@@ -217,19 +210,10 @@ func configureService(c *cli.Context) error {
 	defer rp.Close()
 
 	// Load the config, checking to see if it's new (hasn't been installed before)
+	var oldCfg *config.RocketPoolConfig
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading user settings: %w", err)
-	}
-
-	// Check to see if there is an existing backup config from a previous version after an update
-	var oldCfg *config.RocketPoolConfig
-	isUpdate := rp.IsFirstRun()
-	if isUpdate {
-		oldCfg, err = rp.LoadBackupConfig()
-		if err != nil {
-			return fmt.Errorf("error loading user settings: %w", err)
-		}
 	}
 
 	// Check to see if this is a migration from a legacy config
@@ -241,15 +225,24 @@ func configureService(c *cli.Context) error {
 			return err
 		}
 		if migratedConfig != nil {
-			oldCfg = migratedConfig
+			cfg = migratedConfig
 			isMigration = true
-			cfg = oldCfg.CreateCopy()
+		}
+	}
 
-			// Update the config
-			err = cfg.UpdateDefaults()
-			if err != nil {
-				return fmt.Errorf("error updating legacy configuration to with new settings: %w", err)
-			}
+	// Check if this is a new install
+	isUpdate, err := rp.IsFirstRun()
+	if err != nil {
+		return fmt.Errorf("error checking for first-run status: %w", err)
+	}
+
+	// For migrations and upgrades, move the config to the old one and create a new upgraded copy
+	if isMigration || isUpdate {
+		oldCfg = cfg
+		cfg = cfg.CreateCopy()
+		err = cfg.UpdateDefaults()
+		if err != nil {
+			return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
 		}
 	}
 
@@ -267,14 +260,6 @@ func configureService(c *cli.Context) error {
 
 	// Deal with saving the config and printing the changes
 	if md.ShouldSave {
-		// Remove the upgrade flag
-		if oldCfg != nil {
-			err = rp.RemoveUpgradeFlagFile()
-			if err != nil {
-				return fmt.Errorf("error removing upgrade flag file prior to saving: %w", err)
-			}
-		}
-
 		// Save the config
 		rp.SaveConfig(md.Config)
 		fmt.Println("Your changes have been saved!")
@@ -390,7 +375,6 @@ func startService(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Update the Prometheus template with the assigned ports
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading user settings: %w", err)
@@ -410,11 +394,31 @@ func startService(c *cli.Context) error {
 	}
 
 	if isMigration {
-		return fmt.Errorf("You must upgrade your configuration before starting the Smartnode. Please run `rocketpool service config` to confirm your settings were migrated correctly, and enjoy the new configuration UI!")
+		return fmt.Errorf("You must upgrade your configuration before starting the Smartnode.\nPlease run `rocketpool service config` to confirm your settings were migrated correctly, and enjoy the new configuration UI!")
 	} else if isNew {
 		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smartnode before running it.")
 	}
 
+	// Check if this is a new install
+	isUpdate, err := rp.IsFirstRun()
+	if err != nil {
+		return fmt.Errorf("error checking for first-run status: %w", err)
+	}
+	if isUpdate {
+		if c.Bool("yes") || cliutils.Confirm("Smartnode upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
+			err = cfg.UpdateDefaults()
+			if err != nil {
+				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
+			}
+			rp.SaveConfig(cfg)
+			fmt.Printf("%sUpdated settings successfully.%s\n", colorGreen, colorReset)
+		} else {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	}
+
+	// Update the Prometheus template with the assigned ports
 	metricsEnabled := cfg.EnableMetrics.Value.(bool)
 	if metricsEnabled {
 		err := rp.UpdatePrometheusConfiguration(cfg.GenerateEnvironmentVariables())

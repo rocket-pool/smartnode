@@ -120,6 +120,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "ignore-slash-timer",
 						Usage: "Bypass the safety timer that forces a delay when switching to a new ETH2 client",
 					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Ignore service config prompt after upgrading",
+					},
 				},
 				Action: func(c *cli.Context) error {
 

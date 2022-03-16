@@ -122,7 +122,13 @@ func (c *Client) Close() {
 
 // Load the config
 func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
-	cfg, err := c.loadAndUpgradeConfig(fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
+	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
+	expandedPath, err := homedir.Expand(settingsFilePath)
+	if err != nil {
+		return nil, false, fmt.Errorf("error expanding settings file path: %w", err)
+	}
+
+	cfg, err := rp.LoadConfigFromFile(expandedPath)
 	if err != nil {
 		return nil, false, err
 	}
@@ -135,29 +141,23 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	return cfg, isNew, nil
 }
 
-// Load the backup config
-func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
-	cfg, err := c.loadConfig(fmt.Sprintf("%s/%s", c.configPath, BackupSettingsFile))
-	if err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
-}
-
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
-	return c.saveConfig(cfg, fmt.Sprintf("%s/%s", c.configPath, SettingsFile))
+	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
+	expandedPath, err := homedir.Expand(settingsFilePath)
+	if err != nil {
+		return err
+	}
+	return rp.SaveConfig(cfg, expandedPath)
 }
 
 // Returns whether or not this is the first run of the configurator since a previous installation
-func (c *Client) IsFirstRun() bool {
-	return rp.IsFirstRun(c.configPath)
-}
-
-// Removes the first run indicator after a new installation
-func (c *Client) RemoveUpgradeFlagFile() error {
-	return rp.RemoveUpgradeFlagFile(c.configPath)
+func (c *Client) IsFirstRun() (bool, error) {
+	expandedPath, err := homedir.Expand(c.configPath)
+	if err != nil {
+		return false, fmt.Errorf("error expanding settings file path: %w", err)
+	}
+	return rp.IsFirstRun(expandedPath), nil
 }
 
 // Load the legacy config if one exists
@@ -824,24 +824,6 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 	c.gasLimit = gasLimit
 }
 
-// Load a config file
-func (c *Client) loadAndUpgradeConfig(path string) (*config.RocketPoolConfig, error) {
-	expandedPath, err := homedir.Expand(path)
-	if err != nil {
-		return nil, err
-	}
-	return rp.LoadAndUpgradeConfigFromFile(expandedPath)
-}
-
-// Load a config file
-func (c *Client) loadConfig(path string) (*config.RocketPoolConfig, error) {
-	expandedPath, err := homedir.Expand(path)
-	if err != nil {
-		return nil, err
-	}
-	return rp.LoadConfigFromFile(expandedPath)
-}
-
 // Get the provider mode and port from a legacy config's provider URL
 func (c *Client) migrateProviderInfo(provider string, wsProvider string, localHostname string, clientMode *config.Parameter, httpPortParam *config.Parameter, wsPortParam *config.Parameter, externalHttpUrlParam *config.Parameter, externalWsUrlParam *config.Parameter) error {
 
@@ -1030,15 +1012,6 @@ func convertUintParam(oldParam config.UserParam, newParam *config.Parameter, net
 	}
 
 	return nil
-}
-
-// Save a config file
-func (c *Client) saveConfig(cfg *config.RocketPoolConfig, path string) error {
-	expandedPath, err := homedir.Expand(path)
-	if err != nil {
-		return err
-	}
-	return rp.SaveConfig(cfg, expandedPath)
 }
 
 // Build a docker-compose command

@@ -155,7 +155,7 @@ func getConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
 	var err error
 	initCfg.Do(func() {
 		settingsFile := os.ExpandEnv(c.GlobalString("settings"))
-		cfg, err = rp.LoadAndUpgradeConfigFromFile(settingsFile)
+		cfg, err = rp.LoadConfigFromFile(settingsFile)
 		if cfg == nil && err == nil {
 			err = fmt.Errorf("Settings file [%s] not found.", settingsFile)
 		}
