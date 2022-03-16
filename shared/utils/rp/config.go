@@ -21,7 +21,7 @@ func LoadConfigFromFile(path string) (*config.RocketPoolConfig, error) {
 	if os.IsNotExist(err) {
 		return nil, nil
 	} else {
-		cfg, err := config.LoadFromFile(path, false)
+		cfg, err := config.LoadFromFile(path)
 		if err != nil {
 			return nil, err
 		}

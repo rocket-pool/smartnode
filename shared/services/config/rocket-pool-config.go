@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/alessio/shellescape"
 	"gopkg.in/yaml.v2"
@@ -94,7 +95,7 @@ type RocketPoolConfig struct {
 }
 
 // Load configuration settings from a file
-func LoadFromFile(path string, updateDefaults bool) (*RocketPoolConfig, error) {
+func LoadFromFile(path string) (*RocketPoolConfig, error) {
 
 	// Return nil if the file doesn't exist
 	_, err := os.Stat(path)
@@ -115,18 +116,10 @@ func LoadFromFile(path string, updateDefaults bool) (*RocketPoolConfig, error) {
 	}
 
 	// Deserialize it into a config object
-	cfg := NewRocketPoolConfig("")
+	cfg := NewRocketPoolConfig(filepath.Dir(path))
 	err = cfg.Deserialize(settings)
 	if err != nil {
 		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
-	}
-
-	// Update all of the overwriteable parameters with the default values if requested
-	if updateDefaults {
-		err = cfg.UpdateDefaults()
-		if err != nil {
-			return nil, fmt.Errorf("error updating overwrite-on-upgrade settings: %w", err)
-		}
 	}
 
 	return cfg, nil
