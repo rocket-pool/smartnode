@@ -2,17 +2,14 @@ package service
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/alessio/shellescape"
 	"github.com/rivo/tview"
 	"github.com/urfave/cli"
-	"gopkg.in/yaml.v2"
 
 	"github.com/dustin/go-humanize"
 	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
@@ -247,7 +244,11 @@ func configureService(c *cli.Context) error {
 	}
 
 	// Save the config and exit in headless mode
-	if c.Bool("headless") {
+	if c.NumFlags() > 0 {
+		err := configureHeadless(c, cfg)
+		if err != nil {
+			return fmt.Errorf("error updating config from provided arguments: %w", err)
+		}
 		return rp.SaveConfig(cfg)
 	}
 
@@ -303,6 +304,79 @@ func configureService(c *cli.Context) error {
 	}
 
 	return err
+}
+
+// Updates a configuration from the provided CLI arguments headlessly
+func configureHeadless(c *cli.Context, cfg *config.RocketPoolConfig) error {
+
+	// Root params
+	for _, param := range cfg.GetParameters() {
+		err := updateConfigParamFromCliArg(c, "", param, cfg)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Subconfigs
+	for sectionName, subconfig := range cfg.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			err := updateConfigParamFromCliArg(c, sectionName, param, cfg)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+
+}
+
+// Updates a config parameter from a CLI flag
+func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *config.Parameter, cfg *config.RocketPoolConfig) error {
+
+	var paramName string
+	if sectionName == "" {
+		paramName = param.ID
+	} else {
+		paramName = fmt.Sprintf("%s-%s", sectionName, param.ID)
+	}
+
+	if c.IsSet(paramName) {
+		switch param.Type {
+		case config.ParameterType_Bool:
+			param.Value = c.Bool(paramName)
+		case config.ParameterType_Int:
+			param.Value = c.Int(paramName)
+		case config.ParameterType_Float:
+			param.Value = c.Float64(paramName)
+		case config.ParameterType_String:
+			setting := c.String(paramName)
+			if param.MaxLength > 0 && len(setting) > param.MaxLength {
+				return fmt.Errorf("error setting value for %s: [%s] is too long (max length %d)", paramName, setting, param.MaxLength)
+			}
+			param.Value = c.String(paramName)
+		case config.ParameterType_Uint:
+			param.Value = c.Uint(paramName)
+		case config.ParameterType_Uint16:
+			param.Value = uint16(c.Uint(paramName))
+		case config.ParameterType_Choice:
+			selection := c.String(paramName)
+			found := false
+			for _, option := range param.Options {
+				if fmt.Sprint(option.Value) == selection {
+					param.Value = option.Value
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("error setting value for %s: [%s] is not one of the valid options", paramName, selection)
+			}
+		}
+	}
+
+	return nil
+
 }
 
 // Handle a network change by terminating the service, deleting everything, and starting over
@@ -1147,32 +1221,4 @@ func resyncEth2(c *cli.Context) error {
 
 	return nil
 
-}
-
-// Migrate a legacy configuration to a new one
-func migrateConfig(c *cli.Context, oldConfig string, oldSettings string, newConfig string) error {
-
-	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
-	if err != nil {
-		return err
-	}
-	defer rp.Close()
-
-	newCfg, err := rp.MigrateLegacyConfig(oldConfig, oldSettings)
-	if err != nil {
-		return err
-	}
-
-	settings := newCfg.Serialize()
-	configBytes, err := yaml.Marshal(settings)
-	if err != nil {
-		return fmt.Errorf("could not serialize settings file: %w", err)
-	}
-
-	if err := ioutil.WriteFile(newConfig, configBytes, 0664); err != nil {
-		return fmt.Errorf("could not write Rocket Pool config to %s: %w", shellescape.Quote(newConfig), err)
-	}
-
-	return nil
 }

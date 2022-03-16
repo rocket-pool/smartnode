@@ -2,15 +2,81 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
+// Creates CLI argument flags from the parameters of the configuration struct
+func createFlagsFromConfigParams(sectionName string, params []*config.Parameter, configFlags []cli.Flag) []cli.Flag {
+	for _, param := range params {
+		var paramName string
+		if sectionName == "" {
+			paramName = param.ID
+		} else {
+			paramName = fmt.Sprintf("%s-%s", sectionName, param.ID)
+		}
+
+		switch param.Type {
+		case config.ParameterType_Bool:
+			configFlags = append(configFlags, cli.BoolFlag{
+				Name:  paramName,
+				Usage: param.Description,
+			})
+		case config.ParameterType_Int:
+			configFlags = append(configFlags, cli.IntFlag{
+				Name:  paramName,
+				Usage: param.Description,
+			})
+		case config.ParameterType_Float:
+			configFlags = append(configFlags, cli.Float64Flag{
+				Name:  paramName,
+				Usage: param.Description,
+			})
+		case config.ParameterType_String:
+			configFlags = append(configFlags, cli.StringFlag{
+				Name:  paramName,
+				Usage: param.Description,
+			})
+		case config.ParameterType_Uint:
+		case config.ParameterType_Uint16:
+			configFlags = append(configFlags, cli.UintFlag{
+				Name:  paramName,
+				Usage: param.Description,
+			})
+		case config.ParameterType_Choice:
+			optionStrings := []string{}
+			for _, option := range param.Options {
+				optionStrings = append(optionStrings, fmt.Sprint(option.Value))
+			}
+			configFlags = append(configFlags, cli.StringFlag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tOptions: %s", param.Description, strings.Join(optionStrings, ", ")),
+			})
+		}
+	}
+
+	return configFlags
+}
+
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
+
+	configFlags := []cli.Flag{}
+	cfgTemplate := config.NewRocketPoolConfig("")
+
+	// Root params
+	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags)
+
+	// Subconfigs
+	for sectionName, subconfig := range cfgTemplate.GetSubconfigs() {
+		configFlags = createFlagsFromConfigParams(sectionName, subconfig.GetParameters(), configFlags)
+	}
+
 	app.Commands = append(app.Commands, cli.Command{
 		Name:    name,
 		Aliases: aliases,
@@ -73,12 +139,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases:   []string{"c"},
 				Usage:     "Configure the Rocket Pool service",
 				UsageText: "rocketpool service config",
-				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "headless",
-						Usage: "Create a config file without going through the TUI for 3rd-party post-processing",
-					},
-				},
+				Flags:     configFlags,
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -346,26 +407,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run command
 					return resyncEth2(c)
-
-				},
-			},
-
-			{
-				Name:      "migrate-config",
-				Usage:     "<DEBUG FUNCTION> Migrate a legacy RP config to a new config.",
-				UsageText: "rocketpool service migrate-config",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
-						return err
-					}
-					oldConfig := c.Args().Get(0)
-					oldSettings := c.Args().Get(1)
-					newConfig := c.Args().Get(2)
-
-					// Run command
-					return migrateConfig(c, oldConfig, oldSettings, newConfig)
 
 				},
 			},
