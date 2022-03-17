@@ -12,6 +12,7 @@ const (
 	powProxyTag         string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
 	pruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
 	NetworkID           string = "network"
+	ProjectNameID       string = "projectName"
 )
 
 // Defaults
@@ -20,6 +21,9 @@ const defaultProjectName string = "rocketpool"
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
 	Title string `yaml:"title,omitempty"`
+
+	// The parent config
+	parent *RocketPoolConfig `yaml:"-"`
 
 	////////////////////////////
 	// User-editable settings //
@@ -30,9 +34,6 @@ type SmartnodeConfig struct {
 
 	// The path of the data folder where everything is stored
 	DataPath Parameter `yaml:"dataPath,omitempty"`
-
-	// The command for restarting the validator container in native mode
-	ValidatorRestartCommand Parameter `yaml:"validatorRestartCommand,omitempty"`
 
 	// Which network we're on
 	Network Parameter `yaml:"network,omitempty"`
@@ -88,10 +89,11 @@ type SmartnodeConfig struct {
 func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 	return &SmartnodeConfig{
-		Title: "Smartnode Settings",
+		Title:  "Smartnode Settings",
+		parent: config,
 
 		ProjectName: Parameter{
-			ID:                   "projectName",
+			ID:                   ProjectNameID,
 			Name:                 "Project Name",
 			Description:          "This is the prefix that will be attached to all of the Docker containers managed by the Smartnode.",
 			Type:                 ParameterType_String,
@@ -110,18 +112,6 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Default:              map[Network]interface{}{Network_All: getDefaultDataDir(config)},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Validator},
 			EnvironmentVariables: []string{"ROCKETPOOL_DATA_FOLDER"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		ValidatorRestartCommand: Parameter{
-			ID:                   "validatorRestartCommand",
-			Name:                 "Validator Restart Command",
-			Description:          "The absolute path to a custom script that will be invoked when Rocket Pool needs to restart your validator container to load the new key after a minipool is staked. **For Native mode only.**",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getDefaultValidatorRestartCommand(config)},
-			AffectsContainers:    []ContainerID{ContainerID_Node},
-			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -246,7 +236,6 @@ func (config *SmartnodeConfig) GetParameters() []*Parameter {
 		&config.Network,
 		&config.ProjectName,
 		&config.DataPath,
-		&config.ValidatorRestartCommand,
 		&config.ManualMaxFee,
 		&config.PriorityFee,
 		&config.RplClaimGasThreshold,
@@ -269,15 +258,27 @@ func (config *SmartnodeConfig) GetChainID() uint {
 }
 
 func (config *SmartnodeConfig) GetWalletPath() string {
-	return config.walletPath
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "wallet")
+	} else {
+		return config.walletPath
+	}
 }
 
 func (config *SmartnodeConfig) GetPasswordPath() string {
-	return config.passwordPath
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "password")
+	} else {
+		return config.passwordPath
+	}
 }
 
 func (config *SmartnodeConfig) GetValidatorKeychainPath() string {
-	return config.validatorKeychainPath
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "validators")
+	} else {
+		return config.validatorKeychainPath
+	}
 }
 
 func (config *SmartnodeConfig) GetStorageAddress() string {
@@ -315,8 +316,4 @@ func (config *SmartnodeConfig) GetConfigTitle() string {
 
 func getDefaultDataDir(config *RocketPoolConfig) string {
 	return filepath.Join(config.RocketPoolDirectory, "data")
-}
-
-func getDefaultValidatorRestartCommand(config *RocketPoolConfig) string {
-	return filepath.Join(config.RocketPoolDirectory, "scripts", "restart-validator.sh")
 }

@@ -34,8 +34,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		incompatibleClientWarning = fmt.Sprintf("\n\n[orange]NOTE: The following clients are incompatible with your choice of Execution and/or fallback Execution clients: %s", strings.Join(badClients, ", "))
 	}
 
-	helperText := fmt.Sprintf("Please select the Consensus client you would like to use.\n\n"+
-		"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.%s", incompatibleClientWarning)
+	helperText := fmt.Sprintf("Please select the Consensus client you would like to use.\n\nHighlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.%s", incompatibleClientWarning)
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)

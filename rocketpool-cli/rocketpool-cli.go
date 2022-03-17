@@ -88,7 +88,7 @@ ______           _        _    ______           _
 		},
 		cli.Uint64Flag{
 			Name:  "gasLimit, l",
-			Usage: "Desired gas limit",
+			Usage: "[DEPRECATED] Desired gas limit",
 		},
 		cli.StringFlag{
 			Name:  "nonce",

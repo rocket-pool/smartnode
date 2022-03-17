@@ -257,8 +257,11 @@ func configureService(c *cli.Context) error {
 		return rp.SaveConfig(cfg)
 	}
 
+	// Check for native mode
+	isNative := c.GlobalIsSet("daemon-path")
+
 	app := tview.NewApplication()
-	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isMigration, isUpdate)
+	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isMigration, isUpdate, isNative)
 	err = app.Run()
 	if err != nil {
 		return err
@@ -269,6 +272,13 @@ func configureService(c *cli.Context) error {
 		// Save the config
 		rp.SaveConfig(md.Config)
 		fmt.Println("Your changes have been saved!")
+
+		// Exit immediately if we're in native mode
+		if isNative {
+			fmt.Println("Please restart your daemon service for them to take effect.")
+			return nil
+		}
+
 		if isNew {
 			fmt.Println()
 			fmt.Println("Applying changes and restarting containers...")

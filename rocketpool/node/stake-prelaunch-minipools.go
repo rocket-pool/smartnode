@@ -409,7 +409,7 @@ func (t *stakePrelaunchMinipools) restartValidator() error {
 	} else {
 
 		// Get validator restart command
-		restartCommand := os.ExpandEnv(t.cfg.Smartnode.ValidatorRestartCommand.Value.(string))
+		restartCommand := os.ExpandEnv(t.cfg.Native.ValidatorRestartCommand.Value.(string))
 
 		// Log
 		t.log.Printlnf("Restarting validator process with command '%s'...", restartCommand)

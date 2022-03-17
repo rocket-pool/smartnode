@@ -16,11 +16,13 @@ type mainDisplay struct {
 	app                 *tview.Application
 	content             *tview.Box
 	mainGrid            *tview.Grid
-	newUserWizard       *wizard
+	dockerWizard        *wizard
 	settingsHome        *settingsHome
+	settingsNativeHome  *settingsNativeHome
 	isNew               bool
 	isMigration         bool
 	isUpdate            bool
+	isNative            bool
 	previousWidth       int
 	previousHeight      int
 	PreviousConfig      *config.RocketPoolConfig
@@ -31,7 +33,7 @@ type mainDisplay struct {
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isMigration bool, isUpdate bool) *mainDisplay {
+func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isMigration bool, isUpdate bool, isNative bool) *mainDisplay {
 
 	// Create a copy of the original config for comparison purposes
 	if previousConfig == nil {
@@ -79,13 +81,15 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 		isNew:          isNew,
 		isMigration:    isMigration,
 		isUpdate:       isUpdate,
+		isNative:       isNative,
 		PreviousConfig: previousConfig,
 		Config:         config,
 	}
 
 	// Create all of the child elements
 	md.settingsHome = newSettingsHome(md)
-	md.newUserWizard = newWizard(md)
+	md.settingsNativeHome = newSettingsNativeHome(md)
+	md.dockerWizard = newWizard(md)
 
 	// Set up the resize warning
 	md.app.SetAfterDrawFunc(func(screen tcell.Screen) {
@@ -105,9 +109,17 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 	})
 
 	if isNew || isMigration {
-		md.newUserWizard.welcomeModal.show()
+		if isNative {
+			md.dockerWizard.nativeWelcomeModal.show()
+		} else {
+			md.dockerWizard.welcomeModal.show()
+		}
 	} else {
-		md.setPage(md.settingsHome.homePage)
+		if isNative {
+			md.setPage(md.settingsNativeHome.homePage)
+		} else {
+			md.setPage(md.settingsHome.homePage)
+		}
 	}
 	app.SetRoot(grid, true)
 	return md

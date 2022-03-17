@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/alessio/shellescape"
 	"gopkg.in/yaml.v2"
@@ -38,6 +39,8 @@ type RocketPoolConfig struct {
 	Title string `yaml:"title,omitempty"`
 
 	RocketPoolDirectory string `yaml:"rocketPoolDirectory,omitempty"`
+
+	IsNativeMode bool `yaml:"isNativeMode,omitempty"`
 
 	// Execution client settings
 	ExecutionClientMode Parameter `yaml:"executionClientMode"`
@@ -92,6 +95,9 @@ type RocketPoolConfig struct {
 	Grafana    *GrafanaConfig    `yaml:"grafana,omitempty"`
 	Prometheus *PrometheusConfig `yaml:"prometheus,omitempty"`
 	Exporter   *ExporterConfig   `yaml:"exporter,omitempty"`
+
+	// Native mode
+	Native *NativeConfig `yaml:"native,omitempty"`
 }
 
 // Load configuration settings from a file
@@ -116,7 +122,7 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 	}
 
 	// Deserialize it into a config object
-	cfg := NewRocketPoolConfig(filepath.Dir(path))
+	cfg := NewRocketPoolConfig(filepath.Dir(path), false)
 	err = cfg.Deserialize(settings)
 	if err != nil {
 		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
@@ -127,11 +133,12 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 }
 
 // Creates a new Rocket Pool configuration instance
-func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
+func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	config := &RocketPoolConfig{
 		Title:               "Top-level Settings",
 		RocketPoolDirectory: rpDir,
+		IsNativeMode:        isNativeMode,
 
 		ExecutionClientMode: Parameter{
 			ID:                   "executionClientMode",
@@ -419,6 +426,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 	config.Grafana = NewGrafanaConfig(config)
 	config.Prometheus = NewPrometheusConfig(config)
 	config.Exporter = NewExporterConfig(config)
+	config.Native = NewNativeConfig(config)
 
 	// Apply the default values for mainnet
 	config.Smartnode.Network.Value = config.Smartnode.Network.Options[0].Value
@@ -429,7 +437,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 
 // Create a copy of this configuration.
 func (config *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
-	newConfig := NewRocketPoolConfig(config.RocketPoolDirectory)
+	newConfig := NewRocketPoolConfig(config.RocketPoolDirectory, config.IsNativeMode)
 
 	newParams := newConfig.GetParameters()
 	for i, param := range config.GetParameters() {
@@ -492,6 +500,7 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"grafana":                   config.Grafana,
 		"prometheus":                config.Prometheus,
 		"exporter":                  config.Exporter,
+		"native":                    config.Native,
 	}
 }
 
@@ -599,6 +608,10 @@ func (config *RocketPoolConfig) GetCompatibleConsensusClients() ([]ParameterOpti
 
 // Get the configuration for the selected client
 func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusConfig, error) {
+	if config.IsNativeMode {
+		return nil, fmt.Errorf("consensus config is not available in native mode")
+	}
+
 	mode := config.ConsensusClientMode.Value.(Mode)
 	switch mode {
 	case Mode_Local:
@@ -646,6 +659,7 @@ func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 	}
 	masterMap[rootConfigName] = rootParams
 	masterMap[rootConfigName]["rpDir"] = config.RocketPoolDirectory
+	masterMap[rootConfigName]["isNative"] = fmt.Sprint(config.IsNativeMode)
 
 	// Serialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {
@@ -673,7 +687,13 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 			return fmt.Errorf("error deserializing root config: %w", err)
 		}
 	}
+
+	var err error
 	config.RocketPoolDirectory = masterMap[rootConfigName]["rpDir"]
+	config.IsNativeMode, err = strconv.ParseBool(masterMap[rootConfigName]["isNative"])
+	if err != nil {
+		return fmt.Errorf("error parsing isNative: %w", err)
+	}
 
 	// Deserialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {

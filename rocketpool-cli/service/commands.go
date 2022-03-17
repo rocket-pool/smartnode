@@ -67,7 +67,7 @@ func createFlagsFromConfigParams(sectionName string, params []*config.Parameter,
 func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 	configFlags := []cli.Flag{}
-	cfgTemplate := config.NewRocketPoolConfig("")
+	cfgTemplate := config.NewRocketPoolConfig("", false)
 
 	// Root params
 	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags)

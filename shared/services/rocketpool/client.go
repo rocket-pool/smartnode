@@ -135,7 +135,7 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 
 	isNew := false
 	if cfg == nil {
-		cfg = config.NewRocketPoolConfig(c.configPath)
+		cfg = config.NewRocketPoolConfig(c.configPath, c.daemonPath != "")
 		isNew = true
 	}
 	return cfg, isNew, nil
@@ -247,11 +247,12 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	}
 
 	// Load the legacy config
+	isNative := (c.daemonPath != "")
 	legacyCfg, err := c.LoadMergedConfig_Legacy(legacyConfigFilePath, legacySettingsFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("error loading legacy configuration: %w", err)
 	}
-	cfg := config.NewRocketPoolConfig(c.configPath)
+	cfg := config.NewRocketPoolConfig(c.configPath, isNative)
 
 	// Do the conversion
 
@@ -398,7 +399,6 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 
 	// Smartnode settings
 	cfg.Smartnode.ProjectName.Value = legacyCfg.Smartnode.ProjectName
-	cfg.Smartnode.ValidatorRestartCommand.Value = legacyCfg.Smartnode.ValidatorRestartCommand
 	cfg.Smartnode.ManualMaxFee.Value = legacyCfg.Smartnode.MaxFee
 	cfg.Smartnode.PriorityFee.Value = legacyCfg.Smartnode.MaxPriorityFee
 	cfg.Smartnode.RplClaimGasThreshold.Value = legacyCfg.Smartnode.RplClaimGasThreshold
@@ -426,6 +426,13 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 			cfg.ExternalTeku.ContainerTag.Value = option.Image
 		}
 	}
+
+	// Handle native mode
+	cfg.Native.EcHttpUrl.Value = legacyCfg.Chains.Eth1.Provider
+	cfg.Native.CcHttpUrl.Value = legacyCfg.Chains.Eth2.Provider
+	c.migrateCcSelection(legacyCfg.Chains.Eth2.Client.Selected, &cfg.Native.ConsensusClient)
+	cfg.Native.ValidatorRestartCommand.Value = legacyCfg.Smartnode.ValidatorRestartCommand
+	cfg.Smartnode.DataPath.Value = filepath.Join(c.configPath, "data")
 
 	return cfg, nil
 
