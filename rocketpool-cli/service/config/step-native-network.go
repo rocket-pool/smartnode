@@ -52,7 +52,7 @@ func createNativeNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choi
 		show,
 		done,
 		back,
-		"step-network",
+		"step-native-network",
 	)
 
 }
