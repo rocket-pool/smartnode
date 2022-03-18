@@ -104,7 +104,7 @@ func (config *NativeConfig) GetParameters() []*Parameter {
 }
 
 func getDefaultValidatorRestartCommand(config *RocketPoolConfig) string {
-	return filepath.Join(config.RocketPoolDirectory, "restart-validator.sh")
+	return filepath.Join(config.RocketPoolDirectory, "restart-vc.sh")
 }
 
 // The the title for the config

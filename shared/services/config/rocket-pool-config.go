@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/alessio/shellescape"
+	"github.com/rocket-pool/smartnode/shared"
 	"gopkg.in/yaml.v2"
 )
 
@@ -37,6 +38,8 @@ const defaultWatchtowerMetricsPort uint16 = 9104
 // The master configuration struct
 type RocketPoolConfig struct {
 	Title string `yaml:"title,omitempty"`
+
+	Version string `yaml:"version,omitempty"`
 
 	RocketPoolDirectory string `yaml:"rocketPoolDirectory,omitempty"`
 
@@ -660,6 +663,7 @@ func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 	masterMap[rootConfigName] = rootParams
 	masterMap[rootConfigName]["rpDir"] = config.RocketPoolDirectory
 	masterMap[rootConfigName]["isNative"] = fmt.Sprint(config.IsNativeMode)
+	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion) // Update the version with the current Smartnode version
 
 	// Serialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {
@@ -694,6 +698,7 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 	if err != nil {
 		return fmt.Errorf("error parsing isNative: %w", err)
 	}
+	config.Version = masterMap[rootConfigName]["version"]
 
 	// Deserialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {

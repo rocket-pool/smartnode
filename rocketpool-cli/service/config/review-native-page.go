@@ -43,6 +43,9 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 		}
 	}
 
+	if builder.String() == "" {
+		builder.WriteString("<No changes>")
+	}
 	changeBox.SetText(builder.String())
 
 	// Create the layout

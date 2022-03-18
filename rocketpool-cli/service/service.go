@@ -279,15 +279,15 @@ func configureService(c *cli.Context) error {
 			return nil
 		}
 
-		if isNew {
-			fmt.Println()
-			fmt.Println("Applying changes and restarting containers...")
-			return startService(c)
-		}
-
-		// Deal with network changes
 		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 		if md.ChangeNetworks {
+			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
+
+			if !cliutils.Confirm("Would you like the Smartnode to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
+				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).")
+				return nil
+			}
+
 			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
 			if err != nil {
 				fmt.Printf("%s%s%s\nThe Smartnode could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).\n", colorRed, err.Error(), colorReset)
@@ -299,6 +299,10 @@ func configureService(c *cli.Context) error {
 			fmt.Println("The following containers must be restarted for the changes to take effect:")
 			for _, container := range md.ContainersToRestart {
 				fmt.Printf("\t%s_%s\n", prefix, container)
+			}
+			if !cliutils.Confirm("Would you like to restart them automatically now?") {
+				fmt.Println("Please run `rocketpool service start` when you are ready to apply the changes.")
+				return nil
 			}
 
 			fmt.Println()

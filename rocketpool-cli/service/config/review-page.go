@@ -86,7 +86,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	if builder.String() == "" {
 		builder.WriteString("<No changes>")
 	} else {
-		builder.WriteString("The following containers will be restarted for these changes to take effect:")
+		builder.WriteString("The following containers must be restarted for these changes to take effect:")
 		for container, _ := range totalAffectedContainers {
 			builder.WriteString(fmt.Sprintf("\n\t%v", container))
 			containersToRestart = append(containersToRestart, container)
@@ -98,7 +98,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	width := 86
 
 	// Create the main text view
-	descriptionText := "Please review your changes below.\nScroll through them using the arrow keys, and press Enter when you're ready to save them and restart the relevant Docker containers."
+	descriptionText := "Please review your changes below.\nScroll through them using the arrow keys, and press Enter when you're ready to save them."
 	lines := tview.WordWrap(descriptionText, width-4)
 	textViewHeight := len(lines) + 1
 	textView := tview.NewTextView().
@@ -110,7 +110,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	textView.SetBorderPadding(0, 0, 1, 1)
 
 	// Create the save button
-	saveButton := tview.NewButton("Save Settings and Restart Containers")
+	saveButton := tview.NewButton("Save Settings")
 	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyUp || event.Key() == tcell.KeyDown {
 			changeBox.InputHandler()(event, nil)
@@ -121,28 +121,12 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	})
 	// Save when selected
 	saveButton.SetSelectedFunc(func() {
+		md.ShouldSave = true
+		md.ContainersToRestart = containersToRestart
 		if changeNetworks && !md.isNew {
-			// Network changes need to be handled specially
-			modal := tview.NewModal().
-				SetText("WARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted once you save and run these changes!").
-				AddButtons([]string{"Cancel!", "Ok, I'm Ready"}).
-				SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-					if buttonIndex == 1 {
-						md.ShouldSave = true
-						md.ChangeNetworks = true
-						md.ContainersToRestart = containersToRestart
-						md.app.Stop()
-					} else if buttonIndex == 0 {
-						md.setPage(md.settingsHome.homePage)
-						md.app.SetRoot(md.mainGrid, true)
-					}
-				})
-			md.app.SetRoot(modal, true)
-		} else {
-			md.ShouldSave = true
-			md.ContainersToRestart = containersToRestart
-			md.app.Stop()
+			md.ChangeNetworks = true
 		}
+		md.app.Stop()
 	})
 	saveButton.SetBackgroundColorActivated(tcell.Color46)
 	saveButton.SetLabelColorActivated(tcell.ColorBlack)
