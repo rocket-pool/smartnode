@@ -21,7 +21,6 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	goodClients, badClients := wiz.md.Config.GetCompatibleConsensusClients()
 
 	// Create the button names and descriptions from the config
-	clients := wiz.md.Config.ConsensusClient.Options
 	clientNames := []string{"Random (Recommended)"}
 	clientDescriptions := []string{"Select a client randomly to help promote the diversity of the Beacon Chain. We recommend you do this unless you have a strong reason to pick a specific client. To learn more about why client diversity is important, please visit https://clientdiversity.org for an explanation."}
 	for _, client := range goodClients {
@@ -56,7 +55,17 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 			wiz.md.pages.RemovePage(randomCcID)
 			selectRandomClient(goodClients, true, wiz, currentStep, totalSteps)
 		} else {
-			selectedClient := clients[buttonIndex-1].Value.(config.ConsensusClient)
+			buttonLabel = strings.TrimSpace(buttonLabel)
+			selectedClient := config.ConsensusClient_Unknown
+			for _, client := range wiz.md.Config.ConsensusClient.Options {
+				if client.Name == buttonLabel {
+					selectedClient = client.Value.(config.ConsensusClient)
+					break
+				}
+			}
+			if selectedClient == config.ConsensusClient_Unknown {
+				panic(fmt.Sprintf("Local CC selection buttons didn't match any known clients, buttonLabel = %s\n", buttonLabel))
+			}
 			wiz.md.Config.ConsensusClient.Value = selectedClient
 			switch selectedClient {
 			case config.ConsensusClient_Prysm:
