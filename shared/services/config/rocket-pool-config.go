@@ -536,58 +536,62 @@ func (config *RocketPoolConfig) ChangeNetwork(newNetwork Network) {
 
 }
 
-// Get the Consensus clients compatible with the config's EC and fallback EC selection
-func (config *RocketPoolConfig) GetCompatibleConsensusClients() ([]ParameterOption, []string) {
+// Get the Consensus clients incompatible with the config's EC and fallback EC selection
+func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOption, []ParameterOption) {
 
 	// Get the compatible clients based on the EC choice
 	var compatibleConsensusClients []ConsensusClient
-	executionClient := config.ExecutionClient.Value.(ExecutionClient)
-	switch executionClient {
-	case ExecutionClient_Geth:
-		compatibleConsensusClients = config.Geth.CompatibleConsensusClients
-	case ExecutionClient_Infura:
-		compatibleConsensusClients = config.Infura.CompatibleConsensusClients
-	case ExecutionClient_Pocket:
-		compatibleConsensusClients = config.Pocket.CompatibleConsensusClients
+	if config.ExecutionClientMode.Value == Mode_Local {
+		executionClient := config.ExecutionClient.Value.(ExecutionClient)
+		switch executionClient {
+		case ExecutionClient_Geth:
+			compatibleConsensusClients = config.Geth.CompatibleConsensusClients
+		case ExecutionClient_Infura:
+			compatibleConsensusClients = config.Infura.CompatibleConsensusClients
+		case ExecutionClient_Pocket:
+			compatibleConsensusClients = config.Pocket.CompatibleConsensusClients
+		}
 	}
 
 	// Get the compatible clients based on the fallback EC choice
 	var fallbackCompatibleConsensusClients []ConsensusClient
-	if config.UseFallbackExecutionClient.Value == true {
+	if config.UseFallbackExecutionClient.Value == true && config.FallbackExecutionClientMode.Value == Mode_Local {
 		fallbackExecutionClient := config.FallbackExecutionClient.Value.(ExecutionClient)
 		switch fallbackExecutionClient {
 		case ExecutionClient_Infura:
-			compatibleConsensusClients = config.FallbackInfura.CompatibleConsensusClients
+			fallbackCompatibleConsensusClients = config.FallbackInfura.CompatibleConsensusClients
 		case ExecutionClient_Pocket:
-			compatibleConsensusClients = config.FallbackPocket.CompatibleConsensusClients
+			fallbackCompatibleConsensusClients = config.FallbackPocket.CompatibleConsensusClients
 		}
 	}
 
 	// Sort every consensus client into good and bad lists
-	var goodClients []ParameterOption
-	var badClients []string
+	var badClients []ParameterOption
+	var badFallbackClients []ParameterOption
 	for _, consensusClient := range config.ConsensusClient.Options {
 		// Get the value for one of the consensus client options
 		clientValue := consensusClient.Value.(ConsensusClient)
 
 		// Check if it's in the list of clients compatible with the EC
-		isGood := false
-		for _, compatibleWithEC := range compatibleConsensusClients {
-			if compatibleWithEC == clientValue {
-				isGood = true
-				break
+		if len(compatibleConsensusClients) > 0 {
+			isGood := false
+			for _, compatibleWithEC := range compatibleConsensusClients {
+				if compatibleWithEC == clientValue {
+					isGood = true
+					break
+				}
 			}
-		}
 
-		// If it isn't, append it to the list of bad clients and move on
-		if !isGood {
-			badClients = append(badClients, consensusClient.Name)
-			continue
+			// If it isn't, append it to the list of bad clients and move on
+			if !isGood {
+				badClients = append(badClients, consensusClient)
+				continue
+			}
 		}
 
 		// Check the fallback EC too
 		if len(fallbackCompatibleConsensusClients) > 0 {
-			isGood = false
+			isGood := false
 			for _, compatibleWithFallbackEC := range fallbackCompatibleConsensusClients {
 				if compatibleWithFallbackEC == clientValue {
 					isGood = true
@@ -596,16 +600,13 @@ func (config *RocketPoolConfig) GetCompatibleConsensusClients() ([]ParameterOpti
 			}
 
 			if !isGood {
-				badClients = append(badClients, consensusClient.Name)
+				badFallbackClients = append(badFallbackClients, consensusClient)
 				continue
 			}
 		}
-
-		// If we get here, it's compatible.
-		goodClients = append(goodClients, consensusClient)
 	}
 
-	return goodClients, badClients
+	return badClients, badFallbackClients
 
 }
 

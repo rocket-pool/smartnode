@@ -1058,11 +1058,16 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Make sure the selected CC is compatible with the selected EC
-	consensusClientString := fmt.Sprint(cfg.ConsensusClient.Value.(config.ConsensusClient))
-	_, badClients := cfg.GetCompatibleConsensusClients()
+	consensusClient := cfg.ConsensusClient.Value.(config.ConsensusClient)
+	badClients, badFallbackClients := cfg.GetIncompatibleConsensusClients()
 	for _, badClient := range badClients {
-		if consensusClientString == badClient {
-			return "", fmt.Errorf("Consensus client [%s] is incompatible with your selected Execution for Fallback Execution client choice.\nPlease run 'rocketpool service config' and select compatible clients.", consensusClientString)
+		if consensusClient == badClient.Value {
+			return "", fmt.Errorf("Consensus client [%v] is incompatible with your selected Execution client choice.\nPlease run 'rocketpool service config' and select compatible clients.", consensusClient)
+		}
+	}
+	for _, badClient := range badFallbackClients {
+		if consensusClient == badClient.Value {
+			return "", fmt.Errorf("Consensus client [%v] is incompatible with your selected fallback Execution client choice.\nPlease run 'rocketpool service config' and select compatible clients.", consensusClient)
 		}
 	}
 
