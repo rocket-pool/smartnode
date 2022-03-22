@@ -68,9 +68,16 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		modal.focus(0) // Catch-all for safety
 
 		if wiz.md.isMigration || !wiz.md.isNew {
-			for i, option := range wiz.md.Config.ConsensusClient.Options {
+			var ccName string
+			for _, option := range wiz.md.Config.ConsensusClient.Options {
 				if option.Value == wiz.md.Config.ConsensusClient.Value {
-					modal.focus(i + 1)
+					ccName = option.Name
+					break
+				}
+			}
+			for i, clientName := range clientNames {
+				if ccName == clientName {
+					modal.focus(i)
 					break
 				}
 			}
