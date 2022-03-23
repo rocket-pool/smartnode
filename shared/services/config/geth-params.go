@@ -7,8 +7,11 @@ import (
 )
 
 // Constants
-const gethTag string = "ethereum/client-go:v1.10.16"
-const gethEventLogInterval int = 25000
+const (
+	gethTagStable        string = "ethereum/client-go:v1.10.16"
+	gethTagKiln          string = "rocketpool/client-go:kiln-v2a"
+	gethEventLogInterval int    = 25000
+)
 
 // Defaults
 const defaultGethP2pPort uint16 = 30303
@@ -136,11 +139,15 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 		},
 
 		ContainerTag: Parameter{
-			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Geth container you want to use on Docker Hub.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: gethTag},
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Geth container you want to use on Docker Hub.",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: gethTagStable,
+				Network_Prater:  gethTagStable,
+				Network_Kiln:    gethTagKiln,
+			},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{prefix + "EC_CONTAINER_TAG"},
 			CanBeBlank:           false,

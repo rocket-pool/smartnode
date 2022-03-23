@@ -189,16 +189,19 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		txWatchUrl: map[Network]string{
 			Network_Mainnet: "https://etherscan.io/tx",
 			Network_Prater:  "https://goerli.etherscan.io/tx",
+			Network_Kiln:    "TBD",
 		},
 
 		stakeUrl: map[Network]string{
 			Network_Mainnet: "https://stake.rocketpool.net",
 			Network_Prater:  "https://testnet.rocketpool.net",
+			Network_Kiln:    "TBD",
 		},
 
 		chainID: map[Network]uint{
 			Network_Mainnet: 1, // Mainnet
 			Network_Prater:  5, // Goerli
+			Network_Kiln:    0x1469ca,
 		},
 
 		walletPath: "/.rocketpool/data/wallet",
@@ -210,21 +213,25 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
+			Network_Kiln:    "TBD",
 		},
 
 		oneInchOracleAddress: map[Network]string{
 			Network_Mainnet: "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb",
 			Network_Prater:  "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
+			Network_Kiln:    "TBD",
 		},
 
 		rplTokenAddress: map[Network]string{
 			Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
+			Network_Kiln:    "TBD",
 		},
 
 		rplFaucetAddress: map[Network]string{
 			Network_Mainnet: "",
 			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
+			Network_Kiln:    "TBD",
 		},
 	}
 
