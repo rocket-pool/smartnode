@@ -232,15 +232,19 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
-			Options:              []ParameterOption{ /*{
-					Name:        "Infura",
-					Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
-					Value:       ExecutionClient_Infura,
-				}, {
-					Name:        "Pocket",
-					Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
-					Value:       ExecutionClient_Pocket,
-				}*/},
+			Options: []ParameterOption{{
+				Name:        "Nope",
+				Description: "This is a dummy item, don't pick me",
+				Value:       ExecutionClient_Unknown,
+			}, /*{
+				Name:        "Infura",
+				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
+				Value:       ExecutionClient_Infura,
+			}, {
+				Name:        "Pocket",
+				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
+				Value:       ExecutionClient_Pocket,
+			}*/},
 		},
 
 		ReconnectDelay: Parameter{

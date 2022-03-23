@@ -134,6 +134,10 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 				Name:        "Prater Testnet",
 				Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to mainnet.",
 				Value:       Network_Prater,
+			}, {
+				Name:        "Kiln Testnet",
+				Description: "This is the Kiln test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to experiment with Rocket Pool after the Merge.",
+				Value:       Network_Kiln,
 			}},
 		},
 
