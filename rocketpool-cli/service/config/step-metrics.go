@@ -26,7 +26,7 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		if wiz.md.Config.ConsensusClientMode.Value == true {
 			wiz.consensusLocalModal.show()
 		} else {
-			wiz.consensusExternalSelectModal.show()
+			wiz.consensusModeModal.show()
 		}
 	}
 

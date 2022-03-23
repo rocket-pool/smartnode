@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strconv"
 
 	"github.com/alessio/shellescape"
+	"github.com/rocket-pool/smartnode/shared"
 	"gopkg.in/yaml.v2"
 )
 
@@ -36,7 +39,11 @@ const defaultWatchtowerMetricsPort uint16 = 9104
 type RocketPoolConfig struct {
 	Title string `yaml:"title,omitempty"`
 
+	Version string `yaml:"version,omitempty"`
+
 	RocketPoolDirectory string `yaml:"rocketPoolDirectory,omitempty"`
+
+	IsNativeMode bool `yaml:"isNativeMode,omitempty"`
 
 	// Execution client settings
 	ExecutionClientMode Parameter `yaml:"executionClientMode"`
@@ -91,6 +98,9 @@ type RocketPoolConfig struct {
 	Grafana    *GrafanaConfig    `yaml:"grafana,omitempty"`
 	Prometheus *PrometheusConfig `yaml:"prometheus,omitempty"`
 	Exporter   *ExporterConfig   `yaml:"exporter,omitempty"`
+
+	// Native mode
+	Native *NativeConfig `yaml:"native,omitempty"`
 }
 
 // Load configuration settings from a file
@@ -115,21 +125,23 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 	}
 
 	// Deserialize it into a config object
-	cfg := NewRocketPoolConfig("")
+	cfg := NewRocketPoolConfig(filepath.Dir(path), false)
 	err = cfg.Deserialize(settings)
 	if err != nil {
 		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
 	}
+
 	return cfg, nil
 
 }
 
 // Creates a new Rocket Pool configuration instance
-func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
+func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	config := &RocketPoolConfig{
 		Title:               "Top-level Settings",
 		RocketPoolDirectory: rpDir,
+		IsNativeMode:        isNativeMode,
 
 		ExecutionClientMode: Parameter{
 			ID:                   "executionClientMode",
@@ -137,7 +149,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 			Description:          "Choose which mode to use for your Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:                 ParameterType_Choice,
 			Default:              map[Network]interface{}{},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Eth1, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
@@ -183,7 +195,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 			Description:          "Enable this if you would like to specify a fallback Execution client, which will temporarily be used by the Smartnode and your Consensus client if your primary Execution client ever goes offline.",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: false},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1Fallback},
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Eth1Fallback, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
@@ -195,7 +207,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 			Description:          "Choose which mode to use for your fallback Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:                 ParameterType_Choice,
 			Default:              map[Network]interface{}{Network_All: nil},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1Fallback},
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Eth1Fallback, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
@@ -249,7 +261,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 			Description:          "Choose which mode to use for your Consensus client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:                 ParameterType_Choice,
 			Default:              map[Network]interface{}{Network_All: Mode_Local},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Eth2, ContainerID_Node, ContainerID_Prometheus, ContainerID_Validator, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
@@ -417,6 +429,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 	config.Grafana = NewGrafanaConfig(config)
 	config.Prometheus = NewPrometheusConfig(config)
 	config.Exporter = NewExporterConfig(config)
+	config.Native = NewNativeConfig(config)
 
 	// Apply the default values for mainnet
 	config.Smartnode.Network.Value = config.Smartnode.Network.Options[0].Value
@@ -427,7 +440,7 @@ func NewRocketPoolConfig(rpDir string) *RocketPoolConfig {
 
 // Create a copy of this configuration.
 func (config *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
-	newConfig := NewRocketPoolConfig(config.RocketPoolDirectory)
+	newConfig := NewRocketPoolConfig(config.RocketPoolDirectory, config.IsNativeMode)
 
 	newParams := newConfig.GetParameters()
 	for i, param := range config.GetParameters() {
@@ -490,6 +503,7 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"grafana":                   config.Grafana,
 		"prometheus":                config.Prometheus,
 		"exporter":                  config.Exporter,
+		"native":                    config.Native,
 	}
 }
 
@@ -504,6 +518,7 @@ func (config *RocketPoolConfig) ChangeNetwork(newNetwork Network) {
 	if oldNetwork == newNetwork {
 		return
 	}
+	config.Smartnode.Network.Value = newNetwork
 
 	// Update the master parameters
 	rootParams := config.GetParameters()
@@ -521,58 +536,62 @@ func (config *RocketPoolConfig) ChangeNetwork(newNetwork Network) {
 
 }
 
-// Get the Consensus clients compatible with the config's EC and fallback EC selection
-func (config *RocketPoolConfig) GetCompatibleConsensusClients() ([]ParameterOption, []string) {
+// Get the Consensus clients incompatible with the config's EC and fallback EC selection
+func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOption, []ParameterOption) {
 
 	// Get the compatible clients based on the EC choice
 	var compatibleConsensusClients []ConsensusClient
-	executionClient := config.ExecutionClient.Value.(ExecutionClient)
-	switch executionClient {
-	case ExecutionClient_Geth:
-		compatibleConsensusClients = config.Geth.CompatibleConsensusClients
-	case ExecutionClient_Infura:
-		compatibleConsensusClients = config.Infura.CompatibleConsensusClients
-	case ExecutionClient_Pocket:
-		compatibleConsensusClients = config.Pocket.CompatibleConsensusClients
+	if config.ExecutionClientMode.Value == Mode_Local {
+		executionClient := config.ExecutionClient.Value.(ExecutionClient)
+		switch executionClient {
+		case ExecutionClient_Geth:
+			compatibleConsensusClients = config.Geth.CompatibleConsensusClients
+		case ExecutionClient_Infura:
+			compatibleConsensusClients = config.Infura.CompatibleConsensusClients
+		case ExecutionClient_Pocket:
+			compatibleConsensusClients = config.Pocket.CompatibleConsensusClients
+		}
 	}
 
 	// Get the compatible clients based on the fallback EC choice
 	var fallbackCompatibleConsensusClients []ConsensusClient
-	if config.UseFallbackExecutionClient.Value == true {
+	if config.UseFallbackExecutionClient.Value == true && config.FallbackExecutionClientMode.Value == Mode_Local {
 		fallbackExecutionClient := config.FallbackExecutionClient.Value.(ExecutionClient)
 		switch fallbackExecutionClient {
 		case ExecutionClient_Infura:
-			compatibleConsensusClients = config.FallbackInfura.CompatibleConsensusClients
+			fallbackCompatibleConsensusClients = config.FallbackInfura.CompatibleConsensusClients
 		case ExecutionClient_Pocket:
-			compatibleConsensusClients = config.FallbackPocket.CompatibleConsensusClients
+			fallbackCompatibleConsensusClients = config.FallbackPocket.CompatibleConsensusClients
 		}
 	}
 
 	// Sort every consensus client into good and bad lists
-	var goodClients []ParameterOption
-	var badClients []string
+	var badClients []ParameterOption
+	var badFallbackClients []ParameterOption
 	for _, consensusClient := range config.ConsensusClient.Options {
 		// Get the value for one of the consensus client options
 		clientValue := consensusClient.Value.(ConsensusClient)
 
 		// Check if it's in the list of clients compatible with the EC
-		isGood := false
-		for _, compatibleWithEC := range compatibleConsensusClients {
-			if compatibleWithEC == clientValue {
-				isGood = true
-				break
+		if len(compatibleConsensusClients) > 0 {
+			isGood := false
+			for _, compatibleWithEC := range compatibleConsensusClients {
+				if compatibleWithEC == clientValue {
+					isGood = true
+					break
+				}
 			}
-		}
 
-		// If it isn't, append it to the list of bad clients and move on
-		if !isGood {
-			badClients = append(badClients, consensusClient.Name)
-			continue
+			// If it isn't, append it to the list of bad clients and move on
+			if !isGood {
+				badClients = append(badClients, consensusClient)
+				continue
+			}
 		}
 
 		// Check the fallback EC too
 		if len(fallbackCompatibleConsensusClients) > 0 {
-			isGood = false
+			isGood := false
 			for _, compatibleWithFallbackEC := range fallbackCompatibleConsensusClients {
 				if compatibleWithFallbackEC == clientValue {
 					isGood = true
@@ -581,21 +600,22 @@ func (config *RocketPoolConfig) GetCompatibleConsensusClients() ([]ParameterOpti
 			}
 
 			if !isGood {
-				badClients = append(badClients, consensusClient.Name)
+				badFallbackClients = append(badFallbackClients, consensusClient)
 				continue
 			}
 		}
-
-		// If we get here, it's compatible.
-		goodClients = append(goodClients, consensusClient)
 	}
 
-	return goodClients, badClients
+	return badClients, badFallbackClients
 
 }
 
 // Get the configuration for the selected client
 func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusConfig, error) {
+	if config.IsNativeMode {
+		return nil, fmt.Errorf("consensus config is not available in native mode")
+	}
+
 	mode := config.ConsensusClientMode.Value.(Mode)
 	switch mode {
 	case Mode_Local:
@@ -643,6 +663,8 @@ func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 	}
 	masterMap[rootConfigName] = rootParams
 	masterMap[rootConfigName]["rpDir"] = config.RocketPoolDirectory
+	masterMap[rootConfigName]["isNative"] = fmt.Sprint(config.IsNativeMode)
+	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion) // Update the version with the current Smartnode version
 
 	// Serialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {
@@ -670,7 +692,14 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 			return fmt.Errorf("error deserializing root config: %w", err)
 		}
 	}
+
+	var err error
 	config.RocketPoolDirectory = masterMap[rootConfigName]["rpDir"]
+	config.IsNativeMode, err = strconv.ParseBool(masterMap[rootConfigName]["isNative"])
+	if err != nil {
+		return fmt.Errorf("error parsing isNative: %w", err)
+	}
+	config.Version = masterMap[rootConfigName]["version"]
 
 	// Deserialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {
@@ -681,7 +710,7 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 		for _, param := range subconfig.GetParameters() {
 			err := param.deserialize(subconfigParams)
 			if err != nil {
-				return fmt.Errorf("error deserializing [name]: %w", err)
+				return fmt.Errorf("error deserializing [%s]: %w", name, err)
 			}
 		}
 	}
@@ -868,4 +897,34 @@ func addParametersToEnvVars(params []*Parameter, envVars map[string]string) {
 // The the title for the config
 func (config *RocketPoolConfig) GetConfigTitle() string {
 	return config.Title
+}
+
+// Update the default settings for all overwrite-on-upgrade parameters
+func (config *RocketPoolConfig) UpdateDefaults() error {
+	// Update the root params
+	currentNetwork := config.Smartnode.Network.Value.(Network)
+	for _, param := range config.GetParameters() {
+		defaultValue, err := param.GetDefault(currentNetwork)
+		if err != nil {
+			return fmt.Errorf("error getting defaults for root param [%s] on network [%v]: %w", param.ID, currentNetwork, err)
+		}
+		if param.OverwriteOnUpgrade {
+			param.Value = defaultValue
+		}
+	}
+
+	// Update the subconfigs
+	for subconfigName, subconfig := range config.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			defaultValue, err := param.GetDefault(currentNetwork)
+			if err != nil {
+				return fmt.Errorf("error getting defaults for %s param [%s] on network [%v]: %w", subconfigName, param.ID, currentNetwork, err)
+			}
+			if param.OverwriteOnUpgrade {
+				param.Value = defaultValue
+			}
+		}
+	}
+
+	return nil
 }

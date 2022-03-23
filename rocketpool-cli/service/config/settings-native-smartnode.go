@@ -6,23 +6,23 @@ import (
 )
 
 // The page wrapper for the Smartnode config
-type SmartnodeConfigPage struct {
-	home   *settingsHome
+type NativeSmartnodeConfigPage struct {
+	home   *settingsNativeHome
 	page   *page
 	layout *standardLayout
 }
 
-// Creates a new page for the Smartnode settings
-func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
+// Creates a new page for the Native Smartnode settings
+func NewNativeSmartnodeConfigPage(home *settingsNativeHome) *NativeSmartnodeConfigPage {
 
-	configPage := &SmartnodeConfigPage{
+	configPage := &NativeSmartnodeConfigPage{
 		home: home,
 	}
 
 	configPage.createContent()
 	configPage.page = newPage(
 		home.homePage,
-		"settings-smartnode",
+		"settings-native-smartnode",
 		"Smartnode and TX Fees",
 		"Select this to configure the settings for the Smartnode itself, including the defaults and limits on transaction fees.",
 		configPage.layout.grid,
@@ -33,7 +33,7 @@ func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 }
 
 // Creates the content for the Smartnode settings page
-func (configPage *SmartnodeConfigPage) createContent() {
+func (configPage *NativeSmartnodeConfigPage) createContent() {
 
 	// Create the layout
 	masterConfig := configPage.home.md.Config
@@ -63,6 +63,11 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	// Set up the form items
 	formItems := createParameterizedFormItems(masterConfig.Smartnode.GetParameters(), layout.descriptionBox)
 	for _, formItem := range formItems {
+		if formItem.parameter.ID == config.ProjectNameID {
+			// Ignore the project name ID since it doesn't apply to native mode
+			continue
+		}
+
 		layout.form.AddFormItem(formItem.item)
 		layout.parameters[formItem.item] = formItem
 		if formItem.parameter.ID == config.NetworkID {

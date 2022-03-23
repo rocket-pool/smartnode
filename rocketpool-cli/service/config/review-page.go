@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
@@ -29,59 +31,84 @@ type ReviewPage struct {
 // Create a page to review any changes
 func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
-	// Get the map of changed settings by category
-	changedSettings := getChangedSettingsMap(oldConfig, newConfig)
-
-	// Handle network changes (because it's a special case)
+	var changedSettings map[string][]SettingsPair
+	containersToRestart := []config.ContainerID{}
 	changeNetworks := false
 	if oldConfig.Smartnode.Network.Value != newConfig.Smartnode.Network.Value {
 		changeNetworks = true
 	}
 
-	// Create a list of all of the container IDs that need to be restarted
-	totalAffectedContainers := map[config.ContainerID]bool{}
-	for _, settingList := range changedSettings {
-		for _, setting := range settingList {
-			for container := range setting.AffectedContainers {
-				totalAffectedContainers[container] = true
-			}
-		}
-	}
-
 	// Create the visual list for all of the changed settings
 	changeBox := tview.NewTextView().
-		SetDynamicColors(true)
+		SetDynamicColors(true).
+		SetWordWrap(true)
 	changeBox.SetBorder(true)
 	changeBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	changeBox.SetBorderPadding(0, 0, 1, 1)
-	changeString := ""
-	for categoryName, changedSettingsList := range changedSettings {
-		if len(changedSettingsList) > 0 {
-			changeString += fmt.Sprintf("%s\n", categoryName)
-			for _, pair := range changedSettingsList {
-				changeString += fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue)
+
+	builder := strings.Builder{}
+	errors := validate(newConfig)
+	if len(errors) > 0 {
+		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
+		for _, err := range errors {
+			builder.WriteString(fmt.Sprintf("%s\n\n", err))
+		}
+	} else {
+		// Get the map of changed settings by category
+		changedSettings = getChangedSettingsMap(oldConfig, newConfig)
+
+		// Create a list of all of the container IDs that need to be restarted
+		totalAffectedContainers := map[config.ContainerID]bool{}
+		for _, settingList := range changedSettings {
+			for _, setting := range settingList {
+				for container := range setting.AffectedContainers {
+					totalAffectedContainers[container] = true
+				}
 			}
-			changeString += "\n"
+		}
+
+		if md.isUpdate || md.isMigration {
+			totalAffectedContainers[config.ContainerID_Api] = true
+			totalAffectedContainers[config.ContainerID_Node] = true
+			totalAffectedContainers[config.ContainerID_Watchtower] = true
+
+			if newConfig.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && newConfig.ExecutionClient.Value.(config.ExecutionClient) != config.ExecutionClient_Geth {
+				totalAffectedContainers[config.ContainerID_Eth1] = true
+			}
+			if newConfig.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+				totalAffectedContainers[config.ContainerID_Eth1Fallback] = true
+			}
+			builder.WriteString(fmt.Sprintf("Updated to Smartnode v%s (will affect several containers)\n\n", shared.RocketPoolVersion))
+		}
+
+		for categoryName, changedSettingsList := range changedSettings {
+			if len(changedSettingsList) > 0 {
+				builder.WriteString(fmt.Sprintf("%s\n", categoryName))
+				for _, pair := range changedSettingsList {
+					builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
+				}
+				builder.WriteString("\n")
+			}
+		}
+
+		if builder.String() == "" {
+			builder.WriteString("<No changes>")
+		} else {
+			builder.WriteString("The following containers must be restarted for these changes to take effect:")
+			for container, _ := range totalAffectedContainers {
+				builder.WriteString(fmt.Sprintf("\n\t%v", container))
+				containersToRestart = append(containersToRestart, container)
+			}
 		}
 	}
 
-	containersToRestart := []config.ContainerID{}
-	if changeString == "" {
-		changeString = "<No changes>"
-	} else {
-		changeString += "The following containers will be restarted for these changes to take effect:"
-		for container, _ := range totalAffectedContainers {
-			changeString += fmt.Sprintf("\n\t%v", container)
-			containersToRestart = append(containersToRestart, container)
-		}
-	}
-	changeBox.SetText(changeString)
+	changeBox.SetText(builder.String())
 
 	// Create the layout
 	width := 86
 
 	// Create the main text view
-	descriptionText := "Please review your changes below.\nScroll through them using the arrow keys, and press Enter when you're ready to save them and restart the relevant Docker containers."
+	descriptionText := "Please review your changes below.\nScroll through them using the arrow keys, and press Enter when you're ready to save them."
 	lines := tview.WordWrap(descriptionText, width-4)
 	textViewHeight := len(lines) + 1
 	textView := tview.NewTextView().
@@ -92,49 +119,44 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	textView.SetBorderPadding(0, 0, 1, 1)
 
-	// Create the save button
-	saveButton := tview.NewButton("Save Settings and Restart Containers")
-	saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyUp || event.Key() == tcell.KeyDown {
-			changeBox.InputHandler()(event, nil)
-			return nil
-		} else {
-			return event
-		}
-	})
-	// Save when selected
-	saveButton.SetSelectedFunc(func() {
-		if changeNetworks {
-			// Network changes need to be handled specially
-			modal := tview.NewModal().
-				SetText("WARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted once you save and run these changes!").
-				AddButtons([]string{"Cancel!", "Ok, I'm Ready"}).
-				SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-					if buttonIndex == 1 {
-						md.ShouldSave = true
-						md.ChangeNetworks = true
-						md.ContainersToRestart = containersToRestart
-						md.app.Stop()
-					} else if buttonIndex == 0 {
-						md.setPage(md.settingsHome.homePage)
-						md.app.SetRoot(md.mainGrid, true)
-					}
-				})
-			md.app.SetRoot(modal, true)
-		} else {
+	var buttonGrid *tview.Flex
+
+	if len(errors) > 0 {
+		buttonGrid = tview.NewFlex().
+			SetDirection(tview.FlexColumn).
+			AddItem(tview.NewBox().
+				SetBackgroundColor(tview.Styles.ContrastBackgroundColor), 0, 1, false)
+	} else {
+		// Create the save button
+		saveButton := tview.NewButton("Save Settings")
+		saveButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			if event.Key() == tcell.KeyUp || event.Key() == tcell.KeyDown {
+				changeBox.InputHandler()(event, nil)
+				return nil
+			} else {
+				return event
+			}
+		})
+		// Save when selected
+		saveButton.SetSelectedFunc(func() {
 			md.ShouldSave = true
 			md.ContainersToRestart = containersToRestart
+			if changeNetworks && !md.isNew {
+				md.ChangeNetworks = true
+			}
 			md.app.Stop()
-		}
-	})
+		})
+		saveButton.SetBackgroundColorActivated(tcell.Color46)
+		saveButton.SetLabelColorActivated(tcell.ColorBlack)
 
-	buttonGrid := tview.NewFlex().
-		SetDirection(tview.FlexColumn).
-		AddItem(tview.NewBox().
-			SetBackgroundColor(tview.Styles.ContrastBackgroundColor), 0, 1, false).
-		AddItem(saveButton, len(saveButton.GetLabel())+2, 0, true).
-		AddItem(tview.NewBox().
-			SetBackgroundColor(tview.Styles.ContrastBackgroundColor), 0, 1, false)
+		buttonGrid = tview.NewFlex().
+			SetDirection(tview.FlexColumn).
+			AddItem(tview.NewBox().
+				SetBackgroundColor(tview.Styles.ContrastBackgroundColor), 0, 1, false).
+			AddItem(saveButton, len(saveButton.GetLabel())+2, 0, true).
+			AddItem(tview.NewBox().
+				SetBackgroundColor(tview.Styles.ContrastBackgroundColor), 0, 1, false)
+	}
 
 	// Row spacers with the correct background color
 	spacer1 := tview.NewBox().
@@ -223,6 +245,30 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		page:            page,
 	}
 
+}
+
+// Checks to see if the current configuration is valid; if not, returns a list of errors
+func validate(cfg *config.RocketPoolConfig) []string {
+	errors := []string{}
+
+	badClients, badFallbackClients := cfg.GetIncompatibleConsensusClients()
+	if cfg.ConsensusClientMode.Value == config.Mode_Local {
+		selectedCC := cfg.ConsensusClient.Value.(config.ConsensusClient)
+		for _, badClient := range badClients {
+			if badClient.Value == selectedCC {
+				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected Execution client:\n\t%v", badClient.Name, cfg.ExecutionClient.Value))
+				break
+			}
+		}
+		for _, badClient := range badFallbackClients {
+			if badClient.Value == selectedCC {
+				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected fallback Execution client:\n\t%v", badClient.Name, cfg.FallbackExecutionClient.Value))
+				break
+			}
+		}
+	}
+
+	return errors
 }
 
 // Get all of the changed settings between an old and new config

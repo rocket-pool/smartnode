@@ -1,8 +1,8 @@
 package config
 
-func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
+func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
-	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smartnode and client settings next or just save and exit."
+	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smartnode and Native settings next or just save and exit."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -16,9 +16,9 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 				wiz.md.PreviousConfig = wiz.md.Config.CreateCopy()
 			}
 
-			wiz.md.pages.RemovePage(settingsHomeID)
-			wiz.md.settingsHome = newSettingsHome(wiz.md)
-			wiz.md.setPage(wiz.md.settingsHome.homePage)
+			wiz.md.pages.RemovePage(settingsNativeHomeID)
+			wiz.md.settingsNativeHome = newSettingsNativeHome(wiz.md)
+			wiz.md.setPage(wiz.md.settingsNativeHome.homePage)
 		} else {
 			wiz.md.ShouldSave = true
 			wiz.md.app.Stop()
@@ -26,7 +26,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	back := func() {
-		wiz.metricsModal.show()
+		wiz.nativeMetricsModal.show()
 	}
 
 	return newChoiceStep(
@@ -45,7 +45,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 		show,
 		done,
 		back,
-		"step-finished",
+		"step-native-finished",
 	)
 
 }

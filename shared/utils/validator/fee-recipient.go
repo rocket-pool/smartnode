@@ -25,7 +25,7 @@ var validatorRestartTimeout, _ = time.ParseDuration("5s")
 func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.ColorLogger, d *client.Client) error {
 
 	// Restart validator container
-	if isInsideContainer() {
+	if !cfg.IsNativeMode {
 
 		// Get validator container name & client type label
 		var containerName string
@@ -76,7 +76,7 @@ func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.C
 	} else {
 
 		// Get validator restart command
-		restartCommand := os.ExpandEnv(cfg.Smartnode.ValidatorRestartCommand.Value.(string))
+		restartCommand := os.ExpandEnv(cfg.Native.ValidatorRestartCommand.Value.(string))
 
 		// Log
 		if log != nil {
@@ -105,7 +105,7 @@ func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.C
 func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.ColorLogger, d *client.Client) error {
 
 	// Stop validator container
-	if isInsideContainer() {
+	if !cfg.IsNativeMode {
 
 		// Get validator container name & client type label
 		var containerName string
@@ -156,7 +156,7 @@ func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.Colo
 		// Stop external validator process
 
 		// Get validator stop command
-		stopCommand := os.ExpandEnv(cfg.Smartnode.ValidatorStopCommand.Value.(string))
+		stopCommand := os.ExpandEnv(cfg.Native.ValidatorStopCommand.Value.(string))
 
 		// Log
 		if log != nil {
@@ -178,32 +178,5 @@ func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.Colo
 		log.Println("Successfully stopped validator")
 	}
 	return nil
-
-}
-
-// Check whether process is running inside a container
-func isInsideContainer() bool {
-	containerMarkerPaths := []string{
-		"/.dockerenv",        // Docker
-		"/run/.containerenv", // Podman
-	}
-	for _, path := range containerMarkerPaths {
-		if pathExists(path) {
-			return true
-		}
-	}
-	return false
-}
-
-// Check if path exists
-func pathExists(path string) bool {
-
-	// Check for file info at path
-	if _, err := os.Stat(path); err == nil {
-		return true
-	}
-
-	// Assume that the path does not exist; this may result in false negatives (e.g. due to permissions)
-	return false
 
 }

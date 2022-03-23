@@ -40,6 +40,8 @@ func createInfuraStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWiza
 		70,
 		"Execution Client > Infura",
 		[]string{projectIdLabel},
+		[]int{wiz.md.Config.Infura.ProjectID.MaxLength},
+		[]string{wiz.md.Config.Infura.ProjectID.Regex},
 		show,
 		done,
 		back,

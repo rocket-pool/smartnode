@@ -18,33 +18,66 @@ const supermajorityWeight float64 = 0.05
 func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
 	// Get the list of clients
-	goodClients, badClients := wiz.md.Config.GetCompatibleConsensusClients()
+	badClients, badFallbackClients := wiz.md.Config.GetIncompatibleConsensusClients()
 
 	// Create the button names and descriptions from the config
-	clients := wiz.md.Config.ConsensusClient.Options
 	clientNames := []string{"Random (Recommended)"}
 	clientDescriptions := []string{"Select a client randomly to help promote the diversity of the Beacon Chain. We recommend you do this unless you have a strong reason to pick a specific client. To learn more about why client diversity is important, please visit https://clientdiversity.org for an explanation."}
-	for _, client := range goodClients {
-		clientNames = append(clientNames, client.Name)
-		clientDescriptions = append(clientDescriptions, getAugmentedDescription(client.Value.(config.ConsensusClient), client.Description))
+
+	goodClients := []config.ParameterOption{}
+	for _, client := range wiz.md.Config.ConsensusClient.Options {
+		isGood := true
+		for _, badClient := range badClients {
+			if badClient.Value == client.Value {
+				isGood = false
+				break
+			}
+		}
+		for _, badClient := range badFallbackClients {
+			if badClient.Value == client.Value {
+				isGood = false
+				break
+			}
+		}
+		if isGood {
+			clientNames = append(clientNames, client.Name)
+			clientDescriptions = append(clientDescriptions, getAugmentedDescription(client.Value.(config.ConsensusClient), client.Description))
+			goodClients = append(goodClients, client)
+		}
 	}
 
 	incompatibleClientWarning := ""
 	if len(badClients) > 0 {
-		incompatibleClientWarning = fmt.Sprintf("\n\n[orange]NOTE: The following clients are incompatible with your choice of Execution and/or fallback Execution clients: %s", strings.Join(badClients, ", "))
+		badClientNames := []string{}
+		for _, badClient := range badClients {
+			badClientNames = append(badClientNames, badClient.Name)
+		}
+		incompatibleClientWarning = fmt.Sprintf("\n\n[orange]NOTE: The following clients are incompatible with your choice of Execution client: %s", strings.Join(badClientNames, ", "))
+	} else if len(badFallbackClients) > 0 {
+		badClientNames := []string{}
+		for _, badClient := range badFallbackClients {
+			badClientNames = append(badClientNames, badClient.Name)
+		}
+		incompatibleClientWarning = fmt.Sprintf("\n\n[orange]NOTE: The following clients are incompatible with your choice of fallback Execution client: %s", strings.Join(badClientNames, ", "))
 	}
 
-	helperText := fmt.Sprintf("Please select the Consensus client you would like to use.\n\n"+
-		"Highlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.%s", incompatibleClientWarning)
+	helperText := fmt.Sprintf("Please select the Consensus client you would like to use.\n\nHighlight each one to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them.%s", incompatibleClientWarning)
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
 		modal.focus(0) // Catch-all for safety
 
 		if wiz.md.isMigration || !wiz.md.isNew {
-			for i, option := range wiz.md.Config.ConsensusClient.Options {
+			var ccName string
+			for _, option := range wiz.md.Config.ConsensusClient.Options {
 				if option.Value == wiz.md.Config.ConsensusClient.Value {
-					modal.focus(i + 1)
+					ccName = option.Name
+					break
+				}
+			}
+			for i, clientName := range clientNames {
+				if ccName == clientName {
+					modal.focus(i)
 					break
 				}
 			}
@@ -57,7 +90,17 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 			wiz.md.pages.RemovePage(randomCcID)
 			selectRandomClient(goodClients, true, wiz, currentStep, totalSteps)
 		} else {
-			selectedClient := clients[buttonIndex-1].Value.(config.ConsensusClient)
+			buttonLabel = strings.TrimSpace(buttonLabel)
+			selectedClient := config.ConsensusClient_Unknown
+			for _, client := range wiz.md.Config.ConsensusClient.Options {
+				if client.Name == buttonLabel {
+					selectedClient = client.Value.(config.ConsensusClient)
+					break
+				}
+			}
+			if selectedClient == config.ConsensusClient_Unknown {
+				panic(fmt.Sprintf("Local CC selection buttons didn't match any known clients, buttonLabel = %s\n", buttonLabel))
+			}
 			wiz.md.Config.ConsensusClient.Value = selectedClient
 			switch selectedClient {
 			case config.ConsensusClient_Prysm:

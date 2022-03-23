@@ -17,9 +17,9 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Run
@@ -78,30 +78,6 @@ ______           _        _    ______           _
 			Name:  "daemon-path, d",
 			Usage: "Interact with a Rocket Pool service daemon at a `path` on the host OS, running outside of docker",
 		},
-		cli.StringFlag{
-			Name:  "host, o",
-			Usage: "DEPRECATED - Smart node SSH host `address`",
-		},
-		cli.StringFlag{
-			Name:  "user, u",
-			Usage: "DEPRECATED - Smart node SSH user `name`",
-		},
-		cli.StringFlag{
-			Name:  "key, k",
-			Usage: "DEPRECATED - Smart node SSH key `file`",
-		},
-		cli.StringFlag{
-			Name:  "passphrase, p",
-			Usage: "DEPRECATED - Smart node SSH key passphrase `file`",
-		},
-		cli.StringFlag{
-			Name:  "known-hosts, n",
-			Usage: "DEPRECATED - Smart node SSH known_hosts `file` (default: current user's ~/.ssh/known_hosts)",
-		},
-		cli.StringFlag{
-			Name:  "gasPrice, g",
-			Usage: "OBSOLETE - No longer used, please use --maxFee and --maxPrioFee instead",
-		},
 		cli.Float64Flag{
 			Name:  "maxFee, f",
 			Usage: "The max fee (including the priority fee) you want a transaction to cost, in gwei",
@@ -112,7 +88,7 @@ ______           _        _    ______           _
 		},
 		cli.Uint64Flag{
 			Name:  "gasLimit, l",
-			Usage: "Desired gas limit",
+			Usage: "[DEPRECATED] Desired gas limit",
 		},
 		cli.StringFlag{
 			Name:  "nonce",
@@ -154,7 +130,7 @@ ______           _        _    ______           _
 	// Stop if the config file doesn't exist yet
 	_, err = os.Stat(expandedPath)
 	if !os.IsNotExist(err) {
-		cfg, err := config.LoadFromFile(expandedPath)
+		cfg, err := rp.LoadConfigFromFile(expandedPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to load the global config file: %s\n", err.Error())
 			os.Exit(1)
@@ -179,12 +155,6 @@ ______           _        _    ______           _
 		if os.Getuid() == 0 && !c.GlobalBool("allow-root") {
 			fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
 			fmt.Fprintln(os.Stderr, "If you want to run rocketpool as root anyway, use the '--allow-root' option to override this warning.")
-			os.Exit(1)
-		}
-
-		// Check for deprecated flags
-		if c.String("gasPrice") != "" {
-			fmt.Fprintln(os.Stderr, "The `gasPrice` flag is deprecated - please use `--maxFee` and optionally `--maxPrioFee` instead.")
 			os.Exit(1)
 		}
 

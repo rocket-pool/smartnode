@@ -7,50 +7,41 @@ import (
 	"github.com/rivo/tview"
 )
 
-const settingsHomeID string = "settings-home"
+const settingsNativeHomeID string = "settings-native-home"
 
 // This is a container for the primary settings category selection home screen.
-type settingsHome struct {
+type settingsNativeHome struct {
 	homePage         *page
 	saveButton       *tview.Button
 	wizardButton     *tview.Button
-	smartnodePage    *SmartnodeConfigPage
-	ecPage           *ExecutionConfigPage
-	fallbackEcPage   *FallbackExecutionConfigPage
-	ccPage           *ConsensusConfigPage
-	metricsPage      *MetricsConfigPage
-	addonsPage       *AddonsPage
+	smartnodePage    *NativeSmartnodeConfigPage
+	nativePage       *NativePage
+	metricsPage      *NativeMetricsConfigPage
 	categoryList     *tview.List
 	settingsSubpages []*page
 	content          tview.Primitive
 	md               *mainDisplay
 }
 
-// Creates a new SettingsHome instance and adds (and its subpages) it to the main display.
-func newSettingsHome(md *mainDisplay) *settingsHome {
+// Creates a new SettingsNativeHome instance and adds (and its subpages) it to the main display.
+func newSettingsNativeHome(md *mainDisplay) *settingsNativeHome {
 
-	homePage := newPage(nil, settingsHomeID, "Categories", "", nil)
+	homePage := newPage(nil, settingsNativeHomeID, "Categories", "", nil)
 
 	// Create the page and return it
-	home := &settingsHome{
+	home := &settingsNativeHome{
 		md:       md,
 		homePage: homePage,
 	}
 
 	// Create the settings subpages
-	home.smartnodePage = NewSmartnodeConfigPage(home)
-	home.ecPage = NewExecutionConfigPage(home)
-	home.fallbackEcPage = NewFallbackExecutionConfigPage(home)
-	home.ccPage = NewConsensusConfigPage(home)
-	home.metricsPage = NewMetricsConfigPage(home)
-	home.addonsPage = NewAddonsPage(home.md)
+	home.smartnodePage = NewNativeSmartnodeConfigPage(home)
+	home.nativePage = NewNativePage(home)
+	home.metricsPage = NewNativeMetricsConfigPage(home)
 	settingsSubpages := []*page{
 		home.smartnodePage.page,
-		home.ecPage.page,
-		home.fallbackEcPage.page,
-		home.ccPage.page,
+		home.nativePage.page,
 		home.metricsPage.page,
-		home.addonsPage.page,
 	}
 	home.settingsSubpages = settingsSubpages
 
@@ -66,7 +57,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 }
 
 // Create the content for this page
-func (home *settingsHome) createContent() {
+func (home *settingsNativeHome) createContent() {
 
 	layout := newStandardLayout()
 
@@ -110,7 +101,7 @@ func (home *settingsHome) createContent() {
 }
 
 // Create the footer, including the nav bar and the save / quit buttons
-func (home *settingsHome) createFooter() (tview.Primitive, int) {
+func (home *settingsNativeHome) createFooter() (tview.Primitive, int) {
 
 	// Nav bar
 	navString1 := "Arrow keys: Navigate             Space/Enter: Select"
@@ -155,10 +146,10 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 		return event
 	})
 	saveButton.SetSelectedFunc(func() {
-		home.md.pages.RemovePage(reviewPageID)
-		reviewPage := NewReviewPage(home.md, home.md.PreviousConfig, home.md.Config)
-		home.md.pages.AddPage(reviewPage.page.id, reviewPage.page.content, true, true)
-		home.md.setPage(reviewPage.page)
+		home.md.pages.RemovePage(reviewNativePageID)
+		reviewNativePage := NewReviewNativePage(home.md, home.md.PreviousConfig, home.md.Config)
+		home.md.pages.AddPage(reviewNativePage.page.id, reviewNativePage.page.content, true, true)
+		home.md.setPage(reviewNativePage.page)
 	})
 	saveButton.SetBackgroundColorActivated(tcell.Color46)
 	saveButton.SetLabelColorActivated(tcell.ColorBlack)
@@ -177,7 +168,7 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 		return event
 	})
 	wizardButton.SetSelectedFunc(func() {
-		home.md.dockerWizard.welcomeModal.show()
+		home.md.dockerWizard.nativeWelcomeModal.show()
 	})
 	wizardButton.SetBackgroundColorActivated(tcell.Color46)
 	wizardButton.SetLabelColorActivated(tcell.ColorBlack)
@@ -201,22 +192,14 @@ func (home *settingsHome) createFooter() (tview.Primitive, int) {
 }
 
 // Refreshes the settings on all of the config pages to match the config's values
-func (home *settingsHome) refresh() {
+func (home *settingsNativeHome) refresh() {
 	/*
 		if home.smartnodePage != nil {
 			home.smartnodePage.layout.refresh()
 		}*/
 
-	if home.ecPage != nil {
-		home.ecPage.layout.refresh()
-	}
-
-	if home.fallbackEcPage != nil {
-		home.fallbackEcPage.layout.refresh()
-	}
-
-	if home.ccPage != nil {
-		home.ccPage.layout.refresh()
+	if home.nativePage != nil {
+		home.nativePage.layout.refresh()
 	}
 
 	if home.metricsPage != nil {

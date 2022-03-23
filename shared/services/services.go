@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	uc "github.com/rocket-pool/rocketpool-go/utils/client"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -30,6 +31,7 @@ import (
 	nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 	tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Config
@@ -85,7 +87,7 @@ func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
 		return nil, err
 	}
 	pm := getPasswordManager(cfg)
-	return getWallet(cfg, pm)
+	return getWallet(c, cfg, pm)
 }
 
 func GetEthClientProxy(c *cli.Context) (*uc.EthClientProxy, error) {
@@ -157,7 +159,7 @@ func getConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
 	var err error
 	initCfg.Do(func() {
 		settingsFile := os.ExpandEnv(c.GlobalString("settings"))
-		cfg, err = config.LoadFromFile(settingsFile)
+		cfg, err = rp.LoadConfigFromFile(settingsFile)
 		if cfg == nil && err == nil {
 			err = fmt.Errorf("Settings file [%s] not found.", settingsFile)
 		}
@@ -172,13 +174,27 @@ func getPasswordManager(cfg *config.RocketPoolConfig) *passwords.PasswordManager
 	return passwordManager
 }
 
-func getWallet(cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
+func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager) (*wallet.Wallet, error) {
 	var err error
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
+		maxFeeFloat := c.GlobalFloat64("maxFee")
+		if maxFeeFloat == 0 {
+			maxFeeFloat = cfg.Smartnode.ManualMaxFee.Value.(float64)
+		}
+		if maxFeeFloat != 0 {
+			maxFee = eth.GweiToWei(maxFeeFloat)
+		}
+
 		var maxPriorityFee *big.Int
-		maxFee = big.NewInt(int64(cfg.Smartnode.ManualMaxFee.Value.(float64)))
-		maxPriorityFee = big.NewInt(int64(cfg.Smartnode.PriorityFee.Value.(float64)))
+		maxPriorityFeeFloat := c.GlobalFloat64("maxPrioFee")
+		if maxPriorityFeeFloat == 0 {
+			maxPriorityFeeFloat = cfg.Smartnode.PriorityFee.Value.(float64)
+		}
+		if maxPriorityFeeFloat != 0 {
+			maxPriorityFee = eth.GweiToWei(maxPriorityFeeFloat)
+		}
+
 		chainId := cfg.Smartnode.GetChainID()
 
 		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm)
@@ -219,13 +235,15 @@ func getEthClientProxy(cfg *config.RocketPoolConfig) (*uc.EthClientProxy, error)
 
 		// Get the provider URL of the primary execution client
 		var primaryProvider string
-		if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+		if cfg.IsNativeMode {
+			primaryProvider = cfg.Native.EcHttpUrl.Value.(string)
+		} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
 			primaryProvider = fmt.Sprintf("http://%s:%d", EcContainerName, cfg.ExecutionCommon.HttpPort.Value.(uint16))
 		} else {
 			primaryProvider = cfg.ExternalExecution.HttpUrl.Value.(string)
 		}
 
-		if cfg.UseFallbackExecutionClient.Value == false {
+		if cfg.UseFallbackExecutionClient.Value == false || cfg.IsNativeMode {
 			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, primaryProvider)
 		} else {
 			// Get the provider URL of the fallback execution client
@@ -269,41 +287,37 @@ func getRplFaucet(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (*con
 func getBeaconClient(cfg *config.RocketPoolConfig) (beacon.Client, error) {
 	var err error
 	initBeaconClient.Do(func() {
-		if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
-			provider := fmt.Sprintf("http://%s:%d", BnContainerName, cfg.ConsensusCommon.ApiPort.Value.(uint16))
-			switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
-			case config.ConsensusClient_Lighthouse:
-				beaconClient = lighthouse.NewClient(provider)
-			case config.ConsensusClient_Nimbus:
-				beaconClient = nimbus.NewClient(provider)
-			case config.ConsensusClient_Prysm:
-				beaconClient = prysm.NewClient(provider)
-			case config.ConsensusClient_Teku:
-				beaconClient = teku.NewClient(provider)
-			default:
-				err = fmt.Errorf("Unknown Consensus client '%v' selected", cfg.ConsensusClient.Value)
-			}
+		var provider string
+		var selectedCC config.ConsensusClient
+		if cfg.IsNativeMode {
+			provider = cfg.Native.CcHttpUrl.Value.(string)
+			selectedCC = cfg.Native.ConsensusClient.Value.(config.ConsensusClient)
+		} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+			provider = fmt.Sprintf("http://%s:%d", BnContainerName, cfg.ConsensusCommon.ApiPort.Value.(uint16))
+			selectedCC = cfg.ConsensusClient.Value.(config.ConsensusClient)
 		} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External {
 			var selectedConsensusConfig config.ConsensusConfig
 			selectedConsensusConfig, err = cfg.GetSelectedConsensusClientConfig()
 			if err != nil {
 				return
 			}
-			provider := selectedConsensusConfig.(config.ExternalConsensusConfig).GetApiUrl()
-			switch cfg.ExternalConsensusClient.Value.(config.ConsensusClient) {
-			case config.ConsensusClient_Lighthouse:
-				beaconClient = lighthouse.NewClient(provider)
-			case config.ConsensusClient_Nimbus:
-				beaconClient = nimbus.NewClient(provider)
-			case config.ConsensusClient_Prysm:
-				beaconClient = prysm.NewClient(provider)
-			case config.ConsensusClient_Teku:
-				beaconClient = teku.NewClient(provider)
-			default:
-				err = fmt.Errorf("Unknown Consensus client '%v' selected", cfg.ExternalConsensusClient.Value)
-			}
+			provider = selectedConsensusConfig.(config.ExternalConsensusConfig).GetApiUrl()
+			selectedCC = cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
 		} else {
 			err = fmt.Errorf("Unknown Consensus client mode '%v'", cfg.ConsensusClientMode.Value)
+		}
+
+		switch selectedCC {
+		case config.ConsensusClient_Lighthouse:
+			beaconClient = lighthouse.NewClient(provider)
+		case config.ConsensusClient_Nimbus:
+			beaconClient = nimbus.NewClient(provider)
+		case config.ConsensusClient_Prysm:
+			beaconClient = prysm.NewClient(provider)
+		case config.ConsensusClient_Teku:
+			beaconClient = teku.NewClient(provider)
+		default:
+			err = fmt.Errorf("Unknown Consensus client '%v' selected", cfg.ConsensusClient.Value)
 		}
 
 	})

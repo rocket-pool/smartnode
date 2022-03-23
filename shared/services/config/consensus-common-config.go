@@ -50,6 +50,7 @@ func NewConsensusCommonConfig(config *RocketPoolConfig) *ConsensusCommonConfig {
 			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: defaultGraffiti},
+			MaxLength:            16,
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"CUSTOM_GRAFFITI"},
 			CanBeBlank:           true,
