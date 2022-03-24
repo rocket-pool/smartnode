@@ -72,7 +72,13 @@ type ExternalTekuConfig struct {
 }
 
 // Generates a new ExternalExecutionConfig configuration
-func NewExternalExecutionConfig(config *RocketPoolConfig) *ExternalExecutionConfig {
+func NewExternalExecutionConfig(config *RocketPoolConfig, isFallback bool) *ExternalExecutionConfig {
+
+	prefix := ""
+	if isFallback {
+		prefix = "FALLBACK_"
+	}
+
 	return &ExternalExecutionConfig{
 		Title: "External Execution Client Settings",
 
@@ -83,7 +89,7 @@ func NewExternalExecutionConfig(config *RocketPoolConfig) *ExternalExecutionConf
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"EC_HTTP_ENDPOINT"},
+			EnvironmentVariables: []string{prefix + "EC_HTTP_ENDPOINT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -95,7 +101,7 @@ func NewExternalExecutionConfig(config *RocketPoolConfig) *ExternalExecutionConf
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{"EC_WS_ENDPOINT"},
+			EnvironmentVariables: []string{prefix + "EC_WS_ENDPOINT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},

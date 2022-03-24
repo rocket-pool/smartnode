@@ -240,6 +240,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Pocket",
 				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
 				Value:       ExecutionClient_Pocket,
+			}, {
+				Name:        "External",
+				Description: "Use an existing Execution client that you already manage externally on your own.",
+				Value:       ExecutionClient_Unknown,
 			}},
 		},
 
@@ -413,11 +417,11 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Geth = NewGethConfig(config, false)
 	config.Infura = NewInfuraConfig(config, false)
 	config.Pocket = NewPocketConfig(config, false)
-	config.ExternalExecution = NewExternalExecutionConfig(config)
+	config.ExternalExecution = NewExternalExecutionConfig(config, false)
 	config.FallbackExecutionCommon = NewExecutionCommonConfig(config, true)
 	config.FallbackInfura = NewInfuraConfig(config, true)
 	config.FallbackPocket = NewPocketConfig(config, true)
-	config.FallbackExternalExecution = NewExternalExecutionConfig(config)
+	config.FallbackExternalExecution = NewExternalExecutionConfig(config, true)
 	config.ConsensusCommon = NewConsensusCommonConfig(config)
 	config.Lighthouse = NewLighthouseConfig(config)
 	config.Nimbus = NewNimbusConfig(config)
@@ -783,8 +787,6 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 				addParametersToEnvVars(config.FallbackPocket.GetParameters(), envVars)
 			}
 		} else {
-			envVars["FALLBACK_EC_HTTP_ENDPOINT"] = fmt.Sprint(config.FallbackExternalExecution.HttpUrl.Value)
-			envVars["FALLBACK_EC_WS_ENDPOINT"] = fmt.Sprint(config.FallbackExternalExecution.WsUrl.Value)
 			addParametersToEnvVars(config.FallbackExternalExecution.GetParameters(), envVars)
 		}
 	}
