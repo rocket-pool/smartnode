@@ -279,6 +279,7 @@ func configureService(c *cli.Context) error {
 			return nil
 		}
 
+		// Handle network changes
 		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 		if md.ChangeNetworks {
 			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
@@ -295,6 +296,17 @@ func configureService(c *cli.Context) error {
 			return nil
 		}
 
+		// Query for service start if this is a new installation
+		if isNew {
+			if !cliutils.Confirm("Would you like to start the Smartnode services automatically now?") {
+				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
+				return nil
+			} else {
+				return startService(c)
+			}
+		}
+
+		// Query for service start if this is old and there are containers to change
 		if len(md.ContainersToRestart) > 0 {
 			fmt.Println("The following containers must be restarted for the changes to take effect:")
 			for _, container := range md.ContainersToRestart {
