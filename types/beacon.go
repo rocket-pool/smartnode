@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"encoding/hex"
-	"encoding/json"
+
+	"github.com/rocket-pool/rocketpool-go/utils/json"
 )
 
 // Validator pubkey
