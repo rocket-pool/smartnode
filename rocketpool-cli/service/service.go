@@ -876,7 +876,7 @@ func pauseService(c *cli.Context) error {
 func stopService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, chain databases will be deleted, and ethereum nodes will lose ALL sync progress!")) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

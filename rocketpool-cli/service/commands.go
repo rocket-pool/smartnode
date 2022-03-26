@@ -247,30 +247,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "terminate",
-				Aliases:   []string{"t"},
-				Usage:     "Stop the Rocket Pool service and tear down the service stack",
-				UsageText: "rocketpool service terminate [options]",
-				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm service termination",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run command
-					return stopService(c)
-
-				},
-			},
-
-			{
 				Name:      "logs",
 				Aliases:   []string{"l"},
 				Usage:     "View the Rocket Pool service logs",
@@ -407,6 +383,30 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run command
 					return resyncEth2(c)
+
+				},
+			},
+
+			{
+				Name:      "terminate",
+				Aliases:   []string{"t"},
+				Usage:     fmt.Sprintf("%sDeletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Only use this if you are cleaning up the Smartnode and want to start over!%s", colorRed, colorReset),
+				UsageText: "rocketpool service terminate [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm service termination",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return stopService(c)
 
 				},
 			},
