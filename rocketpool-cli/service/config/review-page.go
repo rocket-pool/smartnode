@@ -13,30 +13,19 @@ import (
 // Constants
 const reviewPageID string = "review-settings"
 
-// A setting that has changed
-type SettingsPair struct {
-	Name               string
-	OldValue           string
-	NewValue           string
-	AffectedContainers map[config.ContainerID]bool
-}
-
 // The changed settings review page
 type ReviewPage struct {
 	md              *mainDisplay
-	changedSettings map[string][]SettingsPair
+	changedSettings map[string][]config.ChangedSetting
 	page            *page
 }
 
 // Create a page to review any changes
 func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
-	var changedSettings map[string][]SettingsPair
-	containersToRestart := []config.ContainerID{}
-	changeNetworks := false
-	if oldConfig.Smartnode.Network.Value != newConfig.Smartnode.Network.Value {
-		changeNetworks = true
-	}
+	var changedSettings map[string][]config.ChangedSetting
+	var containersToRestart []config.ContainerID
+	var changeNetworks bool
 
 	// Create the visual list for all of the changed settings
 	changeBox := tview.NewTextView().
@@ -47,7 +36,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	changeBox.SetBorderPadding(0, 0, 1, 1)
 
 	builder := strings.Builder{}
-	errors := validate(newConfig)
+	errors := newConfig.Validate()
 	if len(errors) > 0 {
 		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
 		for _, err := range errors {
@@ -55,7 +44,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		}
 	} else {
 		// Get the map of changed settings by category
-		changedSettings = getChangedSettingsMap(oldConfig, newConfig)
+		changedSettings, containersToRestart, changeNetworks = newConfig.GetChanges(oldConfig)
 
 		// Create a list of all of the container IDs that need to be restarted
 		totalAffectedContainers := map[config.ContainerID]bool{}
@@ -244,93 +233,5 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		changedSettings: changedSettings,
 		page:            page,
 	}
-
-}
-
-// Checks to see if the current configuration is valid; if not, returns a list of errors
-func validate(cfg *config.RocketPoolConfig) []string {
-	errors := []string{}
-
-	badClients, badFallbackClients := cfg.GetIncompatibleConsensusClients()
-	if cfg.ConsensusClientMode.Value == config.Mode_Local {
-		selectedCC := cfg.ConsensusClient.Value.(config.ConsensusClient)
-		for _, badClient := range badClients {
-			if badClient.Value == selectedCC {
-				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected Execution client:\n\t%v", badClient.Name, cfg.ExecutionClient.Value))
-				break
-			}
-		}
-		for _, badClient := range badFallbackClients {
-			if badClient.Value == selectedCC {
-				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected fallback Execution client:\n\t%v", badClient.Name, cfg.FallbackExecutionClient.Value))
-				break
-			}
-		}
-	}
-
-	return errors
-}
-
-// Get all of the changed settings between an old and new config
-func getChangedSettingsMap(oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) map[string][]SettingsPair {
-	changedSettings := map[string][]SettingsPair{}
-
-	// Root settings
-	oldRootParams := oldConfig.GetParameters()
-	newRootParams := newConfig.GetParameters()
-	changedSettings[oldConfig.Title] = getChangedSettings(oldRootParams, newRootParams, newConfig)
-
-	// Subconfig settings
-	oldSubconfigs := oldConfig.GetSubconfigs()
-	for name, subConfig := range newConfig.GetSubconfigs() {
-		oldParams := oldSubconfigs[name].GetParameters()
-		newParams := subConfig.GetParameters()
-		changedSettings[subConfig.GetConfigTitle()] = getChangedSettings(oldParams, newParams, newConfig)
-	}
-
-	return changedSettings
-}
-
-// Get all of the settings that have changed between the given parameter lists.
-// Assumes the parameter lists represent identical parameters (e.g. they have the same number of elements and
-// each element has the same ID).
-func getChangedSettings(oldParams []*config.Parameter, newParams []*config.Parameter, newConfig *config.RocketPoolConfig) []SettingsPair {
-	changedSettings := []SettingsPair{}
-
-	for i, param := range newParams {
-		oldValString := fmt.Sprint(oldParams[i].Value)
-		newValString := fmt.Sprint(param.Value)
-		if oldValString != newValString {
-			changedSettings = append(changedSettings, SettingsPair{
-				Name:               param.Name,
-				OldValue:           oldValString,
-				NewValue:           newValString,
-				AffectedContainers: getAffectedContainers(param, newConfig),
-			})
-		}
-	}
-
-	return changedSettings
-}
-
-// Handles custom container overrides
-func getAffectedContainers(param *config.Parameter, cfg *config.RocketPoolConfig) map[config.ContainerID]bool {
-
-	affectedContainers := map[config.ContainerID]bool{}
-
-	for _, container := range param.AffectsContainers {
-		affectedContainers[container] = true
-	}
-
-	// Nimbus doesn't operate in split mode, so all of the VC parameters need to get redirected to the BN instead
-	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local &&
-		cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Nimbus {
-		for _, container := range param.AffectsContainers {
-			if container == config.ContainerID_Validator {
-				affectedContainers[config.ContainerID_Eth2] = true
-			}
-		}
-	}
-	return affectedContainers
 
 }

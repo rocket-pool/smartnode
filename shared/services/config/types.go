@@ -88,3 +88,11 @@ type LocalConsensusConfig interface {
 type ExternalConsensusConfig interface {
 	GetApiUrl() string
 }
+
+// A setting that has changed
+type ChangedSetting struct {
+	Name               string
+	OldValue           string
+	NewValue           string
+	AffectedContainers map[ContainerID]bool
+}

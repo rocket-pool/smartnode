@@ -865,38 +865,6 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 
 }
 
-// Applies all of the defaults to all of the settings that have them defined
-func (config *RocketPoolConfig) applyAllDefaults() error {
-	for _, param := range config.GetParameters() {
-		err := param.setToDefault(config.Smartnode.Network.Value.(Network))
-		if err != nil {
-			return fmt.Errorf("error setting root parameter default: %w", err)
-		}
-	}
-
-	for name, subconfig := range config.GetSubconfigs() {
-		for _, param := range subconfig.GetParameters() {
-			err := param.setToDefault(config.Smartnode.Network.Value.(Network))
-			if err != nil {
-				return fmt.Errorf("error setting parameter default for %s: %w", name, err)
-			}
-		}
-	}
-
-	return nil
-}
-
-// Add the parameters to the collection of environment variabes
-func addParametersToEnvVars(params []*Parameter, envVars map[string]string) {
-	for _, param := range params {
-		for _, envVar := range param.EnvironmentVariables {
-			if envVar != "" {
-				envVars[envVar] = fmt.Sprint(param.Value)
-			}
-		}
-	}
-}
-
 // The the title for the config
 func (config *RocketPoolConfig) GetConfigTitle() string {
 	return config.Title
@@ -930,4 +898,153 @@ func (config *RocketPoolConfig) UpdateDefaults() error {
 	}
 
 	return nil
+}
+
+// Get all of the settings that have changed between an old config and this config, and get all of the containers that are affected by those changes - also returns whether or not the selected network was changed
+func (config *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[string][]ChangedSetting, []ContainerID, bool) {
+	// Get the map of changed settings by category
+	changedSettings := getChangedSettingsMap(oldConfig, config)
+
+	// Create a list of all of the container IDs that need to be restarted
+	totalAffectedContainers := map[ContainerID]bool{}
+	containersToRestart := []ContainerID{}
+	for _, settingList := range changedSettings {
+		for _, setting := range settingList {
+			for container := range setting.AffectedContainers {
+				totalAffectedContainers[container] = true
+			}
+		}
+	}
+	for container, _ := range totalAffectedContainers {
+		containersToRestart = append(containersToRestart, container)
+	}
+
+	// Check if the network has changed
+	changeNetworks := false
+	if oldConfig.Smartnode.Network.Value != config.Smartnode.Network.Value {
+		changeNetworks = true
+	}
+
+	// Return everything
+	return changedSettings, containersToRestart, changeNetworks
+}
+
+// Checks to see if the current configuration is valid; if not, returns a list of errors
+func (config *RocketPoolConfig) Validate() []string {
+	errors := []string{}
+
+	badClients, badFallbackClients := config.GetIncompatibleConsensusClients()
+	if config.ConsensusClientMode.Value == Mode_Local {
+		selectedCC := config.ConsensusClient.Value.(ConsensusClient)
+		for _, badClient := range badClients {
+			if badClient.Value == selectedCC {
+				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected Execution client:\n\t%v", badClient.Name, config.ExecutionClient.Value))
+				break
+			}
+		}
+		for _, badClient := range badFallbackClients {
+			if badClient.Value == selectedCC {
+				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected fallback Execution client:\n\t%v", badClient.Name, config.FallbackExecutionClient.Value))
+				break
+			}
+		}
+	}
+
+	return errors
+}
+
+// Applies all of the defaults to all of the settings that have them defined
+func (config *RocketPoolConfig) applyAllDefaults() error {
+	for _, param := range config.GetParameters() {
+		err := param.setToDefault(config.Smartnode.Network.Value.(Network))
+		if err != nil {
+			return fmt.Errorf("error setting root parameter default: %w", err)
+		}
+	}
+
+	for name, subconfig := range config.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			err := param.setToDefault(config.Smartnode.Network.Value.(Network))
+			if err != nil {
+				return fmt.Errorf("error setting parameter default for %s: %w", name, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Add the parameters to the collection of environment variabes
+func addParametersToEnvVars(params []*Parameter, envVars map[string]string) {
+	for _, param := range params {
+		for _, envVar := range param.EnvironmentVariables {
+			if envVar != "" {
+				envVars[envVar] = fmt.Sprint(param.Value)
+			}
+		}
+	}
+}
+
+// Get all of the changed settings between an old and new config
+func getChangedSettingsMap(oldConfig *RocketPoolConfig, newConfig *RocketPoolConfig) map[string][]ChangedSetting {
+	changedSettings := map[string][]ChangedSetting{}
+
+	// Root settings
+	oldRootParams := oldConfig.GetParameters()
+	newRootParams := newConfig.GetParameters()
+	changedSettings[oldConfig.Title] = getChangedSettings(oldRootParams, newRootParams, newConfig)
+
+	// Subconfig settings
+	oldSubconfigs := oldConfig.GetSubconfigs()
+	for name, subConfig := range newConfig.GetSubconfigs() {
+		oldParams := oldSubconfigs[name].GetParameters()
+		newParams := subConfig.GetParameters()
+		changedSettings[subConfig.GetConfigTitle()] = getChangedSettings(oldParams, newParams, newConfig)
+	}
+
+	return changedSettings
+}
+
+// Get all of the settings that have changed between the given parameter lists.
+// Assumes the parameter lists represent identical parameters (e.g. they have the same number of elements and
+// each element has the same ID).
+func getChangedSettings(oldParams []*Parameter, newParams []*Parameter, newConfig *RocketPoolConfig) []ChangedSetting {
+	changedSettings := []ChangedSetting{}
+
+	for i, param := range newParams {
+		oldValString := fmt.Sprint(oldParams[i].Value)
+		newValString := fmt.Sprint(param.Value)
+		if oldValString != newValString {
+			changedSettings = append(changedSettings, ChangedSetting{
+				Name:               param.Name,
+				OldValue:           oldValString,
+				NewValue:           newValString,
+				AffectedContainers: getAffectedContainers(param, newConfig),
+			})
+		}
+	}
+
+	return changedSettings
+}
+
+// Handles custom container overrides
+func getAffectedContainers(param *Parameter, cfg *RocketPoolConfig) map[ContainerID]bool {
+
+	affectedContainers := map[ContainerID]bool{}
+
+	for _, container := range param.AffectsContainers {
+		affectedContainers[container] = true
+	}
+
+	// Nimbus doesn't operate in split mode, so all of the VC parameters need to get redirected to the BN instead
+	if cfg.ConsensusClientMode.Value.(Mode) == Mode_Local &&
+		cfg.ConsensusClient.Value.(ConsensusClient) == ConsensusClient_Nimbus {
+		for _, container := range param.AffectsContainers {
+			if container == ContainerID_Validator {
+				affectedContainers[ContainerID_Eth2] = true
+			}
+		}
+	}
+	return affectedContainers
+
 }
