@@ -6,7 +6,7 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		if wiz.md.Config.EnableMetrics.Value == true {
+		if wiz.md.Config.EnableMetrics.Value == false {
 			modal.focus(0)
 		} else {
 			modal.focus(1)
@@ -14,7 +14,7 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		if buttonIndex == 0 {
+		if buttonIndex == 1 {
 			wiz.md.Config.EnableMetrics.Value = true
 		} else {
 			wiz.md.Config.EnableMetrics.Value = false
@@ -35,7 +35,7 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		currentStep,
 		totalSteps,
 		helperText,
-		[]string{"Yes", "No"},
+		[]string{"No", "Yes"},
 		[]string{},
 		76,
 		"Metrics",

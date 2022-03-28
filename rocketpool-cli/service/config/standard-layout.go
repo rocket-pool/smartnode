@@ -142,7 +142,7 @@ func (layout *standardLayout) createSettingFooter() {
 		SetWrap(false)
 	fmt.Fprint(navTextView1, navString1)
 
-	navString2 := "Esc: Done, Return to Categories"
+	navString2 := "Esc: Go Back to Categories"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).

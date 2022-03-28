@@ -21,11 +21,11 @@ func createWelcomeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		modal.focus(0)
+		modal.focus(1)
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		if buttonIndex == 0 {
+		if buttonIndex == 1 {
 			wiz.networkModal.show()
 		} else {
 			wiz.md.app.Stop()
@@ -40,7 +40,7 @@ func createWelcomeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		currentStep,
 		totalSteps,
 		helperText,
-		[]string{"Next", "Quit"},
+		[]string{"Quit", "Next"},
 		nil,
 		60,
 		"Welcome",

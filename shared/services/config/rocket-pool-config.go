@@ -339,7 +339,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Name:                 "Enable Metrics",
 			Description:          "Enable the Smartnode's performance and status metrics system. This will provide you with the node operator's Grafana dashboard.",
 			Type:                 ParameterType_Bool,
-			Default:              map[Network]interface{}{Network_All: false},
+			Default:              map[Network]interface{}{Network_All: true},
 			AffectsContainers:    []ContainerID{ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth2, ContainerID_Grafana, ContainerID_Prometheus, ContainerID_Exporter},
 			EnvironmentVariables: []string{"ENABLE_METRICS"},
 			CanBeBlank:           false,
@@ -849,6 +849,14 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 
 		if config.Prometheus.OpenPort.Value == true {
 			envVars["PROMETHEUS_OPEN_PORTS"] = fmt.Sprintf("%d:%d/tcp", config.Prometheus.Port.Value, config.Prometheus.Port.Value)
+		}
+
+		// Additional metrics flags
+		if config.Exporter.AdditionalFlags.Value.(string) != "" {
+			envVars["EXPORTER_ADDITIONAL_FLAGS"] = fmt.Sprintf(", \"%s\"", config.Exporter.AdditionalFlags.Value.(string))
+		}
+		if config.Prometheus.AdditionalFlags.Value.(string) != "" {
+			envVars["PROMETHEUS_ADDITIONAL_FLAGS"] = fmt.Sprintf(", \"%s\"", config.Prometheus.AdditionalFlags.Value.(string))
 		}
 
 	}

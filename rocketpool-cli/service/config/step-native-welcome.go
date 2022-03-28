@@ -12,11 +12,11 @@ func createNativeWelcomeStep(wiz *wizard, currentStep int, totalSteps int) *choi
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		modal.focus(0)
+		modal.focus(1)
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		if buttonIndex == 0 {
+		if buttonIndex == 1 {
 			wiz.nativeNetworkModal.show()
 		} else {
 			wiz.md.app.Stop()
@@ -31,7 +31,7 @@ func createNativeWelcomeStep(wiz *wizard, currentStep int, totalSteps int) *choi
 		currentStep,
 		totalSteps,
 		helperText,
-		[]string{"Next", "Quit"},
+		[]string{"Quit", "Next"},
 		nil,
 		60,
 		"Welcome",

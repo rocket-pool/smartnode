@@ -2,7 +2,7 @@ package config
 
 func createPrysmWarningStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
-	helperText := "[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more.\n\nWould you like to use a different client?"
+	helperText := "[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -26,7 +26,7 @@ func createPrysmWarningStep(wiz *wizard, currentStep int, totalSteps int) *choic
 		currentStep,
 		totalSteps,
 		helperText,
-		[]string{"Yes, Go Back", "No, Keep Prysm"},
+		[]string{"Choose Again", "Keep Prysm"},
 		[]string{},
 		76,
 		"Consensus Client > Selection",
@@ -41,7 +41,7 @@ func createPrysmWarningStep(wiz *wizard, currentStep int, totalSteps int) *choic
 
 func createTekuWarningStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
-	helperText := "[orange]WARNING: Teku is a resource-heavy client and will likely not perform well on your system given your CPU power or amount of available RAM. We recommend you pick a lighter client instead.\n\nWould you like to use a different client?"
+	helperText := "[orange]WARNING: Teku is a resource-heavy client and will likely not perform well on your system given your CPU power or amount of available RAM. We recommend you pick a lighter client instead."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -65,7 +65,7 @@ func createTekuWarningStep(wiz *wizard, currentStep int, totalSteps int) *choice
 		currentStep,
 		totalSteps,
 		helperText,
-		[]string{"Yes, Go Back", "No, Keep Teku"},
+		[]string{"Choose Again", "Keep Teku"},
 		[]string{},
 		76,
 		"Consensus Client > Selection",

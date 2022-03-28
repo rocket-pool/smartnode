@@ -8,7 +8,7 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		ddEnabled := false
+		ddEnabled := true
 		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
 		case config.ConsensusClient_Lighthouse:
 			ddEnabled = (wiz.md.Config.ExternalLighthouse.DoppelgangerDetection.Value == true)
@@ -17,15 +17,15 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 		}
 
 		if ddEnabled {
-			modal.focus(0)
-		} else {
 			modal.focus(1)
+		} else {
+			modal.focus(0)
 		}
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
 		ddEnabled := false
-		if buttonIndex == 0 {
+		if buttonIndex == 1 {
 			ddEnabled = true
 		}
 		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
@@ -46,7 +46,7 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 		currentStep,
 		totalSteps,
 		helperText,
-		[]string{"Yes", "No"},
+		[]string{"No", "Yes"},
 		[]string{},
 		76,
 		"Consensus Client (External) > Doppelganger Protection",
