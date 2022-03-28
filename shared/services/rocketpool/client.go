@@ -972,7 +972,15 @@ func (c *Client) migrateEth1Params(client string, network config.Network, params
 		case "INFURA_PROJECT_ID":
 			infura.ProjectID.Value = param.Value
 		case "POCKET_PROJECT_ID":
-			pocket.GatewayID.Value = param.Value
+			if param.Value == "" {
+				valIface, err := pocket.GatewayID.GetDefault(network)
+				if err != nil {
+					return fmt.Errorf("error getting default Pocket gateway for network %v: %w", network, err)
+				}
+				pocket.GatewayID.Value = valIface
+			} else {
+				pocket.GatewayID.Value = param.Value
+			}
 		case "HTTP_PROVIDER_URL":
 			if client == "custom" {
 				externalEc.HttpUrl.Value = param.Value
