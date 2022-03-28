@@ -12,7 +12,7 @@ func Marshal(v interface{}) ([]byte, error) {
 func Unmarshal(data []byte, v interface{}) error {
 	err := json.Unmarshal(data, v)
 	if err != nil {
-		return fmt.Errorf("%w\nUnable to Unmarshal JSON string %s", string(data))
+		return fmt.Errorf("%w\nUnable to Unmarshal JSON string %s", err, string(data))
 	}
 
 	return nil
