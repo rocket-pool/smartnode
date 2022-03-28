@@ -1,8 +1,9 @@
 package types
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/rocket-pool/rocketpool-go/utils/json"
 )
 
 // Minipool statuses
