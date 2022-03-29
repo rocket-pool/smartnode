@@ -183,7 +183,7 @@ func calculateGethCache() uint64 {
 }
 
 // Calculate the default number of Geth peers
-func calculateGethPeers() int {
+func calculateGethPeers() uint16 {
 	if runtime.GOARCH == "arm64" {
 		return 25
 	}
