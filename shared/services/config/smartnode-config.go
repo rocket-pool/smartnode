@@ -217,25 +217,25 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
-			Network_Kiln:    "TBD",
+			Network_Kiln:    "0x93c769b239c5dBb383683869FaE2667623055420",
 		},
 
 		oneInchOracleAddress: map[Network]string{
 			Network_Mainnet: "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb",
 			Network_Prater:  "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
-			Network_Kiln:    "TBD",
+			Network_Kiln:    "0xd46a870139F348C3d2596470c355E4BE26b03071",
 		},
 
 		rplTokenAddress: map[Network]string{
 			Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
-			Network_Kiln:    "TBD",
+			Network_Kiln:    "0x50243dc12c1718E85b1A34ddF66F2c70bC13DF09",
 		},
 
 		rplFaucetAddress: map[Network]string{
 			Network_Mainnet: "",
 			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
-			Network_Kiln:    "TBD",
+			Network_Kiln:    "0xC066e113cD3a568EdcF18D2Fd502f399E63Bc7B7",
 		},
 	}
 
