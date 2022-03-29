@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/urfave/cli"
 
@@ -204,6 +205,18 @@ func serviceStatus(c *cli.Context) error {
 // Configure the service
 func configureService(c *cli.Context) error {
 
+	// Make sure the config directory exists first
+	configPath := c.GlobalString("config-path")
+	path, err := homedir.Expand(configPath)
+	if err != nil {
+		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
+	}
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		fmt.Printf("%sYour configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/guides/node/docker.html to install the Smartnode.%s\n", colorYellow, path, colorReset)
+		return nil
+	}
+
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
@@ -279,6 +292,7 @@ func configureService(c *cli.Context) error {
 			return nil
 		}
 
+		// Handle network changes
 		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 		if md.ChangeNetworks {
 			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
@@ -295,6 +309,17 @@ func configureService(c *cli.Context) error {
 			return nil
 		}
 
+		// Query for service start if this is a new installation
+		if isNew {
+			if !cliutils.Confirm("Would you like to start the Smartnode services automatically now?") {
+				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
+				return nil
+			} else {
+				return startService(c)
+			}
+		}
+
+		// Query for service start if this is old and there are containers to change
 		if len(md.ContainersToRestart) > 0 {
 			fmt.Println("The following containers must be restarted for the changes to take effect:")
 			for _, container := range md.ContainersToRestart {
@@ -865,7 +890,7 @@ func pauseService(c *cli.Context) error {
 func stopService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, chain databases will be deleted, and ethereum nodes will lose ALL sync progress!")) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -11,7 +11,7 @@ func createGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWi
 	// Create the labels
 	graffitiLabel := wiz.md.Config.ConsensusCommon.Graffiti.Name
 
-	helperText := "If you would like to add a short custom message to each block that your minipools propose (called the block's \"graffiti\"), please enter it here. The graffiti is limited to 16 characters max."
+	helperText := "If you would like to add a short custom message to each block that your minipools propose (called the block's \"graffiti\"), please enter it here.\n\nThis is completely optional and just for fun. Leave it blank if you don't want to add any graffiti.\n\nThe graffiti is limited to 16 characters max."
 
 	show := func(modal *textBoxModalLayout) {
 		wiz.md.setPage(modal.page)

@@ -6,7 +6,7 @@ func createDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choic
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
-		if wiz.md.Config.ConsensusCommon.DoppelgangerDetection.Value == true {
+		if wiz.md.Config.ConsensusCommon.DoppelgangerDetection.Value == false {
 			modal.focus(0)
 		} else {
 			modal.focus(1)
@@ -14,7 +14,7 @@ func createDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choic
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		if buttonIndex == 0 {
+		if buttonIndex == 1 {
 			wiz.md.Config.ConsensusCommon.DoppelgangerDetection.Value = true
 		} else {
 			wiz.md.Config.ConsensusCommon.DoppelgangerDetection.Value = false
@@ -31,7 +31,7 @@ func createDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choic
 		currentStep,
 		totalSteps,
 		helperText,
-		[]string{"Yes", "No"},
+		[]string{"No", "Yes"},
 		[]string{},
 		76,
 		"Consensus Client > Doppelganger Protection",

@@ -15,15 +15,14 @@ const reviewNativePageID string = "review-native-settings"
 // The changed settings review page
 type ReviewNativePage struct {
 	md              *mainDisplay
-	changedSettings map[string][]SettingsPair
+	changedSettings map[string][]config.ChangedSetting
 	page            *page
 }
 
 // Create a page to review any changes
 func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
-	// Get the map of changed settings by category
-	changedSettings := getChangedSettingsMap(oldConfig, newConfig)
+	var changedSettings map[string][]config.ChangedSetting
 
 	// Create the visual list for all of the changed settings
 	changeBox := tview.NewTextView().
@@ -31,20 +30,31 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 	changeBox.SetBorder(true)
 	changeBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	changeBox.SetBorderPadding(0, 0, 1, 1)
+
 	builder := strings.Builder{}
-
-	for categoryName, changedSettingsList := range changedSettings {
-		if len(changedSettingsList) > 0 {
-			builder.WriteString(fmt.Sprintf("%s\n", categoryName))
-			for _, pair := range changedSettingsList {
-				builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
-			}
-			builder.WriteString("\n")
+	errors := newConfig.Validate()
+	if len(errors) > 0 {
+		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
+		for _, err := range errors {
+			builder.WriteString(fmt.Sprintf("%s\n\n", err))
 		}
-	}
+	} else {
+		// Get the map of changed settings by category
+		changedSettings, _, _ = newConfig.GetChanges(oldConfig)
 
-	if builder.String() == "" {
-		builder.WriteString("<No changes>")
+		for categoryName, changedSettingsList := range changedSettings {
+			if len(changedSettingsList) > 0 {
+				builder.WriteString(fmt.Sprintf("%s\n", categoryName))
+				for _, pair := range changedSettingsList {
+					builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
+				}
+				builder.WriteString("\n")
+			}
+		}
+
+		if builder.String() == "" {
+			builder.WriteString("<No changes>")
+		}
 	}
 	changeBox.SetText(builder.String())
 

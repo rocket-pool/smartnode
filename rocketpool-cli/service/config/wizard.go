@@ -29,6 +29,7 @@ type wizard struct {
 	consensusLocalPrysmWarning      *choiceWizardStep
 	consensusLocalTekuWarning       *choiceWizardStep
 	externalDoppelgangerModal       *choiceWizardStep
+	fallbackExternalExecutionModal  *textBoxWizardStep
 
 	// Native mode
 	nativeWelcomeModal  *choiceWizardStep
@@ -59,6 +60,7 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.infuraModal = createInfuraStep(wiz, 4, totalDockerSteps)
 	wiz.fallbackExecutionModal = createFallbackEcStep(wiz, 5, totalDockerSteps)
 	wiz.fallbackInfuraModal = createFallbackInfuraStep(wiz, 5, totalDockerSteps)
+	wiz.fallbackExternalExecutionModal = createFallbackExternalEcStep(wiz, 5, totalDockerSteps)
 	wiz.consensusModeModal = createCcModeStep(wiz, 6, totalDockerSteps)
 	wiz.consensusExternalSelectModal = createExternalCcStep(wiz, 7, totalDockerSteps)
 	wiz.consensusLocalPrysmWarning = createPrysmWarningStep(wiz, 7, totalDockerSteps)

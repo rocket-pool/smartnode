@@ -1,5 +1,13 @@
 package config
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/rivo/tview"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+)
+
 func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
 	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smartnode and client settings next or just save and exit."
@@ -20,8 +28,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 			wiz.md.settingsHome = newSettingsHome(wiz.md)
 			wiz.md.setPage(wiz.md.settingsHome.homePage)
 		} else {
-			wiz.md.ShouldSave = true
-			wiz.md.app.Stop()
+			processConfigAfterQuit(wiz.md)
 		}
 	}
 
@@ -48,4 +55,61 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 		"step-finished",
 	)
 
+}
+
+// Processes a configuration after saving and exiting without looking at the review screen
+func processConfigAfterQuit(md *mainDisplay) {
+	errors := md.Config.Validate()
+	if len(errors) > 0 {
+		builder := strings.Builder{}
+		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
+		for _, err := range errors {
+			builder.WriteString(fmt.Sprintf("%s\n\n", err))
+		}
+
+		modal := tview.NewModal().
+			SetText(builder.String()).
+			AddButtons([]string{"Go to Settings Manager"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				// If this is a new installation, reset it with the current settings as the new ones
+				if md.isNew {
+					md.PreviousConfig = md.Config.CreateCopy()
+				}
+
+				md.app.SetRoot(md.mainGrid, true)
+				md.pages.RemovePage(settingsHomeID)
+				md.settingsHome = newSettingsHome(md)
+				md.setPage(md.settingsHome.homePage)
+			})
+
+		md.app.SetRoot(modal, false).SetFocus(modal)
+	} else {
+		// Get the map of changed settings by category
+		_, totalAffectedContainers, changeNetworks := md.Config.GetChanges(md.PreviousConfig)
+
+		if md.isUpdate || md.isMigration {
+			totalAffectedContainers[config.ContainerID_Api] = true
+			totalAffectedContainers[config.ContainerID_Node] = true
+			totalAffectedContainers[config.ContainerID_Watchtower] = true
+
+			if md.Config.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && md.Config.ExecutionClient.Value.(config.ExecutionClient) != config.ExecutionClient_Geth {
+				totalAffectedContainers[config.ContainerID_Eth1] = true
+			}
+			if md.Config.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+				totalAffectedContainers[config.ContainerID_Eth1Fallback] = true
+			}
+		}
+
+		var containersToRestart []config.ContainerID
+		for container := range totalAffectedContainers {
+			containersToRestart = append(containersToRestart, container)
+		}
+
+		md.ShouldSave = true
+		md.ContainersToRestart = containersToRestart
+		if changeNetworks && !md.isNew {
+			md.ChangeNetworks = true
+		}
+		md.app.Stop()
+	}
 }

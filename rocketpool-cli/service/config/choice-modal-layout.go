@@ -31,6 +31,8 @@ type choiceModalLayout struct {
 
 	buttonDescriptions []string
 
+	direction int
+
 	page *page
 }
 
@@ -41,10 +43,11 @@ func newChoiceModalLayout(app *tview.Application, title string, width int, text 
 		app:                app,
 		width:              width,
 		buttonDescriptions: buttonDescriptions,
+		direction:          direction,
 	}
 
 	// Create the button grid
-	buttonGridHeight := layout.createButtonGrid(buttonLabels, buttonDescriptions, direction)
+	buttonGridHeight := layout.createButtonGrid(buttonLabels, buttonDescriptions)
 
 	// Create the main text view
 	textView := tview.NewTextView().
@@ -138,7 +141,7 @@ func newChoiceModalLayout(app *tview.Application, title string, width int, text 
 }
 
 // Creates the grid for the layout's buttons and optional description text.
-func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonDescriptions []string, direction int) int {
+func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonDescriptions []string) int {
 
 	buttonGrid := tview.NewGrid().
 		SetRows(0)
@@ -149,7 +152,7 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 	height := 0
 
 	// Self-explanatory horizontal buttons without a description box
-	if direction == DirectionalModalHorizontal {
+	if layout.direction == DirectionalModalHorizontal {
 
 		// Create the form for the buttons
 		form := NewForm().
@@ -195,11 +198,11 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 			AddItem(leftSpacer, 0, 0, 1, 1, 0, 0, false).
 			AddItem(form, 0, 1, 1, 1, 0, 0, true).
 			AddItem(rightSpacer, 0, 2, 1, 1, 0, 0, false)
-
+		layout.forms = append(layout.forms, form)
 		height = 1
 
 		// Vertical buttons that may come with descriptions
-	} else if direction == DirectionalModalVertical {
+	} else if layout.direction == DirectionalModalVertical {
 
 		formsFlex := tview.NewFlex().
 			SetDirection(tview.FlexRow)
@@ -356,13 +359,24 @@ func (layout *choiceModalLayout) getSizedButtonLabels(buttonLabels []string) []s
 
 // Focuses the given button
 func (layout *choiceModalLayout) focus(index int) {
-	if index < 0 || index > len(layout.forms)-1 {
-		return
-	}
 
-	if layout.descriptionBox != nil {
-		layout.descriptionBox.SetText(layout.buttonDescriptions[index])
+	if layout.direction == DirectionalModalVertical {
+		if layout.descriptionBox != nil {
+			layout.descriptionBox.SetText(layout.buttonDescriptions[index])
+		}
+		if index < 0 || index > len(layout.forms)-1 {
+			return
+		}
+		layout.app.SetFocus(layout.forms[index])
+		layout.selected = index
+	} else {
+		if len(layout.forms) > 0 {
+			if index < 0 || index > layout.forms[0].GetButtonCount()-1 {
+				return
+			}
+			layout.forms[0].SetFocus(index)
+			layout.app.SetFocus(layout.forms[0])
+			layout.selected = index
+		}
 	}
-	layout.app.SetFocus(layout.forms[index])
-	layout.selected = index
 }

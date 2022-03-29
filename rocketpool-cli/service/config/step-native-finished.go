@@ -1,5 +1,12 @@
 package config
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/rivo/tview"
+)
+
 func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
 	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smartnode and Native settings next or just save and exit."
@@ -20,8 +27,7 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 			wiz.md.settingsNativeHome = newSettingsNativeHome(wiz.md)
 			wiz.md.setPage(wiz.md.settingsNativeHome.homePage)
 		} else {
-			wiz.md.ShouldSave = true
-			wiz.md.app.Stop()
+			processConfigAfterQuitNative(wiz.md)
 		}
 	}
 
@@ -48,4 +54,36 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 		"step-native-finished",
 	)
 
+}
+
+// Processes a configuration after saving and exiting without looking at the review screen
+func processConfigAfterQuitNative(md *mainDisplay) {
+	errors := md.Config.Validate()
+	if len(errors) > 0 {
+		builder := strings.Builder{}
+		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
+		for _, err := range errors {
+			builder.WriteString(fmt.Sprintf("%s\n\n", err))
+		}
+
+		modal := tview.NewModal().
+			SetText(builder.String()).
+			AddButtons([]string{"Go to Settings Manager"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				// If this is a new installation, reset it with the current settings as the new ones
+				if md.isNew {
+					md.PreviousConfig = md.Config.CreateCopy()
+				}
+
+				md.app.SetRoot(md.mainGrid, true)
+				md.pages.RemovePage(settingsNativeHomeID)
+				md.settingsNativeHome = newSettingsNativeHome(md)
+				md.setPage(md.settingsNativeHome.homePage)
+			})
+
+		md.app.SetRoot(modal, false).SetFocus(modal)
+	} else {
+		md.ShouldSave = true
+		md.app.Stop()
+	}
 }
