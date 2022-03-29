@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/urfave/cli"
 
@@ -203,6 +204,18 @@ func serviceStatus(c *cli.Context) error {
 
 // Configure the service
 func configureService(c *cli.Context) error {
+
+	// Make sure the config directory exists first
+	configPath := c.GlobalString("config-path")
+	path, err := homedir.Expand(configPath)
+	if err != nil {
+		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
+	}
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		fmt.Printf("%sYour configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/guides/node/docker.html to install the Smartnode.%s\n", colorYellow, path, colorReset)
+		return nil
+	}
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
