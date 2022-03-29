@@ -62,6 +62,7 @@ func NewPocketConfig(config *RocketPoolConfig, isFallback bool) *PocketConfig {
 			Default: map[Network]interface{}{
 				Network_Mainnet: defaultPocketGatewayMainnet,
 				Network_Prater:  defaultPocketGatewayPrater,
+				Network_Kiln:    "",
 			},
 			Regex:                "(^$|^(lb\\/)?[0-9a-zA-Z]{24,}$)",
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
