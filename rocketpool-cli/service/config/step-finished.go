@@ -85,17 +85,7 @@ func processConfigAfterQuit(md *mainDisplay) {
 		md.app.SetRoot(modal, false).SetFocus(modal)
 	} else {
 		// Get the map of changed settings by category
-		changedSettings, containersToRestart, changeNetworks := md.Config.GetChanges(md.PreviousConfig)
-
-		// Create a list of all of the container IDs that need to be restarted
-		totalAffectedContainers := map[config.ContainerID]bool{}
-		for _, settingList := range changedSettings {
-			for _, setting := range settingList {
-				for container := range setting.AffectedContainers {
-					totalAffectedContainers[container] = true
-				}
-			}
-		}
+		_, totalAffectedContainers, changeNetworks := md.Config.GetChanges(md.PreviousConfig)
 
 		if md.isUpdate || md.isMigration {
 			totalAffectedContainers[config.ContainerID_Api] = true
@@ -110,6 +100,7 @@ func processConfigAfterQuit(md *mainDisplay) {
 			}
 		}
 
+		var containersToRestart []config.ContainerID
 		for container := range totalAffectedContainers {
 			containersToRestart = append(containersToRestart, container)
 		}

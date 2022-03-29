@@ -901,22 +901,18 @@ func (config *RocketPoolConfig) UpdateDefaults() error {
 }
 
 // Get all of the settings that have changed between an old config and this config, and get all of the containers that are affected by those changes - also returns whether or not the selected network was changed
-func (config *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[string][]ChangedSetting, []ContainerID, bool) {
+func (config *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[string][]ChangedSetting, map[ContainerID]bool, bool) {
 	// Get the map of changed settings by category
 	changedSettings := getChangedSettingsMap(oldConfig, config)
 
 	// Create a list of all of the container IDs that need to be restarted
 	totalAffectedContainers := map[ContainerID]bool{}
-	containersToRestart := []ContainerID{}
 	for _, settingList := range changedSettings {
 		for _, setting := range settingList {
 			for container := range setting.AffectedContainers {
 				totalAffectedContainers[container] = true
 			}
 		}
-	}
-	for container, _ := range totalAffectedContainers {
-		containersToRestart = append(containersToRestart, container)
 	}
 
 	// Check if the network has changed
@@ -926,7 +922,7 @@ func (config *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[str
 	}
 
 	// Return everything
-	return changedSettings, containersToRestart, changeNetworks
+	return changedSettings, totalAffectedContainers, changeNetworks
 }
 
 // Checks to see if the current configuration is valid; if not, returns a list of errors

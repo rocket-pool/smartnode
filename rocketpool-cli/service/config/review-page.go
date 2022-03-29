@@ -24,8 +24,9 @@ type ReviewPage struct {
 func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
 	var changedSettings map[string][]config.ChangedSetting
-	var containersToRestart []config.ContainerID
+	var totalAffectedContainers map[config.ContainerID]bool
 	var changeNetworks bool
+	var containersToRestart []config.ContainerID
 
 	// Create the visual list for all of the changed settings
 	changeBox := tview.NewTextView().
@@ -44,17 +45,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		}
 	} else {
 		// Get the map of changed settings by category
-		changedSettings, containersToRestart, changeNetworks = newConfig.GetChanges(oldConfig)
-
-		// Create a list of all of the container IDs that need to be restarted
-		totalAffectedContainers := map[config.ContainerID]bool{}
-		for _, settingList := range changedSettings {
-			for _, setting := range settingList {
-				for container := range setting.AffectedContainers {
-					totalAffectedContainers[container] = true
-				}
-			}
-		}
+		changedSettings, totalAffectedContainers, changeNetworks = newConfig.GetChanges(oldConfig)
 
 		if md.isUpdate || md.isMigration {
 			totalAffectedContainers[config.ContainerID_Api] = true
