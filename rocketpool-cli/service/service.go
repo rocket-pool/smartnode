@@ -53,7 +53,7 @@ func installService(c *cli.Context) error {
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-		"The Rocket Pool service will be installed --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your and modifications will be migrated automatically.%s\nAre you sure you want to continue?",
+		"The Rocket Pool service will be installed --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
 		c.String("version"), colorGreen, colorReset,
 	))) {
 		fmt.Println("Cancelled.")
