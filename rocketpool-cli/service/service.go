@@ -79,7 +79,7 @@ func installService(c *cli.Context) error {
 
 	printPatchNotes(c)
 
-	// Load the config, which will upgrade it
+	// Check if this is a new installation
 	_, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading new configuration: %w", err)
@@ -104,7 +104,7 @@ func installService(c *cli.Context) error {
 
 	// Print the docker permissions notice
 	if isNew && !isMigration {
-		fmt.Printf("%sNOTE:\nSince this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
+		fmt.Printf("\n%sNOTE:\nSince this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
 		fmt.Printf("This is necessary for your user account to have permissions to use Docker.%s", colorReset)
 	}
 
@@ -136,7 +136,7 @@ ______           _        _    ______           _
 	fmt.Println("- Advanced users who customize their Docker compose files can now do so with special files in the `override` folder - these will replace any settings in the original Docker compose files, and will persist across updates so you only need to create them once.\n")
 
 	fmt.Printf("%s=== Restoring from Backup ===%s\n", colorGreen, colorReset)
-	fmt.Println("All of your previous configuration files and settings have been backed up. Please see <link I have yet to write> for a walkthrough of how to restore them if you need to revert to the previous version.")
+	fmt.Println("All of your previous configuration files and settings have been backed up. Please see https://docs.rocketpool.net/guides/node/v1.3-update.html#reverting-to-your-previous-configuration for a walkthrough of how to restore them if you need to revert to the previous version.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
