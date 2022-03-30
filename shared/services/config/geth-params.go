@@ -8,8 +8,7 @@ import (
 
 // Constants
 const (
-	gethTagStable        string = "ethereum/client-go:v1.10.16"
-	gethTagKiln          string = "rocketpool/client-go:kiln-v2a"
+	gethTag              string = "ethereum/client-go:v1.10.17"
 	gethEventLogInterval int    = 25000
 )
 
@@ -139,15 +138,11 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 		},
 
 		ContainerTag: Parameter{
-			ID:          "containerTag",
-			Name:        "Container Tag",
-			Description: "The tag name of the Geth container you want to use on Docker Hub.",
-			Type:        ParameterType_String,
-			Default: map[Network]interface{}{
-				Network_Mainnet: gethTagStable,
-				Network_Prater:  gethTagStable,
-				Network_Kiln:    gethTagKiln,
-			},
+			ID:                   "containerTag",
+			Name:                 "Container Tag",
+			Description:          "The tag name of the Geth container you want to use on Docker Hub.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: gethTag},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{prefix + "EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -190,7 +185,7 @@ func calculateGethCache() uint64 {
 }
 
 // Calculate the default number of Geth peers
-func calculateGethPeers() int {
+func calculateGethPeers() uint16 {
 	if runtime.GOARCH == "arm64" {
 		return 25
 	}

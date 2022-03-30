@@ -12,7 +12,7 @@ import (
 )
 
 // Creates CLI argument flags from the parameters of the configuration struct
-func createFlagsFromConfigParams(sectionName string, params []*config.Parameter, configFlags []cli.Flag) []cli.Flag {
+func createFlagsFromConfigParams(sectionName string, params []*config.Parameter, configFlags []cli.Flag, network config.Network) []cli.Flag {
 	for _, param := range params {
 		var paramName string
 		if sectionName == "" {
@@ -21,32 +21,46 @@ func createFlagsFromConfigParams(sectionName string, params []*config.Parameter,
 			paramName = fmt.Sprintf("%s-%s", sectionName, param.ID)
 		}
 
+		defaultVal, err := param.GetDefault(network)
+		if err != nil {
+			panic(fmt.Sprintf("Error getting default value for [%s]: %s\n", paramName, err.Error()))
+		}
+
 		switch param.Type {
 		case config.ParameterType_Bool:
 			configFlags = append(configFlags, cli.BoolFlag{
 				Name:  paramName,
-				Usage: param.Description,
+				Usage: fmt.Sprintf("%s\n\tType: bool\n", param.Description),
 			})
 		case config.ParameterType_Int:
 			configFlags = append(configFlags, cli.IntFlag{
 				Name:  paramName,
-				Usage: param.Description,
+				Usage: fmt.Sprintf("%s\n\tType: int\n", param.Description),
+				Value: int(defaultVal.(int64)),
 			})
 		case config.ParameterType_Float:
 			configFlags = append(configFlags, cli.Float64Flag{
 				Name:  paramName,
-				Usage: param.Description,
+				Usage: fmt.Sprintf("%s\n\tType: float\n", param.Description),
+				Value: defaultVal.(float64),
 			})
 		case config.ParameterType_String:
 			configFlags = append(configFlags, cli.StringFlag{
 				Name:  paramName,
-				Usage: param.Description,
+				Usage: fmt.Sprintf("%s\n\tType: string\n", param.Description),
+				Value: defaultVal.(string),
 			})
 		case config.ParameterType_Uint:
+			configFlags = append(configFlags, cli.UintFlag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tType: uint\n", param.Description),
+				Value: uint(defaultVal.(uint64)),
+			})
 		case config.ParameterType_Uint16:
 			configFlags = append(configFlags, cli.UintFlag{
 				Name:  paramName,
-				Usage: param.Description,
+				Usage: fmt.Sprintf("%s\n\tType: uint16\n", param.Description),
+				Value: uint(defaultVal.(uint16)),
 			})
 		case config.ParameterType_Choice:
 			optionStrings := []string{}
@@ -55,7 +69,8 @@ func createFlagsFromConfigParams(sectionName string, params []*config.Parameter,
 			}
 			configFlags = append(configFlags, cli.StringFlag{
 				Name:  paramName,
-				Usage: fmt.Sprintf("%s\n\tOptions: %s", param.Description, strings.Join(optionStrings, ", ")),
+				Usage: fmt.Sprintf("%s\n\tType: choice\n\tOptions: %s\n", param.Description, strings.Join(optionStrings, ", ")),
+				Value: fmt.Sprint(defaultVal),
 			})
 		}
 	}
@@ -68,13 +83,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 	configFlags := []cli.Flag{}
 	cfgTemplate := config.NewRocketPoolConfig("", false)
+	network := cfgTemplate.Smartnode.Network.Value.(config.Network)
 
 	// Root params
-	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags)
+	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags, network)
 
 	// Subconfigs
 	for sectionName, subconfig := range cfgTemplate.GetSubconfigs() {
-		configFlags = createFlagsFromConfigParams(sectionName, subconfig.GetParameters(), configFlags)
+		configFlags = createFlagsFromConfigParams(sectionName, subconfig.GetParameters(), configFlags, network)
 	}
 
 	app.Commands = append(app.Commands, cli.Command{
