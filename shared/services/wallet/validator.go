@@ -193,6 +193,9 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 // Store the fee recipient file for this wallet's validators
 func (w *Wallet) StoreFeeRecipientFile(rp *rocketpool.RocketPool) (common.Address, error) {
 
+	// TODO: REMOVE AFTER CONTRACT UPGRADES
+	return common.Address{}, nil
+
 	// Check wallet is initialized
 	if !w.IsInitialized() {
 		return common.Address{}, nil
