@@ -24,6 +24,9 @@ type SmartnodeConfig struct {
 	// The path of the data folder where everything is stored
 	DataPath Parameter `yaml:"dataPath,omitempty"`
 
+	// The path of the watchtower's persistent state storage
+	WatchtowerStatePath Parameter `yaml:"watchtowerStatePath"`
+
 	// The command for restarting the validator container in native mode
 	ValidatorRestartCommand Parameter `yaml:"validatorRestartCommand,omitempty"`
 
@@ -103,6 +106,18 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/data"},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Validator},
 			EnvironmentVariables: []string{"ROCKETPOOL_DATA_FOLDER"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		WatchtowerStatePath: Parameter{
+			ID:                   "watchtowerStatePath",
+			Name:                 "Watchtower State Path",
+			Description:          "The absolute path of the `watchtowerState` folder that contains persistent state that is used by the watchtower process on trusted nodes. **Only relevant for trusted nodes.**",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/watchtowerState"},
+			AffectsContainers:    []ContainerID{ContainerID_Watchtower},
+			EnvironmentVariables: []string{"ROCKETPOOL_WATCHTOWER_STATE_FOLDER"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
