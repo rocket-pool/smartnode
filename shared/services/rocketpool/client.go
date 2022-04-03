@@ -1164,12 +1164,8 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 
 	// Check for the folders
 	runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir)
-	_, err := os.Stat(runtimeFolder)
-	if os.IsNotExist(err) {
-		return []string{}, fmt.Errorf("runtime folder [%s] does not exist", runtimeFolder)
-	}
 	templatesFolder := filepath.Join(rocketpoolDir, templatesDir)
-	_, err = os.Stat(templatesFolder)
+	_, err := os.Stat(templatesFolder)
 	if os.IsNotExist(err) {
 		return []string{}, fmt.Errorf("templates folder [%s] does not exist", templatesFolder)
 	}
