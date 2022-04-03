@@ -967,6 +967,14 @@ func serviceVersion(c *cli.Context) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
+	// Handle native mode
+	if cfg.IsNativeMode {
+		fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
+		fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
+		fmt.Println("Configured for Native Mode")
+		return nil
+	}
+
 	// Get the execution client string
 	var eth1ClientString string
 	eth1ClientMode := cfg.ExecutionClientMode.Value.(config.Mode)
