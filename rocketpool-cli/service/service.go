@@ -100,7 +100,7 @@ func installService(c *cli.Context) error {
 
 	// Report next steps
 	fmt.Printf("%s\n=== Next Steps ===\n", colorLightBlue)
-	fmt.Printf("Run 'rocketpool service config' to continue setting up your node.%s\n", colorReset)
+	fmt.Printf("Run 'rocketpool service config' to review the settings changes for this update, or to continue setting up your node.%s\n", colorReset)
 
 	// Print the docker permissions notice
 	if isNew && !isMigration {
@@ -129,11 +129,11 @@ ______           _        _    ______           _
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== New Configuration System ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode's configuration system has undergone some massive changes based on community feedback! Here are the updates:\n")
-	fmt.Println("- The text-based `rocketpool service config` interview process, along with the old `config.yml` file, have been replaced with a shiny, easy-to-use new UI. You can now simply browse through and change any of the settings.`\n")
+	fmt.Println("The Smartnode's configuration system has undergone some massive changes based on community feedback!\nWe have written a migration guide to explain the changes here: https://docs.rocketpool.net/guides/node/v1.3-update.html\n\nHere is a brief overview of the updates:\n")
+	fmt.Println("- The text-based `rocketpool service config` interview process, along with the old `config.yml` file, have been replaced with a shiny, easy-to-use new UI. You can now simply browse through and change any of the settings.\n")
 	fmt.Println("- All of your settings will now persist across Smartnode updates - you don't need to redo the changes anymore after updating!\n")
-	fmt.Println("- First-class support for Hybrid mode (externally-managed clients)! No more need to mess with the Docker files.\n")
-	fmt.Println("- Advanced users who customize their Docker compose files can now do so with special files in the `override` folder - these will replace any settings in the original Docker compose files, and will persist across updates so you only need to create them once.\n")
+	fmt.Println("- First-class support for Hybrid mode (externally-managed clients)! You no longer need to mess with the Docker files directly for Hybrid mode.\n")
+	fmt.Println("- Advanced users who customize their docker-compose files can now do so with special files in the `override` folder - these will replace any settings in the original docker-compose files, and will persist across updates so you only need to create them once.\nSee https://docs.rocketpool.net/guides/node/advanced-config.html#customizing-the-docker-compose-definition-files to learn more about this.\n")
 
 	fmt.Printf("%s=== Restoring from Backup ===%s\n", colorGreen, colorReset)
 	fmt.Println("All of your previous configuration files and settings have been backed up. Please see https://docs.rocketpool.net/guides/node/v1.3-update.html#reverting-to-your-previous-configuration for a walkthrough of how to restore them if you need to revert to the previous version.")
