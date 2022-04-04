@@ -1096,7 +1096,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	// Set up environment variables and deploy the template config files
 	settings := cfg.GenerateEnvironmentVariables()
 	settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
-	settings["ROCKET_POOL_VERSION"] = shellescape.Quote(shared.RocketPoolVersion)
+	settings["ROCKET_POOL_VERSION"] = fmt.Sprintf("v%s", shared.RocketPoolVersion)
 
 	// Deploy the templates and run environment variable substitution on them
 	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
