@@ -118,6 +118,13 @@ func TestNodeRewards(t *testing.T) {
 		t.Errorf("Incorrect initial node claim rewards amount %s", rewardsAmount.String())
 	}
 
+	// Get & check initial RPL rewards amount
+	if pendingRewards, err := rewards.GetPendingRewards(rp, nil); err != nil {
+		t.Error(err)
+	} else if pendingRewards != 0 {
+		t.Errorf("Incorrect initial pending rewards amount %f", pendingRewards)
+	}
+
 	// Start RPL inflation
 	if header, err := rp.Client.HeaderByNumber(context.Background(), nil); err != nil {
 		t.Fatal(err)
@@ -135,6 +142,13 @@ func TestNodeRewards(t *testing.T) {
 		t.Error(err)
 	} else if rewardsAmount.Cmp(big.NewInt(0)) != 1 {
 		t.Errorf("Incorrect updated node claim rewards amount %s", rewardsAmount.String())
+	}
+
+	// Get & check updated RPL rewards amount
+	if pendingRewards, err := rewards.GetPendingRewards(rp, nil); err != nil {
+		t.Error(err)
+	} else if pendingRewards <= 0 {
+		t.Errorf("Incorrect updated pending rewards amount %f", pendingRewards)
 	}
 
 	// Get & check initial node RPL balance
