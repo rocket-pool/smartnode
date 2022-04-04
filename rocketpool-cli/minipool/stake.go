@@ -100,8 +100,8 @@ func stakeMinipools(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -114,6 +114,7 @@ func stakeMinipools(c *cli.Context) error {
 
 	// Stake minipools
 	for _, minipool := range selectedMinipools {
+		g.Assign(rp)
 		response, err := rp.StakeMinipool(minipool.Address)
 		if err != nil {
 			fmt.Printf("Could not stake minipool %s: %s.\n", minipool.Address.Hex(), err)
