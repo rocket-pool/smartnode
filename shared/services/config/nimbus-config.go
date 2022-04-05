@@ -1,10 +1,20 @@
 package config
 
-const nimbusTag string = "statusim/nimbus-eth2:multiarch-v1.7.0"
+import "runtime"
+
+const (
+	nimbusTag                  string = "statusim/nimbus-eth2:multiarch-v22.3.0"
+	defaultNimbusMaxPeersArm   uint16 = 100
+	defaultNimbusMaxPeersAmd   uint16 = 160
+	NimbusFeeRecipientFilename string = ""
+)
 
 // Configuration for Nimbus
 type NimbusConfig struct {
 	Title string `yaml:"title,omitempty"`
+
+	// The max number of P2P peers to connect to
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// Common parameters that Nimbus doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
@@ -20,6 +30,18 @@ type NimbusConfig struct {
 func NewNimbusConfig(config *RocketPoolConfig) *NimbusConfig {
 	return &NimbusConfig{
 		Title: "Nimbus Settings",
+
+		MaxPeers: Parameter{
+			ID:                   "maxPeers",
+			Name:                 "Max Peers",
+			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: getNimbusDefaultPeers()},
+			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			EnvironmentVariables: []string{"BN_MAX_PEERS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true, // TODO: Set to false after v1.3.0
+		},
 
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
@@ -50,6 +72,7 @@ func NewNimbusConfig(config *RocketPoolConfig) *NimbusConfig {
 // Get the parameters for this config
 func (config *NimbusConfig) GetParameters() []*Parameter {
 	return []*Parameter{
+		&config.MaxPeers,
 		&config.ContainerTag,
 		&config.AdditionalFlags,
 	}
@@ -73,4 +96,12 @@ func (config *NimbusConfig) GetName() string {
 // The the title for the config
 func (config *NimbusConfig) GetConfigTitle() string {
 	return config.Title
+}
+
+func getNimbusDefaultPeers() uint16 {
+	if runtime.GOARCH == "arm64" {
+		return defaultNimbusMaxPeersArm
+	} else {
+		return defaultNimbusMaxPeersAmd
+	}
 }

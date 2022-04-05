@@ -2,17 +2,15 @@ package service
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/alessio/shellescape"
+	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/urfave/cli"
-	"gopkg.in/yaml.v2"
 
 	"github.com/dustin/go-humanize"
 	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
@@ -49,18 +47,14 @@ const (
 // Install the Rocket Pool service
 func installService(c *cli.Context) error {
 
-	// Get install location
-	var location string
-	if c.GlobalString("host") == "" {
-		location = "locally"
-	} else {
-		location = fmt.Sprintf("at %s", c.GlobalString("host"))
+	if c.String("network") != "" {
+		fmt.Printf("%sNOTE: The --network flag is deprecated. You no longer need to specify it.%s\n\n", colorLightBlue, colorReset)
 	}
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
-		"The Rocket Pool service will be installed %s --\nNetwork: %s\nVersion: %s\n\nAny existing configuration will be overwritten.\nAre you sure you want to continue?",
-		location, c.String("network"), c.String("version"),
+		"The Rocket Pool service will be installed --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
+		c.String("version"), colorGreen, colorReset,
 	))) {
 		fmt.Println("Cancelled.")
 		return nil
@@ -81,15 +75,39 @@ func installService(c *cli.Context) error {
 
 	// Print success message & return
 	fmt.Println("")
-	fmt.Printf("The Rocket Pool service was successfully installed %s!\n", location)
+	fmt.Println("The Rocket Pool service was successfully installed!")
 
 	printPatchNotes(c)
 
-	if c.GlobalString("host") == "" {
-		fmt.Printf("%sNOTE:\nIf this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
-		fmt.Println("This is necessary for your user account to have permissions to use Docker.")
-		fmt.Printf("If you have installed Rocket Pool previously and are just upgrading, you can safely ignore this message.%s", colorReset)
+	// Check if this is a new installation
+	_, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading new configuration: %w", err)
 	}
+
+	// Check if this is a migration
+	isMigration := false
+	if isNew {
+		// Look for a legacy config to migrate
+		migratedConfig, err := rp.LoadLegacyConfigFromBackup()
+		if err != nil {
+			return err
+		}
+		if migratedConfig != nil {
+			isMigration = true
+		}
+	}
+
+	// Report next steps
+	fmt.Printf("%s\n=== Next Steps ===\n", colorLightBlue)
+	fmt.Printf("Run 'rocketpool service config' to continue setting up your node.%s\n", colorReset)
+
+	// Print the docker permissions notice
+	if isNew && !isMigration {
+		fmt.Printf("\n%sNOTE:\nSince this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
+		fmt.Printf("This is necessary for your user account to have permissions to use Docker.%s", colorReset)
+	}
+
 	return nil
 
 }
@@ -110,30 +128,19 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== Manual Minipool Staking ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now call `rocketpool minipool stake` if you want to manually perform the `stake` operation on a new minipool once it has passed the scrub check, which will trigger the second 16 ETH deposit and move it from `prelaunch` to `staking` status.")
-	fmt.Println("This will still be done automatically by the `rocketpool_node` container, but now you can do it manually too in case you want to submit it with a low max fee or overwrite an existing nonce.\n")
+	fmt.Printf("%s=== New Configuration System ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode's configuration system has undergone some massive changes based on community feedback! Here are the updates:\n")
+	fmt.Println("- The text-based `rocketpool service config` interview process, along with the old `config.yml` file, have been replaced with a shiny, easy-to-use new UI. You can now simply browse through and change any of the settings.`\n")
+	fmt.Println("- All of your settings will now persist across Smartnode updates - you don't need to redo the changes anymore after updating!\n")
+	fmt.Println("- First-class support for Hybrid mode (externally-managed clients)! No more need to mess with the Docker files.\n")
+	fmt.Println("- Advanced users who customize their Docker compose files can now do so with special files in the `override` folder - these will replace any settings in the original Docker compose files, and will persist across updates so you only need to create them once.\n")
 
-	fmt.Printf("%s=== Doppelgänger Detection ===%s\n", colorGreen, colorReset)
-	fmt.Printf("The Smartnode now lets you enable doppelgänger detection - a special feature supported by %sLighthouse, Nimbus, and Prysm%s.\n", colorLightBlue, colorReset)
-	fmt.Println("This will cause the validator client (or the Beacon client in Nimbus's case) to intentionally miss 1 or 2 attestations when it restarts.")
-	fmt.Println("While doing this, it will listen to the network to see if some other machine is attesting with your validator keys.")
-	fmt.Println("If someone is attesting with your keys, the client will shut down immediately to prevent you from attesting twice and being slashed!\n")
-
-	fmt.Println("This is disabled by default, but you can enable it via `rocketpool service config`.")
-	fmt.Printf("%s**IN A FUTURE RELEASE, THIS WILL BE ENABLED BY DEFAULT TO ENSURE MAXIMUM SAFETY.**%s\n\n", colorLightBlue, colorReset)
+	fmt.Printf("%s=== Restoring from Backup ===%s\n", colorGreen, colorReset)
+	fmt.Println("All of your previous configuration files and settings have been backed up. Please see https://docs.rocketpool.net/guides/node/v1.3-update.html#reverting-to-your-previous-configuration for a walkthrough of how to restore them if you need to revert to the previous version.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
 func installUpdateTracker(c *cli.Context) error {
-
-	// Get install location
-	var location string
-	if c.GlobalString("host") == "" {
-		location = "locally"
-	} else {
-		location = fmt.Sprintf("at %s", c.GlobalString("host"))
-	}
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(
@@ -166,12 +173,10 @@ func installUpdateTracker(c *cli.Context) error {
 	colorReset := "\033[0m"
 	colorYellow := "\033[33m"
 	fmt.Println("")
-	fmt.Printf("The Rocket Pool update tracker service was successfully installed %s!\n", location)
-	if c.GlobalString("host") == "" {
-		fmt.Println("")
-		fmt.Printf("%sNOTE:\nPlease run 'docker restart %s%s' to enable update tracking on the metrics dashboard.%s\n", colorYellow, prefix, ExporterContainerSuffix, colorReset)
-		fmt.Println("")
-	}
+	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
+	fmt.Println("")
+	fmt.Printf("%sNOTE:\nPlease run 'docker restart %s%s' to enable update tracking on the metrics dashboard.%s\n", colorYellow, prefix, ExporterContainerSuffix, colorReset)
+	fmt.Println("")
 	return nil
 
 }
@@ -200,6 +205,18 @@ func serviceStatus(c *cli.Context) error {
 // Configure the service
 func configureService(c *cli.Context) error {
 
+	// Make sure the config directory exists first
+	configPath := c.GlobalString("config-path")
+	path, err := homedir.Expand(configPath)
+	if err != nil {
+		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
+	}
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		fmt.Printf("%sYour configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/guides/node/docker.html to install the Smartnode.%s\n", colorYellow, path, colorReset)
+		return nil
+	}
+
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
@@ -207,12 +224,14 @@ func configureService(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	app := tview.NewApplication()
+	// Load the config, checking to see if it's new (hasn't been installed before)
+	var oldCfg *config.RocketPoolConfig
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading user settings: %w", err)
 	}
 
+	// Check to see if this is a migration from a legacy config
 	isMigration := false
 	if isNew {
 		// Look for a legacy config to migrate
@@ -226,7 +245,36 @@ func configureService(c *cli.Context) error {
 		}
 	}
 
-	md := cliconfig.NewMainDisplay(app, cfg, isNew, isMigration)
+	// Check if this is a new install
+	isUpdate, err := rp.IsFirstRun()
+	if err != nil {
+		return fmt.Errorf("error checking for first-run status: %w", err)
+	}
+
+	// For migrations and upgrades, move the config to the old one and create a new upgraded copy
+	if isMigration || isUpdate {
+		oldCfg = cfg
+		cfg = cfg.CreateCopy()
+		err = cfg.UpdateDefaults()
+		if err != nil {
+			return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
+		}
+	}
+
+	// Save the config and exit in headless mode
+	if c.NumFlags() > 0 {
+		err := configureHeadless(c, cfg)
+		if err != nil {
+			return fmt.Errorf("error updating config from provided arguments: %w", err)
+		}
+		return rp.SaveConfig(cfg)
+	}
+
+	// Check for native mode
+	isNative := c.GlobalIsSet("daemon-path")
+
+	app := tview.NewApplication()
+	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isMigration, isUpdate, isNative)
 	err = app.Run()
 	if err != nil {
 		return err
@@ -234,13 +282,26 @@ func configureService(c *cli.Context) error {
 
 	// Deal with saving the config and printing the changes
 	if md.ShouldSave {
+		// Save the config
 		rp.SaveConfig(md.Config)
 		fmt.Println("Your changes have been saved!")
 
-		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
+		// Exit immediately if we're in native mode
+		if isNative {
+			fmt.Println("Please restart your daemon service for them to take effect.")
+			return nil
+		}
 
-		// Deal with network changes
+		// Handle network changes
+		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 		if md.ChangeNetworks {
+			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
+
+			if !cliutils.Confirm("Would you like the Smartnode to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
+				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).")
+				return nil
+			}
+
 			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
 			if err != nil {
 				fmt.Printf("%s%s%s\nThe Smartnode could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).\n", colorRed, err.Error(), colorReset)
@@ -248,25 +309,32 @@ func configureService(c *cli.Context) error {
 			return nil
 		}
 
+		// Query for service start if this is a new installation
+		if isNew {
+			if !cliutils.Confirm("Would you like to start the Smartnode services automatically now?") {
+				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
+				return nil
+			} else {
+				return startService(c)
+			}
+		}
+
+		// Query for service start if this is old and there are containers to change
 		if len(md.ContainersToRestart) > 0 {
 			fmt.Println("The following containers must be restarted for the changes to take effect:")
 			for _, container := range md.ContainersToRestart {
 				fmt.Printf("\t%s_%s\n", prefix, container)
+			}
+			if !cliutils.Confirm("Would you like to restart them automatically now?") {
+				fmt.Println("Please run `rocketpool service start` when you are ready to apply the changes.")
+				return nil
 			}
 
 			fmt.Println()
 			for _, container := range md.ContainersToRestart {
 				fullName := fmt.Sprintf("%s_%s", prefix, container)
 				fmt.Printf("Stopping %s... ", fullName)
-				output, err := rp.StopContainer(fullName)
-				if err != nil {
-					fmt.Printf("%sfailed: %s%s\n", colorRed, err.Error(), colorReset)
-					return nil
-				}
-				if output != fullName {
-					fmt.Printf("%sfailed with unexpected output: %s%s\n", colorRed, output, colorReset)
-					return nil
-				}
+				rp.StopContainer(fullName)
 				fmt.Print("done!\n")
 			}
 
@@ -280,6 +348,79 @@ func configureService(c *cli.Context) error {
 	}
 
 	return err
+}
+
+// Updates a configuration from the provided CLI arguments headlessly
+func configureHeadless(c *cli.Context, cfg *config.RocketPoolConfig) error {
+
+	// Root params
+	for _, param := range cfg.GetParameters() {
+		err := updateConfigParamFromCliArg(c, "", param, cfg)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Subconfigs
+	for sectionName, subconfig := range cfg.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			err := updateConfigParamFromCliArg(c, sectionName, param, cfg)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+
+}
+
+// Updates a config parameter from a CLI flag
+func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *config.Parameter, cfg *config.RocketPoolConfig) error {
+
+	var paramName string
+	if sectionName == "" {
+		paramName = param.ID
+	} else {
+		paramName = fmt.Sprintf("%s-%s", sectionName, param.ID)
+	}
+
+	if c.IsSet(paramName) {
+		switch param.Type {
+		case config.ParameterType_Bool:
+			param.Value = c.Bool(paramName)
+		case config.ParameterType_Int:
+			param.Value = c.Int(paramName)
+		case config.ParameterType_Float:
+			param.Value = c.Float64(paramName)
+		case config.ParameterType_String:
+			setting := c.String(paramName)
+			if param.MaxLength > 0 && len(setting) > param.MaxLength {
+				return fmt.Errorf("error setting value for %s: [%s] is too long (max length %d)", paramName, setting, param.MaxLength)
+			}
+			param.Value = c.String(paramName)
+		case config.ParameterType_Uint:
+			param.Value = c.Uint(paramName)
+		case config.ParameterType_Uint16:
+			param.Value = uint16(c.Uint(paramName))
+		case config.ParameterType_Choice:
+			selection := c.String(paramName)
+			found := false
+			for _, option := range param.Options {
+				if fmt.Sprint(option.Value) == selection {
+					param.Value = option.Value
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("error setting value for %s: [%s] is not one of the valid options", paramName, selection)
+			}
+		}
+	}
+
+	return nil
+
 }
 
 // Handle a network change by terminating the service, deleting everything, and starting over
@@ -362,10 +503,46 @@ func startService(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("Error loading user settings: %w", err)
 	}
+
+	isMigration := false
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		// Look for a legacy config to migrate
+		migratedConfig, err := rp.LoadLegacyConfigFromBackup()
+		if err != nil {
+			return err
+		}
+		if migratedConfig != nil {
+			cfg = migratedConfig
+			isMigration = true
+		}
 	}
 
+	if isMigration {
+		return fmt.Errorf("You must upgrade your configuration before starting the Smartnode.\nPlease run `rocketpool service config` to confirm your settings were migrated correctly, and enjoy the new configuration UI!")
+	} else if isNew {
+		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smartnode before running it.")
+	}
+
+	// Check if this is a new install
+	isUpdate, err := rp.IsFirstRun()
+	if err != nil {
+		return fmt.Errorf("error checking for first-run status: %w", err)
+	}
+	if isUpdate {
+		if c.Bool("yes") || cliutils.Confirm("Smartnode upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
+			err = cfg.UpdateDefaults()
+			if err != nil {
+				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
+			}
+			rp.SaveConfig(cfg)
+			fmt.Printf("%sUpdated settings successfully.%s\n", colorGreen, colorReset)
+		} else {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	}
+
+	// Update the Prometheus template with the assigned ports
 	metricsEnabled := cfg.EnableMetrics.Value.(bool)
 	if metricsEnabled {
 		err := rp.UpdatePrometheusConfiguration(cfg.GenerateEnvironmentVariables())
@@ -713,7 +890,7 @@ func pauseService(c *cli.Context) error {
 func stopService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, chain databases will be deleted, and ethereum nodes will lose ALL sync progress!")) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1089,32 +1266,4 @@ func resyncEth2(c *cli.Context) error {
 
 	return nil
 
-}
-
-// Migrate a legacy configuration to a new one
-func migrateConfig(c *cli.Context, oldConfig string, oldSettings string, newConfig string) error {
-
-	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c)
-	if err != nil {
-		return err
-	}
-	defer rp.Close()
-
-	newCfg, err := rp.MigrateLegacyConfig(oldConfig, oldSettings)
-	if err != nil {
-		return err
-	}
-
-	settings := newCfg.Serialize()
-	configBytes, err := yaml.Marshal(settings)
-	if err != nil {
-		return fmt.Errorf("could not serialize settings file: %w", err)
-	}
-
-	if err := ioutil.WriteFile(newConfig, configBytes, 0664); err != nil {
-		return fmt.Errorf("could not write Rocket Pool config to %s: %w", shellescape.Quote(newConfig), err)
-	}
-
-	return nil
 }

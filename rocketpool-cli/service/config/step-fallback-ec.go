@@ -22,11 +22,21 @@ func createFallbackEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		modal.focus(0) // Catch-all for safety
 
 		if wiz.md.Config.UseFallbackExecutionClient.Value == true {
-			// Focus the selected option
-			for i, option := range wiz.md.Config.FallbackExecutionClient.Options {
-				if option.Value == wiz.md.Config.FallbackExecutionClient.Value {
-					modal.focus(i)
-					break
+			if wiz.md.Config.FallbackExecutionClientMode.Value == config.Mode_External {
+				// Focus the selected option
+				for i, option := range wiz.md.Config.FallbackExecutionClient.Options {
+					if option.Name == "External" {
+						modal.focus(i + 1)
+						break
+					}
+				}
+			} else {
+				// Focus the selected option
+				for i, option := range wiz.md.Config.FallbackExecutionClient.Options {
+					if option.Value == wiz.md.Config.FallbackExecutionClient.Value {
+						modal.focus(i + 1)
+						break
+					}
 				}
 			}
 		}
@@ -36,9 +46,14 @@ func createFallbackEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		if buttonIndex == 0 {
 			wiz.md.Config.UseFallbackExecutionClient.Value = false
 			wiz.consensusModeModal.show()
+		} else if buttonLabel == "External" {
+			wiz.md.Config.UseFallbackExecutionClient.Value = true
+			wiz.md.Config.FallbackExecutionClientMode.Value = config.Mode_External
+			wiz.fallbackExternalExecutionModal.show()
 		} else {
 			wiz.md.Config.UseFallbackExecutionClient.Value = true
 			selectedClient := clients[buttonIndex-1].Value.(config.ExecutionClient)
+			wiz.md.Config.FallbackExecutionClientMode.Value = config.Mode_Local
 			wiz.md.Config.FallbackExecutionClient.Value = selectedClient
 			switch selectedClient {
 			case config.ExecutionClient_Infura:

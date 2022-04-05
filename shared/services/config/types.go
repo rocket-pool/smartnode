@@ -29,6 +29,7 @@ const (
 	Network_All     Network = "all"
 	Network_Mainnet Network = "mainnet"
 	Network_Prater  Network = "prater"
+	Network_Kiln    Network = "kiln"
 )
 
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)
@@ -87,4 +88,12 @@ type LocalConsensusConfig interface {
 // Interface for External Consensus configurations
 type ExternalConsensusConfig interface {
 	GetApiUrl() string
+}
+
+// A setting that has changed
+type ChangedSetting struct {
+	Name               string
+	OldValue           string
+	NewValue           string
+	AffectedContainers map[ContainerID]bool
 }

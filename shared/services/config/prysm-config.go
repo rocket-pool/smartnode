@@ -6,11 +6,15 @@ import (
 )
 
 // v2.0.6
-const prysmBnTagAmd64 string = "prysmaticlabs/prysm-beacon-chain:HEAD-e26cde-debug"
-const prysmVcTagAmd64 string = "prysmaticlabs/prysm-validator:HEAD-e26cde-debug"
-const prysmTagArm64 string = "rocketpool/prysm:v2.0.6"
-const defaultPrysmRpcPort uint16 = 5053
-const defaultPrysmOpenRpcPort bool = false
+const (
+	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-e26cde-debug"
+	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-e26cde-debug"
+	prysmTagArm64             string = "rocketpool/prysm:v2.0.6"
+	defaultPrysmRpcPort       uint16 = 5053
+	defaultPrysmOpenRpcPort   bool   = false
+	defaultPrysmMaxPeers      uint16 = 45
+	PrysmFeeRecipientFilename string = "rp-fee-recipients.json"
+)
 
 // Configuration for Prysm
 type PrysmConfig struct {
@@ -18,6 +22,9 @@ type PrysmConfig struct {
 
 	// Common parameters that Prysm doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
+
+	// The max number of P2P peers to connect to
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// The RPC port for BN / VC connections
 	RpcPort Parameter `yaml:"rpcPort,omitempty"`
@@ -47,6 +54,18 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 			CheckpointSyncUrlID,
 		},
 
+		MaxPeers: Parameter{
+			ID:                   "maxPeers",
+			Name:                 "Max Peers",
+			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultPrysmMaxPeers},
+			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			EnvironmentVariables: []string{"BN_MAX_PEERS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		RpcPort: Parameter{
 			ID:                   "rpcPort",
 			Name:                 "RPC Port",
@@ -61,8 +80,8 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 
 		OpenRpcPort: Parameter{
 			ID:                   "openRpcPort",
-			Name:                 "Open RPC Port",
-			Description:          "Enable this to open Prysm's API ports to your local network, so other machines can access it too.",
+			Name:                 "Expose RPC Port",
+			Description:          "Enable this to expose Prysm's JSON-RPC port to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: defaultPrysmOpenRpcPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
@@ -146,6 +165,7 @@ func getPrysmVcTag() string {
 // Get the parameters for this config
 func (config *PrysmConfig) GetParameters() []*Parameter {
 	return []*Parameter{
+		&config.MaxPeers,
 		&config.RpcPort,
 		&config.OpenRpcPort,
 		&config.BnContainerTag,

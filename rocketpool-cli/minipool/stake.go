@@ -106,6 +106,8 @@ func stakeMinipools(c *cli.Context) error {
 		return err
 	}
 
+	fmt.Println("\nNOTE: Your validator container will be restarted after this process so it loads the new validator key.\n")
+
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %d minipools?", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")

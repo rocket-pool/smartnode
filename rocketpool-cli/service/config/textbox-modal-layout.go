@@ -19,7 +19,7 @@ type textBoxModalLayout struct {
 	controlGrid *tview.Grid
 	done        func(text map[string]string)
 	back        func()
-	form        *tview.Form
+	form        *Form
 
 	firstTextbox *tview.InputField
 	textboxes    map[string]*tview.InputField
@@ -28,7 +28,7 @@ type textBoxModalLayout struct {
 }
 
 // Creates a new TextBoxModalLayout instance
-func newTextBoxModalLayout(app *tview.Application, title string, width int, text string, labels []string) *textBoxModalLayout {
+func newTextBoxModalLayout(app *tview.Application, title string, width int, text string, labels []string, maxLengths []int, regexes []string) *textBoxModalLayout {
 
 	layout := &textBoxModalLayout{
 		app:       app,
@@ -37,7 +37,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 	}
 
 	// Create the button grid
-	height := layout.createControlGrid(labels)
+	height := layout.createControlGrid(labels, maxLengths, regexes)
 
 	// Create the main text view
 	textView := tview.NewTextView().
@@ -90,7 +90,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 	// Get the total content height, including spacers and borders
 	lines := tview.WordWrap(text, width-4)
 	textViewHeight := len(lines) + 4
-	borderGrid.SetRows(0, textViewHeight+height+2, 0, 1)
+	borderGrid.SetRows(0, textViewHeight+height+2, 0, 2)
 
 	// Create the nav footer text view
 	navString1 := "Arrow keys: Navigate     Space/Enter: Select"
@@ -130,7 +130,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 }
 
 // Creates the grid for the layout's controls
-func (layout *textBoxModalLayout) createControlGrid(labels []string) int {
+func (layout *textBoxModalLayout) createControlGrid(labels []string, maxLengths []int, regexes []string) int {
 
 	controlGrid := tview.NewGrid().
 		SetRows(0).
@@ -138,7 +138,7 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string) int {
 	controlGrid.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 
 	// Create the form for the controls
-	form := tview.NewForm().
+	form := NewForm().
 		SetButtonsAlign(tview.AlignCenter).
 		SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
 		SetButtonTextColor(tview.Styles.PrimaryTextColor).
@@ -152,6 +152,16 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string) int {
 	for i := 0; i < len(labels); i++ {
 		textbox := tview.NewInputField().
 			SetLabel(labels[i])
+		maxLength := maxLengths[i]
+		textbox.SetAcceptanceFunc(func(textToCheck string, lastChar rune) bool {
+			if maxLength > 0 {
+				if len(textToCheck) > maxLength {
+					return false
+				}
+			}
+			// TODO: regex support
+			return true
+		})
 		form.AddFormItem(textbox)
 		layout.textboxes[labels[i]] = textbox
 
@@ -167,7 +177,10 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string) int {
 			}
 			layout.done(text)
 		}
-	})
+	}).
+		SetButtonTextColor(tcell.ColorLightGray).
+		SetButtonBackgroundActivatedColor(tcell.Color46).
+		SetButtonTextActivatedColor(tcell.ColorBlack)
 
 	// Create the columns, including the left and right spacers
 	leftSpacer := tview.NewBox().SetBackgroundColor(tview.Styles.ContrastBackgroundColor)

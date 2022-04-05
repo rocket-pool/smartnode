@@ -7,8 +7,10 @@ import (
 )
 
 // Constants
-const gethTag string = "ethereum/client-go:v1.10.16"
-const gethEventLogInterval int = 25000
+const (
+	gethTag              string = "ethereum/client-go:v1.10.17"
+	gethEventLogInterval int    = 25000
+)
 
 // Defaults
 const defaultGethP2pPort uint16 = 30303
@@ -183,7 +185,7 @@ func calculateGethCache() uint64 {
 }
 
 // Calculate the default number of Geth peers
-func calculateGethPeers() int {
+func calculateGethPeers() uint16 {
 	if runtime.GOARCH == "arm64" {
 		return 25
 	}

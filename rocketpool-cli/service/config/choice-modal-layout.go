@@ -22,7 +22,7 @@ type choiceModalLayout struct {
 	back        func()
 
 	// The forms embedded in the modal's frame for the buttons.
-	forms []*tview.Form
+	forms []*Form
 
 	// The currently selected form (for vertical layouts)
 	selected int
@@ -30,6 +30,8 @@ type choiceModalLayout struct {
 	descriptionBox *tview.TextView
 
 	buttonDescriptions []string
+
+	direction int
 
 	page *page
 }
@@ -41,10 +43,11 @@ func newChoiceModalLayout(app *tview.Application, title string, width int, text 
 		app:                app,
 		width:              width,
 		buttonDescriptions: buttonDescriptions,
+		direction:          direction,
 	}
 
 	// Create the button grid
-	buttonGridHeight := layout.createButtonGrid(buttonLabels, buttonDescriptions, direction)
+	buttonGridHeight := layout.createButtonGrid(buttonLabels, buttonDescriptions)
 
 	// Create the main text view
 	textView := tview.NewTextView().
@@ -98,7 +101,7 @@ func newChoiceModalLayout(app *tview.Application, title string, width int, text 
 	// Get the total content height, including spacers and borders
 	lines := tview.WordWrap(text, width-4)
 	textViewHeight := len(lines) + 4
-	borderGrid.SetRows(0, textViewHeight+buttonGridHeight+2, 0, 1)
+	borderGrid.SetRows(0, textViewHeight+buttonGridHeight+2, 0, 2)
 
 	// Create the nav footer text view
 	navString1 := "Arrow keys: Navigate     Space/Enter: Select"
@@ -138,7 +141,7 @@ func newChoiceModalLayout(app *tview.Application, title string, width int, text 
 }
 
 // Creates the grid for the layout's buttons and optional description text.
-func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonDescriptions []string, direction int) int {
+func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonDescriptions []string) int {
 
 	buttonGrid := tview.NewGrid().
 		SetRows(0)
@@ -149,13 +152,15 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 	height := 0
 
 	// Self-explanatory horizontal buttons without a description box
-	if direction == DirectionalModalHorizontal {
+	if layout.direction == DirectionalModalHorizontal {
 
 		// Create the form for the buttons
-		form := tview.NewForm().
+		form := NewForm().
 			SetButtonsAlign(tview.AlignCenter).
 			SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
-			SetButtonTextColor(tview.Styles.PrimaryTextColor)
+			SetButtonTextColor(tcell.ColorLightGray).
+			SetButtonBackgroundActivatedColor(tcell.Color46).
+			SetButtonTextActivatedColor(tcell.ColorBlack)
 		form.
 			SetBackgroundColor(tview.Styles.ContrastBackgroundColor).
 			SetBorderPadding(0, 0, 0, 0)
@@ -193,11 +198,11 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 			AddItem(leftSpacer, 0, 0, 1, 1, 0, 0, false).
 			AddItem(form, 0, 1, 1, 1, 0, 0, true).
 			AddItem(rightSpacer, 0, 2, 1, 1, 0, 0, false)
-
+		layout.forms = append(layout.forms, form)
 		height = 1
 
 		// Vertical buttons that may come with descriptions
-	} else if direction == DirectionalModalVertical {
+	} else if layout.direction == DirectionalModalVertical {
 
 		formsFlex := tview.NewFlex().
 			SetDirection(tview.FlexRow)
@@ -215,10 +220,12 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 			func(i int, l string) {
 
 				// Create a new form for this button
-				form := tview.NewForm().
+				form := NewForm().
 					SetButtonsAlign(tview.AlignCenter).
 					SetButtonBackgroundColor(tview.Styles.PrimitiveBackgroundColor).
-					SetButtonTextColor(tview.Styles.PrimaryTextColor)
+					SetButtonTextColor(tcell.ColorLightGray).
+					SetButtonBackgroundActivatedColor(tcell.Color46).
+					SetButtonTextActivatedColor(tcell.ColorBlack)
 				form.SetBackgroundColor(tview.Styles.ContrastBackgroundColor).SetBorderPadding(0, 0, 0, 0)
 				form.AddButton(label, func() {
 					if layout.done != nil {
@@ -352,13 +359,24 @@ func (layout *choiceModalLayout) getSizedButtonLabels(buttonLabels []string) []s
 
 // Focuses the given button
 func (layout *choiceModalLayout) focus(index int) {
-	if index < 0 || index > len(layout.forms)-1 {
-		return
-	}
 
-	if layout.descriptionBox != nil {
-		layout.descriptionBox.SetText(layout.buttonDescriptions[index])
+	if layout.direction == DirectionalModalVertical {
+		if layout.descriptionBox != nil {
+			layout.descriptionBox.SetText(layout.buttonDescriptions[index])
+		}
+		if index < 0 || index > len(layout.forms)-1 {
+			return
+		}
+		layout.app.SetFocus(layout.forms[index])
+		layout.selected = index
+	} else {
+		if len(layout.forms) > 0 {
+			if index < 0 || index > layout.forms[0].GetButtonCount()-1 {
+				return
+			}
+			layout.forms[0].SetFocus(index)
+			layout.app.SetFocus(layout.forms[0])
+			layout.selected = index
+		}
 	}
-	layout.app.SetFocus(layout.forms[index])
-	layout.selected = index
 }

@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/gdamore/tcell/v2"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 // The page wrapper for the Smartnode config
@@ -43,6 +44,16 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	// Return to the home page after pressing Escape
 	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
+			// Close all dropdowns and break if one was open
+			for _, param := range configPage.layout.parameters {
+				dropDown, ok := param.item.(*DropDown)
+				if ok && dropDown.open {
+					dropDown.CloseList(configPage.home.md.app)
+					return nil
+				}
+			}
+
+			// Return to the home page
 			configPage.home.md.setPage(configPage.home.homePage)
 			return nil
 		}
@@ -54,6 +65,14 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	for _, formItem := range formItems {
 		layout.form.AddFormItem(formItem.item)
 		layout.parameters[formItem.item] = formItem
+		if formItem.parameter.ID == config.NetworkID {
+			dropDown := formItem.item.(*DropDown)
+			dropDown.SetSelectedFunc(func(text string, index int) {
+				newNetwork := configPage.home.md.Config.Smartnode.Network.Options[index].Value.(config.Network)
+				configPage.home.md.Config.ChangeNetwork(newNetwork)
+				configPage.home.refresh()
+			})
+		}
 	}
 	layout.refresh()
 

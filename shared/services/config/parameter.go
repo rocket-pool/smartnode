@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 )
 
@@ -13,6 +14,8 @@ type Parameter struct {
 	Description          string                  `yaml:"description,omitempty"`
 	Type                 ParameterType           `yaml:"type,omitempty"`
 	Default              map[Network]interface{} `yaml:"default,omitempty"`
+	MaxLength            int                     `yaml:"maxLength,omitempty"`
+	Regex                string                  `yaml:"regex,omitempty"`
 	Advanced             bool                    `yaml:"advanced,omitempty"`
 	AffectsContainers    []ContainerID           `yaml:"affectsContainers,omitempty"`
 	EnvironmentVariables []string                `yaml:"environmentVariables,omitempty"`
@@ -82,6 +85,17 @@ func (param *Parameter) deserialize(serializedParams map[string]string) error {
 	case ParameterType_Bool:
 		param.Value, err = strconv.ParseBool(value)
 	case ParameterType_String:
+		if param.Regex != "" {
+			regex := regexp.MustCompile(param.Regex)
+			if param.Value != "" && !regex.MatchString(value) {
+				return fmt.Errorf("cannot deserialize parameter [%s]: value [%s] did not match the expected format", param.ID, value)
+			}
+		}
+		if param.MaxLength > 0 {
+			if len(value) > param.MaxLength {
+				return fmt.Errorf("cannot deserialize parameter [%s]: value [%s] is longer than the max length of [%d]", param.ID, value, param.MaxLength)
+			}
+		}
 		param.Value = value
 	case ParameterType_Choice:
 		// The more complicated one since Go doesn't have generics

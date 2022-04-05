@@ -40,6 +40,8 @@ func createExternalTekuStep(wiz *wizard, currentStep int, totalSteps int) *textB
 		70,
 		"Consensus Client (External) > Settings",
 		[]string{httpUrlLabel},
+		[]int{wiz.md.Config.ExternalTeku.HttpUrl.MaxLength},
+		[]string{wiz.md.Config.ExternalTeku.HttpUrl.Regex},
 		show,
 		done,
 		back,

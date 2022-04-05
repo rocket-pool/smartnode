@@ -1,11 +1,19 @@
 package config
 
-import "github.com/rocket-pool/smartnode/shared"
+import (
+	"path/filepath"
+
+	"github.com/rocket-pool/smartnode/shared"
+)
 
 // Constants
-const smartnodeTag string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-const powProxyTag string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
-const pruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
+const (
+	smartnodeTag        string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
+	powProxyTag         string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
+	pruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
+	NetworkID           string = "network"
+	ProjectNameID       string = "projectName"
+)
 
 // Defaults
 const defaultProjectName string = "rocketpool"
@@ -13,6 +21,9 @@ const defaultProjectName string = "rocketpool"
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
 	Title string `yaml:"title,omitempty"`
+
+	// The parent config
+	parent *RocketPoolConfig `yaml:"-"`
 
 	////////////////////////////
 	// User-editable settings //
@@ -84,10 +95,11 @@ type SmartnodeConfig struct {
 func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 	return &SmartnodeConfig{
-		Title: "Smartnode Settings",
+		Title:  "Smartnode Settings",
+		parent: config,
 
 		ProjectName: Parameter{
-			ID:                   "projectName",
+			ID:                   ProjectNameID,
 			Name:                 "Project Name",
 			Description:          "This is the prefix that will be attached to all of the Docker containers managed by the Smartnode.",
 			Type:                 ParameterType_String,
@@ -103,7 +115,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Name:                 "Data Path",
 			Description:          "The absolute path of the `data` folder that contains your node wallet's encrypted file, the password for your node wallet, and all of the validator keys for your minipools. You may use environment variables in this string.",
 			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/data"},
+			Default:              map[Network]interface{}{Network_All: getDefaultDataDir(config)},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Validator},
 			EnvironmentVariables: []string{"ROCKETPOOL_DATA_FOLDER"},
 			CanBeBlank:           false,
@@ -122,20 +134,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		ValidatorRestartCommand: Parameter{
-			ID:                   "validatorRestartCommand",
-			Name:                 "Validator Restart Command",
-			Description:          "The absolute path to a custom script that will be invoked when Rocket Pool needs to restart your validator container to load the new key after a minipool is staked. **For Native mode only.**",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/chains/eth2/restart-validator.sh"},
-			AffectsContainers:    []ContainerID{ContainerID_Node},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
 		Network: Parameter{
-			ID:                   "network",
+			ID:                   NetworkID,
 			Name:                 "Network",
 			Description:          "The Ethereum network you want to use - select Prater Testnet to practice with fake ETH, or Mainnet to stake on the real network using real ETH.",
 			Type:                 ParameterType_Choice,
@@ -152,15 +152,19 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 				Name:        "Prater Testnet",
 				Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to mainnet.",
 				Value:       Network_Prater,
+			}, {
+				Name:        "Kiln Testnet",
+				Description: "This is the Kiln test network, which uses free \"test\" ETH and free \"test\" RPL.\n\nUse this if you want to practice running a node on a post-merge network to learn how it differs from Mainnet today.",
+				Value:       Network_Kiln,
 			}},
 		},
 
 		ManualMaxFee: Parameter{
 			ID:                   "manualMaxFee",
 			Name:                 "Manual Max Fee",
-			Description:          "Set this if you want all of the Smartnode's transactions to use this specific max fee value (in gwei), which is the most you'd be willing to pay (*including the priority fee*). This will ignore the recommended max fee based on the current network conditions, and explicitly use this value instead. This applies to automated transactions (such as claiming RPL and staking minipools) as well.",
+			Description:          "Set this if you want all of the Smartnode's transactions to use this specific max fee value (in gwei), which is the most you'd be willing to pay (*including the priority fee*).\n\nA value of 0 will show you the current suggested max fee based on the current network conditions and let you specify it each time you do a transaction.\n\nAny other value will ignore the recommended max fee and explicitly use this value instead.\n\nThis applies to automated transactions (such as claiming RPL and staking minipools) as well.",
 			Type:                 ParameterType_Float,
-			Default:              map[Network]interface{}{Network_All: 0},
+			Default:              map[Network]interface{}{Network_All: float64(0)},
 			AffectsContainers:    []ContainerID{ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -170,9 +174,9 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		PriorityFee: Parameter{
 			ID:                   "priorityFee",
 			Name:                 "Priority Fee",
-			Description:          "The default value for the priority fee (in gwei) for all of your transactions. This describes how much you're willing to pay *above the network's current base fee* - the higher this is, the more ETH you give to the miners for including your transaction, which generally means it will be mined faster (as long as your max fee is sufficiently high to cover the current network conditions).",
+			Description:          "The default value for the priority fee (in gwei) for all of your transactions. This describes how much you're willing to pay *above the network's current base fee* - the higher this is, the more ETH you give to the miners for including your transaction, which generally means it will be mined faster (as long as your max fee is sufficiently high to cover the current network conditions).\n\nMust be larger than 0.",
 			Type:                 ParameterType_Float,
-			Default:              map[Network]interface{}{Network_All: 2},
+			Default:              map[Network]interface{}{Network_All: float64(2)},
 			AffectsContainers:    []ContainerID{ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -184,7 +188,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Name:                 "RPL Claim Gas Threshold",
 			Description:          "Automatic RPL rewards claims will use the `Rapid` suggestion from the gas estimator, based on current network conditions. This threshold is a limit (in gwei) you can put on that suggestion; your node will not try to claim RPL rewards automatically until the suggestion is below this limit.",
 			Type:                 ParameterType_Float,
-			Default:              map[Network]interface{}{Network_All: 150},
+			Default:              map[Network]interface{}{Network_All: float64(150)},
 			AffectsContainers:    []ContainerID{ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -197,7 +201,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Description: "Once a newly created minipool passes the scrub check and is ready to perform its second 16 ETH deposit (the `stake` transaction), your node will try to do so automatically using the `Rapid` suggestion from the gas estimator as its max fee. This threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
 				"Note that to ensure your minipool does not get dissolved, the node will ignore this limit and automatically execute the `stake` transaction at whatever the suggested fee happens to be once too much time has passed since its first deposit (currently 7 days).",
 			Type:                 ParameterType_Float,
-			Default:              map[Network]interface{}{Network_All: 150},
+			Default:              map[Network]interface{}{Network_All: float64(150)},
 			AffectsContainers:    []ContainerID{ContainerID_Node},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -207,16 +211,19 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		txWatchUrl: map[Network]string{
 			Network_Mainnet: "https://etherscan.io/tx",
 			Network_Prater:  "https://goerli.etherscan.io/tx",
+			Network_Kiln:    "TBD",
 		},
 
 		stakeUrl: map[Network]string{
 			Network_Mainnet: "https://stake.rocketpool.net",
 			Network_Prater:  "https://testnet.rocketpool.net",
+			Network_Kiln:    "TBD",
 		},
 
 		chainID: map[Network]uint{
 			Network_Mainnet: 1, // Mainnet
 			Network_Prater:  5, // Goerli
+			Network_Kiln:    0x1469ca,
 		},
 
 		walletPath: "/.rocketpool/data/wallet",
@@ -228,21 +235,25 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
+			Network_Kiln:    "0x93c769b239c5dBb383683869FaE2667623055420",
 		},
 
 		oneInchOracleAddress: map[Network]string{
 			Network_Mainnet: "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb",
 			Network_Prater:  "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
+			Network_Kiln:    "0xd46a870139F348C3d2596470c355E4BE26b03071",
 		},
 
 		rplTokenAddress: map[Network]string{
 			Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
+			Network_Kiln:    "0x50243dc12c1718E85b1A34ddF66F2c70bC13DF09",
 		},
 
 		rplFaucetAddress: map[Network]string{
 			Network_Mainnet: "",
 			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
+			Network_Kiln:    "0xC066e113cD3a568EdcF18D2Fd502f399E63Bc7B7",
 		},
 	}
 
@@ -254,7 +265,6 @@ func (config *SmartnodeConfig) GetParameters() []*Parameter {
 		&config.Network,
 		&config.ProjectName,
 		&config.DataPath,
-		&config.ValidatorRestartCommand,
 		&config.ManualMaxFee,
 		&config.PriorityFee,
 		&config.RplClaimGasThreshold,
@@ -277,15 +287,27 @@ func (config *SmartnodeConfig) GetChainID() uint {
 }
 
 func (config *SmartnodeConfig) GetWalletPath() string {
-	return config.walletPath
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "wallet")
+	} else {
+		return config.walletPath
+	}
 }
 
 func (config *SmartnodeConfig) GetPasswordPath() string {
-	return config.passwordPath
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "password")
+	} else {
+		return config.passwordPath
+	}
 }
 
 func (config *SmartnodeConfig) GetValidatorKeychainPath() string {
-	return config.validatorKeychainPath
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "validators")
+	} else {
+		return config.validatorKeychainPath
+	}
 }
 
 func (config *SmartnodeConfig) GetStorageAddress() string {
@@ -319,4 +341,8 @@ func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 // The the title for the config
 func (config *SmartnodeConfig) GetConfigTitle() string {
 	return config.Title
+}
+
+func getDefaultDataDir(config *RocketPoolConfig) string {
+	return filepath.Join(config.RocketPoolDirectory, "data")
 }

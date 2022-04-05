@@ -42,6 +42,8 @@ func createExternalPrysmStep(wiz *wizard, currentStep int, totalSteps int) *text
 		70,
 		"Consensus Client (External) > Settings",
 		[]string{httpUrlLabel, jsonRpcUrlLabel},
+		[]int{wiz.md.Config.ExternalPrysm.HttpUrl.MaxLength, wiz.md.Config.ExternalPrysm.JsonRpcUrl.MaxLength},
+		[]string{wiz.md.Config.ExternalPrysm.HttpUrl.Regex, wiz.md.Config.ExternalPrysm.JsonRpcUrl.Regex},
 		show,
 		done,
 		back,

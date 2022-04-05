@@ -40,6 +40,8 @@ func createFallbackInfuraStep(wiz *wizard, currentStep int, totalSteps int) *tex
 		70,
 		"Fallback Execution Client > Infura",
 		[]string{projectIdLabel},
+		[]int{wiz.md.Config.FallbackInfura.ProjectID.MaxLength},
+		[]string{wiz.md.Config.FallbackInfura.ProjectID.Regex},
 		show,
 		done,
 		back,

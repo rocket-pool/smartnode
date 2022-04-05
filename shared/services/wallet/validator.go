@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
@@ -185,6 +187,36 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 
 	// Return
 	return nil
+
+}
+
+// Store the fee recipient file for this wallet's validators
+func (w *Wallet) StoreFeeRecipientFile(rp *rocketpool.RocketPool) (common.Address, error) {
+
+	// TODO: REMOVE AFTER CONTRACT UPGRADES
+	return common.Address{}, nil
+
+	// Check wallet is initialized
+	if !w.IsInitialized() {
+		return common.Address{}, nil
+	}
+
+	// Get the node account
+	account, err := w.GetNodeAccount()
+	if err != nil {
+		return common.Address{}, fmt.Errorf("error getting node account: %w", err)
+	}
+
+	// Store the files
+	var nodeDistributorAddress common.Address
+	for name, fm := range w.feeRecipientManagers {
+		nodeDistributorAddress, err = fm.StoreFeeRecipientFile(rp, account.Address)
+		if err != nil {
+			return common.Address{}, fmt.Errorf("error storing fee recipients for %s: %w", name, err)
+		}
+	}
+
+	return nodeDistributorAddress, nil
 
 }
 

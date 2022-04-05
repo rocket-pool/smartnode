@@ -1,7 +1,10 @@
 package service
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli"
 
@@ -10,7 +13,7 @@ import (
 
 const dataFolder string = "/.rocketpool/data"
 
-// Deletes the data folder including the wallet file, password file, and all validator keys.
+// Deletes the contents of the data folder including the wallet file, password file, and all validator keys.
 // Don't use this unless you have a very good reason to do it (such as switching from Prater to Mainnet).
 func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, error) {
 
@@ -25,10 +28,46 @@ func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, erro
 	}
 	response.FolderExisted = true
 
-	// Remove it
-	err = os.RemoveAll(dataFolder)
+	// Traverse it
+	files, err := ioutil.ReadDir(dataFolder)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error enumerating files: %w", err)
+	}
+
+	// Delete the children
+	for _, file := range files {
+		// Skip the validators directory - that get special treatment
+		if file.Name() != "validators" && !file.IsDir() {
+			fullPath := filepath.Join(dataFolder, file.Name())
+			if file.IsDir() {
+				err = os.RemoveAll(fullPath)
+			} else {
+				err = os.Remove(fullPath)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("error removing [%s]: %w", file.Name(), err)
+			}
+		}
+	}
+
+	// Traverse the validators dir
+	validatorsDir := filepath.Join(dataFolder, "validators")
+	files, err = ioutil.ReadDir(validatorsDir)
+	if err != nil {
+		return nil, fmt.Errorf("error enumerating validator files: %w", err)
+	}
+
+	// Delete the children
+	for _, file := range files {
+		fullPath := filepath.Join(validatorsDir, file.Name())
+		if file.IsDir() {
+			err = os.RemoveAll(fullPath)
+		} else {
+			err = os.Remove(fullPath)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error removing [%s]: %w", file.Name(), err)
+		}
 	}
 
 	// Return response

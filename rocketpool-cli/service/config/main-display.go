@@ -16,10 +16,13 @@ type mainDisplay struct {
 	app                 *tview.Application
 	content             *tview.Box
 	mainGrid            *tview.Grid
-	newUserWizard       *wizard
+	dockerWizard        *wizard
 	settingsHome        *settingsHome
+	settingsNativeHome  *settingsNativeHome
 	isNew               bool
 	isMigration         bool
+	isUpdate            bool
+	isNative            bool
 	previousWidth       int
 	previousHeight      int
 	PreviousConfig      *config.RocketPoolConfig
@@ -30,10 +33,12 @@ type mainDisplay struct {
 }
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isNew bool, isMigration bool) *mainDisplay {
+func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isMigration bool, isUpdate bool, isNative bool) *mainDisplay {
 
 	// Create a copy of the original config for comparison purposes
-	previousConfig := config.CreateCopy()
+	if previousConfig == nil {
+		previousConfig = config.CreateCopy()
+	}
 
 	// Create the main grid
 	grid := tview.NewGrid().
@@ -75,13 +80,16 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 		mainGrid:       grid,
 		isNew:          isNew,
 		isMigration:    isMigration,
+		isUpdate:       isUpdate,
+		isNative:       isNative,
 		PreviousConfig: previousConfig,
 		Config:         config,
 	}
 
 	// Create all of the child elements
 	md.settingsHome = newSettingsHome(md)
-	md.newUserWizard = newWizard(md)
+	md.settingsNativeHome = newSettingsNativeHome(md)
+	md.dockerWizard = newWizard(md)
 
 	// Set up the resize warning
 	md.app.SetAfterDrawFunc(func(screen tcell.Screen) {
@@ -89,7 +97,7 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 		if x == md.previousWidth && y == md.previousHeight {
 			return
 		}
-		if x < 108 || y < 30 {
+		if x < 112 || y < 32 {
 			grid.RemoveItem(pages)
 			grid.AddItem(resizeWarning, 3, 1, 1, 1, 0, 0, false)
 		} else {
@@ -101,9 +109,17 @@ func NewMainDisplay(app *tview.Application, config *config.RocketPoolConfig, isN
 	})
 
 	if isNew || isMigration {
-		md.newUserWizard.welcomeModal.show()
+		if isNative {
+			md.dockerWizard.nativeWelcomeModal.show()
+		} else {
+			md.dockerWizard.welcomeModal.show()
+		}
 	} else {
-		md.setPage(md.settingsHome.homePage)
+		if isNative {
+			md.setPage(md.settingsNativeHome.homePage)
+		} else {
+			md.setPage(md.settingsHome.homePage)
+		}
 	}
 	app.SetRoot(grid, true)
 	return md

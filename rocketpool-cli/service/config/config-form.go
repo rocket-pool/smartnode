@@ -200,6 +200,15 @@ func createParameterizedStringField(param *config.Parameter) *parameterizedFormI
 			param.Value = item.GetText()
 		}
 	})
+	item.SetAcceptanceFunc(func(textToCheck string, lastChar rune) bool {
+		if param.MaxLength > 0 {
+			if len(textToCheck) > param.MaxLength {
+				return false
+			}
+		}
+		// TODO: regex support
+		return true
+	})
 	item.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyDown, tcell.KeyTab:
@@ -247,6 +256,11 @@ func createParameterizedDropDown(param *config.Parameter, descriptionBox *tview.
 			return event
 		}
 	})
+	list := item.GetList()
+	list.SetSelectedBackgroundColor(tcell.Color46)
+	list.SetSelectedTextColor(tcell.ColorBlack)
+	list.SetBackgroundColor(tcell.ColorBlack)
+	list.SetMainTextColor(tcell.ColorLightGray)
 
 	return &parameterizedFormItem{
 		parameter: param,

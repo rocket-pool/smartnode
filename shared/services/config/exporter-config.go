@@ -19,6 +19,9 @@ type ExporterConfig struct {
 
 	// The Docker Hub tag for Prometheus
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
+
+	// Custom command line flags
+	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
 }
 
 // Generates a new Exporter config
@@ -61,6 +64,18 @@ func NewExporterConfig(config *RocketPoolConfig) *ExporterConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
+
+		AdditionalFlags: Parameter{
+			ID:                   "additionalFlags",
+			Name:                 "Additional Exporter Flags",
+			Description:          "Additional custom command line flags you want to pass to the Node Exporter, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Grafana},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
 	}
 }
 
@@ -70,6 +85,7 @@ func (config *ExporterConfig) GetParameters() []*Parameter {
 		&config.RootFs,
 		&config.Port,
 		&config.ContainerTag,
+		&config.AdditionalFlags,
 	}
 }
 

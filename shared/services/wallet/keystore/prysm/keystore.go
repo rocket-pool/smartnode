@@ -66,6 +66,11 @@ func NewKeystore(keystorePath string, passwordManager *passwords.PasswordManager
 	}
 }
 
+// Get the keystore directory
+func (ks *Keystore) GetKeystoreDir() string {
+	return filepath.Join(ks.keystorePath, KeystoreDir)
+}
+
 // Store a validator key
 func (ks *Keystore) StoreValidatorKey(key *eth2types.BLSPrivateKey, derivationPath string) error {
 

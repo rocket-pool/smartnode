@@ -1,10 +1,17 @@
 package config
 
-const lighthouseTag string = "sigp/lighthouse:v2.1.3"
+const (
+	lighthouseTag                  string = "sigp/lighthouse:v2.1.5"
+	defaultLhMaxPeers              uint16 = 80
+	LighthouseFeeRecipientFilename string = "rp-fee-recipients.txt"
+)
 
 // Configuration for Lighthouse
 type LighthouseConfig struct {
 	Title string `yaml:"title,omitempty"`
+
+	// The max number of P2P peers to connect to
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// Common parameters that Lighthouse doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
@@ -23,6 +30,18 @@ type LighthouseConfig struct {
 func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 	return &LighthouseConfig{
 		Title: "Lighthouse Settings",
+
+		MaxPeers: Parameter{
+			ID:                   "maxPeers",
+			Name:                 "Max Peers",
+			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultLhMaxPeers},
+			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			EnvironmentVariables: []string{"BN_MAX_PEERS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true, // TODO: Set to false after v1.3.0
+		},
 
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
@@ -65,6 +84,7 @@ func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 // Get the parameters for this config
 func (config *LighthouseConfig) GetParameters() []*Parameter {
 	return []*Parameter{
+		&config.MaxPeers,
 		&config.ContainerTag,
 		&config.AdditionalBnFlags,
 		&config.AdditionalVcFlags,

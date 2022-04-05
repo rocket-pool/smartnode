@@ -9,7 +9,7 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 	// Create the labels - use the vanilla graffiti name
 	graffitiLabel := wiz.md.Config.ConsensusCommon.Graffiti.Name
 
-	helperText := "If you would like to add a short custom message to each block that your minipools propose (called the block's \"graffiti\"), please enter it here. The graffiti is limited to 16 characters max."
+	helperText := "If you would like to add a short custom message to each block that your minipools propose (called the block's \"graffiti\"), please enter it here.\n\nThis is completely optional and just for fun. Leave it blank if you don't want to add any graffiti.\n\nThe graffiti is limited to 16 characters max."
 
 	show := func(modal *textBoxModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -29,12 +29,14 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
 		case config.ConsensusClient_Lighthouse:
 			wiz.md.Config.ExternalLighthouse.Graffiti.Value = text[graffitiLabel]
+			wiz.externalDoppelgangerModal.show()
 		case config.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.Graffiti.Value = text[graffitiLabel]
+			wiz.externalDoppelgangerModal.show()
 		case config.ConsensusClient_Teku:
 			wiz.md.Config.ExternalTeku.Graffiti.Value = text[graffitiLabel]
+			wiz.metricsModal.show()
 		}
-		wiz.metricsModal.show()
 	}
 
 	back := func() {
@@ -49,6 +51,8 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 		70,
 		"Consensus Client (External) > Graffiti",
 		[]string{graffitiLabel},
+		[]int{wiz.md.Config.ConsensusCommon.Graffiti.MaxLength},
+		[]string{wiz.md.Config.ConsensusCommon.Graffiti.Regex},
 		show,
 		done,
 		back,

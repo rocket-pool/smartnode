@@ -19,6 +19,9 @@ type PrometheusConfig struct {
 
 	// The Docker Hub tag for Prometheus
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
+
+	// Custom command line flags
+	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
 }
 
 // Generates a new Prometheus config
@@ -40,8 +43,8 @@ func NewPrometheusConfig(config *RocketPoolConfig) *PrometheusConfig {
 
 		OpenPort: Parameter{
 			ID:                   "openPort",
-			Name:                 "Open Prometheus Port",
-			Description:          "Enable this to open Prometheus's port to your local network, so other machines can access it too.",
+			Name:                 "Expose Prometheus Port",
+			Description:          "Enable this to expose Prometheus's port to your local network, so other machines can access it too.",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: defaultPrometheusOpenPort},
 			AffectsContainers:    []ContainerID{ContainerID_Prometheus},
@@ -61,6 +64,18 @@ func NewPrometheusConfig(config *RocketPoolConfig) *PrometheusConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
+
+		AdditionalFlags: Parameter{
+			ID:                   "additionalFlags",
+			Name:                 "Additional Prometheus Flags",
+			Description:          "Additional custom command line flags you want to pass to Prometheus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Grafana},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
 	}
 }
 
@@ -70,6 +85,7 @@ func (config *PrometheusConfig) GetParameters() []*Parameter {
 		&config.Port,
 		&config.OpenPort,
 		&config.ContainerTag,
+		&config.AdditionalFlags,
 	}
 }
 
