@@ -40,6 +40,7 @@ require (
 	github.com/wealdtech/go-eth2-types/v2 v2.6.0
 	github.com/wealdtech/go-eth2-util v1.7.0
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.2.0
+	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a // indirect
 	golang.org/x/crypto v0.0.0-20211115234514-b4de73f9ece8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
@@ -48,4 +49,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-//replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220405053744-d1ca23aa0bad
+
+replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
