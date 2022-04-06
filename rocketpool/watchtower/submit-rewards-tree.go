@@ -408,7 +408,7 @@ func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *ty
 				SmoothingPoolEth: big.NewInt(0),
 			}
 		}
-		rewardsForNode.CollateralRpl.Add(rewardsForNode.CollateralRpl, individualOdaoRewards)
+		rewardsForNode.OracleDaoRpl.Add(rewardsForNode.OracleDaoRpl, individualOdaoRewards)
 		nodeRewardsMap[address] = rewardsForNode
 
 		// Add the rewards to the running total for the specified network
