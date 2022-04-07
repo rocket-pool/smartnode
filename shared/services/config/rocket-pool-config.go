@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -834,6 +835,11 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		case ConsensusClient_Teku:
 			addParametersToEnvVars(config.ExternalTeku.GetParameters(), envVars)
 		}
+	}
+	// Get the hostname of the Consensus client, necessary for Prometheus to work in hybrid mode
+	ccUrl, err := url.Parse(envVars["CC_API_ENDPOINT"])
+	if err == nil && ccUrl != nil {
+		envVars["CC_HOSTNAME"] = ccUrl.Hostname()
 	}
 
 	// Metrics
