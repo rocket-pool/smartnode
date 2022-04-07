@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 
 	"github.com/alessio/shellescape"
@@ -686,13 +687,27 @@ func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 // Deserializes a settings file into this config
 func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string) error {
 
-	// Deserialize root params
-	rootParams, exists := masterMap[rootConfigName]
-	if !exists {
-		return fmt.Errorf("missing config section [%s]", rootConfigName)
+	// Get the network
+	network := Network_Mainnet
+	smartnodeConfig, exists := masterMap[config.Smartnode.Title]
+	if exists {
+		networkString, exists := smartnodeConfig[config.Smartnode.Network.ID]
+		if exists {
+			valueType := reflect.TypeOf(networkString)
+			paramType := reflect.TypeOf(network)
+			if !valueType.ConvertibleTo(paramType) {
+				return fmt.Errorf("Can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
+			} else {
+				network = reflect.ValueOf(networkString).Convert(paramType).Interface().(Network)
+			}
+		}
 	}
+
+	// Deserialize root params
+	rootParams := masterMap[rootConfigName]
 	for _, param := range config.GetParameters() {
-		err := param.deserialize(rootParams)
+		// Note: if the root config doesn't exist, this will end up using the default values for all of its settings
+		err := param.deserialize(rootParams, network)
 		if err != nil {
 			return fmt.Errorf("error deserializing root config: %w", err)
 		}
@@ -708,12 +723,10 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 
 	// Deserialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {
-		subconfigParams, exists := masterMap[name]
-		if !exists {
-			return fmt.Errorf("missing config section [%s]", name)
-		}
+		subconfigParams := masterMap[name]
 		for _, param := range subconfig.GetParameters() {
-			err := param.deserialize(subconfigParams)
+			// Note: if the subconfig doesn't exist, this will end up using the default values for all of its settings
+			err := param.deserialize(subconfigParams, network)
 			if err != nil {
 				return fmt.Errorf("error deserializing [%s]: %w", name, err)
 			}
