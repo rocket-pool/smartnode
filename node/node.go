@@ -314,6 +314,19 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
 	return hash, nil
 }
 
+// Get the network ID for a node's rewards
+func GetRewardNetwork(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return 0, err
+	}
+	rewardNetwork := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, rewardNetwork, "getRewardNetwork", nodeAddress); err != nil {
+		return 0, fmt.Errorf("Could not get node %s reward network: %w", nodeAddress.Hex(), err)
+	}
+	return (*rewardNetwork).Uint64(), nil
+}
+
 // Returns an array of block numbers for prices submissions the given trusted node has submitted since fromBlock
 func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (*[]uint64, error) {
 	// Get contracts

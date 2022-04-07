@@ -144,16 +144,55 @@ func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.
 }
 
 // Get the amount of RPL rewards that will be provided to node operators
-func GetPendingRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return 0, err
 	}
 	rewards := new(*big.Int)
-	if err := rocketRewardsPool.Call(opts, rewards, "getPendingRewards"); err != nil {
+	if err := rocketRewardsPool.Call(opts, rewards, "getPendingRPLRewards"); err != nil {
 		return 0, fmt.Errorf("Could not get pending rewards: %w", err)
 	}
 	return eth.WeiToEth(*rewards), nil
+}
+
+// Get the percent of checkpoint rewards that goes to node operators
+func GetNodeOperatorRewardsPercentRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return nil, err
+	}
+	perc := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimNode"); err != nil {
+		return nil, fmt.Errorf("Could not get node operator rewards percent: %w", err)
+	}
+	return *perc, nil
+}
+
+// Get the percent of checkpoint rewards that goes to ODAO members
+func GetTrustedNodeOperatorRewardsPercentRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return nil, err
+	}
+	perc := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimTrustedNode"); err != nil {
+		return nil, fmt.Errorf("Could not get trusted node operator rewards percent: %w", err)
+	}
+	return *perc, nil
+}
+
+// Get the amount of RPL rewards that will be provided to node operators
+func GetPendingRPLRewardsRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return nil, err
+	}
+	rewards := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, rewards, "getPendingRPLRewards"); err != nil {
+		return nil, fmt.Errorf("Could not get pending rewards: %w", err)
+	}
+	return *rewards, nil
 }
 
 // Get contracts
