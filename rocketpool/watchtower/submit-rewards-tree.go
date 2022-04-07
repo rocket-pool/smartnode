@@ -221,6 +221,12 @@ func (t *submitRewardsTree) generateMerkleTree(nodeRewardsMap map[common.Address
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(nodeRewardsMap))
 	for address, rewardsForNode := range nodeRewardsMap {
+		// Ignore nodes that didn't receive any rewards
+		zero := big.NewInt(0)
+		if rewardsForNode.CollateralRpl.Cmp(zero) == 0 && rewardsForNode.OracleDaoRpl.Cmp(zero) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(zero) == 0 {
+			continue
+		}
+
 		// Node data is address[20] :: network[32] :: RPL[32] :: ETH[32]
 		nodeData := make([]byte, 0, 20+32*3)
 
