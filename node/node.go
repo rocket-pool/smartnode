@@ -54,6 +54,19 @@ type TrustedNodeParticipation struct {
 	Participation       map[common.Address][]bool
 }
 
+// Get the version of the Node Manager contract
+func GetNodeManagerVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint8, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return 0, err
+	}
+	version := new(uint8)
+	if err := rocketNodeManager.Call(opts, version, "version"); err != nil {
+		return 0, fmt.Errorf("Could not get node manager version: %w", err)
+	}
+	return *version, nil
+}
+
 // Get all node details
 func GetNodes(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NodeDetails, error) {
 
