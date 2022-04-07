@@ -968,19 +968,28 @@ func serviceVersion(c *cli.Context) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
+	// Handle native mode
+	if cfg.IsNativeMode {
+		fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
+		fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
+		fmt.Println("Configured for Native Mode")
+		return nil
+	}
+
 	// Get the execution client string
 	var eth1ClientString string
 	eth1ClientMode := cfg.ExecutionClientMode.Value.(config.Mode)
 	switch eth1ClientMode {
 	case config.Mode_Local:
 		eth1Client := cfg.ExecutionClient.Value.(config.ExecutionClient)
+		format := "%s (Locally managed)\n\tImage: %s"
 		switch eth1Client {
 		case config.ExecutionClient_Geth:
-			eth1ClientString = fmt.Sprintf("Geth (Locally managed)\n\tImage: %s", cfg.Geth.ContainerTag.Value.(string))
+			eth1ClientString = fmt.Sprintf(format, "Geth", cfg.Geth.ContainerTag.Value.(string))
 		case config.ExecutionClient_Infura:
-			eth1ClientString = fmt.Sprintf("Infura (Locally managed)\n\tImage: %s", cfg.Smartnode.GetPowProxyContainerTag())
+			eth1ClientString = fmt.Sprintf(format, "Infura", cfg.Smartnode.GetPowProxyContainerTag())
 		case config.ExecutionClient_Pocket:
-			eth1ClientString = fmt.Sprintf("Pocket (Locally managed)\n\tImage: %s", cfg.Smartnode.GetPowProxyContainerTag())
+			eth1ClientString = fmt.Sprintf(format, "Pocket", cfg.Smartnode.GetPowProxyContainerTag())
 		default:
 			return fmt.Errorf("unknown local execution client [%v]", eth1Client)
 		}
@@ -998,28 +1007,31 @@ func serviceVersion(c *cli.Context) error {
 	switch eth2ClientMode {
 	case config.Mode_Local:
 		eth2Client := cfg.ConsensusClient.Value.(config.ConsensusClient)
+		format := "%s (Locally managed)\n\tImage: %s"
 		switch eth2Client {
 		case config.ConsensusClient_Lighthouse:
-			eth2ClientString = fmt.Sprintf("Lighthouse (Locally managed)\n\tImage: %s", cfg.Lighthouse.ContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.Lighthouse.ContainerTag.Value.(string))
 		case config.ConsensusClient_Nimbus:
-			eth2ClientString = fmt.Sprintf("Nimbus (Locally managed)\n\tImage: %s", cfg.Nimbus.ContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format, "Nimbus", cfg.Nimbus.ContainerTag.Value.(string))
 		case config.ConsensusClient_Prysm:
-			eth2ClientString = fmt.Sprintf("Prysm (Locally managed)\n\tBN image: %s\n\tVC image: %s", cfg.Prysm.BnContainerTag.Value.(string), cfg.Prysm.VcContainerTag.Value.(string))
+			// Prysm is a special case, as the BN and VC image versions may differ
+			eth2ClientString = fmt.Sprintf(format+"\n\tVC image: %S", "Prysm", cfg.Prysm.BnContainerTag.Value.(string), cfg.Prysm.VcContainerTag.Value.(string))
 		case config.ConsensusClient_Teku:
-			eth2ClientString = fmt.Sprintf("Teku (Locally managed)\n\tImage: %s", cfg.Teku.ContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format, "Teku", cfg.Teku.ContainerTag.Value.(string))
 		default:
 			return fmt.Errorf("unknown local consensus client [%v]", eth2Client)
 		}
 
 	case config.Mode_External:
 		eth2Client := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+		format := "%s (Externally managed)\n\tVC Image: %s"
 		switch eth2Client {
 		case config.ConsensusClient_Lighthouse:
-			eth2ClientString = fmt.Sprintf("Lighthouse (Externally managed)\n\tVC Image: %s", cfg.ExternalLighthouse.ContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.ExternalLighthouse.ContainerTag.Value.(string))
 		case config.ConsensusClient_Prysm:
-			eth2ClientString = fmt.Sprintf("Prysm (Externally managed)\n\tVC image: %s", cfg.ExternalPrysm.ContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format, "Prysm", cfg.ExternalPrysm.ContainerTag.Value.(string))
 		case config.ConsensusClient_Teku:
-			eth2ClientString = fmt.Sprintf("Teku (Locally managed)\n\tImage: %s", cfg.ExternalTeku.ContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format, "Teku", cfg.ExternalTeku.ContainerTag.Value.(string))
 		default:
 			return fmt.Errorf("unknown external consensus client [%v]", eth2Client)
 		}
