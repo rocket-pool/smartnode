@@ -30,6 +30,7 @@ type wizard struct {
 	consensusLocalTekuWarning       *choiceWizardStep
 	externalDoppelgangerModal       *choiceWizardStep
 	fallbackExternalExecutionModal  *textBoxWizardStep
+	ipfsModal                       *choiceWizardStep
 
 	// Native mode
 	nativeWelcomeModal  *choiceWizardStep
@@ -48,7 +49,7 @@ func newWizard(md *mainDisplay) *wizard {
 		md: md,
 	}
 
-	totalDockerSteps := 9
+	totalDockerSteps := 10
 	totalNativeSteps := 8
 
 	// Docker mode
@@ -74,7 +75,8 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 7, totalDockerSteps)
 	wiz.externalDoppelgangerModal = createExternalDoppelgangerStep(wiz, 7, totalDockerSteps)
 	wiz.metricsModal = createMetricsStep(wiz, 8, totalDockerSteps)
-	wiz.finishedModal = createFinishedStep(wiz, 9, totalDockerSteps)
+	wiz.ipfsModal = createIpfsStep(wiz, 9, totalDockerSteps)
+	wiz.finishedModal = createFinishedStep(wiz, 10, totalDockerSteps)
 
 	// Native mode
 	wiz.nativeWelcomeModal = createNativeWelcomeStep(wiz, 1, totalNativeSteps)
