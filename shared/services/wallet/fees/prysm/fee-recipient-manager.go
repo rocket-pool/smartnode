@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
@@ -40,58 +38,65 @@ func NewFeeRecipientManager(keystore keystore.Keystore) *FeeRecipientManager {
 	}
 }
 
-// Creates a fee recipient file that points all of this node's validators to the node distributor address.
-func (fm *FeeRecipientManager) StoreFeeRecipientFile(rp *rocketpool.RocketPool, nodeAddress common.Address) (common.Address, error) {
+// Checks if the fee recipient file exists and has the correct distributor address in it.
+// If it does, this returns true - the file is up to date.
+// Otherwise, this writes the file and returns false indicating that the VC should be restarted to pick up the new file.
+func (fm *FeeRecipientManager) CheckAndUpdateFeeRecipientFile(distributor common.Address) (bool, error) {
 
-	// Get the distributor address for this node
-	distributor, err := node.GetDistributorAddress(rp, nodeAddress, nil)
-	if err != nil {
-		return common.Address{}, fmt.Errorf("error getting distributor address for node [%s]: %w", nodeAddress.Hex(), err)
-	}
-
-	// Write out the default
+	// Create the expected structure
 	distributorAddress := distributor.Hex()
-	fileContents := FeeRecipientFileContents{
+	expectedStruct := FeeRecipientFileContents{
 		DefaultConfig: ProposerFeeRecipient{
 			FeeRecipient: distributorAddress,
 		},
 		ProposerConfig: map[string]ProposerFeeRecipient{},
 	}
 
-	// Get all of the minipool addresses for the node
-	minipoolAddresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, nil)
-	if err != nil {
-		return common.Address{}, fmt.Errorf("error getting minipool addresses for node [%s]: %w", nodeAddress.Hex(), err)
-	}
-
-	// Write all of the validator addresses
-	for _, minipoolAddress := range minipoolAddresses {
-		pubkey, err := minipool.GetMinipoolPubkey(rp, minipoolAddress, nil)
-		if err != nil {
-			return common.Address{}, fmt.Errorf("error getting validator pubkey for minipool [%s]: %w", minipoolAddress.Hex(), err)
-		}
-		fileContents.ProposerConfig[pubkey.Hex()] = ProposerFeeRecipient{
-			FeeRecipient: distributorAddress,
-		}
-	}
-
-	// Serialize the file contents
-	bytes, err := json.Marshal(fileContents)
-	if err != nil {
-		return common.Address{}, fmt.Errorf("error serializing file contents to JSON: %w", err)
-	}
-
-	// Write the contents out to the file
+	// Check if the file exists, and write it if it doesn't
 	path := filepath.Join(fm.keystore.GetKeystoreDir(), config.PrysmFeeRecipientFilename)
-	err = ioutil.WriteFile(path, bytes, FileMode)
-	if err != nil {
-		return common.Address{}, fmt.Errorf("error writing fee recipient file: %w", err)
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		bytes, err := json.Marshal(expectedStruct)
+		if err != nil {
+			return false, fmt.Errorf("error serializing file contents to JSON: %w", err)
+		}
+		err = ioutil.WriteFile(path, bytes, FileMode)
+		if err != nil {
+			return false, fmt.Errorf("error writing fee recipient file: %w", err)
+		}
+
+		// If it wrote properly, indicate a success but that the file needed to be updated
+		return false, nil
 	}
 
+	// Compare the file contents with the expected string
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return false, fmt.Errorf("error reading fee recipient file: %w", err)
+	}
+	existingStruct := &FeeRecipientFileContents{}
+	err = json.Unmarshal(bytes, existingStruct)
+	if err != nil {
+		return false, fmt.Errorf("error deserializing fee recipient JSON: %w", err)
+	}
+	if existingStruct.DefaultConfig.FeeRecipient != expectedStruct.DefaultConfig.FeeRecipient || len(existingStruct.ProposerConfig) > 0 {
+		// Rewrite the file with the expected distributor address
+		bytes, err := json.Marshal(expectedStruct)
+		if err != nil {
+			return false, fmt.Errorf("error serializing file contents to JSON: %w", err)
+		}
+		err = ioutil.WriteFile(path, bytes, FileMode)
+		if err != nil {
+			return false, fmt.Errorf("error writing fee recipient file: %w", err)
+		}
+
+		// If it wrote properly, indicate a success but that the file needed to be updated
+		return false, nil
+	}
+
+	// The file existed and had the expected address, all set.
 	// TODO: WAIT FOR PRYSM TO ADD SUPPORT FOR THIS, SEE
 	// https://github.com/prysmaticlabs/prysm/pull/10312
-	return common.Address{}, fmt.Errorf("Prysm currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
-
-	return distributor, nil
+	return true, fmt.Errorf("Prysm currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
 
 }

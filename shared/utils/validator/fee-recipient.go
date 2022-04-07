@@ -10,9 +10,13 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Settings
@@ -20,6 +24,26 @@ const ValidatorContainerSuffix = "_validator"
 const BeaconContainerSuffix = "_eth2"
 
 var validatorRestartTimeout, _ = time.ParseDuration("5s")
+
+// Get the distributor address for the provided node wallet
+func GetDistributorAddress(rp *rocketpool.RocketPool, nodeAddress common.Address) (*common.Address, error) {
+	// Return nil if the merge contract update hasn't been deployed yet
+	isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(rp)
+	if err != nil {
+		return nil, err
+	}
+	if !isMergeUpdateDeployed {
+		return nil, nil
+	}
+
+	// Get the distributor address for the node
+	distributor, err := node.GetDistributorAddress(rp, nodeAddress, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting distributor address for node [%s]: %w", nodeAddress.Hex(), err)
+	}
+
+	return &distributor, nil
+}
 
 // Restart validator process
 func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.ColorLogger, d *client.Client) error {

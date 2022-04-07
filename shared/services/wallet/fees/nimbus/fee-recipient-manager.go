@@ -5,7 +5,6 @@ import (
 	"io/fs"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
@@ -25,9 +24,11 @@ func NewFeeRecipientManager(keystore keystore.Keystore) *FeeRecipientManager {
 	}
 }
 
-// Creates a fee recipient file that points all of this node's validators to the node distributor address.
-func (fm *FeeRecipientManager) StoreFeeRecipientFile(rp *rocketpool.RocketPool, nodeAddress common.Address) (common.Address, error) {
+// Checks if the fee recipient file exists and has the correct distributor address in it.
+// If it does, this returns true - the file is up to date.
+// Otherwise, this writes the file and returns false indicating that the VC should be restarted to pick up the new file.
+func (fm *FeeRecipientManager) CheckAndUpdateFeeRecipientFile(distributor common.Address) (bool, error) {
 
-	return common.Address{}, fmt.Errorf("Nimbus currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
+	return false, fmt.Errorf("Nimbus currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
 
 }
