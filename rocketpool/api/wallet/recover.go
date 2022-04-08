@@ -53,14 +53,14 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 		return nil, err
 	}
 
-	if !c.Bool("skip-validator-key-recovery") {
-		// Get node account
-		nodeAccount, err := w.GetNodeAccount()
-		if err != nil {
-			return nil, err
-		}
-		response.AccountAddress = nodeAccount.Address
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+	response.AccountAddress = nodeAccount.Address
 
+	if !c.Bool("skip-validator-key-recovery") {
 		// Get node's validating pubkeys
 		pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAccount.Address, nil)
 		if err != nil {
