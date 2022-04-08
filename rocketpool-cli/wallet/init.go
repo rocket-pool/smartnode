@@ -48,8 +48,14 @@ func initWallet(c *cli.Context) error {
 		}
 	}
 
+	// Get the derivation path
+	derivationPath := c.String("derivation-path")
+	if derivationPath != "" {
+		fmt.Printf("Using a custom derivation path (%s)\n\n.", derivationPath)
+	}
+
 	// Initialize wallet
-	response, err := rp.InitWallet()
+	response, err := rp.InitWallet(derivationPath)
 	if err != nil {
 		return err
 	}

@@ -40,8 +40,8 @@ func (c *Client) SetPassword(password string) (api.SetPasswordResponse, error) {
 }
 
 // Initialize wallet
-func (c *Client) InitWallet() (api.InitWalletResponse, error) {
-	responseBytes, err := c.callAPI("wallet init")
+func (c *Client) InitWallet(derivationPath string) (api.InitWalletResponse, error) {
+	responseBytes, err := c.callAPI("wallet init --derivation-path", derivationPath)
 	if err != nil {
 		return api.InitWalletResponse{}, fmt.Errorf("Could not initialize wallet: %w", err)
 	}
@@ -56,13 +56,13 @@ func (c *Client) InitWallet() (api.InitWalletResponse, error) {
 }
 
 // Recover wallet
-func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool) (api.RecoverWalletResponse, error) {
+func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string) (api.RecoverWalletResponse, error) {
 	var responseBytes []byte
 	var err error
 	if skipValidatorKeyRecovery {
-		responseBytes, err = c.callAPI("wallet recover --skip-validator-key-recovery", mnemonic)
+		responseBytes, err = c.callAPI("wallet recover --skip-validator-key-recovery --derivation-path", derivationPath, mnemonic)
 	} else {
-		responseBytes, err = c.callAPI("wallet recover", mnemonic)
+		responseBytes, err = c.callAPI("wallet recover --derivation-path", derivationPath, mnemonic)
 	}
 	if err != nil {
 		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %w", err)

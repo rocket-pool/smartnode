@@ -51,6 +51,12 @@ func recoverWallet(c *cli.Context) error {
 	// Handle validator key recovery skipping
 	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
 
+	// Get the derivation path
+	derivationPath := c.String("derivation-path")
+	if derivationPath != "" {
+		fmt.Printf("Using a custom derivation path (%s)\n\n.", derivationPath)
+	}
+
 	// Log
 	if skipValidatorKeyRecovery {
 		fmt.Println("Recovering node wallet only (ignoring validator keys)...")
@@ -59,7 +65,7 @@ func recoverWallet(c *cli.Context) error {
 	}
 
 	// Recover wallet
-	response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery)
+	response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath)
 	if err != nil {
 		return err
 	}

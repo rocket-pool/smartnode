@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -36,8 +37,19 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 		return nil, errors.New("The wallet is already initialized")
 	}
 
+	// Get the derivation path
+	path := c.String("derivation-path")
+	switch path {
+	case "":
+		path = wallet.DefaultNodeKeyPath
+	case "ledgerLive":
+		path = wallet.LedgerLiveNodeKeyPath
+	case "mew":
+		path = wallet.MyEtherWalletNodeKeyPath
+	}
+
 	// Recover wallet
-	if err := w.Recover(mnemonic); err != nil {
+	if err := w.Recover(path, mnemonic); err != nil {
 		return nil, err
 	}
 
