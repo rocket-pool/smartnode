@@ -56,8 +56,14 @@ func (c *Client) InitWallet() (api.InitWalletResponse, error) {
 }
 
 // Recover wallet
-func (c *Client) RecoverWallet(mnemonic string) (api.RecoverWalletResponse, error) {
-	responseBytes, err := c.callAPI("wallet recover", mnemonic)
+func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool) (api.RecoverWalletResponse, error) {
+	var responseBytes []byte
+	var err error
+	if skipValidatorKeyRecovery {
+		responseBytes, err = c.callAPI("wallet recover --skip-validator-key-recovery", mnemonic)
+	} else {
+		responseBytes, err = c.callAPI("wallet recover", mnemonic)
+	}
 	if err != nil {
 		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %w", err)
 	}

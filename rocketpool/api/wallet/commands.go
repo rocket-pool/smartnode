@@ -81,6 +81,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"r"},
 				Usage:     "Recover a node wallet from a mnemonic phrase",
 				UsageText: "rocketpool api wallet recover mnemonic",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "skip-validator-key-recovery, k",
+						Usage: "Recover the node wallet, but do not regenerate its validator keys",
+					},
+				},
 				Action: func(c *cli.Context) error {
 
 					// Validate args

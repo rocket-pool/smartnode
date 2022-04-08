@@ -48,11 +48,18 @@ func recoverWallet(c *cli.Context) error {
 		mnemonic = promptMnemonic()
 	}
 
+	// Handle validator key recovery skipping
+	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
+
 	// Log
-	fmt.Println("Recovering node wallet...")
+	if skipValidatorKeyRecovery {
+		fmt.Println("Recovering node wallet only (ignoring validator keys)...")
+	} else {
+		fmt.Println("Recovering node wallet and validator keys...")
+	}
 
 	// Recover wallet
-	response, err := rp.RecoverWallet(mnemonic)
+	response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery)
 	if err != nil {
 		return err
 	}

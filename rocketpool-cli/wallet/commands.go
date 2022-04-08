@@ -81,6 +81,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "mnemonic, m",
 						Usage: "The mnemonic phrase to recover the wallet from",
 					},
+					cli.BoolFlag{
+						Name:  "skip-validator-key-recovery, k",
+						Usage: "Recover the node wallet, but do not regenerate its validator keys",
+					},
 				},
 				Action: func(c *cli.Context) error {
 
