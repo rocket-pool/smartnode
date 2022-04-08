@@ -83,6 +83,9 @@ type SmartnodeConfig struct {
 
 	// The contract address of the RPL faucet
 	rplFaucetAddress map[Network]string `yaml:"rplFaucetAddress"`
+
+	// The contract address of rETH
+	rethAddress map[Network]string `yaml:"rethAddress"`
 }
 
 // Generates a new Smartnode configuration
@@ -237,6 +240,12 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
 			Network_Kiln:    "0xC066e113cD3a568EdcF18D2Fd502f399E63Bc7B7",
 		},
+
+		rethAddress: map[Network]string{
+			Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
+			Network_Prater:  "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
+			Network_Kiln:    "0xfD64e5461e790b2108Fcf1Bcf9fA6151E7753Ff7",
+		},
 	}
 
 }
@@ -323,6 +332,10 @@ func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 // The the title for the config
 func (config *SmartnodeConfig) GetConfigTitle() string {
 	return config.Title
+}
+
+func (config *SmartnodeConfig) GetRethAddress() string {
+	return config.rethAddress[config.Network.Value.(Network)]
 }
 
 func getDefaultDataDir(config *RocketPoolConfig) string {

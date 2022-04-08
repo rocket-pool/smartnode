@@ -46,9 +46,10 @@ const (
 	APIContainerSuffix string = "_api"
 	APIBinPath         string = "/go/bin/rocketpool"
 
-	templatesDir string = "templates"
-	overrideDir  string = "override"
-	runtimeDir   string = "runtime"
+	templatesDir           string = "templates"
+	overrideDir            string = "override"
+	runtimeDir             string = "runtime"
+	defaultFeeRecipientDir string = "fr-default"
 
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
@@ -1312,6 +1313,34 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		}
 		deployedContainers = append(deployedContainers, prometheusComposePath)
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
+	}
+
+	// Deploy the fee recipient templates
+	defaultFrTemplatesFolder := filepath.Join(templatesDir, defaultFeeRecipientDir)
+	defaultFrDeploymentPath := filepath.Join(cfg.Smartnode.DataPath.Value.(string), defaultFeeRecipientDir)
+	err = os.MkdirAll(defaultFrDeploymentPath, 0775)
+	if err != nil {
+		return []string{}, fmt.Errorf("error creating default fee recipient directory: %w", err)
+	}
+	for _, option := range cfg.ConsensusClient.Options {
+		client := option.Value.(config.ConsensusClient)
+		clientString := string(client)
+
+		// Do the environment var substitution
+		contents, err = envsubst.ReadFile(filepath.Join(defaultFrTemplatesFolder, clientString+templateSuffix))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting template for %s fee recipient file: %w", clientString, err)
+		}
+
+		// Write the file if it doesn't exist
+		targetPath := filepath.Join(defaultFrDeploymentPath, clientString)
+		_, err = os.Stat(targetPath)
+		if os.IsNotExist(err) {
+			err = ioutil.WriteFile(targetPath, contents, 0664)
+			if err != nil {
+				return []string{}, fmt.Errorf("could not write default fee recipient file for %s to %s: %w", clientString, targetPath, err)
+			}
+		}
 	}
 
 	return deployedContainers, nil
