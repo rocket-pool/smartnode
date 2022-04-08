@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/docker/docker/client"
@@ -161,22 +160,6 @@ func (t *stakePrelaunchMinipools) run() error {
 
 	// Restart validator process if any minipools were staked successfully
 	if successCount > 0 {
-		_, err = t.w.StoreFeeRecipientFile(t.rp)
-		if err != nil {
-			// If the fee recipient file couldn't be saved, we have to stop the VC out of safety.
-			builder := strings.Builder{}
-			builder.WriteString("***** ERROR *****\n")
-			builder.WriteString("*** Couldn't create the file that maps your validator keys to the fee recipient!\n")
-			builder.WriteString(fmt.Sprintf("*** Error: %s\n", err.Error()))
-			builder.WriteString("*** This will prevent any transaction fees you receive from going to your node's fee recipient contract.\n")
-			builder.WriteString("*** To prevent you from being flagged for stealing those fees from the protocol, your validator container will be shut down.\n")
-			builder.WriteString("*** PLEASE REPORT THIS TO THE DEVELOPERS! ***\n")
-			err = validator.StopValidator(t.cfg, t.bc, &t.log, t.d)
-			if err != nil {
-				builder.WriteString(fmt.Sprintf("*** Error stopping validator container: %s\n", err.Error()))
-			}
-			return fmt.Errorf(builder.String())
-		}
 		if err := validator.RestartValidator(t.cfg, t.bc, &t.log, t.d); err != nil {
 			return err
 		}

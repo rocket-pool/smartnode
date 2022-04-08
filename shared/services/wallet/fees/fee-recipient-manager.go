@@ -7,7 +7,9 @@ import (
 // Implementations of this interface will manage the fee recipient file for the corresponding Consensus client.
 type FeeRecipientManager interface {
 	// Checks if the fee recipient file exists and has the correct distributor address in it.
-	// If it does, this returns true - the file is up to date.
-	// Otherwise, this writes the file and returns false indicating that the VC should be restarted to pick up the new file.
-	CheckAndUpdateFeeRecipientFile(distributor common.Address) (bool, error)
+	// The first return value is for file existence, the second is for validation of the fee recipient address inside.
+	CheckFeeRecipientFile(distributor common.Address) (bool, bool, error)
+
+	// Writes the given address to the fee recipient file. The VC should be restarted to pick up the new file.
+	UpdateFeeRecipientFile(distributor common.Address) error
 }

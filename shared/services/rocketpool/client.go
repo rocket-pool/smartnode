@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/a8m/envsubst"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
@@ -576,7 +575,7 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 func (c *Client) StartService(composeFiles []string) error {
 
 	// Start the API container first
-	cmd, err := c.compose([]string{}, "up -d", true, nil)
+	cmd, err := c.compose([]string{}, "up -d")
 	if err != nil {
 		return fmt.Errorf("error creating compose command for API container: %w", err)
 	}
@@ -585,21 +584,8 @@ func (c *Client) StartService(composeFiles []string) error {
 		return fmt.Errorf("error starting API container: %w", err)
 	}
 
-	// Set up the fee recipient file
-	response, err := c.CreateFeeRecipientFile()
-	if err != nil {
-		return fmt.Errorf("error creating fee recipient file: %w", err)
-	}
-
-	// Get the distributor address for this node
-	distributor := &response.Distributor
-	blankAddress := common.Address{}
-	if response.Distributor == blankAddress {
-		distributor = nil
-	}
-
 	// Start all of the containers
-	cmd, err = c.compose(composeFiles, "up -d --remove-orphans", false, distributor)
+	cmd, err = c.compose(composeFiles, "up -d --remove-orphans")
 	if err != nil {
 		return err
 	}
@@ -608,7 +594,7 @@ func (c *Client) StartService(composeFiles []string) error {
 
 // Pause the Rocket Pool service
 func (c *Client) PauseService(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "stop", false, nil)
+	cmd, err := c.compose(composeFiles, "stop")
 	if err != nil {
 		return err
 	}
@@ -617,7 +603,7 @@ func (c *Client) PauseService(composeFiles []string) error {
 
 // Stop the Rocket Pool service
 func (c *Client) StopService(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "down -v", false, nil)
+	cmd, err := c.compose(composeFiles, "down -v")
 	if err != nil {
 		return err
 	}
@@ -626,7 +612,7 @@ func (c *Client) StopService(composeFiles []string) error {
 
 // Print the Rocket Pool service status
 func (c *Client) PrintServiceStatus(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "ps", false, nil)
+	cmd, err := c.compose(composeFiles, "ps")
 	if err != nil {
 		return err
 	}
@@ -639,7 +625,7 @@ func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNam
 	for i, serviceName := range serviceNames {
 		sanitizedStrings[i] = fmt.Sprintf("%s", shellescape.Quote(serviceName))
 	}
-	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")), false, nil)
+	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
 	if err != nil {
 		return err
 	}
@@ -650,7 +636,7 @@ func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNam
 func (c *Client) PrintServiceStats(composeFiles []string) error {
 
 	// Get service container IDs
-	cmd, err := c.compose(composeFiles, "ps -q", false, nil)
+	cmd, err := c.compose(composeFiles, "ps -q")
 	if err != nil {
 		return err
 	}
@@ -1056,7 +1042,7 @@ func convertUintParam(oldParam config.UserParam, newParam *config.Parameter, net
 }
 
 // Build a docker-compose command
-func (c *Client) compose(composeFiles []string, args string, apiOnly bool, nodeDistributorAddress *common.Address) (string, error) {
+func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	// Cancel if running in non-docker mode
 	if c.daemonPath != "" {
@@ -1123,9 +1109,6 @@ func (c *Client) compose(composeFiles []string, args string, apiOnly bool, nodeD
 	settings := cfg.GenerateEnvironmentVariables()
 	settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
 	settings["ROCKET_POOL_VERSION"] = fmt.Sprintf("v%s", shared.RocketPoolVersion)
-	if nodeDistributorAddress != nil {
-		settings["NODE_FEE_RECIPIENT"] = nodeDistributorAddress.Hex()
-	}
 
 	// Deploy the templates and run environment variable substitution on them
 	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
@@ -1141,17 +1124,8 @@ func (c *Client) compose(composeFiles []string, args string, apiOnly bool, nodeD
 
 	// Include all of the relevant docker compose definition files
 	composeFileFlags := []string{}
-	if apiOnly {
-		for _, container := range deployedContainers {
-			if strings.Contains(container, config.ApiContainerName+composeFileSuffix) {
-				composeFileFlags = []string{fmt.Sprintf("-f %s", shellescape.Quote(container))}
-				break
-			}
-		}
-	} else {
-		for _, container := range deployedContainers {
-			composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
-		}
+	for _, container := range deployedContainers {
+		composeFileFlags = append(composeFileFlags, fmt.Sprintf("-f %s", shellescape.Quote(container)))
 	}
 
 	// Return command

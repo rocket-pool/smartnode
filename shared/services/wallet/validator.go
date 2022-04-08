@@ -189,34 +189,47 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 
 }
 
-// Store the fee recipient file for this wallet's validators
-func (w *Wallet) CheckAndUpdateFeeRecipientFile(distributor common.Address) (common.Address, error) {
+// Check if the fee recipient file for this wallet's validators exists, and has the correct address as the default
+// Note: only call this after the merge contracts have been deployed!
+// Use shared/utils/rp.IsMergeUpdateDeployed() to check.
+func (w *Wallet) CheckFeeRecipientFile(distributor common.Address) (bool, bool, error) {
 
-	// TODO: REMOVE AFTER CONTRACT UPGRADES
-	return common.Address{}, nil
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return common.Address{}, nil
-	}
-
-	// Get the node account
-	account, err := w.GetNodeAccount()
-	if err != nil {
-		return common.Address{}, fmt.Errorf("error getting node account: %w", err)
-	}
-
-	// Store the files
-	var nodeDistributorAddress common.Address
+	// Check the fee recipient for all managers in the wallet
 	for name, fm := range w.feeRecipientManagers {
-		// TODO: split CheckAndUpdateFeeRecipientFile into 2 functions, so the daemon loop can call and log info from them appropriately
-		nodeDistributorAddress, err = fm.StoreFeeRecipientFile(rp, account.Address)
+		fileExists, correctAddress, err := fm.CheckFeeRecipientFile(distributor)
 		if err != nil {
-			return common.Address{}, fmt.Errorf("error storing fee recipients for %s: %w", name, err)
+			return false, false, fmt.Errorf("error checking fee recipients for %s: %w", name, err)
+		}
+
+		// If any of them don't have the correct file, fail
+		if !fileExists {
+			return false, false, nil
+		}
+
+		// If any of them don't have the correct address, fail
+		if !correctAddress {
+			return true, false, nil
 		}
 	}
 
-	return nodeDistributorAddress, nil
+	// If all of them are good, return a success
+	return true, true, nil
+}
+
+// Store the fee recipient file for this wallet's validators
+// Note: only call this after the merge contracts have been deployed!
+// Use shared/utils/rp.IsMergeUpdateDeployed() to check.
+func (w *Wallet) UpdateFeeRecipientFile(distributor common.Address) error {
+
+	// Check the fee recipient for all managers in the wallet
+	for name, fm := range w.feeRecipientManagers {
+		err := fm.UpdateFeeRecipientFile(distributor)
+		if err != nil {
+			return fmt.Errorf("error storing fee recipient file for %s: %w", name, err)
+		}
+	}
+
+	return nil
 
 }
 

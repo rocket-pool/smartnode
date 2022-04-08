@@ -1,8 +1,6 @@
 package wallet
 
 import (
-	"fmt"
-
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/urfave/cli"
 
@@ -54,12 +52,6 @@ func rebuildWallet(c *cli.Context) (*api.RebuildWalletResponse, error) {
 	// Save wallet
 	if err := w.Save(); err != nil {
 		return nil, err
-	}
-
-	// Regenerate the fee recipient file
-	_, err = w.StoreFeeRecipientFile(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error regenerating fee recipient file: %w", err)
 	}
 
 	// Return response

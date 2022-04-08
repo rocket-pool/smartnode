@@ -29,47 +29,51 @@ func NewFeeRecipientManager(keystore keystore.Keystore) *FeeRecipientManager {
 }
 
 // Checks if the fee recipient file exists and has the correct distributor address in it.
-// If it does, this returns true - the file is up to date.
-// Otherwise, this writes the file and returns false indicating that the VC should be restarted to pick up the new file.
-func (fm *FeeRecipientManager) CheckAndUpdateFeeRecipientFile(distributor common.Address) (bool, error) {
+// The first return value is for file existence, the second is for validation of the fee recipient address inside.
+func (fm *FeeRecipientManager) CheckFeeRecipientFile(distributor common.Address) (bool, bool, error) {
+
+	// Check if the file exists
+	path := filepath.Join(fm.keystore.GetKeystoreDir(), config.LighthouseFeeRecipientFilename)
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false, false, nil
+	} else if err != nil {
+		return false, false, err
+	}
 
 	// Create the distributor address string for the node
 	distributorAddress := distributor.Hex()
 	expectedString := fmt.Sprintf("default: %s\n", distributorAddress)
 
-	// Check if the file exists, and write it if it doesn't
-	path := filepath.Join(fm.keystore.GetKeystoreDir(), config.LighthouseFeeRecipientFilename)
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		bytes := []byte(expectedString)
-		err = ioutil.WriteFile(path, bytes, FileMode)
-		if err != nil {
-			return false, fmt.Errorf("error writing fee recipient file: %w", err)
-		}
-
-		// If it wrote properly, indicate a success but that the file needed to be updated
-		return false, nil
-	}
-
 	// Compare the file contents with the expected string
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return false, fmt.Errorf("error reading fee recipient file: %w", err)
+		return false, false, fmt.Errorf("error reading fee recipient file: %w", err)
 	}
 	existingString := string(bytes)
 	if existingString != expectedString {
-		// Rewrite the file with the expected distributor address
-		bytes := []byte(expectedString)
-		err = ioutil.WriteFile(path, bytes, FileMode)
-		if err != nil {
-			return false, fmt.Errorf("error writing fee recipient file: %w", err)
-		}
-
 		// If it wrote properly, indicate a success but that the file needed to be updated
-		return false, nil
+		return true, false, nil
 	}
 
 	// The file existed and had the expected address, all set.
-	return true, nil
+	return true, true, nil
+}
+
+// Writes the given address to the fee recipient file. The VC should be restarted to pick up the new file.
+func (fm *FeeRecipientManager) UpdateFeeRecipientFile(distributor common.Address) error {
+
+	// Create the distributor address string for the node
+	distributorAddress := distributor.Hex()
+	expectedString := fmt.Sprintf("default: %s\n", distributorAddress)
+	bytes := []byte(expectedString)
+
+	// Write the file
+	path := filepath.Join(fm.keystore.GetKeystoreDir(), config.LighthouseFeeRecipientFilename)
+	err := ioutil.WriteFile(path, bytes, FileMode)
+	if err != nil {
+		return fmt.Errorf("error writing fee recipient file: %w", err)
+	}
+	return nil
 
 }

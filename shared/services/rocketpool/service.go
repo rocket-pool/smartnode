@@ -23,19 +23,3 @@ func (c *Client) TerminateDataFolder() (api.TerminateDataFolderResponse, error) 
 	}
 	return response, nil
 }
-
-// Creates the fee recipient file for the validator container.
-func (c *Client) CreateFeeRecipientFile() (api.CreateFeeRecipientFileResponse, error) {
-	responseBytes, err := c.callAPI("service create-fee-recipient-file")
-	if err != nil {
-		return api.CreateFeeRecipientFileResponse{}, fmt.Errorf("Could not create fee recipient file: %w", err)
-	}
-	var response api.CreateFeeRecipientFileResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CreateFeeRecipientFileResponse{}, fmt.Errorf("Could not decode create-fee-recipient-file response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CreateFeeRecipientFileResponse{}, fmt.Errorf("Could not create fee recipient file: %s", response.Error)
-	}
-	return response, nil
-}

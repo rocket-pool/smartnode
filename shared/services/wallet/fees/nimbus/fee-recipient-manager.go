@@ -25,10 +25,20 @@ func NewFeeRecipientManager(keystore keystore.Keystore) *FeeRecipientManager {
 }
 
 // Checks if the fee recipient file exists and has the correct distributor address in it.
-// If it does, this returns true - the file is up to date.
-// Otherwise, this writes the file and returns false indicating that the VC should be restarted to pick up the new file.
-func (fm *FeeRecipientManager) CheckAndUpdateFeeRecipientFile(distributor common.Address) (bool, error) {
+// The first return value is for file existence, the second is for validation of the fee recipient address inside.
+func (fm *FeeRecipientManager) CheckFeeRecipientFile(distributor common.Address) (bool, bool, error) {
 
-	return false, fmt.Errorf("Nimbus currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
+	return true, true, nil
+
+	return false, false, fmt.Errorf("Nimbus currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
+
+}
+
+// Writes the given address to the fee recipient file. The VC should be restarted to pick up the new file.
+func (fm *FeeRecipientManager) UpdateFeeRecipientFile(distributor common.Address) error {
+
+	return nil
+
+	return fmt.Errorf("Nimbus currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
 
 }

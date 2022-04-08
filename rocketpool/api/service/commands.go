@@ -32,25 +32,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-
-			{
-				Name:      "create-fee-recipient-file",
-				Aliases:   []string{"f"},
-				Usage:     "Creates the fee recipient file for the validator container",
-				UsageText: "rocketpool api service create-fee-recipient-file",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(createFeeRecipientFile(c))
-					return nil
-
-				},
-			},
 		},
 	})
 }
