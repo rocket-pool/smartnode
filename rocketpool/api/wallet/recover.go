@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -17,16 +18,19 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 	if err := services.RequireNodePassword(c); err != nil {
 		return nil, err
 	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
+	var rp *rocketpool.RocketPool
+	if !c.Bool("skip-validator-key-recovery") {
+		if err := services.RequireRocketStorage(c); err != nil {
+			return nil, err
+		}
+		rp, err = services.GetRocketPool(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Response
