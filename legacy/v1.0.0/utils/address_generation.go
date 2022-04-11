@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
@@ -26,7 +26,7 @@ func GetNodeSalt(nodeAddress common.Address, salt *big.Int) common.Hash {
 func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte) (common.Address, error) {
 
 	// Get dependencies
-	rocketMinipoolFactory, err := getRocketMinipoolFactory(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -55,16 +55,16 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depo
 	initData := append(minipoolBytecode, packedConstructorArgs...)
 	initHash := crypto.Keccak256(initData)
 
-	address := crypto.CreateAddress2(*rocketMinipoolFactory.Address, nodeSalt, initHash)
+	address := crypto.CreateAddress2(*rocketMinipoolManager.Address, nodeSalt, initHash)
 	return address, nil
 
 }
 
 // Get contracts
-var rocketMinipoolFactoryLock sync.Mutex
+var rocketMinipoolManagerLock sync.Mutex
 
-func getRocketMinipoolFactory(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
-	rocketMinipoolFactoryLock.Lock()
-	defer rocketMinipoolFactoryLock.Unlock()
-	return rp.GetContract("rocketMinipoolFactory")
+func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+	rocketMinipoolManagerLock.Lock()
+	defer rocketMinipoolManagerLock.Unlock()
+	return rp.GetContract("rocketMinipoolManager")
 }
