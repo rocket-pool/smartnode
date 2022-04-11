@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	minipool_v1_0_0 "github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/minipool"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr string) (*api.GetVanityArtifactsResponse, error) {
@@ -55,7 +57,16 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 	if err != nil {
 		return nil, fmt.Errorf("Error getting RocketMinipool ABI: %w", err)
 	}
-	minipoolBytecode, err := minipool.GetMinipoolBytecode(rp, nil)
+	isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
+	}
+	var minipoolBytecode []byte
+	if isMergeUpdateDeployed {
+		minipoolBytecode, err = minipool.GetMinipoolBytecode(rp, nil)
+	} else {
+		minipoolBytecode, err = minipool_v1_0_0.GetMinipoolBytecode(rp, nil)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("Error getting minipool contract bytecode: %w", err)
 	}
