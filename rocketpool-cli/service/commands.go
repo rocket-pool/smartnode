@@ -301,6 +301,24 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "compose",
+				Usage:     "View the Rocket Pool service docker-compose config",
+				UsageText: "rocketpool service compose",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return serviceCompose(c)
+
+				},
+			},
+
+
+			{
 				Name:      "version",
 				Aliases:   []string{"v"},
 				Usage:     "View the Rocket Pool service version information",
