@@ -37,7 +37,7 @@ func NewNimbusConfig(config *RocketPoolConfig) *NimbusConfig {
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true, // TODO: Set to false after v1.3.0
+			OverwriteOnUpgrade:   false,
 		},
 
 		ContainerTag: Parameter{
