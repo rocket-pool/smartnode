@@ -772,6 +772,93 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "is-fee-distributor-initialized",
+				Usage:     "Check if the fee distributor contract for this node is initialized and deployed",
+				UsageText: "rocketpool api node is-fee-distributor-initialized",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(isFeeDistributorInitialized(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-initialize-fee-distributor-gas",
+				Usage:     "Estimate the cost of initializing the fee distributor",
+				UsageText: "rocketpool api node get-initialize-fee-distributor-gas",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getInitializeFeeDistributorGas(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "initialize-fee-distributor",
+				Usage:     "Initialize and deploy the fee distributor contract for this node",
+				UsageText: "rocketpool api node initialize-fee-distributor",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(initializeFeeDistributor(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-distribute",
+				Usage:     "Check if distributing ETH from the node's fee distributor is possible",
+				UsageText: "rocketpool api node can-distribute",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canDistribute(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "distribute",
+				Usage:     "Distribute ETH from the node's fee distributor",
+				UsageText: "rocketpool api node distribute",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(distribute(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

@@ -50,3 +50,9 @@ type NetworkTimezonesResponse struct {
 	TimezoneTotal  uint64            `json:"timezoneTotal"`
 	NodeTotal      uint64            `json:"nodeTotal"`
 }
+
+type NetworkMergeUpdateStatusResponse struct {
+	Status           string `json:"status"`
+	Error            string `json:"error"`
+	IsUpdateDeployed bool   `json:"isUpdateDeployed"`
+}

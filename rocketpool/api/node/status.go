@@ -2,6 +2,8 @@ package node
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
@@ -43,6 +46,13 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return nil, err
 	}
 	response.AccountAddress = nodeAccount.Address
+
+	// Get merge update deployment status
+	isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
+	}
+	response.IsMergeUpdateDeployed = isMergeUpdateDeployed
 
 	// Sync
 	var wg errgroup.Group
@@ -137,6 +147,23 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		}
 		return err
 	})
+
+	if isMergeUpdateDeployed {
+		wg.Go(func() error {
+			var err error
+			response.IsFeeDistributorInitialized, err = node.GetFeeDistributorInitialized(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			response.FeeDistributorAddress, err = node.GetDistributorAddress(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return err
+			}
+			response.FeeDistributorBalance, err = rp.Client.BalanceAt(context.Background(), response.FeeDistributorAddress, nil)
+			return err
+		})
+	}
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
