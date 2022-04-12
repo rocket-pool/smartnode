@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/urfave/cli"
 
@@ -47,6 +48,7 @@ func recoverWallet(c *cli.Context) error {
 	} else {
 		mnemonic = promptMnemonic()
 	}
+	mnemonic = strings.TrimSpace(mnemonic)
 
 	// Handle validator key recovery skipping
 	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
