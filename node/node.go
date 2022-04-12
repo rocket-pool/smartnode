@@ -340,6 +340,54 @@ func GetRewardNetwork(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 	return (*rewardNetwork).Uint64(), nil
 }
 
+// Check if a node's fee distributor has been initialized yet
+func GetFeeDistributorInitialized(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return false, err
+	}
+	isInitialized := new(bool)
+	if err := rocketNodeManager.Call(opts, isInitialized, "getFeeDistributorInitialised", nodeAddress); err != nil {
+		return false, fmt.Errorf("Could not check if node %s's fee distributor is initialized: %w", nodeAddress.Hex(), err)
+	}
+	return *isInitialized, nil
+}
+
+// Estimate the gas for creating the fee distributor contract for a node
+func EstimateInitializeFeeDistributorGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "initialiseFeeDistributor")
+}
+
+// Create the fee distributor contract for a node
+func InitializeFeeDistributor(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	hash, err := rocketNodeManager.Transact(opts, "initialiseFeeDistributor")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not initialize fee distributor: %w", err)
+	}
+	return hash, nil
+}
+
+// Get a node's average minipool fee
+func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (float64, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return 0, err
+	}
+	avgFee := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, avgFee, "getAverageNodeFee", nodeAddress); err != nil {
+		return 0, fmt.Errorf("Could not get node %s average fee: %w", nodeAddress.Hex(), err)
+	}
+	return eth.WeiToEth(*avgFee), nil
+}
+
 // Returns an array of block numbers for prices submissions the given trusted node has submitted since fromBlock
 func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (*[]uint64, error) {
 	// Get contracts
