@@ -652,6 +652,15 @@ func (c *Client) PrintServiceStats(composeFiles []string) error {
 
 }
 
+// Print the Rocket Pool service compose config
+func (c *Client) PrintServiceCompose(composeFiles []string) error {
+	cmd, err := c.compose(composeFiles, "config")
+	if err != nil {
+		return err
+	}
+	return c.printOutput(cmd)
+}
+
 // Get the Rocket Pool service version
 func (c *Client) GetServiceVersion() (string, error) {
 

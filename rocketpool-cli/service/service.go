@@ -937,6 +937,22 @@ func serviceStats(c *cli.Context) error {
 
 }
 
+// View the Rocket Pool service compose config
+func serviceCompose(c *cli.Context) error {
+
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
+
+	// Print service compose config
+	return rp.PrintServiceCompose(getComposeFiles(c))
+
+}
+
+
 // View the Rocket Pool service version information
 func serviceVersion(c *cli.Context) error {
 

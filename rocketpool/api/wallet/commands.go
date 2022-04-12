@@ -62,6 +62,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"i"},
 				Usage:     "Initialize the node wallet",
 				UsageText: "rocketpool api wallet init",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "derivation-path, d",
+						Usage: "Specify the derivation path for the wallet.\nOmit this flag (or leave it blank) for the default of \"m/44'/60'/0'/0/%d\" (where %d is the index).\nSet this to \"ledgerLive\" to use Ledger Live's path of \"m/44'/60'/%d/0/0\".\nSet this to \"mew\" to use MyEtherWallet's path of \"m/44'/60'/0'/%d\".\nFor custom paths, simply enter them here.",
+					},
+				},
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -81,6 +87,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"r"},
 				Usage:     "Recover a node wallet from a mnemonic phrase",
 				UsageText: "rocketpool api wallet recover mnemonic",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "skip-validator-key-recovery, k",
+						Usage: "Recover the node wallet, but do not regenerate its validator keys",
+					},
+					cli.StringFlag{
+						Name:  "derivation-path, d",
+						Usage: "Specify the derivation path for the wallet.\nOmit this flag (or leave it blank) for the default of \"m/44'/60'/0'/0/%d\" (where %d is the index).\nSet this to \"ledgerLive\" to use Ledger Live's path of \"m/44'/60'/%d/0/0\".\nSet this to \"mew\" to use MyEtherWallet's path of \"m/44'/60'/0'/%d\".\nFor custom paths, simply enter them here.",
+					},
+				},
 				Action: func(c *cli.Context) error {
 
 					// Validate args

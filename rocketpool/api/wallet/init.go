@@ -6,6 +6,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -28,8 +29,19 @@ func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
 		return nil, errors.New("The wallet is already initialized")
 	}
 
+	// Get the derivation path
+	path := c.String("derivation-path")
+	switch path {
+	case "":
+		path = wallet.DefaultNodeKeyPath
+	case "ledgerLive":
+		path = wallet.LedgerLiveNodeKeyPath
+	case "mew":
+		path = wallet.MyEtherWalletNodeKeyPath
+	}
+
 	// Initialize wallet
-	mnemonic, err := w.Initialize()
+	mnemonic, err := w.Initialize(path)
 	if err != nil {
 		return nil, err
 	}

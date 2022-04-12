@@ -37,7 +37,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 	} else {
 		confirm = true
 		fmt.Printf("%sYou have specified the \"--force\" option, so your new address will take effect immediately.\n", colorRed)
-		fmt.Printf("Please ensure that you have the correct address - you will not be able to change this once set!%s\n\n", colorReset)
+		fmt.Printf("Please ensure that you have the correct address - if you do not control the new address, you will not be able to change this once set!%s\n\n", colorReset)
 	}
 
 	// Check if the withdrawal address can be set
