@@ -23,6 +23,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	lhfees "github.com/rocket-pool/smartnode/shared/services/wallet/fees/lighthouse"
+	nmfees "github.com/rocket-pool/smartnode/shared/services/wallet/fees/nimbus"
+	prfees "github.com/rocket-pool/smartnode/shared/services/wallet/fees/prysm"
+	tkfees "github.com/rocket-pool/smartnode/shared/services/wallet/fees/teku"
 	lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
@@ -197,6 +201,8 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 		if err != nil {
 			return
 		}
+
+		// Keystores
 		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
 		nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
 		prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
@@ -205,6 +211,16 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 		nodeWallet.AddKeystore("nimbus", nimbusKeystore)
 		nodeWallet.AddKeystore("prysm", prysmKeystore)
 		nodeWallet.AddKeystore("teku", tekuKeystore)
+
+		// Fee recipient managers
+		lighthouseFm := lhfees.NewFeeRecipientManager(lighthouseKeystore)
+		nimbusFm := nmfees.NewFeeRecipientManager(nimbusKeystore)
+		prysmFm := prfees.NewFeeRecipientManager(prysmKeystore)
+		tekuFm := tkfees.NewFeeRecipientManager(tekuKeystore)
+		nodeWallet.AddFeeRecipientManager("lighthouse", lighthouseFm)
+		nodeWallet.AddFeeRecipientManager("nimbus", nimbusFm)
+		nodeWallet.AddFeeRecipientManager("prysm", prysmFm)
+		nodeWallet.AddFeeRecipientManager("teku", tekuFm)
 	})
 	return nodeWallet, err
 }

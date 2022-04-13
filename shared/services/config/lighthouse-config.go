@@ -1,7 +1,10 @@
 package config
 
-const lighthouseTag string = "sigp/lighthouse:v2.1.5"
-const defaultLhMaxPeers uint16 = 80
+const (
+	lighthouseTag                  string = "sigp/lighthouse:v2.2.1"
+	defaultLhMaxPeers              uint16 = 80
+	LighthouseFeeRecipientFilename string = "rp-fee-recipients.txt"
+)
 
 // Configuration for Lighthouse
 type LighthouseConfig struct {
@@ -37,7 +40,7 @@ func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true, // TODO: Set to false after v1.3.0
+			OverwriteOnUpgrade:   false,
 		},
 
 		ContainerTag: Parameter{

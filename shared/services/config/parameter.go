@@ -66,10 +66,10 @@ func (param *Parameter) serialize(serializedParams map[string]string) {
 }
 
 // Deserializes a map of settings into this parameter
-func (param *Parameter) deserialize(serializedParams map[string]string) error {
+func (param *Parameter) deserialize(serializedParams map[string]string, network Network) error {
 	value, exists := serializedParams[param.ID]
 	if !exists {
-		value = ""
+		return param.setToDefault(network)
 	}
 
 	var err error

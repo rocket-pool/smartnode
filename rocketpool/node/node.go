@@ -22,6 +22,7 @@ const (
 	ClaimRplRewardsColor         = color.FgGreen
 	StakePrelaunchMinipoolsColor = color.FgBlue
 	MetricsColor                 = color.FgHiYellow
+	ManageFeeRecipientColor      = color.FgHiCyan
 	ErrorColor                   = color.FgRed
 )
 
@@ -49,6 +50,10 @@ func run(c *cli.Context) error {
 	}
 
 	// Initialize tasks
+	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
+	if err != nil {
+		return err
+	}
 	claimRplRewards, err := newClaimRplRewards(c, log.NewColorLogger(ClaimRplRewardsColor))
 	if err != nil {
 		return err
@@ -68,6 +73,10 @@ func run(c *cli.Context) error {
 	// Run task loop
 	go func() {
 		for {
+			if err := manageFeeRecipient.run(); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
 			if err := claimRplRewards.run(); err != nil {
 				errorLog.Println(err)
 			}

@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/urfave/cli"
 
@@ -47,12 +48,26 @@ func recoverWallet(c *cli.Context) error {
 	} else {
 		mnemonic = promptMnemonic()
 	}
+	mnemonic = strings.TrimSpace(mnemonic)
+
+	// Handle validator key recovery skipping
+	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
+
+	// Get the derivation path
+	derivationPath := c.String("derivation-path")
+	if derivationPath != "" {
+		fmt.Printf("Using a custom derivation path (%s).\n\n", derivationPath)
+	}
 
 	// Log
-	fmt.Println("Recovering node wallet...")
+	if skipValidatorKeyRecovery {
+		fmt.Println("Recovering node wallet only (ignoring validator keys)...")
+	} else {
+		fmt.Println("Recovering node wallet and validator keys...")
+	}
 
 	// Recover wallet
-	response, err := rp.RecoverWallet(mnemonic)
+	response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath)
 	if err != nil {
 		return err
 	}
@@ -60,13 +75,15 @@ func recoverWallet(c *cli.Context) error {
 	// Log & return
 	fmt.Println("The node wallet was successfully recovered.")
 	fmt.Printf("Node account: %s\n", response.AccountAddress.Hex())
-	if len(response.ValidatorKeys) > 0 {
-		fmt.Println("Validator keys:")
-		for _, key := range response.ValidatorKeys {
-			fmt.Println(key.Hex())
+	if !skipValidatorKeyRecovery {
+		if len(response.ValidatorKeys) > 0 {
+			fmt.Println("Validator keys:")
+			for _, key := range response.ValidatorKeys {
+				fmt.Println(key.Hex())
+			}
+		} else {
+			fmt.Println("No validator keys were found.")
 		}
-	} else {
-		fmt.Println("No validator keys were found.")
 	}
 	return nil
 

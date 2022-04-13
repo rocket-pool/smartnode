@@ -17,6 +17,9 @@ type NativeConfig struct {
 
 	// The command for restarting the validator container in native mode
 	ValidatorRestartCommand Parameter `yaml:"validatorRestartCommand,omitempty"`
+
+	// The command for stopping the validator container in native mode
+	ValidatorStopCommand Parameter `yaml:"validatorStopCommand,omitempty"`
 }
 
 // Generates a new Smartnode configuration
@@ -89,6 +92,18 @@ func NewNativeConfig(config *RocketPoolConfig) *NativeConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
+
+		ValidatorStopCommand: Parameter{
+			ID:                   "validatorStopCommand",
+			Name:                 "Validator Stop Command",
+			Description:          "The absolute path to a custom script that will be invoked when Rocket Pool needs to stop your validator container in case of emergency. **For Native mode only.**",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: getDefaultValidatorStopCommand(config)},
+			AffectsContainers:    []ContainerID{ContainerID_Node},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
 	}
 
 }
@@ -100,11 +115,16 @@ func (config *NativeConfig) GetParameters() []*Parameter {
 		&config.ConsensusClient,
 		&config.CcHttpUrl,
 		&config.ValidatorRestartCommand,
+		&config.ValidatorStopCommand,
 	}
 }
 
 func getDefaultValidatorRestartCommand(config *RocketPoolConfig) string {
 	return filepath.Join(config.RocketPoolDirectory, "restart-vc.sh")
+}
+
+func getDefaultValidatorStopCommand(config *RocketPoolConfig) string {
+	return filepath.Join(config.RocketPoolDirectory, "stop-validator.sh")
 }
 
 // The the title for the config

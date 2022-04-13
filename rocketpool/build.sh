@@ -13,8 +13,8 @@ apt update
 apt dist-upgrade -y
 apt install build-essential git wget -y
 cd /tmp
-wget https://golang.org/dl/go1.17.8.linux-$ARCH.tar.gz
-rm -rf /usr/local/go && tar -C /usr/local -xzf go1.17.8.linux-$ARCH.tar.gz
+wget https://golang.org/dl/go1.18.1.linux-$ARCH.tar.gz
+rm -rf /usr/local/go && tar -C /usr/local -xzf go1.18.1.linux-$ARCH.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 cd /smartnode/rocketpool
 CGO_CFLAGS="-O -D__BLST_PORTABLE__" go build -o rocketpool-daemon-linux-$ARCH rocketpool.go

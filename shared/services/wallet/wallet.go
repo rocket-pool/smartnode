@@ -16,13 +16,17 @@ import (
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	"github.com/rocket-pool/smartnode/shared/services/wallet/fees"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
 // Config
 const (
-	EntropyBits = 256
-	FileMode    = 0600
+	EntropyBits              = 256
+	FileMode                 = 0600
+	DefaultNodeKeyPath       = "m/44'/60'/0'/0/%d"
+	LedgerLiveNodeKeyPath    = "m/44'/60'/%d/0/0"
+	MyEtherWalletNodeKeyPath = "m/44'/60'/0'/%d"
 )
 
 // Wallet
@@ -52,6 +56,9 @@ type Wallet struct {
 	// Keystores
 	keystores map[string]keystore.Keystore
 
+	// Fee recipient managers
+	feeRecipientManagers map[string]fees.FeeRecipientManager
+
 	// Desired gas price & limit from config
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
@@ -60,11 +67,12 @@ type Wallet struct {
 
 // Encrypted wallet store
 type walletStore struct {
-	Crypto      map[string]interface{} `json:"crypto"`
-	Name        string                 `json:"name"`
-	Version     uint                   `json:"version"`
-	UUID        uuid.UUID              `json:"uuid"`
-	NextAccount uint                   `json:"next_account"`
+	Crypto         map[string]interface{} `json:"crypto"`
+	Name           string                 `json:"name"`
+	Version        uint                   `json:"version"`
+	UUID           uuid.UUID              `json:"uuid"`
+	DerivationPath string                 `json:"derivationPath,omitempty"`
+	NextAccount    uint                   `json:"next_account"`
 }
 
 // Create new wallet
@@ -72,16 +80,17 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 
 	// Initialize wallet
 	w := &Wallet{
-		walletPath:          walletPath,
-		pm:                  passwordManager,
-		encryptor:           eth2ks.New(),
-		chainID:             big.NewInt(int64(chainId)),
-		validatorKeys:       map[uint]*eth2types.BLSPrivateKey{},
-		validatorKeyIndices: map[string]uint{},
-		keystores:           map[string]keystore.Keystore{},
-		maxFee:              maxFee,
-		maxPriorityFee:      maxPriorityFee,
-		gasLimit:            gasLimit,
+		walletPath:           walletPath,
+		pm:                   passwordManager,
+		encryptor:            eth2ks.New(),
+		chainID:              big.NewInt(int64(chainId)),
+		validatorKeys:        map[uint]*eth2types.BLSPrivateKey{},
+		validatorKeyIndices:  map[string]uint{},
+		keystores:            map[string]keystore.Keystore{},
+		feeRecipientManagers: map[string]fees.FeeRecipientManager{},
+		maxFee:               maxFee,
+		maxPriorityFee:       maxPriorityFee,
+		gasLimit:             gasLimit,
 	}
 
 	// Load & decrypt wallet store
@@ -103,6 +112,11 @@ func (w *Wallet) GetChainID() *big.Int {
 // Add a keystore to the wallet
 func (w *Wallet) AddKeystore(name string, ks keystore.Keystore) {
 	w.keystores[name] = ks
+}
+
+// Add a fee recipient manager to the wallet
+func (w *Wallet) AddFeeRecipientManager(name string, fm fees.FeeRecipientManager) {
+	w.feeRecipientManagers[name] = fm
 }
 
 // Check if the wallet has been initialized
@@ -138,7 +152,7 @@ func (w *Wallet) String() (string, error) {
 }
 
 // Initialize the wallet from a random seed
-func (w *Wallet) Initialize() (string, error) {
+func (w *Wallet) Initialize(derivationPath string) (string, error) {
 
 	// Check wallet is not initialized
 	if w.IsInitialized() {
@@ -158,7 +172,7 @@ func (w *Wallet) Initialize() (string, error) {
 	}
 
 	// Initialize wallet store
-	if err := w.initializeStore(mnemonic); err != nil {
+	if err := w.initializeStore(derivationPath, mnemonic); err != nil {
 		return "", err
 	}
 
@@ -168,7 +182,7 @@ func (w *Wallet) Initialize() (string, error) {
 }
 
 // Recover a wallet from a mnemonic
-func (w *Wallet) Recover(mnemonic string) error {
+func (w *Wallet) Recover(derivationPath string, mnemonic string) error {
 
 	// Check wallet is not initialized
 	if w.IsInitialized() {
@@ -181,7 +195,7 @@ func (w *Wallet) Recover(mnemonic string) error {
 	}
 
 	// Initialize wallet store
-	if err := w.initializeStore(mnemonic); err != nil {
+	if err := w.initializeStore(derivationPath, mnemonic); err != nil {
 		return err
 	}
 
@@ -235,6 +249,11 @@ func (w *Wallet) loadStore() (bool, error) {
 		return false, fmt.Errorf("Could not decode wallet: %w", err)
 	}
 
+	// Upgrade legacy wallets to include derivation paths
+	if w.ws.DerivationPath == "" {
+		w.ws.DerivationPath = DefaultNodeKeyPath
+	}
+
 	// Get wallet password
 	password, err := w.pm.GetPassword()
 	if err != nil {
@@ -259,7 +278,7 @@ func (w *Wallet) loadStore() (bool, error) {
 }
 
 // Initialize the encrypted wallet store from a mnemonic
-func (w *Wallet) initializeStore(mnemonic string) error {
+func (w *Wallet) initializeStore(derivationPath string, mnemonic string) error {
 
 	// Generate seed
 	w.seed = bip39.NewSeed(mnemonic, "")
@@ -285,11 +304,12 @@ func (w *Wallet) initializeStore(mnemonic string) error {
 
 	// Create wallet store
 	w.ws = &walletStore{
-		Crypto:      encryptedSeed,
-		Name:        w.encryptor.Name(),
-		Version:     w.encryptor.Version(),
-		UUID:        uuid.New(),
-		NextAccount: 0,
+		Crypto:         encryptedSeed,
+		Name:           w.encryptor.Name(),
+		Version:        w.encryptor.Version(),
+		UUID:           uuid.New(),
+		DerivationPath: derivationPath,
+		NextAccount:    0,
 	}
 
 	// Return

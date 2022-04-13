@@ -46,9 +46,10 @@ const (
 	APIContainerSuffix string = "_api"
 	APIBinPath         string = "/go/bin/rocketpool"
 
-	templatesDir string = "templates"
-	overrideDir  string = "override"
-	runtimeDir   string = "runtime"
+	templatesDir           string = "templates"
+	overrideDir            string = "override"
+	runtimeDir             string = "runtime"
+	defaultFeeRecipientDir string = "fr-default"
 
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
@@ -573,7 +574,19 @@ func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
 
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
-	cmd, err := c.compose(composeFiles, "up -d --remove-orphans")
+
+	// Start the API container first
+	cmd, err := c.compose([]string{}, "up -d")
+	if err != nil {
+		return fmt.Errorf("error creating compose command for API container: %w", err)
+	}
+	err = c.printOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error starting API container: %w", err)
+	}
+
+	// Start all of the containers
+	cmd, err = c.compose(composeFiles, "up -d --remove-orphans")
 	if err != nil {
 		return err
 	}
@@ -637,6 +650,15 @@ func (c *Client) PrintServiceStats(composeFiles []string) error {
 	// Print stats
 	return c.printOutput(fmt.Sprintf("docker stats %s", strings.Join(containerIds, " ")))
 
+}
+
+// Print the Rocket Pool service compose config
+func (c *Client) PrintServiceCompose(composeFiles []string) error {
+	cmd, err := c.compose(composeFiles, "config")
+	if err != nil {
+		return err
+	}
+	return c.printOutput(cmd)
 }
 
 // Get the Rocket Pool service version
@@ -1315,6 +1337,34 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		}
 		deployedContainers = append(deployedContainers, ipfsComposePath)
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.IpfsContainerName+composeFileSuffix))
+	}
+
+	// Deploy the fee recipient templates
+	defaultFrTemplatesFolder := filepath.Join(templatesFolder, defaultFeeRecipientDir)
+	defaultFrDeploymentPath := filepath.Join(cfg.Smartnode.DataPath.Value.(string), defaultFeeRecipientDir)
+	err = os.MkdirAll(defaultFrDeploymentPath, 0775)
+	if err != nil {
+		return []string{}, fmt.Errorf("error creating default fee recipient directory: %w", err)
+	}
+	for _, option := range cfg.ConsensusClient.Options {
+		client := option.Value.(config.ConsensusClient)
+		clientString := string(client)
+
+		// Do the environment var substitution
+		contents, err = envsubst.ReadFile(filepath.Join(defaultFrTemplatesFolder, clientString+templateSuffix))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting template for %s fee recipient file: %w", clientString, err)
+		}
+
+		// Write the file if it doesn't exist
+		targetPath := filepath.Join(defaultFrDeploymentPath, clientString)
+		_, err = os.Stat(targetPath)
+		if os.IsNotExist(err) {
+			err = ioutil.WriteFile(targetPath, contents, 0664)
+			if err != nil {
+				return []string{}, fmt.Errorf("could not write default fee recipient file for %s to %s: %w", clientString, targetPath, err)
+			}
+		}
 	}
 
 	return deployedContainers, nil

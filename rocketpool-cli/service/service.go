@@ -498,6 +498,7 @@ func startService(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Update the Prometheus template with the assigned ports
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("Error loading user settings: %w", err)
@@ -935,6 +936,22 @@ func serviceStats(c *cli.Context) error {
 	return rp.PrintServiceStats(getComposeFiles(c))
 
 }
+
+// View the Rocket Pool service compose config
+func serviceCompose(c *cli.Context) error {
+
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
+
+	// Print service compose config
+	return rp.PrintServiceCompose(getComposeFiles(c))
+
+}
+
 
 // View the Rocket Pool service version information
 func serviceVersion(c *cli.Context) error {

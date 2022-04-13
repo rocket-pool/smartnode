@@ -1,7 +1,10 @@
 package config
 
-const tekuTag string = "consensys/teku:22.3.2"
-const defaultTekuMaxPeers uint16 = 74
+const (
+	tekuTag                  string = "consensys/teku:22.4.0"
+	defaultTekuMaxPeers      uint16 = 74
+	TekuFeeRecipientFilename string = "rp-fee-recipients.json"
+)
 
 // Configuration for Teku
 type TekuConfig struct {

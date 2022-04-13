@@ -14,6 +14,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+const (
+	colorReset  string = "\033[0m"
+	colorYellow string = "\033[33m"
+)
+
 func getStatus(c *cli.Context) error {
 
 	// Get RP client
@@ -56,8 +61,6 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("")
 
 		// Withdrawal address & balances
-		colorReset := "\033[0m"
-		colorYellow := "\033[33m"
 		if !bytes.Equal(status.AccountAddress.Bytes(), status.WithdrawalAddress.Bytes()) {
 			fmt.Printf(
 				"The node's withdrawal address %s has a balance of %.6f ETH and %.6f RPL.\n",
@@ -74,6 +77,14 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("%sThe node's withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingWithdrawalAddress.Hex())
 			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
 			fmt.Println("")
+		}
+
+		// Fee distributor details
+		if status.IsMergeUpdateDeployed {
+			fmt.Printf("The node's fee distributor %s has a balance of %.6f ETH.\n", status.FeeDistributorAddress.Hex(), math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
+			if !status.IsFeeDistributorInitialized {
+				fmt.Printf("%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n\n", colorYellow, colorReset)
+			}
 		}
 
 		// RPL stake details

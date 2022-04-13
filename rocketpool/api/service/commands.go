@@ -14,7 +14,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the Rocket Pool deposit queue",
 		Subcommands: []cli.Command{
-
 			{
 				Name:      "terminate-data-folder",
 				Aliases:   []string{"t"},

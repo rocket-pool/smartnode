@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 
 	"github.com/alessio/shellescape"
@@ -186,7 +187,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Geth",
 				Description: "Geth is one of the three original implementations of the Ethereum protocol. It is written in Go, fully open source and licensed under the GNU LGPL v3.",
 				Value:       ExecutionClient_Geth,
-			}, {
+			}, /*{
 				Name:        "Infura",
 				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
 				Value:       ExecutionClient_Infura,
@@ -194,7 +195,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Pocket",
 				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
 				Value:       ExecutionClient_Pocket,
-			}},
+			}*/},
 		},
 
 		UseFallbackExecutionClient: Parameter{
@@ -241,14 +242,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				Name:        "Infura",
-				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
-				Value:       ExecutionClient_Infura,
-			}, {
-				Name:        "Pocket",
-				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
-				Value:       ExecutionClient_Pocket,
-			}, {
 				Name:        "External",
 				Description: "Use an existing Execution client that you already manage externally on your own.",
 				Value:       ExecutionClient_Unknown,
@@ -302,19 +295,19 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Lighthouse",
 				Description: "Lighthouse is a Consensus client with a heavy focus on speed and security. The team behind it, Sigma Prime, is an information security and software engineering firm who have funded Lighthouse along with the Ethereum Foundation, Consensys, and private individuals. Lighthouse is built in Rust and offered under an Apache 2.0 License.",
 				Value:       ConsensusClient_Lighthouse,
-			}, {
-				Name:        "Nimbus",
-				Description: "Nimbus is a Consensus client implementation that strives to be as lightweight as possible in terms of resources used. This allows it to perform well on embedded systems, resource-restricted devices -- including Raspberry Pis and mobile devices -- and multi-purpose servers.",
-				Value:       ConsensusClient_Nimbus,
-			}, {
-				Name:        "Prysm",
-				Description: "Prysm is a Go implementation of Ethereum Consensus protocol with a focus on usability, security, and reliability. Prysm is developed by Prysmatic Labs, a company with the sole focus on the development of their client. Prysm is written in Go and released under a GPL-3.0 license.",
-				Value:       ConsensusClient_Prysm,
-			}, {
-				Name:        "Teku",
-				Description: "PegaSys Teku (formerly known as Artemis) is a Java-based Ethereum 2.0 client designed & built to meet institutional needs and security requirements. PegaSys is an arm of ConsenSys dedicated to building enterprise-ready clients and tools for interacting with the core Ethereum platform. Teku is Apache 2 licensed and written in Java, a language notable for its maturity & ubiquity.",
-				Value:       ConsensusClient_Teku,
-			}},
+			}, /*{
+					Name:        "Nimbus",
+					Description: "Nimbus is a Consensus client implementation that strives to be as lightweight as possible in terms of resources used. This allows it to perform well on embedded systems, resource-restricted devices -- including Raspberry Pis and mobile devices -- and multi-purpose servers.",
+					Value:       ConsensusClient_Nimbus,
+				}, {
+					Name:        "Prysm",
+					Description: "Prysm is a Go implementation of Ethereum Consensus protocol with a focus on usability, security, and reliability. Prysm is developed by Prysmatic Labs, a company with the sole focus on the development of their client. Prysm is written in Go and released under a GPL-3.0 license.",
+					Value:       ConsensusClient_Prysm,
+				}, */{
+					Name:        "Teku",
+					Description: "PegaSys Teku (formerly known as Artemis) is a Java-based Ethereum 2.0 client designed & built to meet institutional needs and security requirements. PegaSys is an arm of ConsenSys dedicated to building enterprise-ready clients and tools for interacting with the core Ethereum platform. Teku is Apache 2 licensed and written in Java, a language notable for its maturity & ubiquity.",
+					Value:       ConsensusClient_Teku,
+				}},
 		},
 
 		ExternalConsensusClient: Parameter{
@@ -331,15 +324,15 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Lighthouse",
 				Description: "Select this if you will use Lighthouse as your Consensus client.",
 				Value:       ConsensusClient_Lighthouse,
-			}, {
-				Name:        "Prysm",
-				Description: "Select this if you will use Prysm as your Consensus client.",
-				Value:       ConsensusClient_Prysm,
-			}, {
-				Name:        "Teku",
-				Description: "Select this if you will use Teku as your Consensus client.",
-				Value:       ConsensusClient_Teku,
-			}},
+			}, /*{
+					Name:        "Prysm",
+					Description: "Select this if you will use Prysm as your Consensus client.",
+					Value:       ConsensusClient_Prysm,
+				}, */{
+					Name:        "Teku",
+					Description: "Select this if you will use Teku as your Consensus client.",
+					Value:       ConsensusClient_Teku,
+				}},
 		},
 
 		EnableMetrics: Parameter{
@@ -708,13 +701,27 @@ func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 // Deserializes a settings file into this config
 func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string) error {
 
-	// Deserialize root params
-	rootParams, exists := masterMap[rootConfigName]
-	if !exists {
-		return fmt.Errorf("missing config section [%s]", rootConfigName)
+	// Get the network
+	network := Network_Mainnet
+	smartnodeConfig, exists := masterMap[config.Smartnode.Title]
+	if exists {
+		networkString, exists := smartnodeConfig[config.Smartnode.Network.ID]
+		if exists {
+			valueType := reflect.TypeOf(networkString)
+			paramType := reflect.TypeOf(network)
+			if !valueType.ConvertibleTo(paramType) {
+				return fmt.Errorf("Can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
+			} else {
+				network = reflect.ValueOf(networkString).Convert(paramType).Interface().(Network)
+			}
+		}
 	}
+
+	// Deserialize root params
+	rootParams := masterMap[rootConfigName]
 	for _, param := range config.GetParameters() {
-		err := param.deserialize(rootParams)
+		// Note: if the root config doesn't exist, this will end up using the default values for all of its settings
+		err := param.deserialize(rootParams, network)
 		if err != nil {
 			return fmt.Errorf("error deserializing root config: %w", err)
 		}
@@ -730,12 +737,10 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 
 	// Deserialize the subconfigs
 	for name, subconfig := range config.GetSubconfigs() {
-		subconfigParams, exists := masterMap[name]
-		if !exists {
-			return fmt.Errorf("missing config section [%s]", name)
-		}
+		subconfigParams := masterMap[name]
 		for _, param := range subconfig.GetParameters() {
-			err := param.deserialize(subconfigParams)
+			// Note: if the subconfig doesn't exist, this will end up using the default values for all of its settings
+			err := param.deserialize(subconfigParams, network)
 			if err != nil {
 				return fmt.Errorf("error deserializing [%s]: %w", name, err)
 			}
@@ -753,6 +758,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	// Basic variables and root parameters
 	envVars["SMARTNODE_IMAGE"] = config.Smartnode.GetSmartnodeContainerTag()
 	envVars["ROCKETPOOL_FOLDER"] = config.RocketPoolDirectory
+	envVars["RETH_ADDRESS"] = config.Smartnode.GetRethAddress()
 	addParametersToEnvVars(config.Smartnode.GetParameters(), envVars)
 	addParametersToEnvVars(config.GetParameters(), envVars)
 
@@ -838,13 +844,17 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		switch config.ConsensusClient.Value.(ConsensusClient) {
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.Lighthouse.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
 		case ConsensusClient_Nimbus:
 			addParametersToEnvVars(config.Nimbus.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = NimbusFeeRecipientFilename
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.Prysm.GetParameters(), envVars)
 			envVars["CC_RPC_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth2ContainerName, config.Prysm.RpcPort.Value)
+			envVars["FEE_RECIPIENT_FILE"] = PrysmFeeRecipientFilename
 		case ConsensusClient_Teku:
 			addParametersToEnvVars(config.Teku.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = TekuFeeRecipientFilename
 		}
 	} else {
 		envVars["CC_CLIENT"] = fmt.Sprint(config.ExternalConsensusClient.Value)
@@ -852,10 +862,13 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		switch config.ExternalConsensusClient.Value.(ConsensusClient) {
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.ExternalLighthouse.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.ExternalPrysm.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = PrysmFeeRecipientFilename
 		case ConsensusClient_Teku:
 			addParametersToEnvVars(config.ExternalTeku.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = TekuFeeRecipientFilename
 		}
 	}
 	// Get the hostname of the Consensus client, necessary for Prometheus to work in hybrid mode

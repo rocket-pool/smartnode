@@ -40,6 +40,10 @@ type NodeStatusResponse struct {
 		CloseAvailable      int `json:"closeAvailable"`
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
+	IsMergeUpdateDeployed       bool           `json:"isMergeUpdateDeployed"`
+	IsFeeDistributorInitialized bool           `json:"isFeeDistributorInitialized"`
+	FeeDistributorAddress       common.Address `json:"feeDistributorAddress"`
+	FeeDistributorBalance       *big.Int       `json:"feeDistributorBalance"`
 }
 
 type CanRegisterNodeResponse struct {
@@ -278,4 +282,33 @@ type DepositContractInfoResponse struct {
 	BeaconDepositContract common.Address `json:"beaconDepositContract"`
 	BeaconNetwork         uint64         `json:"beaconNetwork"`
 	SufficientSync        bool           `json:"sufficientSync"`
+}
+
+type NodeIsFeeDistributorInitializedResponse struct {
+	Status        string `json:"status"`
+	Error         string `json:"error"`
+	IsInitialized bool   `json:"isInitialized"`
+}
+type NodeInitializeFeeDistributorGasResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	Distributor common.Address     `json:"distributor"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+type NodeInitializeFeeDistributorResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+type NodeCanDistributeResponse struct {
+	Status         string             `json:"status"`
+	Error          string             `json:"error"`
+	Balance        *big.Int           `json:"balance"`
+	AverageNodeFee float64            `json:"averageNodeFee"`
+	GasInfo        rocketpool.GasInfo `json:"gasInfo"`
+}
+type NodeDistributeResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
 }

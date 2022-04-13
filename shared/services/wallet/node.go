@@ -13,9 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// Config
-const NodeKeyPath = "m/44'/60'/0'/0/%d"
-
 // Get the node account
 func (w *Wallet) GetNodeAccount() (accounts.Account, error) {
 
@@ -125,7 +122,10 @@ func (w *Wallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 func (w *Wallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
 
 	// Get derivation path
-	derivationPath := fmt.Sprintf(NodeKeyPath, index)
+	if w.ws.DerivationPath == "" {
+		w.ws.DerivationPath = DefaultNodeKeyPath
+	}
+	derivationPath := fmt.Sprintf(w.ws.DerivationPath, index)
 
 	// Parse derivation path
 	path, err := accounts.ParseDerivationPath(derivationPath)

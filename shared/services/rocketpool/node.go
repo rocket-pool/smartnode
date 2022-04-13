@@ -587,3 +587,83 @@ func (c *Client) DepositContractInfo() (api.DepositContractInfoResponse, error) 
 	}
 	return response, nil
 }
+
+// Get the initialization status of the fee distributor contract
+func (c *Client) IsFeeDistributorInitialized() (api.NodeIsFeeDistributorInitializedResponse, error) {
+	responseBytes, err := c.callAPI("node is-fee-distributor-initialized")
+	if err != nil {
+		return api.NodeIsFeeDistributorInitializedResponse{}, fmt.Errorf("Could not get fee distributor initialization status: %w", err)
+	}
+	var response api.NodeIsFeeDistributorInitializedResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeIsFeeDistributorInitializedResponse{}, fmt.Errorf("Could not decode fee distributor initialization status response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeIsFeeDistributorInitializedResponse{}, fmt.Errorf("Could not get fee distributor initialization status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the gas cost for initializing the fee distributor contract
+func (c *Client) GetInitializeFeeDistributorGas() (api.NodeInitializeFeeDistributorGasResponse, error) {
+	responseBytes, err := c.callAPI("node get-initialize-fee-distributor-gas")
+	if err != nil {
+		return api.NodeInitializeFeeDistributorGasResponse{}, fmt.Errorf("Could not get initialize fee distributor gas: %w", err)
+	}
+	var response api.NodeInitializeFeeDistributorGasResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeInitializeFeeDistributorGasResponse{}, fmt.Errorf("Could not decode initialize fee distributor gas response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeInitializeFeeDistributorGasResponse{}, fmt.Errorf("Could not get initialize fee distributor gas: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Initialize the fee distributor contract
+func (c *Client) InitializeFeeDistributor() (api.NodeInitializeFeeDistributorResponse, error) {
+	responseBytes, err := c.callAPI("node initialize-fee-distributor")
+	if err != nil {
+		return api.NodeInitializeFeeDistributorResponse{}, fmt.Errorf("Could not initialize fee distributor: %w", err)
+	}
+	var response api.NodeInitializeFeeDistributorResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeInitializeFeeDistributorResponse{}, fmt.Errorf("Could not decode initialize fee distributor response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeInitializeFeeDistributorResponse{}, fmt.Errorf("Could not initialize fee distributor: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if distributing ETH from the node's fee distributor is possible
+func (c *Client) CanDistribute() (api.NodeCanDistributeResponse, error) {
+	responseBytes, err := c.callAPI("node can-distribute")
+	if err != nil {
+		return api.NodeCanDistributeResponse{}, fmt.Errorf("Could not get can distribute: %w", err)
+	}
+	var response api.NodeCanDistributeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeCanDistributeResponse{}, fmt.Errorf("Could not decode can distribute response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeCanDistributeResponse{}, fmt.Errorf("Could not get can distribute: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Distribute ETH from the node's fee distributor
+func (c *Client) Distribute() (api.NodeDistributeResponse, error) {
+	responseBytes, err := c.callAPI("node distribute")
+	if err != nil {
+		return api.NodeDistributeResponse{}, fmt.Errorf("Could not distribute ETH: %w", err)
+	}
+	var response api.NodeDistributeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeDistributeResponse{}, fmt.Errorf("Could not decode distribute response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeDistributeResponse{}, fmt.Errorf("Could not distribute ETH: %s", response.Error)
+	}
+	return response, nil
+}
