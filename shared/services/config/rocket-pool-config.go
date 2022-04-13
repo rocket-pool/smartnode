@@ -902,6 +902,11 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 
 	}
 
+	// IPFS
+	if config.EnableIpfs.Value == true {
+		addParametersToEnvVars(config.Ipfs.GetParameters(), envVars)
+	}
+
 	return envVars
 
 }
