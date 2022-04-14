@@ -255,6 +255,7 @@ func (config *SmartnodeConfig) GetParameters() []*Parameter {
 		&config.PriorityFee,
 		&config.RplClaimGasThreshold,
 		&config.MinipoolStakeGasThreshold,
+		&config.DutyCheckTime,
 	}
 }
 
