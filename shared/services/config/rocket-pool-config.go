@@ -252,7 +252,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		ReconnectDelay: Parameter{
 			ID:                   "reconnectDelay",
 			Name:                 "Reconnect Delay",
-			Description:          "The delay to wait after the primary Execution client fails before trying to reconnect to it. The format is \"10h20m30s\".",
+			Description:          "The delay to wait after the primary Execution client fails before trying to reconnect to it. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: "60s"},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower},
@@ -967,6 +967,7 @@ func (config *RocketPoolConfig) Validate() []string {
 	}
 
 	// Check for illegal blank strings
+	/* TODO - this needs to be smarter and ignore irrelevant settings
 	for _, param := range config.GetParameters() {
 		if param.Type == ParameterType_String && !param.CanBeBlank && param.Value == "" {
 			errors = append(errors, fmt.Sprintf("[%s] cannot be blank.", param.Name))
@@ -980,6 +981,7 @@ func (config *RocketPoolConfig) Validate() []string {
 			}
 		}
 	}
+	*/
 
 	return errors
 }

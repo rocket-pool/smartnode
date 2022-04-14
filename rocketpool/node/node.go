@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -43,19 +42,6 @@ func run(c *cli.Context) error {
 
 	// Configure
 	configureHTTP()
-
-	// Get the tasks interval
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
-	dutyCheckTimeString := cfg.Smartnode.DutyCheckTime.Value.(string)
-	dutyCheckTime, err := time.ParseDuration(dutyCheckTimeString)
-	if err != nil {
-		fmt.Printf("WARNING: configured duty check time of [%s] is not valid: %s\nDefaulting to 5 minutes.\n\n", dutyCheckTimeString, err.Error())
-	} else {
-		tasksInterval = dutyCheckTime
-	}
 
 	// Wait until node is registered
 	if err := services.WaitNodeRegistered(c, true); err != nil {
