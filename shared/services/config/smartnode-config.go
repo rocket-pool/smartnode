@@ -50,6 +50,9 @@ type SmartnodeConfig struct {
 	// Threshold for auto minipool stakes
 	MinipoolStakeGasThreshold Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
 
+	// Interval for the node daemon to check for new duties
+	DutyCheckTime Parameter `yaml:"dutyCheckTime,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -180,6 +183,18 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 				"Note that to ensure your minipool does not get dissolved, the node will ignore this limit and automatically execute the `stake` transaction at whatever the suggested fee happens to be once too much time has passed since its first deposit (currently 7 days).",
 			Type:                 ParameterType_Float,
 			Default:              map[Network]interface{}{Network_All: float64(150)},
+			AffectsContainers:    []ContainerID{ContainerID_Node},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		DutyCheckTime: Parameter{
+			ID:                   "dutyCheckTime",
+			Name:                 "Duty Check Time",
+			Description:          "This determines how long the `rocketpool_node` container will wait between rounds of checking for new duties, such as claiming RPL rewards and staking new minipools. If you want it to check more frequently (for example, to take advantage of dips in gas fees) you can make this shorter.\n\nAn example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: "5m"},
 			AffectsContainers:    []ContainerID{ContainerID_Node},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
