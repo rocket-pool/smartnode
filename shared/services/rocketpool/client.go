@@ -396,6 +396,9 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 
 	// Top-level parameters
 	cfg.ReconnectDelay.Value = legacyCfg.Chains.Eth1.ReconnectDelay
+	if cfg.ReconnectDelay.Value == "" {
+		cfg.ReconnectDelay.Value = cfg.ReconnectDelay.Default[config.Network_All]
+	}
 
 	// Smartnode settings
 	cfg.Smartnode.ProjectName.Value = legacyCfg.Smartnode.ProjectName

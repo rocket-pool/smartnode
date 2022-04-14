@@ -96,6 +96,9 @@ func (param *Parameter) deserialize(serializedParams map[string]string, network 
 				return fmt.Errorf("cannot deserialize parameter [%s]: value [%s] is longer than the max length of [%d]", param.ID, value, param.MaxLength)
 			}
 		}
+		if !param.CanBeBlank && value == "" {
+			return param.setToDefault(network)
+		}
 		param.Value = value
 	case ParameterType_Choice:
 		// The more complicated one since Go doesn't have generics

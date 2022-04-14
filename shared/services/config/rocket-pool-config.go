@@ -948,6 +948,7 @@ func (config *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[str
 func (config *RocketPoolConfig) Validate() []string {
 	errors := []string{}
 
+	// Check for client incompatibility
 	badClients, badFallbackClients := config.GetIncompatibleConsensusClients()
 	if config.ConsensusClientMode.Value == Mode_Local {
 		selectedCC := config.ConsensusClient.Value.(ConsensusClient)
@@ -961,6 +962,21 @@ func (config *RocketPoolConfig) Validate() []string {
 			if badClient.Value == selectedCC {
 				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected fallback Execution client:\n\t%v", badClient.Name, config.FallbackExecutionClient.Value))
 				break
+			}
+		}
+	}
+
+	// Check for illegal blank strings
+	for _, param := range config.GetParameters() {
+		if param.Type == ParameterType_String && !param.CanBeBlank && param.Value == "" {
+			errors = append(errors, fmt.Sprintf("[%s] cannot be blank.", param.Name))
+		}
+	}
+
+	for name, subconfig := range config.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			if param.Type == ParameterType_String && !param.CanBeBlank && param.Value == "" {
+				errors = append(errors, fmt.Sprintf("[%s - %s] cannot be blank.", name, param.Name))
 			}
 		}
 	}
