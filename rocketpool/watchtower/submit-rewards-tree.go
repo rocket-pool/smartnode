@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	rptypes "github.com/rocket-pool/smartnode/shared/types"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
 	"github.com/wealdtech/go-merkletree"
@@ -29,32 +30,6 @@ import (
 
 // Settings
 const SubmitFollowDistanceRewardsTree = 2
-
-// Node operator rewards
-type nodeRewards struct {
-	RewardNetwork    uint64   `json:"rewardNetwork,omitempty"`
-	CollateralRpl    *big.Int `json:"collateralRpl,omitempty"`
-	OracleDaoRpl     *big.Int `json:"oracleDaoRpl,omitempty"`
-	SmoothingPoolEth *big.Int `json:"smoothingPoolEth,omitempty"`
-	MerkleData       []byte   `json:"-"`
-	MerkleProof      []string `json:"merkleProof,omitempty"`
-}
-
-// JSON struct for a complete Merkle Tree proof list
-type proofWrapper struct {
-	MerkleRoot     string `json:"merkleRoot,omitempty"`
-	NetworkRewards struct {
-		CollateralRplPerNetwork    map[uint64]*big.Int `json:"collateralRplPerNetwork,omitempty"`
-		OracleDaoRplPerNetwork     map[uint64]*big.Int `json:"oracleDaoRplPerNetwork,omitempty"`
-		SmoothingPoolEthPerNetwork map[uint64]*big.Int `json:"smoothingPoolEthPerNetwork,omitempty"`
-	} `json:"networkRewards,omitempty"`
-	TotalRewards struct {
-		TotalCollateralRpl    *big.Int `json:"totalCollateralRpl,omitempty"`
-		TotalOracleDaoRpl     *big.Int `json:"totalOracleDaoRpl,omitempty"`
-		TotalSmoothingPoolEth *big.Int `json:"totalSmoothingPoolEth,omitempty"`
-	} `json:"totalRewards,omitempty"`
-	NodeRewards map[common.Address]nodeRewards `json:"nodeRewards,omitempty"`
-}
 
 // Submit rewards Merkle Tree task
 type submitRewardsTree struct {
@@ -180,7 +155,7 @@ func (t *submitRewardsTree) run() error {
 }
 
 // Create the JSON file with the interval rewards and Merkle proof information for each node
-func (t *submitRewardsTree) generateTreeJson(treeRoot []byte, nodeRewardsMap map[common.Address]nodeRewards, networkRewardsMap map[uint64]nodeRewards) *proofWrapper {
+func (t *submitRewardsTree) generateTreeJson(treeRoot []byte, nodeRewardsMap map[common.Address]rptypes.NodeRewards, networkRewardsMap map[uint64]rptypes.NodeRewards) *rptypes.ProofWrapper {
 
 	totalCollateralRpl := big.NewInt(0)
 	totalODaoRpl := big.NewInt(0)
@@ -200,7 +175,7 @@ func (t *submitRewardsTree) generateTreeJson(treeRoot []byte, nodeRewardsMap map
 		totalSmoothingPoolEth.Add(totalSmoothingPoolEth, rewardsForNetwork.SmoothingPoolEth)
 	}
 
-	wrapper := &proofWrapper{
+	wrapper := &rptypes.ProofWrapper{
 		MerkleRoot:  fmt.Sprintf("0x%s", hex.EncodeToString(treeRoot)),
 		NodeRewards: nodeRewardsMap,
 	}
@@ -216,7 +191,7 @@ func (t *submitRewardsTree) generateTreeJson(treeRoot []byte, nodeRewardsMap map
 }
 
 // Generates a merkle tree from the provided rewards map
-func (t *submitRewardsTree) generateMerkleTree(nodeRewardsMap map[common.Address]nodeRewards) (*merkletree.MerkleTree, error) {
+func (t *submitRewardsTree) generateMerkleTree(nodeRewardsMap map[common.Address]rptypes.NodeRewards) (*merkletree.MerkleTree, error) {
 
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(nodeRewardsMap))
@@ -288,21 +263,21 @@ func (t *submitRewardsTree) generateMerkleTree(nodeRewardsMap map[common.Address
 }
 
 // Calculates the RPL rewards for regular node operators for this interval
-func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *types.Header, rewardsInterval time.Duration) (map[common.Address]nodeRewards, map[uint64]nodeRewards, error) {
+func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *types.Header, rewardsInterval time.Duration) (map[common.Address]rptypes.NodeRewards, map[uint64]rptypes.NodeRewards, error) {
 
-	nodeRewardsMap := map[common.Address]nodeRewards{}
-	networkRewardsMap := map[uint64]nodeRewards{}
+	nodeRewardsMap := map[common.Address]rptypes.NodeRewards{}
+	networkRewardsMap := map[uint64]rptypes.NodeRewards{}
 	opts := &bind.CallOpts{
 		BlockNumber: snapshotBlockHeader.Number,
 	}
 	snapshotBlockTime := time.Unix(int64(snapshotBlockHeader.Time), 0)
 
 	// Handle node operator rewards
-	nodeOpPercent, err := rewards.GetNodeOperatorRewardsPercentRaw(t.rp, opts)
+	nodeOpPercent, err := rewards.GetNodeOperatorRewardsPercent(t.rp, opts)
 	if err != nil {
 		return nil, nil, err
 	}
-	pendingRewards, err := rewards.GetPendingRPLRewardsRaw(t.rp, opts)
+	pendingRewards, err := rewards.GetPendingRPLRewards(t.rp, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -321,7 +296,7 @@ func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *ty
 
 	for _, address := range nodeAddresses {
 		// Make sure this node is eligible for rewards
-		regTime, err := rewards.GetNodeRegistrationTime(t.rp, address, opts)
+		regTime, err := node.GetNodeRegistrationTime(t.rp, address, opts)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error getting registration time for node %s: %w", err)
 		}
@@ -352,7 +327,7 @@ func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *ty
 					continue
 				}
 
-				rewardsForNode = nodeRewards{
+				rewardsForNode = rptypes.NodeRewards{
 					RewardNetwork:    network,
 					CollateralRpl:    big.NewInt(0),
 					OracleDaoRpl:     big.NewInt(0),
@@ -365,7 +340,7 @@ func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *ty
 			// Add the rewards to the running total for the specified network
 			rewardsForNetwork, exists := networkRewardsMap[rewardsForNode.RewardNetwork]
 			if !exists {
-				rewardsForNetwork = nodeRewards{
+				rewardsForNetwork = rptypes.NodeRewards{
 					RewardNetwork:    rewardsForNode.RewardNetwork,
 					CollateralRpl:    big.NewInt(0),
 					OracleDaoRpl:     big.NewInt(0),
@@ -378,7 +353,7 @@ func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *ty
 	}
 
 	// Handle Oracle DAO rewards
-	oDaoPercent, err := rewards.GetTrustedNodeOperatorRewardsPercentRaw(t.rp, opts)
+	oDaoPercent, err := rewards.GetTrustedNodeOperatorRewardsPercent(t.rp, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -407,7 +382,7 @@ func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *ty
 				continue
 			}
 
-			rewardsForNode = nodeRewards{
+			rewardsForNode = rptypes.NodeRewards{
 				RewardNetwork:    network,
 				CollateralRpl:    big.NewInt(0),
 				OracleDaoRpl:     big.NewInt(0),
@@ -420,7 +395,7 @@ func (t *submitRewardsTree) calculateNodeOperatorRewards(snapshotBlockHeader *ty
 		// Add the rewards to the running total for the specified network
 		rewardsForNetwork, exists := networkRewardsMap[rewardsForNode.RewardNetwork]
 		if !exists {
-			rewardsForNetwork = nodeRewards{
+			rewardsForNetwork = rptypes.NodeRewards{
 				RewardNetwork:    rewardsForNode.RewardNetwork,
 				CollateralRpl:    big.NewInt(0),
 				OracleDaoRpl:     big.NewInt(0),

@@ -312,3 +312,41 @@ type NodeDistributeResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type IntervalInfo struct {
+	Index                  uint64    `json:"index"`
+	StartTime              time.Time `json:"startTime"`
+	EndTime                time.Time `json:"endTime"`
+	TreeFileExists         bool      `json:"treeFileExists"`
+	CollateralRplAmount    *big.Int  `json:"collateralRplAmount"`
+	ODaoRplAmount          *big.Int  `json:"oDaoRplAmount"`
+	SmoothingPoolEthAmount *big.Int  `json:"smoothingPoolEthAmount"`
+	MerkleProof            [][]byte  `json:"merkleProof"`
+}
+type NodeGetEligibleIntervalInfoResponse struct {
+	Status    string                  `json:"status"`
+	Error     string                  `json:"error"`
+	Intervals map[uint64]IntervalInfo `json:"intervals"`
+}
+
+type CanNodeClaimRewardsResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type NodeClaimRewardsResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type CanNodeClaimAndStakeRewardsResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type NodeClaimAndStakeRewardsResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}

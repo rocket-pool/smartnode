@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/rocket-pool/smartnode/shared"
@@ -8,11 +9,12 @@ import (
 
 // Constants
 const (
-	smartnodeTag        string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-	powProxyTag         string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
-	pruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
-	NetworkID           string = "network"
-	ProjectNameID       string = "projectName"
+	smartnodeTag              string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
+	powProxyTag               string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
+	pruneProvisionerTag       string = "rocketpool/eth1-prune-provision:v0.0.1"
+	NetworkID                 string = "network"
+	ProjectNameID             string = "projectName"
+	RewardsTreeFilenameFormat string = "rp-rewards-%d.json"
 )
 
 // Defaults
@@ -71,6 +73,9 @@ type SmartnodeConfig struct {
 
 	// The path within the daemon Docker container of the validator key folder
 	validatorKeychainPath string `yaml:"validatorKeychainPath"`
+
+	// The path within the daemon Docker container of the rewards merkle tree folder
+	rewardsTreePath string `yaml:"rewardsTreePath"`
 
 	// The contract address of RocketStorage
 	storageAddress map[Network]string `yaml:"storageAddress"`
@@ -217,6 +222,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 		validatorKeychainPath: "/.rocketpool/data/validators",
 
+		rewardsTreePath: "/.rocketpool/data/rewards-trees",
+
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
@@ -340,4 +347,8 @@ func (config *SmartnodeConfig) GetRethAddress() string {
 
 func getDefaultDataDir(config *RocketPoolConfig) string {
 	return filepath.Join(config.RocketPoolDirectory, "data")
+}
+
+func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64) string {
+	return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, interval))
 }

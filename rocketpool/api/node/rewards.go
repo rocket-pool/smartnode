@@ -7,9 +7,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/rewards"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
