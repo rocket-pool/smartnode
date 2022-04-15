@@ -257,14 +257,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "claim-rpl",
+				Name:      "claim-rewards",
 				Aliases:   []string{"c"},
-				Usage:     "Claim available RPL rewards for the current checkpoint",
+				Usage:     "Claim available RPL and ETH rewards for any checkpoint you haven't claimed yet",
 				UsageText: "rocketpool node claim-rpl [options]",
 				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "restake-amount, a",
+						Usage: "The amount of RPL to automatically restake during claiming (or '150%%' to stake up to 150%% collateral, or 'all' for all available RPL)",
+					},
 					cli.BoolFlag{
 						Name:  "yes, y",
-						Usage: "Automatically confirm RPL claim",
+						Usage: "Automatically confirm rewards claim",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -275,7 +279,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeClaimRpl(c)
+					return nodeClaimRewards(c)
 
 				},
 			},

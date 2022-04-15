@@ -876,6 +876,106 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "get-rewards-info",
+				Usage:     "Get info about your eligible rewards periods, including balances and Merkle proofs",
+				UsageText: "rocketpool api node get-rewards-info",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getRewardsInfo(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-claim-rewards",
+				Usage:     "Check if the rewards for the given intervals can be claimed",
+				UsageText: "rocketpool api node can-claim-rewards 0,1,2,5,6",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					indicesString := c.Args().Get(0)
+
+					// Run
+					api.PrintResponse(canClaimRewards(c, indicesString))
+					return nil
+
+				},
+			},
+			{
+				Name:      "claim-rewards",
+				Usage:     "Claim rewards for the given reward intervals",
+				UsageText: "rocketpool api node claim-rewards 0,1,2,5,6",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					indicesString := c.Args().Get(0)
+
+					// Run
+					api.PrintResponse(claimRewards(c, indicesString))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-claim-and-stake-rewards",
+				Usage:     "Check if the rewards for the given intervals can be claimed, and RPL restaked automatically",
+				UsageText: "rocketpool api node can-claim-and-stake-rewards 0,1,2,5,6 amount-to-restake",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					indicesString := c.Args().Get(0)
+
+					stakeAmount, err := cliutils.ValidateBigInt("stakeAmount", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canClaimAndStakeRewards(c, indicesString, stakeAmount))
+					return nil
+
+				},
+			},
+			{
+				Name:      "claim-and-stake-rewards",
+				Usage:     "Claim rewards for the given reward intervals and restake RPL automatically",
+				UsageText: "rocketpool api node claim-and-stake-rewards 0,1,2,5,6 amount-to-restake",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					indicesString := c.Args().Get(0)
+
+					stakeAmount, err := cliutils.ValidateBigInt("stakeAmount", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canClaimAndStakeRewards(c, indicesString, stakeAmount))
+					return nil
+
+				},
+			},
 		},
 	})
 }

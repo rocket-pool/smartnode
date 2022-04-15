@@ -323,10 +323,13 @@ type IntervalInfo struct {
 	SmoothingPoolEthAmount *big.Int  `json:"smoothingPoolEthAmount"`
 	MerkleProof            [][]byte  `json:"merkleProof"`
 }
-type NodeGetEligibleIntervalInfoResponse struct {
-	Status    string                  `json:"status"`
-	Error     string                  `json:"error"`
-	Intervals map[uint64]IntervalInfo `json:"intervals"`
+type NodeGetRewardsInfoResponse struct {
+	Status          string                  `json:"status"`
+	Error           string                  `json:"error"`
+	Intervals       map[uint64]IntervalInfo `json:"intervals"`
+	RplStake        *big.Int                `json:"rplStake"`
+	RplPrice        *big.Int                `json:"rplPrice"`
+	ActiveMinipools int                     `json:"activeMinipools"`
 }
 
 type CanNodeClaimRewardsResponse struct {

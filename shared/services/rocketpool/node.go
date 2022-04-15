@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -664,6 +665,102 @@ func (c *Client) Distribute() (api.NodeDistributeResponse, error) {
 	}
 	if response.Error != "" {
 		return api.NodeDistributeResponse{}, fmt.Errorf("Could not distribute ETH: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get info about your eligible rewards periods, including balances and Merkle proofs
+func (c *Client) GetRewardsInfo() (api.NodeGetRewardsInfoResponse, error) {
+	responseBytes, err := c.callAPI("node get-rewards-info")
+	if err != nil {
+		return api.NodeGetRewardsInfoResponse{}, fmt.Errorf("Could not get rewards info: %w", err)
+	}
+	var response api.NodeGetRewardsInfoResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeGetRewardsInfoResponse{}, fmt.Errorf("Could not decode get rewards info response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeGetRewardsInfoResponse{}, fmt.Errorf("Could not get rewards info: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if the rewards for the given intervals can be claimed
+func (c *Client) CanNodeClaimRewards(indices []uint64) (api.CanNodeClaimRewardsResponse, error) {
+	indexStrings := []string{}
+	for _, index := range indices {
+		indexStrings = append(indexStrings, fmt.Sprint(index))
+	}
+	responseBytes, err := c.callAPI("node can-claim-rewards", strings.Join(indexStrings, ","))
+	if err != nil {
+		return api.CanNodeClaimRewardsResponse{}, fmt.Errorf("Could not check if can claim rewards: %w", err)
+	}
+	var response api.CanNodeClaimRewardsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNodeClaimRewardsResponse{}, fmt.Errorf("Could not decode can claim rewards response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNodeClaimRewardsResponse{}, fmt.Errorf("Could not check if can claim rewards: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Claim rewards for the given reward intervals
+func (c *Client) NodeClaimRewards(indices []uint64) (api.NodeClaimRewardsResponse, error) {
+	indexStrings := []string{}
+	for _, index := range indices {
+		indexStrings = append(indexStrings, fmt.Sprint(index))
+	}
+	responseBytes, err := c.callAPI("node claim-rewards", strings.Join(indexStrings, ","))
+	if err != nil {
+		return api.NodeClaimRewardsResponse{}, fmt.Errorf("Could not claim rewards: %w", err)
+	}
+	var response api.NodeClaimRewardsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeClaimRewardsResponse{}, fmt.Errorf("Could not decode claim rewards response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeClaimRewardsResponse{}, fmt.Errorf("Could not claim rewards: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if the rewards for the given intervals can be claimed, and RPL restaked automatically
+func (c *Client) CanNodeClaimAndStakeRewards(indices []uint64, stakeAmountWei *big.Int) (api.CanNodeClaimAndStakeRewardsResponse, error) {
+	indexStrings := []string{}
+	for _, index := range indices {
+		indexStrings = append(indexStrings, fmt.Sprint(index))
+	}
+	responseBytes, err := c.callAPI("node can-claim-and-stake-rewards", strings.Join(indexStrings, ","), stakeAmountWei.String())
+	if err != nil {
+		return api.CanNodeClaimAndStakeRewardsResponse{}, fmt.Errorf("Could not check if can claim and stake rewards: %w", err)
+	}
+	var response api.CanNodeClaimAndStakeRewardsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNodeClaimAndStakeRewardsResponse{}, fmt.Errorf("Could not decode can claim and stake rewards response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNodeClaimAndStakeRewardsResponse{}, fmt.Errorf("Could not check if can claim and stake rewards: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Claim rewards for the given reward intervals and restake RPL automatically
+func (c *Client) NodeClaimAndStakeRewards(indices []uint64, stakeAmountWei *big.Int) (api.NodeClaimAndStakeRewardsResponse, error) {
+	indexStrings := []string{}
+	for _, index := range indices {
+		indexStrings = append(indexStrings, fmt.Sprint(index))
+	}
+	responseBytes, err := c.callAPI("node claim-and-stake-rewards", strings.Join(indexStrings, ","), stakeAmountWei.String())
+	if err != nil {
+		return api.NodeClaimAndStakeRewardsResponse{}, fmt.Errorf("Could not claim and stake rewards: %w", err)
+	}
+	var response api.NodeClaimAndStakeRewardsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeClaimAndStakeRewardsResponse{}, fmt.Errorf("Could not decode claim and stake rewards response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeClaimAndStakeRewardsResponse{}, fmt.Errorf("Could not claim and stake rewards: %s", response.Error)
 	}
 	return response, nil
 }
