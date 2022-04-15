@@ -91,6 +91,15 @@ type SmartnodeConfig struct {
 
 	// The contract address of rETH
 	rethAddress map[Network]string `yaml:"rethAddress"`
+
+	// The contract address of rocketRewardsPool from v1.0.0
+	legacyRewardsPoolAddress map[Network]string `yaml:"legacyRewardsPoolAddress"`
+
+	// The contract address of rocketClaimNode from v1.0.0
+	legacyClaimNodeAddress map[Network]string `yaml:"legacyClaimNodeAddress"`
+
+	// The contract address of rocketClaimTrustedNode from v1.0.0
+	legacyClaimTrustedNodeAddress map[Network]string `yaml:"legacyClaimTrustedNodeAddress"`
 }
 
 // Generates a new Smartnode configuration
@@ -253,6 +262,24 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Prater:  "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
 			Network_Kiln:    "0xfD64e5461e790b2108Fcf1Bcf9fA6151E7753Ff7",
 		},
+
+		legacyRewardsPoolAddress: map[Network]string{
+			Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
+			Network_Prater:  "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
+			Network_Kiln:    "",
+		},
+
+		legacyClaimNodeAddress: map[Network]string{
+			Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
+			Network_Prater:  "0xc05b7A2a03A6d2736d1D0ebf4d4a0aFE2cc32cE1",
+			Network_Kiln:    "",
+		},
+
+		legacyClaimTrustedNodeAddress: map[Network]string{
+			Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
+			Network_Prater:  "0x730982F4439E5AC30292333ff7d0C478907f2219",
+			Network_Kiln:    "",
+		},
 	}
 
 }
@@ -351,4 +378,16 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 
 func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64) string {
 	return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, interval))
+}
+
+func (config *SmartnodeConfig) GetLegacyRewardsPoolAddress() string {
+	return config.legacyRewardsPoolAddress[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetLegacyClaimNodeAddress() string {
+	return config.legacyClaimNodeAddress[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetLegacyClaimTrustedNodeAddress() string {
+	return config.legacyClaimTrustedNodeAddress[config.Network.Value.(Network)]
 }

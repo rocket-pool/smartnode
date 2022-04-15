@@ -327,11 +327,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	// Get the RPL price
+	// Get the unclaimed rewards
 	wg.Go(func() error {
 		unclaimedRewardsWei, err := rewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil)
 		if err != nil {
-			return fmt.Errorf("Error getting RPL price: %w", err)
+			return fmt.Errorf("Error getting unclaimed rewards: %w", err)
 		}
 		unclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
 		return nil
