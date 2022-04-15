@@ -8,87 +8,22 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
-// Get whether a claims contract is enabled
-func getEnabled(claimsContract *rocketpool.Contract, claimsName string, opts *bind.CallOpts) (bool, error) {
-	enabled := new(bool)
-	if err := claimsContract.Call(opts, enabled, "getEnabled"); err != nil {
-		return false, fmt.Errorf("Could not get %s claims contract enabled status: %w", claimsName, err)
-	}
-	return *enabled, nil
-}
-
-// Get whether a claimer can make a claim
-// Use to check whether a claimer is able to make claims at all
-func getClaimPossible(claimsContract *rocketpool.Contract, claimsName string, claimerAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	claimPossible := new(bool)
-	if err := claimsContract.Call(opts, claimPossible, "getClaimPossible", claimerAddress); err != nil {
-		return false, fmt.Errorf("Could not get %s claim possible status for %s: %w", claimsName, claimerAddress.Hex(), err)
-	}
-	return *claimPossible, nil
-}
-
-// Get the percentage of rewards available to a claimer
-func getClaimRewardsPerc(claimsContract *rocketpool.Contract, claimsName string, claimerAddress common.Address, opts *bind.CallOpts) (float64, error) {
-	claimRewardsPerc := new(*big.Int)
-	if err := claimsContract.Call(opts, claimRewardsPerc, "getClaimRewardsPerc", claimerAddress); err != nil {
-		return 0, fmt.Errorf("Could not get %s claim rewards percent for %s: %w", claimsName, claimerAddress.Hex(), err)
-	}
-	return eth.WeiToEth(*claimRewardsPerc), nil
-}
-
-// Get the total amount of rewards available to a claimer
-// Use to check whether a claimer is able to make a claim for the current interval (returns zero if unable)
-func getClaimRewardsAmount(claimsContract *rocketpool.Contract, claimsName string, claimerAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	claimRewardsAmount := new(*big.Int)
-	if err := claimsContract.Call(opts, claimRewardsAmount, "getClaimRewardsAmount", claimerAddress); err != nil {
-		return nil, fmt.Errorf("Could not get %s claim rewards amount for %s: %w", claimsName, claimerAddress.Hex(), err)
-	}
-	return *claimRewardsAmount, nil
-}
-
-// Get the time that the user registered as a claimer
-func getClaimingContractUserRegisteredTime(rp *rocketpool.RocketPool, claimsContract string, claimerAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
-	if err != nil {
-		return time.Time{}, err
-	}
-	claimTime := new(*big.Int)
-	if err := rocketRewardsPool.Call(opts, claimTime, "getClaimingContractUserRegisteredTime", claimsContract, claimerAddress); err != nil {
-		return time.Time{}, fmt.Errorf("Could not get claims registration time on contract %s for %s: %w", claimsContract, claimerAddress.Hex(), err)
-	}
-	return time.Unix((*claimTime).Int64(), 0), nil
-}
-
-// Get the total amount claimed in the current interval by the given claiming contract
-func getClaimingContractTotalClaimed(rp *rocketpool.RocketPool, claimsContract string, opts *bind.CallOpts) (*big.Int, error) {
+// Get the index of the active rewards period
+func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return nil, err
 	}
-	totalClaimed := new(*big.Int)
-	if err := rocketRewardsPool.Call(opts, totalClaimed, "getClaimingContractTotalClaimed", claimsContract); err != nil {
-		return nil, fmt.Errorf("Could not get total claimed for %s: %w", claimsContract, err)
+	index := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, index, "getRewardIndex"); err != nil {
+		return nil, fmt.Errorf("Could not get current reward index: %w", err)
 	}
-	return *totalClaimed, nil
-}
-
-// Estimate the gas of claim
-func estimateClaimGas(claimsContract *rocketpool.Contract, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return claimsContract.GetTransactionGasInfo(opts, "claim")
-}
-
-// Claim rewards
-func claim(claimsContract *rocketpool.Contract, claimsName string, opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := claimsContract.Transact(opts, "claim")
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not claim %s rewards: %w", claimsName, err)
-	}
-	return hash, nil
+	return *index, nil
 }
 
 // Get the timestamp that the current rewards interval started
@@ -118,46 +53,7 @@ func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.
 }
 
 // Get the percent of checkpoint rewards that goes to node operators
-func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
-	if err != nil {
-		return 0, err
-	}
-	perc := new(*big.Int)
-	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimNode"); err != nil {
-		return 0, fmt.Errorf("Could not get node operator rewards percent: %w", err)
-	}
-	return eth.WeiToEth(*perc), nil
-}
-
-// Get the percent of checkpoint rewards that goes to ODAO members
-func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
-	if err != nil {
-		return 0, err
-	}
-	perc := new(*big.Int)
-	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimTrustedNode"); err != nil {
-		return 0, fmt.Errorf("Could not get trusted node operator rewards percent: %w", err)
-	}
-	return eth.WeiToEth(*perc), nil
-}
-
-// Get the amount of RPL rewards that will be provided to node operators
-func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
-	if err != nil {
-		return 0, err
-	}
-	rewards := new(*big.Int)
-	if err := rocketRewardsPool.Call(opts, rewards, "getPendingRPLRewards"); err != nil {
-		return 0, fmt.Errorf("Could not get pending rewards: %w", err)
-	}
-	return eth.WeiToEth(*rewards), nil
-}
-
-// Get the percent of checkpoint rewards that goes to node operators
-func GetNodeOperatorRewardsPercentRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return nil, err
@@ -170,7 +66,7 @@ func GetNodeOperatorRewardsPercentRaw(rp *rocketpool.RocketPool, opts *bind.Call
 }
 
 // Get the percent of checkpoint rewards that goes to ODAO members
-func GetTrustedNodeOperatorRewardsPercentRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return nil, err
@@ -183,16 +79,56 @@ func GetTrustedNodeOperatorRewardsPercentRaw(rp *rocketpool.RocketPool, opts *bi
 }
 
 // Get the amount of RPL rewards that will be provided to node operators
-func GetPendingRPLRewardsRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return nil, err
 	}
 	rewards := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, rewards, "getPendingRPLRewards"); err != nil {
-		return nil, fmt.Errorf("Could not get pending rewards: %w", err)
+		return nil, fmt.Errorf("Could not get pending RPL rewards: %w", err)
 	}
 	return *rewards, nil
+}
+
+// Get the amount of ETH rewards that will be provided to node operators
+func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return nil, err
+	}
+	rewards := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, rewards, "getPendingETHRewards"); err != nil {
+		return nil, fmt.Errorf("Could not get pending ETH rewards: %w", err)
+	}
+	return *rewards, nil
+}
+
+// Submit a Merkle Tree-based snapshot for a rewards interval
+func SubmitRewardSnapshot(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot []byte, merkleTreeCID string, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	hash, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", index, rewardsPerNetworkRPL, rewardsPerNetworkETH, merkleRoot, merkleTreeCID)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not submit rewards snapshot: %w", err)
+	}
+	return hash, nil
+}
+
+// Get the start block of the provided rewards interval
+func GetStartBlockOfInterval(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (uint64, error) {
+	// 0 is a special case because the start time is based on the legacy rewards system
+	if index == 0 {
+		// Get the start time of the final legacy rewards interval
+		lastLegacyIntervalStartHash := crypto.Keccak256Hash([]byte("rewards.pool.claim.interval.time.last"))
+		rp.RocketStorage.GetUint(nil, lastLegacyIntervalStartHash)
+	} else {
+		// Find it based on the events
+	}
+
+	return 0, nil
 }
 
 // Get contracts

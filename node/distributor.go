@@ -76,7 +76,5 @@ var rocketDistributorLock sync.Mutex
 func getDistributorContract(rp *rocketpool.RocketPool, distributorAddress common.Address) (*rocketpool.Contract, error) {
 	rocketDistributorLock.Lock()
 	defer rocketDistributorLock.Unlock()
-	// TODO: REPLACE THIS ONCE THE CONTRACT ABI IS MERGED
-	// return rp.MakeContract("rocketNodeDistributor", distributorAddress)
-	return rp.MakeContract("rocketNodeDistributorDelegate", distributorAddress)
+	return rp.MakeContract("rocketNodeDistributor", distributorAddress)
 }

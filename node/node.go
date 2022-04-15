@@ -388,6 +388,19 @@ func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, op
 	return eth.WeiToEth(*avgFee), nil
 }
 
+// Get the time that the user registered as a claimer
+func GetNodeRegistrationTime(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (time.Time, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return time.Time{}, err
+	}
+	claimTime := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, claimTime, "getNodeRegistrationTime", address); err != nil {
+		return time.Time{}, fmt.Errorf("Could not get registration time for %s: %w", address.Hex(), err)
+	}
+	return time.Unix((*claimTime).Int64(), 0), nil
+}
+
 // Returns an array of block numbers for prices submissions the given trusted node has submitted since fromBlock
 func GetPricesSubmissions(rp *rocketpool.RocketPool, nodeAddress common.Address, fromBlock uint64, intervalSize *big.Int) (*[]uint64, error) {
 	// Get contracts

@@ -32,7 +32,7 @@ func FilterContractLogs(rp *rocketpool.RocketPool, contractName string, q Filter
 	if err != nil {
 		return nil, err
 	}
-	// Interate the logs and store every past contract address
+	// Iterate the logs and store every past contract address
 	for _, log := range logs {
 		addresses = append(addresses, common.HexToAddress(log.Topics[2].Hex()))
 	}
