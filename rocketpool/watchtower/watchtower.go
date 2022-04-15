@@ -110,6 +110,7 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
+	isUpdateDeployed := false
 	go func() {
 		for {
 			// Randomize the next interval
@@ -120,8 +121,13 @@ func run(c *cli.Context) error {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
-			if err := claimRplRewards.run(); err != nil {
-				errorLog.Println(err)
+			if !isUpdateDeployed {
+				// Only run auto-claims during the legacy period
+				isUpdateDeployed, err = claimRplRewards.run()
+				if err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 			}
 			time.Sleep(taskCooldown)
 			if err := submitRplPrice.run(); err != nil {

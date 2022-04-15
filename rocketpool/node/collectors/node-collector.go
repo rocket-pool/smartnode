@@ -270,7 +270,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		if err != nil {
 			return fmt.Errorf("Error getting node operator rewards percent: %w", err)
 		}
-		nodeOperatorRewardsPercent = _nodeOperatorRewardsPercent
+		nodeOperatorRewardsPercent = eth.WeiToEth(_nodeOperatorRewardsPercent)
 		return nil
 	})
 
