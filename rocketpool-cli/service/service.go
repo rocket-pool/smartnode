@@ -295,7 +295,11 @@ func configureService(c *cli.Context) error {
 		// Handle network changes
 		prefix := fmt.Sprint(md.PreviousConfig.Smartnode.ProjectName.Value)
 		if md.ChangeNetworks {
-			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
+			// Remove the checkpoint sync provider
+			md.Config.ConsensusCommon.CheckpointSyncProvider.Value = ""
+			rp.SaveConfig(md.Config)
+
+			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
 
 			if !cliutils.Confirm("Would you like the Smartnode to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
 				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).")
@@ -950,7 +954,6 @@ func serviceCompose(c *cli.Context) error {
 	return rp.PrintServiceCompose(getComposeFiles(c))
 
 }
-
 
 // View the Rocket Pool service version information
 func serviceVersion(c *cli.Context) error {
