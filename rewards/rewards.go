@@ -11,7 +11,19 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
+
+// Info for a rewards snapshot event
+type RewardsEvent struct {
+	Index                *big.Int
+	Block                *big.Int
+	RewardsPerNetworkRPL []*big.Int
+	RewardsPerNetworkETH []*big.Int
+	MerkleRoot           []byte
+	MerkleTreeCID        string
+	Time                 time.Time
+}
 
 // Get the index of the active rewards period
 func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
@@ -117,18 +129,56 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, index *big.Int, block *big.
 	return hash, nil
 }
 
-// Get the start block of the provided rewards interval
-func GetStartBlockOfInterval(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (uint64, error) {
-	// 0 is a special case because the start time is based on the legacy rewards system
-	if index == 0 {
-		// Get the start time of the final legacy rewards interval
-		lastLegacyIntervalStartHash := crypto.Keccak256Hash([]byte("rewards.pool.claim.interval.time.last"))
-		rp.RocketStorage.GetUint(nil, lastLegacyIntervalStartHash)
-	} else {
-		// Find it based on the events
+// Get the event info for a rewards snapshot
+func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int) (RewardsEvent, error) {
+	// Get contracts
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return RewardsEvent{}, err
 	}
 
-	return 0, nil
+	// Construct a filter query for relevant logs
+	indexBig := big.NewInt(0).SetUint64(index)
+	indexBytes := [32]byte{}
+	indexBig.FillBytes(indexBytes[:])
+	addressFilter := []common.Address{*rocketRewardsPool.Address}
+	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {crypto.Keccak256Hash(indexBytes[:])}}
+
+	// Get the event logs
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
+	if err != nil {
+		return RewardsEvent{}, err
+	}
+
+	// Get the log info
+	values := make(map[string]interface{})
+	if len(logs) == 0 {
+		return RewardsEvent{}, fmt.Errorf("reward snapshot for interval %d not found", index)
+	}
+	if rocketRewardsPool.ABI.Events["RewardSnapshot"].Inputs.UnpackIntoMap(values, logs[0].Data) != nil {
+		return RewardsEvent{}, err
+	}
+
+	// Get the decoded data
+	eventIndex := values["index"].(*big.Int)
+	eventBlock := values["block"].(*big.Int)
+	eventRpl := values["rewardsPerNetworkRPL"].([]*big.Int)
+	eventEth := values["rewardsPerNetworkETH"].([]*big.Int)
+	eventMerkleRoot := values["merkleRoot"].([]byte)
+	eventMerkleTreeCid := values["merkleTreeCID"].(string)
+	eventTime := values["time"].(*big.Int)
+	eventData := RewardsEvent{
+		Index:                eventIndex,
+		Block:                eventBlock,
+		RewardsPerNetworkRPL: eventRpl,
+		RewardsPerNetworkETH: eventEth,
+		MerkleRoot:           eventMerkleRoot,
+		MerkleTreeCID:        eventMerkleTreeCid,
+		Time:                 time.Unix(eventTime.Int64(), 0),
+	}
+
+	return eventData, nil
+
 }
 
 // Get contracts
