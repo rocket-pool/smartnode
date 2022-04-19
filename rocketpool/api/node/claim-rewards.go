@@ -1,21 +1,21 @@
 package node
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"os"
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -51,81 +51,20 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		return nil, err
 	}
 
-	// Make the map of eligible intervals
-	response.Intervals = map[uint64]api.IntervalInfo{}
-
-	// Get the current interval
-	currentIndex, err := rewards.GetRewardIndex(rp, nil)
+	// Get the claimed and unclaimed intervals
+	claimed, unclaimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
+	response.ClaimedIntervals = claimed
 
-	// Get the claim status of every interval that's happened so far
-	indexInt := currentIndex.Uint64() // This is guaranteed to be from 0 to 65535 so the conversion is legal
-	if indexInt == 0 {
-		// If we're still in the first interval, there's nothing to report.
-		return &response, nil
-	}
-
-	bucket := indexInt / 256
-	for i := uint64(0); i <= bucket; i++ {
-		bitmap, err := rewards.ClaimedBitMap(rp, nodeAccount.Address, big.NewInt(0).SetUint64(i), nil)
+	// Get the info for each unclaimed interval
+	for _, unclaimedInterval := range unclaimed {
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
 		if err != nil {
 			return nil, err
 		}
-
-		one := big.NewInt(1)
-		for j := uint64(0); j < 256; j++ {
-			mask := big.NewInt(0)
-			mask.Lsh(one, uint(j))
-			maskedBitmap := big.NewInt(0)
-			maskedBitmap.And(bitmap, mask)
-
-			if maskedBitmap.Cmp(mask) != 0 {
-				// This bit was not flipped, so this period has not been claimed yet
-				targetIndex := i*256 + j
-				response.Intervals[targetIndex] = api.IntervalInfo{
-					Index: targetIndex,
-				}
-			}
-		}
-	}
-
-	// Populate the interval info for each one
-	for index, intervalInfo := range response.Intervals {
-
-		// Check if the tree file exists
-		path := cfg.Smartnode.GetRewardsTreePath(index)
-		_, err = os.Stat(path)
-		if os.IsNotExist(err) {
-			intervalInfo.TreeFileExists = false
-			continue
-		}
-		intervalInfo.TreeFileExists = true
-
-		// Unmarshal it
-		bytes, err := ioutil.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("error reading %s: %w", path, err)
-		}
-		var proofWrapper types.ProofWrapper
-		err = json.Unmarshal(bytes, &proofWrapper)
-		if err != nil {
-			return nil, fmt.Errorf("error deserializing %s: %w", path, err)
-		}
-
-		// Get the rewards from it
-		rewards, exists := proofWrapper.NodeRewards[nodeAccount.Address]
-		if exists {
-			intervalInfo.CollateralRplAmount = rewards.CollateralRpl
-			intervalInfo.ODaoRplAmount = rewards.OracleDaoRpl
-			intervalInfo.SmoothingPoolEthAmount = rewards.SmoothingPoolEth
-			proof, err := rewards.GetMerkleProof()
-			if err != nil {
-				return nil, fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", path, nodeAccount.Address.Hex(), err)
-			}
-			intervalInfo.MerkleProof = proof
-		}
+		response.UnclaimedIntervals = append(response.UnclaimedIntervals, intervalInfo)
 	}
 
 	// Get collateral info for restaking
@@ -167,12 +106,22 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanNodeClaimRewardsResponse{}
 
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(c, indicesString)
+	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -205,12 +154,22 @@ func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsRe
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.NodeClaimRewardsResponse{}
 
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(c, indicesString)
+	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -253,12 +212,22 @@ func canClaimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanNodeClaimAndStakeRewardsResponse{}
 
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(c, indicesString)
+	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -291,9 +260,19 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.NodeClaimAndStakeRewardsResponse{}
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -302,7 +281,7 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 	}
 
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(c, indicesString)
+	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -326,23 +305,7 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 }
 
 // Get the rewards for the provided interval indices
-func getRewardsForIntervals(c *cli.Context, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][][]byte, error) {
-
-	// Get services
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
+func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][][]byte, error) {
 
 	// Get the indices
 	elements := strings.Split(indicesString, ",")
@@ -363,42 +326,25 @@ func getRewardsForIntervals(c *cli.Context, indicesString string) ([]*big.Int, [
 	// Populate the interval info for each one
 	for _, index := range indices {
 
-		// Check if the tree file exists
-		path := cfg.Smartnode.GetRewardsTreePath(index.Uint64())
-		_, err = os.Stat(path)
-		if os.IsNotExist(err) {
-			return nil, nil, nil, nil, fmt.Errorf("rewards tree file '%s' doesn't exist", path)
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64())
+		if err != nil {
+			return nil, nil, nil, nil, err
 		}
 
-		// Unmarshal it
-		bytes, err := ioutil.ReadFile(path)
-		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("error reading %s: %w", path, err)
+		// Validate
+		if !intervalInfo.TreeFileExists {
+			return nil, nil, nil, nil, fmt.Errorf("rewards tree file '%s' doesn't exist", intervalInfo.TreeFilePath)
 		}
-		var proofWrapper types.ProofWrapper
-		err = json.Unmarshal(bytes, &proofWrapper)
-		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("error deserializing %s: %w", path, err)
+		if !intervalInfo.MerkleRootValid {
+			return nil, nil, nil, nil, fmt.Errorf("merkle root for rewards tree file '%s' doesn't match the canonical merkle root for interval %d", intervalInfo.TreeFilePath, index.Uint64())
 		}
 
 		// Get the rewards from it
-		rewards, exists := proofWrapper.NodeRewards[nodeAccount.Address]
-		if exists {
-			// Append RPL
-			rpl := big.NewInt(0)
-			rpl.Add(rpl, rewards.CollateralRpl)
-			rpl.Add(rpl, rewards.OracleDaoRpl)
-			amountRPL = append(amountRPL, rpl)
-
-			// Append ETH
-			amountETH = append(amountETH, rewards.SmoothingPoolEth)
-
-			// Append Merkle proof
-			proof, err := rewards.GetMerkleProof()
-			if err != nil {
-				return nil, nil, nil, nil, fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", path, nodeAccount.Address.Hex(), err)
-			}
-			merkleProofs = append(merkleProofs, proof)
+		if intervalInfo.NodeExists {
+			amountRPL = append(amountRPL, intervalInfo.CollateralRplAmount)
+			amountRPL = append(amountRPL, intervalInfo.ODaoRplAmount)
+			amountETH = append(amountETH, intervalInfo.SmoothingPoolEthAmount)
+			merkleProofs = append(merkleProofs, intervalInfo.MerkleProof)
 		}
 	}
 

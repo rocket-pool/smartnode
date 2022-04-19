@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
+	legacyrewards "github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/rewards"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -19,8 +20,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -77,8 +80,14 @@ type NodeCollector struct {
 	// The next block to start from when looking at cumulative RPL rewards
 	nextRewardsStartBlock *big.Int
 
-	// The cumulative amount of RPL earned
-	cumulativeRewards float64
+	// The cumulative amount of RPL earned the from legacy rewards process
+	legacyCumulativeRewards float64
+
+	// The cumulative amount of RPL earned from the new rewards process
+	newCumulativeRewards float64
+
+	// The Rocket Pool config
+	cfg *config.RocketPoolConfig
 }
 
 // Create a new NodeCollector instance
@@ -145,6 +154,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 		bc:               bc,
 		nodeAddress:      nodeAddress,
 		eventLogInterval: eventLogInterval,
+		cfg:              cfg,
 	}
 }
 
@@ -185,6 +195,18 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	var beaconHead beacon.BeaconHead
 	unclaimedRewards := float64(-1)
 
+	// Handle update checking and new rewards status
+	isUpdated, err := rp.IsMergeUpdateDeployed(collector.rp)
+	if err != nil {
+		log.Printf("Error checking for merge contract update deployment: %w\n", err.Error())
+		return
+	}
+	unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
+	if err != nil {
+		log.Printf("Error checking for new reward claim status: %w\n", err.Error())
+		return
+	}
+
 	// Get the total staked RPL
 	wg.Go(func() error {
 		stakedRplWei, err := node.GetNodeRPLStake(collector.rp, collector.nodeAddress, nil)
@@ -209,7 +231,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get the cumulative RPL rewards
 	wg.Go(func() error {
-		cumulativeRewardsWei, err := rewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock)
+		// Calculate legacy rewards
+		cumulativeRewardsWei, err := rewards.CalculateLegacyLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.cfg.Smartnode.GetLegacyRewardsPoolAddress(), collector.cfg.Smartnode.GetLegacyRewardsPoolAbi(), collector.cfg.Smartnode.GetLegacyClaimNodeAddress(), collector.eventLogInterval, collector.nextRewardsStartBlock)
 		if err != nil {
 			return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
 		}
@@ -219,8 +242,23 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			return fmt.Errorf("Error getting latest block header: %w", err)
 		}
 
-		collector.cumulativeRewards += eth.WeiToEth(cumulativeRewardsWei)
+		collector.legacyCumulativeRewards += eth.WeiToEth(cumulativeRewardsWei)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
+
+		// Calculate new rewards
+		if isUpdated {
+			total := big.NewInt(0)
+			for _, index := range claimed {
+				info, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, index)
+				if err != nil {
+					return fmt.Errorf("Error getting claimed rewards for interval %d: %w", index, err)
+				}
+				total.Add(total, info.CollateralRplAmount)
+				total.Add(total, info.ODaoRplAmount)
+			}
+			collector.newCumulativeRewards = eth.WeiToEth(total)
+		}
+
 		return nil
 	})
 
@@ -329,12 +367,26 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get the unclaimed rewards
 	wg.Go(func() error {
-		unclaimedRewardsWei, err := rewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting unclaimed rewards: %w", err)
+		if !isUpdated {
+			unclaimedRewardsWei, err := legacyrewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil)
+			if err != nil {
+				return fmt.Errorf("Error getting unclaimed rewards: %w", err)
+			}
+			unclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
+			return nil
+		} else {
+			total := big.NewInt(0)
+			for _, index := range unclaimed {
+				info, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, index)
+				if err != nil {
+					return fmt.Errorf("Error getting unclaimed rewards for interval %d: %w", index, err)
+				}
+				total.Add(total, info.CollateralRplAmount)
+				total.Add(total, info.ODaoRplAmount)
+			}
+			unclaimedRewards = eth.WeiToEth(total)
+			return nil
 		}
-		unclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
-		return nil
 	})
 
 	// Wait for data
@@ -386,7 +438,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.rplCollateral, prometheus.GaugeValue, collateralRatio)
 	channel <- prometheus.MustNewConstMetric(
-		collector.cumulativeRplRewards, prometheus.GaugeValue, collector.cumulativeRewards)
+		collector.cumulativeRplRewards, prometheus.GaugeValue, collector.legacyCumulativeRewards+collector.newCumulativeRewards)
 	channel <- prometheus.MustNewConstMetric(
 		collector.expectedRplRewards, prometheus.GaugeValue, estimatedRewards)
 	channel <- prometheus.MustNewConstMetric(

@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/shared/services/rewards"
 )
 
 type NodeStatusResponse struct {
@@ -313,23 +314,14 @@ type NodeDistributeResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type IntervalInfo struct {
-	Index                  uint64    `json:"index"`
-	StartTime              time.Time `json:"startTime"`
-	EndTime                time.Time `json:"endTime"`
-	TreeFileExists         bool      `json:"treeFileExists"`
-	CollateralRplAmount    *big.Int  `json:"collateralRplAmount"`
-	ODaoRplAmount          *big.Int  `json:"oDaoRplAmount"`
-	SmoothingPoolEthAmount *big.Int  `json:"smoothingPoolEthAmount"`
-	MerkleProof            [][]byte  `json:"merkleProof"`
-}
 type NodeGetRewardsInfoResponse struct {
-	Status          string                  `json:"status"`
-	Error           string                  `json:"error"`
-	Intervals       map[uint64]IntervalInfo `json:"intervals"`
-	RplStake        *big.Int                `json:"rplStake"`
-	RplPrice        *big.Int                `json:"rplPrice"`
-	ActiveMinipools int                     `json:"activeMinipools"`
+	Status             string                 `json:"status"`
+	Error              string                 `json:"error"`
+	ClaimedIntervals   []uint64               `json:"claimedIntervals"`
+	UnclaimedIntervals []rewards.IntervalInfo `json:"unclaimedIntervals"`
+	RplStake           *big.Int               `json:"rplStake"`
+	RplPrice           *big.Int               `json:"rplPrice"`
+	ActiveMinipools    int                    `json:"activeMinipools"`
 }
 
 type CanNodeClaimRewardsResponse struct {

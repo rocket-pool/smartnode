@@ -53,7 +53,7 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	if err != nil {
 		return fmt.Errorf("error getting rewards info: %w", err)
 	}
-	if len(rewardsInfoResponse.Intervals) == 0 {
+	if len(rewardsInfoResponse.UnclaimedIntervals) == 0 {
 		fmt.Println("Your node does not have any unclaimed rewards yet.")
 		return nil
 	}
@@ -64,7 +64,7 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	// Print the info for all available periods
 	totalRpl := big.NewInt(0)
 	totalEth := big.NewInt(0)
-	for _, intervalInfo := range rewardsInfoResponse.Intervals {
+	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		fmt.Printf("Rewards for Interval %d:\n", intervalInfo.Index)
 		fmt.Printf("\tStaking:        %.6f RPL\n", eth.WeiToEth(intervalInfo.CollateralRplAmount))
 		fmt.Printf("\tOracle DAO:     %.6f RPL\n", eth.WeiToEth(intervalInfo.ODaoRplAmount))
@@ -82,7 +82,7 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	// Get the list of intervals to claim
 	var indices []uint64
 	validIndices := []string{}
-	for _, intervalInfo := range rewardsInfoResponse.Intervals {
+	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		validIndices = append(validIndices, fmt.Sprint(intervalInfo.Index))
 	}
 	for {
@@ -93,7 +93,7 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 
 		indices = []uint64{}
 		if indexSelection == "" {
-			for _, intervalInfo := range rewardsInfoResponse.Intervals {
+			for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 				indices = append(indices, intervalInfo.Index)
 			}
 			break
@@ -130,7 +130,7 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	// Calculate amount to be claimed
 	claimRpl := big.NewInt(0)
 	claimEth := big.NewInt(0)
-	for _, intervalInfo := range rewardsInfoResponse.Intervals {
+	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		for _, index := range indices {
 			if intervalInfo.Index == index {
 				claimRpl.Add(claimRpl, intervalInfo.CollateralRplAmount)

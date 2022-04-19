@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared"
 )
 
@@ -22,10 +23,10 @@ const defaultProjectName string = "rocketpool"
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string
 
 	// The parent config
-	parent *RocketPoolConfig `yaml:"-"`
+	parent *RocketPoolConfig
 
 	////////////////////////////
 	// User-editable settings //
@@ -57,49 +58,52 @@ type SmartnodeConfig struct {
 	///////////////////////////
 
 	// The URL to provide the user so they can follow pending transactions
-	txWatchUrl map[Network]string `yaml:"txWatchUrl,omitempty"`
+	txWatchUrl map[Network]string
 
 	// The URL to use for staking rETH
-	stakeUrl map[Network]string `yaml:"stakeUrl,omitempty"`
+	stakeUrl map[Network]string
 
 	// The map of networks to execution chain IDs
-	chainID map[Network]uint `yaml:"chainID"`
+	chainID map[Network]uint
 
 	// The path within the daemon Docker container of the wallet file
-	walletPath string `yaml:"walletPath"`
+	walletPath string
 
 	// The path within the daemon Docker container of the wallet's password file
-	passwordPath string `yaml:"passwordPath"`
+	passwordPath string
 
 	// The path within the daemon Docker container of the validator key folder
-	validatorKeychainPath string `yaml:"validatorKeychainPath"`
+	validatorKeychainPath string
 
 	// The path within the daemon Docker container of the rewards merkle tree folder
-	rewardsTreePath string `yaml:"rewardsTreePath"`
+	rewardsTreePath string
 
 	// The contract address of RocketStorage
-	storageAddress map[Network]string `yaml:"storageAddress"`
+	storageAddress map[Network]string
 
 	// The contract address of the 1inch oracle
-	oneInchOracleAddress map[Network]string `yaml:"oneInchOracleAddress"`
+	oneInchOracleAddress map[Network]string
 
 	// The contract address of the RPL token
-	rplTokenAddress map[Network]string `yaml:"rplTokenAddress"`
+	rplTokenAddress map[Network]string
 
 	// The contract address of the RPL faucet
-	rplFaucetAddress map[Network]string `yaml:"rplFaucetAddress"`
+	rplFaucetAddress map[Network]string
 
 	// The contract address of rETH
-	rethAddress map[Network]string `yaml:"rethAddress"`
+	rethAddress map[Network]string
 
 	// The contract address of rocketRewardsPool from v1.0.0
-	legacyRewardsPoolAddress map[Network]string `yaml:"legacyRewardsPoolAddress"`
+	legacyRewardsPoolAddress map[Network]string
 
 	// The contract address of rocketClaimNode from v1.0.0
-	legacyClaimNodeAddress map[Network]string `yaml:"legacyClaimNodeAddress"`
+	legacyClaimNodeAddress map[Network]string
 
 	// The contract address of rocketClaimTrustedNode from v1.0.0
-	legacyClaimTrustedNodeAddress map[Network]string `yaml:"legacyClaimTrustedNodeAddress"`
+	legacyClaimTrustedNodeAddress map[Network]string
+
+	// The ABI for the legacy rocketRewardsPool contract
+	legacyRewardsPoolAbi string
 }
 
 // Generates a new Smartnode configuration
@@ -280,6 +284,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Prater:  "0x730982F4439E5AC30292333ff7d0C478907f2219",
 			Network_Kiln:    "",
 		},
+
+		legacyRewardsPoolAbi: "eJzVWN9vmzAQ/lcmnvPADxtD37po0ia1VZVmT1U1HfYRoRKobJMmqvq/zxCSQBOatMsYe0vs43zfd2ffZ9+/WEn2VGhlXdyXPzXKDNLp6gmtC4vnmZbA9ZdJzh9R3+lcwgx/lEYxcLRGVgbz0vCXbBpcCiFRKTOt136gHnh9GFlKg8brQkOUpIlemdksz55gBVGKuy/MykrLghuHZlAlswx0Id/OvI5eLDCfr+Z5YQDEkCoctfEIXKKwLswX1UwLHmzjrGHwFJJ5ks3GNe4DCEafdtrNStPnFkPLaWH+u9TfOQWDOGvEtzH4jC+dzPGAp4etweT2apo/YqbGJRTjeWuMC6yiaCbIXlKMHYfboU89QpkTeg4NYrQjwimNInBsLlzhskAg4bHHfRFyZCSmFG2fUofXKOos7uJYoFRJnpn18kJ31WwZf7AD1wYWdJTgIsHnnWVcZFyvF6qqDQzGOtlvgJJYEEHtroBnqA13XyGFrNotR8JuZeVwRs4WuuuEAfpuJ9cm9Crb1WZfmDBN4u80SD0sGBF4hEck+jCMcT43xlUtDwmOZ3uIGJwKR92CUkMDYRMvYEy8tyv2cjIsBNQGN2ZIjyEoI78Cpa9BDAwBD23PYduG0BWW6aSmMzX6+Kbj30CzJ9Rmr/sMNJrlt2WitHqfhijP00McVONnJYARQhwRiD4JyEoNc2Qz9seAj8INKCUfZqBTBJ3EwjTXkO6EwoD2BBo54vgOPULIXlhrRjanVdU9pocl0+gc7O472ZOUay8o3xXa3Sn6qVB+B3VSkvqrV4f5IYt85/z12g+jE5yZAxAliuE1NJdEkTBa/H/ldgxZNTyUWvVC4hIW9322llSsz9dCyvXNa0BFZkgJGMW/UGSnkXKDy4ExAuZm66Af9czILUpeytJhkWGj6zJOnVOvBRN8BilUldqBIRGUUebCP0jrsIiIffBiH+OeibhM0/x5eE8qNoS+Z3N3oE1230mH0jVOqtfFut663wU3qbncPEYOKBk+w4Cw4FiHPguPbd3xC7f3wLf6o7aQtVJcC3DZIu7kF/IGE23kJLLRE+6xa85ZkO870XmfFcj3ROGf8xeGPo/AL5+KfwPvAY9J",
 	}
 
 }
@@ -380,14 +386,18 @@ func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64) string {
 	return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, interval))
 }
 
-func (config *SmartnodeConfig) GetLegacyRewardsPoolAddress() string {
-	return config.legacyRewardsPoolAddress[config.Network.Value.(Network)]
+func (config *SmartnodeConfig) GetLegacyRewardsPoolAddress() common.Address {
+	return common.HexToAddress(config.legacyRewardsPoolAddress[config.Network.Value.(Network)])
 }
 
-func (config *SmartnodeConfig) GetLegacyClaimNodeAddress() string {
-	return config.legacyClaimNodeAddress[config.Network.Value.(Network)]
+func (config *SmartnodeConfig) GetLegacyClaimNodeAddress() common.Address {
+	return common.HexToAddress(config.legacyClaimNodeAddress[config.Network.Value.(Network)])
 }
 
-func (config *SmartnodeConfig) GetLegacyClaimTrustedNodeAddress() string {
-	return config.legacyClaimTrustedNodeAddress[config.Network.Value.(Network)]
+func (config *SmartnodeConfig) GetLegacyClaimTrustedNodeAddress() common.Address {
+	return common.HexToAddress(config.legacyClaimTrustedNodeAddress[config.Network.Value.(Network)])
+}
+
+func (config *SmartnodeConfig) GetLegacyRewardsPoolAbi() string {
+	return config.legacyRewardsPoolAbi
 }

@@ -1,8 +1,9 @@
-package types
+package rewards
 
 import (
 	"encoding/hex"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
@@ -32,6 +33,21 @@ type ProofWrapper struct {
 		TotalSmoothingPoolEth *big.Int `json:"totalSmoothingPoolEth,omitempty"`
 	} `json:"totalRewards,omitempty"`
 	NodeRewards map[common.Address]NodeRewards `json:"nodeRewards,omitempty"`
+}
+
+// Information about an interval
+type IntervalInfo struct {
+	Index                  uint64    `json:"index"`
+	TreeFilePath           string    `json:"treeFilePath"`
+	TreeFileExists         bool      `json:"treeFileExists"`
+	MerkleRootValid        bool      `json:"merkleRootValid"`
+	StartTime              time.Time `json:"startTime"`
+	EndTime                time.Time `json:"endTime"`
+	NodeExists             bool      `json:"nodeExists"`
+	CollateralRplAmount    *big.Int  `json:"collateralRplAmount"`
+	ODaoRplAmount          *big.Int  `json:"oDaoRplAmount"`
+	SmoothingPoolEthAmount *big.Int  `json:"smoothingPoolEthAmount"`
+	MerkleProof            [][]byte  `json:"merkleProof"`
 }
 
 // Get the deserialized Merkle Proof bytes

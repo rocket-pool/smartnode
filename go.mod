@@ -32,7 +32,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
 	github.com/rivo/tview v0.0.0-20220106183741-90d72bc664f5
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20220412063915-ab3d5c4c67d5
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20220419012831-2d3201af0111
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/tyler-smith/go-bip39 v1.1.0
@@ -51,4 +51,4 @@ require (
 
 replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
 
-replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+//replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
