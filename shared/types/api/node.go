@@ -345,16 +345,3 @@ type NodeClaimAndStakeRewardsResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
-
-type CanNodeGenerateRewardsTreeResponse struct {
-	Status         string `json:"status"`
-	Error          string `json:"error"`
-	IsUpgraded     bool   `json:"isUpgraded"`
-	CurrentIndex   uint64 `json:"currentIndex"`
-	TreeFileExists bool   `json:"treeFileExists"`
-}
-
-type NodeGenerateRewardsTreeResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-}

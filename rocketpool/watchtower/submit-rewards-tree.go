@@ -8,7 +8,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -127,6 +129,15 @@ func (t *submitRewardsTree) run() error {
 	}
 	currentIndex := currentIndexBig.Uint64()
 
+	// Return if this node has already submitted the tree for the current interval
+	hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig)
+	if err != nil {
+		return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
+	}
+	if hasSubmitted {
+		return nil
+	}
+
 	// Get the total pending rewards and respective distribution percentages
 	nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotBlockHeader, intervalTime)
 	if err != nil {
@@ -187,4 +198,11 @@ func (t *submitRewardsTree) getBlockHeaderForTime(targetTime time.Time, candidat
 		blockNumber = previousNumber
 	}
 
+}
+
+// Check whether the rewards tree for the current interval been submitted by the node
+func (t *submitRewardsTree) hasSubmittedTree(nodeAddress common.Address, index *big.Int) (bool, error) {
+	indexBuffer := make([]byte, 32)
+	index.FillBytes(indexBuffer)
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), nodeAddress.Bytes(), indexBuffer))
 }
