@@ -196,15 +196,19 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	unclaimedRewards := float64(-1)
 
 	// Handle update checking and new rewards status
+	var unclaimed []uint64
+	var claimed []uint64
 	isUpdated, err := rp.IsMergeUpdateDeployed(collector.rp)
 	if err != nil {
 		log.Printf("Error checking for merge contract update deployment: %w\n", err.Error())
 		return
 	}
-	unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
-	if err != nil {
-		log.Printf("Error checking for new reward claim status: %w\n", err.Error())
-		return
+	if isUpdated {
+		unclaimed, claimed, err = rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
+		if err != nil {
+			log.Printf("Error checking for new reward claim status: %w\n", err.Error())
+			return
+		}
 	}
 
 	// Get the total staked RPL

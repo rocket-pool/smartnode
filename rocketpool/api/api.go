@@ -69,7 +69,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	apiservice.RegisterSubcommands(&command, "service", []string{"s"})
 	debug.RegisterSubcommands(&command, "debug", []string{"d"})
 
-	// Append a genral wait-for-transaction command to support async operations
+	// Append a general wait-for-transaction command to support async operations
 	command.Subcommands = append(command.Subcommands, cli.Command{
 		Name:      "wait",
 		Aliases:   []string{"t"},

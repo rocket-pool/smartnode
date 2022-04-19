@@ -120,6 +120,13 @@ func (t *submitRewardsTree) run() error {
 		return nil
 	}
 
+	// Get the current interval
+	currentIndexBig, err := rewards.GetRewardIndex(t.rp, nil)
+	if err != nil {
+		return err
+	}
+	currentIndex := currentIndexBig.Uint64()
+
 	// Get the total pending rewards and respective distribution percentages
 	nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotBlockHeader, intervalTime)
 	if err != nil {
@@ -142,8 +149,15 @@ func (t *submitRewardsTree) run() error {
 		return fmt.Errorf("error serializing proof wrapper into JSON: %w", err)
 	}
 
-	// Write the file (TEMP)
-	ioutil.WriteFile("rocket-pool-rewards-0.json", wrapperBytes, 0755)
+	// Write the file
+	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex)
+	err = ioutil.WriteFile(path, wrapperBytes, 0755)
+	if err != nil {
+		return fmt.Errorf("error saving file to %s: %w", path, err)
+	}
+
+	// Upload the file
+	// TODO
 
 	// Done
 	return nil

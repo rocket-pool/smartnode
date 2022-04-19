@@ -56,3 +56,16 @@ type NetworkMergeUpdateStatusResponse struct {
 	Error            string `json:"error"`
 	IsUpdateDeployed bool   `json:"isUpdateDeployed"`
 }
+
+type CanNetworkGenerateRewardsTreeResponse struct {
+	Status         string `json:"status"`
+	Error          string `json:"error"`
+	IsUpgraded     bool   `json:"isUpgraded"`
+	CurrentIndex   uint64 `json:"currentIndex"`
+	TreeFileExists bool   `json:"treeFileExists"`
+}
+
+type NetworkGenerateRewardsTreeResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}

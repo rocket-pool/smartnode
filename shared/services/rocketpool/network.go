@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/alessio/shellescape"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -93,6 +94,44 @@ func (c *Client) MergeUpdateStatus() (api.NetworkMergeUpdateStatusResponse, erro
 	}
 	if response.Error != "" {
 		return api.NetworkMergeUpdateStatusResponse{}, fmt.Errorf("Could not get merge update deployment status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if the rewards tree for the provided interval can be generated
+func (c *Client) CanGenerateRewardsTree(index uint64) (api.CanNetworkGenerateRewardsTreeResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("network can-generate-rewards-tree %d", index))
+	if err != nil {
+		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not check rewards tree generation status: %w", err)
+	}
+	var response api.CanNetworkGenerateRewardsTreeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not decode rewards tree generation status response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not check rewards tree generation status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Generate and save the rewards tree file for the provided interval; note that this is an asynchronous process, so it will return before the file is generated
+func (c *Client) GenerateRewardsTree(index uint64, executionClientUrl string) (api.NetworkGenerateRewardsTreeResponse, error) {
+	var responseBytes []byte
+	var err error
+	if executionClientUrl == "" {
+		responseBytes, err = c.callAPI(fmt.Sprintf("network generate-rewards-tree %d", index))
+	} else {
+		responseBytes, err = c.callAPI(fmt.Sprintf("network generate-rewards-tree --execution-client-url %s %d", shellescape.Quote(executionClientUrl), index))
+	}
+	if err != nil {
+		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not initialize rewards tree generation: %w", err)
+	}
+	var response api.NetworkGenerateRewardsTreeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not decode rewards tree generation response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not initialize rewards tree generation: %s", response.Error)
 	}
 	return response, nil
 }
