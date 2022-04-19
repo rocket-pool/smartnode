@@ -1,9 +1,10 @@
 package rewards
 
 import (
+	"fmt"
 	"math/big"
-	"sync"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -11,20 +12,25 @@ import (
 )
 
 // Filters through token claim events and sums the total amount claimed by claimerAddress
-func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, legacyRewardsPoolAddress *common.Address, legacyClaimNodeAddress *common.Address, intervalSize *big.Int, startBlock *big.Int) (*big.Int, error) {
-	// Get contracts
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func CalculateLegacyLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, legacyRewardsPoolAddress common.Address, legacyRewardsPoolAbi string, legacyClaimNodeAddress common.Address, intervalSize *big.Int, startBlock *big.Int) (*big.Int, error) {
+	// Create RocketRewardsPool ABI
+	abi, err := rocketpool.DecodeAbi(legacyRewardsPoolAbi)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding legacy RocketRewardsPool ABI: %w", err)
 	}
-	rocketClaimNode, err := getRocketClaimNode(rp)
-	if err != nil {
-		return nil, err
+
+	// Create RocketRewardsPool contract
+	rocketRewardsPool := &rocketpool.Contract{
+		Contract: bind.NewBoundContract(legacyRewardsPoolAddress, *abi, rp.Client, rp.Client, rp.Client),
+		Address:  &legacyRewardsPoolAddress,
+		ABI:      abi,
+		Client:   rp.Client,
 	}
+
 	// Construct a filter query for relevant logs
-	addressFilter := []common.Address{*rocketRewardsPool.Address}
+	addressFilter := []common.Address{legacyRewardsPoolAddress}
 	// RPLTokensClaimed(address clamingContract, address claimingAddress, uint256 amount, uint256 time)
-	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID}, {rocketClaimNode.Address.Hash()}, {claimerAddress.Hash()}}
+	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID}, {legacyClaimNodeAddress.Hash()}, {claimerAddress.Hash()}}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
@@ -49,20 +55,25 @@ func CalculateLifetimeNodeRewards(rp *rocketpool.RocketPool, claimerAddress comm
 }
 
 // Filters through token claim events and sums the total amount claimed by claimerAddress
-func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, legacyRewardsPoolAddress *common.Address, legacyClaimTrustedNodeAddress *common.Address, intervalSize *big.Int, startBlock *big.Int) (*big.Int, error) {
-	// Get contracts
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func CalculateLegacyLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, legacyRewardsPoolAddress common.Address, legacyRewardsPoolAbi string, legacyClaimTrustedNodeAddress common.Address, intervalSize *big.Int, startBlock *big.Int) (*big.Int, error) {
+	// Create RocketRewardsPool ABI
+	abi, err := rocketpool.DecodeAbi(legacyRewardsPoolAbi)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding legacy RocketRewardsPool ABI: %w", err)
 	}
-	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
-	if err != nil {
-		return nil, err
+
+	// Create RocketRewardsPool contract
+	rocketRewardsPool := &rocketpool.Contract{
+		Contract: bind.NewBoundContract(legacyRewardsPoolAddress, *abi, rp.Client, rp.Client, rp.Client),
+		Address:  &legacyRewardsPoolAddress,
+		ABI:      abi,
+		Client:   rp.Client,
 	}
+
 	// Construct a filter query for relevant logs
 	addressFilter := []common.Address{*rocketRewardsPool.Address}
 	// RPLTokensClaimed(address clamingContract, address clainingAddress, uint256 amount, uint256 time)
-	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID}, {rocketClaimTrustedNode.Address.Hash()}, {claimerAddress.Hash()}}
+	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID}, {legacyClaimTrustedNodeAddress.Hash()}, {claimerAddress.Hash()}}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
@@ -84,20 +95,4 @@ func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddre
 	}
 	// Return the result
 	return sum, nil
-}
-
-// Get contracts
-var rocketClaimNodeLock sync.Mutex
-var rocketClaimTrustedNodeLock sync.Mutex
-
-func getRocketClaimNode(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
-	rocketClaimNodeLock.Lock()
-	defer rocketClaimNodeLock.Unlock()
-	return rp.GetContract("rocketClaimNode")
-}
-
-func getRocketClaimTrustedNode(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
-	rocketClaimTrustedNodeLock.Lock()
-	defer rocketClaimTrustedNodeLock.Unlock()
-	return rp.GetContract("rocketClaimTrustedNode")
 }

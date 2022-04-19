@@ -36,6 +36,19 @@ func ClaimedBitMap(rp *rocketpool.RocketPool, claimerAddress common.Address, buc
 	return *bitmap, nil
 }
 
+// Get the Merkle root for an interval
+func MerkleRoots(rp *rocketpool.RocketPool, interval *big.Int, opts *bind.CallOpts) ([]byte, error) {
+	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
+	if err != nil {
+		return nil, err
+	}
+	bytes := new([32]byte)
+	if err := rocketDistributorMainnet.Call(opts, bytes, "merkleRoots", interval); err != nil {
+		return nil, fmt.Errorf("Could not get Merkle root for interval %s: %w", interval.String(), err)
+	}
+	return (*bytes)[:], nil
+}
+
 // Estimate claim rewards gas
 func EstimateClaimGas(rp *rocketpool.RocketPool, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][][]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
