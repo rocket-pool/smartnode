@@ -574,7 +574,13 @@ func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOp
 	// Sort every consensus client into good and bad lists
 	var badClients []ParameterOption
 	var badFallbackClients []ParameterOption
-	for _, consensusClient := range config.ConsensusClient.Options {
+	var consensusClientOptions []ParameterOption
+	if config.ConsensusClientMode.Value.(Mode) == Mode_Local {
+		consensusClientOptions = config.ConsensusClient.Options
+	} else {
+		consensusClientOptions = config.ExternalConsensusClient.Options
+	}
+	for _, consensusClient := range consensusClientOptions {
 		// Get the value for one of the consensus client options
 		clientValue := consensusClient.Value.(ConsensusClient)
 

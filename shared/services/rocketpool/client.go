@@ -1078,7 +1078,12 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Make sure the selected CC is compatible with the selected EC
-	consensusClient := cfg.ConsensusClient.Value.(config.ConsensusClient)
+	var consensusClient config.ConsensusClient
+	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+		consensusClient = cfg.ConsensusClient.Value.(config.ConsensusClient)
+	} else {
+		consensusClient = cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+	}
 	badClients, badFallbackClients := cfg.GetIncompatibleConsensusClients()
 	for _, badClient := range badClients {
 		if consensusClient == badClient.Value {
