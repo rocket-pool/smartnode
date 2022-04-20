@@ -112,16 +112,23 @@ func (t *submitRewardsTree) run() error {
 	if err != nil {
 		return fmt.Errorf("error getting claim interval time: %w", err)
 	}
-	endTime := startTime.Add(intervalTime)
-	if time.Until(endTime) > 0 {
-		return nil
-	}
 
-	// Get the number of the snapshot block which ended the rewards interval
+	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
 	latestBlockHeader, err := t.ec.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting latest block header: %w", err)
 	}
+	latestBlockTime := time.Unix(int64(latestBlockHeader.Time), 0)
+	timeSinceStart := latestBlockTime.Sub(startTime)
+	intervalsPassed := timeSinceStart / intervalTime
+	endTime := startTime.Add(intervalTime * intervalsPassed)
+	if time.Until(endTime) > 0 {
+		return nil
+	} else if int64(intervalsPassed) > 1 {
+		t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", int64(intervalsPassed))
+	}
+
+	// Get the number of the snapshot block which ended the rewards interval
 	snapshotBlockHeader, err := t.getBlockHeaderForTime(endTime, latestBlockHeader.Number)
 	if err != nil {
 		return err
@@ -162,7 +169,7 @@ func (t *submitRewardsTree) run() error {
 	go func() {
 		// Log
 		t.lock.Lock()
-		t.log.Println("Rewards checkpoint has passed, starting Merkle tree generation in the background...")
+		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation in the background... snapshot block = %d, running from %s to %s", snapshotBlockHeader.Number.Uint64(), startTime, endTime)
 		t.lock.Unlock()
 
 		generationPrefix := "[Merkle Tree]"
@@ -248,7 +255,7 @@ func (t *submitRewardsTree) getBlockHeaderForTime(targetTime time.Time, latestBl
 			// If the pivot is down to size 1 and we didn't find anything better after another iteration, this is the best block!
 
 			// If this block happened before the target timestamp, return the one after it.
-			if delta > 0 {
+			if bestBlock.Time < uint64(targetTime.Unix()) {
 				return t.ec.HeaderByNumber(context.Background(), bestBlock.Number.Add(bestBlock.Number, big.NewInt(1)))
 			}
 			return bestBlock, nil
