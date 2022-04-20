@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"math/big"
 	"sync"
 	"time"
@@ -220,29 +221,59 @@ func (t *submitRewardsTree) handleError(err error) {
 	t.lock.Unlock()
 }
 
-// Get the number of the first block after the given time
-func (t *submitRewardsTree) getBlockHeaderForTime(targetTime time.Time, candidateNumber *big.Int) (*types.Header, error) {
-
-	blockNumber := candidateNumber
-	one := big.NewInt(1)
+// Get the number of the first block that was created after the given timestamp
+func (t *submitRewardsTree) getBlockHeaderForTime(targetTime time.Time, latestBlock *big.Int) (*types.Header, error) {
+	// Start at the halfway point
+	candidateBlockNumber := big.NewInt(0).Div(latestBlock, big.NewInt(2))
+	candidateBlock, err := t.ec.HeaderByNumber(context.Background(), candidateBlockNumber)
+	if err != nil {
+		return nil, err
+	}
+	bestBlock := candidateBlock
+	pivotSize := candidateBlock.Number.Uint64()
+	minimumDistance := +math.Inf(1)
+	targetTimeUnix := float64(targetTime.Unix())
 
 	for {
-		// Get the preceding block
-		previousNumber := big.NewInt(0).Sub(blockNumber, one)
-		previousBlock, err := t.ec.HeaderByNumber(context.Background(), previousNumber)
+		// Get the distance from the candidate block to the target time
+		candidateTime := float64(candidateBlock.Time)
+		delta := targetTimeUnix - candidateTime
+		distance := math.Abs(delta)
+
+		// If it's better, replace the best candidate with it
+		if distance < minimumDistance {
+			minimumDistance = distance
+			bestBlock = candidateBlock
+		} else if pivotSize == 1 {
+			// If the pivot is down to size 1 and we didn't find anything better after another iteration, this is the best block!
+
+			// If this block happened before the target timestamp, return the one after it.
+			if delta > 0 {
+				return t.ec.HeaderByNumber(context.Background(), bestBlock.Number.Add(bestBlock.Number, big.NewInt(1)))
+			}
+			return bestBlock, nil
+		}
+
+		// Iterate over the correct half, setting the pivot to the halfway point of that half (rounded up)
+		pivotSize = uint64(math.Ceil(float64(pivotSize) / 2))
+		if delta < 0 {
+			// Go left
+			candidateBlockNumber = big.NewInt(0).Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
+		} else {
+			// Go right
+			candidateBlockNumber = big.NewInt(0).Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
+		}
+
+		// Clamp the new candidate to the latest block
+		if candidateBlockNumber.Uint64() > (latestBlock.Uint64() - 1) {
+			candidateBlockNumber.SetUint64(latestBlock.Uint64() - 1)
+		}
+
+		candidateBlock, err = t.ec.HeaderByNumber(context.Background(), candidateBlockNumber)
 		if err != nil {
-			return nil, fmt.Errorf("error getting header for block %s : %w", previousNumber.String(), err)
+			return nil, err
 		}
-
-		previousBlockTime := time.Unix(int64(previousBlock.Time), 0)
-		if targetTime.Sub(previousBlockTime) > 0 {
-			// This block happened before the end, so return the prior candidate
-			return previousBlock, nil
-		}
-
-		blockNumber = previousNumber
 	}
-
 }
 
 // Check whether the rewards tree for the current interval been submitted by the node
