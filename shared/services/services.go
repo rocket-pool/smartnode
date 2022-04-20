@@ -228,8 +228,10 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 func getEthClientProxy(cfg *config.RocketPoolConfig) (*uc.EthClientProxy, error) {
 	var err error
 	initEthClientProxy.Do(func() {
-		reconnectDelay, err := time.ParseDuration(cfg.ReconnectDelay.Value.(string))
+		var reconnectDelay time.Duration
+		reconnectDelay, err = time.ParseDuration(cfg.ReconnectDelay.Value.(string))
 		if err != nil {
+			err = fmt.Errorf("cannot parse reconnect delay value [%s] into a timestamp: %w", cfg.ReconnectDelay.Value.(string), err)
 			return
 		}
 

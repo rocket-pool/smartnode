@@ -251,7 +251,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		ReconnectDelay: Parameter{
 			ID:                   "reconnectDelay",
 			Name:                 "Reconnect Delay",
-			Description:          "The delay to wait after the primary Execution client fails before trying to reconnect to it. The format is \"10h20m30s\".",
+			Description:          "The delay to wait after the primary Execution client fails before trying to reconnect to it. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: "60s"},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower},
@@ -588,7 +588,13 @@ func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOp
 	// Sort every consensus client into good and bad lists
 	var badClients []ParameterOption
 	var badFallbackClients []ParameterOption
-	for _, consensusClient := range config.ConsensusClient.Options {
+	var consensusClientOptions []ParameterOption
+	if config.ConsensusClientMode.Value.(Mode) == Mode_Local {
+		consensusClientOptions = config.ConsensusClient.Options
+	} else {
+		consensusClientOptions = config.ExternalConsensusClient.Options
+	}
+	for _, consensusClient := range consensusClientOptions {
 		// Get the value for one of the consensus client options
 		clientValue := consensusClient.Value.(ConsensusClient)
 
@@ -975,6 +981,7 @@ func (config *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[str
 func (config *RocketPoolConfig) Validate() []string {
 	errors := []string{}
 
+	// Check for client incompatibility
 	badClients, badFallbackClients := config.GetIncompatibleConsensusClients()
 	if config.ConsensusClientMode.Value == Mode_Local {
 		selectedCC := config.ConsensusClient.Value.(ConsensusClient)
@@ -991,6 +998,23 @@ func (config *RocketPoolConfig) Validate() []string {
 			}
 		}
 	}
+
+	// Check for illegal blank strings
+	/* TODO - this needs to be smarter and ignore irrelevant settings
+	for _, param := range config.GetParameters() {
+		if param.Type == ParameterType_String && !param.CanBeBlank && param.Value == "" {
+			errors = append(errors, fmt.Sprintf("[%s] cannot be blank.", param.Name))
+		}
+	}
+
+	for name, subconfig := range config.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			if param.Type == ParameterType_String && !param.CanBeBlank && param.Value == "" {
+				errors = append(errors, fmt.Sprintf("[%s - %s] cannot be blank.", name, param.Name))
+			}
+		}
+	}
+	*/
 
 	return errors
 }
