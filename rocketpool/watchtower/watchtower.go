@@ -129,7 +129,6 @@ func run(c *cli.Context) error {
 				}
 				time.Sleep(taskCooldown)
 			}
-			time.Sleep(taskCooldown)
 			if err := submitRewardsTree.run(); err != nil {
 				errorLog.Println(err)
 			}

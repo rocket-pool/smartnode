@@ -201,9 +201,10 @@ func (t *submitRewardsTree) run() error {
 
 		// Write the file
 		path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex)
-		err = ioutil.WriteFile(path, wrapperBytes, 0755)
+		err = ioutil.WriteFile(path, wrapperBytes, 0644)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error saving file to %s: %w", generationPrefix, path, err))
+			return
 		}
 
 		// Upload the file

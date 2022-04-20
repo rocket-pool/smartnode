@@ -15,7 +15,7 @@ const (
 	pruneProvisionerTag       string = "rocketpool/eth1-prune-provision:v0.0.1"
 	NetworkID                 string = "network"
 	ProjectNameID             string = "projectName"
-	RewardsTreeFilenameFormat string = "rp-rewards-%d.json"
+	RewardsTreeFilenameFormat string = "rp-rewards-%s-%d.json"
 )
 
 // Defaults
@@ -383,7 +383,7 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 }
 
 func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64) string {
-	return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, interval))
+	return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 }
 
 func (config *SmartnodeConfig) GetLegacyRewardsPoolAddress() common.Address {
