@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -28,16 +29,19 @@ const SubmitFollowDistanceRewardsTree = 2
 
 // Submit rewards Merkle Tree task
 type submitRewardsTree struct {
-	c   *cli.Context
-	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	w   *wallet.Wallet
-	rp  *rocketpool.RocketPool
-	ec  *client.EthClientProxy
+	c         *cli.Context
+	log       log.ColorLogger
+	errLog    log.ColorLogger
+	cfg       *config.RocketPoolConfig
+	w         *wallet.Wallet
+	rp        *rocketpool.RocketPool
+	ec        *client.EthClientProxy
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 // Create submit rewards Merkle Tree task
-func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger) (*submitRewardsTree, error) {
+func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitRewardsTree, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -56,13 +60,17 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger) (*submitReward
 	if err != nil {
 		return nil, err
 	}
+	lock := &sync.Mutex{}
 	generator := &submitRewardsTree{
-		c:   c,
-		log: logger,
-		cfg: cfg,
-		ec:  ec,
-		w:   w,
-		rp:  rp,
+		c:         c,
+		log:       logger,
+		errLog:    errorLogger,
+		cfg:       cfg,
+		ec:        ec,
+		w:         w,
+		rp:        rp,
+		lock:      lock,
+		isRunning: false,
 	}
 
 	return generator, nil
@@ -90,6 +98,9 @@ func (t *submitRewardsTree) run() error {
 	if !nodeTrusted {
 		return nil
 	}
+
+	// Log
+	t.log.Println("Checking for rewards checkpoint...")
 
 	// Check if a rewards interval has passed and needs to be calculated
 	startTime, err := rewards.GetClaimIntervalTimeStart(t.rp, nil)
@@ -138,41 +149,75 @@ func (t *submitRewardsTree) run() error {
 		return nil
 	}
 
-	// Get the total pending rewards and respective distribution percentages
-	nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotBlockHeader, intervalTime)
-	if err != nil {
-		return fmt.Errorf("error calculating node operator rewards: %w", err)
+	// Check if rewards generation is already running
+	t.lock.Lock()
+	if t.isRunning {
+		t.log.Println("Tree generation is already running in the background.")
+		return nil
 	}
-	for address, network := range invalidNodeNetworks {
-		t.log.Printlnf("WARNING: Node %s has invalid network %d assigned!\n", address.Hex(), network)
-	}
+	t.lock.Unlock()
 
-	// Generate the Merkle tree
-	tree, err := rprewards.GenerateMerkleTree(nodeRewardsMap)
-	if err != nil {
-		return fmt.Errorf("error generating Merkle tree: %w", err)
-	}
+	// Run the tree generation
+	go func() {
+		// Log
+		t.lock.Lock()
+		t.log.Println("Rewards checkpoint has passed, starting Merkle tree generation in the background...")
+		t.lock.Unlock()
 
-	// Create the JSON proof wrapper and encode it
-	proofWrapper := rprewards.GenerateTreeJson(tree.Root(), nodeRewardsMap, networkRewardsMap)
-	wrapperBytes, err := json.Marshal(proofWrapper)
-	if err != nil {
-		return fmt.Errorf("error serializing proof wrapper into JSON: %w", err)
-	}
+		generationPrefix := "[Merkle Tree]"
 
-	// Write the file
-	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex)
-	err = ioutil.WriteFile(path, wrapperBytes, 0755)
-	if err != nil {
-		return fmt.Errorf("error saving file to %s: %w", path, err)
-	}
+		// Get the total pending rewards and respective distribution percentages
+		nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotBlockHeader, intervalTime)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error calculating node operator rewards: %w", generationPrefix, err))
+			return
+		}
+		for address, network := range invalidNodeNetworks {
+			t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned!\n", generationPrefix, address.Hex(), network)
+		}
 
-	// Upload the file
-	// TODO
+		// Generate the Merkle tree
+		tree, err := rprewards.GenerateMerkleTree(nodeRewardsMap)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
+			return
+		}
+
+		// Create the JSON proof wrapper and encode it
+		proofWrapper := rprewards.GenerateTreeJson(tree.Root(), nodeRewardsMap, networkRewardsMap)
+		wrapperBytes, err := json.Marshal(proofWrapper)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
+			return
+		}
+
+		// Write the file
+		path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex)
+		err = ioutil.WriteFile(path, wrapperBytes, 0755)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error saving file to %s: %w", generationPrefix, path, err))
+		}
+
+		// Upload the file
+		// TODO
+
+		// Submit to the contracts
+		// TODO
+
+		t.log.Println(fmt.Sprintf("%s Generation complete! CID = [Placeholder]", generationPrefix))
+	}()
 
 	// Done
 	return nil
 
+}
+
+func (t *submitRewardsTree) handleError(err error) {
+	t.errLog.Println(err)
+	t.errLog.Println("*** Rewards tree generation failed. ***")
+	t.lock.Lock()
+	t.isRunning = false
+	t.lock.Unlock()
 }
 
 // Get the number of the first block after the given time

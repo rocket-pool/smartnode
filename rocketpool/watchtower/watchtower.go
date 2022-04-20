@@ -61,6 +61,9 @@ func run(c *cli.Context) error {
 	// Initialize the scrub metrics reporter
 	scrubCollector := collectors.NewScrubCollector()
 
+	// Initialize error logger
+	errorLog := log.NewColorLogger(ErrorColor)
+
 	// Initialize tasks
 	respondChallenges, err := newRespondChallenges(c, log.NewColorLogger(RespondChallengesColor))
 	if err != nil {
@@ -94,13 +97,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	submitRewardsTree, err := newSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor))
+	submitRewardsTree, err := newSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
 	if err != nil {
 		return err
 	}
-
-	// Initialize error logger
-	errorLog := log.NewColorLogger(ErrorColor)
 
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
@@ -130,6 +130,10 @@ func run(c *cli.Context) error {
 				time.Sleep(taskCooldown)
 			}
 			time.Sleep(taskCooldown)
+			if err := submitRewardsTree.run(); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
 			if err := submitRplPrice.run(); err != nil {
 				errorLog.Println(err)
 			}
@@ -151,10 +155,6 @@ func run(c *cli.Context) error {
 			}
 			time.Sleep(taskCooldown)
 			if err := submitScrubMinipools.run(); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if err := submitRewardsTree.run(); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(interval)
