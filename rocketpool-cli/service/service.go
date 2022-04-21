@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/urfave/cli"
+	"gopkg.in/yaml.v2"
 
 	"github.com/dustin/go-humanize"
 	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
@@ -1296,4 +1297,16 @@ func resyncEth2(c *cli.Context) error {
 
 	return nil
 
+}
+
+// Generate a YAML file that shows the current configuration schema, including all of the parameters and their descriptions
+func getConfigYaml(c *cli.Context) error {
+	cfg := config.NewRocketPoolConfig("", false)
+	bytes, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("error serializing configuration schema: %w", err)
+	}
+
+	fmt.Println(string(bytes))
+	return nil
 }

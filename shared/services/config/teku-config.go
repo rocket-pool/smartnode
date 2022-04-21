@@ -5,13 +5,13 @@ const defaultTekuMaxPeers uint16 = 74
 
 // Configuration for Teku
 type TekuConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// The max number of P2P peers to connect to
 	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// Common parameters that Teku doesn't support and should be hidden
-	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
+	UnsupportedCommonParams []string `yaml:"-"`
 
 	// The Docker Hub tag for Lighthouse
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`

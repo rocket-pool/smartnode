@@ -15,16 +15,16 @@ const defaultGethP2pPort uint16 = 30303
 
 // Configuration for Geth
 type GethConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// Common parameters that Geth doesn't support and should be hidden
-	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
+	UnsupportedCommonParams []string `yaml:"-"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
+	CompatibleConsensusClients []ConsensusClient `yaml:"-"`
 
 	// The max number of events to query in a single event log query
-	EventLogInterval int `yaml:"eventLogInterval,omitempty"`
+	EventLogInterval int `yaml:"-"`
 
 	// Size of Geth's Cache
 	CacheSize Parameter `yaml:"cacheSize,omitempty"`

@@ -18,7 +18,7 @@ const defaultDoppelgangerDetection bool = true
 
 // Common parameters shared by all of the Beacon Clients
 type ConsensusCommonConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// Custom proposal graffiti
 	Graffiti Parameter `yaml:"graffiti,omitempty"`

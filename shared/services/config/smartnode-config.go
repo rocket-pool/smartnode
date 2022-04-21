@@ -20,7 +20,7 @@ const defaultProjectName string = "rocketpool"
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// The parent config
 	parent *RocketPoolConfig `yaml:"-"`
@@ -55,34 +55,34 @@ type SmartnodeConfig struct {
 	///////////////////////////
 
 	// The URL to provide the user so they can follow pending transactions
-	txWatchUrl map[Network]string `yaml:"txWatchUrl,omitempty"`
+	txWatchUrl map[Network]string `yaml:"-"`
 
 	// The URL to use for staking rETH
-	stakeUrl map[Network]string `yaml:"stakeUrl,omitempty"`
+	stakeUrl map[Network]string `yaml:"-"`
 
 	// The map of networks to execution chain IDs
-	chainID map[Network]uint `yaml:"chainID"`
+	chainID map[Network]uint `yaml:"-"`
 
 	// The path within the daemon Docker container of the wallet file
-	walletPath string `yaml:"walletPath"`
+	walletPath string `yaml:"-"`
 
 	// The path within the daemon Docker container of the wallet's password file
-	passwordPath string `yaml:"passwordPath"`
+	passwordPath string `yaml:"-"`
 
 	// The path within the daemon Docker container of the validator key folder
-	validatorKeychainPath string `yaml:"validatorKeychainPath"`
+	validatorKeychainPath string `yaml:"-"`
 
 	// The contract address of RocketStorage
-	storageAddress map[Network]string `yaml:"storageAddress"`
+	storageAddress map[Network]string `yaml:"-"`
 
 	// The contract address of the 1inch oracle
-	oneInchOracleAddress map[Network]string `yaml:"oneInchOracleAddress"`
+	oneInchOracleAddress map[Network]string `yaml:"-"`
 
 	// The contract address of the RPL token
-	rplTokenAddress map[Network]string `yaml:"rplTokenAddress"`
+	rplTokenAddress map[Network]string `yaml:"-"`
 
 	// The contract address of the RPL faucet
-	rplFaucetAddress map[Network]string `yaml:"rplFaucetAddress"`
+	rplFaucetAddress map[Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration

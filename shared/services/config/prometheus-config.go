@@ -9,7 +9,7 @@ const defaultPrometheusOpenPort bool = false
 
 // Configuration for Prometheus
 type PrometheusConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// The port to serve metrics on
 	Port Parameter `yaml:"port,omitempty"`

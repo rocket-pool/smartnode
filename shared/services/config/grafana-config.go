@@ -8,7 +8,7 @@ const defaultGrafanaPort uint16 = 3100
 
 // Configuration for Grafana
 type GrafanaConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// The HTTP port to serve on
 	Port Parameter `yaml:"port,omitempty"`

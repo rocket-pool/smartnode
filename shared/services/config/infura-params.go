@@ -5,16 +5,16 @@ const infuraEventLogInterval int = 25000
 
 // Configuration for Infura
 type InfuraConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// Common parameters that Infura doesn't support and should be hidden
-	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
+	UnsupportedCommonParams []string `yaml:"-"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
+	CompatibleConsensusClients []ConsensusClient `yaml:"-"`
 
 	// The max number of events to query in a single event log query
-	EventLogInterval int `yaml:"eventLogInterval,omitempty"`
+	EventLogInterval int `yaml:"-"`
 
 	// The Infura project ID
 	ProjectID Parameter `yaml:"projectID,omitempty"`

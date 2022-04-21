@@ -317,7 +317,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 
-
 			{
 				Name:      "version",
 				Aliases:   []string{"v"},
@@ -383,6 +382,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run command
 					return installUpdateTracker(c)
+
+				},
+			},
+
+			{
+				Name:      "get-config-yaml",
+				Usage:     "Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions",
+				UsageText: "rocketpool service get-config-yaml",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return getConfigYaml(c)
 
 				},
 			},

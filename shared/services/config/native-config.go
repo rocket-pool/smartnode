@@ -4,7 +4,7 @@ import "path/filepath"
 
 // Configuration for Native mode
 type NativeConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// The URL of the EC HTTP endpoint
 	EcHttpUrl Parameter `yaml:"ecHttpUrl,omitempty"`

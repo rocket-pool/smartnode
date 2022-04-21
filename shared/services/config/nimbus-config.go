@@ -8,13 +8,13 @@ const defaultNimbusMaxPeersAmd uint16 = 160
 
 // Configuration for Nimbus
 type NimbusConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// The max number of P2P peers to connect to
 	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// Common parameters that Nimbus doesn't support and should be hidden
-	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
+	UnsupportedCommonParams []string `yaml:"-"`
 
 	// The Docker Hub tag for Nimbus
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`

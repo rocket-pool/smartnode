@@ -7,16 +7,16 @@ const pocketEventLogInterval int = 25000
 
 // Configuration for Pocket
 type PocketConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// Common parameters that Pocket doesn't support and should be hidden
-	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
+	UnsupportedCommonParams []string `yaml:"-"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
+	CompatibleConsensusClients []ConsensusClient `yaml:"-"`
 
 	// The max number of events to query in a single event log query
-	EventLogInterval int `yaml:"eventLogInterval,omitempty"`
+	EventLogInterval int `yaml:"-"`
 
 	// The Pocket gateway ID
 	GatewayID Parameter `yaml:"gatewayID,omitempty"`

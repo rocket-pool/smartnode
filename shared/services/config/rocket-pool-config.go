@@ -39,13 +39,13 @@ const defaultWatchtowerMetricsPort uint16 = 9104
 
 // The master configuration struct
 type RocketPoolConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
-	Version string `yaml:"version,omitempty"`
+	Version string `yaml:"-"`
 
-	RocketPoolDirectory string `yaml:"rocketPoolDirectory,omitempty"`
+	RocketPoolDirectory string `yaml:"-"`
 
-	IsNativeMode bool `yaml:"isNativeMode,omitempty"`
+	IsNativeMode bool `yaml:"-"`
 
 	// Execution client settings
 	ExecutionClientMode Parameter `yaml:"executionClientMode"`
