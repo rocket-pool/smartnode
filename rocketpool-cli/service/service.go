@@ -320,7 +320,7 @@ func configureService(c *cli.Context) error {
 				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
 				return nil
 			} else {
-				return startService(c)
+				return startService(c, true)
 			}
 		}
 
@@ -345,7 +345,7 @@ func configureService(c *cli.Context) error {
 
 			fmt.Println()
 			fmt.Println("Applying changes and restarting containers...")
-			return startService(c)
+			return startService(c, true)
 		}
 	} else {
 		fmt.Println("Your changes have not been saved. Your Smartnode configuration is the same as it was before.")
@@ -494,7 +494,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 }
 
 // Start the Rocket Pool service
-func startService(c *cli.Context) error {
+func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
@@ -532,7 +532,7 @@ func startService(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error checking for first-run status: %w", err)
 	}
-	if isUpdate {
+	if isUpdate && !ignoreConfigSuggestion {
 		if c.Bool("yes") || cliutils.Confirm("Smartnode upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
 			err = cfg.UpdateDefaults()
 			if err != nil {
@@ -573,9 +573,97 @@ func startService(c *cli.Context) error {
 		fmt.Printf("%sIgnoring anti-slashing safety delay.%s\n", colorYellow, colorReset)
 	}
 
-	// Start service
-	return rp.StartService(getComposeFiles(c))
+	// Force a delay if using a local Teku install because of the slashing protection DB migration in v1.3.1
+	// TODO: REMOVE AFTER v1.3.1
+	if isUpdate && cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku {
+		err = handleTekuSlashProtectionMigrationDelay(rp, cfg)
+		if err != nil {
+			return err
+		}
+	}
 
+	// Start service
+	err = rp.StartService(getComposeFiles(c))
+	if err != nil {
+		return err
+	}
+
+	// Remove the upgrade flag if it's there
+	return rp.RemoveUpgradeFlagFile()
+
+}
+
+// TODO: REMOVE AFTER v1.3.1
+func handleTekuSlashProtectionMigrationDelay(rp *rocketpool.Client, cfg *config.RocketPoolConfig) error {
+
+	fmt.Printf("%s=== NOTICE ===\n", colorYellow)
+	fmt.Printf("You are currently using Teku managed by the Smartnode as your Consensus client.\nv1.3.1 fixes an issue that would cause Teku's slashing protection database to be lost after an upgrade.\nIt will now be rebuilt.\n\nFor the absolute safety of your funds, your node will wait for 15 minutes before starting.\nYou will miss a few attestations during this process; this is expected.\n\nThis delay only needs to happen the first time you start the Smartnode after upgrading to v1.3.1.%s\n\n", colorReset)
+
+	// Get the container prefix
+	prefix, err := getContainerPrefix(rp)
+	if err != nil {
+		return fmt.Errorf("Error getting validator container prefix: %w", err)
+	}
+
+	// Get the current validator client
+	currentValidatorImageString, err := rp.GetDockerImage(prefix + ValidatorContainerSuffix)
+	if err != nil {
+		return fmt.Errorf("Error getting current validator image: %w", err)
+	}
+
+	currentValidatorName, err := getDockerImageName(currentValidatorImageString)
+	if err != nil {
+		return fmt.Errorf("Error getting current validator image name: %w", err)
+	}
+
+	// Get the time that the container responsible for validator duties exited
+	validatorDutyContainerName, err := getContainerNameForValidatorDuties(currentValidatorName, rp)
+	if err != nil {
+		return fmt.Errorf("Error getting validator container name: %w", err)
+	}
+	validatorFinishTime, err := rp.GetDockerContainerShutdownTime(validatorDutyContainerName)
+	if err != nil {
+		return fmt.Errorf("Error getting validator shutdown time: %w", err)
+	}
+
+	// If it hasn't exited yet, shut it down
+	zeroTime := time.Time{}
+	status, err := rp.GetDockerStatus(validatorDutyContainerName)
+	if err != nil {
+		return fmt.Errorf("Error getting container [%s] status: %w", validatorDutyContainerName, err)
+	}
+	if validatorFinishTime == zeroTime || status == "running" {
+		fmt.Printf("%sValidator is currently running, stopping it...%s\n", colorYellow, colorReset)
+		response, err := rp.StopContainer(validatorDutyContainerName)
+		validatorFinishTime = time.Now()
+		if err != nil {
+			return fmt.Errorf("Error stopping container [%s]: %w", validatorDutyContainerName, err)
+		}
+		if response != validatorDutyContainerName {
+			return fmt.Errorf("Unexpected response when stopping container [%s]: %s", validatorDutyContainerName, response)
+		}
+	}
+
+	// Print the warning and start the time lockout
+	safeStartTime := validatorFinishTime.Add(15 * time.Minute)
+	remainingTime := time.Until(safeStartTime)
+	if remainingTime <= 0 {
+		fmt.Printf("The validator has been offline for %s, which is long enough to prevent slashing.\n", time.Since(validatorFinishTime))
+		fmt.Println("The new client can be safely started.")
+	} else {
+		// Wait for 15 minutes
+		for remainingTime > 0 {
+			fmt.Printf("Remaining time: %s", remainingTime)
+			time.Sleep(1 * time.Second)
+			remainingTime = time.Until(safeStartTime)
+			fmt.Printf("%s\r", clearLine)
+		}
+
+		fmt.Println(colorReset)
+		fmt.Println("You may now safely start the validator without fear of being slashed.")
+	}
+
+	return nil
 }
 
 func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig) error {
@@ -1164,7 +1252,7 @@ func resyncEth1(c *cli.Context) error {
 
 	// Restart Rocket Pool
 	fmt.Printf("Rebuilding %s and restarting Rocket Pool...\n", executionContainerName)
-	err = startService(c)
+	err = startService(c, true)
 	if err != nil {
 		return fmt.Errorf("Error starting Rocket Pool: %s", err)
 	}
@@ -1288,7 +1376,7 @@ func resyncEth2(c *cli.Context) error {
 
 	// Restart Rocket Pool
 	fmt.Printf("Rebuilding %s and restarting Rocket Pool...\n", beaconContainerName)
-	err = startService(c)
+	err = startService(c, true)
 	if err != nil {
 		return fmt.Errorf("Error starting Rocket Pool: %s", err)
 	}

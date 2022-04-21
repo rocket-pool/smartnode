@@ -151,6 +151,15 @@ func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
 	return rp.SaveConfig(cfg, expandedPath)
 }
 
+// Remove the upgrade flag file
+func (c *Client) RemoveUpgradeFlagFile() error {
+	expandedPath, err := homedir.Expand(c.configPath)
+	if err != nil {
+		return err
+	}
+	return rp.RemoveUpgradeFlagFile(expandedPath)
+}
+
 // Returns whether or not this is the first run of the configurator since a previous installation
 func (c *Client) IsFirstRun() (bool, error) {
 	expandedPath, err := homedir.Expand(c.configPath)

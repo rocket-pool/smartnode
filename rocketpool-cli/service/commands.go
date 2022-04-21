@@ -210,7 +210,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return startService(c)
+					return startService(c, false)
 
 				},
 			},
