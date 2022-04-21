@@ -19,7 +19,6 @@ type settingsHome struct {
 	fallbackEcPage   *FallbackExecutionConfigPage
 	ccPage           *ConsensusConfigPage
 	metricsPage      *MetricsConfigPage
-	ipfsPage         *IpfsConfigPage
 	addonsPage       *AddonsPage
 	categoryList     *tview.List
 	settingsSubpages []*page
@@ -44,7 +43,6 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	home.fallbackEcPage = NewFallbackExecutionConfigPage(home)
 	home.ccPage = NewConsensusConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
-	home.ipfsPage = NewIpfsConfigPage(home)
 	home.addonsPage = NewAddonsPage(home.md)
 	settingsSubpages := []*page{
 		home.smartnodePage.page,
@@ -52,7 +50,6 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 		home.fallbackEcPage.page,
 		home.ccPage.page,
 		home.metricsPage.page,
-		home.ipfsPage.page,
 		home.addonsPage.page,
 	}
 	home.settingsSubpages = settingsSubpages

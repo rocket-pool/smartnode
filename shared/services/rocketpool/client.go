@@ -1332,21 +1332,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
 	}
 
-	// Check IPFS
-	if cfg.EnableIpfs.Value == true {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.IpfsContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting IPFS container template: %w", err)
-		}
-		ipfsComposePath := filepath.Join(runtimeFolder, config.IpfsContainerName+composeFileSuffix)
-		err = ioutil.WriteFile(ipfsComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write IPFS container file to %s: %w", ipfsComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, ipfsComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.IpfsContainerName+composeFileSuffix))
-	}
-
 	// Deploy the fee recipient templates
 	defaultFrTemplatesFolder := filepath.Join(templatesFolder, defaultFeeRecipientDir)
 	defaultFrDeploymentPath := filepath.Join(cfg.Smartnode.DataPath.Value.(string), defaultFeeRecipientDir)

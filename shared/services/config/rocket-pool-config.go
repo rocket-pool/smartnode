@@ -71,9 +71,6 @@ type RocketPoolConfig struct {
 	ExporterMetricsPort   Parameter `yaml:"exporterMetricsPort,omitempty"`
 	WatchtowerMetricsPort Parameter `yaml:"watchtowerMetricsPort,omitempty"`
 
-	// IPFS settings
-	EnableIpfs Parameter `yaml:"enableIpfs,omitempty"`
-
 	// The Smartnode configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode"`
 
@@ -107,9 +104,6 @@ type RocketPoolConfig struct {
 
 	// Native mode
 	Native *NativeConfig `yaml:"native,omitempty"`
-
-	// IPFS
-	Ipfs *IpfsConfig `yaml:"ipfs,omitempty"`
 }
 
 // Load configuration settings from a file
@@ -406,18 +400,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
-
-		EnableIpfs: Parameter{
-			ID:                   "enableIpfs",
-			Name:                 "Enable IPFS",
-			Description:          "Enable the IPFS container, which will store a copy of the information for RPL and Smoothing Pool rewards periods. This way, other users can access this information from you if they need a copy of it. Enabling this is simply a voluntary way to help further decentralize the Rocket Pool rewards system.\n\nTo learn more about IPFS, please visit https://docs.ipfs.io/concepts/what-is-ipfs/",
-			Type:                 ParameterType_Bool,
-			Default:              map[Network]interface{}{Network_All: false},
-			AffectsContainers:    []ContainerID{ContainerID_Ipfs},
-			EnvironmentVariables: []string{"ENABLE_IPFS"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
 	}
 
 	// Set the defaults for choices
@@ -447,7 +429,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Prometheus = NewPrometheusConfig(config)
 	config.Exporter = NewExporterConfig(config)
 	config.Native = NewNativeConfig(config)
-	config.Ipfs = NewIpfsConfig(config)
 
 	// Apply the default values for mainnet
 	config.Smartnode.Network.Value = config.Smartnode.Network.Options[0].Value
@@ -494,7 +475,6 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 		&config.NodeMetricsPort,
 		&config.ExporterMetricsPort,
 		&config.WatchtowerMetricsPort,
-		&config.EnableIpfs,
 	}
 }
 
@@ -523,7 +503,6 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"prometheus":                config.Prometheus,
 		"exporter":                  config.Exporter,
 		"native":                    config.Native,
-		"ipfs":                      config.Ipfs,
 	}
 }
 
@@ -906,11 +885,6 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			envVars["PROMETHEUS_ADDITIONAL_FLAGS"] = fmt.Sprintf(", \"%s\"", config.Prometheus.AdditionalFlags.Value.(string))
 		}
 
-	}
-
-	// IPFS
-	if config.EnableIpfs.Value == true {
-		addParametersToEnvVars(config.Ipfs.GetParameters(), envVars)
 	}
 
 	return envVars
