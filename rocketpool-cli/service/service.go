@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
 	"github.com/urfave/cli"
@@ -575,11 +576,30 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		fmt.Printf("%sIgnoring anti-slashing safety delay.%s\n", colorYellow, colorReset)
 	}
 
-	// Force a delay if using Teku because of the slashing protection DB migration in v1.3.1
-	if isUpdate && !cfg.IsNativeMode && ((cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku) || (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External && cfg.ExternalConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)) {
-		err = handleTekuSlashProtectionMigrationDelay(rp, cfg)
+	// Force a delay if using Teku and upgrading from v1.3.0 or below because of the slashing protection DB migration in v1.3.1+
+	isLocalTeku := (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)
+	isExternalTeku := (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External && cfg.ExternalConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)
+	if isUpdate && !cfg.IsNativeMode && (isLocalTeku || isExternalTeku) {
+		previousVersion := "0.0.0"
+		backupCfg, err := rp.LoadBackupConfig()
 		if err != nil {
-			return err
+			fmt.Printf("WARNING: Couldn't determine previous Smartnode version from backup settings: %s\n", err.Error())
+		} else if backupCfg != nil {
+			previousVersion = backupCfg.Version
+		}
+
+		oldVersion, err := version.NewVersion(strings.TrimPrefix(previousVersion, "v"))
+		if err != nil {
+			fmt.Printf("WARNING: Backup configuration states the previous Smartnode installation used version %s, which is not a valid version\n", previousVersion)
+			oldVersion, _ = version.NewVersion("0.0.0")
+		}
+
+		vulnerableConstraint, _ := version.NewConstraint("<= 1.3.0")
+		if vulnerableConstraint.Check(oldVersion) {
+			err = handleTekuSlashProtectionMigrationDelay(rp, cfg)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -594,11 +614,11 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 }
 
-// TODO AFTER v1.3.1: ADD A SEMVER CHECK TO THIS SO UPGRADING FROM ANY VERSION BEFORE v1.3.1 RUNS THE CHECK
+// Versions prior to v1.3.1 didn't preserve Teku's slashing DB, so force a delay when upgrading to ensure the user doesn't get slashed by accident
 func handleTekuSlashProtectionMigrationDelay(rp *rocketpool.Client, cfg *config.RocketPoolConfig) error {
 
 	fmt.Printf("%s=== NOTICE ===\n", colorYellow)
-	fmt.Printf("You are currently using Teku as your Consensus client.\nv1.3.1 fixes an issue that would cause Teku's slashing protection database to be lost after an upgrade.\nIt will now be rebuilt.\n\nFor the absolute safety of your funds, your node will wait for 15 minutes before starting.\nYou will miss a few attestations during this process; this is expected.\n\nThis delay only needs to happen the first time you start the Smartnode after upgrading to v1.3.1.%s\n\n", colorReset)
+	fmt.Printf("You are currently using Teku as your Consensus client.\nv1.3.1+ fixes an issue that would cause Teku's slashing protection database to be lost after an upgrade.\nIt will now be rebuilt.\n\nFor the absolute safety of your funds, your node will wait for 15 minutes before starting.\nYou will miss a few attestations during this process; this is expected.\n\nThis delay only needs to happen the first time you start the Smartnode after upgrading to v1.3.1 or higher.%s\n\n", colorReset)
 
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)

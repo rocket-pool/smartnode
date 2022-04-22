@@ -141,6 +141,17 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	return cfg, isNew, nil
 }
 
+// Load the backup config
+func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
+	settingsFilePath := filepath.Join(c.configPath, BackupSettingsFile)
+	expandedPath, err := homedir.Expand(settingsFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error expanding backup settings file path: %w", err)
+	}
+
+	return rp.LoadConfigFromFile(expandedPath)
+}
+
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
 	settingsFilePath := filepath.Join(c.configPath, SettingsFile)

@@ -23,6 +23,7 @@ require (
 	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/hashicorp/go-version v1.4.0
 	github.com/herumi/bls-eth-go-binary v0.0.0-20211108015406-b5186ba08dc7 // indirect
 	github.com/imdario/mergo v0.3.12
 	github.com/mitchellh/go-homedir v1.1.0
