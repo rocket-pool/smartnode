@@ -573,9 +573,9 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		fmt.Printf("%sIgnoring anti-slashing safety delay.%s\n", colorYellow, colorReset)
 	}
 
-	// Force a delay if using a local Teku install because of the slashing protection DB migration in v1.3.1
+	// Force a delay if using Teku because of the slashing protection DB migration in v1.3.1
 	// TODO: REMOVE AFTER v1.3.1
-	if isUpdate && cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku {
+	if isUpdate && !cfg.IsNativeMode && ((cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku) || (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External && cfg.ExternalConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)) {
 		err = handleTekuSlashProtectionMigrationDelay(rp, cfg)
 		if err != nil {
 			return err
@@ -597,7 +597,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 func handleTekuSlashProtectionMigrationDelay(rp *rocketpool.Client, cfg *config.RocketPoolConfig) error {
 
 	fmt.Printf("%s=== NOTICE ===\n", colorYellow)
-	fmt.Printf("You are currently using Teku managed by the Smartnode as your Consensus client.\nv1.3.1 fixes an issue that would cause Teku's slashing protection database to be lost after an upgrade.\nIt will now be rebuilt.\n\nFor the absolute safety of your funds, your node will wait for 15 minutes before starting.\nYou will miss a few attestations during this process; this is expected.\n\nThis delay only needs to happen the first time you start the Smartnode after upgrading to v1.3.1.%s\n\n", colorReset)
+	fmt.Printf("You are currently using Teku as your Consensus client.\nv1.3.1 fixes an issue that would cause Teku's slashing protection database to be lost after an upgrade.\nIt will now be rebuilt.\n\nFor the absolute safety of your funds, your node will wait for 15 minutes before starting.\nYou will miss a few attestations during this process; this is expected.\n\nThis delay only needs to happen the first time you start the Smartnode after upgrading to v1.3.1.%s\n\n", colorReset)
 
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)
