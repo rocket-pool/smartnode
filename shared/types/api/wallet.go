@@ -45,3 +45,10 @@ type ExportWalletResponse struct {
 	Wallet            string `json:"wallet"`
 	AccountPrivateKey string `json:"accountPrivateKey"`
 }
+
+type TestMnemonicResponse struct {
+	Status           string         `json:"status"`
+	Error            string         `json:"error"`
+	CurrentAddress   common.Address `json:"currentAddress"`
+	RecoveredAddress common.Address `json:"recoveredAddress"`
+}

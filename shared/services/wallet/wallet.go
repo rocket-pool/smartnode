@@ -194,6 +194,38 @@ func (w *Wallet) Recover(derivationPath string, mnemonic string) error {
 
 }
 
+// Recover a wallet from a mnemonic - only used for testing mnemonics
+func (w *Wallet) TestRecovery(derivationPath string, mnemonic string) error {
+
+	// Check mnemonic
+	if !bip39.IsMnemonicValid(mnemonic) {
+		return fmt.Errorf("Invalid mnemonic '%s'", mnemonic)
+	}
+
+	// Generate seed
+	w.seed = bip39.NewSeed(mnemonic, "")
+
+	// Create master key
+	var err error
+	w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
+	if err != nil {
+		return fmt.Errorf("Could not create wallet master key: %w", err)
+	}
+
+	// Create wallet store
+	w.ws = &walletStore{
+		Name:           w.encryptor.Name(),
+		Version:        w.encryptor.Version(),
+		UUID:           uuid.New(),
+		DerivationPath: derivationPath,
+		NextAccount:    0,
+	}
+
+	// Return
+	return nil
+
+}
+
 // Save the wallet store to disk
 func (w *Wallet) Save() error {
 

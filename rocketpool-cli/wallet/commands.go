@@ -138,6 +138,50 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "test-mnemonic",
+				Aliases:   []string{"t"},
+				Usage:     "Test recovering a node wallet from a mnemonic phrase to ensure the phrase is correct",
+				UsageText: "rocketpool wallet test-mnemonic [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "The password to secure the wallet with (if not already set)",
+					},
+					cli.StringFlag{
+						Name:  "mnemonic, m",
+						Usage: "The mnemonic phrase to recover the wallet from",
+					},
+					cli.StringFlag{
+						Name:  "derivation-path, d",
+						Usage: "Specify the derivation path for the wallet.\nOmit this flag (or leave it blank) for the default of \"m/44'/60'/0'/0/%d\" (where %d is the index).\nSet this to \"ledgerLive\" to use Ledger Live's path of \"m/44'/60'/%d/0/0\".\nSet this to \"mew\" to use MyEtherWallet's path of \"m/44'/60'/0'/%d\".\nFor custom paths, simply enter them here.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("password") != "" {
+						if _, err := cliutils.ValidateNodePassword("password", c.String("password")); err != nil {
+							return err
+						}
+					}
+					if c.String("mnemonic") != "" {
+						if _, err := cliutils.ValidateWalletMnemonic("mnemonic", c.String("mnemonic")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return testMnemonic(c)
+
+				},
+			},
+
+			{
 				Name:      "export",
 				Aliases:   []string{"e"},
 				Usage:     "Export the node wallet in JSON format",

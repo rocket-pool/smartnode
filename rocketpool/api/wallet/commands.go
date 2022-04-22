@@ -135,6 +135,35 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "test-mnemonic",
+				Aliases:   []string{"t"},
+				Usage:     "Test recovering a node wallet from a mnemonic phrase to ensure the phrase is correct",
+				UsageText: "rocketpool api wallet test-mnemonic mnemonic",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "derivation-path, d",
+						Usage: "Specify the derivation path for the wallet.\nOmit this flag (or leave it blank) for the default of \"m/44'/60'/0'/0/%d\" (where %d is the index).\nSet this to \"ledgerLive\" to use Ledger Live's path of \"m/44'/60'/%d/0/0\".\nSet this to \"mew\" to use MyEtherWallet's path of \"m/44'/60'/0'/%d\".\nFor custom paths, simply enter them here.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(testMnemonic(c, mnemonic))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "export",
 				Aliases:   []string{"e"},
 				Usage:     "Export the node wallet in JSON format",
