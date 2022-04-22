@@ -130,14 +130,16 @@ ______           _        _    ______           _
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== New Configuration System ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode's configuration system has undergone some massive changes based on community feedback!\nWe have written a migration guide to explain the changes here: https://docs.rocketpool.net/guides/node/v1.3-update.html\n\nHere is a brief overview of the updates:\n")
-	fmt.Println("- The text-based `rocketpool service config` interview process, along with the old `config.yml` file, have been replaced with a shiny, easy-to-use new UI. You can now simply browse through and change any of the settings.\n")
-	fmt.Println("- All of your settings will now persist across Smartnode updates - you don't need to redo the changes anymore after updating!\n")
-	fmt.Println("- First-class support for Hybrid mode (externally-managed clients)! You no longer need to mess with the Docker files directly for Hybrid mode.\n")
-	fmt.Println("- Advanced users who customize their docker-compose files can now do so with special files in the `override` folder - these will replace any settings in the original docker-compose files, and will persist across updates so you only need to create them once.\nSee https://docs.rocketpool.net/guides/node/advanced-config.html#customizing-the-docker-compose-definition-files to learn more about this.\n")
+	fmt.Println("If you're upgrading from v1.1 or v1.2, you'll want to read all about the new Terminal UI, Docker file layout, and configuration system here: https://docs.rocketpool.net/guides/node/v1.3-update.html\n")
 
-	fmt.Printf("%s=== Restoring from Backup ===%s\n", colorGreen, colorReset)
-	fmt.Println("All of your previous configuration files and settings have been backed up. Please see https://docs.rocketpool.net/guides/node/v1.3-update.html#reverting-to-your-previous-configuration for a walkthrough of how to restore them if you need to revert to the previous version.")
+	fmt.Printf("%s=== Nimbus <3 Pocket ===%s\n", colorGreen, colorReset)
+	fmt.Println("Nimbus now works with HTTP web3 addresses, which means it now supports Pocket! You can finally use Pocket as your primary or fallback Execution client if you're using Nimbus.\n")
+
+	fmt.Printf("%s=== Mnemonic Testing ===%s\n", colorGreen, colorReset)
+	fmt.Println("Would you like to confirm that you wrote your mnemonic recovery phrase down correctly? Now you can! Try the new `rocketpool wallet test-mnemonic` command which will recover a node address from your mnemonic and compare it to your node's active address to make sure you have it right.\n")
+
+	fmt.Printf("%s=== Teku Slashing Protection ===%s\n", colorGreen, colorReset)
+	fmt.Println("This build fixes an issue that caused Teku's slashing protection database to reset after upgrading the Smartnode or Teku's version. If you're using Teku in Docker or Hybrid mode, for the safety of your funds, the Smartnode will wait 15 minutes between stopping and starting your validator container to ensure you don't get slashed while it resets. Don't worry, this only needs to happen once.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -574,7 +576,6 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	}
 
 	// Force a delay if using Teku because of the slashing protection DB migration in v1.3.1
-	// TODO: REMOVE AFTER v1.3.1
 	if isUpdate && !cfg.IsNativeMode && ((cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku) || (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External && cfg.ExternalConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)) {
 		err = handleTekuSlashProtectionMigrationDelay(rp, cfg)
 		if err != nil {
@@ -593,7 +594,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 }
 
-// TODO: REMOVE AFTER v1.3.1
+// TODO AFTER v1.3.1: ADD A SEMVER CHECK TO THIS SO UPGRADING FROM ANY VERSION BEFORE v1.3.1 RUNS THE CHECK
 func handleTekuSlashProtectionMigrationDelay(rp *rocketpool.Client, cfg *config.RocketPoolConfig) error {
 
 	fmt.Printf("%s=== NOTICE ===\n", colorYellow)
