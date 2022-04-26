@@ -181,6 +181,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Description: "Geth is one of the three original implementations of the Ethereum protocol. It is written in Go, fully open source and licensed under the GNU LGPL v3.",
 				Value:       ExecutionClient_Geth,
 			}, {
+				Name:        "Nethermind",
+				Description: "Description goes here",
+				Value:       ExecutionClient_Nethermind,
+			}, {
 				Name:        "Infura",
 				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
 				Value:       ExecutionClient_Infura,
@@ -772,6 +776,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		// Client-specific params
 		switch config.ExecutionClient.Value.(ExecutionClient) {
 		case ExecutionClient_Geth:
+		case ExecutionClient_Nethermind:
 			addParametersToEnvVars(config.Geth.GetParameters(), envVars)
 		case ExecutionClient_Infura:
 			addParametersToEnvVars(config.Infura.GetParameters(), envVars)

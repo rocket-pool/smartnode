@@ -8,6 +8,7 @@ import (
 
 // Constants
 const gethTag string = "ethereum/client-go:v1.10.17"
+const nethermindTag string = "nethermind/nethermind:1.12.7"
 const gethEventLogInterval int = 25000
 
 // Defaults
@@ -31,15 +32,6 @@ type GethConfig struct {
 
 	// Max number of P2P peers to connect to
 	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
-
-	// P2P traffic port
-	P2pPort Parameter `yaml:"p2pPort,omitempty"`
-
-	// Label for Ethstats
-	EthstatsLabel Parameter `yaml:"ethstatsLabel,omitempty"`
-
-	// Login info for Ethstats
-	EthstatsLogin Parameter `yaml:"ethstatsLogin,omitempty"`
 
 	// The Docker Hub tag for Geth
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
@@ -96,42 +88,6 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{prefix + "EC_MAX_PEERS"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		P2pPort: Parameter{
-			ID:                   "p2pPort",
-			Name:                 "P2P Port",
-			Description:          "The port Geth should use for P2P (blockchain) traffic to communicate with other nodes.",
-			Type:                 ParameterType_Uint16,
-			Default:              map[Network]interface{}{Network_All: defaultGethP2pPort},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_P2P_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		EthstatsLabel: Parameter{
-			ID:                   "ethstatsLabel",
-			Name:                 "ETHStats Label",
-			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the label you want to use here.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "ETHSTATS_LABEL"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
-		},
-
-		EthstatsLogin: Parameter{
-			ID:                   "ethstatsLogin",
-			Name:                 "ETHStats Login",
-			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the login you want to use here.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "ETHSTATS_LOGIN"},
-			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
