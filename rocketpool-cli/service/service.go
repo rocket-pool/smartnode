@@ -1114,6 +1114,10 @@ func serviceVersion(c *cli.Context) error {
 		switch eth1Client {
 		case config.ExecutionClient_Geth:
 			eth1ClientString = fmt.Sprintf(format, "Geth", cfg.Geth.ContainerTag.Value.(string))
+		case config.ExecutionClient_Nethermind:
+			eth1ClientString = fmt.Sprintf(format, "Nethermind", cfg.Nethermind.ContainerTag.Value.(string))
+		case config.ExecutionClient_Besu:
+			eth1ClientString = fmt.Sprintf(format, "Besu", cfg.Besu.ContainerTag.Value.(string))
 		case config.ExecutionClient_Infura:
 			eth1ClientString = fmt.Sprintf(format, "Infura", cfg.Smartnode.GetPowProxyContainerTag())
 		case config.ExecutionClient_Pocket:

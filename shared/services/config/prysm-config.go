@@ -144,7 +144,7 @@ func getPrysmBnTag() string {
 	} else if runtime.GOARCH == "amd64" {
 		return prysmBnTagAmd64
 	} else {
-		panic(fmt.Sprint("Prysm doesn't support architecture %s", runtime.GOARCH))
+		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
 	}
 }
 
@@ -155,7 +155,7 @@ func getPrysmVcTag() string {
 	} else if runtime.GOARCH == "amd64" {
 		return prysmVcTagAmd64
 	} else {
-		panic(fmt.Sprint("Prysm doesn't support architecture %s", runtime.GOARCH))
+		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
 	}
 }
 

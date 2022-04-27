@@ -56,6 +56,7 @@ const (
 	ExecutionClient_Unknown    ExecutionClient = ""
 	ExecutionClient_Geth       ExecutionClient = "geth"
 	ExecutionClient_Nethermind ExecutionClient = "nethermind"
+	ExecutionClient_Besu       ExecutionClient = "besu"
 	ExecutionClient_Infura     ExecutionClient = "infura"
 	ExecutionClient_Pocket     ExecutionClient = "pocket"
 )

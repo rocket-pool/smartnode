@@ -93,6 +93,10 @@ func GetEventLogInterval(cfg *config.RocketPoolConfig) (*big.Int, error) {
 		switch cfg.ExecutionClient.Value {
 		case config.ExecutionClient_Geth:
 			eventLogInterval = big.NewInt(int64(cfg.Geth.EventLogInterval))
+		case config.ExecutionClient_Nethermind:
+			eventLogInterval = big.NewInt(int64(cfg.Nethermind.EventLogInterval))
+		case config.ExecutionClient_Besu:
+			eventLogInterval = big.NewInt(int64(cfg.Besu.EventLogInterval))
 		case config.ExecutionClient_Infura:
 			eventLogInterval = big.NewInt(int64(cfg.Infura.EventLogInterval))
 		case config.ExecutionClient_Pocket:

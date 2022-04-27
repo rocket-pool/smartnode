@@ -78,6 +78,7 @@ type RocketPoolConfig struct {
 	ExecutionCommon   *ExecutionCommonConfig   `yaml:"executionCommon,omitempty"`
 	Geth              *GethConfig              `yaml:"geth,omitempty"`
 	Nethermind        *NethermindConfig        `yaml:"nethermind,omitempty"`
+	Besu              *BesuConfig              `yaml:"besu,omitempty"`
 	Infura            *InfuraConfig            `yaml:"infura,omitempty"`
 	Pocket            *PocketConfig            `yaml:"pocket,omitempty"`
 	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
@@ -186,6 +187,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Nethermind",
 				Description: "Description goes here",
 				Value:       ExecutionClient_Nethermind,
+			}, {
+				Name:        "Besu",
+				Description: "Description goes here",
+				Value:       ExecutionClient_Besu,
 			}, {
 				Name:        "Infura",
 				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
@@ -424,6 +429,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.ExecutionCommon = NewExecutionCommonConfig(config, false)
 	config.Geth = NewGethConfig(config, false)
 	config.Nethermind = NewNethermindConfig(config, false)
+	config.Besu = NewBesuConfig(config, false)
 	config.Infura = NewInfuraConfig(config, false)
 	config.Pocket = NewPocketConfig(config, false)
 	config.ExternalExecution = NewExternalExecutionConfig(config, false)
@@ -499,6 +505,7 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"executionCommon":           config.ExecutionCommon,
 		"geth":                      config.Geth,
 		"nethermind":                config.Nethermind,
+		"besu":                      config.Besu,
 		"infura":                    config.Infura,
 		"pocket":                    config.Pocket,
 		"externalExecution":         config.ExternalExecution,
@@ -560,6 +567,10 @@ func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOp
 		switch executionClient {
 		case ExecutionClient_Geth:
 			compatibleConsensusClients = config.Geth.CompatibleConsensusClients
+		case ExecutionClient_Nethermind:
+			compatibleConsensusClients = config.Nethermind.CompatibleConsensusClients
+		case ExecutionClient_Besu:
+			compatibleConsensusClients = config.Besu.CompatibleConsensusClients
 		case ExecutionClient_Infura:
 			compatibleConsensusClients = config.Infura.CompatibleConsensusClients
 		case ExecutionClient_Pocket:
@@ -788,6 +799,8 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			addParametersToEnvVars(config.Geth.GetParameters(), envVars)
 		case ExecutionClient_Nethermind:
 			addParametersToEnvVars(config.Nethermind.GetParameters(), envVars)
+		case ExecutionClient_Besu:
+			addParametersToEnvVars(config.Besu.GetParameters(), envVars)
 		case ExecutionClient_Infura:
 			addParametersToEnvVars(config.Infura.GetParameters(), envVars)
 		case ExecutionClient_Pocket:
