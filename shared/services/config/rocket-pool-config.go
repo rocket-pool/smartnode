@@ -11,6 +11,7 @@ import (
 
 	"github.com/alessio/shellescape"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	"gopkg.in/yaml.v2"
 )
 
@@ -697,6 +698,12 @@ func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 // Deserializes a settings file into this config
 func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string) error {
 
+	// Upgrade the config to the latest version
+	err := migration.UpdateConfig(masterMap)
+	if err != nil {
+		return fmt.Errorf("Error upgrading configuration to v%s: %w", shared.RocketPoolVersion, err)
+	}
+
 	// Get the network
 	network := Network_Mainnet
 	smartnodeConfig, exists := masterMap[config.Smartnode.Title]
@@ -723,7 +730,6 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 		}
 	}
 
-	var err error
 	config.RocketPoolDirectory = masterMap[rootConfigName]["rpDir"]
 	config.IsNativeMode, err = strconv.ParseBool(masterMap[rootConfigName]["isNative"])
 	if err != nil {

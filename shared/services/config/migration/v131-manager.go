@@ -2,7 +2,7 @@ package migration
 
 import "fmt"
 
-func UpgradeFromV131(serializedConfig map[string]map[string]string) error {
+func upgradeFromV131(serializedConfig map[string]map[string]string) error {
 	// v1.3.1 had some of the common EC parameters stored inside the Geth config
 	gethSettings, exists := serializedConfig["geth"]
 	if !exists {
@@ -33,5 +33,3 @@ func UpgradeFromV131(serializedConfig map[string]map[string]string) error {
 
 	return nil
 }
-
-// TODO: bool that checks if a given config is v1.3.1 or not
