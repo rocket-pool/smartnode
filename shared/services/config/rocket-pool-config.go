@@ -111,7 +111,7 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 	// Return nil if the file doesn't exist
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return nil, nil
+		return nil, fmt.Errorf("could not read Rocket Pool settings file at %s: file does not exist", shellescape.Quote(path))
 	}
 
 	// Read the file
