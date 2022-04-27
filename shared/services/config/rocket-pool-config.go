@@ -77,6 +77,7 @@ type RocketPoolConfig struct {
 	// Execution client configurations
 	ExecutionCommon   *ExecutionCommonConfig   `yaml:"executionCommon,omitempty"`
 	Geth              *GethConfig              `yaml:"geth,omitempty"`
+	Nethermind        *NethermindConfig        `yaml:"nethermind,omitempty"`
 	Infura            *InfuraConfig            `yaml:"infura,omitempty"`
 	Pocket            *PocketConfig            `yaml:"pocket,omitempty"`
 	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
@@ -422,6 +423,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Smartnode = NewSmartnodeConfig(config)
 	config.ExecutionCommon = NewExecutionCommonConfig(config, false)
 	config.Geth = NewGethConfig(config, false)
+	config.Nethermind = NewNethermindConfig(config, false)
 	config.Infura = NewInfuraConfig(config, false)
 	config.Pocket = NewPocketConfig(config, false)
 	config.ExternalExecution = NewExternalExecutionConfig(config, false)
@@ -496,6 +498,7 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"smartnode":                 config.Smartnode,
 		"executionCommon":           config.ExecutionCommon,
 		"geth":                      config.Geth,
+		"nethermind":                config.Nethermind,
 		"infura":                    config.Infura,
 		"pocket":                    config.Pocket,
 		"externalExecution":         config.ExternalExecution,
@@ -701,7 +704,7 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 	// Upgrade the config to the latest version
 	err := migration.UpdateConfig(masterMap)
 	if err != nil {
-		return fmt.Errorf("Error upgrading configuration to v%s: %w", shared.RocketPoolVersion, err)
+		return fmt.Errorf("error upgrading configuration to v%s: %w", shared.RocketPoolVersion, err)
 	}
 
 	// Get the network
@@ -713,7 +716,7 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 			valueType := reflect.TypeOf(networkString)
 			paramType := reflect.TypeOf(network)
 			if !valueType.ConvertibleTo(paramType) {
-				return fmt.Errorf("Can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
+				return fmt.Errorf("can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
 			} else {
 				network = reflect.ValueOf(networkString).Convert(paramType).Interface().(Network)
 			}
@@ -782,8 +785,9 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		// Client-specific params
 		switch config.ExecutionClient.Value.(ExecutionClient) {
 		case ExecutionClient_Geth:
-		case ExecutionClient_Nethermind:
 			addParametersToEnvVars(config.Geth.GetParameters(), envVars)
+		case ExecutionClient_Nethermind:
+			addParametersToEnvVars(config.Nethermind.GetParameters(), envVars)
 		case ExecutionClient_Infura:
 			addParametersToEnvVars(config.Infura.GetParameters(), envVars)
 		case ExecutionClient_Pocket:

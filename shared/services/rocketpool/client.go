@@ -300,7 +300,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.ExecutionCommon, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
 	}
@@ -316,7 +316,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating fallback eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1Fallback.Client.Selected, network, legacyCfg.Chains.Eth1Fallback.Client.Params, nil, cfg.FallbackInfura, cfg.FallbackPocket, cfg.FallbackExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1Fallback.Client.Selected, network, legacyCfg.Chains.Eth1Fallback.Client.Params, nil, nil, cfg.FallbackInfura, cfg.FallbackPocket, cfg.FallbackExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating fallback eth1 params: %w", err)
 	}
@@ -978,16 +978,16 @@ func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *config
 }
 
 // Migrates the parameters from a legacy eth1 config to a modern one
-func (c *Client) migrateEth1Params(client string, network config.Network, params []config.UserParam, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
+func (c *Client) migrateEth1Params(client string, network config.Network, params []config.UserParam, ecCommon *config.ExecutionCommonConfig, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
 	for _, param := range params {
 		switch param.Env {
 		case "ETHSTATS_LABEL":
-			if geth != nil {
-				geth.EthstatsLabel.Value = param.Value
+			if ecCommon != nil {
+				ecCommon.EthstatsLabel.Value = param.Value
 			}
 		case "ETHSTATS_LOGIN":
-			if geth != nil {
-				geth.EthstatsLogin.Value = param.Value
+			if ecCommon != nil {
+				ecCommon.EthstatsLogin.Value = param.Value
 			}
 		case "GETH_CACHE_SIZE":
 			if geth != nil {
@@ -998,8 +998,8 @@ func (c *Client) migrateEth1Params(client string, network config.Network, params
 				convertUintParam(param, &geth.MaxPeers, network, 16)
 			}
 		case "ETH1_P2P_PORT":
-			if geth != nil {
-				convertUintParam(param, &geth.P2pPort, network, 16)
+			if ecCommon != nil {
+				convertUintParam(param, &ecCommon.P2pPort, network, 16)
 			}
 		case "INFURA_PROJECT_ID":
 			infura.ProjectID.Value = param.Value

@@ -33,12 +33,11 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		selectedClient := clients[buttonIndex].Value.(config.ExecutionClient)
 		wiz.md.Config.ExecutionClient.Value = selectedClient
 		switch selectedClient {
-		case config.ExecutionClient_Geth, config.ExecutionClient_Pocket:
-			// Geth doesn't have any required parameters so move on
-			wiz.fallbackExecutionModal.show()
 		case config.ExecutionClient_Infura:
 			// Switch to the Infura dialog
 			wiz.infuraModal.show()
+		default:
+			wiz.fallbackExecutionModal.show()
 		}
 	}
 
