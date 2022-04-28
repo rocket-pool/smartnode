@@ -185,7 +185,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Value:       ExecutionClient_Geth,
 			}, {
 				Name:        "Nethermind",
-				Description: "Description goes here",
+				Description: "Nethermind is a high-performance, highly configurable full Ethereum protocol client. It offers very fast sync speeds and support for external plug-ins. Nethermind is built with proven industrial technologies such as .NET 6 and the Kestrel web server. Its is fully open source and provides detailed documentation at https://docs.nethermind.io/nethermind/.",
 				Value:       ExecutionClient_Nethermind,
 			}, {
 				Name:        "Besu",
