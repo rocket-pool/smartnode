@@ -603,6 +603,14 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		}
 	}
 
+	// Warn about light ECs
+	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && (cfg.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura || cfg.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Pocket) {
+		fmt.Printf("==========\n%sWARNING: you are using a light client (Infura or Pocket) as your primary Execution client.\nLight clients are NOT COMPATIBLE with the upcoming Ethereum Merge, and will be removed in a future version of the Smartnode.\n\nPlease switch to a full client such as Geth, Nethermind, or Besu as soon as possible.\n\nThis can be done via the `rocketpool service config` Terminal UI by simply selecting a different client from the Execution Client drop-down menu in the Execution Client (ETH1) section.%s\n==========\n\n", colorRed, colorReset)
+	}
+	if cfg.UseFallbackExecutionClient.Value == true && cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local && (cfg.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura || cfg.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Pocket) {
+		fmt.Printf("==========\n%sWARNING: you are using a light client (Infura or Pocket) as your fallback Execution client.\nLight clients are NOT COMPATIBLE with the upcoming Ethereum Merge, and will be removed in a future version of the Smartnode.\n\nIf you wish to continue using a fallback Execution client after light clients have been removed, you will need to run one on a separate machine and use Externally Managed mode for your fallback Execution client in the `rocketpool service config` Terminal UI.%s\n==========\n\n", colorRed, colorReset)
+	}
+
 	// Start service
 	err = rp.StartService(getComposeFiles(c))
 	if err != nil {
