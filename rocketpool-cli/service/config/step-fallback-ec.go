@@ -57,7 +57,9 @@ func createFallbackEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 			wiz.md.Config.FallbackExecutionClient.Value = selectedClient
 			switch selectedClient {
 			case config.ExecutionClient_Infura:
-				wiz.fallbackInfuraModal.show()
+				wiz.fallbackExecutionLocalInfuraWarning.show()
+			case config.ExecutionClient_Pocket:
+				wiz.fallbackExecutionLocalPocketWarning.show()
 			default:
 				wiz.consensusModeModal.show()
 			}
@@ -75,7 +77,7 @@ func createFallbackEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		helperText,
 		clientNames,
 		clientDescriptions,
-		70,
+		80,
 		"Fallback Execution Client",
 		DirectionalModalVertical,
 		show,

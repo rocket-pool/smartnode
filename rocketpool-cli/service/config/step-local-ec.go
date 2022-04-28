@@ -34,8 +34,9 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		wiz.md.Config.ExecutionClient.Value = selectedClient
 		switch selectedClient {
 		case config.ExecutionClient_Infura:
-			// Switch to the Infura dialog
-			wiz.infuraModal.show()
+			wiz.executionLocalInfuraWarning.show()
+		case config.ExecutionClient_Pocket:
+			wiz.executionLocalPocketWarning.show()
 		default:
 			wiz.fallbackExecutionModal.show()
 		}
@@ -52,7 +53,7 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		helperText,
 		clientNames,
 		clientDescriptions,
-		76,
+		78,
 		"Execution Client > Selection",
 		DirectionalModalVertical,
 		show,

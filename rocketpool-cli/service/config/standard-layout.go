@@ -35,6 +35,7 @@ func newStandardLayout() *standardLayout {
 	descriptionBox.SetTitle(" Description ")
 	descriptionBox.SetWordWrap(true)
 	descriptionBox.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	descriptionBox.SetDynamicColors(true)
 
 	grid.AddItem(descriptionBox, 0, 2, 1, 1, 0, 0, false)
 

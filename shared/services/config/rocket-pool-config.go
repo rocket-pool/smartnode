@@ -192,12 +192,12 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Description: "Description goes here",
 				Value:       ExecutionClient_Besu,
 			}, {
-				Name:        "Infura",
-				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
+				Name:        "*Infura",
+				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. We strongly recommend you choose a Full Execution client instead.",
 				Value:       ExecutionClient_Infura,
 			}, {
-				Name:        "Pocket",
-				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
+				Name:        "*Pocket",
+				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. We strongly recommend you choose a Full Execution client instead.",
 				Value:       ExecutionClient_Pocket,
 			}},
 		},
@@ -246,12 +246,12 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				Name:        "Infura",
-				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
+				Name:        "*Infura",
+				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
 				Value:       ExecutionClient_Infura,
 			}, {
-				Name:        "Pocket",
-				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
+				Name:        "*Pocket",
+				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
 				Value:       ExecutionClient_Pocket,
 			}, {
 				Name:        "External",
