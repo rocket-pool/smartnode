@@ -20,7 +20,7 @@ func createRandomPrysmStep(wiz *wizard, currentStep int, totalSteps int, goodOpt
 
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 0 {
-			selectRandomClient(goodOptions, false, wiz, currentStep, totalSteps)
+			selectRandomCC(goodOptions, false, wiz, currentStep, totalSteps)
 		} else {
 			wiz.graffitiModal.show()
 		}
@@ -48,7 +48,7 @@ func createRandomPrysmStep(wiz *wizard, currentStep int, totalSteps int, goodOpt
 
 }
 
-func createRandomStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []config.ParameterOption) *choiceWizardStep {
+func createRandomCCStep(wiz *wizard, currentStep int, totalSteps int, goodOptions []config.ParameterOption) *choiceWizardStep {
 
 	var selectedClientName string
 	selectedClient := wiz.md.Config.ConsensusClient.Value

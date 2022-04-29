@@ -189,7 +189,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Value:       ExecutionClient_Nethermind,
 			}, {
 				Name:        "Besu",
-				Description: "Description goes here",
+				Description: "Hyperledger Besu is an Apache 2.0 licensed, Mainnet compatible, Ethereum client written in Java.",
 				Value:       ExecutionClient_Besu,
 			}, {
 				Name:        "*Infura",

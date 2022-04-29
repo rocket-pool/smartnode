@@ -86,7 +86,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		if buttonIndex == 0 {
 			wiz.md.pages.RemovePage(randomCcPrysmID)
 			wiz.md.pages.RemovePage(randomCcID)
-			selectRandomClient(goodClients, true, wiz, currentStep, totalSteps)
+			selectRandomCC(goodClients, true, wiz, currentStep, totalSteps)
 		} else {
 			buttonLabel = strings.TrimSpace(buttonLabel)
 			selectedClient := config.ConsensusClient_Unknown
@@ -139,7 +139,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 }
 
 // Get a random client compatible with the user's hardware and EC choices.
-func selectRandomClient(goodOptions []config.ParameterOption, includeSupermajority bool, wiz *wizard, currentStep int, totalSteps int) {
+func selectRandomCC(goodOptions []config.ParameterOption, includeSupermajority bool, wiz *wizard, currentStep int, totalSteps int) {
 
 	// Get system specs
 	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
@@ -180,7 +180,7 @@ func selectRandomClient(goodOptions []config.ParameterOption, includeSupermajori
 			wiz.consensusLocalRandomModal.show()
 		}
 	*/
-	wiz.consensusLocalRandomModal = createRandomStep(wiz, currentStep, totalSteps, goodOptions)
+	wiz.consensusLocalRandomModal = createRandomCCStep(wiz, currentStep, totalSteps, goodOptions)
 	wiz.consensusLocalRandomModal.show()
 
 }

@@ -34,6 +34,7 @@ type wizard struct {
 	executionLocalPocketWarning         *choiceWizardStep
 	fallbackExecutionLocalInfuraWarning *choiceWizardStep
 	fallbackExecutionLocalPocketWarning *choiceWizardStep
+	executionLocalRandomModal           *choiceWizardStep
 
 	// Native mode
 	nativeWelcomeModal  *choiceWizardStep
