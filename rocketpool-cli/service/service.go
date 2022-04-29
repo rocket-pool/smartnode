@@ -130,17 +130,11 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== New Configuration System ===%s\n", colorGreen, colorReset)
-	fmt.Println("If you're upgrading from v1.1 or v1.2, you'll want to read all about the new Terminal UI, Docker file layout, and configuration system here: https://docs.rocketpool.net/guides/node/v1.3-update.html\n")
+	fmt.Printf("%s=== New Execution Clients ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode now supports Nethermind and Besu as execution clients. If you'd like to help support the health and diversity of the Ethereum chain, give them a try!\n")
 
-	fmt.Printf("%s=== Nimbus <3 Pocket ===%s\n", colorGreen, colorReset)
-	fmt.Println("Nimbus now works with HTTP web3 addresses, which means it now supports Pocket! You can finally use Pocket as your primary or fallback Execution client if you're using Nimbus.\n")
-
-	fmt.Printf("%s=== Mnemonic Testing ===%s\n", colorGreen, colorReset)
-	fmt.Println("Would you like to confirm that you wrote your mnemonic recovery phrase down correctly? Now you can! Try the new `rocketpool wallet test-mnemonic` command which will recover a node address from your mnemonic and compare it to your node's active address to make sure you have it right.\n")
-
-	fmt.Printf("%s=== Teku Slashing Protection ===%s\n", colorGreen, colorReset)
-	fmt.Println("This build fixes an issue that caused Teku's slashing protection database to reset after upgrading the Smartnode or Teku's version. If you're using Teku in Docker or Hybrid mode, for the safety of your funds, the Smartnode will wait 15 minutes between stopping and starting your validator container to ensure you don't get slashed while it resets. Don't worry, this only needs to happen once.")
+	fmt.Printf("%s=== Light Client Deprecation ===%s\n", colorGreen, colorReset)
+	fmt.Println("Infura and Pocket are now deprecated because light clients will not be compatible with the upcomfing Ethereum Merge. They will be removed in a later version. If you're running one of these, either as your primary or your fallback client, you should prepare to move away from them and use a full Execution client instead.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
