@@ -253,10 +253,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "*Pocket",
 				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
 				Value:       ExecutionClient_Pocket,
-			}, {
-				Name:        "External",
-				Description: "Use an existing Execution client that you already manage externally on your own.",
-				Value:       ExecutionClient_Unknown,
 			}},
 		},
 

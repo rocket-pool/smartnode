@@ -14,6 +14,8 @@ func createFallbackEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		clientNames = append(clientNames, client.Name)
 		clientDescriptions = append(clientDescriptions, client.Description)
 	}
+	clientNames = append(clientNames, "External")
+	clientDescriptions = append(clientDescriptions, "Use an existing Execution client that you already manage externally on your own.")
 
 	helperText := "If you would like to add a fallback Execution client, please choose it below.\n\nThe Smartnode will temporarily use this instead of your main Execution client if the main client ever fails.\nIt will switch back to the main client when it starts working again."
 
@@ -23,13 +25,7 @@ func createFallbackEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 
 		if wiz.md.Config.UseFallbackExecutionClient.Value == true {
 			if wiz.md.Config.FallbackExecutionClientMode.Value == config.Mode_External {
-				// Focus the selected option
-				for i, option := range wiz.md.Config.FallbackExecutionClient.Options {
-					if option.Name == "External" {
-						modal.focus(i + 1)
-						break
-					}
-				}
+				modal.focus(len(clientNames) - 1)
 			} else {
 				// Focus the selected option
 				for i, option := range wiz.md.Config.FallbackExecutionClient.Options {
