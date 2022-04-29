@@ -8,7 +8,7 @@ import (
 // Constants
 const (
 	besuTagAmd64         string = "rocketpool/besu:22.1.3-tx-fix" //"hyperledger/besu:22.1.3"
-	besuTagArm64         string = "rocketpool/besu:22.1.3"
+	besuTagArm64         string = "rocketpool/besu:22.1.3-tx-fix"
 	besuEventLogInterval int    = 25000
 	besuMaxPeers         uint16 = 25
 )
