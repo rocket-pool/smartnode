@@ -877,7 +877,13 @@ func pruneExecutionClient(c *cli.Context) error {
 	if cfg.UseFallbackExecutionClient.Value == false {
 		fmt.Printf("%sYou do not have a fallback ETH1 client configured.\nYou will continue attesting while ETH1 prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 	} else {
-		fmt.Printf("You have a fallback ETH1 client configured (%v). Rocket Pool (and your ETH2 client) will use that while the main client is pruning.\n", cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
+		var fallbackClientName string
+		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_External {
+			fallbackClientName = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
+		} else {
+			fallbackClientName = fmt.Sprint(cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
+		}
+		fmt.Printf("You have a fallback ETH1 client configured (%s). Rocket Pool (and your ETH2 client) will use that while the main client is pruning.\n", fallbackClientName)
 	}
 
 	// Get the container prefix
