@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
 )
 
@@ -269,7 +270,7 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ec, err := GetEthClientProxy(c)
+	ec, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
@@ -286,7 +287,7 @@ func getOneInchOracleLoaded(c *cli.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ec, err := GetEthClientProxy(c)
+	ec, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
@@ -303,7 +304,7 @@ func getRplFaucetLoaded(c *cli.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ec, err := GetEthClientProxy(c)
+	ec, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
@@ -360,7 +361,7 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 
 	// Get eth client
 	var err error
-	ec, err := GetEthClientProxy(c)
+	ec, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
@@ -395,12 +396,12 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 		} else {
 			// Eth 1 client is not in "syncing" state but may be behind head
 			// Get the latest block it knows about and make sure it's recent compared to system clock time
-			timestamp, err := GetEthClientLatestBlockTimestamp(c)
+			isUpToDate, _, err := IsSyncWithinThreshold(ec)
 			if err != nil {
 				return false, err
 			}
 			// Only return true if the last reportedly known block is within our defined threshold
-			if timestamp+uint64(ethClientRecentBlockThreshold.Seconds()) > uint64(time.Now().Unix()) {
+			if isUpToDate {
 				return true, nil
 			}
 		}
@@ -459,4 +460,20 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 
 	}
 
+}
+
+// Confirm the EC's latest block is within the threshold of the current system clock
+func IsSyncWithinThreshold(ec rocketpool.ExecutionClient) (bool, time.Time, error) {
+	timestamp, err := GetEthClientLatestBlockTimestamp(ec)
+	if err != nil {
+		return false, time.Time{}, err
+	}
+
+	// Return true if the latest block is under the threshold
+	blockTime := time.Unix(int64(timestamp), 0)
+	if time.Since(blockTime) < ethClientRecentBlockThreshold {
+		return true, blockTime, nil
+	} else {
+		return false, blockTime, nil
+	}
 }

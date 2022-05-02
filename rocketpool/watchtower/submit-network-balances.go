@@ -16,7 +16,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -44,7 +43,7 @@ type submitNetworkBalances struct {
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
 	w              *wallet.Wallet
-	ec             *client.EthClientProxy
+	ec             rocketpool.ExecutionClient
 	rp             *rocketpool.RocketPool
 	bc             beacon.Client
 	maxFee         *big.Int
@@ -78,7 +77,7 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNe
 	if err != nil {
 		return nil, err
 	}
-	ec, err := services.GetEthClientProxy(c)
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}

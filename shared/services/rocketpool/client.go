@@ -69,6 +69,7 @@ type Client struct {
 	originalMaxPrioFee float64
 	originalGasLimit   uint64
 	debugPrint         bool
+	ecUrl              string
 }
 
 // Create new Rocket Pool client from CLI context
@@ -1366,7 +1367,11 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), c.getGasOpts(), c.getCustomNonce(), args)
+		ecUrl, err := c.getEcUrl()
+		if err != nil {
+			return []byte{}, err
+		}
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ecUrl, c.getGasOpts(), c.getCustomNonce(), args)
 	} else {
 		cmd = fmt.Sprintf("%s --settings %s %s %s api %s",
 			c.daemonPath,
@@ -1430,6 +1435,33 @@ func (c *Client) getCustomNonce() string {
 		nonce = fmt.Sprintf("--nonce %s", c.customNonce.String())
 	}
 	return nonce
+}
+
+func (c *Client) getEcUrl() (string, error) {
+	// Return the existing EC URL if one has already been found
+	if c.ecUrl != "" {
+		return fmt.Sprintf("--ec-url %s", c.ecUrl), nil
+	}
+
+	// Create an EC manager for the this CLI run
+	cfg, _, err := c.LoadConfig()
+	if err != nil {
+		return "", err
+	}
+	ecMgr, err := NewEcManager(cfg)
+	if err != nil {
+		return "", err
+	}
+
+	// Get the URL of the first working EC
+	ecUrl, err := ecMgr.GetWorkingEcUrl()
+	if err != nil {
+		return "", err
+	}
+
+	// Set it and return it
+	c.ecUrl = ecUrl
+	return fmt.Sprintf("--ec-url %s", c.ecUrl), nil
 }
 
 // Get the first downloader available to the system

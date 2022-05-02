@@ -13,7 +13,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -37,7 +36,7 @@ type submitRplPrice struct {
 	c              *cli.Context
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
-	ec             *client.EthClientProxy
+	ec             rocketpool.ExecutionClient
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	oio            *contracts.OneInchOracle
@@ -58,7 +57,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
 	if err != nil {
 		return nil, err
 	}
-	ec, err := services.GetEthClientProxy(c)
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}

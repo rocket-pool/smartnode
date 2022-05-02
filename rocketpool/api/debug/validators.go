@@ -3,6 +3,8 @@ package debug
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -15,7 +17,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
-	"math/big"
 )
 
 const MinipoolBalanceDetailsBatchSize = 20
@@ -26,7 +27,7 @@ func ExportValidators(c *cli.Context) error {
 	opts := &bind.CallOpts{}
 
 	// Get services
-	ec, err := services.GetEthClientProxy(c)
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return err
 	}

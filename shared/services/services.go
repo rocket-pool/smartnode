@@ -9,8 +9,8 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	uc "github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -43,7 +43,7 @@ var (
 	cfg             *config.RocketPoolConfig
 	passwordManager *passwords.PasswordManager
 	nodeWallet      *wallet.Wallet
-	ethClientProxy  *uc.EthClientProxy
+	ethClient       rocketpool.ExecutionClient
 	rocketPool      *rocketpool.RocketPool
 	oneInchOracle   *contracts.OneInchOracle
 	rplFaucet       *contracts.RPLFaucet
@@ -86,12 +86,12 @@ func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
 	return getWallet(c, cfg, pm)
 }
 
-func GetEthClientProxy(c *cli.Context) (*uc.EthClientProxy, error) {
+func GetEthClient(c *cli.Context) (rocketpool.ExecutionClient, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
 	}
-	ec, err := getEthClientProxy(cfg)
+	ec, err := getEthClient(c, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 	if err != nil {
 		return nil, err
 	}
-	ec, err := getEthClientProxy(cfg)
+	ec, err := getEthClient(c, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func GetOneInchOracle(c *cli.Context) (*contracts.OneInchOracle, error) {
 	if err != nil {
 		return nil, err
 	}
-	ec, err := getEthClientProxy(cfg)
+	ec, err := getEthClient(c, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func GetRplFaucet(c *cli.Context) (*contracts.RPLFaucet, error) {
 	if err != nil {
 		return nil, err
 	}
-	ec, err := getEthClientProxy(cfg)
+	ec, err := getEthClient(c, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -209,44 +209,52 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 	return nodeWallet, err
 }
 
-func getEthClientProxy(cfg *config.RocketPoolConfig) (*uc.EthClientProxy, error) {
+func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (rocketpool.ExecutionClient, error) {
 	var err error
 	initEthClientProxy.Do(func() {
-		var reconnectDelay time.Duration
-		reconnectDelay, err = time.ParseDuration(cfg.ReconnectDelay.Value.(string))
-		if err != nil {
-			err = fmt.Errorf("cannot parse reconnect delay value [%s] into a timestamp: %w", cfg.ReconnectDelay.Value.(string), err)
-			return
-		}
-
-		// Get the provider URL of the primary execution client
-		var primaryProvider string
-		if cfg.IsNativeMode {
-			primaryProvider = cfg.Native.EcHttpUrl.Value.(string)
-		} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-			primaryProvider = fmt.Sprintf("http://%s:%d", EcContainerName, cfg.ExecutionCommon.HttpPort.Value.(uint16))
+		// Check if there's an explicit EC set, e.g. if this is just an API function being called by the CLI
+		if c.GlobalString("ec-url") != "" {
+			ethClient, err = ethclient.Dial(c.GlobalString("ec-url"))
 		} else {
-			primaryProvider = cfg.ExternalExecution.HttpUrl.Value.(string)
-		}
+			// Handle node / watchtower operations by creating a new fallback-aware manager
 
-		if cfg.UseFallbackExecutionClient.Value == false || cfg.IsNativeMode {
-			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, primaryProvider)
-		} else {
-			// Get the provider URL of the fallback execution client
-			var fallbackProvider string
-			if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-				fallbackProvider = fmt.Sprintf("http://%s:%d", FallbackEcContainerName, cfg.FallbackExecutionCommon.HttpPort.Value.(uint16))
-			} else {
-				fallbackProvider = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
+			var reconnectDelay time.Duration
+			reconnectDelay, err = time.ParseDuration(cfg.ReconnectDelay.Value.(string))
+			if err != nil {
+				err = fmt.Errorf("cannot parse reconnect delay value [%s] into a timestamp: %w", cfg.ReconnectDelay.Value.(string), err)
+				return
 			}
 
-			ethClientProxy = uc.NewEth1ClientProxy(reconnectDelay, primaryProvider, fallbackProvider)
+			// Get the provider URL of the primary execution client
+			var primaryProvider string
+			if cfg.IsNativeMode {
+				primaryProvider = cfg.Native.EcHttpUrl.Value.(string)
+			} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+				primaryProvider = fmt.Sprintf("http://%s:%d", EcContainerName, cfg.ExecutionCommon.HttpPort.Value.(uint16))
+			} else {
+				primaryProvider = cfg.ExternalExecution.HttpUrl.Value.(string)
+			}
+
+			if cfg.UseFallbackExecutionClient.Value == false || cfg.IsNativeMode {
+				ethClient = uc.NewEth1ClientProxy(reconnectDelay, primaryProvider) // TODO
+			} else {
+				// Get the provider URL of the fallback execution client
+				var fallbackProvider string
+				if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+					fallbackProvider = fmt.Sprintf("http://%s:%d", FallbackEcContainerName, cfg.FallbackExecutionCommon.HttpPort.Value.(uint16))
+				} else {
+					fallbackProvider = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
+				}
+
+				ethClient = uc.NewEth1ClientProxy(reconnectDelay, primaryProvider, fallbackProvider) // TODO
+			}
 		}
+
 	})
-	return ethClientProxy, err
+	return ethClient, err
 }
 
-func getRocketPool(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (*rocketpool.RocketPool, error) {
+func getRocketPool(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*rocketpool.RocketPool, error) {
 	var err error
 	initRocketPool.Do(func() {
 		rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))
@@ -254,7 +262,7 @@ func getRocketPool(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (*ro
 	return rocketPool, err
 }
 
-func getOneInchOracle(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (*contracts.OneInchOracle, error) {
+func getOneInchOracle(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.OneInchOracle, error) {
 	var err error
 	initOneInchOracle.Do(func() {
 		oneInchOracle, err = contracts.NewOneInchOracle(common.HexToAddress(cfg.Smartnode.GetOneInchOracleAddress()), client)
@@ -262,7 +270,7 @@ func getOneInchOracle(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (
 	return oneInchOracle, err
 }
 
-func getRplFaucet(cfg *config.RocketPoolConfig, client *uc.EthClientProxy) (*contracts.RPLFaucet, error) {
+func getRplFaucet(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.RPLFaucet, error) {
 	var err error
 	initRplFaucet.Do(func() {
 		rplFaucet, err = contracts.NewRPLFaucet(common.HexToAddress(cfg.Smartnode.GetRplFaucetAddress()), client)

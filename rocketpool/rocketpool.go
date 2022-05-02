@@ -112,6 +112,10 @@ func main() {
 			Usage: "Port to serve metrics on if enabled",
 			Value: 9102,
 		},
+		cli.StringFlag{
+			Name:  "ec-url",
+			Usage: "The URL of the execution client to use for the requested function",
+		},
 	}
 
 	// Register commands

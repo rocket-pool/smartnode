@@ -15,7 +15,7 @@ func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
 	response := api.NodeSyncProgressResponse{}
 
 	// Get eth1 client
-	ec, err := services.GetEthClientProxy(c)
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
 	}
 
 	// Get eth1 latest block timestamp
-	latestBlockTime, err := services.GetEthClientLatestBlockTimestamp(c)
+	latestBlockTime, err := services.GetEthClientLatestBlockTimestamp(ec)
 	if err != nil {
 		return nil, err
 	}

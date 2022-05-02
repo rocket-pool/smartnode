@@ -15,7 +15,6 @@ import (
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -44,7 +43,7 @@ type submitScrubMinipools struct {
 	cfg            *config.RocketPoolConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
-	ec             *client.EthClientProxy
+	ec             rocketpool.ExecutionClient
 	bc             beacon.Client
 	it             *iterationData
 	coll           *collectors.ScrubCollector
@@ -92,7 +91,7 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, coll *colle
 	if err != nil {
 		return nil, err
 	}
-	ec, err := services.GetEthClientProxy(c)
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}
