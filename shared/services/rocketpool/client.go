@@ -1448,13 +1448,9 @@ func (c *Client) getEcUrl() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ecMgr, err := NewEcManager(cfg)
-	if err != nil {
-		return "", err
-	}
 
 	// Get the URL of the first working EC
-	ecUrl, err := ecMgr.GetWorkingEcUrl()
+	ecUrl, err := getWorkingEcUrl(cfg)
 	if err != nil {
 		return "", err
 	}
