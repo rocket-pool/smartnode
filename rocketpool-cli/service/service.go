@@ -573,7 +573,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	// Force a delay if using Teku and upgrading from v1.3.0 or below because of the slashing protection DB migration in v1.3.1+
 	isLocalTeku := (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)
 	isExternalTeku := (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External && cfg.ExternalConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)
-	if isUpdate && !cfg.IsNativeMode && (isLocalTeku || isExternalTeku) && !c.Bool("ignore-slash-timer") {
+	if isUpdate && !isNew && !cfg.IsNativeMode && (isLocalTeku || isExternalTeku) && !c.Bool("ignore-slash-timer") {
 		previousVersion := "0.0.0"
 		backupCfg, err := rp.LoadBackupConfig()
 		if err != nil {
