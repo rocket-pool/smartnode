@@ -69,7 +69,7 @@ type Client struct {
 	originalMaxPrioFee float64
 	originalGasLimit   uint64
 	debugPrint         bool
-	ecUrl              string
+	forceFallbackEC    bool
 }
 
 // Create new Rocket Pool client from CLI context
@@ -98,7 +98,7 @@ func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee 
 	}
 
 	// Return client
-	return &Client{
+	client := &Client{
 		configPath:         os.ExpandEnv(configPath),
 		daemonPath:         os.ExpandEnv(daemonPath),
 		maxFee:             maxFee,
@@ -110,7 +110,24 @@ func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee 
 		customNonce:        customNonceBigInt,
 		client:             sshClient,
 		debugPrint:         debug,
-	}, nil
+		forceFallbackEC:    false,
+	}
+
+	// Check if the primary EC is up, synced, and able to respond to requests - if not, forces the use of the fallback EC for this command
+	response, err := client.GetExecutionClientStatus()
+	if err != nil {
+		return nil, fmt.Errorf("error checking execution client status: %w", response)
+	}
+
+	client.forceFallbackEC = !response.UsePrimary
+	if response.Log != "" {
+		fmt.Println(response.Log)
+	}
+	if response.Error != "" {
+		return nil, fmt.Errorf("error during execution client status check: %s", response.Error)
+	}
+
+	return client, nil
 
 }
 
@@ -1367,11 +1384,11 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		ecUrl, err := c.getEcUrl()
-		if err != nil {
-			return []byte{}, err
+		forceFallbackECFlag := ""
+		if c.forceFallbackEC {
+			forceFallbackECFlag = "--force-fallback-ec"
 		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ecUrl, c.getGasOpts(), c.getCustomNonce(), args)
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
 	} else {
 		cmd = fmt.Sprintf("%s --settings %s %s %s api %s",
 			c.daemonPath,
@@ -1435,29 +1452,6 @@ func (c *Client) getCustomNonce() string {
 		nonce = fmt.Sprintf("--nonce %s", c.customNonce.String())
 	}
 	return nonce
-}
-
-func (c *Client) getEcUrl() (string, error) {
-	// Return the existing EC URL if one has already been found
-	if c.ecUrl != "" {
-		return fmt.Sprintf("--ec-url %s", c.ecUrl), nil
-	}
-
-	// Create an EC manager for the this CLI run
-	cfg, _, err := c.LoadConfig()
-	if err != nil {
-		return "", err
-	}
-
-	// Get the URL of the first working EC
-	ecUrl, err := getWorkingEcUrl(cfg)
-	if err != nil {
-		return "", err
-	}
-
-	// Set it and return it
-	c.ecUrl = ecUrl
-	return fmt.Sprintf("--ec-url %s", c.ecUrl), nil
 }
 
 // Get the first downloader available to the system

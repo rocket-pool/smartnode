@@ -23,6 +23,7 @@ const (
 	StakePrelaunchMinipoolsColor = color.FgBlue
 	MetricsColor                 = color.FgHiYellow
 	ErrorColor                   = color.FgRed
+	WarningColor                 = color.FgYellow
 )
 
 // Register node command
@@ -48,6 +49,12 @@ func run(c *cli.Context) error {
 		return err
 	}
 
+	// Get the EC manager
+	ec, err := services.GetEthClient(c)
+	if err != nil {
+		return err
+	}
+
 	// Initialize tasks
 	claimRplRewards, err := newClaimRplRewards(c, log.NewColorLogger(ClaimRplRewardsColor))
 	if err != nil {
@@ -58,8 +65,9 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	// Initialize error logger
+	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
+	warningLog := log.NewColorLogger(WarningColor)
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
@@ -68,12 +76,24 @@ func run(c *cli.Context) error {
 	// Run task loop
 	go func() {
 		for {
-			if err := claimRplRewards.run(); err != nil {
-				errorLog.Println(err)
+			// Check the EC status
+			_, log, err := ec.CheckStatus()
+			if log != "" {
+				warningLog.Println(log)
 			}
-			time.Sleep(taskCooldown)
-			if err := stakePrelaunchMinipools.run(); err != nil {
+			if err != nil {
 				errorLog.Println(err)
+			} else {
+				// Run the rewards check
+				if err := claimRplRewards.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the minipool stake check
+				if err := stakePrelaunchMinipools.run(); err != nil {
+					errorLog.Println(err)
+				}
 			}
 			time.Sleep(tasksInterval)
 		}

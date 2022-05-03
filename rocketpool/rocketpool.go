@@ -112,9 +112,9 @@ func main() {
 			Usage: "Port to serve metrics on if enabled",
 			Value: 9102,
 		},
-		cli.StringFlag{
-			Name:  "ec-url",
-			Usage: "The URL of the execution client to use for the requested function",
+		cli.BoolFlag{
+			Name:  "force-fallback-ec",
+			Usage: "Set this to true if you know the primary EC is offline and want to bypass its health checks, and just use the fallback EC instead",
 		},
 	}
 

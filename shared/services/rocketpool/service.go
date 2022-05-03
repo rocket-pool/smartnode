@@ -23,3 +23,19 @@ func (c *Client) TerminateDataFolder() (api.TerminateDataFolderResponse, error) 
 	}
 	return response, nil
 }
+
+// Gets the status of the configured execution clients
+func (c *Client) GetExecutionClientStatus() (api.ExecutionClientStatusResponse, error) {
+	responseBytes, err := c.callAPI("service get-ec-status")
+	if err != nil {
+		return api.ExecutionClientStatusResponse{}, fmt.Errorf("Could not get execution client status: %w", err)
+	}
+	var response api.ExecutionClientStatusResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ExecutionClientStatusResponse{}, fmt.Errorf("Could not decode execution client status response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ExecutionClientStatusResponse{}, fmt.Errorf("Could not get execution client status: %s", response.Error)
+	}
+	return response, nil
+}
