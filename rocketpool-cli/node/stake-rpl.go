@@ -23,6 +23,12 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get node status
 	status, err := rp.NodeStatus()
 	if err != nil {

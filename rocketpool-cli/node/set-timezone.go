@@ -19,6 +19,12 @@ func setTimezoneLocation(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Prompt for timezone location
 	var timezoneLocation string
 	if c.String("timezone") != "" {

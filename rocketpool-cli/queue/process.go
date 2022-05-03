@@ -19,6 +19,12 @@ func processQueue(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Check deposit queue can be processed
 	canProcess, err := rp.CanProcessQueue()
 	if err != nil {

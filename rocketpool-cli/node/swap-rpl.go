@@ -23,6 +23,12 @@ func nodeSwapRpl(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get swap amount
 	var amountWei *big.Int
 	if c.String("amount") == "all" {

@@ -40,6 +40,12 @@ func getProposals(c *cli.Context, stateFilter string) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get oracle DAO proposals
 	allProposals, err := rp.TNDAOProposals()
 	if err != nil {
@@ -100,6 +106,12 @@ func getProposal(c *cli.Context, id uint64) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Get oracle DAO proposals
 	allProposals, err := rp.TNDAOProposals()

@@ -27,6 +27,12 @@ func nodeDeposit(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Make sure ETH2 is on the correct chain
 	depositContractInfo, err := rp.DepositContractInfo()
 	if err != nil {

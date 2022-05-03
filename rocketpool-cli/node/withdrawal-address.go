@@ -22,6 +22,12 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Print the "pending" disclaimer
 	colorReset := "\033[0m"
 	colorRed := "\033[31m"

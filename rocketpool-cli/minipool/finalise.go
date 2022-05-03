@@ -20,6 +20,12 @@ func finaliseMinipool(c *cli.Context, minipoolAddress common.Address) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Check if the minipool can be finalised
 	canResponse, err := rp.CanFinaliseMinipool(minipoolAddress)
 	if err != nil {

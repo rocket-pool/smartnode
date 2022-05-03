@@ -8,6 +8,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 func getMemberSettings(c *cli.Context) error {
@@ -18,6 +19,12 @@ func getMemberSettings(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Get oracle DAO member settings
 	response, err := rp.GetTNDAOMemberSettings()
@@ -45,6 +52,12 @@ func getProposalSettings(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get oracle DAO proposal settings
 	response, err := rp.GetTNDAOProposalSettings()
 	if err != nil {
@@ -69,6 +82,12 @@ func getMinipoolSettings(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Get oracle DAO proposal settings
 	response, err := rp.GetTNDAOMinipoolSettings()

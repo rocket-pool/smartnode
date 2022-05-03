@@ -21,6 +21,12 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Check if proposal can be made
 	canPropose, err := rp.CanProposeTNDAOSettingMembersQuorum(quorumPercent / 100)
 	if err != nil {
@@ -72,6 +78,12 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Check if proposal can be made
 	canPropose, err := rp.CanProposeTNDAOSettingMembersRplBond(eth.EthToWei(bondAmountEth))
@@ -125,6 +137,12 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Check if proposal can be made
 	canPropose, err := rp.CanProposeTNDAOSettingMinipoolUnbondedMax(unbondedMinipoolMax)
 	if err != nil {
@@ -176,6 +194,12 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan str
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Parse the timespan
 	timespan, err := time.ParseDuration(proposalCooldownTimespan)
@@ -236,6 +260,12 @@ func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan str
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Parse the timespan
 	timespan, err := time.ParseDuration(proposalVoteTimespan)
 	if err != nil {
@@ -294,6 +324,12 @@ func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimesp
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Parse the timespan
 	timespan, err := time.ParseDuration(proposalDelayTimespan)
@@ -354,6 +390,12 @@ func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimesp
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Parse the timespan
 	timespan, err := time.ParseDuration(proposalExecuteTimespan)
 	if err != nil {
@@ -413,6 +455,12 @@ func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Parse the timespan
 	timespan, err := time.ParseDuration(proposalActionTimespan)
 	if err != nil {
@@ -471,6 +519,12 @@ func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod string) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Parse the timespan
 	timespan, err := time.ParseDuration(scrubPeriod)
