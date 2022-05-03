@@ -66,6 +66,9 @@ func getSyncProgress(c *cli.Context) error {
 		}
 	} else {
 		fmt.Printf("Your eth1 client is still syncing (%0.2f%%).\n", status.Eth1Progress*100)
+		if status.Eth1Progress == 0 {
+			fmt.Println("NOTE: not all clients report their sync progress. You should check your execution client's logs to observe it.")
+		}
 	}
 
 	// Print eth2 status
