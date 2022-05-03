@@ -49,12 +49,6 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	// Get the EC manager
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return err
-	}
-
 	// Initialize tasks
 	claimRplRewards, err := newClaimRplRewards(c, log.NewColorLogger(ClaimRplRewardsColor))
 	if err != nil {
@@ -67,7 +61,6 @@ func run(c *cli.Context) error {
 
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
-	warningLog := log.NewColorLogger(WarningColor)
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
@@ -77,10 +70,7 @@ func run(c *cli.Context) error {
 	go func() {
 		for {
 			// Check the EC status
-			_, log, err := ec.CheckStatus()
-			if log != "" {
-				warningLog.Println(log)
-			}
+			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
 			} else {

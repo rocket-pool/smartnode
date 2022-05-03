@@ -69,7 +69,8 @@ type Client struct {
 	originalMaxPrioFee float64
 	originalGasLimit   uint64
 	debugPrint         bool
-	forceFallbackEC    bool
+	ignoreSyncCheck    bool
+	forceFallbackEc    bool
 }
 
 // Create new Rocket Pool client from CLI context
@@ -110,22 +111,8 @@ func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee 
 		customNonce:        customNonceBigInt,
 		client:             sshClient,
 		debugPrint:         debug,
-		forceFallbackEC:    false,
-	}
-
-	// Check if the primary EC is up, synced, and able to respond to requests - if not, forces the use of the fallback EC for this command
-	response, err := client.GetExecutionClientStatus()
-	if err != nil {
-		// Fail silently if the container doesn't respond, because this check only matters if it's already up
-		return client, nil
-	}
-
-	client.forceFallbackEC = !response.UsePrimary
-	if response.Log != "" {
-		fmt.Printf("%s%s%s\n", colorYellow, response.Log, colorReset)
-	}
-	if response.Error != "" {
-		return nil, fmt.Errorf("error during execution client status check: %s", response.Error)
+		forceFallbackEc:    false,
+		ignoreSyncCheck:    false,
 	}
 
 	return client, nil
@@ -882,6 +869,12 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 	c.gasLimit = gasLimit
 }
 
+// Set the flags for ignoring EC sync check and fallback forcing to prevent unnecessary duplication of effort by the API during CLI commands
+func (c *Client) SetEcStatusFlags(ignoreSyncCheck bool, forceFallbackEc bool) {
+	c.ignoreSyncCheck = ignoreSyncCheck
+	c.forceFallbackEc = forceFallbackEc
+}
+
 // Get the provider mode and port from a legacy config's provider URL
 func (c *Client) migrateProviderInfo(provider string, wsProvider string, localHostname string, clientMode *config.Parameter, httpPortParam *config.Parameter, wsPortParam *config.Parameter, externalHttpUrlParam *config.Parameter, externalWsUrlParam *config.Parameter) error {
 
@@ -1378,6 +1371,15 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		}
 	}
 
+	ignoreSyncCheckFlag := ""
+	if c.ignoreSyncCheck {
+		ignoreSyncCheckFlag = "--ignore-sync-check"
+	}
+	forceFallbackECFlag := ""
+	if c.forceFallbackEc {
+		forceFallbackECFlag = "--force-fallback-ec"
+	}
+
 	// Run the command
 	var cmd string
 	if c.daemonPath == "" {
@@ -1385,15 +1387,13 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		forceFallbackECFlag := ""
-		if c.forceFallbackEC {
-			forceFallbackECFlag = "--force-fallback-ec"
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
 	} else {
-		cmd = fmt.Sprintf("%s --settings %s %s %s api %s",
+		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
 			c.daemonPath,
 			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
+			ignoreSyncCheckFlag,
+			forceFallbackECFlag,
 			c.getGasOpts(),
 			c.getCustomNonce(),
 			args)

@@ -113,6 +113,10 @@ func main() {
 			Value: 9102,
 		},
 		cli.BoolFlag{
+			Name:  "ignore-sync-check",
+			Usage: "Set this to true if you already checked the sync status of the execution client(s) and don't need to re-check it for this command",
+		},
+		cli.BoolFlag{
 			Name:  "force-fallback-ec",
 			Usage: "Set this to true if you know the primary EC is offline and want to bypass its health checks, and just use the fallback EC instead",
 		},

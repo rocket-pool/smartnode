@@ -355,6 +355,46 @@ func getNodeTrusted(c *cli.Context) (bool, error) {
 // timeout of 0 indicates no timeout
 var ethClientSyncLock sync.Mutex
 
+func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool.ExecutionClient, error) {
+
+	// Check the EC status
+	mgrStatus := ecMgr.CheckStatus()
+	if ecMgr.primaryReady {
+		return true, nil, nil
+	}
+
+	// If the primary isn't synced but there's a fallback and it is, return true
+	if ecMgr.fallbackReady {
+		if mgrStatus.PrimaryEcStatus.Error != "" {
+			log.Printf("Primary execution client is unavailable (%s), using fallback execution client...\n", mgrStatus.PrimaryEcStatus.Error)
+		} else {
+			log.Printf("Primary execution client is still syncing (%.2f%%), using fallback execution client...\n", mgrStatus.PrimaryEcStatus.SyncProgress*100)
+		}
+		return true, nil, nil
+	}
+
+	// If neither is synced, go through the status to figure out what to do
+
+	// Is the primary working and syncing? If so, wait for it
+	if mgrStatus.PrimaryEcStatus.IsWorking && mgrStatus.PrimaryEcStatus.Error == "" {
+		log.Printf("Fallback execution client is not configured or unavailable, waiting for primary execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryEcStatus.SyncProgress)
+		return false, ecMgr.primaryEc, nil
+	}
+
+	// Is the fallback working and syncing? If so, wait for it
+	if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.IsWorking && mgrStatus.FallbackEcStatus.Error == "" {
+		log.Printf("Primary execution client is unavailable (%s), waiting for the fallback execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.SyncProgress)
+		return false, ecMgr.fallbackEc, nil
+	}
+
+	// If neither client is working, report the errors
+	if mgrStatus.FallbackEnabled {
+		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and fallback execution client is unavailable (%s), no execution clients are ready.", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.Error)
+	} else {
+		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryEcStatus.Error)
+	}
+}
+
 func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
 
 	// Prevent multiple waiting goroutines from requesting sync progress
@@ -363,18 +403,17 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 
 	// Get eth client
 	var err error
-	ec, err := GetEthClient(c)
+	ecMgr, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
 
-	// Check the EC status
-	_, statusLog, err := ec.CheckStatus()
-	if statusLog != "" {
-		log.Println(statusLog)
-	}
+	synced, clientToCheck, err := checkExecutionClientStatus(ecMgr)
 	if err != nil {
 		return false, err
+	}
+	if synced {
+		return true, nil
 	}
 
 	// Get wait start time
@@ -387,25 +426,25 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 	for {
 
 		// Check timeout
-		if (timeout > 0) && (int64(time.Since(startTime)) > timeout) {
+		if (timeout > 0) && (time.Since(startTime).Seconds() > float64(timeout)) {
 			return false, nil
 		}
 
 		// Check if the EC status needs to be refreshed
 		if time.Since(ecRefreshTime) > ethClientStatusRefreshInterval {
-			fmt.Println("Checking if primary EC is ready yet...")
-			_, statusLog, err := ec.CheckStatus()
-			if statusLog != "" {
-				log.Println(statusLog)
-			}
+			log.Println("Refreshing primary / fallback execution client status...")
+			ecRefreshTime = time.Now()
+			synced, clientToCheck, err = checkExecutionClientStatus(ecMgr)
 			if err != nil {
 				return false, err
 			}
-			ecRefreshTime = time.Now()
+			if synced {
+				return true, nil
+			}
 		}
 
 		// Get sync progress
-		progress, err := ec.SyncProgress(context.Background())
+		progress, err := clientToCheck.SyncProgress(context.Background())
 		if err != nil {
 			return false, err
 		}
@@ -423,7 +462,7 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 		} else {
 			// Eth 1 client is not in "syncing" state but may be behind head
 			// Get the latest block it knows about and make sure it's recent compared to system clock time
-			isUpToDate, _, err := IsSyncWithinThreshold(ec)
+			isUpToDate, _, err := IsSyncWithinThreshold(clientToCheck)
 			if err != nil {
 				return false, err
 			}

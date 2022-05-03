@@ -19,14 +19,9 @@ func getExecutionClientStatus(c *cli.Context) (*api.ExecutionClientStatusRespons
 	// Response
 	response := api.ExecutionClientStatusResponse{}
 
-	// Get the EC status
-	usePrimary, log, err := ec.CheckStatus()
-
-	response.UsePrimary = usePrimary
-	response.Log = log
-	if err != nil {
-		response.Error = err.Error()
-	}
+	// Get the EC manager status
+	mgrStatus := ec.CheckStatus()
+	response.ManagerStatus = *mgrStatus
 
 	// Return response
 	return &response, nil

@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
@@ -213,9 +214,12 @@ func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (*ExecutionClien
 		// Create a new client manager
 		ethClientManager, err = NewExecutionClientManager(cfg)
 		if err == nil {
-			// Check if the manager should default to using the fallback (used by the API container)
+			// Check if the manager should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
+			if c.GlobalBool("ignore-sync-check") {
+				ethClientManager.lastCheck = time.Now()
+			}
 			if c.GlobalBool("force-fallback-ec") {
-				ethClientManager.usePrimary = false
+				ethClientManager.primaryReady = false
 			}
 		}
 	})

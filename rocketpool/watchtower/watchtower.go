@@ -58,12 +58,6 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	// Get the EC manager
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return err
-	}
-
 	// Initialize the scrub metrics reporter
 	scrubCollector := collectors.NewScrubCollector()
 
@@ -103,7 +97,6 @@ func run(c *cli.Context) error {
 
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
-	warningLog := log.NewColorLogger(WarningColor)
 
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
@@ -120,10 +113,7 @@ func run(c *cli.Context) error {
 			interval := time.Duration(randomSeconds)*time.Second + minTasksInterval
 
 			// Check the EC status
-			_, log, err := ec.CheckStatus()
-			if log != "" {
-				warningLog.Println(log)
-			}
+			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errorLog.Println(err)
 			} else {

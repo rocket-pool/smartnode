@@ -18,12 +18,31 @@ import (
 
 // This is a proxy for multiple ETH clients, providing natural fallback support if one of them fails.
 type ExecutionClientManager struct {
-	primaryEcUrl  string
-	fallbackEcUrl string
-	primaryEc     *ethclient.Client
-	fallbackEc    *ethclient.Client
-	logger        log.ColorLogger
-	usePrimary    bool
+	primaryEcUrl   string
+	fallbackEcUrl  string
+	primaryEc      *ethclient.Client
+	fallbackEc     *ethclient.Client
+	logger         log.ColorLogger
+	primaryReady   bool
+	fallbackReady  bool
+	reconnectDelay time.Duration
+	lastCheck      time.Time
+	status         *ExecutionClientManagerStatus
+}
+
+// This is a wrapper for the EC status report
+type ExecutionClientStatus struct {
+	IsWorking    bool    `json:"isWorking"`
+	IsSynced     bool    `json:"isSynced"`
+	SyncProgress float64 `json:"syncProgress"`
+	Error        string  `json:"error"`
+}
+
+// This is a wrapper for the manager's overall status report
+type ExecutionClientManagerStatus struct {
+	PrimaryEcStatus  ExecutionClientStatus `json:"primaryEcStatus"`
+	FallbackEnabled  bool                  `json:"fallbackEnabled"`
+	FallbackEcStatus ExecutionClientStatus `json:"fallbackEcStatus"`
 }
 
 // This is a signature for a wrapped ethclient.Client function
@@ -66,13 +85,21 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 		}
 	}
 
+	reconnectDelay, err := time.ParseDuration(cfg.ReconnectDelay.Value.(string))
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse reconnect delay value [%s] into a timestamp: %w", cfg.ReconnectDelay.Value.(string), err)
+	}
+
 	return &ExecutionClientManager{
-		primaryEcUrl:  primaryEcUrl,
-		fallbackEcUrl: fallbackEcUrl,
-		primaryEc:     primaryEc,
-		fallbackEc:    fallbackEc,
-		logger:        log.NewColorLogger(color.FgYellow),
-		usePrimary:    true,
+		primaryEcUrl:   primaryEcUrl,
+		fallbackEcUrl:  fallbackEcUrl,
+		primaryEc:      primaryEc,
+		fallbackEc:     fallbackEc,
+		logger:         log.NewColorLogger(color.FgYellow),
+		primaryReady:   true,
+		fallbackReady:  fallbackEc != nil,
+		reconnectDelay: reconnectDelay,
+		lastCheck:      time.Time{},
 	}, nil
 
 }
@@ -309,113 +336,80 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 /// Internal functions
 /// ==================
 
-func (p *ExecutionClientManager) CheckStatus() (bool, string, error) {
+func (p *ExecutionClientManager) CheckStatus() *ExecutionClientManagerStatus {
 
-	statusBuilder := &strings.Builder{}
-
-	// Check the primary's sync progress
-	primaryProgress, err := p.primaryEc.SyncProgress(context.Background())
-	if err != nil {
-		statusBuilder.WriteString(fmt.Sprintf("WARNING: Primary EC's sync progress check failed with [%s], using fallback EC...\n", err.Error()))
-
-		err = p.checkFallbackEc(statusBuilder)
-		if err != nil {
-			return false, statusBuilder.String(), err
-		}
-		p.usePrimary = false
+	// Ignore repeat checks if they're too frequent
+	if time.Since(p.lastCheck) < p.reconnectDelay {
+		return p.status
 	}
 
-	var progressFloat float64
-	if primaryProgress == nil {
-		// Make sure it's up to date
-		isUpToDate, blockTime, err := IsSyncWithinThreshold(p.primaryEc)
-		if err != nil {
-			statusBuilder.WriteString(fmt.Sprintf("WARNING: Error checking if primary EC's sync progress is up to date: [%s], using fallback EC...\n", err.Error()))
+	p.lastCheck = time.Now()
 
-			err = p.checkFallbackEc(statusBuilder)
-			if err != nil {
-				return false, statusBuilder.String(), err
-			}
-			p.usePrimary = false
-		}
-		if !isUpToDate {
-			statusBuilder.WriteString(fmt.Sprintf("WARNING: Primary EC claims to have finished syncing, but its last block was from %s ago. It likely doesn't have enough peers. Using fallback EC...\n", time.Since(blockTime)))
-
-			err = p.checkFallbackEc(statusBuilder)
-			if err != nil {
-				return false, statusBuilder.String(), err
-			}
-			p.usePrimary = false
-		}
-
-		// Primary is synced and up to date!
-		p.usePrimary = true
-
-	} else {
-		// It's not synced yet, print the progress
-		progressFloat = float64(primaryProgress.CurrentBlock-primaryProgress.StartingBlock) / float64(primaryProgress.HighestBlock-primaryProgress.StartingBlock)
-		if progressFloat > 1 {
-			statusBuilder.WriteString("NOTE: Primary EC is still syncing, using fallback EC...\n")
-			err = p.checkFallbackEc(statusBuilder)
-			if err != nil {
-				return false, statusBuilder.String(), err
-			}
-			p.usePrimary = false
-		} else {
-			statusBuilder.WriteString(fmt.Sprintf("NOTE: Primary EC is still syncing (%.2f%%), using fallback EC...\n", progressFloat*100))
-			err = p.checkFallbackEc(statusBuilder)
-			if err != nil {
-				return false, statusBuilder.String(), err
-			}
-			p.usePrimary = false
-		}
+	// Get the primary EC status
+	p.status = &ExecutionClientManagerStatus{
+		PrimaryEcStatus: checkClientStatus(p.primaryEc),
+		FallbackEnabled: p.fallbackEc != nil,
 	}
 
-	return p.usePrimary, statusBuilder.String(), nil
+	// Get the fallback EC status if applicable
+	if p.status.FallbackEnabled {
+		p.status.FallbackEcStatus = checkClientStatus(p.fallbackEc)
+	}
+
+	// Flag the ready clients
+	p.primaryReady = (p.status.PrimaryEcStatus.IsWorking && p.status.PrimaryEcStatus.IsSynced)
+	p.fallbackReady = (p.status.FallbackEnabled && p.status.FallbackEcStatus.IsWorking && p.status.FallbackEcStatus.IsSynced)
+
+	return p.status
 
 }
 
 // Check the Fallback EC
-func (p *ExecutionClientManager) checkFallbackEc(statusBuilder *strings.Builder) error {
+func checkClientStatus(client *ethclient.Client) ExecutionClientStatus {
 
-	// Make sure there's a fallback configured
-	if p.fallbackEc == nil {
-		statusBuilder.WriteString("No fallback EC configured.\n")
-		return fmt.Errorf("all execution clients failed")
-	}
+	status := ExecutionClientStatus{}
 
 	// Get the fallback's sync progress
-	fallbackProgress, err := p.fallbackEc.SyncProgress(context.Background())
+	progress, err := client.SyncProgress(context.Background())
 	if err != nil {
-		statusBuilder.WriteString(fmt.Sprintf("WARNING: Fallback EC's sync progress check failed with [%s].\n", err.Error()))
-		return fmt.Errorf("all execution clients failed")
+		status.Error = fmt.Sprintf("Sync progress check failed with [%s].\n", err.Error())
+		status.IsWorking = false
+		return status
 	}
 
 	// Make sure it's up to date
-	if fallbackProgress == nil {
+	if progress == nil {
 
-		isUpToDate, blockTime, err := IsSyncWithinThreshold(p.fallbackEc)
+		isUpToDate, blockTime, err := IsSyncWithinThreshold(client)
 		if err != nil {
-			statusBuilder.WriteString(fmt.Sprintf("WARNING: Error checking if fallback EC's sync progress is up to date: [%s].\n", err.Error()))
-			return fmt.Errorf("all execution clients failed")
+			status.Error = fmt.Sprintf("Error checking if client's sync progress is up to date: [%s].\n", err.Error())
+			status.IsWorking = false
+			return status
 		}
+
+		status.IsWorking = true
 		if !isUpToDate {
-			statusBuilder.WriteString(fmt.Sprintf("WARNING: Fallback EC claims to have finished syncing, but its last block was from %s ago. It likely doesn't have enough peers.\n", time.Since(blockTime)))
-			return fmt.Errorf("all execution clients failed")
+			status.Error = fmt.Sprintf("Client claims to have finished syncing, but its last block was from %s ago. It likely doesn't have enough peers.\n", time.Since(blockTime))
+			status.IsSynced = false
+			status.SyncProgress = 0
+			return status
 		}
+
 		// It's synced and it works!
-		return nil
+		status.IsSynced = true
+		return status
 
 	} else {
 		// It's not synced yet, print the progress
-		progressFloat := float64(fallbackProgress.CurrentBlock-fallbackProgress.StartingBlock) / float64(fallbackProgress.HighestBlock-fallbackProgress.StartingBlock)
-		if progressFloat > 1 {
-			statusBuilder.WriteString("Fallback EC is still syncing.\n")
-			return fmt.Errorf("all execution clients failed")
-		} else {
-			statusBuilder.WriteString(fmt.Sprintf("Fallback EC is still syncing: %.2f%%\n", progressFloat*100))
-			return fmt.Errorf("all execution clients failed")
+		status.IsWorking = true
+		status.IsSynced = false
+
+		status.SyncProgress = float64(progress.CurrentBlock-progress.StartingBlock) / float64(progress.HighestBlock-progress.StartingBlock)
+		if status.SyncProgress > 1 {
+			status.SyncProgress = 1
 		}
+
+		return status
 	}
 
 }
@@ -424,14 +418,14 @@ func (p *ExecutionClientManager) checkFallbackEc(statusBuilder *strings.Builder)
 func (p *ExecutionClientManager) runFunction(function clientFunction) (interface{}, error) {
 
 	// Check if we can use the primary
-	if p.usePrimary {
+	if p.primaryReady {
 		// Try to run the function on the primary
 		result, err := function(p.primaryEc)
 		if err != nil {
 			if isDisconnected(err) {
 				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("%sWARNING: Primary execution client disconnected (%s), using fallback...", err.Error())
-				p.usePrimary = false
+				p.logger.Printlnf("WARNING: Primary execution client disconnected (%s), using fallback...", err.Error())
+				p.primaryReady = false
 				return p.runFunction(function)
 			} else {
 				// If it's a different error, just return it
@@ -441,13 +435,14 @@ func (p *ExecutionClientManager) runFunction(function clientFunction) (interface
 			// If there's no error, return the result
 			return result, nil
 		}
-	} else {
+	} else if p.fallbackReady {
 		// Try to run the function on the fallback
 		result, err := function(p.fallbackEc)
 		if err != nil {
 			if isDisconnected(err) {
 				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("%sWARNING: Fallback execution client disconnected (%s).", err.Error())
+				p.logger.Printlnf("WARNING: Fallback execution client disconnected (%s).", err.Error())
+				p.fallbackReady = false
 				return nil, fmt.Errorf("all execution clients failed")
 			} else {
 				// If it's a different error, just return it
@@ -457,6 +452,8 @@ func (p *ExecutionClientManager) runFunction(function clientFunction) (interface
 			// If there's no error, return the result
 			return result, nil
 		}
+	} else {
+		return nil, fmt.Errorf("no execution clients were ready")
 	}
 
 }
