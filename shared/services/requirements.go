@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
 var ethClientSyncPollInterval, _ = time.ParseDuration("5s")
 var beaconClientSyncPollInterval, _ = time.ParseDuration("5s")
 var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
+var ethClientStatusRefreshInterval, _ = time.ParseDuration("60s")
 
 //
 // Service requirements
@@ -366,15 +368,40 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 		return false, err
 	}
 
+	// Check the EC status
+	_, statusLog, err := ec.CheckStatus()
+	if statusLog != "" {
+		log.Println(statusLog)
+	}
+	if err != nil {
+		return false, err
+	}
+
 	// Get wait start time
-	startTime := time.Now().Unix()
+	startTime := time.Now()
+
+	// Get EC status refresh time
+	ecRefreshTime := startTime
 
 	// Wait for sync
 	for {
 
 		// Check timeout
-		if (timeout > 0) && (time.Now().Unix()-startTime > timeout) {
+		if (timeout > 0) && (int64(time.Since(startTime)) > timeout) {
 			return false, nil
+		}
+
+		// Check if the EC status needs to be refreshed
+		if time.Since(ecRefreshTime) > ethClientStatusRefreshInterval {
+			fmt.Println("Checking if primary EC is ready yet...")
+			_, statusLog, err := ec.CheckStatus()
+			if statusLog != "" {
+				log.Println(statusLog)
+			}
+			if err != nil {
+				return false, err
+			}
+			ecRefreshTime = time.Now()
 		}
 
 		// Get sync progress

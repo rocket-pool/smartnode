@@ -339,7 +339,7 @@ func (p *ExecutionClientManager) CheckStatus() (bool, string, error) {
 			p.usePrimary = false
 		}
 		if !isUpToDate {
-			statusBuilder.WriteString(fmt.Sprintf("WARNING: Primary EC claims to have finished syncing, but its last block was from %s ago. It likely doesn't have enough peers. Using fallback EC...\n", time.Since(blockTime), err))
+			statusBuilder.WriteString(fmt.Sprintf("WARNING: Primary EC claims to have finished syncing, but its last block was from %s ago. It likely doesn't have enough peers. Using fallback EC...\n", time.Since(blockTime)))
 
 			err = p.checkFallbackEc(statusBuilder)
 			if err != nil {

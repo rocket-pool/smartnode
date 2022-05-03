@@ -116,12 +116,13 @@ func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee 
 	// Check if the primary EC is up, synced, and able to respond to requests - if not, forces the use of the fallback EC for this command
 	response, err := client.GetExecutionClientStatus()
 	if err != nil {
-		return nil, fmt.Errorf("error checking execution client status: %w", response)
+		// Fail silently if the container doesn't respond, because this check only matters if it's already up
+		return client, nil
 	}
 
 	client.forceFallbackEC = !response.UsePrimary
 	if response.Log != "" {
-		fmt.Println(response.Log)
+		fmt.Printf("%s%s%s\n", colorYellow, response.Log, colorReset)
 	}
 	if response.Error != "" {
 		return nil, fmt.Errorf("error during execution client status check: %s", response.Error)
