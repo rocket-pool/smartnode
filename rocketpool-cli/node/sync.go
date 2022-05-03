@@ -86,11 +86,11 @@ func getSyncProgress(c *cli.Context) error {
 
 	// Print eth2 status
 	if status.Eth2Synced {
-		fmt.Print("Your eth2 client is fully synced.\n")
+		fmt.Print("Your consensus client is fully synced.\n")
 	} else if status.Eth2Progress != -1 {
-		fmt.Printf("Your eth2 client is still syncing (%0.2f%%).\n", status.Eth2Progress*100)
+		fmt.Printf("Your consensus client is still syncing (%0.2f%%).\n", status.Eth2Progress*100)
 	} else {
-		fmt.Print("Your eth2 client is still syncing (but does not provide its progress).\n")
+		fmt.Print("Your consensus client is still syncing (but does not provide its progress).\n")
 	}
 
 	// Return

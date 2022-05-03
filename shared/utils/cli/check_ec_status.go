@@ -36,15 +36,15 @@ func CheckExecutionClientStatus(rp *rocketpool.Client) error {
 	// Is the primary working and syncing?
 	if mgrStatus.PrimaryEcStatus.IsWorking && mgrStatus.PrimaryEcStatus.Error == "" {
 		if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.Error != "" {
-			return fmt.Errorf("Error: fallback execution client is unavailable (%s), and primary execution client is still syncing (%.2f%%). Please try again later once the client has synced.", mgrStatus.FallbackEcStatus.Error, mgrStatus.PrimaryEcStatus.SyncProgress)
+			return fmt.Errorf("Error: fallback execution client is unavailable (%s), and primary execution client is still syncing (%.2f%%). Please try again later once the client has synced.", mgrStatus.FallbackEcStatus.Error, mgrStatus.PrimaryEcStatus.SyncProgress*100)
 		} else {
-			return fmt.Errorf("Error: fallback execution client is not configured or unavailable, and primary execution client is still syncing (%.2f%%). Please try again later once the client has synced.", mgrStatus.PrimaryEcStatus.SyncProgress)
+			return fmt.Errorf("Error: fallback execution client is not configured or unavailable, and primary execution client is still syncing (%.2f%%). Please try again later once the client has synced.", mgrStatus.PrimaryEcStatus.SyncProgress*100)
 		}
 	}
 
 	// Is the fallback working and syncing?
 	if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.IsWorking && mgrStatus.FallbackEcStatus.Error == "" {
-		return fmt.Errorf("Error: primary execution client is unavailable (%s), and fallback execution client is still syncing (%.2f%%). Please try again later.", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.SyncProgress)
+		return fmt.Errorf("Error: primary execution client is unavailable (%s), and fallback execution client is still syncing (%.2f%%). Please try again later.", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.SyncProgress*100)
 	}
 
 	// Report if neither client is working
