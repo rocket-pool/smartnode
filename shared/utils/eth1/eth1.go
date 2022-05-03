@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/urfave/cli"
 )
 
@@ -54,51 +53,5 @@ func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
 		opts.Nonce = customNonce
 	}
 	return nil
-
-}
-
-// Check the status of the execution client(s) and provision the API with them
-func CheckExecutionClientStatus(rp *rocketpool.Client) error {
-
-	// Check if the primary EC is up, synced, and able to respond to requests - if not, forces the use of the fallback EC for this command
-	response, err := rp.GetExecutionClientStatus()
-	if err != nil {
-		return err
-	}
-
-	mgrStatus := response.ManagerStatus
-
-	// Primary EC is good
-	if mgrStatus.PrimaryEcStatus.IsSynced {
-		rp.SetEcStatusFlags(true, false)
-	}
-
-	// Fallback EC is good
-	if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.IsSynced {
-		if mgrStatus.PrimaryEcStatus.Error != "" {
-			fmt.Printf("Primary execution client is unavailable (%s), using fallback execution client...\n", mgrStatus.PrimaryEcStatus.Error)
-		} else {
-			fmt.Printf("Primary execution client is still syncing (%.2f%%), using fallback execution client...\n", mgrStatus.PrimaryEcStatus.SyncProgress*100)
-		}
-		rp.SetEcStatusFlags(true, true)
-		return nil
-	}
-
-	// Is the primary working and syncing?
-	if mgrStatus.PrimaryEcStatus.IsWorking && mgrStatus.PrimaryEcStatus.Error == "" {
-		return fmt.Errorf("fallback execution client is not configured or unavailable, and primary execution client is still syncing (%.2f%%)", mgrStatus.PrimaryEcStatus.SyncProgress)
-	}
-
-	// Is the fallback working and syncing?
-	if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.IsWorking && mgrStatus.FallbackEcStatus.Error == "" {
-		return fmt.Errorf("primary execution client is unavailable (%s), and fallback execution client is still syncing (%.2f%%)", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.SyncProgress)
-	}
-
-	// Report if neither client is working
-	if mgrStatus.FallbackEnabled {
-		return fmt.Errorf("primary execution client is unavailable (%s) and fallback execution client is unavailable (%s), no execution clients are ready", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.Error)
-	} else {
-		return fmt.Errorf("primary execution client is unavailable (%s) and no fallback execution client is configured", mgrStatus.PrimaryEcStatus.Error)
-	}
 
 }

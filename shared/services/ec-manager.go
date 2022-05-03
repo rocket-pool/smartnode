@@ -13,36 +13,20 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 // This is a proxy for multiple ETH clients, providing natural fallback support if one of them fails.
 type ExecutionClientManager struct {
-	primaryEcUrl   string
-	fallbackEcUrl  string
-	primaryEc      *ethclient.Client
-	fallbackEc     *ethclient.Client
-	logger         log.ColorLogger
-	primaryReady   bool
-	fallbackReady  bool
-	reconnectDelay time.Duration
-	lastCheck      time.Time
-	status         *ExecutionClientManagerStatus
-}
-
-// This is a wrapper for the EC status report
-type ExecutionClientStatus struct {
-	IsWorking    bool    `json:"isWorking"`
-	IsSynced     bool    `json:"isSynced"`
-	SyncProgress float64 `json:"syncProgress"`
-	Error        string  `json:"error"`
-}
-
-// This is a wrapper for the manager's overall status report
-type ExecutionClientManagerStatus struct {
-	PrimaryEcStatus  ExecutionClientStatus `json:"primaryEcStatus"`
-	FallbackEnabled  bool                  `json:"fallbackEnabled"`
-	FallbackEcStatus ExecutionClientStatus `json:"fallbackEcStatus"`
+	primaryEcUrl    string
+	fallbackEcUrl   string
+	primaryEc       *ethclient.Client
+	fallbackEc      *ethclient.Client
+	logger          log.ColorLogger
+	primaryReady    bool
+	fallbackReady   bool
+	ignoreSyncCheck bool
 }
 
 // This is a signature for a wrapped ethclient.Client function
@@ -85,21 +69,14 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 		}
 	}
 
-	reconnectDelay, err := time.ParseDuration(cfg.ReconnectDelay.Value.(string))
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse reconnect delay value [%s] into a timestamp: %w", cfg.ReconnectDelay.Value.(string), err)
-	}
-
 	return &ExecutionClientManager{
-		primaryEcUrl:   primaryEcUrl,
-		fallbackEcUrl:  fallbackEcUrl,
-		primaryEc:      primaryEc,
-		fallbackEc:     fallbackEc,
-		logger:         log.NewColorLogger(color.FgYellow),
-		primaryReady:   true,
-		fallbackReady:  fallbackEc != nil,
-		reconnectDelay: reconnectDelay,
-		lastCheck:      time.Time{},
+		primaryEcUrl:  primaryEcUrl,
+		fallbackEcUrl: fallbackEcUrl,
+		primaryEc:     primaryEc,
+		fallbackEc:    fallbackEc,
+		logger:        log.NewColorLogger(color.FgYellow),
+		primaryReady:  true,
+		fallbackReady: fallbackEc != nil,
 	}, nil
 
 }
@@ -336,43 +313,48 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 /// Internal functions
 /// ==================
 
-func (p *ExecutionClientManager) CheckStatus() *ExecutionClientManagerStatus {
+func (p *ExecutionClientManager) CheckStatus() *api.ExecutionClientManagerStatus {
 
-	// Ignore repeat checks if they're too frequent
-	if time.Since(p.lastCheck) < p.reconnectDelay {
-		return p.status
-	}
-
-	p.lastCheck = time.Now()
-
-	// Get the primary EC status
-	p.status = &ExecutionClientManagerStatus{
-		PrimaryEcStatus: checkClientStatus(p.primaryEc),
+	status := &api.ExecutionClientManagerStatus{
 		FallbackEnabled: p.fallbackEc != nil,
 	}
 
+	// Ignore the sync check and just use the predefined settings if requested
+	if p.ignoreSyncCheck {
+		status.PrimaryEcStatus.IsWorking = p.primaryReady
+		status.PrimaryEcStatus.IsSynced = p.primaryReady
+		if status.FallbackEnabled {
+			status.FallbackEcStatus.IsWorking = p.fallbackReady
+			status.FallbackEcStatus.IsSynced = p.fallbackReady
+		}
+		return status
+	}
+
+	// Get the primary EC status
+	status.PrimaryEcStatus = checkClientStatus(p.primaryEc)
+
 	// Get the fallback EC status if applicable
-	if p.status.FallbackEnabled {
-		p.status.FallbackEcStatus = checkClientStatus(p.fallbackEc)
+	if status.FallbackEnabled {
+		status.FallbackEcStatus = checkClientStatus(p.fallbackEc)
 	}
 
 	// Flag the ready clients
-	p.primaryReady = (p.status.PrimaryEcStatus.IsWorking && p.status.PrimaryEcStatus.IsSynced)
-	p.fallbackReady = (p.status.FallbackEnabled && p.status.FallbackEcStatus.IsWorking && p.status.FallbackEcStatus.IsSynced)
+	p.primaryReady = (status.PrimaryEcStatus.IsWorking && status.PrimaryEcStatus.IsSynced)
+	p.fallbackReady = (status.FallbackEnabled && status.FallbackEcStatus.IsWorking && status.FallbackEcStatus.IsSynced)
 
-	return p.status
+	return status
 
 }
 
 // Check the Fallback EC
-func checkClientStatus(client *ethclient.Client) ExecutionClientStatus {
+func checkClientStatus(client *ethclient.Client) api.ExecutionClientStatus {
 
-	status := ExecutionClientStatus{}
+	status := api.ExecutionClientStatus{}
 
 	// Get the fallback's sync progress
 	progress, err := client.SyncProgress(context.Background())
 	if err != nil {
-		status.Error = fmt.Sprintf("Sync progress check failed with [%s].\n", err.Error())
+		status.Error = fmt.Sprintf("Sync progress check failed with [%s]", err.Error())
 		status.IsWorking = false
 		return status
 	}
@@ -382,14 +364,14 @@ func checkClientStatus(client *ethclient.Client) ExecutionClientStatus {
 
 		isUpToDate, blockTime, err := IsSyncWithinThreshold(client)
 		if err != nil {
-			status.Error = fmt.Sprintf("Error checking if client's sync progress is up to date: [%s].\n", err.Error())
+			status.Error = fmt.Sprintf("Error checking if client's sync progress is up to date: [%s]", err.Error())
 			status.IsWorking = false
 			return status
 		}
 
 		status.IsWorking = true
 		if !isUpToDate {
-			status.Error = fmt.Sprintf("Client claims to have finished syncing, but its last block was from %s ago. It likely doesn't have enough peers.\n", time.Since(blockTime))
+			status.Error = fmt.Sprintf("Client claims to have finished syncing, but its last block was from %s ago. It likely doesn't have enough peers", time.Since(blockTime))
 			status.IsSynced = false
 			status.SyncProgress = 0
 			return status
@@ -441,7 +423,7 @@ func (p *ExecutionClientManager) runFunction(function clientFunction) (interface
 		if err != nil {
 			if isDisconnected(err) {
 				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("WARNING: Fallback execution client disconnected (%s).", err.Error())
+				p.logger.Printlnf("WARNING: Fallback execution client disconnected (%s)", err.Error())
 				p.fallbackReady = false
 				return nil, fmt.Errorf("all execution clients failed")
 			} else {
