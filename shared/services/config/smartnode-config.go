@@ -11,6 +11,7 @@ const (
 	smartnodeTag        string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
 	powProxyTag         string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
 	pruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
+	ecMigratorTag       string = "rocketpool/ec-migrator:v1.0.0"
 	NetworkID           string = "network"
 	ProjectNameID       string = "projectName"
 )
@@ -307,6 +308,10 @@ func (config *SmartnodeConfig) GetPowProxyContainerTag() string {
 
 func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 	return pruneProvisionerTag
+}
+
+func (config *SmartnodeConfig) GetEcMigratorContainerTag() string {
+	return ecMigratorTag
 }
 
 // The the title for the config

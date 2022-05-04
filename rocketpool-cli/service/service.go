@@ -32,6 +32,7 @@ const (
 	NodeContainerSuffix             string = "_node"
 	ApiContainerSuffix              string = "_api"
 	PruneProvisionerContainerSuffix string = "_prune_provisioner"
+	EcMigratorContainerSuffix       string = "_ec_migrator"
 	clientDataVolumeName            string = "/ethclient"
 	dataFolderVolumeName            string = "/.rocketpool/data"
 
@@ -873,11 +874,11 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
-	fmt.Println("This will shut down your main ETH1 client and prune its database, freeing up disk space.")
-	fmt.Println("Once pruning is complete, your ETH1 client will restart automatically.\n")
+	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
+	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
 
 	if cfg.UseFallbackExecutionClient.Value == false {
-		fmt.Printf("%sYou do not have a fallback ETH1 client configured.\nYou will continue attesting while ETH1 prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 	} else {
 		var fallbackClientName string
 		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_External {
@@ -885,7 +886,7 @@ func pruneExecutionClient(c *cli.Context) error {
 		} else {
 			fallbackClientName = fmt.Sprint(cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
 		}
-		fmt.Printf("You have a fallback ETH1 client configured (%s). Rocket Pool (and your ETH2 client) will use that while the main client is pruning.\n", fallbackClientName)
+		fmt.Printf("You have a fallback execution client configured (%s). Rocket Pool (and your consensus client) will use that while the main client is pruning.\n", fallbackClientName)
 	}
 
 	// Get the container prefix
@@ -906,7 +907,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to prune your main ETH1 client?")) {
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to prune your main execution client?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -918,7 +919,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	executionContainerName := prefix + ExecutionContainerSuffix
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
 	if err != nil {
-		return fmt.Errorf("Error getting ETH1 volume source path: %w", err)
+		return fmt.Errorf("Error getting execution volume source path: %w", err)
 	}
 	partitions, err := disk.Partitions(false)
 	if err != nil {
@@ -948,16 +949,16 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Printf("Stopping %s...\n", executionContainerName)
 	result, err := rp.StopContainer(executionContainerName)
 	if err != nil {
-		return fmt.Errorf("Error stopping main ETH1 container: %w", err)
+		return fmt.Errorf("Error stopping main execution container: %w", err)
 	}
 	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while stopping main ETH1 container: %s", result)
+		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
 	}
 
 	// Get the ETH1 volume name
 	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
 	if err != nil {
-		return fmt.Errorf("Error getting ETH1 volume name: %w", err)
+		return fmt.Errorf("Error getting execution client volume name: %w", err)
 	}
 
 	// Run the prune provisioner
@@ -971,13 +972,13 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Printf("Restarting %s...\n", executionContainerName)
 	result, err = rp.StartContainer(executionContainerName)
 	if err != nil {
-		return fmt.Errorf("Error starting main ETH1 container: %w", err)
+		return fmt.Errorf("Error starting main execution client: %w", err)
 	}
 	if result != executionContainerName {
-		return fmt.Errorf("Unexpected output while starting main ETH1 container: %s", result)
+		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 	}
 
-	fmt.Printf("\nDone! Your main ETH1 client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
+	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
 	fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
 
 	fmt.Printf("%sNOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!%s\n", colorYellow, colorReset)
@@ -1430,4 +1431,151 @@ func getConfigYaml(c *cli.Context) error {
 
 	fmt.Println(string(bytes))
 	return nil
+}
+
+// Export the EC volume to an external folder
+func exportEcData(c *cli.Context, targetDir string) error {
+
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
+
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return err
+	}
+	if isNew {
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+	}
+
+	// Make sure the target dir exists and is accessible
+	targetDirInfo, err := os.Stat(targetDir)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("Target directory [%s] does not exist.", targetDir)
+	} else if err != nil {
+		return fmt.Errorf("Error reading target dir: %w", err)
+	}
+	if !targetDirInfo.IsDir() {
+		return fmt.Errorf("Target directory [%s] is not a directory.", targetDir)
+	}
+
+	fmt.Println("This will export your execution client's chain data to an external directory, such as a portable hard drive.")
+	fmt.Println("If your execution client is running, it will be shut down.")
+	fmt.Println("Once the export is complete, your execution client will restart automatically.\n")
+
+	if cfg.UseFallbackExecutionClient.Value == false {
+		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while exporting the chain data, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+	} else {
+		var fallbackClientName string
+		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_External {
+			fallbackClientName = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
+		} else {
+			fallbackClientName = fmt.Sprint(cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
+		}
+		fmt.Printf("You have a fallback execution client configured (%s). Rocket Pool (and your consensus client) will use that while the main client is pruning.\n", fallbackClientName)
+	}
+
+	// Get the container prefix
+	prefix, err := getContainerPrefix(rp)
+	if err != nil {
+		return fmt.Errorf("Error getting container prefix: %w", err)
+	}
+
+	// Get the migrator image
+	ecMigrator := cfg.Smartnode.GetEcMigratorContainerTag()
+
+	// Get the EC volume name
+	executionContainerName := prefix + ExecutionContainerSuffix
+	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
+	if err != nil {
+		return fmt.Errorf("Error getting execution client volume name: %w", err)
+	}
+
+	// Get the amount of space used by the EC volume
+	size, err := rp.GetVolumeSize(volume)
+	if err != nil {
+		return fmt.Errorf("Error getting execution client volume name: %w", err)
+	}
+	volumeBytes, err := humanize.ParseBytes(size)
+	if err != nil {
+		return fmt.Errorf("Couldn't parse size of EC volume (%s): %w", size, err)
+	}
+	volumeBytesHuman := humanize.IBytes(volumeBytes)
+
+	// Get the amount of free space available in the target dir
+	partitions, err := disk.Partitions(false)
+	if err != nil {
+		return fmt.Errorf("Error getting partition list: %w", err)
+	}
+	longestPath := 0
+	bestPartition := disk.PartitionStat{}
+	for _, partition := range partitions {
+		if strings.HasPrefix(targetDir, partition.Mountpoint) && len(partition.Mountpoint) > longestPath {
+			bestPartition = partition
+			longestPath = len(partition.Mountpoint)
+		}
+	}
+	diskUsage, err := disk.Usage(bestPartition.Mountpoint)
+	if err != nil {
+		return fmt.Errorf("Error getting free disk space available: %w", err)
+	}
+	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
+
+	// Make sure the target dir has enough space
+	fmt.Printf("Chain data size:       %s\n", volumeBytesHuman)
+	fmt.Printf("Target dir free space: %s\n", freeSpaceHuman)
+	if diskUsage.Free < volumeBytes {
+		return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, freeSpaceHuman, colorReset)
+	} else {
+		fmt.Println("Your target directory has enough space to store the chain data.")
+	}
+
+	// Prompt for confirmation
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to export your execution layer chain data?")) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
+	fmt.Printf("Stopping %s...\n", executionContainerName)
+	result, err := rp.StopContainer(executionContainerName)
+	if err != nil {
+		return fmt.Errorf("Error stopping main execution container: %w", err)
+	}
+	if result != executionContainerName {
+		return fmt.Errorf("Unexpected output while stopping main execution container: %s", result)
+	}
+
+	// Run the migrator
+	fmt.Printf("Exporting data from volume %s to %s...\n", volume, targetDir)
+	err = rp.RunEcMigrator(prefix+EcMigratorContainerSuffix, volume, targetDir, "export", ecMigrator)
+	if err != nil {
+		return fmt.Errorf("Error running EC migrator: %w", err)
+	}
+
+	// Restart ETH1
+	fmt.Printf("Restarting %s...\n", executionContainerName)
+	result, err = rp.StartContainer(executionContainerName)
+	if err != nil {
+		return fmt.Errorf("Error starting main execution client: %w", err)
+	}
+	if result != executionContainerName {
+		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+	}
+
+	fmt.Println("\nDone! Your chain data has been exported.")
+
+	return nil
+
+}
+
+// Import the EC volume from an external folder
+func importEcData(c *cli.Context, sourceDir string) error {
+
+	// TODO
+	return nil
+
 }
