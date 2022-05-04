@@ -1476,7 +1476,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		} else {
 			fallbackClientName = fmt.Sprint(cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
 		}
-		fmt.Printf("You have a fallback execution client configured (%s). Rocket Pool (and your consensus client) will use that while the main client is pruning.\n", fallbackClientName)
+		fmt.Printf("You have a fallback execution client configured (%s).\nRocket Pool (and your consensus client) will use that while the main client is offline.\n\n", fallbackClientName)
 	}
 
 	// Get the container prefix
@@ -1531,7 +1531,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	if diskUsage.Free < volumeBytes {
 		return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, freeSpaceHuman, colorReset)
 	} else {
-		fmt.Println("Your target directory has enough space to store the chain data.")
+		fmt.Println("Your target directory has enough space to store the chain data.\n")
 	}
 
 	// Prompt for confirmation
