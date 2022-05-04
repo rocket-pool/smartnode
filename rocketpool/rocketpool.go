@@ -13,7 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/contracts"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
 )
 
 // Cache settings
@@ -35,7 +34,7 @@ type cachedContract struct {
 
 // Rocket Pool contract manager
 type RocketPool struct {
-	Client                *client.EthClientProxy
+	Client                ExecutionClient
 	RocketStorage         *contracts.RocketStorage
 	RocketStorageContract *Contract
 	addresses             map[string]cachedAddress
@@ -47,7 +46,7 @@ type RocketPool struct {
 }
 
 // Create new contract manager
-func NewRocketPool(client *client.EthClientProxy, rocketStorageAddress common.Address) (*RocketPool, error) {
+func NewRocketPool(client ExecutionClient, rocketStorageAddress common.Address) (*RocketPool, error) {
 
 	// Initialize RocketStorage contract
 	rocketStorage, err := contracts.NewRocketStorage(rocketStorageAddress, client)

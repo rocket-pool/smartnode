@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	uc "github.com/rocket-pool/rocketpool-go/utils/client"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 
@@ -29,7 +29,10 @@ func TestSendTransaction(t *testing.T) {
 	})
 
 	// Initialize eth client
-	client := uc.NewEth1ClientProxy(0, tests.Eth1ProviderAddress)
+	client, err := ethclient.Dial(tests.Eth1ProviderAddress)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Initialize accounts
 	userAccount, err := accounts.GetAccount(9)
