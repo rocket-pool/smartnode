@@ -47,7 +47,9 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 	return &PrysmConfig{
 		Title: "Prysm Settings",
 
-		UnsupportedCommonParams: []string{},
+		UnsupportedCommonParams: []string{
+			CheckpointSyncUrlID,
+		},
 
 		MaxPeers: Parameter{
 			ID:                   "maxPeers",
