@@ -1526,7 +1526,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	fmt.Printf("%sChain data size:       %s%s\n", colorLightBlue, volumeBytesHuman, colorReset)
 	fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 	if diskUsage.Free < volumeBytes {
-		return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, freeSpaceHuman, colorReset)
+		return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
 	} else {
 		fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 	}
@@ -1673,7 +1673,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	fmt.Printf("%sChain data size:         %s%s\n", colorLightBlue, sourceBytesHuman, colorReset)
 	fmt.Printf("%sDocker drive free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 	if diskUsage.Free < sourceBytes {
-		return fmt.Errorf("%sYour Docker drive does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, freeSpaceHuman, colorReset)
+		return fmt.Errorf("%sYour Docker drive does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
 	} else {
 		fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 	}
@@ -1713,7 +1713,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 	}
 
-	fmt.Println("\nDone! Your chain data has been exported.")
+	fmt.Println("\nDone! Your chain data has been imported.")
 
 	return nil
 }
