@@ -1526,15 +1526,16 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
 
 	// Make sure the target dir has enough space
-	fmt.Printf("Chain data size:       %s\n", volumeBytesHuman)
-	fmt.Printf("Target dir free space: %s\n", freeSpaceHuman)
+	fmt.Printf("%sChain data size:       %s%s\n", colorLightBlue, volumeBytesHuman, colorReset)
+	fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 	if diskUsage.Free < volumeBytes {
 		return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, freeSpaceHuman, colorReset)
 	} else {
-		fmt.Println("Your target directory has enough space to store the chain data.\n")
+		fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 	}
 
 	// Prompt for confirmation
+	fmt.Printf("%sNOTE: Once started, this process *will not stop* until the export is complete - even if you exit the command with Ctrl+C.\nPlease do not exit until it finishes so you can watch its progress.%s\n\n", colorYellow, colorReset)
 	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to export your execution layer chain data?")) {
 		fmt.Println("Cancelled.")
 		return nil
