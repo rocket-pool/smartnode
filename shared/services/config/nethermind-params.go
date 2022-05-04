@@ -8,7 +8,7 @@ import (
 
 // Constants
 const (
-	nethermindTag              string = "nethermind/nethermind:1.12.7"
+	nethermindTag              string = "nethermind/nethermind:1.12.8"
 	nethermindEventLogInterval int    = 25000
 )
 
