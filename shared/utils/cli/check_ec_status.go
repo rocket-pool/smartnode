@@ -20,6 +20,7 @@ func CheckExecutionClientStatus(rp *rocketpool.Client) error {
 	// Primary EC is good
 	if mgrStatus.PrimaryEcStatus.IsSynced {
 		rp.SetEcStatusFlags(true, false)
+		return nil
 	}
 
 	// Fallback EC is good
