@@ -872,7 +872,7 @@ func (c *Client) RunPruneProvisioner(container string, volume string, image stri
 func (c *Client) RunEcMigrator(container string, volume string, targetDir string, mode string, image string) error {
 
 	// Run the prune provisioner
-	cmd := fmt.Sprintf("docker run --name %s -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, image)
+	cmd := fmt.Sprintf("docker run --name %s -it -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, image)
 	err := c.printOutput(cmd)
 	if err != nil {
 		return err
