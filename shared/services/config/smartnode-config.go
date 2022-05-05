@@ -54,6 +54,9 @@ type SmartnodeConfig struct {
 	// Threshold for auto minipool stakes
 	MinipoolStakeGasThreshold Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
 
+	// Token for Oracle DAO members to use when uploading Merkle trees to Web3.Storage
+	Web3StorageApiToken Parameter `yaml:"web3StorageApiToken"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -212,6 +215,18 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		Web3StorageApiToken: Parameter{
+			ID:                   "web3StorageApiToken",
+			Name:                 "Web3.Storage API Token",
+			Description:          "[orange]**For Oracle DAO members only.**\n\n[white]The API token for your https://web3.storage/ account. This is required in order for you to upload Merkle rewards trees to Web3.Storage at each rewards interval.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
 		txWatchUrl: map[Network]string{
 			Network_Mainnet: "https://etherscan.io/tx",
 			Network_Prater:  "https://goerli.etherscan.io/tx",
@@ -301,6 +316,7 @@ func (config *SmartnodeConfig) GetParameters() []*Parameter {
 		&config.PriorityFee,
 		&config.RplClaimGasThreshold,
 		&config.MinipoolStakeGasThreshold,
+		&config.Web3StorageApiToken,
 	}
 }
 
