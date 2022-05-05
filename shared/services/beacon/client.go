@@ -20,6 +20,8 @@ type Eth2Config struct {
 	GenesisValidatorsRoot        []byte
 	GenesisEpoch                 uint64
 	GenesisTime                  uint64
+	SecondsPerSlot               uint64
+	SlotsPerEpoch                uint64
 	SecondsPerEpoch              uint64
 	EpochsPerSyncCommitteePeriod uint64
 }
@@ -82,5 +84,5 @@ type Client interface {
 	GetDomainData(domainType []byte, epoch uint64) ([]byte, error)
 	ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
 	Close() error
-	GetEth1DataForEth2Block(blockId string) (Eth1Data, error)
+	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
 }

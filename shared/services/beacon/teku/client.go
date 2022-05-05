@@ -117,6 +117,8 @@ func (c *Client) GetEth2Config() (beacon.Eth2Config, error) {
 		GenesisValidatorsRoot:        genesis.Data.GenesisValidatorsRoot,
 		GenesisEpoch:                 0,
 		GenesisTime:                  uint64(genesis.Data.GenesisTime),
+		SecondsPerSlot:               uint64(eth2Config.Data.SecondsPerSlot),
+		SlotsPerEpoch:                uint64(eth2Config.Data.SlotsPerEpoch),
 		SecondsPerEpoch:              uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
 		EpochsPerSyncCommitteePeriod: uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
 	}, nil
@@ -418,12 +420,15 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 }
 
 // Get the ETH1 data for the target beacon block
-func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error) {
+func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, bool, error) {
 
 	// Get the Beacon block
-	block, err := c.getBeaconBlock(blockId)
+	block, exists, err := c.getBeaconBlock(blockId)
 	if err != nil {
-		return beacon.Eth1Data{}, err
+		return beacon.Eth1Data{}, false, err
+	}
+	if !exists {
+		return beacon.Eth1Data{}, false, nil
 	}
 
 	// Convert the response to the eth1 data struct
@@ -431,7 +436,7 @@ func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error
 		DepositRoot:  common.BytesToHash(block.Data.Message.Body.Eth1Data.DepositRoot),
 		DepositCount: uint64(block.Data.Message.Body.Eth1Data.DepositCount),
 		BlockHash:    common.BytesToHash(block.Data.Message.Body.Eth1Data.BlockHash),
-	}, nil
+	}, true, nil
 
 }
 
@@ -606,18 +611,20 @@ func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
 }
 
 // Get the target beacon block
-func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, error) {
+func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, bool, error) {
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
 	if err != nil {
-		return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: %w", err)
+		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: %w", err)
+	} else if status == http.StatusNotFound {
+		return BeaconBlockResponse{}, false, nil
 	} else if status != http.StatusOK {
-		return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
+		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var beaconBlock BeaconBlockResponse
 	if err := json.Unmarshal(responseBody, &beaconBlock); err != nil {
-		return BeaconBlockResponse{}, fmt.Errorf("Could not decode beacon block data: %w", err)
+		return BeaconBlockResponse{}, false, fmt.Errorf("Could not decode beacon block data: %w", err)
 	}
-	return beaconBlock, nil
+	return beaconBlock, true, nil
 }
 
 // Make a GET request to the beacon node
