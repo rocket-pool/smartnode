@@ -246,7 +246,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
-			Options:              []ParameterOption{ /*{
+			Options: []ParameterOption{ /*{
 					Name:        "*Infura",
 					Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
 					Value:       ExecutionClient_Infura,
@@ -254,7 +254,11 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 					Name:        "*Pocket",
 					Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
 					Value:       ExecutionClient_Pocket,
-				}*/},
+				},*/{
+					Name:        "*Dummy",
+					Description: "Ignore moe",
+					Value:       ExecutionClient_Unknown,
+				}},
 		},
 
 		ReconnectDelay: Parameter{
