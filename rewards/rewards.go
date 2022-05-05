@@ -22,7 +22,8 @@ type RewardsEvent struct {
 	RewardsPerNetworkETH []*big.Int
 	MerkleRoot           []byte
 	MerkleTreeCID        string
-	Time                 time.Time
+	IntervalStartTime    time.Time
+	IntervalEndTime      time.Time
 }
 
 // Get the index of the active rewards period
@@ -166,7 +167,8 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 	eventEth := values["rewardsPerNetworkETH"].([]*big.Int)
 	eventMerkleRoot := values["merkleRoot"].([]byte)
 	eventMerkleTreeCid := values["merkleTreeCID"].(string)
-	eventTime := values["time"].(*big.Int)
+	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
+	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
 	eventData := RewardsEvent{
 		Index:                eventIndex,
 		Block:                eventBlock,
@@ -174,7 +176,8 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 		RewardsPerNetworkETH: eventEth,
 		MerkleRoot:           eventMerkleRoot,
 		MerkleTreeCID:        eventMerkleTreeCid,
-		Time:                 time.Unix(eventTime.Int64(), 0),
+		IntervalStartTime:    time.Unix(eventIntervalStartTime.Int64(), 0),
+		IntervalEndTime:      time.Unix(eventIntervalEndTime.Int64(), 0),
 	}
 
 	return eventData, nil
