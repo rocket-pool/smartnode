@@ -48,7 +48,7 @@ func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	if err := rocketRewardsPool.Call(opts, unixTime, "getClaimIntervalTimeStart"); err != nil {
 		return time.Time{}, fmt.Errorf("Could not get claim interval time start: %w", err)
 	}
-	return time.Unix(int64((*unixTime).Uint64()), 0), nil
+	return time.Unix((*unixTime).Int64(), 0), nil
 }
 
 // Get the number of seconds in a claim interval

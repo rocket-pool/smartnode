@@ -789,6 +789,54 @@ func GetTrustedNodeLatestPricesParticipation(rp *rocketpool.RocketPool, interval
 	return participationTable, nil
 }
 
+// Get the smoothing pool opt-in status of a node
+func GetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return false, err
+	}
+	state := new(bool)
+	if err := rocketNodeManager.Call(opts, state, "getSmoothingPoolRegistrationState", nodeAddress); err != nil {
+		return false, fmt.Errorf("Could not get node %s smoothing pool registration status: %w", nodeAddress.Hex(), err)
+	}
+	return *state, nil
+}
+
+// Get the time of the previous smoothing pool opt-in / opt-out
+func GetSmoothingPoolRegistrationChanged(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return time.Time{}, err
+	}
+	timestamp := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, timestamp, "getSmoothingPoolRegistrationChanged", nodeAddress); err != nil {
+		return time.Time{}, fmt.Errorf("Could not get node %s's last smoothing pool registration change time: %w", nodeAddress.Hex(), err)
+	}
+	return time.Unix((*timestamp).Int64(), 0), nil
+}
+
+// Estimate the gas for opting into / out of the smoothing pool
+func EstimateSetSmoothingPoolRegistrationStateGas(rp *rocketpool.RocketPool, optIn bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "setSmoothingPoolRegistrationState", optIn)
+}
+
+// Opt into / out of the smoothing pool
+func SetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, optIn bool, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	hash, err := rocketNodeManager.Transact(opts, "setSmoothingPoolRegistrationState", optIn)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not set smoothing pool registration state: %w", err)
+	}
+	return hash, nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 
