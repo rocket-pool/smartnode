@@ -2,7 +2,6 @@ package network
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -84,6 +83,10 @@ func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewa
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Handle custom EC URLs for archive nodes
 	var ec rocketpool.ExecutionClient
@@ -139,19 +142,30 @@ func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewa
 			printError(fmt.Errorf("Error getting event for interval %d: %w", index, err))
 			return
 		}
-		logger.Printlnf("Found snapshot event: block %s, timestamp %s", rewardsEvent.Block.String(), rewardsEvent.Time.String())
+		logger.Printlnf("Found snapshot event: consensus block %s", rewardsEvent.Block.String())
 
-		// Get the header for the event
-		snapshotBlockHeader, err := ec.HeaderByNumber(context.Background(), rewardsEvent.Block)
+		// Figure out the timestamp for the block
+		eth2Config, err := bc.GetEth2Config()
 		if err != nil {
-			printError(fmt.Errorf("Error getting header for block %s: %w", rewardsEvent.Block.String(), err))
+			printError(fmt.Errorf("Error getting Beacon config: %w", err))
 			return
 		}
+		genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
+		blockTime := genesisTime.Add(time.Duration(rewardsEvent.Block.Uint64()*eth2Config.SecondsPerSlot) * time.Second)
+		logger.Printlnf("Block time is %s", blockTime)
+
+		// Get the matching EL block
+		elBlockHeader, err := rprewards.GetELBlockHeaderForTime(blockTime, ec)
+		if err != nil {
+			printError(fmt.Errorf("Error getting matching EL block: %w", err))
+			return
+		}
+		logger.Printlnf("Found matching EL block: %s", elBlockHeader.Number.String())
 
 		// Get the total pending rewards and respective distribution percentages
 		logger.Println("Calculating RPL rewards...")
 		start := time.Now()
-		nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(rp, snapshotBlockHeader, intervalTime)
+		nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(rp, elBlockHeader, intervalTime)
 		if err != nil {
 			printError(fmt.Errorf("Error calculating node operator rewards: %w", err))
 			return

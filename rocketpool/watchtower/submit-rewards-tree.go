@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
@@ -36,6 +36,7 @@ type submitRewardsTree struct {
 	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
 	ec        rocketpool.ExecutionClient
+	bc        beacon.Client
 	lock      *sync.Mutex
 	isRunning bool
 }
@@ -56,6 +57,10 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -67,6 +72,7 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 		errLog:    errorLogger,
 		cfg:       cfg,
 		ec:        ec,
+		bc:        bc,
 		w:         w,
 		rp:        rp,
 		lock:      lock,
@@ -79,8 +85,11 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 // Submit rewards Merkle Tree
 func (t *submitRewardsTree) run() error {
 
-	// Wait for eth client to sync
+	// Wait for clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
+		return err
+	}
+	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
 		return err
 	}
 
@@ -127,17 +136,16 @@ func (t *submitRewardsTree) run() error {
 		t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", int64(intervalsPassed))
 	}
 
-	// Get the number of the snapshot block which ended the rewards interval
-	snapshotBlockHeader, err := t.getBlockHeaderForTime(endTime, latestBlockHeader.Number)
+	// Get the block and timestamp of the consensus block that best matches the end time
+	snapshotBeaconBlock, snapshotBeaconBlockTime, err := t.getSnapshotConsensusBlock(endTime)
 	if err != nil {
 		return err
 	}
 
-	// Allow some blocks to pass in case of a short reorg
-	blockWithBuffer := big.NewInt(SubmitFollowDistanceRewardsTree)
-	blockWithBuffer.Add(snapshotBlockHeader.Number, blockWithBuffer)
-	if blockWithBuffer.Cmp(latestBlockHeader.Number) == 1 {
-		return nil
+	// Get the number of the EL block matching the CL snapshot block
+	snapshotElBlockHeader, err := rprewards.GetELBlockHeaderForTime(snapshotBeaconBlockTime, t.ec)
+	if err != nil {
+		return err
 	}
 
 	// Get the current interval
@@ -168,13 +176,13 @@ func (t *submitRewardsTree) run() error {
 	go func() {
 		// Log
 		t.lock.Lock()
-		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation in the background... snapshot block = %d, running from %s to %s", snapshotBlockHeader.Number.Uint64(), startTime, endTime)
+		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation in the background... snapshot Beacon block = %d, EL block = %d, running from %s to %s", snapshotBeaconBlock, snapshotElBlockHeader.Number.Uint64(), startTime, endTime)
 		t.lock.Unlock()
 
 		generationPrefix := "[Merkle Tree]"
 
 		// Get the total pending rewards and respective distribution percentages
-		nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotBlockHeader, intervalTime)
+		nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotElBlockHeader, intervalTime)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error calculating node operator rewards: %w", generationPrefix, err))
 			return
@@ -228,59 +236,59 @@ func (t *submitRewardsTree) handleError(err error) {
 	t.lock.Unlock()
 }
 
-// Get the number of the first block that was created after the given timestamp
-func (t *submitRewardsTree) getBlockHeaderForTime(targetTime time.Time, latestBlock *big.Int) (*types.Header, error) {
-	// Start at the halfway point
-	candidateBlockNumber := big.NewInt(0).Div(latestBlock, big.NewInt(2))
-	candidateBlock, err := t.ec.HeaderByNumber(context.Background(), candidateBlockNumber)
+// Get the first finalized, successful consensus block that occurred after the given target time
+func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64, time.Time, error) {
+
+	// Get the config
+	eth2Config, err := t.bc.GetEth2Config()
 	if err != nil {
-		return nil, err
+		return 0, time.Time{}, fmt.Errorf("Error getting Beacon config: %w", err)
 	}
-	bestBlock := candidateBlock
-	pivotSize := candidateBlock.Number.Uint64()
-	minimumDistance := +math.Inf(1)
-	targetTimeUnix := float64(targetTime.Unix())
 
+	// Get the beacon head
+	beaconHead, err := t.bc.GetBeaconHead()
+	if err != nil {
+		return 0, time.Time{}, fmt.Errorf("Error getting Beacon head: %w", err)
+	}
+
+	// Get the target block number
+	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
+	totalTimespan := endTime.Sub(genesisTime)
+	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
+	targetEpoch := targetSlot / eth2Config.SlotsPerEpoch
+
+	// Check if the target epoch is finalized yet
+	if beaconHead.FinalizedEpoch < targetEpoch {
+		return 0, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d) but the latest finalized epoch is %d... waiting until the snapshot slot is finalized.", endTime, targetSlot, targetEpoch, beaconHead.FinalizedEpoch)
+	}
+
+	// Get the first successful block
 	for {
-		// Get the distance from the candidate block to the target time
-		candidateTime := float64(candidateBlock.Time)
-		delta := targetTimeUnix - candidateTime
-		distance := math.Abs(delta)
-
-		// If it's better, replace the best candidate with it
-		if distance < minimumDistance {
-			minimumDistance = distance
-			bestBlock = candidateBlock
-		} else if pivotSize == 1 {
-			// If the pivot is down to size 1 and we didn't find anything better after another iteration, this is the best block!
-
-			// If this block happened before the target timestamp, return the one after it.
-			if bestBlock.Time < uint64(targetTime.Unix()) {
-				return t.ec.HeaderByNumber(context.Background(), bestBlock.Number.Add(bestBlock.Number, big.NewInt(1)))
-			}
-			return bestBlock, nil
-		}
-
-		// Iterate over the correct half, setting the pivot to the halfway point of that half (rounded up)
-		pivotSize = uint64(math.Ceil(float64(pivotSize) / 2))
-		if delta < 0 {
-			// Go left
-			candidateBlockNumber = big.NewInt(0).Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
-		} else {
-			// Go right
-			candidateBlockNumber = big.NewInt(0).Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
-		}
-
-		// Clamp the new candidate to the latest block
-		if candidateBlockNumber.Uint64() > (latestBlock.Uint64() - 1) {
-			candidateBlockNumber.SetUint64(latestBlock.Uint64() - 1)
-		}
-
-		candidateBlock, err = t.ec.HeaderByNumber(context.Background(), candidateBlockNumber)
+		// Try to get the current block
+		_, exists, err := t.bc.GetEth1DataForEth2Block(fmt.Sprint(targetSlot))
 		if err != nil {
-			return nil, err
+			return 0, time.Time{}, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
 		}
+
+		// If the block was missing, try the next one (and make sure its epoch is finalized)
+		if !exists {
+			t.log.Printlnf("Slot %d was missing, trying the next one...", targetSlot)
+			targetSlot++
+			newEpoch := targetSlot / eth2Config.SlotsPerEpoch
+			if newEpoch != targetEpoch {
+				if beaconHead.FinalizedEpoch < targetEpoch {
+					return 0, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d) but the latest finalized epoch is %d... waiting until the snapshot slot is finalized.", endTime, targetSlot, newEpoch, beaconHead.FinalizedEpoch)
+				}
+			}
+			targetEpoch = newEpoch
+			continue
+		}
+
+		// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
+		blockTime := genesisTime.Add(time.Duration(targetSlot*eth2Config.SecondsPerSlot) * time.Second)
+		return targetSlot, blockTime, nil
 	}
+
 }
 
 // Check whether the rewards tree for the current interval been submitted by the node

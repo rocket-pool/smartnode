@@ -131,7 +131,7 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimGas(rp, indices, amountRPL, amountETH, merkleProofs, opts)
+	gasInfo, err := rewards.EstimateClaimGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsRe
 	}
 
 	// Claim rewards
-	hash, err := rewards.Claim(rp, indices, amountRPL, amountETH, merkleProofs, opts)
+	hash, err := rewards.Claim(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func canClaimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimAndStakeGas(rp, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
+	gasInfo, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 	}
 
 	// Claim rewards
-	hash, err := rewards.ClaimAndStake(rp, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
+	hash, err := rewards.ClaimAndStake(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
 	if err != nil {
 		return nil, err
 	}
