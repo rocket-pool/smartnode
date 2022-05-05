@@ -20,6 +20,12 @@ func leave(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get the RPL bond refund address
 	var bondRefundAddress common.Address
 	if c.String("refund-address") == "node" {

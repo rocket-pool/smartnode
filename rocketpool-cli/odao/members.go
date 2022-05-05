@@ -20,6 +20,12 @@ func getMembers(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get oracle DAO members
 	members, err := rp.TNDAOMembers()
 	if err != nil {

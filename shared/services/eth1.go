@@ -2,18 +2,12 @@ package services
 
 import (
 	"context"
-	"github.com/urfave/cli"
 	"math/big"
+
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
-func GetEthClientLatestBlockTimestamp(c *cli.Context) (uint64, error) {
-	// Get eth client
-	var err error
-	ec, err := GetEthClientProxy(c)
-	if err != nil {
-		return 0, err
-	}
-
+func GetEthClientLatestBlockTimestamp(ec rocketpool.ExecutionClient) (uint64, error) {
 	// Get latest block number
 	blockNumber, err := ec.BlockNumber(context.Background())
 	if err != nil {

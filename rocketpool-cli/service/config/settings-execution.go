@@ -15,6 +15,8 @@ type ExecutionConfigPage struct {
 	ecDropdown      *parameterizedFormItem
 	ecCommonItems   []*parameterizedFormItem
 	gethItems       []*parameterizedFormItem
+	nethermindItems []*parameterizedFormItem
+	besuItems       []*parameterizedFormItem
 	infuraItems     []*parameterizedFormItem
 	pocketItems     []*parameterizedFormItem
 	externalEcItems []*parameterizedFormItem
@@ -72,6 +74,8 @@ func (configPage *ExecutionConfigPage) createContent() {
 	configPage.ecDropdown = createParameterizedDropDown(&configPage.masterConfig.ExecutionClient, configPage.layout.descriptionBox)
 	configPage.ecCommonItems = createParameterizedFormItems(configPage.masterConfig.ExecutionCommon.GetParameters(), configPage.layout.descriptionBox)
 	configPage.gethItems = createParameterizedFormItems(configPage.masterConfig.Geth.GetParameters(), configPage.layout.descriptionBox)
+	configPage.nethermindItems = createParameterizedFormItems(configPage.masterConfig.Nethermind.GetParameters(), configPage.layout.descriptionBox)
+	configPage.besuItems = createParameterizedFormItems(configPage.masterConfig.Besu.GetParameters(), configPage.layout.descriptionBox)
 	configPage.infuraItems = createParameterizedFormItems(configPage.masterConfig.Infura.GetParameters(), configPage.layout.descriptionBox)
 	configPage.pocketItems = createParameterizedFormItems(configPage.masterConfig.Pocket.GetParameters(), configPage.layout.descriptionBox)
 	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecution.GetParameters(), configPage.layout.descriptionBox)
@@ -80,6 +84,8 @@ func (configPage *ExecutionConfigPage) createContent() {
 	configPage.layout.mapParameterizedFormItems(configPage.ecModeDropdown, configPage.ecDropdown)
 	configPage.layout.mapParameterizedFormItems(configPage.ecCommonItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.gethItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.nethermindItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.besuItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.infuraItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.pocketItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalEcItems...)
@@ -135,6 +141,10 @@ func (configPage *ExecutionConfigPage) handleLocalEcChanged() {
 	switch selectedEc {
 	case config.ExecutionClient_Geth:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.gethItems, configPage.masterConfig.Geth.UnsupportedCommonParams)
+	case config.ExecutionClient_Nethermind:
+		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.nethermindItems, configPage.masterConfig.Nethermind.UnsupportedCommonParams)
+	case config.ExecutionClient_Besu:
+		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.besuItems, configPage.masterConfig.Besu.UnsupportedCommonParams)
 	case config.ExecutionClient_Infura:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ecCommonItems, configPage.infuraItems, configPage.masterConfig.Infura.UnsupportedCommonParams)
 	case config.ExecutionClient_Pocket:

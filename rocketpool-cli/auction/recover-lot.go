@@ -24,6 +24,12 @@ func recoverRplFromLot(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get lot details
 	lots, err := rp.AuctionLots()
 	if err != nil {

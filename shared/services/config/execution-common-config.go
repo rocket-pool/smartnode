@@ -1,18 +1,21 @@
 package config
 
-// Param IDs
-const ecHttpPortID string = "httpPort"
-const ecWsPortID string = "wsPort"
-const ecOpenRpcPortsID string = "openRpcPorts"
+const (
+	// Param IDs
+	ecHttpPortID     string = "httpPort"
+	ecWsPortID       string = "wsPort"
+	ecOpenRpcPortsID string = "openRpcPorts"
 
-// Defaults
-const defaultEcHttpPort uint16 = 8545
-const defaultEcWsPort uint16 = 8546
-const defaultOpenEcApiPort bool = false
+	// Defaults
+	defaultEcP2pPort     uint16 = 30303
+	defaultEcHttpPort    uint16 = 8545
+	defaultEcWsPort      uint16 = 8546
+	defaultOpenEcApiPort bool   = false
+)
 
 // Configuration for the Execution client
 type ExecutionCommonConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// The HTTP API port
 	HttpPort Parameter `yaml:"httpPort,omitempty"`
@@ -22,6 +25,15 @@ type ExecutionCommonConfig struct {
 
 	// Toggle for forwarding the HTTP and Websocket API ports outside of Docker
 	OpenRpcPorts Parameter `yaml:"openRpcPorts,omitempty"`
+
+	// P2P traffic port
+	P2pPort Parameter `yaml:"p2pPort,omitempty"`
+
+	// Label for Ethstats
+	EthstatsLabel Parameter `yaml:"ethstatsLabel,omitempty"`
+
+	// Login info for Ethstats
+	EthstatsLogin Parameter `yaml:"ethstatsLogin,omitempty"`
 }
 
 // Create a new ExecutionCommonConfig struct
@@ -75,6 +87,42 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
+
+		P2pPort: Parameter{
+			ID:                   "p2pPort",
+			Name:                 "P2P Port",
+			Description:          "The port Geth should use for P2P (blockchain) traffic to communicate with other nodes.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultEcP2pPort},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: []string{prefix + "EC_P2P_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		EthstatsLabel: Parameter{
+			ID:                   "ethstatsLabel",
+			Name:                 "ETHStats Label",
+			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the label you want to use here.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: []string{prefix + "ETHSTATS_LABEL"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		EthstatsLogin: Parameter{
+			ID:                   "ethstatsLogin",
+			Name:                 "ETHStats Login",
+			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the login you want to use here.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: []string{prefix + "ETHSTATS_LOGIN"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
 	}
 }
 
@@ -84,6 +132,9 @@ func (config *ExecutionCommonConfig) GetParameters() []*Parameter {
 		&config.HttpPort,
 		&config.WsPort,
 		&config.OpenRpcPorts,
+		&config.P2pPort,
+		&config.EthstatsLabel,
+		&config.EthstatsLogin,
 	}
 }
 

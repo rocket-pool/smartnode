@@ -1,7 +1,7 @@
 package config
 
 // Constants
-const prometheusTag string = "prom/prometheus:v2.31.1"
+const prometheusTag string = "prom/prometheus:v2.35.0"
 
 // Defaults
 const defaultPrometheusPort uint16 = 9091
@@ -9,7 +9,7 @@ const defaultPrometheusOpenPort bool = false
 
 // Configuration for Prometheus
 type PrometheusConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// The port to serve metrics on
 	Port Parameter `yaml:"port,omitempty"`

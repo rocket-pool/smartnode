@@ -5,11 +5,11 @@ import (
 	"runtime"
 )
 
-// v2.0.6
+// v2.1.1
 const (
-	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-e26cde-debug"
-	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-e26cde-debug"
-	prysmTagArm64             string = "rocketpool/prysm:v2.0.6"
+	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-208ae6-debug"
+	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-208ae6-debug"
+	prysmTagArm64             string = "rocketpool/prysm:v2.1.1"
 	defaultPrysmRpcPort       uint16 = 5053
 	defaultPrysmOpenRpcPort   bool   = false
 	defaultPrysmMaxPeers      uint16 = 45
@@ -147,7 +147,7 @@ func getPrysmBnTag() string {
 	} else if runtime.GOARCH == "amd64" {
 		return prysmBnTagAmd64
 	} else {
-		panic(fmt.Sprint("Prysm doesn't support architecture %s", runtime.GOARCH))
+		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
 	}
 }
 
@@ -158,7 +158,7 @@ func getPrysmVcTag() string {
 	} else if runtime.GOARCH == "amd64" {
 		return prysmVcTagAmd64
 	} else {
-		panic(fmt.Sprint("Prysm doesn't support architecture %s", runtime.GOARCH))
+		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
 	}
 }
 

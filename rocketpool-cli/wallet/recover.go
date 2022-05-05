@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 func recoverWallet(c *cli.Context) error {
@@ -63,6 +64,11 @@ func recoverWallet(c *cli.Context) error {
 	if skipValidatorKeyRecovery {
 		fmt.Println("Recovering node wallet only (ignoring validator keys)...")
 	} else {
+		// Check and assign the EC status
+		err = cliutils.CheckExecutionClientStatus(rp)
+		if err != nil {
+			return err
+		}
 		fmt.Println("Recovering node wallet and validator keys...")
 	}
 

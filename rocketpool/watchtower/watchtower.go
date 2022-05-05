@@ -33,6 +33,7 @@ const (
 	ErrorColor                       = color.FgRed
 	MetricsColor                     = color.FgHiYellow
 	SubmitRewardsTreeColor           = color.FgHiCyan
+	WarningColor                     = color.FgYellow
 )
 
 // Register watchtower command
@@ -117,44 +118,66 @@ func run(c *cli.Context) error {
 			randomSeconds := rand.Intn(int(secondsDelta))
 			interval := time.Duration(randomSeconds)*time.Second + minTasksInterval
 
-			if err := respondChallenges.run(); err != nil {
+			// Check the EC status
+			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
+			if err != nil {
 				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if !isUpdateDeployed {
-				// Only run auto-claims during the legacy period
-				isUpdateDeployed, err = claimRplRewards.run()
-				if err != nil {
+			} else {
+				// Run the challenge check
+				if err := respondChallenges.run(); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
-			}
-			if err := submitRewardsTree.run(); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if err := submitRplPrice.run(); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if err := submitNetworkBalances.run(); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if err := submitWithdrawableMinipools.run(); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if err := dissolveTimedOutMinipools.run(); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if err := processWithdrawals.run(); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if err := submitScrubMinipools.run(); err != nil {
-				errorLog.Println(err)
+
+				// Run the oDAO rewards check
+				if !isUpdateDeployed {
+					// Only run auto-claims during the legacy period
+					isUpdateDeployed, err = claimRplRewards.run()
+					if err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+				}
+
+				// Run the rewards tree submission check
+				if err := submitRewardsTree.run(); err != nil {
+					errorLog.Println(err)
+				}
+
+				// Run the price submission check
+				if err := submitRplPrice.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the network balance submission check
+				if err := submitNetworkBalances.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the withdrawable status submission check
+				if err := submitWithdrawableMinipools.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the minipool dissolve check
+				if err := dissolveTimedOutMinipools.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the withdrawal processing check
+				if err := processWithdrawals.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the minipool scrub check
+				if err := submitScrubMinipools.run(); err != nil {
+					errorLog.Println(err)
+				}
 			}
 			time.Sleep(interval)
 		}

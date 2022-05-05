@@ -25,6 +25,12 @@ func refundMinipools(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get minipool statuses
 	status, err := rp.MinipoolStatus()
 	if err != nil {

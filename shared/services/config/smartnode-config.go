@@ -13,6 +13,7 @@ const (
 	smartnodeTag              string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
 	powProxyTag               string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
 	pruneProvisionerTag       string = "rocketpool/eth1-prune-provision:v0.0.1"
+	ecMigratorTag             string = "rocketpool/ec-migrator:v1.0.0"
 	NetworkID                 string = "network"
 	ProjectNameID             string = "projectName"
 	RewardsTreeFilenameFormat string = "rp-rewards-%s-%d.json"
@@ -23,7 +24,7 @@ const defaultProjectName string = "rocketpool"
 
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
-	Title string
+	Title string `yaml:"-"`
 
 	// The parent config
 	parent *RocketPoolConfig
@@ -58,52 +59,52 @@ type SmartnodeConfig struct {
 	///////////////////////////
 
 	// The URL to provide the user so they can follow pending transactions
-	txWatchUrl map[Network]string
+	txWatchUrl map[Network]string `yaml:"-"`
 
 	// The URL to use for staking rETH
-	stakeUrl map[Network]string
+	stakeUrl map[Network]string `yaml:"-"`
 
 	// The map of networks to execution chain IDs
-	chainID map[Network]uint
+	chainID map[Network]uint `yaml:"-"`
 
 	// The path within the daemon Docker container of the wallet file
-	walletPath string
+	walletPath string `yaml:"-"`
 
 	// The path within the daemon Docker container of the wallet's password file
-	passwordPath string
+	passwordPath string `yaml:"-"`
 
 	// The path within the daemon Docker container of the validator key folder
-	validatorKeychainPath string
+	validatorKeychainPath string `yaml:"-"`
 
 	// The path within the daemon Docker container of the rewards merkle tree folder
-	rewardsTreePath string
+	rewardsTreePath string `yaml:"-"`
 
 	// The contract address of RocketStorage
-	storageAddress map[Network]string
+	storageAddress map[Network]string `yaml:"-"`
 
 	// The contract address of the 1inch oracle
-	oneInchOracleAddress map[Network]string
+	oneInchOracleAddress map[Network]string `yaml:"-"`
 
 	// The contract address of the RPL token
-	rplTokenAddress map[Network]string
+	rplTokenAddress map[Network]string `yaml:"-"`
 
 	// The contract address of the RPL faucet
-	rplFaucetAddress map[Network]string
+	rplFaucetAddress map[Network]string `yaml:"-"`
 
 	// The contract address of rETH
-	rethAddress map[Network]string
+	rethAddress map[Network]string `yaml:"-"`
 
 	// The contract address of rocketRewardsPool from v1.0.0
-	legacyRewardsPoolAddress map[Network]string
+	legacyRewardsPoolAddress map[Network]string `yaml:"-"`
 
 	// The contract address of rocketClaimNode from v1.0.0
-	legacyClaimNodeAddress map[Network]string
+	legacyClaimNodeAddress map[Network]string `yaml:"-"`
 
 	// The contract address of rocketClaimTrustedNode from v1.0.0
-	legacyClaimTrustedNodeAddress map[Network]string
+	legacyClaimTrustedNodeAddress map[Network]string `yaml:"-"`
 
 	// The ABI for the legacy rocketRewardsPool contract
-	legacyRewardsPoolAbi string
+	legacyRewardsPoolAbi string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -367,6 +368,10 @@ func (config *SmartnodeConfig) GetPowProxyContainerTag() string {
 
 func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 	return pruneProvisionerTag
+}
+
+func (config *SmartnodeConfig) GetEcMigratorContainerTag() string {
+	return ecMigratorTag
 }
 
 // The the title for the config

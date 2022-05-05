@@ -20,6 +20,12 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Check if proposal can be made
 	canPropose, err := rp.CanProposeInviteToTNDAO(memberAddress, memberId, memberUrl)
 	if err != nil {

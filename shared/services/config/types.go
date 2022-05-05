@@ -55,10 +55,12 @@ const (
 
 // Enum to describe the Execution client options
 const (
-	ExecutionClient_Unknown ExecutionClient = ""
-	ExecutionClient_Geth    ExecutionClient = "geth"
-	ExecutionClient_Infura  ExecutionClient = "infura"
-	ExecutionClient_Pocket  ExecutionClient = "pocket"
+	ExecutionClient_Unknown    ExecutionClient = ""
+	ExecutionClient_Geth       ExecutionClient = "geth"
+	ExecutionClient_Nethermind ExecutionClient = "nethermind"
+	ExecutionClient_Besu       ExecutionClient = "besu"
+	ExecutionClient_Infura     ExecutionClient = "infura"
+	ExecutionClient_Pocket     ExecutionClient = "pocket"
 )
 
 // Enum to describe the Consensus client options

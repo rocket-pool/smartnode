@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -85,15 +86,18 @@ func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewa
 	}
 
 	// Handle custom EC URLs for archive nodes
-	var ec *client.EthClientProxy
+	var ec rocketpool.ExecutionClient
 	customEcUrl := c.String("execution-client-url")
 	if customEcUrl == "" {
-		ec, err = services.GetEthClientProxy(c)
+		ec, err = services.GetEthClient(c)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		ec = client.NewEth1ClientProxy(0, customEcUrl)
+		ec, err = ethclient.Dial(customEcUrl)
+		if err != nil {
+			return nil, fmt.Errorf("Error connecting to custom EC: %w", err)
+		}
 	}
 
 	// Response

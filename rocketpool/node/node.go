@@ -24,6 +24,7 @@ const (
 	MetricsColor                 = color.FgHiYellow
 	ManageFeeRecipientColor      = color.FgHiCyan
 	ErrorColor                   = color.FgRed
+	WarningColor                 = color.FgYellow
 )
 
 // Register node command
@@ -63,7 +64,7 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	// Initialize error logger
+	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
 
 	// Wait group to handle the various threads
@@ -74,20 +75,30 @@ func run(c *cli.Context) error {
 	isUpdateDeployed := false
 	go func() {
 		for {
-			if err := manageFeeRecipient.run(); err != nil {
+			// Check the EC status
+			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
+			if err != nil {
 				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-			if !isUpdateDeployed {
-				// Only run auto-claims during the legacy period
-				isUpdateDeployed, err = claimRplRewards.run()
-				if err != nil {
+			} else {
+				// Manage the fee recipient for the node
+				if err := manageFeeRecipient.run(); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
-			}
-			if err := stakePrelaunchMinipools.run(); err != nil {
-				errorLog.Println(err)
+
+				// Run auto-claims during the legacy period
+				if !isUpdateDeployed {
+					isUpdateDeployed, err = claimRplRewards.run()
+					if err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+				}
+
+				// Run the minipool stake check
+				if err := stakePrelaunchMinipools.run(); err != nil {
+					errorLog.Println(err)
+				}
 			}
 			time.Sleep(tasksInterval)
 		}

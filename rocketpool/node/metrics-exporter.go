@@ -31,7 +31,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 	if err != nil {
 		return err
 	}
-	ec, err := services.GetEthClientProxy(c)
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return err
 	}

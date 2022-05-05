@@ -19,6 +19,12 @@ func getRewards(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get node RPL rewards status
 	rewards, err := rp.NodeRewards()
 	if err != nil {

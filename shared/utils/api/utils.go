@@ -9,7 +9,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -56,7 +55,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 }
 
 // Print a TX's details to the logger and waits for it to be mined.
-func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, ec *client.EthClientProxy, logger log.ColorLogger) error {
+func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, ec rocketpool.ExecutionClient, logger log.ColorLogger) error {
 
 	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
 	hashString := hash.String()
@@ -93,6 +92,10 @@ func GetEventLogInterval(cfg *config.RocketPoolConfig) (*big.Int, error) {
 		switch cfg.ExecutionClient.Value {
 		case config.ExecutionClient_Geth:
 			eventLogInterval = big.NewInt(int64(cfg.Geth.EventLogInterval))
+		case config.ExecutionClient_Nethermind:
+			eventLogInterval = big.NewInt(int64(cfg.Nethermind.EventLogInterval))
+		case config.ExecutionClient_Besu:
+			eventLogInterval = big.NewInt(int64(cfg.Besu.EventLogInterval))
 		case config.ExecutionClient_Infura:
 			eventLogInterval = big.NewInt(int64(cfg.Infura.EventLogInterval))
 		case config.ExecutionClient_Pocket:

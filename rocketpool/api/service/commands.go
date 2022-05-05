@@ -32,6 +32,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "get-ec-status",
+				Aliases:   []string{"g"},
+				Usage:     "Gets the status of the configured execution clients",
+				UsageText: "rocketpool api service get-ec-status",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getExecutionClientStatus(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

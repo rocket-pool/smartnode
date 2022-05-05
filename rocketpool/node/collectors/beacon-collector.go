@@ -10,7 +10,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,14 +31,14 @@ type BeaconCollector struct {
 	bc beacon.Client
 
 	// The eth1 client
-	ec *client.EthClientProxy
+	ec rocketpool.ExecutionClient
 
 	// The node's address
 	nodeAddress common.Address
 }
 
 // Create a new PerformanceCollector instance
-func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec *client.EthClientProxy, nodeAddress common.Address) *BeaconCollector {
+func NewBeaconCollector(rp *rocketpool.RocketPool, bc beacon.Client, ec rocketpool.ExecutionClient, nodeAddress common.Address) *BeaconCollector {
 	subsystem := "beacon"
 	return &BeaconCollector{
 		activeSyncCommittee: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_sync_committee"),

@@ -44,6 +44,13 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 			builder.WriteString(fmt.Sprintf("%s\n\n", err))
 		}
 	} else {
+		// Warn about light clients
+		if newConfig.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && (newConfig.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura || newConfig.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Pocket) {
+			builder.WriteString("==========\n[orange]WARNING: you are using a light client (Infura or Pocket) as your primary Execution client.\nLight clients are NOT COMPATIBLE with the upcoming Ethereum Merge, and will be removed in a future version of the Smartnode.\n\nPlease switch to a full client such as Geth, Nethermind, or Besu as soon as possible.[white]\n==========\n\n")
+		}
+		if newConfig.UseFallbackExecutionClient.Value == true && newConfig.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local && (newConfig.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura || newConfig.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Pocket) {
+			builder.WriteString("==========\n[orange]WARNING: you are using a light client (Infura or Pocket) as your fallback Execution client.\nLight clients are NOT COMPATIBLE with the upcoming Ethereum Merge, and will be removed in a future version of the Smartnode.\n\nIf you wish to continue using a fallback Execution client after light clients have been removed, you will need to run one on a separate machine and use Externally Managed mode for your fallback Execution client.[white]\n==========\n\n")
+		}
 		// Get the map of changed settings by category
 		changedSettings, totalAffectedContainers, changeNetworks = newConfig.GetChanges(oldConfig)
 

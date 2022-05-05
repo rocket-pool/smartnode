@@ -16,7 +16,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
@@ -36,7 +35,7 @@ type submitRewardsTree struct {
 	cfg       *config.RocketPoolConfig
 	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
-	ec        *client.EthClientProxy
+	ec        rocketpool.ExecutionClient
 	lock      *sync.Mutex
 	isRunning bool
 }
@@ -53,7 +52,7 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 	if err != nil {
 		return nil, err
 	}
-	ec, err := services.GetEthClientProxy(c)
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}

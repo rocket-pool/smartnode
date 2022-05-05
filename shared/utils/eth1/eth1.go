@@ -22,7 +22,7 @@ func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
 
 		// Do a sanity check to make sure the provided nonce is for a pending transaction
 		// otherwise the user is burning gas for no reason
-		ec, err := services.GetEthClientProxy(c)
+		ec, err := services.GetEthClient(c)
 		if err != nil {
 			return fmt.Errorf("Could not retrieve ETH1 client: %w", err)
 		}

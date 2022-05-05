@@ -56,25 +56,41 @@ func getSyncProgress(c *cli.Context) error {
 		return err
 	}
 
-	// Print eth1 status
-	if status.Eth1Synced {
-		if status.Eth1LatestBlockTime+uint64(ethClientRecentBlockThreshold.Seconds()) > uint64(time.Now().Unix()) {
-			fmt.Print("Your eth1 client is fully synced.\n")
+	// Print EC status
+	if status.EcStatus.PrimaryEcStatus.Error != "" {
+		fmt.Printf("Your primary execution client is unavailable (%s).\n", status.EcStatus.PrimaryEcStatus.Error)
+	} else if status.EcStatus.PrimaryEcStatus.IsSynced {
+		fmt.Print("Your primary execution client is fully synced.\n")
+	} else {
+		fmt.Printf("Your primary execution client is still syncing (%0.2f%%).\n", status.EcStatus.PrimaryEcStatus.SyncProgress*100)
+		if status.EcStatus.PrimaryEcStatus.SyncProgress == 0 {
+			fmt.Println("\tNOTE: your execution client may not report sync progress.\n\tYou should check your its logs to review it.")
+		}
+	}
+
+	// Print fallback EC status
+	if status.EcStatus.FallbackEnabled {
+		if status.EcStatus.FallbackEcStatus.Error != "" {
+			fmt.Printf("Your fallback execution client is unavailable (%s).\n", status.EcStatus.FallbackEcStatus.Error)
+		} else if status.EcStatus.FallbackEcStatus.IsSynced {
+			fmt.Print("Your fallback execution client is fully synced.\n")
 		} else {
-			duration := time.Now().Sub(time.Unix(int64(status.Eth1LatestBlockTime), 0))
-			fmt.Printf("Your eth1 client is reporting as fully synced but its latest known block was from %s ago; it likely doesn't have enough peers yet.\n", duration)
+			fmt.Printf("Your fallback execution client is still syncing (%0.2f%%).\n", status.EcStatus.FallbackEcStatus.SyncProgress*100)
+			if status.EcStatus.FallbackEcStatus.SyncProgress == 0 {
+				fmt.Println("\tNOTE: your execution client may not report sync progress.\n\tYou should check your its logs to review it.")
+			}
 		}
 	} else {
-		fmt.Printf("Your eth1 client is still syncing (%0.2f%%).\n", status.Eth1Progress*100)
+		fmt.Printf("You do not have a fallback execution client enabled.\n")
 	}
 
 	// Print eth2 status
 	if status.Eth2Synced {
-		fmt.Print("Your eth2 client is fully synced.\n")
+		fmt.Print("Your consensus client is fully synced.\n")
 	} else if status.Eth2Progress != -1 {
-		fmt.Printf("Your eth2 client is still syncing (%0.2f%%).\n", status.Eth2Progress*100)
+		fmt.Printf("Your consensus client is still syncing (%0.2f%%).\n", status.Eth2Progress*100)
 	} else {
-		fmt.Print("Your eth2 client is still syncing (but does not provide its progress).\n")
+		fmt.Print("Your consensus client is still syncing (but does not provide its progress).\n")
 	}
 
 	// Return

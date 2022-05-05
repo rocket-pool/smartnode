@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
 )
 
@@ -23,6 +25,7 @@ var checkNodeRegisteredInterval, _ = time.ParseDuration("15s")
 var ethClientSyncPollInterval, _ = time.ParseDuration("5s")
 var beaconClientSyncPollInterval, _ = time.ParseDuration("5s")
 var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
+var ethClientStatusRefreshInterval, _ = time.ParseDuration("60s")
 
 //
 // Service requirements
@@ -269,7 +272,7 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ec, err := GetEthClientProxy(c)
+	ec, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
@@ -286,7 +289,7 @@ func getOneInchOracleLoaded(c *cli.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ec, err := GetEthClientProxy(c)
+	ec, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
@@ -303,7 +306,7 @@ func getRplFaucetLoaded(c *cli.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ec, err := GetEthClientProxy(c)
+	ec, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
@@ -352,6 +355,46 @@ func getNodeTrusted(c *cli.Context) (bool, error) {
 // timeout of 0 indicates no timeout
 var ethClientSyncLock sync.Mutex
 
+func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool.ExecutionClient, error) {
+
+	// Check the EC status
+	mgrStatus := ecMgr.CheckStatus()
+	if ecMgr.primaryReady {
+		return true, nil, nil
+	}
+
+	// If the primary isn't synced but there's a fallback and it is, return true
+	if ecMgr.fallbackReady {
+		if mgrStatus.PrimaryEcStatus.Error != "" {
+			log.Printf("Primary execution client is unavailable (%s), using fallback execution client...\n", mgrStatus.PrimaryEcStatus.Error)
+		} else {
+			log.Printf("Primary execution client is still syncing (%.2f%%), using fallback execution client...\n", mgrStatus.PrimaryEcStatus.SyncProgress*100)
+		}
+		return true, nil, nil
+	}
+
+	// If neither is synced, go through the status to figure out what to do
+
+	// Is the primary working and syncing? If so, wait for it
+	if mgrStatus.PrimaryEcStatus.IsWorking && mgrStatus.PrimaryEcStatus.Error == "" {
+		log.Printf("Fallback execution client is not configured or unavailable, waiting for primary execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryEcStatus.SyncProgress*100)
+		return false, ecMgr.primaryEc, nil
+	}
+
+	// Is the fallback working and syncing? If so, wait for it
+	if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.IsWorking && mgrStatus.FallbackEcStatus.Error == "" {
+		log.Printf("Primary execution client is unavailable (%s), waiting for the fallback execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.SyncProgress*100)
+		return false, ecMgr.fallbackEc, nil
+	}
+
+	// If neither client is working, report the errors
+	if mgrStatus.FallbackEnabled {
+		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and fallback execution client is unavailable (%s), no execution clients are ready.", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.Error)
+	} else {
+		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryEcStatus.Error)
+	}
+}
+
 func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
 
 	// Prevent multiple waiting goroutines from requesting sync progress
@@ -360,24 +403,48 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 
 	// Get eth client
 	var err error
-	ec, err := GetEthClientProxy(c)
+	ecMgr, err := GetEthClient(c)
 	if err != nil {
 		return false, err
 	}
 
+	synced, clientToCheck, err := checkExecutionClientStatus(ecMgr)
+	if err != nil {
+		return false, err
+	}
+	if synced {
+		return true, nil
+	}
+
 	// Get wait start time
-	startTime := time.Now().Unix()
+	startTime := time.Now()
+
+	// Get EC status refresh time
+	ecRefreshTime := startTime
 
 	// Wait for sync
 	for {
 
 		// Check timeout
-		if (timeout > 0) && (time.Now().Unix()-startTime > timeout) {
+		if (timeout > 0) && (time.Since(startTime).Seconds() > float64(timeout)) {
 			return false, nil
 		}
 
+		// Check if the EC status needs to be refreshed
+		if time.Since(ecRefreshTime) > ethClientStatusRefreshInterval {
+			log.Println("Refreshing primary / fallback execution client status...")
+			ecRefreshTime = time.Now()
+			synced, clientToCheck, err = checkExecutionClientStatus(ecMgr)
+			if err != nil {
+				return false, err
+			}
+			if synced {
+				return true, nil
+			}
+		}
+
 		// Get sync progress
-		progress, err := ec.SyncProgress(context.Background())
+		progress, err := clientToCheck.SyncProgress(context.Background())
 		if err != nil {
 			return false, err
 		}
@@ -395,12 +462,12 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 		} else {
 			// Eth 1 client is not in "syncing" state but may be behind head
 			// Get the latest block it knows about and make sure it's recent compared to system clock time
-			timestamp, err := GetEthClientLatestBlockTimestamp(c)
+			isUpToDate, _, err := IsSyncWithinThreshold(clientToCheck)
 			if err != nil {
 				return false, err
 			}
 			// Only return true if the last reportedly known block is within our defined threshold
-			if timestamp+uint64(ethClientRecentBlockThreshold.Seconds()) > uint64(time.Now().Unix()) {
+			if isUpToDate {
 				return true, nil
 			}
 		}
@@ -459,4 +526,20 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 
 	}
 
+}
+
+// Confirm the EC's latest block is within the threshold of the current system clock
+func IsSyncWithinThreshold(ec rocketpool.ExecutionClient) (bool, time.Time, error) {
+	timestamp, err := GetEthClientLatestBlockTimestamp(ec)
+	if err != nil {
+		return false, time.Time{}, err
+	}
+
+	// Return true if the latest block is under the threshold
+	blockTime := time.Unix(int64(timestamp), 0)
+	if time.Since(blockTime) < ethClientRecentBlockThreshold {
+		return true, blockTime, nil
+	} else {
+		return false, blockTime, nil
+	}
 }

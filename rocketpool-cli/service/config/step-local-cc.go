@@ -13,8 +13,6 @@ import (
 
 const localCcStepID string = "step-local-cc"
 
-const supermajorityWeight float64 = 0.05
-
 func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
 	// Get the list of clients
@@ -88,7 +86,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		if buttonIndex == 0 {
 			wiz.md.pages.RemovePage(randomCcPrysmID)
 			wiz.md.pages.RemovePage(randomCcID)
-			selectRandomClient(goodClients, true, wiz, currentStep, totalSteps)
+			selectRandomCC(goodClients, true, wiz, currentStep, totalSteps)
 		} else {
 			buttonLabel = strings.TrimSpace(buttonLabel)
 			selectedClient := config.ConsensusClient_Unknown
@@ -103,8 +101,8 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 			}
 			wiz.md.Config.ConsensusClient.Value = selectedClient
 			switch selectedClient {
-			case config.ConsensusClient_Prysm:
-				wiz.consensusLocalPrysmWarning.show()
+			//case config.ConsensusClient_Prysm:
+			//	wiz.consensusLocalPrysmWarning.show()
 			case config.ConsensusClient_Teku:
 				totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 				if runtime.GOARCH == "arm64" || totalMemoryGB < 15 {
@@ -141,7 +139,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 }
 
 // Get a random client compatible with the user's hardware and EC choices.
-func selectRandomClient(goodOptions []config.ParameterOption, includeSupermajority bool, wiz *wizard, currentStep int, totalSteps int) {
+func selectRandomCC(goodOptions []config.ParameterOption, includeSupermajority bool, wiz *wizard, currentStep int, totalSteps int) {
 
 	// Get system specs
 	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
@@ -156,10 +154,12 @@ func selectRandomClient(goodOptions []config.ParameterOption, includeSupermajori
 			if !isLowPower {
 				filteredClients = append(filteredClients, client)
 			}
-		case config.ConsensusClient_Prysm:
-			if includeSupermajority {
-				filteredClients = append(filteredClients, client)
-			}
+		/*
+			case config.ConsensusClient_Prysm:
+				if includeSupermajority {
+					filteredClients = append(filteredClients, client)
+				}
+		*/
 		default:
 			filteredClients = append(filteredClients, client)
 		}
@@ -171,13 +171,17 @@ func selectRandomClient(goodOptions []config.ParameterOption, includeSupermajori
 	wiz.md.Config.ConsensusClient.Value = selectedClient
 
 	// Show the selection page
-	if selectedClient == config.ConsensusClient_Prysm {
-		wiz.consensusLocalRandomPrysmModal = createRandomPrysmStep(wiz, currentStep, totalSteps, goodOptions)
-		wiz.consensusLocalRandomPrysmModal.show()
-	} else {
-		wiz.consensusLocalRandomModal = createRandomStep(wiz, currentStep, totalSteps, goodOptions)
-		wiz.consensusLocalRandomModal.show()
-	}
+	/*
+		if selectedClient == config.ConsensusClient_Prysm {
+			wiz.consensusLocalRandomPrysmModal = createRandomPrysmStep(wiz, currentStep, totalSteps, goodOptions)
+			wiz.consensusLocalRandomPrysmModal.show()
+		} else {
+			wiz.consensusLocalRandomModal = createRandomStep(wiz, currentStep, totalSteps, goodOptions)
+			wiz.consensusLocalRandomModal.show()
+		}
+	*/
+	wiz.consensusLocalRandomModal = createRandomCCStep(wiz, currentStep, totalSteps, goodOptions)
+	wiz.consensusLocalRandomModal.show()
 
 }
 
@@ -185,8 +189,10 @@ func selectRandomClient(goodOptions []config.ParameterOption, includeSupermajori
 func getAugmentedDescription(client config.ConsensusClient, originalDescription string) string {
 
 	switch client {
-	case config.ConsensusClient_Prysm:
-		return fmt.Sprintf("%s\n\n[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more.", originalDescription)
+	/*
+		case config.ConsensusClient_Prysm:
+			return fmt.Sprintf("%s\n\n[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more.", originalDescription)
+	*/
 	case config.ConsensusClient_Teku:
 		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 		if runtime.GOARCH == "arm64" || totalMemoryGB < 15 {

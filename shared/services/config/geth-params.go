@@ -12,36 +12,24 @@ const (
 	gethEventLogInterval int    = 25000
 )
 
-// Defaults
-const defaultGethP2pPort uint16 = 30303
-
 // Configuration for Geth
 type GethConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
 	// Common parameters that Geth doesn't support and should be hidden
-	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
+	UnsupportedCommonParams []string `yaml:"-"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []ConsensusClient `yaml:"compatibleConsensusClients,omitempty"`
+	CompatibleConsensusClients []ConsensusClient `yaml:"-"`
 
 	// The max number of events to query in a single event log query
-	EventLogInterval int `yaml:"eventLogInterval,omitempty"`
+	EventLogInterval int `yaml:"-"`
 
 	// Size of Geth's Cache
 	CacheSize Parameter `yaml:"cacheSize,omitempty"`
 
 	// Max number of P2P peers to connect to
 	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
-
-	// P2P traffic port
-	P2pPort Parameter `yaml:"p2pPort,omitempty"`
-
-	// Label for Ethstats
-	EthstatsLabel Parameter `yaml:"ethstatsLabel,omitempty"`
-
-	// Login info for Ethstats
-	EthstatsLogin Parameter `yaml:"ethstatsLogin,omitempty"`
 
 	// The Docker Hub tag for Geth
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
@@ -98,42 +86,6 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{prefix + "EC_MAX_PEERS"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		P2pPort: Parameter{
-			ID:                   "p2pPort",
-			Name:                 "P2P Port",
-			Description:          "The port Geth should use for P2P (blockchain) traffic to communicate with other nodes.",
-			Type:                 ParameterType_Uint16,
-			Default:              map[Network]interface{}{Network_All: defaultGethP2pPort},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_P2P_PORT"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		EthstatsLabel: Parameter{
-			ID:                   "ethstatsLabel",
-			Name:                 "ETHStats Label",
-			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the label you want to use here.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "ETHSTATS_LABEL"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
-		},
-
-		EthstatsLogin: Parameter{
-			ID:                   "ethstatsLogin",
-			Name:                 "ETHStats Login",
-			Description:          "If you would like to report your Execution client statistics to https://ethstats.net/, enter the login you want to use here.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "ETHSTATS_LOGIN"},
-			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
@@ -197,9 +149,6 @@ func (config *GethConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.CacheSize,
 		&config.MaxPeers,
-		&config.P2pPort,
-		&config.EthstatsLabel,
-		&config.EthstatsLogin,
 		&config.ContainerTag,
 		&config.AdditionalFlags,
 	}

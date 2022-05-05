@@ -70,6 +70,8 @@ type Client struct {
 	originalMaxPrioFee float64
 	originalGasLimit   uint64
 	debugPrint         bool
+	ignoreSyncCheck    bool
+	forceFallbackEc    bool
 }
 
 // Create new Rocket Pool client from CLI context
@@ -98,7 +100,7 @@ func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee 
 	}
 
 	// Return client
-	return &Client{
+	client := &Client{
 		configPath:         os.ExpandEnv(configPath),
 		daemonPath:         os.ExpandEnv(daemonPath),
 		maxFee:             maxFee,
@@ -110,7 +112,11 @@ func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee 
 		customNonce:        customNonceBigInt,
 		client:             sshClient,
 		debugPrint:         debug,
-	}, nil
+		forceFallbackEc:    false,
+		ignoreSyncCheck:    false,
+	}
+
+	return client, nil
 
 }
 
@@ -142,6 +148,17 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	return cfg, isNew, nil
 }
 
+// Load the backup config
+func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
+	settingsFilePath := filepath.Join(c.configPath, BackupSettingsFile)
+	expandedPath, err := homedir.Expand(settingsFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error expanding backup settings file path: %w", err)
+	}
+
+	return rp.LoadConfigFromFile(expandedPath)
+}
+
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
 	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
@@ -150,6 +167,15 @@ func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
 		return err
 	}
 	return rp.SaveConfig(cfg, expandedPath)
+}
+
+// Remove the upgrade flag file
+func (c *Client) RemoveUpgradeFlagFile() error {
+	expandedPath, err := homedir.Expand(c.configPath)
+	if err != nil {
+		return err
+	}
+	return rp.RemoveUpgradeFlagFile(expandedPath)
 }
 
 // Returns whether or not this is the first run of the configurator since a previous installation
@@ -281,7 +307,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.ExecutionCommon, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
 	}
@@ -297,7 +323,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating fallback eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1Fallback.Client.Selected, network, legacyCfg.Chains.Eth1Fallback.Client.Params, nil, cfg.FallbackInfura, cfg.FallbackPocket, cfg.FallbackExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1Fallback.Client.Selected, network, legacyCfg.Chains.Eth1Fallback.Client.Params, nil, nil, cfg.FallbackInfura, cfg.FallbackPocket, cfg.FallbackExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating fallback eth1 params: %w", err)
 	}
@@ -822,6 +848,17 @@ func (c *Client) GetClientVolumeName(container string, volumeTarget string) (str
 	return strings.TrimSpace(string(output)), nil
 }
 
+// Gets the disk usage of the given volume
+func (c *Client) GetVolumeSize(volumeName string) (string, error) {
+
+	cmd := fmt.Sprintf("docker system df -v --format='{{range .Volumes}}{{if eq \"%s\" .Name}}{{.Size}}{{end}}{{end}}'", volumeName)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
 // Runs the prune provisioner
 func (c *Client) RunPruneProvisioner(container string, volume string, image string) error {
 
@@ -844,6 +881,23 @@ func (c *Client) RunPruneProvisioner(container string, volume string, image stri
 
 }
 
+// Runs the EC migrator
+func (c *Client) RunEcMigrator(container string, volume string, targetDir string, mode string, image string) error {
+
+	// Run the prune provisioner
+	cmd := fmt.Sprintf("docker run --name %s -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, image)
+	err := c.printOutput(cmd)
+	if err != nil {
+		return err
+	}
+
+	// Remove the prune provisioner, ignoring output
+	cmd = fmt.Sprintf("docker container rm %s", container)
+	c.readOutput(cmd)
+	return nil
+
+}
+
 // Get the gas settings
 func (c *Client) GetGasSettings() (float64, float64, uint64) {
 	return c.maxFee, c.maxPrioFee, c.gasLimit
@@ -854,6 +908,12 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 	c.maxFee = maxFee
 	c.maxPrioFee = maxPrioFee
 	c.gasLimit = gasLimit
+}
+
+// Set the flags for ignoring EC sync check and fallback forcing to prevent unnecessary duplication of effort by the API during CLI commands
+func (c *Client) SetEcStatusFlags(ignoreSyncCheck bool, forceFallbackEc bool) {
+	c.ignoreSyncCheck = ignoreSyncCheck
+	c.forceFallbackEc = forceFallbackEc
 }
 
 // Get the provider mode and port from a legacy config's provider URL
@@ -971,16 +1031,16 @@ func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *config
 }
 
 // Migrates the parameters from a legacy eth1 config to a modern one
-func (c *Client) migrateEth1Params(client string, network config.Network, params []config.UserParam, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
+func (c *Client) migrateEth1Params(client string, network config.Network, params []config.UserParam, ecCommon *config.ExecutionCommonConfig, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
 	for _, param := range params {
 		switch param.Env {
 		case "ETHSTATS_LABEL":
-			if geth != nil {
-				geth.EthstatsLabel.Value = param.Value
+			if ecCommon != nil {
+				ecCommon.EthstatsLabel.Value = param.Value
 			}
 		case "ETHSTATS_LOGIN":
-			if geth != nil {
-				geth.EthstatsLogin.Value = param.Value
+			if ecCommon != nil {
+				ecCommon.EthstatsLogin.Value = param.Value
 			}
 		case "GETH_CACHE_SIZE":
 			if geth != nil {
@@ -991,8 +1051,8 @@ func (c *Client) migrateEth1Params(client string, network config.Network, params
 				convertUintParam(param, &geth.MaxPeers, network, 16)
 			}
 		case "ETH1_P2P_PORT":
-			if geth != nil {
-				convertUintParam(param, &geth.P2pPort, network, 16)
+			if ecCommon != nil {
+				convertUintParam(param, &ecCommon.P2pPort, network, 16)
 			}
 		case "INFURA_PROJECT_ID":
 			infura.ProjectID.Value = param.Value
@@ -1380,6 +1440,15 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		}
 	}
 
+	ignoreSyncCheckFlag := ""
+	if c.ignoreSyncCheck {
+		ignoreSyncCheckFlag = "--ignore-sync-check"
+	}
+	forceFallbackECFlag := ""
+	if c.forceFallbackEc {
+		forceFallbackECFlag = "--force-fallback-ec"
+	}
+
 	// Run the command
 	var cmd string
 	if c.daemonPath == "" {
@@ -1387,11 +1456,13 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), c.getGasOpts(), c.getCustomNonce(), args)
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
 	} else {
-		cmd = fmt.Sprintf("%s --settings %s %s %s api %s",
+		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
 			c.daemonPath,
 			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
+			ignoreSyncCheckFlag,
+			forceFallbackECFlag,
 			c.getGasOpts(),
 			c.getCustomNonce(),
 			args)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/alessio/shellescape"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	"gopkg.in/yaml.v2"
 )
 
@@ -40,13 +41,13 @@ const defaultWatchtowerMetricsPort uint16 = 9104
 
 // The master configuration struct
 type RocketPoolConfig struct {
-	Title string `yaml:"title,omitempty"`
+	Title string `yaml:"-"`
 
-	Version string `yaml:"version,omitempty"`
+	Version string `yaml:"-"`
 
-	RocketPoolDirectory string `yaml:"rocketPoolDirectory,omitempty"`
+	RocketPoolDirectory string `yaml:"-"`
 
-	IsNativeMode bool `yaml:"isNativeMode,omitempty"`
+	IsNativeMode bool `yaml:"-"`
 
 	// Execution client settings
 	ExecutionClientMode Parameter `yaml:"executionClientMode"`
@@ -77,6 +78,8 @@ type RocketPoolConfig struct {
 	// Execution client configurations
 	ExecutionCommon   *ExecutionCommonConfig   `yaml:"executionCommon,omitempty"`
 	Geth              *GethConfig              `yaml:"geth,omitempty"`
+	Nethermind        *NethermindConfig        `yaml:"nethermind,omitempty"`
+	Besu              *BesuConfig              `yaml:"besu,omitempty"`
 	Infura            *InfuraConfig            `yaml:"infura,omitempty"`
 	Pocket            *PocketConfig            `yaml:"pocket,omitempty"`
 	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
@@ -181,13 +184,21 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Geth",
 				Description: "Geth is one of the three original implementations of the Ethereum protocol. It is written in Go, fully open source and licensed under the GNU LGPL v3.",
 				Value:       ExecutionClient_Geth,
+			}, {
+				Name:        "Nethermind",
+				Description: "Nethermind is a high-performance, highly configurable full Ethereum protocol client. It offers very fast sync speeds and support for external plug-ins. Nethermind is built with proven industrial technologies such as .NET 6 and the Kestrel web server. Its is fully open source and provides detailed documentation at https://docs.nethermind.io/nethermind/.",
+				Value:       ExecutionClient_Nethermind,
+			}, {
+				Name:        "Besu",
+				Description: "Hyperledger Besu is an Apache 2.0 licensed, Mainnet compatible, Ethereum client written in Java.",
+				Value:       ExecutionClient_Besu,
 			}, /*{
-				Name:        "Infura",
-				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.",
+				Name:        "*Infura",
+				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. We strongly recommend you choose a Full Execution client instead.",
 				Value:       ExecutionClient_Infura,
 			}, {
-				Name:        "Pocket",
-				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.",
+				Name:        "*Pocket",
+				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. We strongly recommend you choose a Full Execution client instead.",
 				Value:       ExecutionClient_Pocket,
 			}*/},
 		},
@@ -235,11 +246,15 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
-			Options: []ParameterOption{{
-				Name:        "External",
-				Description: "Use an existing Execution client that you already manage externally on your own.",
-				Value:       ExecutionClient_Unknown,
-			}},
+			Options:              []ParameterOption{ /*{
+					Name:        "*Infura",
+					Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
+					Value:       ExecutionClient_Infura,
+				}, {
+					Name:        "*Pocket",
+					Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
+					Value:       ExecutionClient_Pocket,
+				}*/},
 		},
 
 		ReconnectDelay: Parameter{
@@ -410,6 +425,8 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Smartnode = NewSmartnodeConfig(config)
 	config.ExecutionCommon = NewExecutionCommonConfig(config, false)
 	config.Geth = NewGethConfig(config, false)
+	config.Nethermind = NewNethermindConfig(config, false)
+	config.Besu = NewBesuConfig(config, false)
 	config.Infura = NewInfuraConfig(config, false)
 	config.Pocket = NewPocketConfig(config, false)
 	config.ExternalExecution = NewExternalExecutionConfig(config, false)
@@ -484,6 +501,8 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"smartnode":                 config.Smartnode,
 		"executionCommon":           config.ExecutionCommon,
 		"geth":                      config.Geth,
+		"nethermind":                config.Nethermind,
+		"besu":                      config.Besu,
 		"infura":                    config.Infura,
 		"pocket":                    config.Pocket,
 		"externalExecution":         config.ExternalExecution,
@@ -545,6 +564,10 @@ func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOp
 		switch executionClient {
 		case ExecutionClient_Geth:
 			compatibleConsensusClients = config.Geth.CompatibleConsensusClients
+		case ExecutionClient_Nethermind:
+			compatibleConsensusClients = config.Nethermind.CompatibleConsensusClients
+		case ExecutionClient_Besu:
+			compatibleConsensusClients = config.Besu.CompatibleConsensusClients
 		case ExecutionClient_Infura:
 			compatibleConsensusClients = config.Infura.CompatibleConsensusClients
 		case ExecutionClient_Pocket:
@@ -686,6 +709,12 @@ func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 // Deserializes a settings file into this config
 func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string) error {
 
+	// Upgrade the config to the latest version
+	err := migration.UpdateConfig(masterMap)
+	if err != nil {
+		return fmt.Errorf("error upgrading configuration to v%s: %w", shared.RocketPoolVersion, err)
+	}
+
 	// Get the network
 	network := Network_Mainnet
 	smartnodeConfig, exists := masterMap[config.Smartnode.Title]
@@ -695,7 +724,7 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 			valueType := reflect.TypeOf(networkString)
 			paramType := reflect.TypeOf(network)
 			if !valueType.ConvertibleTo(paramType) {
-				return fmt.Errorf("Can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
+				return fmt.Errorf("can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
 			} else {
 				network = reflect.ValueOf(networkString).Convert(paramType).Interface().(Network)
 			}
@@ -712,7 +741,6 @@ func (config *RocketPoolConfig) Deserialize(masterMap map[string]map[string]stri
 		}
 	}
 
-	var err error
 	config.RocketPoolDirectory = masterMap[rootConfigName]["rpDir"]
 	config.IsNativeMode, err = strconv.ParseBool(masterMap[rootConfigName]["isNative"])
 	if err != nil {
@@ -767,6 +795,10 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		switch config.ExecutionClient.Value.(ExecutionClient) {
 		case ExecutionClient_Geth:
 			addParametersToEnvVars(config.Geth.GetParameters(), envVars)
+		case ExecutionClient_Nethermind:
+			addParametersToEnvVars(config.Nethermind.GetParameters(), envVars)
+		case ExecutionClient_Besu:
+			addParametersToEnvVars(config.Besu.GetParameters(), envVars)
 		case ExecutionClient_Infura:
 			addParametersToEnvVars(config.Infura.GetParameters(), envVars)
 		case ExecutionClient_Pocket:

@@ -12,7 +12,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -31,7 +30,7 @@ func canWithdrawRpl(c *cli.Context) (*api.CanFaucetWithdrawRplResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	ec, err := services.GetEthClientProxy(c)
+	ec, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +214,7 @@ func withdrawRpl(c *cli.Context) (*api.FaucetWithdrawRplResponse, error) {
 
 }
 
-func estimateWithdrawGas(c *cli.Context, client *client.EthClientProxy, faucet *contracts.RPLFaucet, opts *bind.TransactOpts, amount *big.Int) (rocketpool.GasInfo, error) {
+func estimateWithdrawGas(c *cli.Context, client rocketpool.ExecutionClient, faucet *contracts.RPLFaucet, opts *bind.TransactOpts, amount *big.Int) (rocketpool.GasInfo, error) {
 
 	response := rocketpool.GasInfo{}
 

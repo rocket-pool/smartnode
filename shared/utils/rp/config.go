@@ -43,20 +43,6 @@ func SaveConfig(cfg *config.RocketPoolConfig, path string) error {
 		return fmt.Errorf("could not write Rocket Pool config to %s: %w", shellescape.Quote(path), err)
 	}
 
-	// Check for the upgrade flag file
-	configDir := filepath.Dir(path)
-	upgradeFilePath := filepath.Join(configDir, upgradeFlagFile)
-	_, err = os.Stat(upgradeFilePath)
-	if os.IsNotExist(err) {
-		return nil
-	}
-
-	// Delete the upgrade flag file
-	err = os.Remove(upgradeFilePath)
-	if err != nil {
-		return fmt.Errorf("error removing upgrade flag file: %w", err)
-	}
-
 	return nil
 
 }
@@ -72,4 +58,24 @@ func IsFirstRun(configDir string) bool {
 	}
 
 	return true
+}
+
+// Remove the upgrade flag file
+func RemoveUpgradeFlagFile(configDir string) error {
+
+	// Check for the upgrade flag file
+	upgradeFilePath := filepath.Join(configDir, upgradeFlagFile)
+	_, err := os.Stat(upgradeFilePath)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
+	// Delete the upgrade flag file
+	err = os.Remove(upgradeFilePath)
+	if err != nil {
+		return fmt.Errorf("error removing upgrade flag file: %w", err)
+	}
+
+	return nil
+
 }

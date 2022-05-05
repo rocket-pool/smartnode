@@ -93,6 +93,22 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 	return response, nil
 }
 
+// Test recovering a node wallet from a mnemonic phrase to ensure the phrase is correct
+func (c *Client) TestMnemonic(mnemonic string, derivationPath string) (api.TestMnemonicResponse, error) {
+	responseBytes, err := c.callAPI("wallet test-mnemonic --derivation-path", derivationPath, mnemonic)
+	if err != nil {
+		return api.TestMnemonicResponse{}, fmt.Errorf("Could not test mnemonic: %w", err)
+	}
+	var response api.TestMnemonicResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.TestMnemonicResponse{}, fmt.Errorf("Could not decode test mnemonic response: %w", err)
+	}
+	if response.Error != "" {
+		return api.TestMnemonicResponse{}, fmt.Errorf("Could not test mnemonic: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Export wallet
 func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
 	responseBytes, err := c.callAPI("wallet export")

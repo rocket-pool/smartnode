@@ -210,7 +210,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return startService(c)
+					return startService(c, false)
 
 				},
 			},
@@ -317,7 +317,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 
-
 			{
 				Name:      "version",
 				Aliases:   []string{"v"},
@@ -383,6 +382,59 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run command
 					return installUpdateTracker(c)
+
+				},
+			},
+
+			{
+				Name:      "get-config-yaml",
+				Usage:     "Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions",
+				UsageText: "rocketpool service get-config-yaml",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return getConfigYaml(c)
+
+				},
+			},
+
+			{
+				Name:      "export-eth1-data",
+				Usage:     "Exports the execution client (eth1) chain data to an external folder. Use this if you want to back up your chain data before switching execution clients.",
+				UsageText: "rocketpool service export-eth1-data target-folder",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					targetDir := c.Args().Get(0)
+
+					// Run command
+					return exportEcData(c, targetDir)
+
+				},
+			},
+
+			{
+				Name:      "import-eth1-data",
+				Usage:     "Imports execution client (eth1) chain data from an external folder. Use this if you want to restore the data from an execution client that you previously backed up.",
+				UsageText: "rocketpool service import-eth1-data source-folder",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					sourceDir := c.Args().Get(0)
+
+					// Run command
+					return importEcData(c, sourceDir)
 
 				},
 			},

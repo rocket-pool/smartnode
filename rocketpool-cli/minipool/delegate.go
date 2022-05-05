@@ -21,6 +21,12 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get selected minipools
 	var selectedMinipools []common.Address
 
@@ -124,6 +130,12 @@ func delegateRollbackMinipools(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Get selected minipools
 	var selectedMinipools []common.Address
 
@@ -226,6 +238,12 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Get selected minipools
 	var selectedMinipools []common.Address

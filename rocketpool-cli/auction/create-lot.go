@@ -19,6 +19,12 @@ func createLot(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
+
 	// Check lot can be created
 	canCreate, err := rp.CanCreateLot()
 	if err != nil {

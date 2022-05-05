@@ -6,6 +6,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 func getStatus(c *cli.Context) error {
@@ -16,6 +17,12 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check and assign the EC status
+	err = cliutils.CheckExecutionClientStatus(rp)
+	if err != nil {
+		return err
+	}
 
 	// Get oracle DAO status
 	status, err := rp.TNDAOStatus()
