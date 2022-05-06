@@ -50,7 +50,7 @@ func MerkleRoots(rp *rocketpool.RocketPool, interval *big.Int, opts *bind.CallOp
 }
 
 // Estimate claim rewards gas
-func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][][]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -59,7 +59,7 @@ func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, indices
 }
 
 // Claim rewards
-func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][][]byte, opts *bind.TransactOpts) (common.Hash, error) {
+func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
 	if err != nil {
 		return common.Hash{}, err
@@ -72,7 +72,7 @@ func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int
 }
 
 // Estimate claim and restake rewards gas
-func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][][]byte, stakeAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, stakeAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -81,7 +81,7 @@ func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address,
 }
 
 // Claim and restake rewards
-func ClaimAndStake(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][][]byte, stakeAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func ClaimAndStake(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, stakeAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
 	if err != nil {
 		return common.Hash{}, err
