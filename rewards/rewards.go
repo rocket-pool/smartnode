@@ -118,7 +118,7 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 }
 
 // Estimate the gas for submiting a Merkle Tree-based snapshot for a rewards interval
-func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot []byte, merkleTreeCID string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot common.Hash, merkleTreeCID string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -127,7 +127,7 @@ func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, index *big.Int, 
 }
 
 // Submit a Merkle Tree-based snapshot for a rewards interval
-func SubmitRewardSnapshot(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot []byte, merkleTreeCID string, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitRewardSnapshot(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot common.Hash, merkleTreeCID string, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return common.Hash{}, err
