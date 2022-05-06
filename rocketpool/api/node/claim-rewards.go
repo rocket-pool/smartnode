@@ -52,7 +52,7 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 	}
 
 	// Get the claimed and unclaimed intervals
-	claimed, unclaimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
+	unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
