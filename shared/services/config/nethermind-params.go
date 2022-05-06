@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"runtime"
 
 	"github.com/pbnjay/memory"
@@ -8,7 +9,8 @@ import (
 
 // Constants
 const (
-	nethermindTag              string = "nethermind/nethermind:1.12.8"
+	nethermindTagAmd64         string = "nethermind/nethermind:1.12.8"
+	nethermindTagArm64         string = "rocketpool/nethermind:1.12.8-pi"
 	nethermindEventLogInterval int    = 25000
 )
 
@@ -94,7 +96,7 @@ func NewNethermindConfig(config *RocketPoolConfig, isFallback bool) *NethermindC
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Nethermind container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: nethermindTag},
+			Default:              map[Network]interface{}{Network_All: getNethermindTag()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{prefix + "EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -142,6 +144,17 @@ func calculateNethermindPeers() uint16 {
 		return 25
 	}
 	return 50
+}
+
+// Get the container tag for Nethermind based on the current architecture
+func getNethermindTag() string {
+	if runtime.GOARCH == "arm64" {
+		return nethermindTagArm64
+	} else if runtime.GOARCH == "amd64" {
+		return nethermindTagAmd64
+	} else {
+		panic(fmt.Sprintf("Nethermind doesn't support architecture %s", runtime.GOARCH))
+	}
 }
 
 // Get the parameters for this config
