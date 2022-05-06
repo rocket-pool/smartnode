@@ -308,6 +308,7 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][]common.Hash, error) {
 
 	// Get the indices
+	seenIndices := map[uint64]bool{}
 	elements := strings.Split(indicesString, ",")
 	indices := []*big.Int{}
 	for _, element := range elements {
@@ -315,7 +316,12 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 		if err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("cannot convert index %s to a number: %w", element, err)
 		}
-		indices = append(indices, big.NewInt(0).SetUint64(index))
+		// Ignore duplicates
+		_, exists := seenIndices[index]
+		if !exists {
+			indices = append(indices, big.NewInt(0).SetUint64(index))
+			seenIndices[index] = true
+		}
 	}
 
 	// Read the tree files to get the details
@@ -341,9 +347,15 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 
 		// Get the rewards from it
 		if intervalInfo.NodeExists {
-			amountRPL = append(amountRPL, intervalInfo.CollateralRplAmount)
-			amountRPL = append(amountRPL, intervalInfo.ODaoRplAmount)
-			amountETH = append(amountETH, intervalInfo.SmoothingPoolEthAmount)
+			rplForInterval := big.NewInt(0)
+			rplForInterval.Add(rplForInterval, intervalInfo.CollateralRplAmount)
+			rplForInterval.Add(rplForInterval, intervalInfo.ODaoRplAmount)
+
+			ethForInterval := big.NewInt(0)
+			ethForInterval.Add(ethForInterval, intervalInfo.SmoothingPoolEthAmount)
+
+			amountRPL = append(amountRPL, rplForInterval)
+			amountETH = append(amountETH, ethForInterval)
 			merkleProofs = append(merkleProofs, intervalInfo.MerkleProof)
 		}
 	}
