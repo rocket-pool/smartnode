@@ -209,7 +209,7 @@ func (t *submitRewardsTree) run() error {
 	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex)
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
-		t.log.Println("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, path)
+		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, path)
 
 		// Deserialize the file
 		bytes, err := ioutil.ReadFile(path)
@@ -235,7 +235,9 @@ func (t *submitRewardsTree) run() error {
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
+
 		t.log.Printlnf("Successfully submitted rewards snapshot for interval %d.", currentIndex)
+		return nil
 	}
 
 	// Run the tree generation
