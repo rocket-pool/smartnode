@@ -165,8 +165,6 @@ func (t *submitRewardsTree) run() error {
 	endTime := startTime.Add(intervalTime * intervalsPassed)
 	if time.Until(endTime) > 0 {
 		return nil
-	} else if int64(intervalsPassed) > 1 {
-		t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", int64(intervalsPassed))
 	}
 
 	// Get the block and timestamp of the consensus block that best matches the end time
@@ -243,9 +241,10 @@ func (t *submitRewardsTree) run() error {
 	// Run the tree generation
 	go func() {
 		// Log
-		t.lock.Lock()
+		if int64(intervalsPassed) > 1 {
+			t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", int64(intervalsPassed))
+		}
 		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation in the background... snapshot Beacon block = %d, EL block = %d, running from %s to %s", snapshotBeaconBlock, snapshotElBlockHeader.Number.Uint64(), startTime, endTime)
-		t.lock.Unlock()
 
 		generationPrefix := "[Merkle Tree]"
 
