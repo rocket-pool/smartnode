@@ -315,10 +315,11 @@ func (t *submitRewardsTree) handleError(err error) {
 func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, proofWrapper *rprewards.ProofWrapper, cid string) error {
 
 	consensusBlockBig := big.NewInt(0).SetUint64(consensusBlock)
-	treeRoot, err := hex.DecodeString(hexutil.RemovePrefix(proofWrapper.MerkleRoot))
+	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(proofWrapper.MerkleRoot))
 	if err != nil {
 		return fmt.Errorf("Error decoding merkle root: %w", err)
 	}
+	treeRoot := common.BytesToHash(treeRootBytes)
 
 	// Create the array of RPL rewards per network
 	rplRewards := []*big.Int{}
