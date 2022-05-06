@@ -115,7 +115,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 		info.ODaoRplAmount = rewards.OracleDaoRpl
 		info.SmoothingPoolEthAmount = rewards.SmoothingPoolEth
 
-		var proof [][]byte
+		var proof []common.Hash
 		proof, err = rewards.GetMerkleProof()
 		if err != nil {
 			err = fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", info.TreeFilePath, nodeAddress.Hex(), err)

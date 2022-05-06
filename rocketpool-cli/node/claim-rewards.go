@@ -106,6 +106,8 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 		} else {
 			elements := strings.Split(indexSelection, ",")
 			allValid := true
+			seenIndices := map[uint64]bool{}
+
 			for _, element := range elements {
 				found := false
 				for _, validIndex := range validIndices {
@@ -125,7 +127,13 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 					allValid = false
 					break
 				}
-				indices = append(indices, index)
+
+				// Ignore duplicates
+				_, exists := seenIndices[index]
+				if !exists {
+					indices = append(indices, index)
+					seenIndices[index] = true
+				}
 			}
 			if allValid {
 				break
@@ -240,7 +248,7 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			fmt.Printf("You can restake a max of %.6f RPL which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", availableRpl, bestTotal, bestCollateral)
 		} else {
 			total := rplToMaxCollateral + currentRplStake
-			fmt.Printf("If you restake %.6f RPL, you will have a total of %.6f RPL staked (the max collateral of 150%%). Restaking more than this will not result in higher rewards.\n", rplToMaxCollateral, total)
+			fmt.Printf("If you restake %.6f RPL, you will have a total of %.6f RPL staked (the max collateral of 150%%).\nRestaking more than this will not result in higher rewards.\n\n", rplToMaxCollateral, total)
 		}
 	} else {
 		fmt.Println("You do not have any active minipools, so restaking RPL will not lead to any rewards.")
@@ -293,10 +301,10 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 		if rplToMaxCollateral <= 0 || availableRpl < rplToMaxCollateral {
 			amountOptions := []string{
 				"None (do not restake any RPL)",
-				fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% collateral", availableRpl, bestCollateral),
+				fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% collateral", availableRpl, bestCollateral*100),
 				"A custom amount",
 			}
-			selected, _ := cliutils.Select("You can now automatically restake RPL as part of the rewards claiming process. Please choose an amount to restake here:", amountOptions)
+			selected, _ := cliutils.Select("Please choose an amount to restake here:", amountOptions)
 			switch selected {
 			case 0:
 				restakeAmountWei = nil
@@ -319,13 +327,15 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 				}
 			}
 		} else {
+			bestTotal = availableRpl + currentRplStake
+			bestCollateral = rplPrice * bestTotal / (activeMinipools * 16.0)
 			amountOptions := []string{
 				"None (do not restake any RPL)",
 				fmt.Sprintf("Enough to get to 150%% collateral (%.6f RPL)", rplToMaxCollateral),
-				fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% collateral", availableRpl, bestCollateral),
+				fmt.Sprintf("All %.6f RPL, which will bring you to %.2f%% collateral", availableRpl, bestCollateral*100),
 				"A custom amount",
 			}
-			selected, _ := cliutils.Select("You can now automatically restake RPL as part of the rewards claiming process. Please choose an amount to restake here:", amountOptions)
+			selected, _ := cliutils.Select("Please choose an amount to restake here:", amountOptions)
 			switch selected {
 			case 0:
 				restakeAmountWei = nil

@@ -1,12 +1,10 @@
 package rewards
 
 import (
-	"encoding/hex"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Node operator rewards
@@ -37,28 +35,24 @@ type ProofWrapper struct {
 
 // Information about an interval
 type IntervalInfo struct {
-	Index                  uint64    `json:"index"`
-	TreeFilePath           string    `json:"treeFilePath"`
-	TreeFileExists         bool      `json:"treeFileExists"`
-	MerkleRootValid        bool      `json:"merkleRootValid"`
-	StartTime              time.Time `json:"startTime"`
-	EndTime                time.Time `json:"endTime"`
-	NodeExists             bool      `json:"nodeExists"`
-	CollateralRplAmount    *big.Int  `json:"collateralRplAmount"`
-	ODaoRplAmount          *big.Int  `json:"oDaoRplAmount"`
-	SmoothingPoolEthAmount *big.Int  `json:"smoothingPoolEthAmount"`
-	MerkleProof            [][]byte  `json:"merkleProof"`
+	Index                  uint64        `json:"index"`
+	TreeFilePath           string        `json:"treeFilePath"`
+	TreeFileExists         bool          `json:"treeFileExists"`
+	MerkleRootValid        bool          `json:"merkleRootValid"`
+	StartTime              time.Time     `json:"startTime"`
+	EndTime                time.Time     `json:"endTime"`
+	NodeExists             bool          `json:"nodeExists"`
+	CollateralRplAmount    *big.Int      `json:"collateralRplAmount"`
+	ODaoRplAmount          *big.Int      `json:"oDaoRplAmount"`
+	SmoothingPoolEthAmount *big.Int      `json:"smoothingPoolEthAmount"`
+	MerkleProof            []common.Hash `json:"merkleProof"`
 }
 
 // Get the deserialized Merkle Proof bytes
-func (n *NodeRewards) GetMerkleProof() ([][]byte, error) {
-	proofBytes := [][]byte{}
+func (n *NodeRewards) GetMerkleProof() ([]common.Hash, error) {
+	proof := []common.Hash{}
 	for _, proofLevel := range n.MerkleProof {
-		proofLevelBytes, err := hex.DecodeString(hexutil.RemovePrefix(proofLevel))
-		if err != nil {
-			return nil, err
-		}
-		proofBytes = append(proofBytes, proofLevelBytes)
+		proof = append(proof, common.HexToHash(proofLevel))
 	}
-	return proofBytes, nil
+	return proof, nil
 }

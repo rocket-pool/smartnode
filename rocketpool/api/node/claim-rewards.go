@@ -305,7 +305,7 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 }
 
 // Get the rewards for the provided interval indices
-func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][][]byte, error) {
+func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][]common.Hash, error) {
 
 	// Get the indices
 	elements := strings.Split(indicesString, ",")
@@ -321,7 +321,7 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 	// Read the tree files to get the details
 	amountRPL := []*big.Int{}
 	amountETH := []*big.Int{}
-	merkleProofs := [][][]byte{}
+	merkleProofs := [][]common.Hash{}
 
 	// Populate the interval info for each one
 	for _, index := range indices {
