@@ -971,7 +971,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(canClaimAndStakeRewards(c, indicesString, stakeAmount))
+					api.PrintResponse(claimAndStakeRewards(c, indicesString, stakeAmount))
 					return nil
 
 				},
