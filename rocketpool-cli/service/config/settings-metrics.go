@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -8,19 +10,21 @@ import (
 
 // The page wrapper for the metrics config
 type MetricsConfigPage struct {
-	home                     *settingsHome
-	page                     *page
-	layout                   *standardLayout
-	masterConfig             *config.RocketPoolConfig
-	enableMetricsBox         *parameterizedFormItem
-	bnMetricsPortBox         *parameterizedFormItem
-	vcMetricsPortBox         *parameterizedFormItem
-	nodeMetricsPortBox       *parameterizedFormItem
-	exporterMetricsPortBox   *parameterizedFormItem
-	watchtowerMetricsPortBox *parameterizedFormItem
-	grafanaItems             []*parameterizedFormItem
-	prometheusItems          []*parameterizedFormItem
-	exporterItems            []*parameterizedFormItem
+	home                       *settingsHome
+	page                       *page
+	layout                     *standardLayout
+	masterConfig               *config.RocketPoolConfig
+	enableMetricsBox           *parameterizedFormItem
+	bnMetricsPortBox           *parameterizedFormItem
+	vcMetricsPortBox           *parameterizedFormItem
+	nodeMetricsPortBox         *parameterizedFormItem
+	exporterMetricsPortBox     *parameterizedFormItem
+	watchtowerMetricsPortBox   *parameterizedFormItem
+	grafanaItems               []*parameterizedFormItem
+	prometheusItems            []*parameterizedFormItem
+	exporterItems              []*parameterizedFormItem
+	enableBitflyNodeMetricsBox *parameterizedFormItem
+	bitflyNodeMetricsItems     []*parameterizedFormItem
 }
 
 // Creates a new page for the metrics / stats settings
@@ -80,12 +84,16 @@ func (configPage *MetricsConfigPage) createContent() {
 	configPage.grafanaItems = createParameterizedFormItems(configPage.masterConfig.Grafana.GetParameters(), configPage.layout.descriptionBox)
 	configPage.prometheusItems = createParameterizedFormItems(configPage.masterConfig.Prometheus.GetParameters(), configPage.layout.descriptionBox)
 	configPage.exporterItems = createParameterizedFormItems(configPage.masterConfig.Exporter.GetParameters(), configPage.layout.descriptionBox)
+	configPage.enableBitflyNodeMetricsBox = createParameterizedCheckbox(&configPage.masterConfig.EnableBitflyNodeMetrics)
+	configPage.bitflyNodeMetricsItems = createParameterizedFormItems(configPage.masterConfig.BitflyNodeMetrics.GetParameters(), configPage.layout.descriptionBox)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableMetricsBox, configPage.bnMetricsPortBox, configPage.vcMetricsPortBox, configPage.nodeMetricsPortBox, configPage.exporterMetricsPortBox, configPage.watchtowerMetricsPortBox)
 	configPage.layout.mapParameterizedFormItems(configPage.grafanaItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.prometheusItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.exporterItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.enableBitflyNodeMetricsBox)
+	configPage.layout.mapParameterizedFormItems(configPage.bitflyNodeMetricsItems...)
 
 	// Set up the setting callbacks
 	configPage.enableMetricsBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
@@ -93,27 +101,40 @@ func (configPage *MetricsConfigPage) createContent() {
 			return
 		}
 		configPage.masterConfig.EnableMetrics.Value = checked
-		configPage.handleEnableMetricsChanged()
+		configPage.handleLayoutChange()
+	})
+
+	// Set up the setting callbacks
+	configPage.enableBitflyNodeMetricsBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
+		if configPage.masterConfig.EnableBitflyNodeMetrics.Value == checked {
+			return
+		}
+		configPage.masterConfig.EnableBitflyNodeMetrics.Value = checked
+		configPage.handleLayoutChange()
 	})
 
 	// Do the initial draw
-	configPage.handleEnableMetricsChanged()
+	configPage.handleLayoutChange()
 }
 
 // Handle all of the form changes when the Enable Metrics box has changed
-func (configPage *MetricsConfigPage) handleEnableMetricsChanged() {
+func (configPage *MetricsConfigPage) handleLayoutChange() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableMetricsBox.item)
 
-	// Only add the supporting stuff if metrics are enabled
-	if configPage.masterConfig.EnableMetrics.Value == false {
-		return
+	if configPage.masterConfig.EnableMetrics.Value == true {
+		configPage.layout.addFormItems(configPage.grafanaItems)
+		configPage.layout.addFormItems(configPage.prometheusItems)
+		configPage.layout.addFormItems(configPage.exporterItems)
 	}
 
-	configPage.layout.addFormItems([]*parameterizedFormItem{configPage.bnMetricsPortBox, configPage.vcMetricsPortBox, configPage.nodeMetricsPortBox, configPage.exporterMetricsPortBox, configPage.watchtowerMetricsPortBox})
-	configPage.layout.addFormItems(configPage.grafanaItems)
-	configPage.layout.addFormItems(configPage.prometheusItems)
-	configPage.layout.addFormItems(configPage.exporterItems)
+	var selectedCC string = fmt.Sprint(configPage.masterConfig.ConsensusClient.Value)
+	if selectedCC == "teku" || selectedCC == "lighthouse" {
+		configPage.layout.form.AddFormItem(configPage.enableBitflyNodeMetricsBox.item)
+		if configPage.masterConfig.EnableBitflyNodeMetrics.Value == true {
+			configPage.layout.addFormItems(configPage.bitflyNodeMetricsItems)
+		}
+	}
 
 	configPage.layout.refresh()
 }
