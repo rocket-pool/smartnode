@@ -1,7 +1,7 @@
 package config
 
 const (
-	tekuTag                  string = "consensys/teku:22.4.0"
+	tekuTag                  string = "consensys/teku:22.5.0"
 	defaultTekuMaxPeers      uint16 = 74
 	TekuFeeRecipientFilename string = "rp-fee-recipients.json"
 )
