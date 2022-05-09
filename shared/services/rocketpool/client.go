@@ -1394,7 +1394,10 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 
 	// Deploy the fee recipient templates
 	defaultFrTemplatesFolder := filepath.Join(templatesFolder, defaultFeeRecipientDir)
-	defaultFrDeploymentPath := filepath.Join(cfg.Smartnode.DataPath.Value.(string), defaultFeeRecipientDir)
+	defaultFrDeploymentPath, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), defaultFeeRecipientDir))
+	if err != nil {
+		return []string{}, fmt.Errorf("error expanding default fee recipient directory: %w", err)
+	}
 	err = os.MkdirAll(defaultFrDeploymentPath, 0775)
 	if err != nil {
 		return []string{}, fmt.Errorf("error creating default fee recipient directory: %w", err)

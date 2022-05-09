@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
@@ -461,7 +462,11 @@ func downloadRewardsFiles(cfg *config.RocketPoolConfig, intervals []uint64, cids
 	for i := 0; i < len(intervals); i++ {
 		index := intervals[i]
 		cid := cids[i]
-		path := cfg.Smartnode.GetRewardsTreePath(index, false)
+		path, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(index, false))
+		if err != nil {
+			fmt.Printf("Error expanding rewards tree path: %s", err.Error())
+			return false
+		}
 
 		// Try to download from the primary URL
 		primary := fmt.Sprintf(primaryFileGateway, cid, network, index)
