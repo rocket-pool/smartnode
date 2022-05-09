@@ -163,7 +163,7 @@ func (t *submitRewardsTree) run() error {
 	timeSinceStart := latestBlockTime.Sub(startTime)
 	intervalsPassed := timeSinceStart / intervalTime
 	endTime := startTime.Add(intervalTime * intervalsPassed)
-	if intervalsPassed > 0 && time.Until(endTime) > 0 {
+	if intervalsPassed == 0 {
 		return nil
 	}
 
