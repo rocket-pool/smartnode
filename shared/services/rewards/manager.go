@@ -73,11 +73,30 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (uncl
 func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64) (info IntervalInfo, err error) {
 	info.Index = interval
 
+	// Get the event log interval
+	var eventLogInterval int
+	eventLogInterval, err = cfg.GetEventLogInterval()
+	if err != nil {
+		return
+	}
+
+	// Get the event details for this interval
+	var event rewards.RewardsEvent
+	event, err = rewards.GetRewardSnapshotEvent(rp, interval, big.NewInt(int64(eventLogInterval)), nil)
+	if err != nil {
+		return
+	}
+	info.CID = event.MerkleTreeCID
+	info.StartTime = event.IntervalStartTime
+	info.EndTime = event.IntervalEndTime
+	merkleRootCanon := event.MerkleRoot
+
 	// Check if the tree file exists
-	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval)
+	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval, true)
 	_, err = os.Stat(info.TreeFilePath)
 	if os.IsNotExist(err) {
 		info.TreeFileExists = false
+		err = nil
 		return
 	}
 	info.TreeFileExists = true
@@ -96,10 +115,6 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	}
 
 	// Make sure the Merkle root has the expected value
-	merkleRootCanon, err := rewards.MerkleRoots(rp, big.NewInt(int64(interval)), nil)
-	if err != nil {
-		return
-	}
 	merkleRootFromFile := common.Hex2Bytes(hexutil.RemovePrefix(proofWrapper.MerkleRoot))
 	if !bytes.Equal(merkleRootCanon, merkleRootFromFile) {
 		info.MerkleRootValid = false

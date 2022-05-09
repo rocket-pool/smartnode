@@ -90,7 +90,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "generate-rewards-tree",
 				Aliases:   []string{"g"},
 				Usage:     "Generate and save the rewards tree file for the provided interval.\nNote that this is an asynchronous process, so it will return before the file is generated.\nYou will need to use `rocketpool service logs api` to follow its progress.",
-				UsageText: "rocketpool network generate-rewards-tree index",
+				UsageText: "rocketpool network generate-rewards-tree",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "execution-client-url, e",

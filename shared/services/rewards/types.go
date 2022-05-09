@@ -39,6 +39,7 @@ type IntervalInfo struct {
 	TreeFilePath           string        `json:"treeFilePath"`
 	TreeFileExists         bool          `json:"treeFileExists"`
 	MerkleRootValid        bool          `json:"merkleRootValid"`
+	CID                    string        `json:"cid"`
 	StartTime              time.Time     `json:"startTime"`
 	EndTime                time.Time     `json:"endTime"`
 	NodeExists             bool          `json:"nodeExists"`

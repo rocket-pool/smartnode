@@ -60,7 +60,7 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 	response.CurrentIndex = currentIndexBig.Uint64()
 
 	// Get the path of the file to save
-	filePath := cfg.Smartnode.GetRewardsTreePath(index)
+	filePath := cfg.Smartnode.GetRewardsTreePath(index, true)
 	_, err = os.Stat(filePath)
 	if os.IsNotExist(err) {
 		response.TreeFileExists = false
@@ -202,7 +202,7 @@ func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewa
 		}
 
 		// Write the file
-		path := cfg.Smartnode.GetRewardsTreePath(index)
+		path := cfg.Smartnode.GetRewardsTreePath(index, true)
 		err = ioutil.WriteFile(path, wrapperBytes, 0755)
 		if err != nil {
 			printError(fmt.Errorf("Error saving file to %s: %w", path, err))

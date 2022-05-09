@@ -163,7 +163,7 @@ func (t *submitRewardsTree) run() error {
 	timeSinceStart := latestBlockTime.Sub(startTime)
 	intervalsPassed := timeSinceStart / intervalTime
 	endTime := startTime.Add(intervalTime * intervalsPassed)
-	if time.Until(endTime) > 0 {
+	if intervalsPassed > 0 && time.Until(endTime) > 0 {
 		return nil
 	}
 
@@ -204,7 +204,7 @@ func (t *submitRewardsTree) run() error {
 	t.lock.Unlock()
 
 	// Check if the file is already generated and reupload it without rebuilding it
-	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex)
+	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
 		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, path)
@@ -275,7 +275,7 @@ func (t *submitRewardsTree) run() error {
 		t.log.Println(fmt.Sprintf("%s Generation complete! Saving and uploading...", generationPrefix))
 
 		// Write the file
-		path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex)
+		path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
 		err = ioutil.WriteFile(path, wrapperBytes, 0644)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error saving file to %s: %w", generationPrefix, path, err))

@@ -642,7 +642,40 @@ func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOp
 
 }
 
-// Get the configuration for the selected client
+// Get the configuration for the selected execution client
+func (config *RocketPoolConfig) GetEventLogInterval() (int, error) {
+	if config.IsNativeMode {
+		return gethEventLogInterval, nil
+	}
+
+	mode := config.ExecutionClientMode.Value.(Mode)
+	switch mode {
+	case Mode_Local:
+		client := config.ExecutionClient.Value.(ExecutionClient)
+		switch client {
+		case ExecutionClient_Besu:
+			return config.Besu.EventLogInterval, nil
+		case ExecutionClient_Geth:
+			return config.Geth.EventLogInterval, nil
+		case ExecutionClient_Infura:
+			return config.Infura.EventLogInterval, nil
+		case ExecutionClient_Nethermind:
+			return config.Nethermind.EventLogInterval, nil
+		case ExecutionClient_Pocket:
+			return config.Pocket.EventLogInterval, nil
+		default:
+			return 0, fmt.Errorf("can't get event log interval of unknown execution client [%v]", client)
+		}
+
+	case Mode_External:
+		return gethEventLogInterval, nil
+
+	default:
+		return 0, fmt.Errorf("can't get event log interval of unknown execution client mode [%v]", mode)
+	}
+}
+
+// Get the configuration for the selected consensus client
 func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusConfig, error) {
 	if config.IsNativeMode {
 		return nil, fmt.Errorf("consensus config is not available in native mode")

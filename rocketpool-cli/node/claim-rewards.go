@@ -2,7 +2,9 @@ package node
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/big"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -18,7 +21,9 @@ import (
 )
 
 const (
-	colorBlue string = "\033[36m"
+	colorBlue            string = "\033[36m"
+	primaryFileGateway   string = "https://%s.ipfs.dweb.link/rp-rewards-%s-%d.json"
+	secondaryFileGateway string = "https://ipfs.io/ipfs/%s/rp-rewards-%s-%d.json"
 )
 
 func nodeClaimRewards(c *cli.Context) error {
@@ -66,6 +71,42 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 
 	// Provide a notice
 	fmt.Printf("%sWelcome to the new rewards system!\nYou no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.\nHere you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.%s\n\n", colorBlue, colorReset)
+
+	// Check for missing Merkle trees with rewards available
+	missingIntervals := []uint64{}
+	missingCIDs := []string{}
+	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
+		if !intervalInfo.TreeFileExists {
+			fmt.Printf("You have rewards for interval %d but are missing the rewards tree file.\n", intervalInfo.Index)
+			missingIntervals = append(missingIntervals, intervalInfo.Index)
+			missingCIDs = append(missingCIDs, intervalInfo.CID)
+		}
+	}
+
+	// Download the Merkle trees for all unclaimed intervals that don't exist
+	if len(missingIntervals) > 0 {
+		fmt.Println()
+		fmt.Printf("%sNOTE: If you would like to regenerate these tree files manually, please answer `n` to the prompt below and run `rocketpool network generate-rewards-tree` before claiming your rewards.%s\n", colorBlue, colorReset)
+		if !cliutils.Confirm("Would you like to download all missing rewards tree files now?") {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+
+		// Load the config file
+		cfg, _, err := rp.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("error loading config: %w", err)
+		}
+		if !downloadRewardsFiles(cfg, missingIntervals, missingCIDs) {
+			return nil
+		}
+
+		// Reload rewards now that the files are in place
+		rewardsInfoResponse, err = rp.GetRewardsInfo()
+		if err != nil {
+			return fmt.Errorf("error getting rewards info: %w", err)
+		}
+	}
 
 	// Print the info for all available periods
 	totalRpl := big.NewInt(0)
@@ -411,4 +452,48 @@ func nodeClaimRewardsLegacy(c *cli.Context, rp *rocketpool.Client) error {
 	fmt.Printf("Successfully claimed %.6f RPL in rewards.", math.RoundDown(eth.WeiToEth(canClaim.RplAmount), 6))
 	return nil
 
+}
+
+// Download the rewards files for the provided indices
+func downloadRewardsFiles(cfg *config.RocketPoolConfig, intervals []uint64, cids []string) bool {
+	network := fmt.Sprint(cfg.Smartnode.Network.Value.(config.Network))
+
+	for i := 0; i < len(intervals); i++ {
+		index := intervals[i]
+		cid := cids[i]
+		path := cfg.Smartnode.GetRewardsTreePath(index, false)
+
+		// Try to download from the primary URL
+		primary := fmt.Sprintf(primaryFileGateway, cid, network, index)
+		fmt.Printf("Downloading %s... ", primary)
+		resp, err := http.Get(primary)
+		if err != nil {
+			// Try to download from the secondary URL
+			fmt.Printf("error: %s\n", err.Error())
+			secondary := fmt.Sprintf(secondaryFileGateway, cid, network, index)
+			fmt.Printf("Trying fallback (%s)... ", secondary)
+			resp, err = http.Get(primary)
+			if err != nil {
+				// Error out
+				fmt.Printf("error: %s\n", err.Error())
+				return false
+			}
+		}
+		fmt.Print("done!")
+
+		// Save the file
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("Error reading interval %d file: %s", index, err.Error())
+			return false
+		}
+		err = ioutil.WriteFile(path, body, 0644)
+		if err != nil {
+			fmt.Printf("Error saving interval %d file to %s: %s", index, path, err.Error())
+			return false
+		}
+	}
+
+	return true
 }

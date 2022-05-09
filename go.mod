@@ -26,6 +26,7 @@ require (
 	github.com/hashicorp/go-version v1.4.0
 	github.com/herumi/bls-eth-go-binary v0.0.0-20211108015406-b5186ba08dc7 // indirect
 	github.com/imdario/mergo v0.3.12
+	github.com/klauspost/compress v1.15.3 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect

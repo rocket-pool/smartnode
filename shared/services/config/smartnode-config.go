@@ -17,6 +17,7 @@ const (
 	NetworkID                 string = "network"
 	ProjectNameID             string = "projectName"
 	RewardsTreeFilenameFormat string = "rp-rewards-%s-%d.json"
+	RewardsTreesFolder        string = "rewards-trees"
 )
 
 // Defaults
@@ -251,7 +252,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 		validatorKeychainPath: "/.rocketpool/data/validators",
 
-		rewardsTreePath: "/.rocketpool/data/rewards-trees",
+		rewardsTreePath: fmt.Sprintf("/.rocketpool/data/%s", RewardsTreesFolder),
 
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
@@ -403,8 +404,12 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 	return filepath.Join(config.RocketPoolDirectory, "data")
 }
 
-func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64) string {
-	return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) string {
+	if daemon && !config.parent.IsNativeMode {
+		return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+	} else {
+		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+	}
 }
 
 func (config *SmartnodeConfig) GetLegacyRewardsPoolAddress() common.Address {
