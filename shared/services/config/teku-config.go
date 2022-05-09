@@ -1,6 +1,6 @@
 package config
 
-const tekuTag string = "consensys/teku:22.4.0"
+const tekuTag string = "consensys/teku:22.5.0"
 const defaultTekuMaxPeers uint16 = 74
 
 // Configuration for Teku
