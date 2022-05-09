@@ -151,11 +151,14 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 	indexBig := big.NewInt(0).SetUint64(index)
 	indexBytes := [32]byte{}
 	indexBig.FillBytes(indexBytes[:])
-	addressFilter := []common.Address{*rocketRewardsPool.Address}
 	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {crypto.Keccak256Hash(indexBytes[:])}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
+	q := eth.FilterQuery{
+		Topics:    topicFilter,
+		FromBlock: startBlock,
+	}
+	logs, err := eth.FilterContractLogs(rp, "rocketRewardsPool", q, intervalSize)
 	if err != nil {
 		return RewardsEvent{}, err
 	}
