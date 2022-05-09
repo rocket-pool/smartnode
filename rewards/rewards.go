@@ -118,21 +118,21 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 }
 
 // Estimate the gas for submiting a Merkle Tree-based snapshot for a rewards interval
-func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot common.Hash, merkleTreeCID string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot common.Hash, merkleTreeCID string, intervalsPassed *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketRewardsPool.GetTransactionGasInfo(opts, "submitRewardSnapshot", index, block, rewardsPerNetworkRPL, rewardsPerNetworkETH, merkleRoot, merkleTreeCID)
+	return rocketRewardsPool.GetTransactionGasInfo(opts, "submitRewardSnapshot", index, block, rewardsPerNetworkRPL, rewardsPerNetworkETH, merkleRoot, merkleTreeCID, intervalsPassed)
 }
 
 // Submit a Merkle Tree-based snapshot for a rewards interval
-func SubmitRewardSnapshot(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot common.Hash, merkleTreeCID string, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitRewardSnapshot(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot common.Hash, merkleTreeCID string, intervalsPassed *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", index, block, rewardsPerNetworkRPL, rewardsPerNetworkETH, merkleRoot, merkleTreeCID)
+	hash, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", index, block, rewardsPerNetworkRPL, rewardsPerNetworkETH, merkleRoot, merkleTreeCID, intervalsPassed)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not submit rewards snapshot: %w", err)
 	}
