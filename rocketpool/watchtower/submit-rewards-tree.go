@@ -229,7 +229,7 @@ func (t *submitRewardsTree) run() error {
 		t.log.Printlnf("Uploaded Merkle tree with CID %s", cid)
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, proofWrapper, cid)
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -291,7 +291,7 @@ func (t *submitRewardsTree) run() error {
 		t.log.Printlnf("%s Uploaded Merkle tree with CID %s", generationPrefix, cid)
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, proofWrapper, cid)
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error submitting rewards snapshot: %w", generationPrefix, err))
 			return
@@ -313,7 +313,7 @@ func (t *submitRewardsTree) handleError(err error) {
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, proofWrapper *rprewards.ProofWrapper, cid string) error {
+func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, proofWrapper *rprewards.ProofWrapper, cid string, intervalsPassed *big.Int) error {
 
 	consensusBlockBig := big.NewInt(0).SetUint64(consensusBlock)
 	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(proofWrapper.MerkleRoot))
@@ -346,7 +346,7 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	}
 
 	// Get the gas limit
-	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, index, consensusBlockBig, rplRewards, ethRewards, treeRoot, cid, opts)
+	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, index, consensusBlockBig, rplRewards, ethRewards, treeRoot, cid, intervalsPassed, opts)
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
 	}
@@ -376,7 +376,7 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	opts.GasLimit = gas.Uint64()
 
 	// Submit RPL price
-	hash, err := rewards.SubmitRewardSnapshot(t.rp, index, consensusBlockBig, rplRewards, ethRewards, treeRoot, cid, opts)
+	hash, err := rewards.SubmitRewardSnapshot(t.rp, index, consensusBlockBig, rplRewards, ethRewards, treeRoot, cid, intervalsPassed, opts)
 	if err != nil {
 		return err
 	}
