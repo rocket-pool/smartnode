@@ -143,6 +143,7 @@ func run(c *cli.Context) error {
 				if err := submitRewardsTree.run(); err != nil {
 					errorLog.Println(err)
 				}
+				time.Sleep(taskCooldown)
 
 				// Run the price submission check
 				if err := submitRplPrice.run(); err != nil {
