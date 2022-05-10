@@ -10,14 +10,15 @@ import (
 
 // Constants
 const (
-	smartnodeTag              string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-	powProxyTag               string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
-	pruneProvisionerTag       string = "rocketpool/eth1-prune-provision:v0.0.1"
-	ecMigratorTag             string = "rocketpool/ec-migrator:v1.0.0"
-	NetworkID                 string = "network"
-	ProjectNameID             string = "projectName"
-	RewardsTreeFilenameFormat string = "rp-rewards-%s-%d.json"
-	RewardsTreesFolder        string = "rewards-trees"
+	smartnodeTag                        string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
+	powProxyTag                         string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
+	pruneProvisionerTag                 string = "rocketpool/eth1-prune-provision:v0.0.1"
+	ecMigratorTag                       string = "rocketpool/ec-migrator:v1.0.0"
+	NetworkID                           string = "network"
+	ProjectNameID                       string = "projectName"
+	RewardsTreeFilenameFormat           string = "rp-rewards-%s-%d.json"
+	CompressedRewardsTreeFilenameFormat string = "rp-rewards-%s-%d.json.zst"
+	RewardsTreesFolder                  string = "rewards-trees"
 )
 
 // Defaults
@@ -409,6 +410,14 @@ func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) 
 		return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 	} else {
 		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+	}
+}
+
+func (config *SmartnodeConfig) GetCompressedRewardsTreePath(interval uint64, daemon bool) string {
+	if daemon && !config.parent.IsNativeMode {
+		return filepath.Join(config.rewardsTreePath, fmt.Sprintf(CompressedRewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+	} else {
+		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(CompressedRewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 	}
 }
 

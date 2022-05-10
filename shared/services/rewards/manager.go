@@ -21,7 +21,7 @@ import (
 )
 
 // Gets the intervals the node can claim and the intervals that have already been claimed
-func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (unclaimed []uint64, claimed []uint64, err error) {
+func GetClaimStatus(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address) (unclaimed []uint64, claimed []uint64, err error) {
 	// Get the current interval
 	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
 	if err != nil {
@@ -49,6 +49,13 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (uncl
 			if targetIndex >= currentIndex {
 				// End once we've hit the current interval
 				break
+			}
+
+			// Ignore the first 3 intervals on Kiln
+			if cfg.Smartnode.Network.Value.(config.Network) == config.Network_Kiln {
+				if targetIndex < 3 {
+					claimed = append(claimed, targetIndex)
+				}
 			}
 
 			mask := big.NewInt(0)

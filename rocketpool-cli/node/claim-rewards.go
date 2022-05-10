@@ -5,10 +5,12 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -22,9 +24,9 @@ import (
 )
 
 const (
-	colorBlue            string = "\033[36m"
-	primaryFileGateway   string = "https://%s.ipfs.dweb.link/rp-rewards-%s-%d.json"
-	secondaryFileGateway string = "https://ipfs.io/ipfs/%s/rp-rewards-%s-%d.json"
+	colorBlue               string = "\033[36m"
+	primaryRewardsFileUrl   string = "https://%s.ipfs.dweb.link/%s"
+	secondaryRewardsFileUrl string = "https://ipfs.io/ipfs/%s/%s"
 )
 
 func nodeClaimRewards(c *cli.Context) error {
@@ -457,48 +459,128 @@ func nodeClaimRewardsLegacy(c *cli.Context, rp *rocketpool.Client) error {
 
 // Download the rewards files for the provided indices
 func downloadRewardsFiles(cfg *config.RocketPoolConfig, intervals []uint64, cids []string) bool {
-	network := fmt.Sprint(cfg.Smartnode.Network.Value.(config.Network))
-
 	for i := 0; i < len(intervals); i++ {
 		index := intervals[i]
 		cid := cids[i]
-		path, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(index, false))
+		compressedUrls := []string{}
+		uncompressedUrls := []string{}
+
+		compressedPath, err := homedir.Expand(cfg.Smartnode.GetCompressedRewardsTreePath(index, false))
 		if err != nil {
-			fmt.Printf("Error expanding rewards tree path: %s", err.Error())
+			fmt.Printf("Error expanding compressed rewards tree path: %s", err.Error())
 			return false
 		}
-
-		// Try to download from the primary URL
-		primary := fmt.Sprintf(primaryFileGateway, cid, network, index)
-		fmt.Printf("Downloading %s... ", primary)
-		resp, err := http.Get(primary)
+		uncompressedPath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(index, false))
 		if err != nil {
-			// Try to download from the secondary URL
-			fmt.Printf("error: %s\n", err.Error())
-			secondary := fmt.Sprintf(secondaryFileGateway, cid, network, index)
-			fmt.Printf("Trying fallback (%s)... ", secondary)
-			resp, err = http.Get(primary)
-			if err != nil {
-				// Error out
-				fmt.Printf("error: %s\n", err.Error())
-				return false
-			}
+			fmt.Printf("Error expanding uncompressed rewards tree path: %s", err.Error())
+			return false
 		}
-		fmt.Print("done!")
+		compressedFilename := filepath.Base(compressedPath)
+		uncompressedFilename := filepath.Base(uncompressedPath)
+
+		// Create URL lists
+		urls := []string{primaryRewardsFileUrl, secondaryRewardsFileUrl}
+		for _, url := range urls {
+			compressedUrls = append(compressedUrls, fmt.Sprintf(url, cid, compressedFilename))
+			uncompressedUrls = append(uncompressedUrls, fmt.Sprintf(url, cid, uncompressedFilename))
+		}
+
+		// Download the file
+		bytes, err := downloadRewardsFile(index, cid, compressedUrls, uncompressedUrls)
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
 
 		// Save the file
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		err = ioutil.WriteFile(uncompressedPath, bytes, 0644)
 		if err != nil {
-			fmt.Printf("Error reading interval %d file: %s", index, err.Error())
-			return false
-		}
-		err = ioutil.WriteFile(path, body, 0644)
-		if err != nil {
-			fmt.Printf("Error saving interval %d file to %s: %s", index, path, err.Error())
+			fmt.Printf("Error saving interval %d file to %s: %s", index, uncompressedPath, err.Error())
 			return false
 		}
 	}
 
 	return true
+}
+
+// Downloads a single rewards file
+func downloadRewardsFile(interval uint64, cid string, compressedUrls []string, uncompressedUrls []string) ([]byte, error) {
+
+	for i, url := range compressedUrls {
+		fmt.Printf("Downloading %s... ", url)
+		resp, err := http.Get(url)
+		if err != nil {
+			fmt.Printf("failed (%s)\n", err)
+			continue
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			// Not found, try the uncompressed URL
+			// NOTE: this can go after Kiln
+			uncompressedUrl := uncompressedUrls[i]
+			fmt.Printf("not found, trying uncompressed URL (%s)... ", uncompressedUrl)
+			resp, err = http.Get(url)
+			if err != nil {
+				fmt.Printf("failed (%s)\n", err)
+				continue
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				fmt.Printf("failed with status %s\n", resp.Status)
+				continue
+			} else {
+				// Got it uncompressed, return the body
+				bytes, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Printf("error reading response bytes: %s\n", err.Error())
+					continue
+				}
+
+				fmt.Println("done!")
+				return bytes, nil
+			}
+
+		} else if resp.StatusCode != http.StatusOK {
+			fmt.Printf("failed with status %s\n", resp.Status)
+			continue
+		} else {
+			// If we got here, we have a successful download
+			fmt.Print("done!\nDecompressing... ")
+			bytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Printf("error reading response bytes: %s\n", err.Error())
+				continue
+			}
+
+			// Decompress it
+			decompressedBytes, err := decompressFile(bytes)
+			if err != nil {
+				fmt.Println(err.Error())
+				continue
+			}
+
+			fmt.Println("done!")
+			return decompressedBytes, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Error downloading rewards file for interval %d: all URLs failed.", interval)
+
+}
+
+// Decompresses a rewards file
+func decompressFile(compressedBytes []byte) ([]byte, error) {
+	decoder, err := zstd.NewReader(nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating compression decoder: %w", err)
+	}
+
+	decompressedBytes, err := decoder.DecodeAll(compressedBytes, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing rewards file: %w", err)
+	}
+
+	return decompressedBytes, nil
 }

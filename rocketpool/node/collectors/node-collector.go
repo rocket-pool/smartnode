@@ -204,7 +204,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return
 	}
 	if isUpdated {
-		unclaimed, claimed, err = rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
+		unclaimed, claimed, err = rprewards.GetClaimStatus(collector.rp, collector.cfg, collector.nodeAddress)
 		if err != nil {
 			log.Printf("Error checking for new reward claim status: %w\n", err.Error())
 			return

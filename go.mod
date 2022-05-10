@@ -26,7 +26,7 @@ require (
 	github.com/hashicorp/go-version v1.4.0
 	github.com/herumi/bls-eth-go-binary v0.0.0-20211108015406-b5186ba08dc7 // indirect
 	github.com/imdario/mergo v0.3.12
-	github.com/klauspost/compress v1.15.3 // indirect
+	github.com/klauspost/compress v1.15.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
@@ -34,7 +34,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
 	github.com/rivo/tview v0.0.0-20220106183741-90d72bc664f5
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20220509070112-091a2c9ab755
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20220510025908-2c509ef38f92
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/tyler-smith/go-bip39 v1.1.0

@@ -14,6 +14,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -205,24 +206,25 @@ func (t *submitRewardsTree) run() error {
 
 	// Check if the file is already generated and reupload it without rebuilding it
 	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
+	compressedPath := t.cfg.Smartnode.GetCompressedRewardsTreePath(currentIndex, true)
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
 		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, path)
 
 		// Deserialize the file
-		bytes, err := ioutil.ReadFile(path)
+		wrapperBytes, err := ioutil.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("Error reading rewards tree file: %w", err)
 		}
 
 		proofWrapper := new(rprewards.ProofWrapper)
-		err = json.Unmarshal(bytes, proofWrapper)
+		err = json.Unmarshal(wrapperBytes, proofWrapper)
 		if err != nil {
 			return fmt.Errorf("Error deserializing rewards tree file: %w", err)
 		}
 
 		// Upload the file
-		cid, err := t.uploadRewardsTreeToWeb3Storage(path)
+		cid, err := t.uploadRewardsTreeToWeb3Storage(wrapperBytes, compressedPath)
 		if err != nil {
 			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
 		}
@@ -241,12 +243,11 @@ func (t *submitRewardsTree) run() error {
 	// Run the tree generation
 	go func() {
 		// Log
+		generationPrefix := "[Merkle Tree]"
 		if int64(intervalsPassed) > 1 {
 			t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", int64(intervalsPassed))
 		}
-		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation in the background... snapshot Beacon block = %d, EL block = %d, running from %s to %s", snapshotBeaconBlock, snapshotElBlockHeader.Number.Uint64(), startTime, endTime)
-
-		generationPrefix := "[Merkle Tree]"
+		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, generationPrefix, snapshotBeaconBlock, snapshotElBlockHeader.Number.Uint64(), startTime, endTime)
 
 		// Get the total pending rewards and respective distribution percentages
 		nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotElBlockHeader, intervalTime)
@@ -283,7 +284,7 @@ func (t *submitRewardsTree) run() error {
 		}
 
 		// Upload the file
-		cid, err := t.uploadRewardsTreeToWeb3Storage(path)
+		cid, err := t.uploadRewardsTreeToWeb3Storage(wrapperBytes, path)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error uploading Merkle tree to Web3.Storage: %w", generationPrefix, err))
 			return
@@ -392,7 +393,7 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 }
 
 // Upload the Merkle rewards tree to Web3.Storage and get the CID for it
-func (t *submitRewardsTree) uploadRewardsTreeToWeb3Storage(path string) (string, error) {
+func (t *submitRewardsTree) uploadRewardsTreeToWeb3Storage(wrapperBytes []byte, compressedPath string) (string, error) {
 
 	// Get the API token
 	apiToken := t.cfg.Smartnode.Web3StorageApiToken.Value.(string)
@@ -406,16 +407,27 @@ func (t *submitRewardsTree) uploadRewardsTreeToWeb3Storage(path string) (string,
 		return "", fmt.Errorf("Error creating new Web3.Storage client: %w", err)
 	}
 
-	// Open the file
-	f, err := os.Open(path)
+	// Compress the file
+	encoder, _ := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	compressedBytes := encoder.EncodeAll(wrapperBytes, make([]byte, 0, len(wrapperBytes)))
+
+	// Create the compressed tree file
+	compressedFile, err := os.Create(compressedPath)
 	if err != nil {
-		return "", fmt.Errorf("Error opening Merkle rewards file at [%s]: %w", path, err)
+		return "", fmt.Errorf("Error creating compressed rewards tree file [%s]: %w", compressedPath, err)
+	}
+	defer compressedFile.Close()
+
+	// Write the compressed data to the tree file
+	_, err = compressedFile.Write(compressedBytes)
+	if err != nil {
+		return "", fmt.Errorf("Error writing compressed rewards tree to %s: %w", compressedPath, err)
 	}
 
 	// Upload it
-	cid, err := w3sClient.Put(context.Background(), f)
+	cid, err := w3sClient.Put(context.Background(), compressedFile)
 	if err != nil {
-		return "", fmt.Errorf("Error uploading test file: %w", err)
+		return "", fmt.Errorf("Error uploading compressed rewards tree: %w", err)
 	}
 
 	return cid.String(), nil
