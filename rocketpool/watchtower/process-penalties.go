@@ -218,6 +218,7 @@ func (t *processPenalties) run() error {
 				if slotsSinceUpdate > 10000 {
 					t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
 					slotsSinceUpdate = 0
+					s.LatestPenaltySlot = block.Slot
 					err = s.saveState(watchtowerStatePath)
 					if err != nil {
 						t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, err))
@@ -249,6 +250,7 @@ func (t *processPenalties) run() error {
 			if slotsSinceUpdate > 10000 {
 				t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
 				slotsSinceUpdate = 0
+				s.LatestPenaltySlot = block.Slot
 				err = s.saveState(watchtowerStatePath)
 				if err != nil {
 					t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, err))
