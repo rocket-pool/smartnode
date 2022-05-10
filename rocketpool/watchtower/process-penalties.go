@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -127,10 +128,36 @@ func (s *state) saveState(path string) error {
 // Process penalties
 func (t *processPenalties) run() error {
 
+	// Wait for eth clients to sync
+	if err := services.WaitEthClientSynced(t.c, true); err != nil {
+		return err
+	}
+	if err := services.WaitBeaconClientSynced(t.c, true); err != nil {
+		return err
+	}
+
+	// Get node account
+	nodeAccount, err := t.w.GetNodeAccount()
+	if err != nil {
+		return err
+	}
+
+	// Get trusted node status
+	nodeTrusted, err := trustednode.GetMemberExists(t.rp, nodeAccount.Address, nil)
+	if err != nil {
+		return err
+	}
+	if !(nodeTrusted) {
+		return nil
+	}
+
+	// Log
+	t.log.Println("Checking for illegal fee recipients...")
+
 	// Get latest block
 	head, _, err := t.bc.GetBeaconBlock("finalized")
 	if err != nil {
-		return fmt.Errorf("Error getting beacon block: %q", err)
+		return fmt.Errorf("Error getting beacon block: %w", err)
 	}
 
 	currentSlot := head.Slot
@@ -142,7 +169,7 @@ func (t *processPenalties) run() error {
 	if stateFileExists(watchtowerStatePath) {
 		_, err := s.loadState(watchtowerStatePath)
 		if err != nil {
-			return fmt.Errorf("Error loading watchtower state: %q", err)
+			return fmt.Errorf("Error loading watchtower state: %w", err)
 		}
 	} else {
 		// No state file so start from NewPenaltyScanBuffer slots ago
@@ -157,6 +184,7 @@ func (t *processPenalties) run() error {
 	}
 
 	// Loop over unprocessed slots
+	slotsSinceUpdate := 0
 	for i := s.LatestPenaltySlot; i < currentSlot; i++ {
 		block, exists, err := t.bc.GetBeaconBlock(strconv.FormatUint(i, 10))
 		if !exists {
@@ -164,15 +192,28 @@ func (t *processPenalties) run() error {
 			continue
 		}
 		if err != nil {
-			return fmt.Errorf("Error getting beacon block: %q", err)
+			return fmt.Errorf("Error getting beacon block: %w", err)
 		}
 
-		err = t.processBlock(&block)
+		illegalFeeRecipientFound, err := t.processBlock(&block)
+		if illegalFeeRecipientFound {
+			s.LatestPenaltySlot = block.Slot
+			saveErr := s.saveState(watchtowerStatePath)
+			if saveErr != nil {
+				return fmt.Errorf("Error saving watchtower state file: %w", saveErr)
+			}
+		}
 		if err != nil {
 			return err
 		}
+
+		slotsSinceUpdate++
+		if slotsSinceUpdate > 10000 {
+			t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
+			slotsSinceUpdate = 0
+		}
 	}
-	err = t.processBlock(&head)
+	_, err = t.processBlock(&head)
 	if err != nil {
 		return err
 	}
@@ -182,7 +223,7 @@ func (t *processPenalties) run() error {
 
 	err = s.saveState(watchtowerStatePath)
 	if err != nil {
-		return fmt.Errorf("Error saving watchtower state: %q", err)
+		return fmt.Errorf("Error saving watchtower state file: %w", err)
 	}
 
 	// Return
@@ -190,43 +231,45 @@ func (t *processPenalties) run() error {
 
 }
 
-func (t *processPenalties) processBlock(block *beacon.BeaconBlock) error {
+func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error) {
+	illegalFeeRecipient := false
+
 	if !block.HasExecutionPayload {
 		// Merge hasn't occurred yet so skip
-		return nil
+		return illegalFeeRecipient, nil
 	}
 
 	status, err := t.bc.GetValidatorStatusByIndex(strconv.FormatUint(block.ProposerIndex, 10), nil)
 	if err != nil {
-		return err
+		return illegalFeeRecipient, err
 	}
 
 	// Get the minipool address from the proposer's pubkey
 	minipoolAddress, err := minipool.GetMinipoolByPubkey(t.rp, status.Pubkey, nil)
 	if err != nil {
-		return err
+		return illegalFeeRecipient, err
 	}
 
 	// A zero result indicates this proposer is not a RocketPool node operator
 	var emptyAddress [20]byte
 	if bytes.Equal(emptyAddress[:], minipoolAddress[:]) {
-		return nil
+		return illegalFeeRecipient, nil
 	}
 
 	// Retrieve the node's distributor address
 	mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
 	if err != nil {
-		return err
+		return illegalFeeRecipient, err
 	}
 
 	nodeAddress, err := mp.GetNodeAddress(nil)
 	if err != nil {
-		return err
+		return illegalFeeRecipient, err
 	}
 
 	distributorAddress, err := node.GetDistributorAddress(t.rp, nodeAddress, nil)
 	if err != nil {
-		return err
+		return illegalFeeRecipient, err
 	}
 
 	// Retrieve the rETH address
@@ -235,6 +278,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) error {
 	// Check whether the fee recipient is set correctly
 	if block.FeeRecipient != distributorAddress && block.FeeRecipient != rethAddress {
 		// Penalise for non-compliance
+		illegalFeeRecipient = true
 		t.log.Println("=== ILLEGAL FEE RECIPIENT DETECTED ===")
 		t.log.Printlnf("Beacon Block:  %d", block.Slot)
 		t.log.Printlnf("Minipool:      %s", minipoolAddress.Hex())
@@ -246,18 +290,18 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) error {
 
 		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, block.Slot, nil)
 		if err != nil {
-			return fmt.Errorf("Error submitting penalty against %s for block %n: %q", minipoolAddress.Hex(), block.Slot, err)
+			return illegalFeeRecipient, fmt.Errorf("Error submitting penalty against %s for block %n: %w", minipoolAddress.Hex(), block.Slot, err)
 		}
 
 		// Wait for the TX to successfully get mined
 		_, err = utils.WaitForTransaction(t.ec, hash)
 		if err != nil {
-			return err
+			return illegalFeeRecipient, err
 		}
 
 		// Log result
 		t.log.Printlnf("Submitted penalty against %s with fee recipient %s on block %n with tx %s", minipoolAddress.Hex(), block.FeeRecipient.Hex(), block.Slot, hash.Hex())
 	}
 
-	return nil
+	return illegalFeeRecipient, nil
 }

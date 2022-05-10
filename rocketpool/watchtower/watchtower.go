@@ -184,10 +184,12 @@ func run(c *cli.Context) error {
 				if err := submitScrubMinipools.run(); err != nil {
 					errorLog.Println(err)
 				}
-			}
-			time.Sleep(taskCooldown)
-			if err := processPenalties.run(); err != nil {
-				errorLog.Println(err)
+				time.Sleep(taskCooldown)
+
+				// Run the fee recipient penalty check
+				if err := processPenalties.run(); err != nil {
+					errorLog.Println(err)
+				}
 			}
 			time.Sleep(interval)
 		}
