@@ -55,6 +55,7 @@ func GetClaimStatus(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nod
 			if cfg.Smartnode.Network.Value.(config.Network) == config.Network_Kiln {
 				if targetIndex < 3 {
 					claimed = append(claimed, targetIndex)
+					continue
 				}
 			}
 
