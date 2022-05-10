@@ -123,13 +123,13 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		WatchtowerStatePath: Parameter{
-			ID:                   "watchtowerStatePath",
-			Name:                 "Watchtower State Path",
-			Description:          "The absolute path of the `watchtowerState` folder that contains persistent state that is used by the watchtower process on trusted nodes. **Only relevant for trusted nodes.**",
+			ID:                   "watchtowerPath",
+			Name:                 "Watchtower Path",
+			Description:          "The absolute path of the watchtower state folder that contains persistent state that is used by the watchtower process on trusted nodes. **Only relevant for trusted nodes.**",
 			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/watchtowerState"},
+			Default:              map[Network]interface{}{Network_All: "$HOME/.rocketpool/watchtower"},
 			AffectsContainers:    []ContainerID{ContainerID_Watchtower},
-			EnvironmentVariables: []string{"ROCKETPOOL_WATCHTOWER_STATE_FOLDER"},
+			EnvironmentVariables: []string{"ROCKETPOOL_WATCHTOWER_FOLDER"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},

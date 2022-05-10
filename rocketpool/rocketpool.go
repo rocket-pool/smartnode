@@ -51,6 +51,11 @@ func main() {
 			Value: "/.rocketpool/user-settings.yml",
 		},
 		cli.StringFlag{
+			Name:  "watchtowerFolder, w",
+			Usage: "Absolute path to the directory the watchtower stores persistent state",
+			Value: "/.rocketpool/watchtower",
+		},
+		cli.StringFlag{
 			Name:  "storageAddress, a",
 			Usage: "Rocket Pool storage contract `address`",
 		},
