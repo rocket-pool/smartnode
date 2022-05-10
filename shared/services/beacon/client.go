@@ -57,7 +57,7 @@ type BeaconBlock struct {
 	Slot                uint64
 	ProposerIndex       uint64
 	HasExecutionPayload bool
-	FeeRecipient        common.Hash
+	FeeRecipient        common.Address
 }
 
 // Beacon client type

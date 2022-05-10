@@ -808,7 +808,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	// Basic variables and root parameters
 	envVars["SMARTNODE_IMAGE"] = config.Smartnode.GetSmartnodeContainerTag()
 	envVars["ROCKETPOOL_FOLDER"] = config.RocketPoolDirectory
-	envVars["RETH_ADDRESS"] = config.Smartnode.GetRethAddress()
+	envVars["RETH_ADDRESS"] = config.Smartnode.GetRethAddress().Hex()
 	addParametersToEnvVars(config.Smartnode.GetParameters(), envVars)
 	addParametersToEnvVars(config.GetParameters(), envVars)
 

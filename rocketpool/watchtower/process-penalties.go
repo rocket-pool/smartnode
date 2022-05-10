@@ -9,13 +9,13 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 
@@ -31,6 +31,7 @@ const NewPenaltyScanBuffer = 400000
 type processPenalties struct {
 	c   *cli.Context
 	log log.ColorLogger
+	cfg *config.RocketPoolConfig
 	w   *wallet.Wallet
 	rp  *rocketpool.RocketPool
 	ec  rocketpool.ExecutionClient
@@ -44,6 +45,10 @@ type state struct {
 // Create process penalties task
 func newProcessPenalties(c *cli.Context, logger log.ColorLogger) (*processPenalties, error) {
 	// Get services
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -65,6 +70,7 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger) (*processPenalt
 	return &processPenalties{
 		c:   c,
 		log: logger,
+		cfg: cfg,
 		w:   w,
 		ec:  ec,
 		bc:  bc,
@@ -192,7 +198,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) error {
 
 	// A zero result indicates this proposer is not a RocketPool node operator
 	var emptyAddress [20]byte
-	if bytes.Compare(emptyAddress[:], minipoolAddress[:]) == 0 {
+	if bytes.Equal(emptyAddress[:], minipoolAddress[:]) {
 		return nil
 	}
 
@@ -212,12 +218,21 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) error {
 		return err
 	}
 
-	// Check whether the fee recipient is set correctly
-	var expectedFeeRecipient common.Hash
-	copy(expectedFeeRecipient[32-20:], distributorAddress[:])
+	// Retrieve the rETH address
+	rethAddress := t.cfg.Smartnode.GetRethAddress()
 
-	if bytes.Compare(expectedFeeRecipient[:], block.FeeRecipient[:]) != 0 {
+	// Check whether the fee recipient is set correctly
+	if block.FeeRecipient != distributorAddress && block.FeeRecipient != rethAddress {
 		// Penalise for non-compliance
+		t.log.Println("=== ILLEGAL FEE RECIPIENT DETECTED ===")
+		t.log.Printlnf("Beacon Block:  %d", block.Slot)
+		t.log.Printlnf("Minipool:      %s", minipoolAddress.Hex())
+		t.log.Printlnf("Node:          %s", nodeAddress.Hex())
+		t.log.Printlnf("Distributor:   %s", distributorAddress.Hex())
+		t.log.Printlnf("rETH:          %s", rethAddress.Hex())
+		t.log.Printlnf("FEE RECIPIENT: %s", block.FeeRecipient.Hex())
+		t.log.Println("======================================")
+
 		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, block.Slot, nil)
 		if err != nil {
 			return fmt.Errorf("Error submitting penalty against %s for block %n: %q", minipoolAddress.Hex(), block.Slot, err)
@@ -230,7 +245,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) error {
 		}
 
 		// Log result
-		t.log.Printf("Submitted penalty against %s with fee recipient %s on block %n with tx %s\n", minipoolAddress.Hex(), block.FeeRecipient.Hex(), block.Slot, hash.Hex())
+		t.log.Printlnf("Submitted penalty against %s with fee recipient %s on block %n with tx %s", minipoolAddress.Hex(), block.FeeRecipient.Hex(), block.Slot, hash.Hex())
 	}
 
 	return nil

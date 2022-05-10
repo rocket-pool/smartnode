@@ -81,7 +81,7 @@ func (c *Client) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error
 		beaconBlock.HasExecutionPayload = false
 	} else {
 		beaconBlock.HasExecutionPayload = true
-		beaconBlock.FeeRecipient = common.BytesToHash(block.Data.Message.Body.ExecutionPayload.FeeRecipient)
+		beaconBlock.FeeRecipient = common.BytesToAddress(block.Data.Message.Body.ExecutionPayload.FeeRecipient)
 	}
 
 	return beaconBlock, true, nil

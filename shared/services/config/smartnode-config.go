@@ -415,8 +415,8 @@ func (config *SmartnodeConfig) GetConfigTitle() string {
 	return config.Title
 }
 
-func (config *SmartnodeConfig) GetRethAddress() string {
-	return config.rethAddress[config.Network.Value.(Network)]
+func (config *SmartnodeConfig) GetRethAddress() common.Address {
+	return common.HexToAddress(config.rethAddress[config.Network.Value.(Network)])
 }
 
 func getDefaultDataDir(config *RocketPoolConfig) string {
