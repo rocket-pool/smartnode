@@ -407,7 +407,10 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error) {
 
 	// Get the Beacon block
-	block, err := c.getBeaconBlock(blockId)
+	block, exists, err := c.getBeaconBlock(blockId)
+	if !exists {
+		return beacon.Eth1Data{}, fmt.Errorf("Block %n does not exist", blockId)
+	}
 	if err != nil {
 		return beacon.Eth1Data{}, err
 	}

@@ -78,7 +78,7 @@ type BeaconBlockResponse struct {
 					DepositCount uinteger  `json:"deposit_count"`
 					BlockHash    byteArray `json:"block_hash"`
 				} `json:"eth1_data"`
-				ExecutionPayload struct {
+				ExecutionPayload *struct {
 					FeeRecipient byteArray `json:"fee_recipient"`
 				} `json:"execution_payload"`
 			} `json:"body"`
