@@ -62,6 +62,31 @@ func (c *Client) GetClientType() beacon.BeaconClientType {
 	return beacon.SingleProcess
 }
 
+func (c *Client) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {
+	block, exists, err := c.getBeaconBlock(blockId)
+	if !exists {
+		return beacon.BeaconBlock{}, false, nil
+	}
+	if err != nil {
+		return beacon.BeaconBlock{}, false, err
+	}
+
+	beaconBlock := beacon.BeaconBlock{
+		Slot:          uint64(block.Data.Message.Slot),
+		ProposerIndex: uint64(block.Data.Message.ProposerIndex),
+	}
+
+	// Execution payload only exists after the merge, so check for its existence
+	if block.Data.Message.Body.ExecutionPayload == nil {
+		beaconBlock.HasExecutionPayload = false
+	} else {
+		beaconBlock.HasExecutionPayload = true
+		beaconBlock.FeeRecipient = common.BytesToHash(block.Data.Message.Body.ExecutionPayload.FeeRecipient)
+	}
+
+	return beaconBlock, true, nil
+}
+
 // Get the node's sync status
 func (c *Client) GetSyncStatus() (beacon.SyncStatus, error) {
 
@@ -179,15 +204,26 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 // Get a validator's status
 func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
+	return c.getValidatorStatus(pubkey.Hex(), opts)
+
+}
+func (c *Client) GetValidatorStatusByIndex(index string, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
+
+	return c.getValidatorStatus(index, opts)
+
+}
+
+func (c *Client) getValidatorStatus(pubkeyOrIndex string, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
+
 	// Get validator
-	validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, opts)
+	validators, err := c.getValidatorsByOpts([]string{pubkeyOrIndex}, opts)
 	if err != nil {
 		return beacon.ValidatorStatus{}, err
 	}
-	if len(validators) == 0 {
+	if len(validators.Data) == 0 {
 		return beacon.ValidatorStatus{}, nil
 	}
-	validator := validators[0]
+	validator := validators.Data[0]
 
 	// Return response
 	return beacon.ValidatorStatus{
@@ -209,15 +245,21 @@ func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.V
 // Get multiple validators' statuses
 func (c *Client) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 
+	// Convert pubkeys into hex strings
+	pubkeysHex := make([]string, len(pubkeys))
+	for vi := 0; vi < len(pubkeys); vi++ {
+		pubkeysHex[vi] = hexutil.AddPrefix(pubkeys[vi].Hex())
+	}
+
 	// Get validators
-	validators, err := c.getValidatorsByOpts(pubkeys, opts)
+	validators, err := c.getValidatorsByOpts(pubkeysHex, opts)
 	if err != nil {
-		return map[types.ValidatorPubkey]beacon.ValidatorStatus{}, err
+		return nil, err
 	}
 
 	// Build validator status map
 	statuses := make(map[types.ValidatorPubkey]beacon.ValidatorStatus)
-	for _, validator := range validators {
+	for _, validator := range validators.Data {
 
 		// Get validator pubkey
 		pubkey := types.BytesToValidatorPubkey(validator.Validator.Pubkey)
@@ -321,14 +363,14 @@ func (c *Client) GetValidatorProposerDuties(indices []uint64, epoch uint64) (map
 func (c *Client) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {
 
 	// Get validator
-	validators, err := c.getValidatorsByOpts([]types.ValidatorPubkey{pubkey}, nil)
+	validators, err := c.getValidatorsByOpts([]string{pubkey.Hex()}, nil)
 	if err != nil {
 		return 0, err
 	}
-	if len(validators) == 0 {
+	if len(validators.Data) == 0 {
 		return 0, fmt.Errorf("Validator %s index not found.", pubkey.Hex())
 	}
-	validator := validators[0]
+	validator := validators.Data[0]
 
 	// Return validator index
 	return uint64(validator.Index), nil
@@ -519,7 +561,7 @@ func (c *Client) getValidators(stateId string, pubkeys []string) (ValidatorsResp
 }
 
 // Get validators by pubkeys and status options
-func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) ([]Validator, error) {
+func (c *Client) getValidatorsByOpts(pubkeysOrIndices []string, opts *beacon.ValidatorStatusOptions) (ValidatorsResponse, error) {
 
 	// Get state ID
 	var stateId string
@@ -530,7 +572,7 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 		// Get eth2 config
 		eth2Config, err := c.getEth2Config()
 		if err != nil {
-			return []Validator{}, err
+			return ValidatorsResponse{}, err
 		}
 
 		// Get slot nuimber
@@ -540,31 +582,31 @@ func (c *Client) getValidatorsByOpts(pubkeys []types.ValidatorPubkey, opts *beac
 	}
 
 	// Load validator data in batches & return
-	data := make([]Validator, 0, len(pubkeys))
-	for bsi := 0; bsi < len(pubkeys); bsi += MaxRequestValidatorsCount {
+	data := make([]Validator, 0, len(pubkeysOrIndices))
+	for bsi := 0; bsi < len(pubkeysOrIndices); bsi += MaxRequestValidatorsCount {
 
 		// Get batch start & end index
 		vsi := bsi
 		vei := bsi + MaxRequestValidatorsCount
-		if vei > len(pubkeys) {
-			vei = len(pubkeys)
+		if vei > len(pubkeysOrIndices) {
+			vei = len(pubkeysOrIndices)
 		}
 
-		// Get validator pubkeys for batch request
-		pubkeysHex := make([]string, vei-vsi)
+		// Get validator pubkeysOrIndices for batch request
+		batch := make([]string, vei-vsi)
 		for vi := vsi; vi < vei; vi++ {
-			pubkeysHex[vi-vsi] = hexutil.AddPrefix(pubkeys[vi].Hex())
+			batch[vi-vsi] = pubkeysOrIndices[vi]
 		}
 
 		// Get & add validators
-		validators, err := c.getValidators(stateId, pubkeysHex)
+		validators, err := c.getValidators(stateId, batch)
 		if err != nil {
-			return []Validator{}, err
+			return ValidatorsResponse{}, err
 		}
 		data = append(data, validators.Data...)
 
 	}
-	return data, nil
+	return ValidatorsResponse{Data: data}, nil
 
 }
 

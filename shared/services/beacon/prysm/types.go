@@ -70,12 +70,17 @@ type ForkResponse struct {
 type BeaconBlockResponse struct {
 	Data struct {
 		Message struct {
-			Body struct {
+			Slot          uinteger `json:"slot"`
+			ProposerIndex uinteger `json:"proposer_index"`
+			Body          struct {
 				Eth1Data struct {
 					DepositRoot  byteArray `json:"deposit_root"`
 					DepositCount uinteger  `json:"deposit_count"`
 					BlockHash    byteArray `json:"block_hash"`
 				} `json:"eth1_data"`
+				ExecutionPayload *struct {
+					FeeRecipient byteArray `json:"fee_recipient"`
+				} `json:"execution_payload"`
 			} `json:"body"`
 		} `json:"message"`
 	} `json:"data"`

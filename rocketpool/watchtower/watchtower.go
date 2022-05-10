@@ -34,6 +34,7 @@ const (
 	MetricsColor                     = color.FgHiYellow
 	SubmitRewardsTreeColor           = color.FgHiCyan
 	WarningColor                     = color.FgYellow
+	ProcessPenaltiesColor            = color.FgHiMagenta
 )
 
 // Register watchtower command
@@ -99,6 +100,10 @@ func run(c *cli.Context) error {
 		return err
 	}
 	submitRewardsTree, err := newSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
+	if err != nil {
+		return err
+	}
+	processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor))
 	if err != nil {
 		return err
 	}
@@ -179,6 +184,10 @@ func run(c *cli.Context) error {
 				if err := submitScrubMinipools.run(); err != nil {
 					errorLog.Println(err)
 				}
+			}
+			time.Sleep(taskCooldown)
+			if err := processPenalties.run(); err != nil {
+				errorLog.Println(err)
 			}
 			time.Sleep(interval)
 		}

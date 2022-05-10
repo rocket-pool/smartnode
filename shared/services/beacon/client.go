@@ -53,6 +53,12 @@ type Eth1Data struct {
 	DepositCount uint64
 	BlockHash    common.Hash
 }
+type BeaconBlock struct {
+	Slot                uint64
+	ProposerIndex       uint64
+	HasExecutionPayload bool
+	FeeRecipient        common.Hash
+}
 
 // Beacon client type
 type BeaconClientType int
@@ -75,7 +81,9 @@ type Client interface {
 	GetSyncStatus() (SyncStatus, error)
 	GetEth2Config() (Eth2Config, error)
 	GetEth2DepositContract() (Eth2DepositContract, error)
+	GetBeaconBlock(blockId string) (BeaconBlock, bool, error)
 	GetBeaconHead() (BeaconHead, error)
+	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
 	GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error)
