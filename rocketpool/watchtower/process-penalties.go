@@ -126,7 +126,7 @@ func (s *state) saveState(path string) error {
 
 	// Write to disk
 	watchtowerDir := filepath.Dir(path)
-	err = os.MkdirAll(watchtowerDir, 0644)
+	err = os.MkdirAll(watchtowerDir, 0755)
 	if err != nil {
 		return fmt.Errorf("error creating watchtower directory: %w", err)
 	}
@@ -178,7 +178,7 @@ func (t *processPenalties) run() error {
 		checkPrefix := "[Fee Recipients]"
 
 		// Get latest block
-		head, _, err := t.bc.GetBeaconBlock("finalized")
+		head, headExists, err := t.bc.GetBeaconBlock("finalized")
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error getting beacon block: %w", checkPrefix, err))
 			return
@@ -208,47 +208,35 @@ func (t *processPenalties) run() error {
 			return
 		}
 
+		t.log.Printlnf("Starting check in a separate thread at block %d", s.LatestPenaltySlot)
+
 		// Loop over unprocessed slots
 		slotsSinceUpdate := 0
 		for i := s.LatestPenaltySlot; i < currentSlot; i++ {
 			block, exists, err := t.bc.GetBeaconBlock(strconv.FormatUint(i, 10))
-			if !exists {
-				// Nothing to do if slot was missed
-				slotsSinceUpdate++
-				if slotsSinceUpdate > 10000 {
-					t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
-					slotsSinceUpdate = 0
-					s.LatestPenaltySlot = block.Slot
-					err = s.saveState(watchtowerStatePath)
-					if err != nil {
-						t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, err))
-						return
-					}
-				}
-				continue
-			}
 			if err != nil {
 				t.handleError(fmt.Errorf("%s Error getting beacon block: %w", checkPrefix, err))
 				return
 			}
-
-			illegalFeeRecipientFound, err := t.processBlock(&block)
-			if illegalFeeRecipientFound {
-				s.LatestPenaltySlot = block.Slot
-				saveErr := s.saveState(watchtowerStatePath)
-				if saveErr != nil {
-					t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, saveErr))
+			if exists {
+				illegalFeeRecipientFound, err := t.processBlock(&block)
+				if illegalFeeRecipientFound {
+					s.LatestPenaltySlot = block.Slot
+					saveErr := s.saveState(watchtowerStatePath)
+					if saveErr != nil {
+						t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, saveErr))
+						return
+					}
+				}
+				if err != nil {
+					t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
 					return
 				}
-			}
-			if err != nil {
-				t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
-				return
 			}
 
 			slotsSinceUpdate++
 			if slotsSinceUpdate > 10000 {
-				t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
+				t.log.Printlnf("\t%s At block %d of %d...", checkPrefix, block.Slot, currentSlot)
 				slotsSinceUpdate = 0
 				s.LatestPenaltySlot = block.Slot
 				err = s.saveState(watchtowerStatePath)
@@ -258,15 +246,17 @@ func (t *processPenalties) run() error {
 				}
 			}
 		}
-		_, err = t.processBlock(&head)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
-			return
+
+		if headExists {
+			_, err = t.processBlock(&head)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
+				return
+			}
 		}
 
 		// Update latest slot in state
 		s.LatestPenaltySlot = currentSlot
-
 		err = s.saveState(watchtowerStatePath)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, err))
