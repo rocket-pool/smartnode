@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/rocket-pool/rocketpool-go/utils/client"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/urfave/cli"
@@ -220,6 +221,12 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) error {
 		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, block.Slot, nil)
 		if err != nil {
 			return fmt.Errorf("Error submitting penalty against %s for block %n: %q", minipoolAddress.Hex(), block.Slot, err)
+		}
+
+		// Wait for the TX to successfully get mined
+		_, err = utils.WaitForTransaction(t.ec, hash)
+		if err != nil {
+			return err
 		}
 
 		// Log result
