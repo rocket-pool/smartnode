@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -29,13 +30,16 @@ const NewPenaltyScanBuffer = 400000
 
 // Process withdrawals task
 type processPenalties struct {
-	c   *cli.Context
-	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	w   *wallet.Wallet
-	rp  *rocketpool.RocketPool
-	ec  rocketpool.ExecutionClient
-	bc  beacon.Client
+	c         *cli.Context
+	log       log.ColorLogger
+	errLog    log.ColorLogger
+	cfg       *config.RocketPoolConfig
+	w         *wallet.Wallet
+	rp        *rocketpool.RocketPool
+	ec        rocketpool.ExecutionClient
+	bc        beacon.Client
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 type state struct {
@@ -43,7 +47,7 @@ type state struct {
 }
 
 // Create process penalties task
-func newProcessPenalties(c *cli.Context, logger log.ColorLogger) (*processPenalties, error) {
+func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*processPenalties, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -67,14 +71,18 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger) (*processPenalt
 	}
 
 	// Return task
+	lock := &sync.Mutex{}
 	return &processPenalties{
-		c:   c,
-		log: logger,
-		cfg: cfg,
-		w:   w,
-		ec:  ec,
-		bc:  bc,
-		rp:  rp,
+		c:         c,
+		log:       logger,
+		errLog:    errorLogger,
+		cfg:       cfg,
+		w:         w,
+		ec:        ec,
+		bc:        bc,
+		rp:        rp,
+		lock:      lock,
+		isRunning: false,
 	}, nil
 }
 
@@ -154,86 +162,132 @@ func (t *processPenalties) run() error {
 	// Log
 	t.log.Println("Checking for illegal fee recipients...")
 
-	// Get latest block
-	head, _, err := t.bc.GetBeaconBlock("finalized")
-	if err != nil {
-		return fmt.Errorf("Error getting beacon block: %w", err)
-	}
-
-	currentSlot := head.Slot
-
-	// Read state from file or create if this is the first run
-	watchtowerStatePath := t.cfg.Smartnode.GetWatchtowerStatePath()
-	var s state
-
-	if stateFileExists(watchtowerStatePath) {
-		_, err := s.loadState(watchtowerStatePath)
-		if err != nil {
-			return fmt.Errorf("Error loading watchtower state: %w", err)
-		}
-	} else {
-		// No state file so start from NewPenaltyScanBuffer slots ago
-		if currentSlot > NewPenaltyScanBuffer {
-			s.LatestPenaltySlot = currentSlot - NewPenaltyScanBuffer
-		}
-	}
-
-	if currentSlot <= s.LatestPenaltySlot {
-		// Nothing to do
+	// Check if the check is already running
+	t.lock.Lock()
+	if t.isRunning {
+		t.log.Println("Fee recipient check is already running in the background.")
 		return nil
 	}
+	t.lock.Unlock()
 
-	// Loop over unprocessed slots
-	slotsSinceUpdate := 0
-	for i := s.LatestPenaltySlot; i < currentSlot; i++ {
-		block, exists, err := t.bc.GetBeaconBlock(strconv.FormatUint(i, 10))
-		if !exists {
-			// Nothing to do if slot was missed
+	// Run the check
+	go func() {
+		t.lock.Lock()
+		t.isRunning = true
+		t.lock.Unlock()
+		checkPrefix := "[Fee Recipients]"
+
+		// Get latest block
+		head, _, err := t.bc.GetBeaconBlock("finalized")
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error getting beacon block: %w", checkPrefix, err))
+			return
+		}
+
+		currentSlot := head.Slot
+
+		// Read state from file or create if this is the first run
+		watchtowerStatePath := t.cfg.Smartnode.GetWatchtowerStatePath()
+		var s state
+
+		if stateFileExists(watchtowerStatePath) {
+			_, err := s.loadState(watchtowerStatePath)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s Error loading watchtower state: %w", checkPrefix, err))
+				return
+			}
+		} else {
+			// No state file so start from NewPenaltyScanBuffer slots ago
+			if currentSlot > NewPenaltyScanBuffer {
+				s.LatestPenaltySlot = currentSlot - NewPenaltyScanBuffer
+			}
+		}
+
+		if currentSlot <= s.LatestPenaltySlot {
+			// Nothing to do
+			return
+		}
+
+		// Loop over unprocessed slots
+		slotsSinceUpdate := 0
+		for i := s.LatestPenaltySlot; i < currentSlot; i++ {
+			block, exists, err := t.bc.GetBeaconBlock(strconv.FormatUint(i, 10))
+			if !exists {
+				// Nothing to do if slot was missed
+				slotsSinceUpdate++
+				if slotsSinceUpdate > 10000 {
+					t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
+					slotsSinceUpdate = 0
+					err = s.saveState(watchtowerStatePath)
+					if err != nil {
+						t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, err))
+						return
+					}
+				}
+				continue
+			}
+			if err != nil {
+				t.handleError(fmt.Errorf("%s Error getting beacon block: %w", checkPrefix, err))
+				return
+			}
+
+			illegalFeeRecipientFound, err := t.processBlock(&block)
+			if illegalFeeRecipientFound {
+				s.LatestPenaltySlot = block.Slot
+				saveErr := s.saveState(watchtowerStatePath)
+				if saveErr != nil {
+					t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, saveErr))
+					return
+				}
+			}
+			if err != nil {
+				t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
+				return
+			}
+
 			slotsSinceUpdate++
 			if slotsSinceUpdate > 10000 {
 				t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
 				slotsSinceUpdate = 0
-			}
-			continue
-		}
-		if err != nil {
-			return fmt.Errorf("Error getting beacon block: %w", err)
-		}
-
-		illegalFeeRecipientFound, err := t.processBlock(&block)
-		if illegalFeeRecipientFound {
-			s.LatestPenaltySlot = block.Slot
-			saveErr := s.saveState(watchtowerStatePath)
-			if saveErr != nil {
-				return fmt.Errorf("Error saving watchtower state file: %w", saveErr)
+				err = s.saveState(watchtowerStatePath)
+				if err != nil {
+					t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, err))
+					return
+				}
 			}
 		}
+		_, err = t.processBlock(&head)
 		if err != nil {
-			return err
+			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
+			return
 		}
 
-		slotsSinceUpdate++
-		if slotsSinceUpdate > 10000 {
-			t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
-			slotsSinceUpdate = 0
+		// Update latest slot in state
+		s.LatestPenaltySlot = currentSlot
+
+		err = s.saveState(watchtowerStatePath)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error saving watchtower state file: %w", checkPrefix, err))
+			return
 		}
-	}
-	_, err = t.processBlock(&head)
-	if err != nil {
-		return err
-	}
 
-	// Update latest slot in state
-	s.LatestPenaltySlot = currentSlot
-
-	err = s.saveState(watchtowerStatePath)
-	if err != nil {
-		return fmt.Errorf("Error saving watchtower state file: %w", err)
-	}
+		t.log.Printlnf("%s Finished checking for illegal fee recipients.", checkPrefix)
+		t.lock.Lock()
+		t.isRunning = false
+		t.lock.Unlock()
+	}()
 
 	// Return
 	return nil
 
+}
+
+func (t *processPenalties) handleError(err error) {
+	t.errLog.Println(err)
+	t.errLog.Println("*** Illegal fee recipient check failed. ***")
+	t.lock.Lock()
+	t.isRunning = false
+	t.lock.Unlock()
 }
 
 func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error) {

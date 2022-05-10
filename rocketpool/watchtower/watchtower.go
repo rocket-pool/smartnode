@@ -103,7 +103,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor))
+	processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
 		return err
 	}

@@ -242,6 +242,10 @@ func (t *submitRewardsTree) run() error {
 
 	// Run the tree generation
 	go func() {
+		t.lock.Lock()
+		t.isRunning = true
+		t.lock.Unlock()
+
 		// Log
 		generationPrefix := "[Merkle Tree]"
 		if int64(intervalsPassed) > 1 {
@@ -297,7 +301,11 @@ func (t *submitRewardsTree) run() error {
 			t.handleError(fmt.Errorf("%s Error submitting rewards snapshot: %w", generationPrefix, err))
 			return
 		}
+
 		t.log.Printlnf("%s Successfully submitted rewards snapshot for interval %d.", generationPrefix, currentIndex)
+		t.lock.Lock()
+		t.isRunning = false
+		t.lock.Unlock()
 	}()
 
 	// Done
