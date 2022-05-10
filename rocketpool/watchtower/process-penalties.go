@@ -103,10 +103,10 @@ func (s *state) saveState(watchtowerFolder string) error {
 	}
 
 	// Write to disc
-	return ioutil.WriteFile(path.Join(watchtowerFolder, "state.yml"), data, 0)
+	return ioutil.WriteFile(path.Join(watchtowerFolder, "state.yml"), data, 0644)
 }
 
-// Process withdrawals
+// Process penalties
 func (t *processPenalties) run() error {
 
 	// Get latest block
