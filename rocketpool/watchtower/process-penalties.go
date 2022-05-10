@@ -159,6 +159,9 @@ func (t *processPenalties) run() error {
 		return err
 	}
 
+	// Update latest slot in state
+	s.LatestPenaltySlot = currentSlot
+
 	err = s.saveState(watchtowerFolder)
 	if err != nil {
 		return fmt.Errorf("Error saving watchtower state: %q", err)
