@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,14 +15,16 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -30,16 +33,19 @@ const NewPenaltyScanBuffer = 400000
 
 // Process withdrawals task
 type processPenalties struct {
-	c         *cli.Context
-	log       log.ColorLogger
-	errLog    log.ColorLogger
-	cfg       *config.RocketPoolConfig
-	w         *wallet.Wallet
-	rp        *rocketpool.RocketPool
-	ec        rocketpool.ExecutionClient
-	bc        beacon.Client
-	lock      *sync.Mutex
-	isRunning bool
+	c              *cli.Context
+	log            log.ColorLogger
+	errLog         log.ColorLogger
+	cfg            *config.RocketPoolConfig
+	w              *wallet.Wallet
+	rp             *rocketpool.RocketPool
+	ec             rocketpool.ExecutionClient
+	bc             beacon.Client
+	lock           *sync.Mutex
+	isRunning      bool
+	maxFee         *big.Int
+	maxPriorityFee *big.Int
+	gasLimit       uint64
 }
 
 type state struct {
@@ -70,19 +76,41 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log
 		return nil, err
 	}
 
+	// Get the user-requested max fee
+	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
+	var maxFee *big.Int
+	if maxFeeGwei == 0 {
+		maxFee = nil
+	} else {
+		maxFee = eth.GweiToWei(maxFeeGwei)
+	}
+
+	// Get the user-requested max fee
+	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
+	var priorityFee *big.Int
+	if priorityFeeGwei == 0 {
+		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
+		priorityFee = eth.GweiToWei(2)
+	} else {
+		priorityFee = eth.GweiToWei(priorityFeeGwei)
+	}
+
 	// Return task
 	lock := &sync.Mutex{}
 	return &processPenalties{
-		c:         c,
-		log:       logger,
-		errLog:    errorLogger,
-		cfg:       cfg,
-		w:         w,
-		ec:        ec,
-		bc:        bc,
-		rp:        rp,
-		lock:      lock,
-		isRunning: false,
+		c:              c,
+		log:            logger,
+		errLog:         errorLogger,
+		cfg:            cfg,
+		w:              w,
+		ec:             ec,
+		bc:             bc,
+		rp:             rp,
+		lock:           lock,
+		isRunning:      false,
+		maxFee:         maxFee,
+		maxPriorityFee: priorityFee,
+		gasLimit:       0,
 	}, nil
 }
 
@@ -340,13 +368,49 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 		t.log.Printlnf("FEE RECIPIENT: %s", block.FeeRecipient.Hex())
 		t.log.Println("======================================")
 
-		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, block.Slot, nil)
+		// Get transactor
+		opts, err := t.w.GetNodeAccountTransactor()
+		if err != nil {
+			return illegalFeeRecipient, err
+		}
+
+		// Get the gas limit
+		gasInfo, err := network.EstimateSubmitPenaltyGas(t.rp, minipoolAddress, block.Slot, opts)
+		if err != nil {
+			return illegalFeeRecipient, fmt.Errorf("Could not estimate the gas required to submit penalty: %w", err)
+		}
+		var gas *big.Int
+		if t.gasLimit != 0 {
+			gas = new(big.Int).SetUint64(t.gasLimit)
+		} else {
+			gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
+		}
+
+		// Get the max fee
+		maxFee := t.maxFee
+		if maxFee == nil || maxFee.Uint64() == 0 {
+			maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+			if err != nil {
+				return illegalFeeRecipient, err
+			}
+		}
+
+		// Print the gas info
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
+			return illegalFeeRecipient, nil
+		}
+
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = t.maxPriorityFee
+		opts.GasLimit = gas.Uint64()
+
+		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, block.Slot, opts)
 		if err != nil {
 			return illegalFeeRecipient, fmt.Errorf("Error submitting penalty against %s for block %d: %w", minipoolAddress.Hex(), block.Slot, err)
 		}
 
-		// Wait for the TX to successfully get mined
-		_, err = utils.WaitForTransaction(t.ec, hash)
+		// Print TX info and wait for it to be mined
+		err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 		if err != nil {
 			return illegalFeeRecipient, err
 		}

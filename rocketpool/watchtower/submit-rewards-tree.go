@@ -286,7 +286,7 @@ func (t *submitRewardsTree) run() error {
 		}
 
 		// Upload the file
-		cid, err := t.uploadRewardsTreeToWeb3Storage(wrapperBytes, path)
+		cid, err := t.uploadRewardsTreeToWeb3Storage(wrapperBytes, compressedPath)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error uploading Merkle tree to Web3.Storage: %w", generationPrefix, err))
 			return
@@ -429,6 +429,9 @@ func (t *submitRewardsTree) uploadRewardsTreeToWeb3Storage(wrapperBytes []byte, 
 	if err != nil {
 		return "", fmt.Errorf("Error writing compressed rewards tree to %s: %w", compressedPath, err)
 	}
+
+	// Rewind it to the start
+	compressedFile.Seek(0, 0)
 
 	// Upload it
 	cid, err := w3sClient.Put(context.Background(), compressedFile)
