@@ -200,6 +200,7 @@ func (t *submitRewardsTree) run() error {
 	t.lock.Lock()
 	if t.isRunning {
 		t.log.Println("Tree generation is already running in the background.")
+		t.lock.Unlock()
 		return nil
 	}
 	t.lock.Unlock()

@@ -166,6 +166,7 @@ func (t *processPenalties) run() error {
 	t.lock.Lock()
 	if t.isRunning {
 		t.log.Println("Fee recipient check is already running in the background.")
+		t.lock.Unlock()
 		return nil
 	}
 	t.lock.Unlock()
