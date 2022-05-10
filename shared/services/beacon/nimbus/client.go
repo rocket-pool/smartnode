@@ -62,17 +62,29 @@ func (c *Client) GetClientType() beacon.BeaconClientType {
 	return beacon.SingleProcess
 }
 
-func (c *Client) GetBeaconBlock(blockId string) (beacon.BeaconBlock, error) {
-	block, err := c.getBeaconBlock(blockId)
+func (c *Client) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {
+	block, exists, err := c.getBeaconBlock(blockId)
+	if !exists {
+		return beacon.BeaconBlock{}, false, nil
+	}
 	if err != nil {
-		return beacon.BeaconBlock{}, err
+		return beacon.BeaconBlock{}, false, err
 	}
 
-	return beacon.BeaconBlock{
+	beaconBlock := beacon.BeaconBlock{
 		Slot:          uint64(block.Data.Message.Slot),
 		ProposerIndex: uint64(block.Data.Message.ProposerIndex),
-		FeeRecipient:  common.BytesToHash(block.Data.Message.Body.ExecutionPayload.FeeRecipient),
-	}, nil
+	}
+
+	// Execution payload only exists after the merge, so check for its existence
+	if block.Data.Message.Body.ExecutionPayload == nil {
+		beaconBlock.HasExecutionPayload = false
+	} else {
+		beaconBlock.HasExecutionPayload = true
+		beaconBlock.FeeRecipient = common.BytesToHash(block.Data.Message.Body.ExecutionPayload.FeeRecipient)
+	}
+
+	return beaconBlock, true, nil
 }
 
 // Get the node's sync status
@@ -420,7 +432,10 @@ func (c *Client) ExitValidator(validatorIndex, epoch uint64, signature types.Val
 func (c *Client) GetEth1DataForEth2Block(blockId string) (beacon.Eth1Data, error) {
 
 	// Get the Beacon block
-	block, err := c.getBeaconBlock(blockId)
+	block, exists, err := c.getBeaconBlock(blockId)
+	if !exists {
+		return beacon.Eth1Data{}, fmt.Errorf("Block %n does not exist", blockId)
+	}
 	if err != nil {
 		return beacon.Eth1Data{}, err
 	}
@@ -605,18 +620,20 @@ func (c *Client) postVoluntaryExit(request VoluntaryExitRequest) error {
 }
 
 // Get the target beacon block
-func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, error) {
+func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, bool, error) {
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
 	if err != nil {
-		return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: %w", err)
+		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: %w", err)
+	} else if status == http.StatusNotFound {
+		return BeaconBlockResponse{}, false, nil
 	} else if status != http.StatusOK {
-		return BeaconBlockResponse{}, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
+		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var beaconBlock BeaconBlockResponse
 	if err := json.Unmarshal(responseBody, &beaconBlock); err != nil {
-		return BeaconBlockResponse{}, fmt.Errorf("Could not decode beacon block data: %w", err)
+		return BeaconBlockResponse{}, false, fmt.Errorf("Could not decode beacon block data: %w", err)
 	}
-	return beaconBlock, nil
+	return beaconBlock, true, nil
 }
 
 // Make a GET request to the beacon node
