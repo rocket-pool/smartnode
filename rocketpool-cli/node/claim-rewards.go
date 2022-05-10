@@ -115,7 +115,7 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	totalRpl := big.NewInt(0)
 	totalEth := big.NewInt(0)
 	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
-		fmt.Printf("Rewards for Interval %d:\n", intervalInfo.Index)
+		fmt.Printf("Rewards for Interval %d (%s to %s):\n", intervalInfo.Index, intervalInfo.StartTime.Local(), intervalInfo.EndTime.Local())
 		fmt.Printf("\tStaking:        %.6f RPL\n", eth.WeiToEth(intervalInfo.CollateralRplAmount))
 		fmt.Printf("\tOracle DAO:     %.6f RPL\n", eth.WeiToEth(intervalInfo.ODaoRplAmount))
 		fmt.Printf("\tSmoothing Pool: %.6f ETH\n\n", eth.WeiToEth(intervalInfo.SmoothingPoolEthAmount))
