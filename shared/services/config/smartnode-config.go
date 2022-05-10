@@ -87,6 +87,9 @@ type SmartnodeConfig struct {
 	// The path within the daemon Docker container of the validator key folder
 	validatorKeychainPath string `yaml:"-"`
 
+	// The path for the watchtower's state file
+	watchtowerStatePath string `yaml:"-"`
+
 	// The path within the daemon Docker container of the rewards merkle tree folder
 	rewardsTreePath string `yaml:"-"`
 
@@ -271,6 +274,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 		validatorKeychainPath: "/.rocketpool/data/validators",
 
+		watchtowerStatePath: "/.rocketpool/data/watchtower/state.yml",
+
 		rewardsTreePath: fmt.Sprintf("/.rocketpool/data/%s", RewardsTreesFolder),
 
 		storageAddress: map[Network]string{
@@ -375,6 +380,14 @@ func (config *SmartnodeConfig) GetValidatorKeychainPath() string {
 		return filepath.Join(config.DataPath.Value.(string), "validators")
 	} else {
 		return config.validatorKeychainPath
+	}
+}
+
+func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "watchtower", "state.yml")
+	} else {
+		return config.watchtowerStatePath
 	}
 }
 

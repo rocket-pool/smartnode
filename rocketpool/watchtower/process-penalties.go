@@ -2,11 +2,10 @@ package watchtower
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -78,16 +77,23 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger) (*processPenalt
 	}, nil
 }
 
-func stateFileExists(watchtowerFolder string) bool {
+func stateFileExists(path string) bool {
 	// Check if file exists
-	_, err := os.Stat(path.Join(watchtowerFolder, "state.yml"))
-	return err != nil || !errors.Is(err, os.ErrNotExist)
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
-func (s *state) loadState(watchtowerFolder string) (*state, error) {
+func (s *state) loadState(path string) (*state, error) {
 
 	// Load file into memory
-	yamlFile, err := ioutil.ReadFile(path.Join(watchtowerFolder, "state.yml"))
+	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
 		return s, err
 	}
@@ -101,7 +107,7 @@ func (s *state) loadState(watchtowerFolder string) (*state, error) {
 	return s, nil
 }
 
-func (s *state) saveState(watchtowerFolder string) error {
+func (s *state) saveState(path string) error {
 	// Marshal state object
 	data, err := yaml.Marshal(s)
 
@@ -109,8 +115,13 @@ func (s *state) saveState(watchtowerFolder string) error {
 		return err
 	}
 
-	// Write to disc
-	return ioutil.WriteFile(path.Join(watchtowerFolder, "state.yml"), data, 0644)
+	// Write to disk
+	watchtowerDir := filepath.Dir(path)
+	err = os.MkdirAll(watchtowerDir, 0644)
+	if err != nil {
+		return fmt.Errorf("error creating watchtower directory: %w", err)
+	}
+	return ioutil.WriteFile(path, data, 0644)
 }
 
 // Process penalties
@@ -125,11 +136,11 @@ func (t *processPenalties) run() error {
 	currentSlot := head.Slot
 
 	// Read state from file or create if this is the first run
-	watchtowerFolder := t.c.GlobalString("watchtowerFolder")
+	watchtowerStatePath := t.cfg.Smartnode.GetWatchtowerStatePath()
 	var s state
 
-	if stateFileExists(watchtowerFolder) {
-		_, err := s.loadState(watchtowerFolder)
+	if stateFileExists(watchtowerStatePath) {
+		_, err := s.loadState(watchtowerStatePath)
 		if err != nil {
 			return fmt.Errorf("Error loading watchtower state: %q", err)
 		}
@@ -169,7 +180,7 @@ func (t *processPenalties) run() error {
 	// Update latest slot in state
 	s.LatestPenaltySlot = currentSlot
 
-	err = s.saveState(watchtowerFolder)
+	err = s.saveState(watchtowerStatePath)
 	if err != nil {
 		return fmt.Errorf("Error saving watchtower state: %q", err)
 	}
