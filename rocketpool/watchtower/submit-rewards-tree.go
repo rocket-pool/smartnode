@@ -32,9 +32,6 @@ import (
 	"github.com/web3-storage/go-w3s-client"
 )
 
-// Settings
-const SubmitFollowDistanceRewardsTree = 2
-
 // Submit rewards Merkle Tree task
 type submitRewardsTree struct {
 	c              *cli.Context
@@ -187,15 +184,6 @@ func (t *submitRewardsTree) run() error {
 	}
 	currentIndex := currentIndexBig.Uint64()
 
-	// Return if this node has already submitted the tree for the current interval
-	hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig)
-	if err != nil {
-		return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
-	}
-	if hasSubmitted {
-		return nil
-	}
-
 	// Check if rewards generation is already running
 	t.lock.Lock()
 	if t.isRunning {
@@ -210,6 +198,15 @@ func (t *submitRewardsTree) run() error {
 	compressedPath := t.cfg.Smartnode.GetCompressedRewardsTreePath(currentIndex, true)
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
+		// Return if this node has already submitted the tree for the current interval and there's a file present
+		hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig)
+		if err != nil {
+			return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
+		}
+		if hasSubmitted {
+			return nil
+		}
+
 		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, path)
 
 		// Deserialize the file

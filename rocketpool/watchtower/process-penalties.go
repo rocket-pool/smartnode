@@ -342,7 +342,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 
 		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, block.Slot, nil)
 		if err != nil {
-			return illegalFeeRecipient, fmt.Errorf("Error submitting penalty against %s for block %n: %w", minipoolAddress.Hex(), block.Slot, err)
+			return illegalFeeRecipient, fmt.Errorf("Error submitting penalty against %s for block %d: %w", minipoolAddress.Hex(), block.Slot, err)
 		}
 
 		// Wait for the TX to successfully get mined
