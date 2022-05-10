@@ -189,6 +189,11 @@ func (t *processPenalties) run() error {
 		block, exists, err := t.bc.GetBeaconBlock(strconv.FormatUint(i, 10))
 		if !exists {
 			// Nothing to do if slot was missed
+			slotsSinceUpdate++
+			if slotsSinceUpdate > 10000 {
+				t.log.Printlnf("\tAt block %d of %d...", block.Slot, currentSlot)
+				slotsSinceUpdate = 0
+			}
 			continue
 		}
 		if err != nil {
