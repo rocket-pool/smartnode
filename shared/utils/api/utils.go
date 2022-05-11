@@ -76,46 +76,6 @@ func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, 
 
 }
 
-// Gets the event log interval supported by the selected eth1 client
-// TODO: REPLACE WITH cfg.GetEventLogInterval()
-func GetEventLogInterval(cfg *config.RocketPoolConfig) (*big.Int, error) {
-
-	// Get event log interval
-	var eventLogInterval *big.Int = nil
-	ecMode := cfg.ExecutionClientMode.Value
-	if cfg.IsNativeMode {
-		return big.NewInt(int64(cfg.Geth.EventLogInterval)), nil
-	}
-
-	switch ecMode {
-	case config.Mode_External:
-		// Use the Geth limit for external clients
-		eventLogInterval = big.NewInt(int64(cfg.Geth.EventLogInterval))
-
-	case config.Mode_Local:
-		switch cfg.ExecutionClient.Value {
-		case config.ExecutionClient_Geth:
-			eventLogInterval = big.NewInt(int64(cfg.Geth.EventLogInterval))
-		case config.ExecutionClient_Nethermind:
-			eventLogInterval = big.NewInt(int64(cfg.Nethermind.EventLogInterval))
-		case config.ExecutionClient_Besu:
-			eventLogInterval = big.NewInt(int64(cfg.Besu.EventLogInterval))
-		case config.ExecutionClient_Infura:
-			eventLogInterval = big.NewInt(int64(cfg.Infura.EventLogInterval))
-		case config.ExecutionClient_Pocket:
-			eventLogInterval = big.NewInt(int64(cfg.Pocket.EventLogInterval))
-		default:
-			return nil, fmt.Errorf("unknown execution client selected: %v", cfg.ExecutionClient.Value)
-		}
-
-	default:
-		return nil, fmt.Errorf("unknown execution client mode selected: %v", ecMode)
-	}
-
-	return eventLogInterval, nil
-
-}
-
 // True if a transaction is due and needs to bypass the gas threshold
 func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time) (bool, time.Duration, error) {
 

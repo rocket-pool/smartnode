@@ -355,11 +355,11 @@ func (t *submitScrubMinipools) getEth1SearchArtifacts() error {
 	t.it.startBlock = targetBlock.Number
 
 	// Check the prestake event from the minipool and validate its signature
-	eventLogInterval, err := api.GetEventLogInterval(t.cfg)
+	eventLogInterval, err := t.cfg.GetEventLogInterval()
 	if err != nil {
 		return err
 	}
-	t.it.eventLogInterval = eventLogInterval
+	t.it.eventLogInterval = big.NewInt(int64(eventLogInterval))
 
 	// Put together the signature validation data
 	eth2Config, err := t.bc.GetEth2Config()

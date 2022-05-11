@@ -19,7 +19,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -64,7 +63,7 @@ type TrustedNodeCollector struct {
 func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, cfg *config.RocketPoolConfig) *TrustedNodeCollector {
 
 	// Get the event log interval
-	eventLogInterval, err := api.GetEventLogInterval(cfg)
+	eventLogInterval, err := cfg.GetEventLogInterval()
 	if err != nil {
 		log.Printf("Error getting event log interval: %s\n", err.Error())
 		return nil
@@ -99,7 +98,7 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 		rp:               rp,
 		bc:               bc,
 		nodeAddress:      nodeAddress,
-		eventLogInterval: eventLogInterval,
+		eventLogInterval: big.NewInt(int64(eventLogInterval)),
 	}
 }
 
