@@ -264,7 +264,7 @@ func (t *processPenalties) run() error {
 			}
 
 			slotsSinceUpdate++
-			if slotsSinceUpdate > 10000 {
+			if slotsSinceUpdate >= 10000 {
 				t.log.Printlnf("\t%s At block %d of %d...", checkPrefix, block.Slot, currentSlot)
 				slotsSinceUpdate = 0
 				s.LatestPenaltySlot = block.Slot
@@ -416,7 +416,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 		}
 
 		// Log result
-		t.log.Printlnf("Submitted penalty against %s with fee recipient %s on block %n with tx %s", minipoolAddress.Hex(), block.FeeRecipient.Hex(), block.Slot, hash.Hex())
+		t.log.Printlnf("Submitted penalty against %s with fee recipient %s on block %d with tx %s", minipoolAddress.Hex(), block.FeeRecipient.Hex(), block.Slot, hash.Hex())
 	}
 
 	return illegalFeeRecipient, nil

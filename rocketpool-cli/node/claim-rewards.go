@@ -103,6 +103,7 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 		if !downloadRewardsFiles(cfg, missingIntervals, missingCIDs) {
 			return nil
 		}
+		fmt.Println()
 
 		// Reload rewards now that the files are in place
 		rewardsInfoResponse, err = rp.GetRewardsInfo()
@@ -283,13 +284,13 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 		maxRplRequired := activeMinipools * 16.0 * 1.5 / rplPrice // NOTE: Assumes the max is 150%
 		rplToMaxCollateral = maxRplRequired - currentRplStake
 
-		fmt.Printf("You currently have %.6f RPL staked (%.2f%% collateral).\n", currentRplStake, currentCollateral)
+		fmt.Printf("You currently have %.6f RPL staked (%.2f%% collateral).\n", currentRplStake, currentCollateral*100)
 		if rplToMaxCollateral <= 0 {
 			fmt.Println("You are already at maximum collateral. Restaking more RPL will not lead to more rewards.")
 		} else if availableRpl < rplToMaxCollateral {
 			bestTotal = availableRpl + currentRplStake
 			bestCollateral = rplPrice * bestTotal / (activeMinipools * 16.0)
-			fmt.Printf("You can restake a max of %.6f RPL which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", availableRpl, bestTotal, bestCollateral)
+			fmt.Printf("You can restake a max of %.6f RPL which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", availableRpl, bestTotal, bestCollateral*100)
 		} else {
 			total := rplToMaxCollateral + currentRplStake
 			fmt.Printf("If you restake %.6f RPL, you will have a total of %.6f RPL staked (the max collateral of 150%%).\nRestaking more than this will not result in higher rewards.\n\n", rplToMaxCollateral, total)
@@ -308,7 +309,7 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			fmt.Println("Ignoring automatic staking request since your collateral is already maximized.")
 			restakeAmountWei = nil
 		} else if availableRpl < rplToMaxCollateral {
-			fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", bestTotal, bestCollateral)
+			fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", bestTotal, bestCollateral*100)
 			restakeAmountWei = claimRpl
 		} else {
 			total := rplToMaxCollateral + currentRplStake
@@ -319,7 +320,7 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 		// Restake everything with no regard for collateral level
 		total := availableRpl + currentRplStake
 		totalCollateral := rplPrice * total / (activeMinipools * 16.0)
-		fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", total, totalCollateral)
+		fmt.Printf("Automatically restaking all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", total, totalCollateral*100)
 		restakeAmountWei = claimRpl
 	} else if restakeAmountFlag != "" {
 		// Restake a specific amount, capped at how much is available to claim
@@ -328,12 +329,12 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			return nil, fmt.Errorf("invalid restake amount '%s': %w", restakeAmountFlag, err)
 		}
 		if availableRpl < stakeAmount {
-			fmt.Printf("Limiting the automatic restake to all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", bestTotal, bestCollateral)
+			fmt.Printf("Limiting the automatic restake to all of the claimable RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", bestTotal, bestCollateral*100)
 			restakeAmountWei = claimRpl
 		} else {
 			total := stakeAmount + currentRplStake
 			totalCollateral := rplPrice * total / (activeMinipools * 16.0)
-			fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", stakeAmount, total, totalCollateral)
+			fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", stakeAmount, total, totalCollateral*100)
 			restakeAmountWei = eth.EthToWei(stakeAmount)
 		}
 	} else if c.Bool("yes") {
@@ -547,7 +548,6 @@ func downloadRewardsFile(interval uint64, cid string, compressedUrls []string, u
 			continue
 		} else {
 			// If we got here, we have a successful download
-			fmt.Print("done!\nDecompressing... ")
 			bytes, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				fmt.Printf("error reading response bytes: %s\n", err.Error())
