@@ -19,6 +19,11 @@ const (
 	RewardsTreeFilenameFormat           string = "rp-rewards-%s-%d.json"
 	CompressedRewardsTreeFilenameFormat string = "rp-rewards-%s-%d.json.zst"
 	RewardsTreesFolder                  string = "rewards-trees"
+	DaemonDataPath                      string = "/.rocketpool/data"
+	WatchtowerFolder                    string = "watchtower"
+	WatchtowerStateFile                 string = "state.yml"
+	RegenerateRewardsTreeRequestSuffix  string = ".request"
+	RegenerateRewardsTreeRequestFormat  string = "%d" + RegenerateRewardsTreeRequestSuffix
 )
 
 // Defaults
@@ -77,21 +82,6 @@ type SmartnodeConfig struct {
 
 	// The map of networks to execution chain IDs
 	chainID map[Network]uint `yaml:"-"`
-
-	// The path within the daemon Docker container of the wallet file
-	walletPath string `yaml:"-"`
-
-	// The path within the daemon Docker container of the wallet's password file
-	passwordPath string `yaml:"-"`
-
-	// The path within the daemon Docker container of the validator key folder
-	validatorKeychainPath string `yaml:"-"`
-
-	// The path for the watchtower's state file
-	watchtowerStatePath string `yaml:"-"`
-
-	// The path within the daemon Docker container of the rewards merkle tree folder
-	rewardsTreePath string `yaml:"-"`
 
 	// The contract address of RocketStorage
 	storageAddress map[Network]string `yaml:"-"`
@@ -268,16 +258,6 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Kiln:    0x1469ca,
 		},
 
-		walletPath: "/.rocketpool/data/wallet",
-
-		passwordPath: "/.rocketpool/data/password",
-
-		validatorKeychainPath: "/.rocketpool/data/validators",
-
-		watchtowerStatePath: "/.rocketpool/data/watchtower/state.yml",
-
-		rewardsTreePath: fmt.Sprintf("/.rocketpool/data/%s", RewardsTreesFolder),
-
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
@@ -363,7 +343,7 @@ func (config *SmartnodeConfig) GetWalletPath() string {
 	if config.parent.IsNativeMode {
 		return filepath.Join(config.DataPath.Value.(string), "wallet")
 	} else {
-		return config.walletPath
+		return filepath.Join(DaemonDataPath, "wallet")
 	}
 }
 
@@ -371,7 +351,7 @@ func (config *SmartnodeConfig) GetPasswordPath() string {
 	if config.parent.IsNativeMode {
 		return filepath.Join(config.DataPath.Value.(string), "password")
 	} else {
-		return config.passwordPath
+		return filepath.Join(DaemonDataPath, "password")
 	}
 }
 
@@ -379,15 +359,15 @@ func (config *SmartnodeConfig) GetValidatorKeychainPath() string {
 	if config.parent.IsNativeMode {
 		return filepath.Join(config.DataPath.Value.(string), "validators")
 	} else {
-		return config.validatorKeychainPath
+		return filepath.Join(DaemonDataPath, "validators")
 	}
 }
 
 func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
 	if config.parent.IsNativeMode {
-		return filepath.Join(config.DataPath.Value.(string), "watchtower", "state.yml")
+		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder, "state.yml")
 	} else {
-		return config.watchtowerStatePath
+		return filepath.Join(DaemonDataPath, WatchtowerFolder, "state.yml")
 	}
 }
 
@@ -438,7 +418,7 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 
 func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) string {
 	if daemon && !config.parent.IsNativeMode {
-		return filepath.Join(config.rewardsTreePath, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 	} else {
 		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 	}
@@ -446,9 +426,25 @@ func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) 
 
 func (config *SmartnodeConfig) GetCompressedRewardsTreePath(interval uint64, daemon bool) string {
 	if daemon && !config.parent.IsNativeMode {
-		return filepath.Join(config.rewardsTreePath, fmt.Sprintf(CompressedRewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(CompressedRewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 	} else {
 		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(CompressedRewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+	}
+}
+
+func (config *SmartnodeConfig) GetRegenerateRewardsTreeRequestPath(interval uint64, daemon bool) string {
+	if daemon && !config.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
+	} else {
+		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
+	}
+}
+
+func (config *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
+	if daemon && !config.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, WatchtowerFolder)
+	} else {
+		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder)
 	}
 }
 

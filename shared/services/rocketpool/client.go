@@ -802,6 +802,18 @@ func (c *Client) StartContainer(container string) (string, error) {
 
 }
 
+// Restart a container
+func (c *Client) RestartContainer(container string) (string, error) {
+
+	cmd := fmt.Sprintf("docker restart %s", container)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+
+}
+
 // Deletes a container
 func (c *Client) RemoveContainer(container string) (string, error) {
 

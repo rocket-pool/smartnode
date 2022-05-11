@@ -132,35 +132,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-
-			{
-				Name:      "generate-rewards-tree",
-				Usage:     "Generate and save the rewards tree file for the provided interval; note that this is an asynchronous process, so it will return before the file is generated.",
-				UsageText: "rocketpool api network generate-rewards-tree index",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "execution-client-url, e",
-						Usage: "The URL of a separate execution client you want to use for generation (ignore this flag to use your primary exeuction client). Use this if your primary client is not an archive node, and you need to provide a separate archive node URL.",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-
-					index, err := cliutils.ValidateUint("index", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(generateRewardsTree(c, index))
-					return nil
-
-				},
-			},
 		},
 	})
 }

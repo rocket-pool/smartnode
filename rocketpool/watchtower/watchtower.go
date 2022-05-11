@@ -107,6 +107,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	generateRewardsTree, err := newGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
+	if err != nil {
+		return err
+	}
 
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
@@ -128,13 +132,18 @@ func run(c *cli.Context) error {
 			if err != nil {
 				errorLog.Println(err)
 			} else {
+				// Run the manual rewards tree generation
+				if err := generateRewardsTree.run(); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
 				// Run the challenge check
 				if err := respondChallenges.run(); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
 
-				// Run the oDAO rewards check
 				if !isUpdateDeployed {
 					// Only run auto-claims during the legacy period
 					isUpdateDeployed, err = claimRplRewards.run()
@@ -142,13 +151,13 @@ func run(c *cli.Context) error {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
+				} else {
+					// Run the rewards tree submission check
+					if err := submitRewardsTree.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 				}
-
-				// Run the rewards tree submission check
-				if err := submitRewardsTree.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
 
 				// Run the price submission check
 				if err := submitRplPrice.run(); err != nil {

@@ -77,11 +77,15 @@ func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, 
 }
 
 // Gets the event log interval supported by the selected eth1 client
+// TODO: REPLACE WITH cfg.GetEventLogInterval()
 func GetEventLogInterval(cfg *config.RocketPoolConfig) (*big.Int, error) {
 
 	// Get event log interval
 	var eventLogInterval *big.Int = nil
 	ecMode := cfg.ExecutionClientMode.Value
+	if cfg.IsNativeMode {
+		return big.NewInt(int64(cfg.Geth.EventLogInterval)), nil
+	}
 
 	switch ecMode {
 	case config.Mode_External:

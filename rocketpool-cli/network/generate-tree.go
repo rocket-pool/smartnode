@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -11,6 +12,7 @@ import (
 
 const (
 	colorReset  string = "\033[0m"
+	colorGreen  string = "\033[32m"
 	colorYellow string = "\033[33m"
 )
 
@@ -22,6 +24,12 @@ func generateRewardsTree(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Get config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
 
 	// Print some info
 	fmt.Printf("%sNOTE: in order to generate a Merkle rewards tree for a rewards interval, you will need to have access to an execution client with archival state. By default, Geth, Infura, or Pocket will not provide this.\n\nIf your primary execution client is not an archive node, please re-run this command with the `--execution-client-url` flag set to the URL of an archive node.\n\nIf you need one, Alchemy provides a free service which you can use: https://www.alchemy.com/ethereum%s\n\n", colorYellow, colorReset)
@@ -60,13 +68,30 @@ func generateRewardsTree(c *cli.Context) error {
 		}
 	}
 
-	// Generate the tree
-	_, err = rp.GenerateRewardsTree(index, c.String("execution-client-url"))
+	// Create the generation request
+	requestPath := cfg.Smartnode.GetRegenerateRewardsTreeRequestPath(index, false)
+	requestFile, err := os.Create(requestPath)
+	if requestFile != nil {
+		requestFile.Close()
+	}
 	if err != nil {
-		return err
+		return fmt.Errorf("Error creating request marker: %w", err)
 	}
 
-	fmt.Printf("Your node is now generating the rewards tree for interval %d. This process could take a very long time if many users have opted into the Smoothing Pool, so it will run in the background.\n\nYou can follow its progress with `rocketpool service logs api`.\n", index)
+	fmt.Printf("Your request to generate the rewards tree for interval %d has been applied, and your `watchtower` container will begin the process during its next duty check (typically 5 minutes).\nYou can follow its progress with %s`rocketpool service logs watchtower`%s.\n\n", index, colorGreen, colorReset)
+
+	if c.Bool("yes") || cliutils.Confirm("Would you like to restart the watchtower container now, so it starts generating the file immediately?") {
+		container := fmt.Sprintf("%s_watchtower", cfg.Smartnode.ProjectName.Value.(string))
+		response, err := rp.RestartContainer(container)
+		if err != nil {
+			return fmt.Errorf("Error restarting watchtower: %w", err)
+		}
+		if response != container {
+			return fmt.Errorf("Unexpected output while restarting watchtower: %s", response)
+		}
+
+		fmt.Println("Done!")
+	}
 
 	return nil
 
