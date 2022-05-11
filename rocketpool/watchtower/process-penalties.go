@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -357,8 +358,22 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 
 	// Check whether the fee recipient is set correctly
 	if block.FeeRecipient != distributorAddress && block.FeeRecipient != rethAddress {
-		// Penalise for non-compliance
 		illegalFeeRecipient = true
+
+		// Check if this penalty has already been applied
+		blockNumberBuf := make([]byte, 32)
+		slotBig := big.NewInt(int64(block.Slot))
+		slotBig.FillBytes(blockNumberBuf)
+		penaltyExecuted, err := t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.penalties.executed"), minipoolAddress.Bytes(), blockNumberBuf))
+		if err != nil {
+			return illegalFeeRecipient, fmt.Errorf("Could not check if penality has already been applied for block %d, minipool %s: %w", block.Slot, minipoolAddress.Hex(), err)
+		}
+		if penaltyExecuted {
+			t.log.Printlnf("NOTE: Minipool %s was already penalized on block %d, skipping...", minipoolAddress.Hex(), block.Slot)
+			return illegalFeeRecipient, nil
+		}
+
+		// Penalise for non-compliance
 		t.log.Println("=== ILLEGAL FEE RECIPIENT DETECTED ===")
 		t.log.Printlnf("Beacon Block:  %d", block.Slot)
 		t.log.Printlnf("Minipool:      %s", minipoolAddress.Hex())
@@ -375,7 +390,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 		}
 
 		// Get the gas limit
-		gasInfo, err := network.EstimateSubmitPenaltyGas(t.rp, minipoolAddress, big.NewInt(int64(block.Slot)), opts)
+		gasInfo, err := network.EstimateSubmitPenaltyGas(t.rp, minipoolAddress, slotBig, opts)
 		if err != nil {
 			return illegalFeeRecipient, fmt.Errorf("Could not estimate the gas required to submit penalty: %w", err)
 		}
@@ -404,7 +419,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 		opts.GasTipCap = t.maxPriorityFee
 		opts.GasLimit = gas.Uint64()
 
-		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, big.NewInt(int64(block.Slot)), opts)
+		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, slotBig, opts)
 		if err != nil {
 			return illegalFeeRecipient, fmt.Errorf("Error submitting penalty against %s for block %d: %w", minipoolAddress.Hex(), block.Slot, err)
 		}
@@ -417,6 +432,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 
 		// Log result
 		t.log.Printlnf("Submitted penalty against %s with fee recipient %s on block %d with tx %s", minipoolAddress.Hex(), block.FeeRecipient.Hex(), block.Slot, hash.Hex())
+
 	}
 
 	return illegalFeeRecipient, nil
