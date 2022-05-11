@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -20,7 +19,7 @@ type RewardsEvent struct {
 	Block                *big.Int
 	RewardsPerNetworkRPL []*big.Int
 	RewardsPerNetworkETH []*big.Int
-	MerkleRoot           []byte
+	MerkleRoot           common.Hash
 	MerkleTreeCID        string
 	IntervalStartTime    time.Time
 	IntervalEndTime      time.Time
@@ -152,7 +151,7 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 	indexBytes := [32]byte{}
 	indexBig.FillBytes(indexBytes[:])
 	addressFilter := []common.Address{*rocketRewardsPool.Address}
-	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {crypto.Keccak256Hash(indexBytes[:])}}
+	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
@@ -170,20 +169,19 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 	}
 
 	// Get the decoded data
-	eventIndex := values["index"].(*big.Int)
 	eventBlock := values["block"].(*big.Int)
 	eventRpl := values["rewardsPerNetworkRPL"].([]*big.Int)
 	eventEth := values["rewardsPerNetworkETH"].([]*big.Int)
-	eventMerkleRoot := values["merkleRoot"].([]byte)
+	eventMerkleRoot := values["merkleRoot"].([32]byte)
 	eventMerkleTreeCid := values["merkleTreeCID"].(string)
 	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
 	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
 	eventData := RewardsEvent{
-		Index:                eventIndex,
+		Index:                indexBig,
 		Block:                eventBlock,
 		RewardsPerNetworkRPL: eventRpl,
 		RewardsPerNetworkETH: eventEth,
-		MerkleRoot:           eventMerkleRoot,
+		MerkleRoot:           common.BytesToHash(eventMerkleRoot[:]),
 		MerkleTreeCID:        eventMerkleTreeCid,
 		IntervalStartTime:    time.Unix(eventIntervalStartTime.Int64(), 0),
 		IntervalEndTime:      time.Unix(eventIntervalEndTime.Int64(), 0),

@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -11,7 +12,7 @@ import (
 )
 
 // Estimate the gas of SubmitPenalty
-func EstimateSubmitPenaltyGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, block uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitPenaltyGas(rp *rocketpool.RocketPool, minipoolAddress common.Address, block *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNetworkPenalties, err := getRocketNetworkPenalties(rp)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -20,7 +21,7 @@ func EstimateSubmitPenaltyGas(rp *rocketpool.RocketPool, minipoolAddress common.
 }
 
 // Submit penalty for given minipool
-func SubmitPenalty(rp *rocketpool.RocketPool, minipoolAddress common.Address, block uint64, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitPenalty(rp *rocketpool.RocketPool, minipoolAddress common.Address, block *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkPrices, err := getRocketNetworkPenalties(rp)
 	if err != nil {
 		return common.Hash{}, err
