@@ -14,6 +14,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -130,6 +131,29 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
 
+	var ec rocketpool.ExecutionClient
+	var rp *rocketpool.RocketPool
+	var err error
+	archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
+	if archiveEcUrl == "" {
+		t.log.Printlnf("%s WARNING: you do not have an archive Execution client node specified. If your primary EC is not in archive-mode, rewards tree generation may fail! Please specify an archive-capable EC in the Smartnode section of the `rocketpool service config` Terminal UI.\n", generationPrefix)
+		ec = t.ec
+		rp = t.rp
+	} else {
+		t.log.Printlnf("%s Using archive EC [%s]", generationPrefix, archiveEcUrl)
+		ec, err = ethclient.Dial(archiveEcUrl)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error connecting to archive EC: %w", generationPrefix, err))
+			return
+		}
+
+		rp, err = rocketpool.NewRocketPool(ec, *t.rp.RocketStorageContract.Address)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", generationPrefix, err))
+			return
+		}
+	}
+
 	// Get the event log interval
 	eventLogInterval, err := t.cfg.GetEventLogInterval()
 	if err != nil {
@@ -138,7 +162,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Find the event for this interval
-	rewardsEvent, err := rewards.GetRewardSnapshotEvent(t.rp, index, big.NewInt(int64(eventLogInterval)), nil)
+	rewardsEvent, err := rewards.GetRewardSnapshotEvent(rp, index, big.NewInt(int64(eventLogInterval)), nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return
@@ -156,7 +180,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	t.log.Printlnf("%s Block time is %s", generationPrefix, blockTime)
 
 	// Get the matching EL block
-	elBlockHeader, err := rprewards.GetELBlockHeaderForTime(blockTime, t.ec)
+	elBlockHeader, err := rprewards.GetELBlockHeaderForTime(blockTime, ec)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting matching EL block: %w", generationPrefix, err))
 		return
@@ -169,7 +193,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	// Get the total pending rewards and respective distribution percentages
 	t.log.Printlnf("%s Calculating RPL rewards...", generationPrefix)
 	start := time.Now()
-	nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, elBlockHeader, intervalTime)
+	nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(rp, elBlockHeader, intervalTime)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error calculating node operator rewards: %w", generationPrefix, err))
 		return

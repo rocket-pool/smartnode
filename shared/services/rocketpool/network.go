@@ -112,3 +112,19 @@ func (c *Client) CanGenerateRewardsTree(index uint64) (api.CanNetworkGenerateRew
 	}
 	return response, nil
 }
+
+// Set a request marker for the watchtower to generate the rewards tree for the given interval
+func (c *Client) GenerateRewardsTree(index uint64) (api.NetworkGenerateRewardsTreeResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("network generate-rewards-tree %d", index))
+	if err != nil {
+		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not initialize rewards tree generation: %w", err)
+	}
+	var response api.NetworkGenerateRewardsTreeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not decode rewards tree generation response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NetworkGenerateRewardsTreeResponse{}, fmt.Errorf("Could not initialize rewards tree generation: %s", response.Error)
+	}
+	return response, nil
+}

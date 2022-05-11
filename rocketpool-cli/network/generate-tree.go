@@ -2,7 +2,6 @@ package network
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -69,13 +68,9 @@ func generateRewardsTree(c *cli.Context) error {
 	}
 
 	// Create the generation request
-	requestPath := cfg.Smartnode.GetRegenerateRewardsTreeRequestPath(index, false)
-	requestFile, err := os.Create(requestPath)
-	if requestFile != nil {
-		requestFile.Close()
-	}
+	_, err = rp.GenerateRewardsTree(index)
 	if err != nil {
-		return fmt.Errorf("Error creating request marker: %w", err)
+		return err
 	}
 
 	fmt.Printf("Your request to generate the rewards tree for interval %d has been applied, and your `watchtower` container will begin the process during its next duty check (typically 5 minutes).\nYou can follow its progress with %s`rocketpool service logs watchtower`%s.\n\n", index, colorGreen, colorReset)

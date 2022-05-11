@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/fatih/color"
@@ -55,6 +56,31 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 		response.TreeFileExists = false
 	} else {
 		response.TreeFileExists = true
+	}
+
+	return &response, nil
+
+}
+
+func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewardsTreeResponse, error) {
+
+	// Get services
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.NetworkGenerateRewardsTreeResponse{}
+
+	// Create the generation request
+	requestPath := cfg.Smartnode.GetRegenerateRewardsTreeRequestPath(index, false)
+	requestFile, err := os.Create(requestPath)
+	if requestFile != nil {
+		requestFile.Close()
+	}
+	if err != nil {
+		return nil, fmt.Errorf("Error creating request marker: %w", err)
 	}
 
 	return &response, nil

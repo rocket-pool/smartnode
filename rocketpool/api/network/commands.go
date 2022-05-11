@@ -132,6 +132,29 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "generate-rewards-tree",
+				Usage:     "Set a request marker for the watchtower to generate the rewards tree for the given interval",
+				UsageText: "rocketpool api network generate-rewards-tree index",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					index, err := cliutils.ValidateUint("index", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(generateRewardsTree(c, index))
+					return nil
+
+				},
+			},
 		},
 	})
 }

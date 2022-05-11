@@ -135,7 +135,7 @@ func (t *submitRewardsTree) run() error {
 	if err != nil {
 		return err
 	}
-	if !nodeTrusted {
+	if !nodeTrusted && t.cfg.Smartnode.AutoGenerateRewardsTrees.Value == false {
 		return nil
 	}
 
@@ -198,6 +198,11 @@ func (t *submitRewardsTree) run() error {
 	compressedPath := t.cfg.Smartnode.GetCompressedRewardsTreePath(currentIndex, true)
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
+		if !nodeTrusted {
+			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, path)
+			return nil
+		}
+
 		// Return if this node has already submitted the tree for the current interval and there's a file present
 		hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig)
 		if err != nil {
@@ -275,7 +280,7 @@ func (t *submitRewardsTree) run() error {
 			t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
 			return
 		}
-		t.log.Println(fmt.Sprintf("%s Generation complete! Saving and uploading...", generationPrefix))
+		t.log.Println(fmt.Sprintf("%s Generation complete! Saving tree...", generationPrefix))
 
 		// Write the file
 		path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
@@ -285,22 +290,29 @@ func (t *submitRewardsTree) run() error {
 			return
 		}
 
-		// Upload the file
-		cid, err := t.uploadRewardsTreeToWeb3Storage(wrapperBytes, compressedPath)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s Error uploading Merkle tree to Web3.Storage: %w", generationPrefix, err))
-			return
-		}
-		t.log.Printlnf("%s Uploaded Merkle tree with CID %s", generationPrefix, cid)
+		// Only do the upload and submission process if this is an Oracle DAO node
+		if nodeTrusted {
+			t.log.Println(fmt.Sprintf("%s Uploading to Web3.Storage and submitting results to the contracts...", generationPrefix))
+			// Upload the file
+			cid, err := t.uploadRewardsTreeToWeb3Storage(wrapperBytes, compressedPath)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s Error uploading Merkle tree to Web3.Storage: %w", generationPrefix, err))
+				return
+			}
+			t.log.Printlnf("%s Uploaded Merkle tree with CID %s", generationPrefix, cid)
 
-		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
-		if err != nil {
-			t.handleError(fmt.Errorf("%s Error submitting rewards snapshot: %w", generationPrefix, err))
-			return
+			// Submit to the contracts
+			err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
+			if err != nil {
+				t.handleError(fmt.Errorf("%s Error submitting rewards snapshot: %w", generationPrefix, err))
+				return
+			}
+
+			t.log.Printlnf("%s Successfully submitted rewards snapshot for interval %d.", generationPrefix, currentIndex)
+		} else {
+			t.log.Printlnf("%s Successfully generated rewards snapshot for interval %d.", generationPrefix, currentIndex)
 		}
 
-		t.log.Printlnf("%s Successfully submitted rewards snapshot for interval %d.", generationPrefix, currentIndex)
 		t.lock.Lock()
 		t.isRunning = false
 		t.lock.Unlock()

@@ -67,6 +67,12 @@ type SmartnodeConfig struct {
 	// Threshold for auto minipool stakes
 	MinipoolStakeGasThreshold Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
 
+	// Toggle for automatically generating rewards trees
+	AutoGenerateRewardsTrees Parameter `yaml:"autoGenerateRewardsTrees"`
+
+	// URL for an EC with archive mode, for manual rewards tree generation
+	ArchiveECUrl Parameter `yaml:"archiveEcUrl"`
+
 	// Token for Oracle DAO members to use when uploading Merkle trees to Web3.Storage
 	Web3StorageApiToken Parameter `yaml:"web3StorageApiToken"`
 
@@ -228,6 +234,30 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		AutoGenerateRewardsTrees: Parameter{
+			ID:                   "autoGenerateRewardsTrees",
+			Name:                 "Autogenerate Rewards Trees",
+			Description:          "Enable this to automatically generate Merkle rewards trees for each interval, so you don't have to download and trust the ones created by the Oracle DAO.\n\n[orange]NOTE: rewards tree generation can be computationally expensive if there are many nodes opted into the Smoothing Pool. This may affect your node's performance during generation!",
+			Type:                 ParameterType_Bool,
+			Default:              map[Network]interface{}{Network_All: false},
+			AffectsContainers:    []ContainerID{ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		ArchiveECUrl: Parameter{
+			ID:                   "archiveECUrl",
+			Name:                 "Archive-Mode EC URL",
+			Description:          "[orange]**For manual Merkle rewards tree generation only.**[white]\n\nGenerating the Merkle rewards tree files for past rewards intervals typically requires an Execution client with Archive mode enabled, which is usually disabled on your primary and fallback Execution clients to save disk space.\nIf you want to generate your own rewards tree files, you may enter the URL of an Execution client with Archive access here.\n\nFor a free light client with Archive access, you may use https://www.alchemy.com/supernode.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Watchtower},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
 		Web3StorageApiToken: Parameter{
 			ID:                   "web3StorageApiToken",
 			Name:                 "Web3.Storage API Token",
@@ -321,6 +351,8 @@ func (config *SmartnodeConfig) GetParameters() []*Parameter {
 		&config.PriorityFee,
 		&config.RplClaimGasThreshold,
 		&config.MinipoolStakeGasThreshold,
+		&config.AutoGenerateRewardsTrees,
+		&config.ArchiveECUrl,
 		&config.Web3StorageApiToken,
 	}
 }
