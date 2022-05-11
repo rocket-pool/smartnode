@@ -30,8 +30,13 @@ func generateRewardsTree(c *cli.Context) error {
 		return fmt.Errorf("Error loading configuration: %w", err)
 	}
 
-	// Print some info
-	fmt.Printf("%sNOTE: in order to generate a Merkle rewards tree for a rewards interval, you will need to have access to an execution client with archival state. By default, Geth, Infura, or Pocket will not provide this.\n\nIf your primary execution client is not an archive node, please re-run this command with the `--execution-client-url` flag set to the URL of an archive node.\n\nIf you need one, Alchemy provides a free service which you can use: https://www.alchemy.com/ethereum%s\n\n", colorYellow, colorReset)
+	// Print archive node info
+	archiveEcUrl := cfg.Smartnode.ArchiveECUrl.Value.(string)
+	if archiveEcUrl == "" {
+		fmt.Printf("%sNOTE: in order to generate a Merkle rewards tree for a past rewards interval, you will likely need to have access to an Execution client with archival state.\nBy default, your Smartnode's Execution client will not provide this.\n\nPlease specify the URL of an archive-capable EC in the Smartnode section of the `rocketpool service config` Terminal UI.\nIf you need one, Alchemy provides a free service which you can use: https://www.alchemy.com/ethereum%s\n\n", colorYellow, colorReset)
+	} else {
+		fmt.Printf("%sYou have an archive EC specified at [%s]. This will be used for tree generation.%s\n\n", colorGreen, archiveEcUrl, colorReset)
+	}
 
 	// Get the index
 	var index uint64

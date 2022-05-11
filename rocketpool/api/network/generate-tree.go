@@ -74,7 +74,7 @@ func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewa
 	response := api.NetworkGenerateRewardsTreeResponse{}
 
 	// Create the generation request
-	requestPath := cfg.Smartnode.GetRegenerateRewardsTreeRequestPath(index, false)
+	requestPath := cfg.Smartnode.GetRegenerateRewardsTreeRequestPath(index, true)
 	requestFile, err := os.Create(requestPath)
 	if requestFile != nil {
 		requestFile.Close()

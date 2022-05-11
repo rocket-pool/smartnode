@@ -151,7 +151,9 @@ func run(c *cli.Context) error {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
-				} else {
+				}
+
+				if isUpdateDeployed {
 					// Run the rewards tree submission check
 					if err := submitRewardsTree.run(); err != nil {
 						errorLog.Println(err)
