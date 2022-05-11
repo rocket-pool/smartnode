@@ -2,7 +2,6 @@
 package rewards
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,7 +16,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Gets the intervals the node can claim and the intervals that have already been claimed
@@ -123,8 +121,8 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	}
 
 	// Make sure the Merkle root has the expected value
-	merkleRootFromFile := common.Hex2Bytes(hexutil.RemovePrefix(proofWrapper.MerkleRoot))
-	if !bytes.Equal(merkleRootCanon, merkleRootFromFile) {
+	merkleRootFromFile := common.HexToHash(proofWrapper.MerkleRoot)
+	if merkleRootCanon != merkleRootFromFile {
 		info.MerkleRootValid = false
 		return
 	}

@@ -375,7 +375,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 		}
 
 		// Get the gas limit
-		gasInfo, err := network.EstimateSubmitPenaltyGas(t.rp, minipoolAddress, block.Slot, opts)
+		gasInfo, err := network.EstimateSubmitPenaltyGas(t.rp, minipoolAddress, big.NewInt(int64(block.Slot)), opts)
 		if err != nil {
 			return illegalFeeRecipient, fmt.Errorf("Could not estimate the gas required to submit penalty: %w", err)
 		}
@@ -404,7 +404,7 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 		opts.GasTipCap = t.maxPriorityFee
 		opts.GasLimit = gas.Uint64()
 
-		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, block.Slot, opts)
+		hash, err := network.SubmitPenalty(t.rp, minipoolAddress, big.NewInt(int64(block.Slot)), opts)
 		if err != nil {
 			return illegalFeeRecipient, fmt.Errorf("Error submitting penalty against %s for block %d: %w", minipoolAddress.Hex(), block.Slot, err)
 		}

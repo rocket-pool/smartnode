@@ -1,13 +1,13 @@
 package network
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/fatih/color"
@@ -186,8 +186,9 @@ func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewa
 		logger.Printlnf("Finished in %s", time.Since(start).String())
 
 		// Validate the Merkle root
-		if !bytes.Equal(tree.Root(), rewardsEvent.MerkleRoot) {
-			logger.Printlnf("WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", hexutil.Encode(tree.Root()), hexutil.Encode(rewardsEvent.MerkleRoot))
+		root := common.BytesToHash(tree.Root())
+		if root != rewardsEvent.MerkleRoot {
+			logger.Printlnf("WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", root.Hex(), rewardsEvent.MerkleRoot.Hex())
 		} else {
 			logger.Printlnf("Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", hexutil.Encode(tree.Root()))
 		}
