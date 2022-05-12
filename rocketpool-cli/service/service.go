@@ -921,7 +921,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
 	}
-	partitions, err := disk.Partitions(false)
+	partitions, err := disk.Partitions(true)
 	if err != nil {
 		return fmt.Errorf("Error getting partition list: %w", err)
 	}
@@ -1504,7 +1504,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	volumeBytesHuman := humanize.IBytes(volumeBytes)
 
 	// Get the amount of free space available in the target dir
-	partitions, err := disk.Partitions(false)
+	partitions, err := disk.Partitions(true)
 	if err != nil {
 		return fmt.Errorf("Error getting partition list: %w", err)
 	}
@@ -1649,7 +1649,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
 	}
-	partitions, err := disk.Partitions(false)
+	partitions, err := disk.Partitions(true)
 	if err != nil {
 		return fmt.Errorf("Error getting partition list: %w", err)
 	}
