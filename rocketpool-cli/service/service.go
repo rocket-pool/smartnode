@@ -874,6 +874,23 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
+	// Sanity checks
+	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_External {
+		fmt.Println("You are using an externally managed Execution client.\nThe Smartnode cannot prune it for you.")
+		return nil
+	}
+	if cfg.IsNativeMode {
+		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
+	}
+	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
+	case config.ExecutionClient_Nethermind:
+		fmt.Println("You are using Nethermind as your Execution client.\nNethermind will automatically prune itself once your disk's free space hits a certain threshold - you can configure it in the `Execution Client` section of the `rocketpool service config` Terminal UI.")
+		return nil
+	case config.ExecutionClient_Besu:
+		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
+		return nil
+	}
+
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
 
