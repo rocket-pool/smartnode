@@ -1,14 +1,13 @@
 package config
 
 // Defaults
-const defaultBitflyNodeMetricsSecret string = ""
+const (
+	defaultBitflyNodeMetricsSecret      string = ""
+	defaultBitflyNodeMetricsEndpoint    string = "https://beaconcha.in/api/v1/client/metrics"
+	defaultBitflyNodeMetricsMachineName string = "Smartnode"
+)
 
-const defaultBitflyNodeMetricsEndpoint string = "https://beaconcha.in/api/v1/client/metrics"
-
-const defaultBitflyNodeMetricsMachineName string = "Smartnode"
-
-
-// Configuration for Bitfly Node Metrics 
+// Configuration for Bitfly Node Metrics
 type BitflyNodeMetricsConfig struct {
 	Title string `yaml:"-"`
 
@@ -23,25 +22,25 @@ type BitflyNodeMetricsConfig struct {
 func NewBitflyNodeMetricsConfig(config *RocketPoolConfig) *BitflyNodeMetricsConfig {
 	return &BitflyNodeMetricsConfig{
 		Title: "Bitfly Node Metrics Settings",
-		
+
 		Secret: Parameter{
 			ID:                   "bitflySecret",
 			Name:                 "Node Metrics Secret",
-			Description:          "The secret used to authenticate your beaconcha.in Node Metrics integration. Can be found in your beaconcha.in account settings.",
+			Description:          "The secret used to authenticate your Beaconcha.in node metrics integration. Can be found in your Beaconcha.in account settings.\n\nPlease visit https://beaconcha.in/login to access your account information.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: defaultBitflyNodeMetricsSecret},
 			AffectsContainers:    []ContainerID{ContainerID_Validator, ContainerID_Eth2},
 			EnvironmentVariables: []string{"BITFLY_NODE_METRICS_SECRET"},
 			// ensures the string is 28 characters of Base64
-			Regex: 				  "^[A-Za-z0-9+/]{28}$",
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			Regex:              "^[A-Za-z0-9+/]{28}$",
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		Endpoint: Parameter{
 			ID:                   "bitflyEndpoint",
 			Name:                 "Node Metrics Endpoint",
-			Description:          "The endpoint to send your beaconcha.in Node Metrics data to. Should be left as the default.",
+			Description:          "The endpoint to send your Beaconcha.in Node Metrics data to. Should be left as the default.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: defaultBitflyNodeMetricsEndpoint},
 			AffectsContainers:    []ContainerID{ContainerID_Validator, ContainerID_Eth2},
@@ -63,7 +62,6 @@ func NewBitflyNodeMetricsConfig(config *RocketPoolConfig) *BitflyNodeMetricsConf
 		},
 	}
 }
-
 
 // Get the parameters for this config
 func (config *BitflyNodeMetricsConfig) GetParameters() []*Parameter {

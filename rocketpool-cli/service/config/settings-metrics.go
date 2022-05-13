@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -103,8 +101,6 @@ func (configPage *MetricsConfigPage) createContent() {
 		configPage.masterConfig.EnableMetrics.Value = checked
 		configPage.handleLayoutChange()
 	})
-
-	// Set up the setting callbacks
 	configPage.enableBitflyNodeMetricsBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
 		if configPage.masterConfig.EnableBitflyNodeMetrics.Value == checked {
 			return
@@ -128,8 +124,9 @@ func (configPage *MetricsConfigPage) handleLayoutChange() {
 		configPage.layout.addFormItems(configPage.exporterItems)
 	}
 
-	var selectedCC string = fmt.Sprint(configPage.masterConfig.ConsensusClient.Value)
-	if selectedCC == "teku" || selectedCC == "lighthouse" {
+	switch configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient) {
+	case config.ConsensusClient_Teku:
+	case config.ConsensusClient_Lighthouse:
 		configPage.layout.form.AddFormItem(configPage.enableBitflyNodeMetricsBox.item)
 		if configPage.masterConfig.EnableBitflyNodeMetrics.Value == true {
 			configPage.layout.addFormItems(configPage.bitflyNodeMetricsItems)

@@ -101,10 +101,10 @@ type RocketPoolConfig struct {
 	ExternalTeku       *ExternalTekuConfig       `yaml:"externalTeku,omitempty"`
 
 	// Metrics
-	Grafana             *GrafanaConfig           `yaml:"grafana,omitempty"`
-	Prometheus          *PrometheusConfig        `yaml:"prometheus,omitempty"`
-	Exporter            *ExporterConfig          `yaml:"exporter,omitempty"`
-	BitflyNodeMetrics   *BitflyNodeMetricsConfig `yaml:"bitflyNodeMetrics,omitempty"`
+	Grafana           *GrafanaConfig           `yaml:"grafana,omitempty"`
+	Prometheus        *PrometheusConfig        `yaml:"prometheus,omitempty"`
+	Exporter          *ExporterConfig          `yaml:"exporter,omitempty"`
+	BitflyNodeMetrics *BitflyNodeMetricsConfig `yaml:"bitflyNodeMetrics,omitempty"`
 
 	// Native mode
 	Native *NativeConfig `yaml:"native,omitempty"`
@@ -360,7 +360,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		EnableBitflyNodeMetrics: Parameter{
 			ID:                   "enableBitflyNodeMetrics",
 			Name:                 "Enable Beaconcha.in Node Metrics",
-			Description:          "Enable the Beaconcha.in Node Metrics Integration. This will allow you to track your Node Metrics from your phone using the beaconcha.in APP.",
+			Description:          "Enable the Beaconcha.in node metrics integration. This will allow you to track your node's metrics from your phone using the Beaconcha.in App.\n\nFor more information on setting up an account and the app, please visit https://beaconcha.in/mobile.",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: false},
 			AffectsContainers:    []ContainerID{ContainerID_Validator, ContainerID_Eth2},
@@ -368,7 +368,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
-		
 
 		BnMetricsPort: Parameter{
 			ID:                   "bnMetricsPort",
