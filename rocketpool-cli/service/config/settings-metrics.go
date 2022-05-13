@@ -125,8 +125,7 @@ func (configPage *MetricsConfigPage) handleLayoutChange() {
 	}
 
 	switch configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient) {
-	case config.ConsensusClient_Teku:
-	case config.ConsensusClient_Lighthouse:
+	case config.ConsensusClient_Teku, config.ConsensusClient_Lighthouse:
 		configPage.layout.form.AddFormItem(configPage.enableBitflyNodeMetricsBox.item)
 		if configPage.masterConfig.EnableBitflyNodeMetrics.Value == true {
 			configPage.layout.addFormItems(configPage.bitflyNodeMetricsItems)
