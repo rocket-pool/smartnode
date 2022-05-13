@@ -46,6 +46,11 @@ func NewMetricsConfigPage(home *settingsHome) *MetricsConfigPage {
 
 }
 
+// Get the underlying page
+func (configPage *MetricsConfigPage) getPage() *page {
+	return configPage.page
+}
+
 // Creates the content for the monitoring / stats settings page
 func (configPage *MetricsConfigPage) createContent() {
 
@@ -99,22 +104,22 @@ func (configPage *MetricsConfigPage) createContent() {
 			return
 		}
 		configPage.masterConfig.EnableMetrics.Value = checked
-		configPage.handleLayoutChange()
+		configPage.handleLayoutChanged()
 	})
 	configPage.enableBitflyNodeMetricsBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
 		if configPage.masterConfig.EnableBitflyNodeMetrics.Value == checked {
 			return
 		}
 		configPage.masterConfig.EnableBitflyNodeMetrics.Value = checked
-		configPage.handleLayoutChange()
+		configPage.handleLayoutChanged()
 	})
 
 	// Do the initial draw
-	configPage.handleLayoutChange()
+	configPage.handleLayoutChanged()
 }
 
 // Handle all of the form changes when the Enable Metrics box has changed
-func (configPage *MetricsConfigPage) handleLayoutChange() {
+func (configPage *MetricsConfigPage) handleLayoutChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableMetricsBox.item)
 

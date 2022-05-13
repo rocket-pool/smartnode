@@ -45,6 +45,11 @@ func NewConsensusConfigPage(home *settingsHome) *ConsensusConfigPage {
 
 }
 
+// Get the underlying page
+func (configPage *ConsensusConfigPage) getPage() *page {
+	return configPage.page
+}
+
 // Creates the content for the Consensus client settings page
 func (configPage *ConsensusConfigPage) createContent() {
 
@@ -178,4 +183,9 @@ func (configPage *ConsensusConfigPage) handleExternalCcChanged() {
 	}
 
 	configPage.layout.refresh()
+}
+
+// Handle a bulk redraw request
+func (configPage *ConsensusConfigPage) handleLayoutChanged() {
+	configPage.handleCcModeChanged()
 }

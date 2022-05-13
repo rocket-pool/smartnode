@@ -43,6 +43,11 @@ func NewFallbackExecutionConfigPage(home *settingsHome) *FallbackExecutionConfig
 
 }
 
+// Get the underlying page
+func (configPage *FallbackExecutionConfigPage) getPage() *page {
+	return configPage.page
+}
+
 // Creates the content for the fallback Execution client settings page
 func (configPage *FallbackExecutionConfigPage) createContent() {
 
@@ -165,4 +170,9 @@ func (configPage *FallbackExecutionConfigPage) handleLocalFallbackEcChanged() {
 	}
 
 	configPage.layout.refresh()
+}
+
+// Handle a bulk redraw request
+func (configPage *FallbackExecutionConfigPage) handleLayoutChanged() {
+	configPage.handleUseFallbackEcChanged()
 }

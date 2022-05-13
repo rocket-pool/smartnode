@@ -43,6 +43,11 @@ func NewExecutionConfigPage(home *settingsHome) *ExecutionConfigPage {
 
 }
 
+// Get the underlying page
+func (configPage *ExecutionConfigPage) getPage() *page {
+	return configPage.page
+}
+
 // Creates the content for the Execution client settings page
 func (configPage *ExecutionConfigPage) createContent() {
 
@@ -152,4 +157,9 @@ func (configPage *ExecutionConfigPage) handleLocalEcChanged() {
 	}
 
 	configPage.layout.refresh()
+}
+
+// Handle a bulk redraw request
+func (configPage *ExecutionConfigPage) handleLayoutChanged() {
+	configPage.handleEcModeChanged()
 }
