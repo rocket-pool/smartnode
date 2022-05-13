@@ -39,7 +39,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		}
 		if isGood {
 			clientNames = append(clientNames, client.Name)
-			clientDescriptions = append(clientDescriptions, getAugmentedDescription(client.Value.(config.ConsensusClient), client.Description))
+			clientDescriptions = append(clientDescriptions, getAugmentedCcDescription(client.Value.(config.ConsensusClient), client.Description))
 			goodClients = append(goodClients, client)
 		}
 	}
@@ -186,7 +186,7 @@ func selectRandomCC(goodOptions []config.ParameterOption, includeSupermajority b
 }
 
 // Get a more verbose client description, including warnings
-func getAugmentedDescription(client config.ConsensusClient, originalDescription string) string {
+func getAugmentedCcDescription(client config.ConsensusClient, originalDescription string) string {
 
 	switch client {
 	/*
