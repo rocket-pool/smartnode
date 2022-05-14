@@ -36,9 +36,6 @@ type NethermindConfig struct {
 	// Nethermind's memory for pruning
 	PruneMemSize Parameter `yaml:"pruneMemSize,omitempty"`
 
-	// Remaining free space limit before triggering a prune
-	PruneFreeSpaceThreshold Parameter `yaml:"pruneFreeSpaceThreshold,omitempty"`
-
 	// The Docker Hub tag for Nethermind
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
@@ -100,23 +97,11 @@ func NewNethermindConfig(config *RocketPoolConfig, isFallback bool) *NethermindC
 		PruneMemSize: Parameter{
 			ID:                   "pruneMemSize",
 			Name:                 "In-Memory Pruning Cache Size",
-			Description:          "The amount of RAM (in MB) you want to dedicate to Nethermind for its in-memory pruning system. Higher values mean less writes to your SSD and faster pruning.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
+			Description:          "The amount of RAM (in MB) you want to dedicate to Nethermind for its in-memory pruning system. Higher values mean less writes to your SSD and slower overall database growth.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
 			Type:                 ParameterType_Uint,
 			Default:              map[Network]interface{}{Network_All: calculateNethermindPruneMemSize()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{prefix + "NETHERMIND_PRUNE_MEM_SIZE"},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		PruneFreeSpaceThreshold: Parameter{
-			ID:                   "pruneFreeSpaceThreshold",
-			Name:                 "Pruning Free Space Threshold",
-			Description:          "When your disk's free space goes below this value (in GB), Nethermind will automatically begin pruning its data.",
-			Type:                 ParameterType_Uint,
-			Default:              map[Network]interface{}{Network_All: uint64(200)},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "NETHERMIND_PRUNE_DISK_FS_THRESHOLD"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -162,9 +147,9 @@ func calculateNethermindCache() uint64 {
 	} else if totalMemoryGB < 25 {
 		return 4096
 	} else if totalMemoryGB < 33 {
-		return 8192
+		return 6144
 	} else {
-		return 12288
+		return 8192
 	}
 }
 
@@ -183,7 +168,7 @@ func calculateNethermindPruneMemSize() uint64 {
 	} else if totalMemoryGB < 25 {
 		return 4096
 	} else if totalMemoryGB < 33 {
-		return 8192
+		return 6144
 	} else {
 		return 8192
 	}
@@ -214,7 +199,6 @@ func (config *NethermindConfig) GetParameters() []*Parameter {
 		&config.CacheSize,
 		&config.MaxPeers,
 		&config.PruneMemSize,
-		&config.PruneFreeSpaceThreshold,
 		&config.ContainerTag,
 		&config.AdditionalFlags,
 	}

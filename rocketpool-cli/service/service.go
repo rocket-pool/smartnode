@@ -884,7 +884,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
 	case config.ExecutionClient_Nethermind:
-		fmt.Println("You are using Nethermind as your Execution client.\nNethermind will automatically prune itself once your disk's free space hits a certain threshold - you can configure it in the `Execution Client` section of the `rocketpool service config` Terminal UI.")
+		fmt.Println("You are using Nethermind as your Execution client.\nNethermind pruning is not supported yet.")
 		return nil
 	case config.ExecutionClient_Besu:
 		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
