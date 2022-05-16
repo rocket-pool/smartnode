@@ -65,12 +65,13 @@ type RocketPoolConfig struct {
 	ExternalConsensusClient Parameter `yaml:"externalConsensusClient,omitempty"`
 
 	// Metrics settings
-	EnableMetrics         Parameter `yaml:"enableMetrics,omitempty"`
-	BnMetricsPort         Parameter `yaml:"bnMetricsPort,omitempty"`
-	VcMetricsPort         Parameter `yaml:"vcMetricsPort,omitempty"`
-	NodeMetricsPort       Parameter `yaml:"nodeMetricsPort,omitempty"`
-	ExporterMetricsPort   Parameter `yaml:"exporterMetricsPort,omitempty"`
-	WatchtowerMetricsPort Parameter `yaml:"watchtowerMetricsPort,omitempty"`
+	EnableMetrics           Parameter `yaml:"enableMetrics,omitempty"`
+	BnMetricsPort           Parameter `yaml:"bnMetricsPort,omitempty"`
+	VcMetricsPort           Parameter `yaml:"vcMetricsPort,omitempty"`
+	NodeMetricsPort         Parameter `yaml:"nodeMetricsPort,omitempty"`
+	ExporterMetricsPort     Parameter `yaml:"exporterMetricsPort,omitempty"`
+	WatchtowerMetricsPort   Parameter `yaml:"watchtowerMetricsPort,omitempty"`
+	EnableBitflyNodeMetrics Parameter `yaml:"enableBitflyNodeMetrics,omitempty"`
 
 	// The Smartnode configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode"`
@@ -101,9 +102,10 @@ type RocketPoolConfig struct {
 	ExternalTeku       *ExternalTekuConfig       `yaml:"externalTeku,omitempty"`
 
 	// Metrics
-	Grafana    *GrafanaConfig    `yaml:"grafana,omitempty"`
-	Prometheus *PrometheusConfig `yaml:"prometheus,omitempty"`
-	Exporter   *ExporterConfig   `yaml:"exporter,omitempty"`
+	Grafana           *GrafanaConfig           `yaml:"grafana,omitempty"`
+	Prometheus        *PrometheusConfig        `yaml:"prometheus,omitempty"`
+	Exporter          *ExporterConfig          `yaml:"exporter,omitempty"`
+	BitflyNodeMetrics *BitflyNodeMetricsConfig `yaml:"bitflyNodeMetrics,omitempty"`
 
 	// Native mode
 	Native *NativeConfig `yaml:"native,omitempty"`
@@ -360,6 +362,18 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		EnableBitflyNodeMetrics: Parameter{
+			ID:                   "enableBitflyNodeMetrics",
+			Name:                 "Enable Beaconcha.in Node Metrics",
+			Description:          "Enable the Beaconcha.in node metrics integration. This will allow you to track your node's metrics from your phone using the Beaconcha.in App.\n\nFor more information on setting up an account and the app, please visit https://beaconcha.in/mobile.",
+			Type:                 ParameterType_Bool,
+			Default:              map[Network]interface{}{Network_All: false},
+			AffectsContainers:    []ContainerID{ContainerID_Validator, ContainerID_Eth2},
+			EnvironmentVariables: []string{"ENABLE_BITFLY_NODE_METRICS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		BnMetricsPort: Parameter{
 			ID:                   "bnMetricsPort",
 			Name:                 "Beacon Node Metrics Port",
@@ -449,6 +463,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Grafana = NewGrafanaConfig(config)
 	config.Prometheus = NewPrometheusConfig(config)
 	config.Exporter = NewExporterConfig(config)
+	config.BitflyNodeMetrics = NewBitflyNodeMetricsConfig(config)
 	config.Native = NewNativeConfig(config)
 
 	// Apply the default values for mainnet
@@ -491,6 +506,7 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 		&config.ConsensusClient,
 		&config.ExternalConsensusClient,
 		&config.EnableMetrics,
+		&config.EnableBitflyNodeMetrics,
 		&config.BnMetricsPort,
 		&config.VcMetricsPort,
 		&config.NodeMetricsPort,
@@ -525,6 +541,7 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"grafana":                   config.Grafana,
 		"prometheus":                config.Prometheus,
 		"exporter":                  config.Exporter,
+		"bitflyNodeMetrics":         config.BitflyNodeMetrics,
 		"native":                    config.Native,
 	}
 }
@@ -954,6 +971,11 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			envVars["PROMETHEUS_ADDITIONAL_FLAGS"] = fmt.Sprintf(", \"%s\"", config.Prometheus.AdditionalFlags.Value.(string))
 		}
 
+	}
+
+	// Bitfly Node Metrics
+	if config.EnableBitflyNodeMetrics.Value == true {
+		addParametersToEnvVars(config.BitflyNodeMetrics.GetParameters(), envVars)
 	}
 
 	return envVars

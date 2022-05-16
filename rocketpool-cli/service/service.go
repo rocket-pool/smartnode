@@ -876,6 +876,23 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
+	// Sanity checks
+	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_External {
+		fmt.Println("You are using an externally managed Execution client.\nThe Smartnode cannot prune it for you.")
+		return nil
+	}
+	if cfg.IsNativeMode {
+		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
+	}
+	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
+	case config.ExecutionClient_Nethermind:
+		fmt.Println("You are using Nethermind as your Execution client.\nNethermind pruning is not supported yet.")
+		return nil
+	case config.ExecutionClient_Besu:
+		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
+		return nil
+	}
+
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
 
@@ -923,7 +940,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
 	}
-	partitions, err := disk.Partitions(false)
+	partitions, err := disk.Partitions(true)
 	if err != nil {
 		return fmt.Errorf("Error getting partition list: %w", err)
 	}
@@ -1506,7 +1523,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	volumeBytesHuman := humanize.IBytes(volumeBytes)
 
 	// Get the amount of free space available in the target dir
-	partitions, err := disk.Partitions(false)
+	partitions, err := disk.Partitions(true)
 	if err != nil {
 		return fmt.Errorf("Error getting partition list: %w", err)
 	}
@@ -1651,7 +1668,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	if err != nil {
 		return fmt.Errorf("Error getting execution volume source path: %w", err)
 	}
-	partitions, err := disk.Partitions(false)
+	partitions, err := disk.Partitions(true)
 	if err != nil {
 		return fmt.Errorf("Error getting partition list: %w", err)
 	}

@@ -7,8 +7,8 @@ import (
 
 // Constants
 const (
-	besuTagAmd64         string = "rocketpool/besu:22.4.0-tx-fix" //"hyperledger/besu:22.1.3"
-	besuTagArm64         string = "rocketpool/besu:22.4.0-tx-fix"
+	besuTagAmd64         string = "hyperledger/besu:22.4.1-SNAPSHOT-openjdk-latest"
+	besuTagArm64         string = "hyperledger/besu:22.4.1-SNAPSHOT-openjdk-latest"
 	besuEventLogInterval int    = 25000
 	besuMaxPeers         uint16 = 25
 )

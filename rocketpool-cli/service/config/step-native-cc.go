@@ -12,7 +12,7 @@ func createNativeCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	clientDescriptions := []string{}
 	for _, client := range clients {
 		clientNames = append(clientNames, client.Name)
-		clientDescriptions = append(clientDescriptions, getAugmentedDescription(client.Value.(config.ConsensusClient), client.Description))
+		clientDescriptions = append(clientDescriptions, getAugmentedCcDescription(client.Value.(config.ConsensusClient), client.Description))
 	}
 
 	helperText := "Please select the Consensus client you are / will be using.\n\nIf you're still deciding on one, highlight each one below to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them."

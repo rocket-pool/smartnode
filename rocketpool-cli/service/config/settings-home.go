@@ -21,7 +21,7 @@ type settingsHome struct {
 	metricsPage      *MetricsConfigPage
 	addonsPage       *AddonsPage
 	categoryList     *tview.List
-	settingsSubpages []*page
+	settingsSubpages []settingsPage
 	content          tview.Primitive
 	md               *mainDisplay
 }
@@ -44,19 +44,19 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	home.ccPage = NewConsensusConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
 	home.addonsPage = NewAddonsPage(home.md)
-	settingsSubpages := []*page{
-		home.smartnodePage.page,
-		home.ecPage.page,
-		home.fallbackEcPage.page,
-		home.ccPage.page,
-		home.metricsPage.page,
-		home.addonsPage.page,
+	settingsSubpages := []settingsPage{
+		home.smartnodePage,
+		home.ecPage,
+		home.fallbackEcPage,
+		home.ccPage,
+		home.metricsPage,
+		home.addonsPage,
 	}
 	home.settingsSubpages = settingsSubpages
 
 	// Add the subpages to the main display
 	for _, subpage := range settingsSubpages {
-		md.pages.AddPage(subpage.id, subpage.content, true, false)
+		md.pages.AddPage(subpage.getPage().id, subpage.getPage().content, true, false)
 	}
 	home.createContent()
 	homePage.content = home.content
@@ -73,7 +73,7 @@ func (home *settingsHome) createContent() {
 	// Create the category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-			layout.descriptionBox.SetText(home.settingsSubpages[index].description)
+			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
 		})
 	categoryList.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	categoryList.SetBorderPadding(0, 0, 1, 1)
@@ -90,15 +90,16 @@ func (home *settingsHome) createContent() {
 
 	// Add all of the subpages to the list
 	for _, subpage := range home.settingsSubpages {
-		categoryList.AddItem(subpage.title, "", 0, nil)
+		categoryList.AddItem(subpage.getPage().title, "", 0, nil)
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
-		home.md.setPage(home.settingsSubpages[i])
+		home.settingsSubpages[i].handleLayoutChanged()
+		home.md.setPage(home.settingsSubpages[i].getPage())
 	})
 
 	// Make it the content of the layout and set the default description text
 	layout.setContent(categoryList, categoryList.Box, "Select a Category")
-	layout.descriptionBox.SetText(home.settingsSubpages[0].description)
+	layout.descriptionBox.SetText(home.settingsSubpages[0].getPage().description)
 
 	// Make the footer
 	footer, height := home.createFooter()

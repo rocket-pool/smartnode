@@ -113,3 +113,13 @@ func NewAddonsPage(md *mainDisplay) *AddonsPage {
 	}
 
 }
+
+// Get the underlying page
+func (configPage *AddonsPage) getPage() *page {
+	return configPage.page
+}
+
+// Handle a bulk redraw request
+func (configPage *AddonsPage) handleLayoutChanged() {
+
+}

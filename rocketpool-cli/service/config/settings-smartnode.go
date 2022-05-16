@@ -32,6 +32,11 @@ func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 
 }
 
+// Get the underlying page
+func (configPage *SmartnodeConfigPage) getPage() *page {
+	return configPage.page
+}
+
 // Creates the content for the Smartnode settings page
 func (configPage *SmartnodeConfigPage) createContent() {
 
@@ -76,4 +81,9 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	}
 	layout.refresh()
 
+}
+
+// Handle a bulk redraw request
+func (configPage *SmartnodeConfigPage) handleLayoutChanged() {
+	configPage.layout.refresh()
 }
