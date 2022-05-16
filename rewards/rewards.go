@@ -15,14 +15,33 @@ import (
 
 // Info for a rewards snapshot event
 type RewardsEvent struct {
-	Index                *big.Int
-	Block                *big.Int
-	RewardsPerNetworkRPL []*big.Int
-	RewardsPerNetworkETH []*big.Int
-	MerkleRoot           common.Hash
-	MerkleTreeCID        string
-	IntervalStartTime    time.Time
-	IntervalEndTime      time.Time
+	Index             *big.Int
+	ExecutionBlock    *big.Int
+	ConsensusBlock    *big.Int
+	MerkleRoot        common.Hash
+	MerkleTreeCID     string
+	IntervalsPassed   *big.Int
+	TreasuryRPL       *big.Int
+	TrustedNodeRPL    []*big.Int
+	NodeRPL           []*big.Int
+	NodeETH           []*big.Int
+	IntervalStartTime time.Time
+	IntervalEndTime   time.Time
+	SubmissionTime    time.Time
+}
+
+// Struct for submitting the rewards for a checkpoint
+type RewardSubmission struct {
+	RewardIndex     *big.Int    `abi:"rewardIndex"`
+	ExecutionBlock  *big.Int    `abi:"executionBlock"`
+	ConsensusBlock  *big.Int    `abi:"consensusBlock"`
+	MerkleRoot      common.Hash `abi:"merkleRoot"`
+	MerkleTreeCID   string      `abi:"merkleTreeCID"`
+	IntervalsPassed *big.Int    `abi:"intervalsPassed"`
+	TreasuryRPL     *big.Int    `abi:"treasuryRPL"`
+	TrustedNodeRPL  []*big.Int  `abi:"trustedNodeRPL"`
+	NodeRPL         []*big.Int  `abi:"nodeRPL"`
+	NodeETH         []*big.Int  `abi:"nodeETH"`
 }
 
 // Get the index of the active rewards period
@@ -117,21 +136,21 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 }
 
 // Estimate the gas for submiting a Merkle Tree-based snapshot for a rewards interval
-func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot common.Hash, merkleTreeCID string, intervalsPassed *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketRewardsPool.GetTransactionGasInfo(opts, "submitRewardSnapshot", index, block, rewardsPerNetworkRPL, rewardsPerNetworkETH, merkleRoot, merkleTreeCID, intervalsPassed)
+	return rocketRewardsPool.GetTransactionGasInfo(opts, "submitRewardSnapshot", submission)
 }
 
 // Submit a Merkle Tree-based snapshot for a rewards interval
-func SubmitRewardSnapshot(rp *rocketpool.RocketPool, index *big.Int, block *big.Int, rewardsPerNetworkRPL []*big.Int, rewardsPerNetworkETH []*big.Int, merkleRoot common.Hash, merkleTreeCID string, intervalsPassed *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", index, block, rewardsPerNetworkRPL, rewardsPerNetworkETH, merkleRoot, merkleTreeCID, intervalsPassed)
+	hash, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", submission)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not submit rewards snapshot: %w", err)
 	}
@@ -169,22 +188,24 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 	}
 
 	// Get the decoded data
-	eventBlock := values["block"].(*big.Int)
-	eventRpl := values["rewardsPerNetworkRPL"].([]*big.Int)
-	eventEth := values["rewardsPerNetworkETH"].([]*big.Int)
-	eventMerkleRoot := values["merkleRoot"].([32]byte)
-	eventMerkleTreeCid := values["merkleTreeCID"].(string)
+	submission := values["submission"].(RewardSubmission)
 	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
 	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
+	submissionTime := values["time"].(*big.Int)
 	eventData := RewardsEvent{
-		Index:                indexBig,
-		Block:                eventBlock,
-		RewardsPerNetworkRPL: eventRpl,
-		RewardsPerNetworkETH: eventEth,
-		MerkleRoot:           common.BytesToHash(eventMerkleRoot[:]),
-		MerkleTreeCID:        eventMerkleTreeCid,
-		IntervalStartTime:    time.Unix(eventIntervalStartTime.Int64(), 0),
-		IntervalEndTime:      time.Unix(eventIntervalEndTime.Int64(), 0),
+		Index:             indexBig,
+		ExecutionBlock:    submission.ExecutionBlock,
+		ConsensusBlock:    submission.ConsensusBlock,
+		IntervalsPassed:   submission.IntervalsPassed,
+		TreasuryRPL:       submission.TreasuryRPL,
+		TrustedNodeRPL:    submission.TrustedNodeRPL,
+		NodeRPL:           submission.NodeRPL,
+		NodeETH:           submission.NodeETH,
+		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
+		MerkleTreeCID:     submission.MerkleTreeCID,
+		IntervalStartTime: time.Unix(eventIntervalStartTime.Int64(), 0),
+		IntervalEndTime:   time.Unix(eventIntervalEndTime.Int64(), 0),
+		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
 	}
 
 	return eventData, nil
