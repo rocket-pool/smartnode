@@ -319,6 +319,7 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 	}
 	pDaoRewards := big.NewInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
+	pDaoRewards.Div(pDaoRewards, eth.EthToWei(1))
 
 	// Return the rewards maps
 	return nodeRewardsMap, networkRewardsMap, pDaoRewards, invalidNetworkNodes, nil
