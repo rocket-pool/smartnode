@@ -139,7 +139,7 @@ func calculateNethermindCache() uint64 {
 	if totalMemoryGB == 0 {
 		return 0
 	} else if totalMemoryGB < 9 {
-		return 256
+		return 512
 	} else if totalMemoryGB < 13 {
 		return 1024
 	} else if totalMemoryGB < 17 {
@@ -160,7 +160,7 @@ func calculateNethermindPruneMemSize() uint64 {
 	if totalMemoryGB == 0 {
 		return 0
 	} else if totalMemoryGB < 9 {
-		return 256
+		return 512
 	} else if totalMemoryGB < 13 {
 		return 1024
 	} else if totalMemoryGB < 17 {
