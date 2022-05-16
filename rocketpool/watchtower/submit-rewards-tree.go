@@ -176,6 +176,7 @@ func (t *submitRewardsTree) run() error {
 	if err != nil {
 		return err
 	}
+	elBlockIndex := snapshotElBlockHeader.Number.Uint64()
 
 	// Get the current interval
 	currentIndexBig, err := rewards.GetRewardIndex(t.rp, nil)
@@ -234,7 +235,7 @@ func (t *submitRewardsTree) run() error {
 		t.log.Printlnf("Uploaded Merkle tree with CID %s", cid)
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -251,19 +252,19 @@ func (t *submitRewardsTree) run() error {
 
 		// Log
 		generationPrefix := "[Merkle Tree]"
-		if int64(intervalsPassed) > 1 {
-			t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", int64(intervalsPassed))
+		if uint64(intervalsPassed) > 1 {
+			t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", uint64(intervalsPassed))
 		}
-		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, generationPrefix, snapshotBeaconBlock, snapshotElBlockHeader.Number.Uint64(), startTime, endTime)
+		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 		// Get the total pending rewards and respective distribution percentages
-		nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotElBlockHeader, intervalTime)
+		nodeRewardsMap, networkRewardsMap, pDaoRewards, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotElBlockHeader, intervalTime)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error calculating node operator rewards: %w", generationPrefix, err))
 			return
 		}
 		for address, network := range invalidNodeNetworks {
-			t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned!", generationPrefix, address.Hex(), network)
+			t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
 		}
 
 		// Generate the Merkle tree
@@ -274,7 +275,7 @@ func (t *submitRewardsTree) run() error {
 		}
 
 		// Create the JSON proof wrapper and encode it
-		proofWrapper := rprewards.GenerateTreeJson(tree.Root(), nodeRewardsMap, networkRewardsMap)
+		proofWrapper := rprewards.GenerateTreeJson(common.BytesToHash(tree.Root()), nodeRewardsMap, networkRewardsMap, pDaoRewards, currentIndex, snapshotBeaconBlock, elBlockIndex, uint64(intervalsPassed))
 		wrapperBytes, err := json.Marshal(proofWrapper)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
@@ -302,7 +303,7 @@ func (t *submitRewardsTree) run() error {
 			t.log.Printlnf("%s Uploaded Merkle tree with CID %s", generationPrefix, cid)
 
 			// Submit to the contracts
-			err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
+			err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
 			if err != nil {
 				t.handleError(fmt.Errorf("%s Error submitting rewards snapshot: %w", generationPrefix, err))
 				return
@@ -332,31 +333,35 @@ func (t *submitRewardsTree) handleError(err error) {
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, proofWrapper *rprewards.ProofWrapper, cid string, intervalsPassed *big.Int) error {
+func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, proofWrapper *rprewards.ProofWrapper, cid string, intervalsPassed *big.Int) error {
 
-	consensusBlockBig := big.NewInt(0).SetUint64(consensusBlock)
 	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(proofWrapper.MerkleRoot))
 	if err != nil {
 		return fmt.Errorf("Error decoding merkle root: %w", err)
 	}
 	treeRoot := common.BytesToHash(treeRootBytes)
 
-	// Create the array of RPL rewards per network
-	rplRewards := []*big.Int{}
+	// Create the arrays of rewards per network
+	collateralRplRewards := []*big.Int{}
+	oDaoRplRewards := []*big.Int{}
+	smoothingPoolEthRewards := []*big.Int{}
 
-	// TODO: OTHER NETWORK SUPPORT
-	mainnetRplRewards := big.NewInt(0)
-	mainnetRplRewards.Add(mainnetRplRewards, proofWrapper.NetworkRewards.CollateralRplPerNetwork[0])
-	mainnetRplRewards.Add(mainnetRplRewards, proofWrapper.NetworkRewards.OracleDaoRplPerNetwork[0])
-	rplRewards = append(rplRewards, mainnetRplRewards)
+	// Create the total rewards for each network
+	network := uint64(0)
+	for {
+		// Assumes that each of the rewards structures exists for the same networks, so once a missing one is hit
+		// then we're done going through the networks
+		collateralRplForNetwork, exists := proofWrapper.NetworkRewards.CollateralRplPerNetwork[network]
+		if !exists {
+			break
+		}
 
-	// Create the array of ETH rewards per network
-	ethRewards := []*big.Int{}
+		collateralRplRewards = append(collateralRplRewards, collateralRplForNetwork)
+		oDaoRplRewards = append(oDaoRplRewards, proofWrapper.NetworkRewards.OracleDaoRplPerNetwork[network])
+		smoothingPoolEthRewards = append(smoothingPoolEthRewards, proofWrapper.NetworkRewards.SmoothingPoolEthPerNetwork[network])
 
-	// TODO: OTHER NETWORK SUPPORT
-	mainnetEthRewards := big.NewInt(0)
-	mainnetEthRewards.Add(mainnetEthRewards, proofWrapper.NetworkRewards.SmoothingPoolEthPerNetwork[0])
-	ethRewards = append(ethRewards, mainnetEthRewards)
+		network++
+	}
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -364,8 +369,22 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 		return err
 	}
 
+	// Create the submission
+	submission := rewards.RewardSubmission{
+		RewardIndex:     index,
+		ExecutionBlock:  big.NewInt(0).SetUint64(executionBlock),
+		ConsensusBlock:  big.NewInt(0).SetUint64(consensusBlock),
+		MerkleRoot:      treeRoot,
+		MerkleTreeCID:   cid,
+		IntervalsPassed: intervalsPassed,
+		TreasuryRPL:     proofWrapper.TotalRewards.ProtocolDaoRpl,
+		NodeRPL:         collateralRplRewards,
+		TrustedNodeRPL:  oDaoRplRewards,
+		NodeETH:         smoothingPoolEthRewards,
+	}
+
 	// Get the gas limit
-	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, index, consensusBlockBig, rplRewards, ethRewards, treeRoot, cid, intervalsPassed, opts)
+	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
 	}
@@ -395,7 +414,7 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	opts.GasLimit = gas.Uint64()
 
 	// Submit RPL price
-	hash, err := rewards.SubmitRewardSnapshot(t.rp, index, consensusBlockBig, rplRewards, ethRewards, treeRoot, cid, intervalsPassed, opts)
+	hash, err := rewards.SubmitRewardSnapshot(t.rp, submission, opts)
 	if err != nil {
 		return err
 	}

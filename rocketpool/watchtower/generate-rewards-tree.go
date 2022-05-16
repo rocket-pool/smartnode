@@ -1,6 +1,7 @@
 package watchtower
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -167,25 +168,14 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return
 	}
-	t.log.Printlnf("%s Found snapshot event: consensus block %s", generationPrefix, rewardsEvent.Block.String())
+	t.log.Printlnf("%s Found snapshot event: Beacon block %s, execution block %s", generationPrefix, rewardsEvent.ConsensusBlock.String(), rewardsEvent.ExecutionBlock.String())
 
-	// Figure out the timestamp for the block
-	eth2Config, err := t.bc.GetEth2Config()
+	// Get the EL block
+	elBlockHeader, err := t.ec.HeaderByNumber(context.Background(), rewardsEvent.ExecutionBlock)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error getting Beacon config: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("%s Error getting execution block: %w", generationPrefix, err))
 		return
 	}
-	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	blockTime := genesisTime.Add(time.Duration(rewardsEvent.Block.Uint64()*eth2Config.SecondsPerSlot) * time.Second)
-	t.log.Printlnf("%s Block time is %s", generationPrefix, blockTime)
-
-	// Get the matching EL block
-	elBlockHeader, err := rprewards.GetELBlockHeaderForTime(blockTime, ec)
-	if err != nil {
-		t.handleError(fmt.Errorf("%s Error getting matching EL block: %w", generationPrefix, err))
-		return
-	}
-	t.log.Printlnf("%s Found matching EL block: %s", generationPrefix, elBlockHeader.Number.String())
 
 	// Get the interval time
 	intervalTime := rewardsEvent.IntervalEndTime.Sub(rewardsEvent.IntervalStartTime)
@@ -193,9 +183,9 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	// Get the total pending rewards and respective distribution percentages
 	t.log.Printlnf("%s Calculating RPL rewards...", generationPrefix)
 	start := time.Now()
-	nodeRewardsMap, networkRewardsMap, invalidNodeNetworks, err := rprewards.CalculateRplRewards(rp, elBlockHeader, intervalTime)
+	nodeRewardsMap, networkRewardsMap, protocolDaoRpl, invalidNodeNetworks, err := rprewards.CalculateRplRewards(rp, elBlockHeader, intervalTime)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error calculating node operator rewards: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("%s Error calculating rewards: %w", generationPrefix, err))
 		return
 	}
 	for address, network := range invalidNodeNetworks {
@@ -223,7 +213,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 
 	// Create the JSON proof wrapper and encode it
 	t.log.Printlnf("%s Saving JSON file...", generationPrefix)
-	proofWrapper := rprewards.GenerateTreeJson(tree.Root(), nodeRewardsMap, networkRewardsMap)
+	proofWrapper := rprewards.GenerateTreeJson(common.BytesToHash(tree.Root()), nodeRewardsMap, networkRewardsMap, protocolDaoRpl, index, rewardsEvent.ConsensusBlock.Uint64(), rewardsEvent.ExecutionBlock.Uint64(), rewardsEvent.IntervalsPassed.Uint64())
 	wrapperBytes, err := json.Marshal(proofWrapper)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
