@@ -291,7 +291,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
-			Network_Kiln:    "0x93c769b239c5dBb383683869FaE2667623055420",
+			Network_Kiln:    "0x340b8bB313B9d5d79cA82c7b7416Ee1A8485326c",
 		},
 
 		oneInchOracleAddress: map[Network]string{
@@ -303,40 +303,38 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		rplTokenAddress: map[Network]string{
 			Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
-			Network_Kiln:    "0x50243dc12c1718E85b1A34ddF66F2c70bC13DF09",
+			Network_Kiln:    "0xeD962Cf44d2B4B4C3B793d2665A701Ce183DDbC6",
 		},
 
 		rplFaucetAddress: map[Network]string{
 			Network_Mainnet: "",
 			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
-			Network_Kiln:    "0xC066e113cD3a568EdcF18D2Fd502f399E63Bc7B7",
+			Network_Kiln:    "0xE200d83cE0534fB28F12813617abCE01258b6673",
 		},
 
 		rethAddress: map[Network]string{
 			Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
 			Network_Prater:  "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
-			Network_Kiln:    "0xfD64e5461e790b2108Fcf1Bcf9fA6151E7753Ff7",
+			Network_Kiln:    "0xBCAB713355D265B3e3D64F02bc1Eb4F7717b4B14",
 		},
 
 		legacyRewardsPoolAddress: map[Network]string{
 			Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
 			Network_Prater:  "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
-			Network_Kiln:    "",
+			Network_Kiln:    "0xa9fafd343ebe3152f906cfc6a21c9e83cdcd977c", // Old Kiln
 		},
 
 		legacyClaimNodeAddress: map[Network]string{
 			Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
 			Network_Prater:  "0xc05b7A2a03A6d2736d1D0ebf4d4a0aFE2cc32cE1",
-			Network_Kiln:    "",
+			Network_Kiln:    "0x2508B37abB889BD727914AFBb06b623aF2592f76", // Old Kiln
 		},
 
 		legacyClaimTrustedNodeAddress: map[Network]string{
 			Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
 			Network_Prater:  "0x730982F4439E5AC30292333ff7d0C478907f2219",
-			Network_Kiln:    "",
+			Network_Kiln:    "0x247B877Ba98Ffa627AFE034be54498ac4F9b1695", // Old Kiln
 		},
-
-		legacyRewardsPoolAbi: "eJzVWN9vmzAQ/lcmnvPADxtD37po0ia1VZVmT1U1HfYRoRKobJMmqvq/zxCSQBOatMsYe0vs43zfd2ffZ9+/WEn2VGhlXdyXPzXKDNLp6gmtC4vnmZbA9ZdJzh9R3+lcwgx/lEYxcLRGVgbz0vCXbBpcCiFRKTOt136gHnh9GFlKg8brQkOUpIlemdksz55gBVGKuy/MykrLghuHZlAlswx0Id/OvI5eLDCfr+Z5YQDEkCoctfEIXKKwLswX1UwLHmzjrGHwFJJ5ks3GNe4DCEafdtrNStPnFkPLaWH+u9TfOQWDOGvEtzH4jC+dzPGAp4etweT2apo/YqbGJRTjeWuMC6yiaCbIXlKMHYfboU89QpkTeg4NYrQjwimNInBsLlzhskAg4bHHfRFyZCSmFG2fUofXKOos7uJYoFRJnpn18kJ31WwZf7AD1wYWdJTgIsHnnWVcZFyvF6qqDQzGOtlvgJJYEEHtroBnqA13XyGFrNotR8JuZeVwRs4WuuuEAfpuJ9cm9Crb1WZfmDBN4u80SD0sGBF4hEck+jCMcT43xlUtDwmOZ3uIGJwKR92CUkMDYRMvYEy8tyv2cjIsBNQGN2ZIjyEoI78Cpa9BDAwBD23PYduG0BWW6aSmMzX6+Kbj30CzJ9Rmr/sMNJrlt2WitHqfhijP00McVONnJYARQhwRiD4JyEoNc2Qz9seAj8INKCUfZqBTBJ3EwjTXkO6EwoD2BBo54vgOPULIXlhrRjanVdU9pocl0+gc7O472ZOUay8o3xXa3Sn6qVB+B3VSkvqrV4f5IYt85/z12g+jE5yZAxAliuE1NJdEkTBa/H/ldgxZNTyUWvVC4hIW9322llSsz9dCyvXNa0BFZkgJGMW/UGSnkXKDy4ExAuZm66Af9czILUpeytJhkWGj6zJOnVOvBRN8BilUldqBIRGUUebCP0jrsIiIffBiH+OeibhM0/x5eE8qNoS+Z3N3oE1230mH0jVOqtfFut663wU3qbncPEYOKBk+w4Cw4FiHPguPbd3xC7f3wLf6o7aQtVJcC3DZIu7kF/IGE23kJLLRE+6xa85ZkO870XmfFcj3ROGf8xeGPo/AL5+KfwPvAY9J",
 	}
 
 }
