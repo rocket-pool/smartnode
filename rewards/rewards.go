@@ -109,6 +109,19 @@ func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.
 	return *perc, nil
 }
 
+// Get the percent of checkpoint rewards that goes to the PDAO
+func GetProtocolDaoRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return nil, err
+	}
+	perc := new(*big.Int)
+	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimDAO"); err != nil {
+		return nil, fmt.Errorf("Could not get protocol DAO rewards percent: %w", err)
+	}
+	return *perc, nil
+}
+
 // Get the amount of RPL rewards that will be provided to node operators
 func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
