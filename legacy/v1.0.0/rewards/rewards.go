@@ -149,5 +149,5 @@ var rocketRewardsPoolLock sync.Mutex
 func getRocketRewardsPool(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
 	rocketRewardsPoolLock.Lock()
 	defer rocketRewardsPoolLock.Unlock()
-	return rp.GetContract("rocketRewardsPool")
+	return rp.VersionManager.V1_0_0.GetContract("rocketRewardsPool")
 }

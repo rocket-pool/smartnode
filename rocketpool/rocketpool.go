@@ -37,6 +37,7 @@ type RocketPool struct {
 	Client                ExecutionClient
 	RocketStorage         *contracts.RocketStorage
 	RocketStorageContract *Contract
+	VersionManager        *VersionManager
 	addresses             map[string]cachedAddress
 	abis                  map[string]cachedABI
 	contracts             map[string]cachedContract
@@ -67,14 +68,17 @@ func NewRocketPool(client ExecutionClient, rocketStorageAddress common.Address) 
 	}
 
 	// Create and return
-	return &RocketPool{
+	rp := &RocketPool{
 		Client:                client,
 		RocketStorage:         rocketStorage,
 		RocketStorageContract: contract,
 		addresses:             make(map[string]cachedAddress),
 		abis:                  make(map[string]cachedABI),
 		contracts:             make(map[string]cachedContract),
-	}, nil
+	}
+	rp.VersionManager = NewVersionManager(rp)
+
+	return rp, nil
 
 }
 
@@ -106,6 +110,7 @@ func (rp *RocketPool) GetAddress(contractName string) (*common.Address, error) {
 	return &address, nil
 
 }
+
 func (rp *RocketPool) GetAddresses(contractNames ...string) ([]*common.Address, error) {
 
 	// Data

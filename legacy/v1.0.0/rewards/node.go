@@ -120,5 +120,5 @@ var rocketClaimNodeLock sync.Mutex
 func getRocketClaimNode(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
 	rocketClaimNodeLock.Lock()
 	defer rocketClaimNodeLock.Unlock()
-	return rp.GetContract("rocketClaimNode")
+	return rp.VersionManager.V1_0_0.GetContract("rocketClaimNode")
 }
