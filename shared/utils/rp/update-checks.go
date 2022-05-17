@@ -1,21 +1,18 @@
 package rp
 
 import (
-	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/hashicorp/go-version"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils"
 )
 
 // Check if the contract upgrades for Merge support (Rocket Pool v1.1) have been deployed
 func IsMergeUpdateDeployed(rp *rocketpool.RocketPool) (bool, error) {
-	// Use rocketNodeManager's version as the reference
-	version, err := node.GetNodeManagerVersion(rp, nil)
+	currentVersion, err := utils.GetCurrentVersion(rp)
 	if err != nil {
 		return false, err
 	}
 
-	if version == 1 {
-		return false, nil
-	}
-
-	return true, nil
+	constraint, _ := version.NewConstraint(">= 1.1.0")
+	return constraint.Check(currentVersion), nil
 }

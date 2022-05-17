@@ -79,11 +79,8 @@ type NodeCollector struct {
 	// The next block to start from when looking at cumulative RPL rewards
 	nextRewardsStartBlock *big.Int
 
-	// The cumulative amount of RPL earned the from legacy rewards process
-	legacyCumulativeRewards float64
-
-	// The cumulative amount of RPL earned from the new rewards process
-	newCumulativeRewards float64
+	// The cumulative amount of RPL earned
+	cumulativeRewards float64
 
 	// The Rocket Pool config
 	cfg *config.RocketPoolConfig
@@ -195,19 +192,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	unclaimedRewards := float64(-1)
 
 	// Handle update checking and new rewards status
-	var unclaimed []uint64
-	var claimed []uint64
-	isUpdated, err := rp.IsMergeUpdateDeployed(collector.rp)
+	isMergeUpdateDeployed, err := rp.IsMergeUpdateDeployed(collector.rp)
 	if err != nil {
 		log.Printf("Error checking for merge contract update deployment: %w\n", err.Error())
 		return
-	}
-	if isUpdated {
-		unclaimed, claimed, err = rprewards.GetClaimStatus(collector.rp, collector.cfg, collector.nodeAddress)
-		if err != nil {
-			log.Printf("Error checking for new reward claim status: %w\n", err.Error())
-			return
-		}
 	}
 
 	// Get the total staked RPL
@@ -232,35 +220,63 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	// Get the cumulative RPL rewards
+	// Get the cumulative claimed and unclaimed RPL rewards
 	wg.Go(func() error {
-		// Calculate legacy rewards
-		cumulativeRewardsWei, err := rewards.CalculateLegacyLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.cfg.Smartnode.GetLegacyRewardsPoolAddress(), collector.cfg.Smartnode.GetLegacyRewardsPoolAbi(), collector.cfg.Smartnode.GetLegacyClaimNodeAddress(), collector.eventLogInterval, collector.nextRewardsStartBlock)
+		// Legacy rewards
+		unclaimedRewardsWei := big.NewInt(0)
+		rewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
 		}
 
+		// Modern rewards
+		if isMergeUpdateDeployed {
+			// Get the claimed and unclaimed intervals
+			unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.cfg, collector.nodeAddress)
+			if err != nil {
+				return err
+			}
+
+			// Get the info for each claimed interval
+			for _, claimedInterval := range claimed {
+				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval)
+				if err != nil {
+					return err
+				}
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
+				}
+				rewards.Add(rewards, intervalInfo.CollateralRplAmount)
+			}
+
+			// Get the unclaimed rewards
+			for _, unclaimedInterval := range unclaimed {
+				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
+				if err != nil {
+					return err
+				}
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+				}
+				unclaimedRewardsWei.Add(unclaimedRewardsWei, intervalInfo.CollateralRplAmount)
+			}
+		} else {
+			// Check if legacy rewards are currently available from the previous checkpoint
+			unclaimedRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil)
+			if err != nil {
+				return fmt.Errorf("Error getting unclaimed rewards: %w", err)
+			}
+		}
+
+		// Get the block for the next rewards checkpoint
 		header, err := collector.rp.Client.HeaderByNumber(context.Background(), nil)
 		if err != nil {
 			return fmt.Errorf("Error getting latest block header: %w", err)
 		}
 
-		collector.legacyCumulativeRewards += eth.WeiToEth(cumulativeRewardsWei)
+		collector.cumulativeRewards += eth.WeiToEth(rewards)
+		unclaimedRewards += eth.WeiToEth(unclaimedRewardsWei)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
-
-		// Calculate new rewards
-		if isUpdated {
-			total := big.NewInt(0)
-			for _, index := range claimed {
-				info, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, index)
-				if err != nil {
-					return fmt.Errorf("Error getting claimed rewards for interval %d: %w", index, err)
-				}
-				total.Add(total, info.CollateralRplAmount)
-				total.Add(total, info.ODaoRplAmount)
-			}
-			collector.newCumulativeRewards = eth.WeiToEth(total)
-		}
 
 		return nil
 	})
@@ -368,30 +384,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
-	// Get the unclaimed rewards
-	wg.Go(func() error {
-		if !isUpdated {
-			unclaimedRewardsWei, err := legacyrewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting unclaimed rewards: %w", err)
-			}
-			unclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
-			return nil
-		} else {
-			total := big.NewInt(0)
-			for _, index := range unclaimed {
-				info, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, index)
-				if err != nil {
-					return fmt.Errorf("Error getting unclaimed rewards for interval %d: %w", index, err)
-				}
-				total.Add(total, info.CollateralRplAmount)
-				total.Add(total, info.ODaoRplAmount)
-			}
-			unclaimedRewards = eth.WeiToEth(total)
-			return nil
-		}
-	})
-
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		log.Printf("%s\n", err.Error())
@@ -441,7 +433,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.rplCollateral, prometheus.GaugeValue, collateralRatio)
 	channel <- prometheus.MustNewConstMetric(
-		collector.cumulativeRplRewards, prometheus.GaugeValue, collector.legacyCumulativeRewards+collector.newCumulativeRewards)
+		collector.cumulativeRplRewards, prometheus.GaugeValue, collector.cumulativeRewards)
 	channel <- prometheus.MustNewConstMetric(
 		collector.expectedRplRewards, prometheus.GaugeValue, estimatedRewards)
 	channel <- prometheus.MustNewConstMetric(

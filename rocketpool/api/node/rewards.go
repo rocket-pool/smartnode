@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/rewards"
+	legacyrewards "github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/rewards"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -17,8 +19,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
+	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
@@ -65,6 +69,12 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		return nil, err
 	}
 
+	// Check if the merge upgrades are deployed
+	isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(rp)
+	if err != nil {
+		return nil, fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
+	}
+
 	var totalEffectiveStake *big.Int
 	var totalRplSupply *big.Int
 	var inflationInterval *big.Int
@@ -90,7 +100,15 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 	// Get the node registration time
 	wg.Go(func() error {
-		time, err := rewards.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
+		var time time.Time
+		var err error
+		// Not totally necessary because these both end up getting the same value out of RocketStorage, but it's tidy
+		if isMergeUpdateDeployed {
+			time, err = legacyrewards.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
+		} else {
+			time, err = node.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
+		}
+
 		if err == nil {
 			response.NodeRegistrationTime = time
 		}
@@ -106,11 +124,51 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		return err
 	})
 
-	// Get cumulative rewards
+	// Get claimed and pending rewards
 	wg.Go(func() error {
-		rewards, err := rewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil)
+		// Legacy rewards
+		unclaimedRewardsWei := big.NewInt(0)
+		rewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil)
+
+		// Modern rewards
+		if isMergeUpdateDeployed {
+			// Get the claimed and unclaimed intervals
+			unclaimed, claimed, err := rprewards.GetClaimStatus(rp, cfg, nodeAccount.Address)
+			if err != nil {
+				return err
+			}
+
+			// Get the info for each claimed interval
+			for _, claimedInterval := range claimed {
+				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval)
+				if err != nil {
+					return err
+				}
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
+				}
+				rewards.Add(rewards, intervalInfo.CollateralRplAmount)
+			}
+
+			// Get the unclaimed rewards
+			for _, unclaimedInterval := range unclaimed {
+				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
+				if err != nil {
+					return err
+				}
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+				}
+				unclaimedRewardsWei.Add(unclaimedRewardsWei, intervalInfo.CollateralRplAmount)
+			}
+		} else {
+			// Check if legacy rewards are currently available from the previous checkpoint
+			unclaimedRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
+		}
+
 		if err == nil {
 			response.CumulativeRewards = eth.WeiToEth(rewards)
+			response.UnclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
 		}
 		return err
 	})
@@ -153,6 +211,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 	// Get the total network effective stake
 	wg.Go(func() error {
+		var err error
 		totalEffectiveStake, err = node.GetTotalEffectiveRPLStake(rp, nil)
 		if err != nil {
 			return err
@@ -162,6 +221,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 	// Get the total RPL supply
 	wg.Go(func() error {
+		var err error
 		totalRplSupply, err = tokens.GetRPLTotalSupply(rp, nil)
 		if err != nil {
 			return err
@@ -171,6 +231,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 	// Get the RPL inflation interval
 	wg.Go(func() error {
+		var err error
 		inflationInterval, err = tokens.GetRPLInflationIntervalRate(rp, nil)
 		if err != nil {
 			return err
@@ -180,20 +241,12 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 	// Get the node operator rewards percent
 	wg.Go(func() error {
-		nodeOperatorRewardsPercent, err = rewards.GetNodeOperatorRewardsPercent(rp, nil)
+		nodeOperatorRewardsPercentRaw, err := rewards.GetNodeOperatorRewardsPercent(rp, nil)
+		nodeOperatorRewardsPercent = eth.WeiToEth(nodeOperatorRewardsPercentRaw)
 		if err != nil {
 			return err
 		}
 		return nil
-	})
-
-	// Check if rewards are currently available from the previous checkpoint
-	wg.Go(func() error {
-		unclaimedRewardsWei, err := rewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.UnclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
-		}
-		return err
 	})
 
 	// Get the list of minipool addresses for this node
@@ -248,26 +301,58 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 		var wg2 errgroup.Group
 
-		// Get the node registration time
-		wg2.Go(func() error {
-			time, err := rewards.GetTrustedNodeRegistrationTime(rp, nodeAccount.Address, nil)
-			if err == nil {
-				response.TrustedNodeRegistrationTime = time
-			}
-			return err
-		})
-
 		// Get cumulative ODAO rewards
 		wg2.Go(func() error {
-			rewards, err := rewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil)
+			// Legacy rewards
+			unclaimedRewardsWei := big.NewInt(0)
+			rewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil)
+
+			// Modern rewards
+			if isMergeUpdateDeployed {
+				// Get the claimed and unclaimed intervals
+				unclaimed, claimed, err := rprewards.GetClaimStatus(rp, cfg, nodeAccount.Address)
+				if err != nil {
+					return err
+				}
+
+				// Get the info for each claimed interval
+				for _, claimedInterval := range claimed {
+					intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval)
+					if err != nil {
+						return err
+					}
+					if !intervalInfo.TreeFileExists {
+						return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
+					}
+					rewards.Add(rewards, intervalInfo.ODaoRplAmount)
+				}
+
+				// Get the unclaimed rewards
+				for _, unclaimedInterval := range unclaimed {
+					intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
+					if err != nil {
+						return err
+					}
+					if !intervalInfo.TreeFileExists {
+						return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+					}
+					unclaimedRewardsWei.Add(unclaimedRewardsWei, intervalInfo.ODaoRplAmount)
+				}
+			} else {
+				// Check if legacy rewards are currently available from the previous checkpoint
+				unclaimedRewardsWei, err = legacyrewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
+			}
+
 			if err == nil {
-				response.CumulativeTrustedRewards = eth.WeiToEth(rewards)
+				response.CumulativeRewards = eth.WeiToEth(rewards)
+				response.UnclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
 			}
 			return err
 		})
 
 		// Get the ODAO member count
 		wg2.Go(func() error {
+			var err error
 			odaoSize, err = trustednode.GetMemberCount(rp, nil)
 			if err != nil {
 				return err
@@ -277,7 +362,8 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 
 		// Get the trusted node operator rewards percent
 		wg2.Go(func() error {
-			trustedNodeOperatorRewardsPercent, err = rewards.GetTrustedNodeOperatorRewardsPercent(rp, nil)
+			trustedNodeOperatorRewardsPercentRaw, err := rewards.GetTrustedNodeOperatorRewardsPercent(rp, nil)
+			trustedNodeOperatorRewardsPercent = eth.WeiToEth(trustedNodeOperatorRewardsPercentRaw)
 			if err != nil {
 				return err
 			}
@@ -289,15 +375,6 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 			bond, err := trustednode.GetMemberRPLBondAmount(rp, nodeAccount.Address, nil)
 			if err == nil {
 				response.TrustedRplBond = eth.WeiToEth(bond)
-			}
-			return err
-		})
-
-		// Check if rewards are currently available from the previous checkpoint for the ODAO
-		wg2.Go(func() error {
-			unclaimedRewardsWei, err := rewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
-			if err == nil {
-				response.UnclaimedTrustedRewards = eth.WeiToEth(unclaimedRewardsWei)
 			}
 			return err
 		})
