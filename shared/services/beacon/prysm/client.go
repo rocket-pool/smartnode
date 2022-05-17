@@ -179,7 +179,7 @@ func (c *Client) GetBeaconHead() (beacon.BeaconHead, error) {
 // Get a validator's status
 func (c *Client) GetValidatorStatus(pubkey types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 
-	return c.getValidatorStatus(pubkey.Hex(), opts)
+	return c.getValidatorStatus(hexutil.AddPrefix(pubkey.Hex()), opts)
 
 }
 func (c *Client) GetValidatorStatusByIndex(index string, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
