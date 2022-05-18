@@ -75,8 +75,10 @@ type ExternalTekuConfig struct {
 func NewExternalExecutionConfig(config *RocketPoolConfig, isFallback bool) *ExternalExecutionConfig {
 
 	prefix := ""
+	ecContainerID := ContainerID_Eth1
 	if isFallback {
 		prefix = "FALLBACK_"
+		ecContainerID = ContainerID_Eth1Fallback
 	}
 
 	return &ExternalExecutionConfig{
@@ -88,7 +90,7 @@ func NewExternalExecutionConfig(config *RocketPoolConfig, isFallback bool) *Exte
 			Description:          "The URL of the HTTP RPC endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Eth1, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
+			AffectsContainers:    []ContainerID{ContainerID_Api, ecContainerID, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{prefix + "EC_HTTP_ENDPOINT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
@@ -100,7 +102,7 @@ func NewExternalExecutionConfig(config *RocketPoolConfig, isFallback bool) *Exte
 			Description:          "The URL of the Websocket RPC endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Eth1, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
+			AffectsContainers:    []ContainerID{ContainerID_Api, ecContainerID, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{prefix + "EC_WS_ENDPOINT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
