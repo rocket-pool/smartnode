@@ -82,6 +82,9 @@ type NodeCollector struct {
 	// The cumulative amount of RPL earned
 	cumulativeRewards float64
 
+	// Map of reward intervals that have already been processed
+	handledIntervals map[uint64]bool
+
 	// The Rocket Pool config
 	cfg *config.RocketPoolConfig
 }
@@ -150,6 +153,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress c
 		bc:               bc,
 		nodeAddress:      nodeAddress,
 		eventLogInterval: big.NewInt(int64(eventLogInterval)),
+		handledIntervals: map[uint64]bool{},
 		cfg:              cfg,
 	}
 }
@@ -224,7 +228,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	wg.Go(func() error {
 		// Legacy rewards
 		unclaimedRewardsWei := big.NewInt(0)
-		rewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, nil)
+		newRewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock)
 		if err != nil {
 			return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
 		}
@@ -246,7 +250,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 				if !intervalInfo.TreeFileExists {
 					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 				}
-				rewards.Add(rewards, intervalInfo.CollateralRplAmount)
+				_, exists := collector.handledIntervals[claimedInterval]
+				if !exists {
+					newRewards.Add(newRewards, intervalInfo.CollateralRplAmount)
+					collector.handledIntervals[claimedInterval] = true
+				}
 			}
 
 			// Get the unclaimed rewards
@@ -274,7 +282,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			return fmt.Errorf("Error getting latest block header: %w", err)
 		}
 
-		collector.cumulativeRewards += eth.WeiToEth(rewards)
+		collector.cumulativeRewards += eth.WeiToEth(newRewards)
 		unclaimedRewards += eth.WeiToEth(unclaimedRewardsWei)
 		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
 
