@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 
 	"github.com/alessio/shellescape"
@@ -187,11 +188,11 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Value:       ExecutionClient_Geth,
 			}, {
 				Name:        "Nethermind",
-				Description: "Nethermind is a high-performance, highly configurable full Ethereum protocol client. It offers very fast sync speeds and support for external plug-ins. Nethermind is built with proven industrial technologies such as .NET 6 and the Kestrel web server. Its is fully open source and provides detailed documentation at https://docs.nethermind.io/nethermind/.",
+				Description: getAugmentedEcDescription(ExecutionClient_Nethermind, "Nethermind is a high-performance full Ethereum protocol client with very fast sync speeds. Nethermind is built with proven industrial technologies such as .NET 6 and the Kestrel web server. It is fully open source."),
 				Value:       ExecutionClient_Nethermind,
 			}, {
 				Name:        "Besu",
-				Description: "Hyperledger Besu is an Apache 2.0 licensed, Mainnet compatible, Ethereum client written in Java.",
+				Description: getAugmentedEcDescription(ExecutionClient_Besu, "Hyperledger Besu is a robust full Ethereum protocol client. It uses a novel system called \"Bonsai Trees\" to store its chain data efficiently, which allows it to access block states from the past and does not require pruning. Besu is fully open source and written in Java."),
 				Value:       ExecutionClient_Besu,
 			}, {
 				Name:        "*Infura",
@@ -466,6 +467,24 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.applyAllDefaults()
 
 	return config
+}
+
+// Get a more verbose client description, including warnings
+func getAugmentedEcDescription(client ExecutionClient, originalDescription string) string {
+
+	switch client {
+	case ExecutionClient_Besu:
+		if runtime.GOARCH == "arm64" {
+			return fmt.Sprintf("%s\n\n[orange]NOTE: Besu has not been fully optimized for ARM systems yet. Better ARM performance will be provided in a future client release.", originalDescription)
+		}
+	case ExecutionClient_Nethermind:
+		if runtime.GOARCH == "arm64" {
+			return fmt.Sprintf("%s\n\n[orange]NOTE: Nethermind has not been fully optimized for ARM systems yet. Better ARM performance will be provided in a future client release.", originalDescription)
+		}
+	}
+
+	return originalDescription
+
 }
 
 // Create a copy of this configuration.

@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"math/rand"
-	"runtime"
 	"strings"
 	"time"
 
@@ -18,7 +17,7 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	clientDescriptions := []string{"Select a client randomly to help promote the diversity of the Ethereum Chain. We recommend you do this unless you have a strong reason to pick a specific client."}
 	for _, client := range clients {
 		clientNames = append(clientNames, client.Name)
-		clientDescriptions = append(clientDescriptions, getAugmentedEcDescription(client.Value.(config.ExecutionClient), client.Description))
+		clientDescriptions = append(clientDescriptions, client.Description)
 	}
 
 	goodClients := []config.ParameterOption{}
@@ -126,19 +125,5 @@ func selectRandomEC(goodOptions []config.ParameterOption, wiz *wizard, currentSt
 	// Show the selection page
 	wiz.executionLocalRandomModal = createRandomECStep(wiz, currentStep, totalSteps, goodOptions)
 	wiz.executionLocalRandomModal.show()
-
-}
-
-// Get a more verbose client description, including warnings
-func getAugmentedEcDescription(client config.ExecutionClient, originalDescription string) string {
-
-	switch client {
-	case config.ExecutionClient_Besu:
-		if runtime.GOARCH == "arm64" {
-			return fmt.Sprintf("%s\n\n[orange]NOTE: Besu has not been fully optimized for ARM systems yet. Better ARM performance will be provided in a future client release.", originalDescription)
-		}
-	}
-
-	return originalDescription
 
 }
