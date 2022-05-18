@@ -103,7 +103,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		var time time.Time
 		var err error
 		// Not totally necessary because these both end up getting the same value out of RocketStorage, but it's tidy
-		if isMergeUpdateDeployed {
+		if !isMergeUpdateDeployed {
 			time, err = legacyrewards.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
 		} else {
 			time, err = node.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
