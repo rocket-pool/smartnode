@@ -5,11 +5,11 @@ import (
 	"runtime"
 )
 
-// v2.1.1
+// v2.1.2
 const (
-	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-208ae6-debug"
-	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-208ae6-debug"
-	prysmTagArm64             string = "rocketpool/prysm:v2.1.1"
+	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-e33850-debug"
+	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-e33850-debug"
+	prysmTagArm64             string = "rocketpool/prysm:v2.1.2"
 	defaultPrysmRpcPort       uint16 = 5053
 	defaultPrysmOpenRpcPort   bool   = false
 	defaultPrysmMaxPeers      uint16 = 45

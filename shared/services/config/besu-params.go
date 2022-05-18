@@ -29,6 +29,9 @@ type BesuConfig struct {
 	// Max number of P2P peers to connect to
 	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
+	// Historical state block regeneration limit
+	MaxBackLayers Parameter `yaml:"maxBackLayers,omitempty"`
+
 	// The Docker Hub tag for Besu
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
@@ -75,6 +78,18 @@ func NewBesuConfig(config *RocketPoolConfig, isFallback bool) *BesuConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		MaxBackLayers: Parameter{
+			ID:                   "maxBackLayers",
+			Name:                 "Historical Block Replay Limit",
+			Description:          "Besu has the ability to revisit the state of any historical block on the chain by \"replaying\" all of the previous blocks to get back to the target. This limit controls how many blocks you can replay - in other words, how far back Besu can go in time. Normal Execution client processing will be paused while a replay is in progress.\n\n[orange]NOTE: If you try to replay a state from a long time ago, it may take Besu several minutes to rebuild the state!",
+			Type:                 ParameterType_Uint,
+			Default:              map[Network]interface{}{Network_All: uint64(512)},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: []string{prefix + "BESU_MAX_BACK_LAYERS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		ContainerTag: Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
@@ -116,6 +131,7 @@ func getBesuTag() string {
 func (config *BesuConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.MaxPeers,
+		&config.MaxBackLayers,
 		&config.ContainerTag,
 		&config.AdditionalFlags,
 	}

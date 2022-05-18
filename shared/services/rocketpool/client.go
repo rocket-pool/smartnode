@@ -1190,11 +1190,11 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	consensus := externalip.DefaultConsensus(nil, nil)
 	ip, err := consensus.ExternalIP()
 	if err != nil {
-		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus, it may have trouble finding peers:")
+		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
 		fmt.Println(err.Error())
 	} else {
 		if ip.To4() == nil {
-			fmt.Println("Warning: external IP address is v6; if you're using Nimbus, it may have trouble finding peers:")
+			fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
 		}
 		externalIP = ip.String()
 	}
