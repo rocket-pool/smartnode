@@ -173,23 +173,23 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
-	stakedRpl := float64(-1)
-	effectiveStakedRpl := float64(-1)
+	stakedRpl := float64(0)
+	effectiveStakedRpl := float64(0)
 	var rewardsInterval time.Duration
 	var inflationInterval *big.Int
 	var totalRplSupply *big.Int
 	var totalEffectiveStake *big.Int
 	var nodeOperatorRewardsPercent float64
-	ethBalance := float64(-1)
-	oldRplBalance := float64(-1)
-	newRplBalance := float64(-1)
-	rethBalance := float64(-1)
+	ethBalance := float64(0)
+	oldRplBalance := float64(0)
+	newRplBalance := float64(0)
+	rethBalance := float64(0)
 	var activeMinipoolCount float64
 	var rplPrice float64
-	collateralRatio := float64(-1)
+	collateralRatio := float64(0)
 	var addresses []common.Address
 	var beaconHead beacon.BeaconHead
-	unclaimedRewards := float64(-1)
+	unclaimedRewards := float64(0)
 
 	// Handle update checking and new rewards status
 	isMergeUpdateDeployed, err := rp.IsMergeUpdateDeployed(collector.rp)
