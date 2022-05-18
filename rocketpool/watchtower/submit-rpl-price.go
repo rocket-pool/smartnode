@@ -20,7 +20,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
-	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -33,16 +32,13 @@ const ConfirmDistancePrices = 30
 
 // Submit RPL price task
 type submitRplPrice struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	ec             rocketpool.ExecutionClient
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	oio            *contracts.OneInchOracle
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c   *cli.Context
+	log log.ColorLogger
+	cfg *config.RocketPoolConfig
+	ec  rocketpool.ExecutionClient
+	w   *wallet.Wallet
+	rp  *rocketpool.RocketPool
+	oio *contracts.OneInchOracle
 }
 
 // Create submit RPL price task
@@ -70,37 +66,15 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
 		return nil, err
 	}
 
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested max fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
-	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
-	}
-
 	// Return task
 	return &submitRplPrice{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		ec:             ec,
-		w:              w,
-		rp:             rp,
-		oio:            oio,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:   c,
+		log: logger,
+		cfg: cfg,
+		ec:  ec,
+		w:   w,
+		rp:  rp,
+		oio: oio,
 	}, nil
 
 }
@@ -319,30 +293,17 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
 	}
-	var gas *big.Int
-	if t.gasLimit != 0 {
-		gas = new(big.Int).SetUint64(t.gasLimit)
-	} else {
-		gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
-	}
-
-	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
-		if err != nil {
-			return err
-		}
-	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
+	maxFee := eth.GweiToWei(WatchtowerMaxFee)
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
+	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = gas.Uint64()
+	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit RPL price
 	hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)

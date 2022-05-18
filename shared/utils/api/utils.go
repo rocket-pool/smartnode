@@ -46,7 +46,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 	}
 	totalGasWei := new(big.Int).Mul(maxFeeWei, gas)
 	totalSafeGasWei := new(big.Int).Mul(maxFeeWei, safeGas)
-	logger.Printlnf("This transaction will use a gas price of %.6f Gwei, for a total of %.6f to %.6f ETH.",
+	logger.Printlnf("This transaction will use a max fee of %.6f Gwei, for a total of up to %.6f - %.6f ETH.",
 		eth.WeiToGwei(maxFeeWei),
 		math.RoundDown(eth.WeiToEth(totalGasWei), 6),
 		math.RoundDown(eth.WeiToEth(totalSafeGasWei), 6))
