@@ -12,7 +12,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -22,15 +21,11 @@ import (
 
 // Claim RPL rewards task
 type claimRplRewards struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c   *cli.Context
+	log log.ColorLogger
+	cfg *config.RocketPoolConfig
+	w   *wallet.Wallet
+	rp  *rocketpool.RocketPool
 }
 
 // Create claim RPL rewards task
@@ -50,53 +45,19 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 		return nil, err
 	}
 
-	// Check if auto-claiming is disabled
-	gasThreshold := cfg.Smartnode.RplClaimGasThreshold.Value.(float64)
-	if gasThreshold == 0 {
-		logger.Println("RPL claim gas threshold is set to 0, automatic claims will be disabled.")
-	}
-
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested max fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
-	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
-	}
-
 	// Return task
 	return &claimRplRewards{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		w:              w,
-		rp:             rp,
-		gasThreshold:   gasThreshold,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:   c,
+		log: logger,
+		cfg: cfg,
+		w:   w,
+		rp:  rp,
 	}, nil
 
 }
 
 // Claim RPL rewards
 func (t *claimRplRewards) run() (bool, error) {
-
-	// Check to see if autoclaim is disabled
-	if t.gasThreshold == 0 {
-		return false, nil
-	}
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -154,30 +115,17 @@ func (t *claimRplRewards) run() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
 	}
-	var gas *big.Int
-	if t.gasLimit != 0 {
-		gas = new(big.Int).SetUint64(t.gasLimit)
-	} else {
-		gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
-	}
 
-	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
-		if err != nil {
-			return false, err
-		}
-	}
-
-	// Check the threshold
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
+	// Print the gas info
+	maxFee := eth.GweiToWei(WatchtowerMaxFee)
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return false, nil
 	}
 
+	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = gas.Uint64()
+	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Claim rewards
 	hash, err := rewards.ClaimTrustedNodeRewards(t.rp, opts)

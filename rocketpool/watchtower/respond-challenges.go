@@ -2,7 +2,6 @@ package watchtower
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -19,14 +17,11 @@ import (
 
 // Respond to challenges task
 type respondChallenges struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c   *cli.Context
+	log log.ColorLogger
+	cfg *config.RocketPoolConfig
+	w   *wallet.Wallet
+	rp  *rocketpool.RocketPool
 }
 
 // Create respond to challenges task
@@ -46,35 +41,13 @@ func newRespondChallenges(c *cli.Context, logger log.ColorLogger) (*respondChall
 		return nil, err
 	}
 
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested max fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
-	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
-	}
-
 	// Return task
 	return &respondChallenges{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		w:              w,
-		rp:             rp,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:   c,
+		log: logger,
+		cfg: cfg,
+		w:   w,
+		rp:  rp,
 	}, nil
 
 }
@@ -128,30 +101,17 @@ func (t *respondChallenges) run() error {
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to respond to the challenge: %w", err)
 	}
-	var gas *big.Int
-	if t.gasLimit != 0 {
-		gas = new(big.Int).SetUint64(t.gasLimit)
-	} else {
-		gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
-	}
-
-	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
-		if err != nil {
-			return err
-		}
-	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
+	maxFee := eth.GweiToWei(WatchtowerMaxFee)
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
+	// Set the gas settings
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = gas.Uint64()
+	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Respond to challenge
 	hash, err := trustednode.DecideChallenge(t.rp, nodeAccount.Address, opts)
