@@ -344,8 +344,8 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 			}
 
 			if err == nil {
-				response.CumulativeRewards = eth.WeiToEth(rewards)
-				response.UnclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
+				response.CumulativeTrustedRewards = eth.WeiToEth(rewards)
+				response.UnclaimedTrustedRewards = eth.WeiToEth(unclaimedRewardsWei)
 			}
 			return err
 		})
