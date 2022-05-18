@@ -235,6 +235,10 @@ func (t *processPenalties) run() error {
 
 		if currentSlot <= s.LatestPenaltySlot {
 			// Nothing to do
+			t.log.Printlnf("%s Finished checking for illegal fee recipients.", checkPrefix)
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
 			return
 		}
 
