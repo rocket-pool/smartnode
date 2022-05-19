@@ -61,6 +61,9 @@ func run(c *cli.Context) error {
 	// Initialize the scrub metrics reporter
 	scrubCollector := collectors.NewScrubCollector()
 
+	// Initialize error logger
+	errorLog := log.NewColorLogger(ErrorColor)
+
 	// Initialize tasks
 	respondChallenges, err := newRespondChallenges(c, log.NewColorLogger(RespondChallengesColor))
 	if err != nil {
@@ -90,13 +93,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), scrubCollector)
+	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
 	if err != nil {
 		return err
 	}
-
-	// Initialize loggers
-	errorLog := log.NewColorLogger(ErrorColor)
 
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
