@@ -23,10 +23,10 @@ func GetNodeSalt(nodeAddress common.Address, salt *big.Int) common.Hash {
 
 // Precompute the address of a minipool based on the node wallet, deposit type, and unique salt
 // If you set minipoolBytecode to nil, this will retrieve it from the contracts using minipool.GetMinipoolBytecode().
-func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte) (common.Address, error) {
+func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte, legacyRocketMinipoolManagerAddress *common.Address) (common.Address, error) {
 
 	// Get dependencies
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, legacyRocketMinipoolManagerAddress)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -36,7 +36,7 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depo
 	}
 
 	if len(minipoolBytecode) == 0 {
-		minipoolBytecode, err = minipool.GetMinipoolBytecode(rp, nil)
+		minipoolBytecode, err = minipool.GetMinipoolBytecode(rp, nil, legacyRocketMinipoolManagerAddress)
 		if err != nil {
 			return common.Address{}, fmt.Errorf("Error getting minipool bytecode: %w", err)
 		}
@@ -63,8 +63,12 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depo
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
 
-func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketMinipoolManager(rp *rocketpool.RocketPool, address *common.Address) (*rocketpool.Contract, error) {
 	rocketMinipoolManagerLock.Lock()
 	defer rocketMinipoolManagerLock.Unlock()
-	return rp.VersionManager.V1_0_0.GetContract("rocketMinipoolManager")
+	if address == nil {
+		return rp.VersionManager.V1_0_0.GetContract("rocketMinipoolManager")
+	} else {
+		return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketMinipoolManager", *address)
+	}
 }

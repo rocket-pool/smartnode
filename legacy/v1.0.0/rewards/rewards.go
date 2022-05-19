@@ -52,8 +52,8 @@ func getClaimRewardsAmount(claimsContract *rocketpool.Contract, claimsName strin
 }
 
 // Get the time that the user registered as a claimer
-func getClaimingContractUserRegisteredTime(rp *rocketpool.RocketPool, claimsContract string, claimerAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func getClaimingContractUserRegisteredTime(rp *rocketpool.RocketPool, claimsContract string, claimerAddress common.Address, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (time.Time, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -65,8 +65,8 @@ func getClaimingContractUserRegisteredTime(rp *rocketpool.RocketPool, claimsCont
 }
 
 // Get the total amount claimed in the current interval by the given claiming contract
-func getClaimingContractTotalClaimed(rp *rocketpool.RocketPool, claimsContract string, opts *bind.CallOpts) (*big.Int, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func getClaimingContractTotalClaimed(rp *rocketpool.RocketPool, claimsContract string, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +92,8 @@ func claim(claimsContract *rocketpool.Contract, claimsName string, opts *bind.Tr
 }
 
 // Get the timestamp that the current rewards interval started
-func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Time, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (time.Time, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -105,8 +105,8 @@ func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 }
 
 // Get the number of seconds in a claim interval
-func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (time.Duration, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return 0, err
 	}
@@ -118,8 +118,8 @@ func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.
 }
 
 // Get the percent of checkpoint rewards that goes to node operators
-func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (float64, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return 0, err
 	}
@@ -131,8 +131,8 @@ func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpt
 }
 
 // Get the percent of checkpoint rewards that goes to ODAO members
-func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (float64, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return 0, err
 	}
@@ -146,8 +146,12 @@ func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.
 // Get contracts
 var rocketRewardsPoolLock sync.Mutex
 
-func getRocketRewardsPool(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketRewardsPool(rp *rocketpool.RocketPool, address *common.Address) (*rocketpool.Contract, error) {
 	rocketRewardsPoolLock.Lock()
 	defer rocketRewardsPoolLock.Unlock()
-	return rp.VersionManager.V1_0_0.GetContract("rocketRewardsPool")
+	if address == nil {
+		return rp.VersionManager.V1_0_0.GetContract("rocketRewardsPool")
+	} else {
+		return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketRewardsPool", *address)
+	}
 }

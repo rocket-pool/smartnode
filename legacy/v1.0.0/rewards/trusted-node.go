@@ -13,8 +13,8 @@ import (
 )
 
 // Get whether trusted node reward claims are enabled
-func GetTrustedNodeClaimsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+func GetTrustedNodeClaimsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketClaimTrustedNodeAddress *common.Address) (bool, error) {
+	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp, legacyRocketClaimTrustedNodeAddress)
 	if err != nil {
 		return false, err
 	}
@@ -22,8 +22,8 @@ func GetTrustedNodeClaimsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 }
 
 // Get whether a trusted node rewards claimer can claim
-func GetTrustedNodeClaimPossible(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+func GetTrustedNodeClaimPossible(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts, legacyRocketClaimTrustedNodeAddress *common.Address) (bool, error) {
+	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp, legacyRocketClaimTrustedNodeAddress)
 	if err != nil {
 		return false, err
 	}
@@ -31,8 +31,8 @@ func GetTrustedNodeClaimPossible(rp *rocketpool.RocketPool, claimerAddress commo
 }
 
 // Get the percentage of rewards available for a trusted node rewards claimer
-func GetTrustedNodeClaimRewardsPerc(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts) (float64, error) {
-	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+func GetTrustedNodeClaimRewardsPerc(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts, legacyRocketClaimTrustedNodeAddress *common.Address) (float64, error) {
+	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp, legacyRocketClaimTrustedNodeAddress)
 	if err != nil {
 		return 0, err
 	}
@@ -40,8 +40,8 @@ func GetTrustedNodeClaimRewardsPerc(rp *rocketpool.RocketPool, claimerAddress co
 }
 
 // Get the total amount of rewards available for a trusted node rewards claimer
-func GetTrustedNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+func GetTrustedNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts, legacyRocketClaimTrustedNodeAddress *common.Address) (*big.Int, error) {
+	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp, legacyRocketClaimTrustedNodeAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +49,8 @@ func GetTrustedNodeClaimRewardsAmount(rp *rocketpool.RocketPool, claimerAddress 
 }
 
 // Estimate the gas of ClaimTrustedNodeRewards
-func EstimateClaimTrustedNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+func EstimateClaimTrustedNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacyRocketClaimTrustedNodeAddress *common.Address) (rocketpool.GasInfo, error) {
+	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp, legacyRocketClaimTrustedNodeAddress)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -58,8 +58,8 @@ func EstimateClaimTrustedNodeRewardsGas(rp *rocketpool.RocketPool, opts *bind.Tr
 }
 
 // Claim trusted node rewards
-func ClaimTrustedNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+func ClaimTrustedNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts, legacyRocketClaimTrustedNodeAddress *common.Address) (common.Hash, error) {
+	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp, legacyRocketClaimTrustedNodeAddress)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -67,13 +67,13 @@ func ClaimTrustedNodeRewards(rp *rocketpool.RocketPool, opts *bind.TransactOpts)
 }
 
 // Filters through token claim events and sums the total amount claimed by claimerAddress
-func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, intervalSize *big.Int, startBlock *big.Int) (*big.Int, error) {
+func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddress common.Address, intervalSize *big.Int, startBlock *big.Int, legacyRocketRewardsPoolAddress *common.Address, legacyRocketClaimTrustedNodeAddress *common.Address) (*big.Int, error) {
 	// Get contracts
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return nil, err
 	}
-	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp)
+	rocketClaimTrustedNode, err := getRocketClaimTrustedNode(rp, legacyRocketClaimTrustedNodeAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -105,20 +105,24 @@ func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddre
 }
 
 // Get the time that the user registered as a claimer
-func GetTrustedNodeRegistrationTime(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts) (time.Time, error) {
-	return getClaimingContractUserRegisteredTime(rp, "rocketClaimTrustedNode", claimerAddress, opts)
+func GetTrustedNodeRegistrationTime(rp *rocketpool.RocketPool, claimerAddress common.Address, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (time.Time, error) {
+	return getClaimingContractUserRegisteredTime(rp, "rocketClaimTrustedNode", claimerAddress, opts, legacyRocketRewardsPoolAddress)
 }
 
 // Get the total rewards claimed for this claiming contract this interval
-func GetTrustedNodeTotalClaimed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	return getClaimingContractTotalClaimed(rp, "rocketClaimTrustedNode", opts)
+func GetTrustedNodeTotalClaimed(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (*big.Int, error) {
+	return getClaimingContractTotalClaimed(rp, "rocketClaimTrustedNode", opts, legacyRocketRewardsPoolAddress)
 }
 
 // Get contracts
 var rocketClaimTrustedNodeLock sync.Mutex
 
-func getRocketClaimTrustedNode(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketClaimTrustedNode(rp *rocketpool.RocketPool, address *common.Address) (*rocketpool.Contract, error) {
 	rocketClaimTrustedNodeLock.Lock()
 	defer rocketClaimTrustedNodeLock.Unlock()
-	return rp.VersionManager.V1_0_0.GetContract("rocketClaimTrustedNode")
+	if address == nil {
+		return rp.VersionManager.V1_0_0.GetContract("rocketClaimTrustedNode")
+	} else {
+		return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketClaimTrustedNode", *address)
+	}
 }
