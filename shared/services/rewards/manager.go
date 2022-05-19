@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -36,11 +37,12 @@ func GetClaimStatus(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nod
 	one := big.NewInt(1)
 	bucket := currentIndex / 256
 	for i := uint64(0); i <= bucket; i++ {
+		bucketBig := big.NewInt(int64(i))
+		bucketBytes := [32]byte{}
+		bucketBig.FillBytes(bucketBytes[:])
+
 		var bitmap *big.Int
-		bitmap, err = rewards.ClaimedBitMap(rp, nodeAddress, big.NewInt(0).SetUint64(i), nil)
-		if err != nil {
-			return
-		}
+		bitmap, err = rp.RocketStorage.GetUint(nil, crypto.Keccak256Hash([]byte("rewards.interval.claimed"), nodeAddress.Bytes(), bucketBytes[:]))
 
 		for j := uint64(0); j < 256; j++ {
 			targetIndex := i*256 + j
