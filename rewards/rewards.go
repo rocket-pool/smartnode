@@ -3,6 +3,7 @@ package rewards
 import (
 	"fmt"
 	"math/big"
+	"reflect"
 	"sync"
 	"time"
 
@@ -201,7 +202,9 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 	}
 
 	// Get the decoded data
-	submission := values["submission"].(RewardSubmission)
+	submissionPrototype := RewardSubmission{}
+	submissionType := reflect.TypeOf(submissionPrototype)
+	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
 	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
 	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
 	submissionTime := values["time"].(*big.Int)
