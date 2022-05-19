@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -37,15 +38,18 @@ const MinScrubSafetyTime = time.Duration(0) * time.Hour
 
 // Submit scrub minipools task
 type submitScrubMinipools struct {
-	c    *cli.Context
-	log  log.ColorLogger
-	cfg  *config.RocketPoolConfig
-	w    *wallet.Wallet
-	rp   *rocketpool.RocketPool
-	ec   rocketpool.ExecutionClient
-	bc   beacon.Client
-	it   *iterationData
-	coll *collectors.ScrubCollector
+	c         *cli.Context
+	log       log.ColorLogger
+	errLog    log.ColorLogger
+	cfg       *config.RocketPoolConfig
+	w         *wallet.Wallet
+	rp        *rocketpool.RocketPool
+	ec        rocketpool.ExecutionClient
+	bc        beacon.Client
+	it        *iterationData
+	coll      *collectors.ScrubCollector
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 type iterationData struct {
@@ -76,7 +80,7 @@ type minipoolDetails struct {
 }
 
 // Create submit scrub minipools task
-func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, coll *collectors.ScrubCollector) (*submitScrubMinipools, error) {
+func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.ScrubCollector) (*submitScrubMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -101,15 +105,19 @@ func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, coll *colle
 	}
 
 	// Return task
+	lock := &sync.Mutex{}
 	return &submitScrubMinipools{
-		c:    c,
-		log:  logger,
-		cfg:  cfg,
-		w:    w,
-		rp:   rp,
-		ec:   ec,
-		bc:   bc,
-		coll: coll,
+		c:         c,
+		log:       logger,
+		errLog:    errorLogger,
+		cfg:       cfg,
+		w:         w,
+		rp:        rp,
+		ec:        ec,
+		bc:        bc,
+		coll:      coll,
+		lock:      lock,
+		isRunning: false,
 	}, nil
 
 }
@@ -142,73 +150,123 @@ func (t *submitScrubMinipools) run() error {
 
 	// Log
 	t.log.Println("Checking for minipools to scrub...")
-	t.it = new(iterationData)
 
-	// Get minipools in prelaunch status
-	minipoolAddresses, err := minipool.GetPrelaunchMinipoolAddresses(t.rp, nil)
-	if err != nil {
-		return err
-	}
-	t.it.totalMinipools = len(minipoolAddresses)
-	if t.it.totalMinipools == 0 {
-		t.log.Println("No minipools in prelaunch.")
+	// Check if the check is already running
+	t.lock.Lock()
+	if t.isRunning {
+		t.log.Println("Scrub check is already running in the background.")
+		t.lock.Unlock()
 		return nil
 	}
-	t.it.minipools = make(map[*minipool.Minipool]*minipoolDetails, t.it.totalMinipools)
+	t.lock.Unlock()
 
-	// Get the correct withdrawal credentials and validator pubkeys for each minipool
-	pubkeys := t.initializeMinipoolDetails(minipoolAddresses)
+	// Run the check
+	go func() {
+		t.lock.Lock()
+		t.isRunning = true
+		t.lock.Unlock()
+		checkPrefix := "[Minipool Scrub]"
+		t.log.Printlnf("%s Starting scrub check in a separate thread.", checkPrefix)
 
-	// Step 1: Verify the Beacon credentials if they exist
-	err = t.verifyBeaconWithdrawalCredentials(pubkeys)
-	if err != nil {
-		return err
-	}
+		t.it = new(iterationData)
 
-	// If there aren't any minipools left to check, print the final tally and exit
-	if len(t.it.minipools) == 0 {
-		t.printFinalTally()
-		return nil
-	}
+		// Get minipools in prelaunch status
+		minipoolAddresses, err := minipool.GetPrelaunchMinipoolAddresses(t.rp, nil)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
+			return
+		}
+		t.it.totalMinipools = len(minipoolAddresses)
+		if t.it.totalMinipools == 0 {
+			t.log.Printlnf("%s No minipools in prelaunch.", checkPrefix)
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
+			return
+		}
 
-	// Get various elements needed to do eth1 prestake and deposit contract searches
-	err = t.getEth1SearchArtifacts()
-	if err != nil {
-		return err
-	}
+		t.it.minipools = make(map[*minipool.Minipool]*minipoolDetails, t.it.totalMinipools)
 
-	// Step 2: Verify the MinipoolPrestaked events
-	t.verifyPrestakeEvents()
+		// Get the correct withdrawal credentials and validator pubkeys for each minipool
+		pubkeys := t.initializeMinipoolDetails(minipoolAddresses)
 
-	// If there aren't any minipools left to check, print the final tally and exit
-	if len(t.it.minipools) == 0 {
-		t.printFinalTally()
-		return nil
-	}
+		// Step 1: Verify the Beacon credentials if they exist
+		err = t.verifyBeaconWithdrawalCredentials(pubkeys)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
+			return
+		}
 
-	// Step 3: Verify the deposit data of the remaining minipools
-	err = t.verifyDeposits()
-	if err != nil {
-		return err
-	}
+		// If there aren't any minipools left to check, print the final tally and exit
+		if len(t.it.minipools) == 0 {
+			t.printFinalTally(checkPrefix)
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
+			return
+		}
 
-	// If there aren't any minipools left to check, print the final tally and exit
-	if len(t.it.minipools) == 0 {
-		t.printFinalTally()
-		return nil
-	}
+		// Get various elements needed to do eth1 prestake and deposit contract searches
+		err = t.getEth1SearchArtifacts()
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
+			return
+		}
 
-	// Step 4: Scrub all of the undeposited minipools after half the scrub period for safety
-	err = t.checkSafetyScrub()
-	if err != nil {
-		return err
-	}
+		// Step 2: Verify the MinipoolPrestaked events
+		t.verifyPrestakeEvents()
 
-	// Log and return
-	t.printFinalTally()
-	t.it = nil
+		// If there aren't any minipools left to check, print the final tally and exit
+		if len(t.it.minipools) == 0 {
+			t.printFinalTally(checkPrefix)
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
+			return
+		}
+
+		// Step 3: Verify the deposit data of the remaining minipools
+		err = t.verifyDeposits()
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
+			return
+		}
+
+		// If there aren't any minipools left to check, print the final tally and exit
+		if len(t.it.minipools) == 0 {
+			t.printFinalTally(checkPrefix)
+			t.lock.Lock()
+			t.isRunning = false
+			t.lock.Unlock()
+			return
+		}
+
+		// Step 4: Scrub all of the undeposited minipools after half the scrub period for safety
+		err = t.checkSafetyScrub()
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
+			return
+		}
+
+		// Log and return
+		t.printFinalTally(checkPrefix)
+		t.it = nil
+		t.lock.Lock()
+		t.isRunning = false
+		t.lock.Unlock()
+	}()
+
+	// Return
 	return nil
 
+}
+
+func (t *submitScrubMinipools) handleError(err error) {
+	t.errLog.Println(err)
+	t.errLog.Println("*** Minipool scrub check failed. ***")
+	t.lock.Lock()
+	t.isRunning = false
+	t.lock.Unlock()
 }
 
 // Get the correct withdrawal credentials and pubkeys for each minipool
@@ -602,9 +660,9 @@ func (t *submitScrubMinipools) submitVoteScrubMinipool(mp *minipool.Minipool) er
 }
 
 // Prints the final tally of minipool counts
-func (t *submitScrubMinipools) printFinalTally() {
+func (t *submitScrubMinipools) printFinalTally(prefix string) {
 
-	t.log.Println("Scrub check complete.")
+	t.log.Printlnf("%s Scrub check complete.", prefix)
 	t.log.Printlnf("\tTotal prelaunch minipools: %d", t.it.totalMinipools)
 	t.log.Printlnf("\tBeacon Chain scrubs: %d/%d", t.it.badOnBeaconCount, (t.it.badOnBeaconCount + t.it.goodOnBeaconCount))
 	t.log.Printlnf("\tPrestake scrubs: %d/%d", t.it.badPrestakeCount, (t.it.badPrestakeCount + t.it.goodPrestakeCount))

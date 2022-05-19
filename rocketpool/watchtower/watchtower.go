@@ -95,7 +95,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), scrubCollector)
+	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
 	if err != nil {
 		return err
 	}
