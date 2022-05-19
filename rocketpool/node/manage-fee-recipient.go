@@ -109,7 +109,7 @@ func (m *manageFeeRecipient) run() error {
 	if !fileExists {
 		m.log.Println("Fee recipient files don't all exist, regenerating...")
 	} else if !correctAddress {
-		m.log.Println("WARNING: Fee recipient files did not contain the correct fee recipient of %s, regenerating...", distributor.Hex())
+		m.log.Printlnf("WARNING: Fee recipient files did not contain the correct fee recipient of %s, regenerating...", distributor.Hex())
 	} else {
 		// Files are all correct, return.
 		return nil
