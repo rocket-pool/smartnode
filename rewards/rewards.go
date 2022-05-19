@@ -32,16 +32,16 @@ type RewardsEvent struct {
 
 // Struct for submitting the rewards for a checkpoint
 type RewardSubmission struct {
-	RewardIndex     *big.Int    `abi:"rewardIndex"`
-	ExecutionBlock  *big.Int    `abi:"executionBlock"`
-	ConsensusBlock  *big.Int    `abi:"consensusBlock"`
-	MerkleRoot      common.Hash `abi:"merkleRoot"`
-	MerkleTreeCID   string      `abi:"merkleTreeCID"`
-	IntervalsPassed *big.Int    `abi:"intervalsPassed"`
-	TreasuryRPL     *big.Int    `abi:"treasuryRPL"`
-	TrustedNodeRPL  []*big.Int  `abi:"trustedNodeRPL"`
-	NodeRPL         []*big.Int  `abi:"nodeRPL"`
-	NodeETH         []*big.Int  `abi:"nodeETH"`
+	RewardIndex     *big.Int   `json:"rewardIndex"`
+	ExecutionBlock  *big.Int   `json:"executionBlock"`
+	ConsensusBlock  *big.Int   `json:"consensusBlock"`
+	MerkleRoot      [32]byte   `json:"merkleRoot"`
+	MerkleTreeCID   string     `json:"merkleTreeCID"`
+	IntervalsPassed *big.Int   `json:"intervalsPassed"`
+	TreasuryRPL     *big.Int   `json:"treasuryRPL"`
+	TrustedNodeRPL  []*big.Int `json:"trustedNodeRPL"`
+	NodeRPL         []*big.Int `json:"nodeRPL"`
+	NodeETH         []*big.Int `json:"nodeETH"`
 }
 
 // Get the index of the active rewards period

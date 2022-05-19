@@ -23,19 +23,6 @@ func IsClaimed(rp *rocketpool.RocketPool, index *big.Int, claimerAddress common.
 	return *isClaimed, nil
 }
 
-// Get the bitmap of intervals that the node has claimed so far
-func ClaimedBitMap(rp *rocketpool.RocketPool, claimerAddress common.Address, bucket *big.Int, opts *bind.CallOpts) (*big.Int, error) {
-	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
-	if err != nil {
-		return nil, err
-	}
-	bitmap := new(*big.Int)
-	if err := rocketDistributorMainnet.Call(opts, bitmap, "claimedBitMap", claimerAddress, bucket); err != nil {
-		return nil, fmt.Errorf("Could not get claim bitmap for bucket %s, node %s: %w", bucket.String(), claimerAddress.Hex(), err)
-	}
-	return *bitmap, nil
-}
-
 // Get the Merkle root for an interval
 func MerkleRoots(rp *rocketpool.RocketPool, interval *big.Int, opts *bind.CallOpts) ([]byte, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
