@@ -113,8 +113,8 @@ type SmartnodeConfig struct {
 	// The contract address of rocketClaimTrustedNode from v1.0.0
 	legacyClaimTrustedNodeAddress map[Network]string `yaml:"-"`
 
-	// The ABI for the legacy rocketRewardsPool contract
-	legacyRewardsPoolAbi string `yaml:"-"`
+	// The contract address of rocketMinipoolManager from v1.0.0
+	legacyMinipoolManagerAddress map[Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -321,19 +321,25 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		legacyRewardsPoolAddress: map[Network]string{
 			Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
 			Network_Prater:  "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
-			Network_Kiln:    "0xa9fafd343ebe3152f906cfc6a21c9e83cdcd977c", // Old Kiln
+			Network_Kiln:    "0xFb62F3B5AF8099Bbd19d5d46084Bb152ECDE25A6",
 		},
 
 		legacyClaimNodeAddress: map[Network]string{
 			Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
 			Network_Prater:  "0xc05b7A2a03A6d2736d1D0ebf4d4a0aFE2cc32cE1",
-			Network_Kiln:    "0x2508B37abB889BD727914AFBb06b623aF2592f76", // Old Kiln
+			Network_Kiln:    "0xF98086202F8F58dad8120055Fdd6e2f36De2c6Fb",
 		},
 
 		legacyClaimTrustedNodeAddress: map[Network]string{
 			Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
 			Network_Prater:  "0x730982F4439E5AC30292333ff7d0C478907f2219",
-			Network_Kiln:    "0x247B877Ba98Ffa627AFE034be54498ac4F9b1695", // Old Kiln
+			Network_Kiln:    "0x2DFD22dD4474C306824d3014C6FC664012577807",
+		},
+
+		legacyMinipoolManagerAddress: map[Network]string{
+			Network_Mainnet: "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a",
+			Network_Prater:  "0xB815a94430f08dD2ab61143cE1D5739Ac81D3C6d",
+			Network_Kiln:    "0x6230e0180bc24cA59D20c56F964C81DcE4fe8df6",
 		},
 	}
 
@@ -490,6 +496,6 @@ func (config *SmartnodeConfig) GetLegacyClaimTrustedNodeAddress() common.Address
 	return common.HexToAddress(config.legacyClaimTrustedNodeAddress[config.Network.Value.(Network)])
 }
 
-func (config *SmartnodeConfig) GetLegacyRewardsPoolAbi() string {
-	return config.legacyRewardsPoolAbi
+func (config *SmartnodeConfig) GetLegacyMinipoolManagerAddress() common.Address {
+	return common.HexToAddress(config.legacyMinipoolManagerAddress[config.Network.Value.(Network)])
 }

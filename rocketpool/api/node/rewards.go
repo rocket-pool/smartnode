@@ -75,6 +75,11 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		return nil, fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
 	}
 
+	// Legacy contract addresses
+	legacyRocketRewardsAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()
+	legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
+	legacyClaimTrustedNodeAddress := cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
+
 	var totalEffectiveStake *big.Int
 	var totalRplSupply *big.Int
 	var inflationInterval *big.Int
@@ -104,7 +109,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		var err error
 		// Not totally necessary because these both end up getting the same value out of RocketStorage, but it's tidy
 		if !isMergeUpdateDeployed {
-			time, err = legacyrewards.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
+			time, err = legacyrewards.GetNodeRegistrationTime(rp, nodeAccount.Address, nil, &legacyRocketRewardsAddress)
 		} else {
 			time, err = node.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
 		}
@@ -128,7 +133,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	wg.Go(func() error {
 		// Legacy rewards
 		unclaimedRewardsWei := big.NewInt(0)
-		rewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil)
+		rewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimNodeAddress)
 
 		// Modern rewards
 		if isMergeUpdateDeployed {
@@ -163,7 +168,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 			}
 		} else {
 			// Check if legacy rewards are currently available from the previous checkpoint
-			unclaimedRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
+			unclaimedRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimNodeAddress)
 		}
 
 		if err == nil {
@@ -305,7 +310,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		wg2.Go(func() error {
 			// Legacy rewards
 			unclaimedRewardsWei := big.NewInt(0)
-			rewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil)
+			rewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimTrustedNodeAddress)
 
 			// Modern rewards
 			if isMergeUpdateDeployed {
@@ -340,7 +345,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 				}
 			} else {
 				// Check if legacy rewards are currently available from the previous checkpoint
-				unclaimedRewardsWei, err = legacyrewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
+				unclaimedRewardsWei, err = legacyrewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimTrustedNodeAddress)
 			}
 
 			if err == nil {

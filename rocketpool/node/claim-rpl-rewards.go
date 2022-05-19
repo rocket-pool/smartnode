@@ -93,6 +93,8 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 // Claim RPL rewards
 func (t *claimRplRewards) run() (bool, error) {
 
+	legacyClaimNodeAddress := t.cfg.Smartnode.GetLegacyClaimNodeAddress()
+
 	// Check to see if autoclaim is disabled
 	if t.gasThreshold == 0 {
 		return false, nil
@@ -123,7 +125,7 @@ func (t *claimRplRewards) run() (bool, error) {
 	}
 
 	// Check for rewards
-	rewardsAmountWei, err := rewards.GetNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil)
+	rewardsAmountWei, err := rewards.GetNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil, &legacyClaimNodeAddress)
 	if err != nil {
 		return false, err
 	}
@@ -132,7 +134,7 @@ func (t *claimRplRewards) run() (bool, error) {
 	}
 
 	// Don't claim unless the oDAO has claimed first (prevent known issue yet to be patched in smart contracts)
-	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(t.rp, nil)
+	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(t.rp, nil, &legacyClaimNodeAddress)
 	if err != nil {
 		return false, err
 	}
@@ -151,7 +153,7 @@ func (t *claimRplRewards) run() (bool, error) {
 	}
 
 	// Get the gas limit
-	gasInfo, err := rewards.EstimateClaimNodeRewardsGas(t.rp, opts)
+	gasInfo, err := rewards.EstimateClaimNodeRewardsGas(t.rp, opts, &legacyClaimNodeAddress)
 	if err != nil {
 		return false, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
 	}
@@ -196,7 +198,7 @@ func (t *claimRplRewards) run() (bool, error) {
 	opts.GasLimit = gas.Uint64()
 
 	// Claim rewards
-	hash, err := rewards.ClaimNodeRewards(t.rp, opts)
+	hash, err := rewards.ClaimNodeRewards(t.rp, opts, &legacyClaimNodeAddress)
 	if err != nil {
 		return false, err
 	}

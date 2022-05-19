@@ -59,6 +59,8 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 // Claim RPL rewards
 func (t *claimRplRewards) run() (bool, error) {
 
+	legacyClaimTrustedNodeAddress := t.cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
+
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return false, err
@@ -93,7 +95,7 @@ func (t *claimRplRewards) run() (bool, error) {
 	t.log.Println("Checking for RPL rewards to claim...")
 
 	// Check for rewards
-	rewardsAmountWei, err := rewards.GetTrustedNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil)
+	rewardsAmountWei, err := rewards.GetTrustedNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil, &legacyClaimTrustedNodeAddress)
 	if err != nil {
 		return false, err
 	}
@@ -111,7 +113,7 @@ func (t *claimRplRewards) run() (bool, error) {
 	}
 
 	// Get the gas limit
-	gasInfo, err := rewards.EstimateClaimTrustedNodeRewardsGas(t.rp, opts)
+	gasInfo, err := rewards.EstimateClaimTrustedNodeRewardsGas(t.rp, opts, &legacyClaimTrustedNodeAddress)
 	if err != nil {
 		return false, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
 	}
@@ -128,7 +130,7 @@ func (t *claimRplRewards) run() (bool, error) {
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Claim rewards
-	hash, err := rewards.ClaimTrustedNodeRewards(t.rp, opts)
+	hash, err := rewards.ClaimTrustedNodeRewards(t.rp, opts, &legacyClaimTrustedNodeAddress)
 	if err != nil {
 		return false, err
 	}

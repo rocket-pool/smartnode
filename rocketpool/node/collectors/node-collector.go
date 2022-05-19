@@ -226,9 +226,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get the cumulative claimed and unclaimed RPL rewards
 	wg.Go(func() error {
+		legacyClaimNodeAddress := collector.cfg.Smartnode.GetLegacyClaimNodeAddress()
+		legacyRewardsPoolAddress := collector.cfg.Smartnode.GetLegacyRewardsPoolAddress()
+
 		// Legacy rewards
 		unclaimedRewardsWei := big.NewInt(0)
-		newRewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock)
+		newRewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock, &legacyRewardsPoolAddress, &legacyClaimNodeAddress)
 		if err != nil {
 			return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
 		}
@@ -270,7 +273,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			}
 		} else {
 			// Check if legacy rewards are currently available from the previous checkpoint
-			unclaimedRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil)
+			unclaimedRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil, &legacyClaimNodeAddress)
 			if err != nil {
 				return fmt.Errorf("Error getting unclaimed rewards: %w", err)
 			}

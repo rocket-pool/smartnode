@@ -29,6 +29,10 @@ func canNodeClaimRpl(c *cli.Context) (*api.CanNodeClaimRplResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanNodeClaimRplResponse{}
@@ -40,14 +44,16 @@ func canNodeClaimRpl(c *cli.Context) (*api.CanNodeClaimRplResponse, error) {
 	}
 
 	// Check for rewards
-	rewardsAmountWei, err := rewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil)
+	legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
+	legacyRewardsPoolAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()
+	rewardsAmountWei, err := rewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimNodeAddress)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting RPL rewards amount: %w", err)
 	}
 	response.RplAmount = rewardsAmountWei
 
 	// Don't claim unless the oDAO has claimed first (prevent known issue yet to be patched in smart contracts)
-	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(rp, nil)
+	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(rp, nil, &legacyRewardsPoolAddress)
 	if err != nil {
 		return nil, fmt.Errorf("Error checking if trusted node has already minted RPL: %w", err)
 	}
@@ -60,7 +66,7 @@ func canNodeClaimRpl(c *cli.Context) (*api.CanNodeClaimRplResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimNodeRewardsGas(rp, opts)
+	gasInfo, err := rewards.EstimateClaimNodeRewardsGas(rp, opts, &legacyClaimNodeAddress)
 	if err != nil {
 		return nil, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
 	}
@@ -86,6 +92,10 @@ func nodeClaimRpl(c *cli.Context) (*api.NodeClaimRplResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.NodeClaimRplResponse{}
@@ -103,7 +113,8 @@ func nodeClaimRpl(c *cli.Context) (*api.NodeClaimRplResponse, error) {
 	}
 
 	// Claim rewards
-	hash, err := rewards.ClaimNodeRewards(rp, opts)
+	legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
+	hash, err := rewards.ClaimNodeRewards(rp, opts, &legacyClaimNodeAddress)
 	if err != nil {
 		return nil, err
 	}

@@ -28,6 +28,10 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.GetVanityArtifactsResponse{}
@@ -65,7 +69,8 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 	if isMergeUpdateDeployed {
 		minipoolBytecode, err = minipool.GetMinipoolBytecode(rp, nil)
 	} else {
-		minipoolBytecode, err = minipool_v1_0_0.GetMinipoolBytecode(rp, nil)
+		legacyMinipoolManagerAddress := cfg.Smartnode.GetLegacyMinipoolManagerAddress()
+		minipoolBytecode, err = minipool_v1_0_0.GetMinipoolBytecode(rp, nil, &legacyMinipoolManagerAddress)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("Error getting minipool contract bytecode: %w", err)

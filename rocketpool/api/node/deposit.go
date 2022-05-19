@@ -61,6 +61,10 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get eth2 config
 	eth2Config, err := bc.GetEth2Config()
@@ -169,7 +173,8 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		if isMergeUpdateDeployed {
 			minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
 		} else {
-			minipoolAddress, err = utils_v1_0_0.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+			legacyMinipoolManagerAddress := cfg.Smartnode.GetLegacyMinipoolManagerAddress()
+			minipoolAddress, err = utils_v1_0_0.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, &legacyMinipoolManagerAddress)
 		}
 		if err != nil {
 			return err
@@ -287,6 +292,10 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get eth2 config
 	eth2Config, err := bc.GetEth2Config()
@@ -362,7 +371,8 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	if isMergeUpdateDeployed {
 		minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
 	} else {
-		minipoolAddress, err = utils_v1_0_0.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+		legacyMinipoolManagerAddress := cfg.Smartnode.GetLegacyMinipoolManagerAddress()
+		minipoolAddress, err = utils_v1_0_0.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, &legacyMinipoolManagerAddress)
 	}
 	if err != nil {
 		return nil, err
