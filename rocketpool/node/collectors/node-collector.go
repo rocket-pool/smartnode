@@ -239,7 +239,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		// Modern rewards
 		if isMergeUpdateDeployed {
 			// Get the claimed and unclaimed intervals
-			unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.cfg, collector.nodeAddress)
+			unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
 			if err != nil {
 				return err
 			}

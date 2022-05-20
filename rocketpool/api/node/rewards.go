@@ -138,7 +138,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		// Modern rewards
 		if isMergeUpdateDeployed {
 			// Get the claimed and unclaimed intervals
-			unclaimed, claimed, err := rprewards.GetClaimStatus(rp, cfg, nodeAccount.Address)
+			unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
 			if err != nil {
 				return err
 			}
@@ -315,7 +315,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 			// Modern rewards
 			if isMergeUpdateDeployed {
 				// Get the claimed and unclaimed intervals
-				unclaimed, claimed, err := rprewards.GetClaimStatus(rp, cfg, nodeAccount.Address)
+				unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
 				if err != nil {
 					return err
 				}
