@@ -1509,43 +1509,25 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return fmt.Errorf("Error getting execution client volume name: %w", err)
 	}
 
-	// Get the amount of space used by the EC volume
-	size, err := rp.GetVolumeSize(volume)
-	if err != nil {
-		return fmt.Errorf("Error getting execution client volume name: %w", err)
-	}
-	volumeBytes, err := humanize.ParseBytes(size)
-	if err != nil {
-		return fmt.Errorf("Couldn't parse size of EC volume (%s): %w", size, err)
-	}
-	volumeBytesHuman := humanize.IBytes(volumeBytes)
-
-	// Get the amount of free space available in the target dir
-	partitions, err := disk.Partitions(true)
-	if err != nil {
-		return fmt.Errorf("Error getting partition list: %w", err)
-	}
-	longestPath := 0
-	bestPartition := disk.PartitionStat{}
-	for _, partition := range partitions {
-		if strings.HasPrefix(targetDir, partition.Mountpoint) && len(partition.Mountpoint) > longestPath {
-			bestPartition = partition
-			longestPath = len(partition.Mountpoint)
-		}
-	}
-	diskUsage, err := disk.Usage(bestPartition.Mountpoint)
-	if err != nil {
-		return fmt.Errorf("Error getting free disk space available: %w", err)
-	}
-	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
-
 	// Make sure the target dir has enough space
-	fmt.Printf("%sChain data size:       %s%s\n", colorLightBlue, volumeBytesHuman, colorReset)
-	fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
-	if diskUsage.Free < volumeBytes {
-		return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
+	volumeBytes, err := getVolumeSpaceUsed(rp, volume)
+	if err != nil {
+		fmt.Printf("%sWARNING: Couldn't check the disk space used by the Execution client volume: %s\nPlease verify you have enough free space to store the chain data in the target folder before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
 	} else {
-		fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
+		volumeBytesHuman := humanize.IBytes(volumeBytes)
+		targetFree, err := getPartitionFreeSpace(rp, targetDir)
+		if err != nil {
+			fmt.Printf("%sWARNING: Couldn't get the free space available on the target folder: %s\nPlease verify you have enough free space to store the chain data in the target folder before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
+		} else {
+			freeSpaceHuman := humanize.IBytes(targetFree)
+			fmt.Printf("%sChain data size:       %s%s\n", colorLightBlue, volumeBytesHuman, colorReset)
+			fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
+			if targetFree < volumeBytes {
+				return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
+			} else {
+				fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
+			}
+		}
 	}
 
 	// Prompt for confirmation
@@ -1640,59 +1622,39 @@ func importEcData(c *cli.Context, sourceDir string) error {
 		return fmt.Errorf("Error getting container prefix: %w", err)
 	}
 
-	// Get the amount of space used by the source dir
-	sourceBytes := uint64(0)
-	err = filepath.Walk(sourceDir, func(_ string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			sourceBytes += uint64(info.Size())
-		}
-		return err
-	})
-	if err != nil {
-		return fmt.Errorf("Error calculating size of source directory: %w", err)
-	}
-	sourceBytesHuman := humanize.IBytes(sourceBytes)
-
-	// Get the amount of free space available on the EC volume partition
+	// Get the volume to import into
 	executionContainerName := prefix + ExecutionContainerSuffix
 	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
 	if err != nil {
 		return fmt.Errorf("Error getting execution client volume name: %w", err)
 	}
-	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
-	if err != nil {
-		return fmt.Errorf("Error getting execution volume source path: %w", err)
-	}
-	partitions, err := disk.Partitions(true)
-	if err != nil {
-		return fmt.Errorf("Error getting partition list: %w", err)
-	}
-
-	longestPath := 0
-	bestPartition := disk.PartitionStat{}
-	for _, partition := range partitions {
-		if strings.HasPrefix(volumePath, partition.Mountpoint) && len(partition.Mountpoint) > longestPath {
-			bestPartition = partition
-			longestPath = len(partition.Mountpoint)
-		}
-	}
-
-	diskUsage, err := disk.Usage(bestPartition.Mountpoint)
-	if err != nil {
-		return fmt.Errorf("Error getting free disk space available: %w", err)
-	}
-	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
 
 	// Make sure the target volume has enough space
-	fmt.Printf("%sChain data size:         %s%s\n", colorLightBlue, sourceBytesHuman, colorReset)
-	fmt.Printf("%sDocker drive free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
-	if diskUsage.Free < sourceBytes {
-		return fmt.Errorf("%sYour Docker drive does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
+	sourceBytes, err := getFolderSpaceUsed(sourceDir)
+	if err != nil {
+		fmt.Printf("%sWARNING: Couldn't check the disk space used by the source folder: %s\nPlease verify you have enough free space to import the chain data before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
 	} else {
-		fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
+		sourceBytesHuman := humanize.IBytes(sourceBytes)
+		volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
+		if err != nil {
+			err = fmt.Errorf("error getting execution volume source path: %w", err)
+			fmt.Printf("%sWARNING: Couldn't check the disk space free on the Docker volume partition: %s\nPlease verify you have enough free space to import the chain data before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
+		} else {
+			targetFree, err := getPartitionFreeSpace(rp, volumePath)
+			if err != nil {
+				fmt.Printf("%sWARNING: Couldn't check the disk space free on the Docker volume partition: %s\nPlease verify you have enough free space to import the chain data before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
+			} else {
+				freeSpaceHuman := humanize.IBytes(targetFree)
+
+				fmt.Printf("%sChain data size:         %s%s\n", colorLightBlue, sourceBytesHuman, colorReset)
+				fmt.Printf("%sDocker drive free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
+				if targetFree < sourceBytes {
+					return fmt.Errorf("%sYour Docker drive does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
+				} else {
+					fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
+				}
+			}
+		}
 	}
 
 	// Prompt for confirmation
@@ -1714,7 +1676,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 
 	// Run the migrator
 	ecMigrator := cfg.Smartnode.GetEcMigratorContainerTag()
-	fmt.Printf("Exporting data from volume %s to %s...\n", volume, sourceDir)
+	fmt.Printf("Importing data from %s to volume %s...\n", sourceDir, volume)
 	err = rp.RunEcMigrator(prefix+EcMigratorContainerSuffix, volume, sourceDir, "import", ecMigrator)
 	if err != nil {
 		return fmt.Errorf("Error running EC migrator: %w", err)
@@ -1733,4 +1695,56 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	fmt.Println("\nDone! Your chain data has been imported.")
 
 	return nil
+}
+
+// Get the amount of space used by a Docker volume
+func getVolumeSpaceUsed(rp *rocketpool.Client, volume string) (uint64, error) {
+	size, err := rp.GetVolumeSize(volume)
+	if err != nil {
+		return 0, fmt.Errorf("error getting execution client volume name: %w", err)
+	}
+	volumeBytes, err := humanize.ParseBytes(size)
+	if err != nil {
+		return 0, fmt.Errorf("couldn't parse size of EC volume (%s): %w", size, err)
+	}
+	return volumeBytes, nil
+}
+
+// Get the amount of free space available in the target dir
+func getPartitionFreeSpace(rp *rocketpool.Client, targetDir string) (uint64, error) {
+	partitions, err := disk.Partitions(true)
+	if err != nil {
+		return 0, fmt.Errorf("error getting partition list: %w", err)
+	}
+	longestPath := 0
+	bestPartition := disk.PartitionStat{}
+	for _, partition := range partitions {
+		if strings.HasPrefix(targetDir, partition.Mountpoint) && len(partition.Mountpoint) > longestPath {
+			bestPartition = partition
+			longestPath = len(partition.Mountpoint)
+		}
+	}
+	diskUsage, err := disk.Usage(bestPartition.Mountpoint)
+	if err != nil {
+		return 0, fmt.Errorf("error getting free disk space available: %w", err)
+	}
+	return diskUsage.Free, nil
+}
+
+// Get the amount of space used by the source dir
+func getFolderSpaceUsed(sourceDir string) (uint64, error) {
+	sourceBytes := uint64(0)
+	err := filepath.Walk(sourceDir, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			sourceBytes += uint64(info.Size())
+		}
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("error calculating size of source directory: %w", err)
+	}
+	return sourceBytes, nil
 }
