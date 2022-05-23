@@ -55,12 +55,20 @@ func getRewards(c *cli.Context) error {
 	fmt.Printf("It will end on %s (%s from now).\n", nextRewardsTimeString, timeToCheckpointString)
 
 	if rewards.UnclaimedRewards > 0 {
-		fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle. If you don't claim them before the above date, you will lose them!%s\n",
-			colorYellow, rewards.UnclaimedRewards, colorReset)
+		if rewards.IsMergeUpdateDeployed {
+			fmt.Printf("You currently have %f unclaimed RPL from staking rewards.\n", rewards.UnclaimedRewards)
+		} else {
+			fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle. If you don't claim them before the above date, you will lose them!%s\n",
+				colorYellow, rewards.UnclaimedRewards, colorReset)
+		}
 	}
 	if rewards.UnclaimedTrustedRewards > 0 {
-		fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle's Oracle DAO duties. If you don't claim them before the above date, you will lose them!%s\n",
-			colorYellow, rewards.UnclaimedTrustedRewards, colorReset)
+		if rewards.IsMergeUpdateDeployed {
+			fmt.Printf("You currently have %f unclaimed RPL from Oracle DAO duties.\n", rewards.UnclaimedTrustedRewards)
+		} else {
+			fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle's Oracle DAO duties. If you don't claim them before the above date, you will lose them!%s\n",
+				colorYellow, rewards.UnclaimedTrustedRewards, colorReset)
+		}
 	}
 
 	fmt.Println()

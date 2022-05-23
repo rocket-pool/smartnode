@@ -74,6 +74,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
 	}
+	response.IsMergeUpdateDeployed = isMergeUpdateDeployed
 
 	// Legacy contract addresses
 	legacyRocketRewardsAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()

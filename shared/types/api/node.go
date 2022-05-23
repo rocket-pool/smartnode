@@ -269,6 +269,7 @@ type NodeRewardsResponse struct {
 	UnclaimedRewards         float64       `json:"unclaimedRewards"`
 	UnclaimedTrustedRewards  float64       `json:"unclaimedTrustedRewards"`
 	BeaconRewards            float64       `json:"beaconRewards"`
+	IsMergeUpdateDeployed    bool          `json:"isMergeUpdateDeployed"`
 	TxHash                   common.Hash   `json:"txHash"`
 }
 
