@@ -1469,6 +1469,12 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
+	// Make the path absolute
+	targetDir, err = filepath.Abs(targetDir)
+	if err != nil {
+		return fmt.Errorf("Error converting to absolute path: %w", err)
+	}
+
 	// Make sure the target dir exists and is accessible
 	targetDirInfo, err := os.Stat(targetDir)
 	if os.IsNotExist(err) {
@@ -1485,7 +1491,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	fmt.Println("Once the export is complete, your execution client will restart automatically.\n")
 
 	if cfg.UseFallbackExecutionClient.Value == false {
-		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while exporting the chain data, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while exporting the chain data, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n\n", colorRed, colorReset)
 	} else {
 		var fallbackClientName string
 		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_External {
@@ -1589,6 +1595,12 @@ func importEcData(c *cli.Context, sourceDir string) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
+	// Make the path absolute
+	sourceDir, err = filepath.Abs(sourceDir)
+	if err != nil {
+		return fmt.Errorf("Error converting to absolute path: %w", err)
+	}
+
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)
 	if err != nil {
@@ -1608,7 +1620,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	fmt.Println("Once the import is complete, your execution client will restart automatically.\n")
 
 	if cfg.UseFallbackExecutionClient.Value == false {
-		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while importing the chain data, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while importing the chain data, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n\n", colorRed, colorReset)
 	} else {
 		var fallbackClientName string
 		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_External {
