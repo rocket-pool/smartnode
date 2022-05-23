@@ -884,9 +884,10 @@ func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, ima
 		return 0, fmt.Errorf("Error getting source directory size: %w", err)
 	}
 
-	dirSize, err := strconv.ParseUint(string(output), 0, 64)
+	trimmedOutput := strings.TrimRight(string(output), "\n")
+	dirSize, err := strconv.ParseUint(trimmedOutput, 0, 64)
 	if err != nil {
-		return 0, fmt.Errorf("Error parsing directory size output [%s]: %w", string(output), err)
+		return 0, fmt.Errorf("Error parsing directory size output [%s]: %w", trimmedOutput, err)
 	}
 
 	return dirSize, nil
