@@ -479,7 +479,7 @@ func getAugmentedEcDescription(client ExecutionClient, originalDescription strin
 		}
 	case ExecutionClient_Nethermind:
 		if runtime.GOARCH == "arm64" {
-			return fmt.Sprintf("%s\n\n[red]WARNING: Nethermind is not currently recommended for ARM systems (such as the Raspberry Pi) on Mainnet due to its higher performance requirements. Full support will be added in a future release.", originalDescription)
+			return fmt.Sprintf("%s\n\n[red]WARNING: Nethermind is not currently recommended for ARM systems (such as the Raspberry Pi) on Mainnet due to its higher performance requirements. This will be improved in a future release.", originalDescription)
 		}
 	}
 
