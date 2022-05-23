@@ -1589,15 +1589,18 @@ func importEcData(c *cli.Context, sourceDir string) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
-	// Make sure the source dir exists and is accessible
-	sourceDirInfo, err := os.Stat(sourceDir)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("Source directory [%s] does not exist.", sourceDir)
-	} else if err != nil {
-		return fmt.Errorf("Error reading source dir: %w", err)
+	// Get the container prefix
+	prefix, err := getContainerPrefix(rp)
+	if err != nil {
+		return fmt.Errorf("Error getting container prefix: %w", err)
 	}
-	if !sourceDirInfo.IsDir() {
-		return fmt.Errorf("Source directory [%s] is not a directory.", sourceDir)
+
+	// Check the source dir
+	fmt.Println("Checking source directory...")
+	ecMigrator := cfg.Smartnode.GetEcMigratorContainerTag()
+	sourceBytes, err := rp.GetDirSizeViaEcMigrator(prefix+EcMigratorContainerSuffix, sourceDir, ecMigrator)
+	if err != nil {
+		return err
 	}
 
 	fmt.Println("This will import execution layer chain data that you previously exported into your execution client.")
@@ -1616,12 +1619,6 @@ func importEcData(c *cli.Context, sourceDir string) error {
 		fmt.Printf("You have a fallback execution client configured (%s).\nRocket Pool (and your consensus client) will use that while the main client is offline.\n\n", fallbackClientName)
 	}
 
-	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return fmt.Errorf("Error getting container prefix: %w", err)
-	}
-
 	// Get the volume to import into
 	executionContainerName := prefix + ExecutionContainerSuffix
 	volume, err := rp.GetClientVolumeName(executionContainerName, clientDataVolumeName)
@@ -1630,7 +1627,6 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	}
 
 	// Make sure the target volume has enough space
-	sourceBytes, err := getFolderSpaceUsed(sourceDir)
 	if err != nil {
 		fmt.Printf("%sWARNING: Couldn't check the disk space used by the source folder: %s\nPlease verify you have enough free space to import the chain data before proceeding!%s\n\n", colorRed, err.Error(), colorReset)
 	} else {
@@ -1675,7 +1671,6 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	}
 
 	// Run the migrator
-	ecMigrator := cfg.Smartnode.GetEcMigratorContainerTag()
 	fmt.Printf("Importing data from %s to volume %s...\n", sourceDir, volume)
 	err = rp.RunEcMigrator(prefix+EcMigratorContainerSuffix, volume, sourceDir, "import", ecMigrator)
 	if err != nil {
@@ -1731,6 +1726,7 @@ func getPartitionFreeSpace(rp *rocketpool.Client, targetDir string) (uint64, err
 	return diskUsage.Free, nil
 }
 
+/*
 // Get the amount of space used by the source dir
 func getFolderSpaceUsed(sourceDir string) (uint64, error) {
 	sourceBytes := uint64(0)
@@ -1748,3 +1744,4 @@ func getFolderSpaceUsed(sourceDir string) (uint64, error) {
 	}
 	return sourceBytes, nil
 }
+*/

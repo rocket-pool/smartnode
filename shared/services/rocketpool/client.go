@@ -861,32 +861,35 @@ func (c *Client) RunPruneProvisioner(container string, volume string, image stri
 		return fmt.Errorf("Unexpected output running the prune provisioner: %s", outputString)
 	}
 
-	/*
-		// Remove the prune provisioner, ignoring output
-		cmd = fmt.Sprintf("docker container rm %s", container)
-		c.readOutput(cmd)
-	*/
 	return nil
 
 }
 
 // Runs the EC migrator
 func (c *Client) RunEcMigrator(container string, volume string, targetDir string, mode string, image string) error {
-
-	// Run the prune provisioner
 	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, image)
 	err := c.printOutput(cmd)
 	if err != nil {
 		return err
 	}
 
-	/*
-		// Remove the prune provisioner, ignoring output
-		cmd = fmt.Sprintf("docker container rm %s", container)
-		c.readOutput(cmd)
-	*/
 	return nil
+}
 
+// Gets the size of the target directory via the EC migrator for importing, which should have the same permissions as exporting
+func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, image string) (uint64, error) {
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/mnt/external -e OPERATION='size' %s", container, targetDir, image)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return 0, fmt.Errorf("Error getting source directory size: %w", err)
+	}
+
+	dirSize, err := strconv.ParseUint(string(output), 0, 64)
+	if err != nil {
+		return 0, fmt.Errorf("Error parsing directory size output [%s]: %w", string(output), err)
+	}
+
+	return dirSize, nil
 }
 
 // Get the gas settings
