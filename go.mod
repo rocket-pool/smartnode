@@ -16,7 +16,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/ethereum/go-ethereum v1.10.16
+	github.com/ethereum/go-ethereum v1.10.17
 	github.com/fatih/color v1.13.0
 	github.com/ferranbt/fastssz v0.0.0-20220103083642-bc5fefefa28b
 	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1
