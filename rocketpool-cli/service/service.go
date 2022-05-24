@@ -598,6 +598,14 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		}
 	}
 
+	// Write a note on doppelganger protection
+	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
+	if err != nil {
+		fmt.Printf("%sCouldn't check if you have Doppelganger Protection enabled: %s\nIf you do, your validator will miss up to 3 attestations when it starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, err.Error(), colorReset)
+	} else if doppelgangerEnabled {
+		fmt.Printf("%sNOTE: You currently have Doppelganger Protection enabled.\nYour validator will miss up to 3 attestations when it starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, colorReset)
+	}
+
 	// Warn about light ECs
 	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && (cfg.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura || cfg.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Pocket) {
 		fmt.Printf("==========\n%sWARNING: you are using a light client (Infura or Pocket) as your primary Execution client.\nLight clients are NOT COMPATIBLE with the upcoming Ethereum Merge, and will be removed in a future version of the Smartnode.\n\nPlease switch to a full client such as Geth, Nethermind, or Besu as soon as possible.\n\nThis can be done via the `rocketpool service config` Terminal UI by simply selecting a different client from the Execution Client drop-down menu in the Execution Client (ETH1) section.%s\n==========\n\n", colorRed, colorReset)
@@ -1007,18 +1015,32 @@ func pruneExecutionClient(c *cli.Context) error {
 // Pause the Rocket Pool service
 func pauseService(c *cli.Context) error {
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
+
+	// Get the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	// Write a note on doppelganger protection
+	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
+	if err != nil {
+		fmt.Printf("%sCouldn't check if you have Doppelganger Protection enabled: %s\nIf you do, stopping your validator will cause it to miss up to 3 attestations when it next starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, err.Error(), colorReset)
+	} else if doppelgangerEnabled {
+		fmt.Printf("%sNOTE: You currently have Doppelganger Protection enabled.\nIf you stop your validator, it will miss up to 3 attestations when it next starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, colorReset)
+	}
+
+	// Prompt for confirmation
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
 
 	// Pause service
 	return rp.PauseService(getComposeFiles(c))
@@ -1737,23 +1759,3 @@ func getPartitionFreeSpace(rp *rocketpool.Client, targetDir string) (uint64, err
 	}
 	return diskUsage.Free, nil
 }
-
-/*
-// Get the amount of space used by the source dir
-func getFolderSpaceUsed(sourceDir string) (uint64, error) {
-	sourceBytes := uint64(0)
-	err := filepath.Walk(sourceDir, func(_ string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			sourceBytes += uint64(info.Size())
-		}
-		return err
-	})
-	if err != nil {
-		return 0, fmt.Errorf("error calculating size of source directory: %w", err)
-	}
-	return sourceBytes, nil
-}
-*/

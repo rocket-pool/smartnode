@@ -714,6 +714,47 @@ func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusCon
 	}
 }
 
+// Check if doppelganger protection is enabled
+func (config *RocketPoolConfig) IsDoppelgangerEnabled() (bool, error) {
+	if config.IsNativeMode {
+		return false, fmt.Errorf("consensus config is not available in native mode")
+	}
+
+	mode := config.ConsensusClientMode.Value.(Mode)
+	switch mode {
+	case Mode_Local:
+		client := config.ConsensusClient.Value.(ConsensusClient)
+		switch client {
+		case ConsensusClient_Lighthouse:
+			return config.ConsensusCommon.DoppelgangerDetection.Value.(bool), nil
+		case ConsensusClient_Nimbus:
+			return config.ConsensusCommon.DoppelgangerDetection.Value.(bool), nil
+		case ConsensusClient_Prysm:
+			return config.ConsensusCommon.DoppelgangerDetection.Value.(bool), nil
+		case ConsensusClient_Teku:
+			return false, nil
+		default:
+			return false, fmt.Errorf("unknown consensus client [%v] selected", client)
+		}
+
+	case Mode_External:
+		client := config.ExternalConsensusClient.Value.(ConsensusClient)
+		switch client {
+		case ConsensusClient_Lighthouse:
+			return config.ExternalLighthouse.DoppelgangerDetection.Value.(bool), nil
+		case ConsensusClient_Prysm:
+			return config.ExternalPrysm.DoppelgangerDetection.Value.(bool), nil
+		case ConsensusClient_Teku:
+			return false, nil
+		default:
+			return false, fmt.Errorf("unknown external consensus client [%v] selected", client)
+		}
+
+	default:
+		return false, fmt.Errorf("unknown consensus client mode [%v]", mode)
+	}
+}
+
 // Serializes the configuration into a map of maps, compatible with a settings file
 func (config *RocketPoolConfig) Serialize() map[string]map[string]string {
 
