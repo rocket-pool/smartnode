@@ -10,6 +10,7 @@ import (
 const (
 	gethTag              string = "ethereum/client-go:v1.10.17"
 	gethEventLogInterval int    = 25000
+	gethStopSignal       string = "SIGTERM"
 )
 
 // Configuration for Geth

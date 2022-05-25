@@ -870,10 +870,13 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		switch config.ExecutionClient.Value.(ExecutionClient) {
 		case ExecutionClient_Geth:
 			addParametersToEnvVars(config.Geth.GetParameters(), envVars)
+			envVars["EC_STOP_SIGNAL"] = gethStopSignal
 		case ExecutionClient_Nethermind:
 			addParametersToEnvVars(config.Nethermind.GetParameters(), envVars)
+			envVars["EC_STOP_SIGNAL"] = nethermindStopSignal
 		case ExecutionClient_Besu:
 			addParametersToEnvVars(config.Besu.GetParameters(), envVars)
+			envVars["EC_STOP_SIGNAL"] = besuStopSignal
 		case ExecutionClient_Infura:
 			addParametersToEnvVars(config.Infura.GetParameters(), envVars)
 		case ExecutionClient_Pocket:
