@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
 	"time"
@@ -386,9 +387,12 @@ func checkClientStatus(client *ethclient.Client) api.ExecutionClientStatus {
 		status.IsWorking = true
 		status.IsSynced = false
 
-		status.SyncProgress = float64(progress.CurrentBlock-progress.StartingBlock) / float64(progress.HighestBlock-progress.StartingBlock)
+		status.SyncProgress = float64(progress.CurrentBlock) / float64(progress.HighestBlock)
 		if status.SyncProgress > 1 {
 			status.SyncProgress = 1
+		}
+		if math.IsNaN(status.SyncProgress) {
+			status.SyncProgress = 0
 		}
 
 		return status
