@@ -879,8 +879,10 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			envVars["EC_STOP_SIGNAL"] = besuStopSignal
 		case ExecutionClient_Infura:
 			addParametersToEnvVars(config.Infura.GetParameters(), envVars)
+			envVars["EC_STOP_SIGNAL"] = powProxyStopSignal
 		case ExecutionClient_Pocket:
 			addParametersToEnvVars(config.Pocket.GetParameters(), envVars)
+			envVars["EC_STOP_SIGNAL"] = powProxyStopSignal
 		}
 	} else {
 		addParametersToEnvVars(config.ExternalExecution.GetParameters(), envVars)
