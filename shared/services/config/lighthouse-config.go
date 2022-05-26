@@ -1,7 +1,7 @@
 package config
 
 const (
-	lighthouseTag                  string = "sigp/lighthouse:v2.2.1"
+	lighthouseTag                  string = "sigp/lighthouse:v2.3.0-rc.0"
 	defaultLhMaxPeers              uint16 = 80
 	LighthouseFeeRecipientFilename string = "rp-fee-recipients.txt"
 )

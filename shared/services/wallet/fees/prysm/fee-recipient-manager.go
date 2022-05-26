@@ -75,11 +75,7 @@ func (fm *FeeRecipientManager) CheckFeeRecipientFile(distributor common.Address)
 	}
 
 	// The file existed and had the expected address, all set.
-	// TODO: WAIT FOR PRYSM TO ADD SUPPORT FOR THIS, SEE
-	// https://github.com/prysmaticlabs/prysm/pull/10312
 	return true, true, nil
-
-	return true, true, fmt.Errorf("Prysm currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
 
 }
 
@@ -106,7 +102,5 @@ func (fm *FeeRecipientManager) UpdateFeeRecipientFile(distributor common.Address
 		return fmt.Errorf("error writing fee recipient file: %w", err)
 	}
 	return nil
-
-	return fmt.Errorf("Prysm currently does not provide support for per-validator fee recipient specification, so it cannot be used to test the Merge. We will re-enable it when it has support for this feature.")
 
 }
