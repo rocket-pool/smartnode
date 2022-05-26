@@ -380,6 +380,7 @@ func checkClientStatus(client *ethclient.Client) api.ExecutionClientStatus {
 
 		// It's synced and it works!
 		status.IsSynced = true
+		status.SyncProgress = 1
 		return status
 
 	} else {
