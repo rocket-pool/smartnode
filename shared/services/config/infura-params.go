@@ -1,7 +1,10 @@
 package config
 
 // Constants
-const infuraEventLogInterval int = 25000
+const (
+	infuraEventLogInterval int    = 25000
+	powProxyStopSignal     string = "SIGTERM"
+)
 
 // Configuration for Infura
 type InfuraConfig struct {
