@@ -772,6 +772,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "sign",
+				Usage:     "Signs data with the node's private key",
+				UsageText: "rocketpool api node sign data",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					data := c.Args().Get(0)
+
+					// Run
+					api.PrintResponse(sign(c, data))
+					return nil
+
+				},
+			},
 		},
 	})
 }

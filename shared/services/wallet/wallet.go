@@ -10,6 +10,7 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/tyler-smith/go-bip39"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -248,6 +249,22 @@ func (w *Wallet) Save() error {
 	// Return
 	return nil
 
+}
+
+// Signs data using the wallet's private key
+func (w *Wallet) Sign(data []byte) ([]byte, error) {
+	// Get private key
+	privateKey, _, err := w.getNodePrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	signedData, err := crypto.Sign(data, privateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return signedData, nil
 }
 
 // Reloads wallet from disk

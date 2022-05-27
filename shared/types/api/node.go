@@ -277,3 +277,9 @@ type DepositContractInfoResponse struct {
 	BeaconNetwork         uint64         `json:"beaconNetwork"`
 	SufficientSync        bool           `json:"sufficientSync"`
 }
+
+type NodeSignResponse struct {
+	Status     string `json:"status"`
+	Error      string `json:"error"`
+	SignedData []byte `json:"signedData"`
+}
