@@ -21,6 +21,7 @@ const (
 
 	ClaimRplRewardsColor         = color.FgGreen
 	StakePrelaunchMinipoolsColor = color.FgBlue
+	DownloadRewardsTreesColor    = color.FgGreen
 	MetricsColor                 = color.FgHiYellow
 	ManageFeeRecipientColor      = color.FgHiCyan
 	ErrorColor                   = color.FgRed
@@ -63,6 +64,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
+	if err != nil {
+		return err
+	}
 
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
@@ -86,10 +91,17 @@ func run(c *cli.Context) error {
 				}
 				time.Sleep(taskCooldown)
 
-				// Run auto-claims during the legacy period
 				if !isUpdateDeployed {
+					// Run auto-claims during the legacy period
 					isUpdateDeployed, err = claimRplRewards.run()
 					if err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+				}
+				if isUpdateDeployed {
+					// Run the rewards download check
+					if err := downloadRewardsTrees.run(); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)

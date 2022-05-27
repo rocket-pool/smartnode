@@ -8,12 +8,17 @@ import (
 	"io/ioutil"
 	"math"
 	"math/big"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/klauspost/compress/zstd"
+	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -198,4 +203,77 @@ func GetELBlockHeaderForTime(targetTime time.Time, ec rocketpool.ExecutionClient
 			return nil, err
 		}
 	}
+}
+
+// Downloads a single rewards file
+func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid string, isDaemon bool) error {
+
+	// Determine file name and path
+	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
+	if err != nil {
+		return fmt.Errorf("Error expanding rewards tree path: %w", err)
+	}
+	rewardsTreeFilename := filepath.Base(rewardsTreePath)
+	ipfsFilename := rewardsTreeFilename + config.RewardsTreeIpfsExtension
+
+	// Create URL list
+	urls := []string{
+		fmt.Sprintf(config.PrimaryRewardsFileUrl, cid, ipfsFilename),
+		fmt.Sprintf(config.SecondaryRewardsFileUrl, cid, ipfsFilename),
+	}
+
+	// Attempt downloads
+	errBuilder := strings.Builder{}
+	for _, url := range urls {
+		resp, err := http.Get(url)
+		if err != nil {
+			errBuilder.WriteString(fmt.Sprintf("Downloading %s failed (%s)\n", url, err.Error()))
+			continue
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			errBuilder.WriteString(fmt.Sprintf("Downloading %s failed with status %s\n", url, resp.Status))
+			continue
+		} else {
+			// If we got here, we have a successful download
+			bytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
+				continue
+			}
+
+			// Decompress it
+			decompressedBytes, err := decompressFile(bytes)
+			if err != nil {
+				errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
+				continue
+			}
+
+			// Write the file
+			err = ioutil.WriteFile(rewardsTreePath, decompressedBytes, 0644)
+			if err != nil {
+				return fmt.Errorf("Error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf(errBuilder.String())
+
+}
+
+// Decompresses a rewards file
+func decompressFile(compressedBytes []byte) ([]byte, error) {
+	decoder, err := zstd.NewReader(nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating compression decoder: %w", err)
+	}
+
+	decompressedBytes, err := decoder.DecodeAll(compressedBytes, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error decompressing rewards file: %w", err)
+	}
+
+	return decompressedBytes, nil
 }

@@ -6,6 +6,7 @@ type Mode string
 type ParameterType string
 type ExecutionClient string
 type ConsensusClient string
+type RewardsMode string
 
 // Enum to describe which container(s) a parameter impacts, so the Smartnode knows which
 // ones to restart upon a settings change
@@ -71,6 +72,13 @@ const (
 	ConsensusClient_Nimbus     ConsensusClient = "nimbus"
 	ConsensusClient_Prysm      ConsensusClient = "prysm"
 	ConsensusClient_Teku       ConsensusClient = "teku"
+)
+
+// Enum to describe the rewards tree acquisition modes
+const (
+	RewardsMode_Unknown  RewardsMode = ""
+	RewardsMode_Download RewardsMode = "download"
+	RewardsMode_Generate RewardsMode = "generate"
 )
 
 type Config interface {

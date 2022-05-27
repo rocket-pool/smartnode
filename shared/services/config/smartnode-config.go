@@ -10,20 +10,22 @@ import (
 
 // Constants
 const (
-	smartnodeTag                        string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-	powProxyTag                         string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
-	pruneProvisionerTag                 string = "rocketpool/eth1-prune-provision:v0.0.1"
-	ecMigratorTag                       string = "rocketpool/ec-migrator:v1.0.0"
-	NetworkID                           string = "network"
-	ProjectNameID                       string = "projectName"
-	RewardsTreeFilenameFormat           string = "rp-rewards-%s-%d.json"
-	CompressedRewardsTreeFilenameFormat string = "rp-rewards-%s-%d.json.zst"
-	RewardsTreesFolder                  string = "rewards-trees"
-	DaemonDataPath                      string = "/.rocketpool/data"
-	WatchtowerFolder                    string = "watchtower"
-	WatchtowerStateFile                 string = "state.yml"
-	RegenerateRewardsTreeRequestSuffix  string = ".request"
-	RegenerateRewardsTreeRequestFormat  string = "%d" + RegenerateRewardsTreeRequestSuffix
+	smartnodeTag                       string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
+	powProxyTag                        string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
+	pruneProvisionerTag                string = "rocketpool/eth1-prune-provision:v0.0.1"
+	ecMigratorTag                      string = "rocketpool/ec-migrator:v1.0.0"
+	NetworkID                          string = "network"
+	ProjectNameID                      string = "projectName"
+	RewardsTreeFilenameFormat          string = "rp-rewards-%s-%d.json"
+	RewardsTreeIpfsExtension           string = ".zst"
+	RewardsTreesFolder                 string = "rewards-trees"
+	DaemonDataPath                     string = "/.rocketpool/data"
+	WatchtowerFolder                   string = "watchtower"
+	WatchtowerStateFile                string = "state.yml"
+	RegenerateRewardsTreeRequestSuffix string = ".request"
+	RegenerateRewardsTreeRequestFormat string = "%d" + RegenerateRewardsTreeRequestSuffix
+	PrimaryRewardsFileUrl              string = "https://%s.ipfs.dweb.link/%s"
+	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
 )
 
 // Defaults
@@ -67,8 +69,8 @@ type SmartnodeConfig struct {
 	// Threshold for auto minipool stakes
 	MinipoolStakeGasThreshold Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
 
-	// Toggle for automatically generating rewards trees
-	AutoGenerateRewardsTrees Parameter `yaml:"autoGenerateRewardsTrees"`
+	// Mode for acquiring Merkle rewards trees
+	RewardsTreeMode Parameter `yaml:"rewardsTreeMode"`
 
 	// URL for an EC with archive mode, for manual rewards tree generation
 	ArchiveECUrl Parameter `yaml:"archiveEcUrl"`
@@ -238,22 +240,31 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		AutoGenerateRewardsTrees: Parameter{
-			ID:                   "autoGenerateRewardsTrees",
-			Name:                 "Autogenerate Rewards Trees",
-			Description:          "Enable this to automatically generate Merkle rewards trees for each interval, so you don't have to download and trust the ones created by the Oracle DAO.\n\n[orange]NOTE: rewards tree generation can be computationally expensive if there are many nodes opted into the Smoothing Pool. This may affect your node's performance during generation!",
-			Type:                 ParameterType_Bool,
-			Default:              map[Network]interface{}{Network_All: false},
-			AffectsContainers:    []ContainerID{ContainerID_Watchtower},
+		RewardsTreeMode: Parameter{
+			ID:                   "rewardsTreeMode",
+			Name:                 "Rewards Tree Mode",
+			Description:          "Select how you want to acquire the Merkle Tree files for each rewards interval.",
+			Type:                 ParameterType_Choice,
+			Default:              map[Network]interface{}{Network_All: RewardsMode_Download},
+			AffectsContainers:    []ContainerID{ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
+			Options: []ParameterOption{{
+				Name:        "Download",
+				Description: "Automatically download the Merkle Tree rewards files that were published by the Oracle DAO after a rewards checkpoint.",
+				Value:       RewardsMode_Download,
+			}, {
+				Name:        "Generate",
+				Description: "Use your node to automatically generate the Merkle Tree rewards file once a checkpoint has passed. This option lets you build and verify the file that the Oracle DAO created if you prefer not to trust it and want to generate the tree yourself.\n\n[orange]WARNING: Generating the tree can take a *very long time* if many node operators are opted into the Smoothing Pool, which could impact your attestation performance!",
+				Value:       RewardsMode_Generate,
+			}},
 		},
 
 		ArchiveECUrl: Parameter{
 			ID:                   "archiveECUrl",
 			Name:                 "Archive-Mode EC URL",
-			Description:          "[orange]**For manual Merkle rewards tree generation only.**[white]\n\nGenerating the Merkle rewards tree files for past rewards intervals typically requires an Execution client with Archive mode enabled, which is usually disabled on your primary and fallback Execution clients to save disk space.\nIf you want to generate your own rewards tree files, you may enter the URL of an Execution client with Archive access here.\n\nFor a free light client with Archive access, you may use https://www.alchemy.com/supernode.",
+			Description:          "[orange]**For manual Merkle rewards tree generation only.**[white]\n\nGenerating the Merkle rewards tree files for past rewards intervals typically requires an Execution client with Archive mode enabled, which is usually disabled on your primary and fallback Execution clients to save disk space.\nIf you want to generate your own rewards tree files for intervals from a long time ago, you may enter the URL of an Execution client with Archive access here.\n\nFor a free light client with Archive access, you may use https://www.alchemy.com/supernode.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Watchtower},
@@ -371,7 +382,7 @@ func (config *SmartnodeConfig) GetParameters() []*Parameter {
 		&config.PriorityFee,
 		&config.RplClaimGasThreshold,
 		&config.MinipoolStakeGasThreshold,
-		&config.AutoGenerateRewardsTrees,
+		&config.RewardsTreeMode,
 		&config.ArchiveECUrl,
 		&config.Web3StorageApiToken,
 	}
@@ -473,14 +484,6 @@ func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) 
 		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 	} else {
 		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
-	}
-}
-
-func (config *SmartnodeConfig) GetCompressedRewardsTreePath(interval uint64, daemon bool) string {
-	if daemon && !config.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(CompressedRewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
-	} else {
-		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(CompressedRewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 	}
 }
 

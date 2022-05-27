@@ -135,7 +135,7 @@ func (t *submitRewardsTree) run() error {
 	if err != nil {
 		return err
 	}
-	if !nodeTrusted && t.cfg.Smartnode.AutoGenerateRewardsTrees.Value == false {
+	if !nodeTrusted && t.cfg.Smartnode.RewardsTreeMode.Value.(config.RewardsMode) != config.RewardsMode_Generate {
 		return nil
 	}
 
@@ -196,7 +196,7 @@ func (t *submitRewardsTree) run() error {
 
 	// Check if the file is already generated and reupload it without rebuilding it
 	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
-	compressedPath := t.cfg.Smartnode.GetCompressedRewardsTreePath(currentIndex, true)
+	compressedPath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true) + config.RewardsTreeIpfsExtension
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
 		if !nodeTrusted {
