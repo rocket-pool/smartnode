@@ -2,7 +2,7 @@ package config
 
 import "github.com/pbnjay/memory"
 
-const tekuTag string = "consensys/teku:22.5.1"
+const tekuTag string = "consensys/teku:22.5.2"
 const defaultTekuMaxPeers uint16 = 74
 
 // Configuration for Teku
