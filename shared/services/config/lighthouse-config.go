@@ -1,6 +1,6 @@
 package config
 
-const lighthouseTag string = "sigp/lighthouse:v2.2.1"
+const lighthouseTag string = "sigp/lighthouse:v2.3.0"
 const defaultLhMaxPeers uint16 = 80
 
 // Configuration for Lighthouse
