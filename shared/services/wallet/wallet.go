@@ -10,7 +10,7 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/google/uuid"
 	"github.com/tyler-smith/go-bip39"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -251,17 +251,29 @@ func (w *Wallet) Save() error {
 
 }
 
-// Signs data using the wallet's private key
-func (w *Wallet) Sign(data []byte) ([]byte, error) {
+// Signs a serialized TX using the wallet's private key
+func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
 	// Get private key
 	privateKey, _, err := w.getNodePrivateKey()
 	if err != nil {
 		return nil, err
 	}
 
-	signedData, err := crypto.Sign(data, privateKey)
+	tx := types.Transaction{}
+	err = tx.UnmarshalBinary(serializedTx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error unmarshalling TX: %w", err)
+	}
+
+	signer := types.NewEIP155Signer(w.chainID)
+	signedTx, err := types.SignTx(&tx, signer, privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error signing TX: %w", err)
+	}
+
+	signedData, err := signedTx.MarshalBinary()
+	if err != nil {
+		return nil, fmt.Errorf("Error marshalling signed TX to binary: %w", err)
 	}
 
 	return signedData, nil

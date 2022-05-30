@@ -12,7 +12,7 @@ import (
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
-func sign(c *cli.Context, data string) (*api.NodeSignResponse, error) {
+func sign(c *cli.Context, serializedTx string) (*api.NodeSignResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -25,17 +25,17 @@ func sign(c *cli.Context, data string) (*api.NodeSignResponse, error) {
 	// Response
 	response := api.NodeSignResponse{}
 
-	data = hexutils.RemovePrefix(data)
-	bytes, err := hex.DecodeString(data)
+	serializedTx = hexutils.RemovePrefix(serializedTx)
+	bytes, err := hex.DecodeString(serializedTx)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing data [%s]: %w", data, err)
+		return nil, fmt.Errorf("Error parsing TX bytes [%s]: %w", serializedTx, err)
 	}
 
 	signedBytes, err := w.Sign(bytes)
 	if err != nil {
-		return nil, fmt.Errorf("Error signing data [%s]: %w", data, err)
+		return nil, fmt.Errorf("Error signing TX [%s]: %w", serializedTx, err)
 	}
-	response.SignedData = signedBytes
+	response.SignedData = hexutils.AddPrefix(hex.EncodeToString(signedBytes))
 
 	// Return response
 	return &response, nil

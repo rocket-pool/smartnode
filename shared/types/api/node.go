@@ -281,5 +281,5 @@ type DepositContractInfoResponse struct {
 type NodeSignResponse struct {
 	Status     string `json:"status"`
 	Error      string `json:"error"`
-	SignedData []byte `json:"signedData"`
+	SignedData string `json:"signedData"`
 }

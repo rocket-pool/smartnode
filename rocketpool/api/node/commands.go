@@ -774,8 +774,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 			{
 				Name:      "sign",
-				Usage:     "Signs data with the node's private key",
-				UsageText: "rocketpool api node sign data",
+				Usage:     "Signs a transaction with the node's private key. The TX must be serialized as a hex string.",
+				UsageText: "rocketpool api node sign tx",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
