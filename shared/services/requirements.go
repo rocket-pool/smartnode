@@ -358,7 +358,7 @@ var ethClientSyncLock sync.Mutex
 func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool.ExecutionClient, error) {
 
 	// Check the EC status
-	mgrStatus := ecMgr.CheckStatus()
+	mgrStatus := ecMgr.CheckStatus(false)
 	if ecMgr.primaryReady {
 		return true, nil, nil
 	}
