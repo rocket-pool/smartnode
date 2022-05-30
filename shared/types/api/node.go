@@ -283,6 +283,12 @@ type DepositContractInfoResponse struct {
 	SufficientSync        bool           `json:"sufficientSync"`
 }
 
+type NodeSignResponse struct {
+	Status     string `json:"status"`
+	Error      string `json:"error"`
+	SignedData string `json:"signedData"`
+}
+
 type NodeIsFeeDistributorInitializedResponse struct {
 	Status        string `json:"status"`
 	Error         string `json:"error"`

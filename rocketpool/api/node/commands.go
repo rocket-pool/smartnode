@@ -774,6 +774,26 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "sign",
+				Usage:     "Signs a transaction with the node's private key. The TX must be serialized as a hex string.",
+				UsageText: "rocketpool api node sign tx",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					data := c.Args().Get(0)
+
+					// Run
+					api.PrintResponse(sign(c, data))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "is-fee-distributor-initialized",
 				Usage:     "Check if the fee distributor contract for this node is initialized and deployed",
 				UsageText: "rocketpool api node is-fee-distributor-initialized",

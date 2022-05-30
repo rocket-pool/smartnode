@@ -897,9 +897,15 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 
 		// Handle open API ports
 		if config.ExecutionCommon.OpenRpcPorts.Value == true {
-			ecHttpPort := config.ExecutionCommon.HttpPort.Value.(uint16)
-			ecWsPort := config.ExecutionCommon.WsPort.Value.(uint16)
-			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+			switch config.ExecutionClient.Value.(ExecutionClient) {
+			case ExecutionClient_Pocket:
+				ecHttpPort := config.ExecutionCommon.HttpPort.Value.(uint16)
+				envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort)
+			default:
+				ecHttpPort := config.ExecutionCommon.HttpPort.Value.(uint16)
+				ecWsPort := config.ExecutionCommon.WsPort.Value.(uint16)
+				envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+			}
 		}
 
 		// Common params
@@ -936,9 +942,15 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 
 			// Handle open API ports
 			if config.FallbackExecutionCommon.OpenRpcPorts.Value == true {
-				ecHttpPort := config.FallbackExecutionCommon.HttpPort.Value.(uint16)
-				ecWsPort := config.FallbackExecutionCommon.WsPort.Value.(uint16)
-				envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf("\"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+				switch config.FallbackExecutionClient.Value.(ExecutionClient) {
+				case ExecutionClient_Pocket:
+					ecHttpPort := config.FallbackExecutionCommon.HttpPort.Value.(uint16)
+					envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf("\"%d:%d/tcp\"", ecHttpPort, ecHttpPort)
+				default:
+					ecHttpPort := config.FallbackExecutionCommon.HttpPort.Value.(uint16)
+					ecWsPort := config.FallbackExecutionCommon.WsPort.Value.(uint16)
+					envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf("\"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
+				}
 			}
 
 			// Common params
