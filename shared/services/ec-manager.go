@@ -314,7 +314,7 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 /// Internal functions
 /// ==================
 
-func (p *ExecutionClientManager) CheckStatus() *api.ExecutionClientManagerStatus {
+func (p *ExecutionClientManager) CheckStatus(alwaysCheckFallback bool) *api.ExecutionClientManagerStatus {
 
 	status := &api.ExecutionClientManagerStatus{
 		FallbackEnabled: p.fallbackEc != nil,
@@ -336,7 +336,9 @@ func (p *ExecutionClientManager) CheckStatus() *api.ExecutionClientManagerStatus
 
 	// Get the fallback EC status if applicable
 	if status.FallbackEnabled {
-		status.FallbackEcStatus = checkClientStatus(p.fallbackEc)
+		if alwaysCheckFallback || !status.PrimaryEcStatus.IsSynced {
+			status.FallbackEcStatus = checkClientStatus(p.fallbackEc)
+		}
 	}
 
 	// Flag the ready clients
@@ -347,7 +349,7 @@ func (p *ExecutionClientManager) CheckStatus() *api.ExecutionClientManagerStatus
 
 }
 
-// Check the Fallback EC
+// Check the client status
 func checkClientStatus(client *ethclient.Client) api.ExecutionClientStatus {
 
 	status := api.ExecutionClientStatus{}
@@ -356,6 +358,7 @@ func checkClientStatus(client *ethclient.Client) api.ExecutionClientStatus {
 	progress, err := client.SyncProgress(context.Background())
 	if err != nil {
 		status.Error = fmt.Sprintf("Sync progress check failed with [%s]", err.Error())
+		status.IsSynced = false
 		status.IsWorking = false
 		return status
 	}
@@ -366,6 +369,7 @@ func checkClientStatus(client *ethclient.Client) api.ExecutionClientStatus {
 		isUpToDate, blockTime, err := IsSyncWithinThreshold(client)
 		if err != nil {
 			status.Error = fmt.Sprintf("Error checking if client's sync progress is up to date: [%s]", err.Error())
+			status.IsSynced = false
 			status.IsWorking = false
 			return status
 		}

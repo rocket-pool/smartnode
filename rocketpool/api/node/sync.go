@@ -19,7 +19,7 @@ func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
 	}
 
 	// Get status of EC and fallback EC
-	status := ecMgr.CheckStatus()
+	status := ecMgr.CheckStatus(true)
 	response.EcStatus = *status
 
 	// Get CC client

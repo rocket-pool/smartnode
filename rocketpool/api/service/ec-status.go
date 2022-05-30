@@ -20,7 +20,7 @@ func getExecutionClientStatus(c *cli.Context) (*api.ExecutionClientStatusRespons
 	response := api.ExecutionClientStatusResponse{}
 
 	// Get the EC manager status
-	mgrStatus := ec.CheckStatus()
+	mgrStatus := ec.CheckStatus(false)
 	response.ManagerStatus = *mgrStatus
 
 	// Return response
