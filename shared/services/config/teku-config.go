@@ -105,6 +105,7 @@ func NewTekuConfig(config *RocketPoolConfig) *TekuConfig {
 // Get the parameters for this config
 func (config *TekuConfig) GetParameters() []*Parameter {
 	return []*Parameter{
+		&config.JvmHeapSize,
 		&config.MaxPeers,
 		&config.ContainerTag,
 		&config.AdditionalBnFlags,
