@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/pbnjay/memory"
 )
 
 // Constants
@@ -23,6 +25,9 @@ type BesuConfig struct {
 
 	// Compatible consensus clients
 	CompatibleConsensusClients []ConsensusClient `yaml:"-"`
+
+	// Max number of P2P peers to connect to
+	JvmHeapSize Parameter `yaml:"jvmHeapSize,omitempty"`
 
 	// The max number of events to query in a single event log query
 	EventLogInterval int `yaml:"-"`
@@ -66,6 +71,18 @@ func NewBesuConfig(config *RocketPoolConfig, isFallback bool) *BesuConfig {
 		},
 
 		EventLogInterval: nethermindEventLogInterval,
+
+		JvmHeapSize: Parameter{
+			ID:                   "jvmHeapSize",
+			Name:                 "JVM Heap Size",
+			Description:          "The max amount of RAM, in MB, that Besu's JVM should limit itself to. Setting this lower will cause Besu to use less RAM, though it will always use more than this limit.\n\nUse 0 for automatic allocation.",
+			Type:                 ParameterType_Uint,
+			Default:              map[Network]interface{}{Network_All: getBesuHeapSize()},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: []string{prefix + "BESU_JVM_HEAP_SIZE"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
 
 		MaxPeers: Parameter{
 			ID:                   "maxPeers",
@@ -128,9 +145,19 @@ func getBesuTag() string {
 	}
 }
 
+// Get the recommended heap size for Besu
+func getBesuHeapSize() uint64 {
+	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+	if totalMemoryGB < 9 {
+		return 2048
+	}
+	return 0
+}
+
 // Get the parameters for this config
 func (config *BesuConfig) GetParameters() []*Parameter {
 	return []*Parameter{
+		&config.JvmHeapSize,
 		&config.MaxPeers,
 		&config.MaxBackLayers,
 		&config.ContainerTag,

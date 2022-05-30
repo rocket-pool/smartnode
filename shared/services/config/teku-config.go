@@ -1,5 +1,7 @@
 package config
 
+import "github.com/pbnjay/memory"
+
 const tekuTag string = "consensys/teku:22.5.1"
 const defaultTekuMaxPeers uint16 = 74
 
@@ -7,11 +9,14 @@ const defaultTekuMaxPeers uint16 = 74
 type TekuConfig struct {
 	Title string `yaml:"-"`
 
-	// The max number of P2P peers to connect to
-	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
-
 	// Common parameters that Teku doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"-"`
+
+	// Max number of P2P peers to connect to
+	JvmHeapSize Parameter `yaml:"jvmHeapSize,omitempty"`
+
+	// The max number of P2P peers to connect to
+	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
 
 	// The Docker Hub tag for Lighthouse
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
@@ -30,6 +35,18 @@ func NewTekuConfig(config *RocketPoolConfig) *TekuConfig {
 
 		UnsupportedCommonParams: []string{
 			DoppelgangerDetectionID,
+		},
+
+		JvmHeapSize: Parameter{
+			ID:                   "jvmHeapSize",
+			Name:                 "JVM Heap Size",
+			Description:          "The max amount of RAM, in MB, that Teku's JVM should limit itself to. Setting this lower will cause Teku to use less RAM, though it will always use more than this limit.\n\nUse 0 for automatic allocation.",
+			Type:                 ParameterType_Uint,
+			Default:              map[Network]interface{}{Network_All: getTekuHeapSize()},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: []string{"TEKU_JVM_HEAP_SIZE"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
 		},
 
 		MaxPeers: Parameter{
@@ -90,6 +107,15 @@ func (config *TekuConfig) GetParameters() []*Parameter {
 		&config.AdditionalBnFlags,
 		&config.AdditionalVcFlags,
 	}
+}
+
+// Get the recommended heap size for Teku
+func getTekuHeapSize() uint64 {
+	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+	if totalMemoryGB < 9 {
+		return 2048
+	}
+	return 0
 }
 
 // Get the common params that this client doesn't support
