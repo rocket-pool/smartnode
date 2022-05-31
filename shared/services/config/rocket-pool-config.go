@@ -862,8 +862,8 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	addParametersToEnvVars(config.GetParameters(), envVars)
 
 	// EC parameters
-	envVars["EC_CLIENT"] = fmt.Sprint(config.ExecutionClient.Value)
 	if config.ExecutionClientMode.Value.(Mode) == Mode_Local {
+		envVars["EC_CLIENT"] = fmt.Sprint(config.ExecutionClient.Value)
 		envVars["EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, config.ExecutionCommon.HttpPort.Value)
 		envVars["EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, config.ExecutionCommon.WsPort.Value)
 
@@ -902,6 +902,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			envVars["EC_STOP_SIGNAL"] = powProxyStopSignal
 		}
 	} else {
+		envVars["EC_CLIENT"] = "X" // X is for external / unknown
 		addParametersToEnvVars(config.ExternalExecution.GetParameters(), envVars)
 	}
 	// Get the hostname of the Execution client, necessary for Prometheus to work in hybrid mode
