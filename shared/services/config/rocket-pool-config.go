@@ -38,6 +38,7 @@ const defaultVcMetricsPort uint16 = 9101
 const defaultNodeMetricsPort uint16 = 9102
 const defaultExporterMetricsPort uint16 = 9103
 const defaultWatchtowerMetricsPort uint16 = 9104
+const defaultEcMetricsPort uint16 = 9105
 
 // The master configuration struct
 type RocketPoolConfig struct {
@@ -66,6 +67,7 @@ type RocketPoolConfig struct {
 
 	// Metrics settings
 	EnableMetrics           Parameter `yaml:"enableMetrics,omitempty"`
+	EcMetricsPort           Parameter `yaml:"ecMetricsPort,omitempty"`
 	BnMetricsPort           Parameter `yaml:"bnMetricsPort,omitempty"`
 	VcMetricsPort           Parameter `yaml:"vcMetricsPort,omitempty"`
 	NodeMetricsPort         Parameter `yaml:"nodeMetricsPort,omitempty"`
@@ -370,6 +372,18 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		EcMetricsPort: Parameter{
+			ID:                   "ecMetricsPort",
+			Name:                 "Execution Client Metrics Port",
+			Description:          "The port your Execution client should expose its metrics on.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultEcMetricsPort},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1, ContainerID_Prometheus},
+			EnvironmentVariables: []string{"EC_METRICS_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		BnMetricsPort: Parameter{
 			ID:                   "bnMetricsPort",
 			Name:                 "Beacon Node Metrics Port",
@@ -521,6 +535,7 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 		&config.ExternalConsensusClient,
 		&config.EnableMetrics,
 		&config.EnableBitflyNodeMetrics,
+		&config.EcMetricsPort,
 		&config.BnMetricsPort,
 		&config.VcMetricsPort,
 		&config.NodeMetricsPort,
@@ -892,6 +907,11 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		}
 	} else {
 		addParametersToEnvVars(config.ExternalExecution.GetParameters(), envVars)
+	}
+	// Get the hostname of the Execution client, necessary for Prometheus to work in hybrid mode
+	ecUrl, err := url.Parse(envVars["EC_HTTP_ENDPOINT"])
+	if err == nil && ecUrl != nil {
+		envVars["EC_HOSTNAME"] = ecUrl.Hostname()
 	}
 
 	// Fallback EC parameters

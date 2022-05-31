@@ -13,6 +13,7 @@ type MetricsConfigPage struct {
 	layout                     *standardLayout
 	masterConfig               *config.RocketPoolConfig
 	enableMetricsBox           *parameterizedFormItem
+	ecMetricsPortBox           *parameterizedFormItem
 	bnMetricsPortBox           *parameterizedFormItem
 	vcMetricsPortBox           *parameterizedFormItem
 	nodeMetricsPortBox         *parameterizedFormItem
@@ -79,6 +80,7 @@ func (configPage *MetricsConfigPage) createContent() {
 
 	// Set up the form items
 	configPage.enableMetricsBox = createParameterizedCheckbox(&configPage.masterConfig.EnableMetrics)
+	configPage.ecMetricsPortBox = createParameterizedUint16Field(&configPage.masterConfig.EcMetricsPort)
 	configPage.bnMetricsPortBox = createParameterizedUint16Field(&configPage.masterConfig.BnMetricsPort)
 	configPage.vcMetricsPortBox = createParameterizedUint16Field(&configPage.masterConfig.VcMetricsPort)
 	configPage.nodeMetricsPortBox = createParameterizedUint16Field(&configPage.masterConfig.NodeMetricsPort)
@@ -91,7 +93,7 @@ func (configPage *MetricsConfigPage) createContent() {
 	configPage.bitflyNodeMetricsItems = createParameterizedFormItems(configPage.masterConfig.BitflyNodeMetrics.GetParameters(), configPage.layout.descriptionBox)
 
 	// Map the parameters to the form items in the layout
-	configPage.layout.mapParameterizedFormItems(configPage.enableMetricsBox, configPage.bnMetricsPortBox, configPage.vcMetricsPortBox, configPage.nodeMetricsPortBox, configPage.exporterMetricsPortBox, configPage.watchtowerMetricsPortBox)
+	configPage.layout.mapParameterizedFormItems(configPage.enableMetricsBox, configPage.ecMetricsPortBox, configPage.bnMetricsPortBox, configPage.vcMetricsPortBox, configPage.nodeMetricsPortBox, configPage.exporterMetricsPortBox, configPage.watchtowerMetricsPortBox)
 	configPage.layout.mapParameterizedFormItems(configPage.grafanaItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.prometheusItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.exporterItems...)
