@@ -487,6 +487,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 func getAugmentedEcDescription(client ExecutionClient, originalDescription string) string {
 
 	switch client {
+	case ExecutionClient_Besu:
+		if runtime.GOARCH == "arm64" {
+			return fmt.Sprintf("%s\n\n[orange]WARNING: Besu has not been fully optimized for ARM systems yet. Better ARM performance will be provided in a future client release.", originalDescription)
+		}
 	case ExecutionClient_Nethermind:
 		if runtime.GOARCH == "arm64" {
 			return fmt.Sprintf("%s\n\n[red]WARNING: Nethermind is not currently recommended for ARM systems (such as the Raspberry Pi) on Mainnet due to its higher performance requirements. This will be improved in a future release.", originalDescription)
