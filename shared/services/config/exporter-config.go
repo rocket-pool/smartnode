@@ -5,7 +5,6 @@ const exporterTag string = "prom/node-exporter:v1.3.1"
 
 // Defaults
 const defaultExporterRootFs bool = false
-const defaultExporterPort uint16 = 9103
 
 // Configuration for Exporter
 type ExporterConfig struct {
@@ -13,9 +12,6 @@ type ExporterConfig struct {
 
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
 	RootFs Parameter `yaml:"rootFs,omitempty"`
-
-	// The port to serve metrics on
-	Port Parameter `yaml:"port,omitempty"`
 
 	// The Docker Hub tag for Prometheus
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
@@ -38,18 +34,6 @@ func NewExporterConfig(config *RocketPoolConfig) *ExporterConfig {
 			AffectsContainers:    []ContainerID{ContainerID_Exporter},
 			EnvironmentVariables: []string{"EXPORTER_ROOT_FS"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		Port: Parameter{
-			ID:                   "port",
-			Name:                 "Exporter Port",
-			Description:          "The port Prometheus's Node Exporter should make its statistics available on.",
-			Type:                 ParameterType_Uint16,
-			Default:              map[Network]interface{}{Network_All: defaultExporterPort},
-			AffectsContainers:    []ContainerID{ContainerID_Exporter},
-			EnvironmentVariables: []string{"EXPORTER_PORT"},
-			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
@@ -83,7 +67,6 @@ func NewExporterConfig(config *RocketPoolConfig) *ExporterConfig {
 func (config *ExporterConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.RootFs,
-		&config.Port,
 		&config.ContainerTag,
 		&config.AdditionalFlags,
 	}

@@ -126,6 +126,7 @@ func (configPage *MetricsConfigPage) handleLayoutChanged() {
 	configPage.layout.form.AddFormItem(configPage.enableMetricsBox.item)
 
 	if configPage.masterConfig.EnableMetrics.Value == true {
+		configPage.layout.addFormItems([]*parameterizedFormItem{configPage.ecMetricsPortBox, configPage.bnMetricsPortBox, configPage.vcMetricsPortBox, configPage.nodeMetricsPortBox, configPage.exporterMetricsPortBox, configPage.watchtowerMetricsPortBox})
 		configPage.layout.addFormItems(configPage.grafanaItems)
 		configPage.layout.addFormItems(configPage.prometheusItems)
 		configPage.layout.addFormItems(configPage.exporterItems)

@@ -1017,7 +1017,6 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		if config.Prometheus.AdditionalFlags.Value.(string) != "" {
 			envVars["PROMETHEUS_ADDITIONAL_FLAGS"] = fmt.Sprintf(", \"%s\"", config.Prometheus.AdditionalFlags.Value.(string))
 		}
-
 	}
 
 	// Bitfly Node Metrics
