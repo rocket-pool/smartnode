@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strconv"
 
 	"github.com/alessio/shellescape"
+	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	"gopkg.in/yaml.v2"
@@ -39,6 +39,7 @@ const defaultVcMetricsPort uint16 = 9101
 const defaultNodeMetricsPort uint16 = 9102
 const defaultExporterMetricsPort uint16 = 9103
 const defaultWatchtowerMetricsPort uint16 = 9104
+const defaultEcMetricsPort uint16 = 9105
 
 // The master configuration struct
 type RocketPoolConfig struct {
@@ -67,6 +68,7 @@ type RocketPoolConfig struct {
 
 	// Metrics settings
 	EnableMetrics           Parameter `yaml:"enableMetrics,omitempty"`
+	EcMetricsPort           Parameter `yaml:"ecMetricsPort,omitempty"`
 	BnMetricsPort           Parameter `yaml:"bnMetricsPort,omitempty"`
 	VcMetricsPort           Parameter `yaml:"vcMetricsPort,omitempty"`
 	NodeMetricsPort         Parameter `yaml:"nodeMetricsPort,omitempty"`
@@ -375,6 +377,18 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		EcMetricsPort: Parameter{
+			ID:                   "ecMetricsPort",
+			Name:                 "Execution Client Metrics Port",
+			Description:          "The port your Execution client should expose its metrics on.",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultEcMetricsPort},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1, ContainerID_Prometheus},
+			EnvironmentVariables: []string{"EC_METRICS_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		BnMetricsPort: Parameter{
 			ID:                   "bnMetricsPort",
 			Name:                 "Beacon Node Metrics Port",
@@ -479,13 +493,12 @@ func getAugmentedEcDescription(client ExecutionClient, originalDescription strin
 
 	switch client {
 	case ExecutionClient_Besu:
-		if runtime.GOARCH == "arm64" {
-			return fmt.Sprintf("%s\n\n[orange]WARNING: Besu has not been fully optimized for ARM systems yet. Better ARM performance will be provided in a future client release.", originalDescription)
+		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+		if totalMemoryGB < 9 {
+			return fmt.Sprintf("%s\n\n[red]WARNING: Besu currently requires over 8 GB of RAM to run smoothly. We do not recommend it for your system. This may be improved in a future release.", originalDescription)
 		}
 	case ExecutionClient_Nethermind:
-		if runtime.GOARCH == "arm64" {
-			return fmt.Sprintf("%s\n\n[red]WARNING: Nethermind is not currently recommended for ARM systems (such as the Raspberry Pi) on Mainnet due to its higher performance requirements. This will be improved in a future release.", originalDescription)
-		}
+		return fmt.Sprintf("%s\n\n[red]WARNING: Users have reported a memory leak in v1.13.1 of Nethermind, which will cause it to gradually use all of the system's RAM. Please use caution when selecting Nethermind until this issue has been fixed.", originalDescription)
 	}
 
 	return originalDescription
@@ -526,6 +539,7 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 		&config.ExternalConsensusClient,
 		&config.EnableMetrics,
 		&config.EnableBitflyNodeMetrics,
+		&config.EcMetricsPort,
 		&config.BnMetricsPort,
 		&config.VcMetricsPort,
 		&config.NodeMetricsPort,
@@ -890,8 +904,8 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	addParametersToEnvVars(config.GetParameters(), envVars)
 
 	// EC parameters
-	envVars["EC_CLIENT"] = fmt.Sprint(config.ExecutionClient.Value)
 	if config.ExecutionClientMode.Value.(Mode) == Mode_Local {
+		envVars["EC_CLIENT"] = fmt.Sprint(config.ExecutionClient.Value)
 		envVars["EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, config.ExecutionCommon.HttpPort.Value)
 		envVars["EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, config.ExecutionCommon.WsPort.Value)
 
@@ -930,7 +944,13 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			envVars["EC_STOP_SIGNAL"] = powProxyStopSignal
 		}
 	} else {
+		envVars["EC_CLIENT"] = "X" // X is for external / unknown
 		addParametersToEnvVars(config.ExternalExecution.GetParameters(), envVars)
+	}
+	// Get the hostname of the Execution client, necessary for Prometheus to work in hybrid mode
+	ecUrl, err := url.Parse(envVars["EC_HTTP_ENDPOINT"])
+	if err == nil && ecUrl != nil {
+		envVars["EC_HOSTNAME"] = ecUrl.Hostname()
 	}
 
 	// Fallback EC parameters
@@ -1047,7 +1067,6 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		if config.Prometheus.AdditionalFlags.Value.(string) != "" {
 			envVars["PROMETHEUS_ADDITIONAL_FLAGS"] = fmt.Sprintf(", \"%s\"", config.Prometheus.AdditionalFlags.Value.(string))
 		}
-
 	}
 
 	// Bitfly Node Metrics
