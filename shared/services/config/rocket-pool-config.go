@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strconv"
 
 	"github.com/alessio/shellescape"
+	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	"gopkg.in/yaml.v2"
@@ -488,13 +488,12 @@ func getAugmentedEcDescription(client ExecutionClient, originalDescription strin
 
 	switch client {
 	case ExecutionClient_Besu:
-		if runtime.GOARCH == "arm64" {
-			return fmt.Sprintf("%s\n\n[orange]WARNING: Besu has not been fully optimized for ARM systems yet. Better ARM performance will be provided in a future client release.", originalDescription)
+		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+		if totalMemoryGB < 9 {
+			return fmt.Sprintf("%s\n\n[red]WARNING: Besu currently requires over 8 GB of RAM to run smoothly. We do not recommend it for your system. This may be improved in a future release.", originalDescription)
 		}
 	case ExecutionClient_Nethermind:
-		if runtime.GOARCH == "arm64" {
-			return fmt.Sprintf("%s\n\n[red]WARNING: Nethermind is not currently recommended for ARM systems (such as the Raspberry Pi) on Mainnet due to its higher performance requirements. This will be improved in a future release.", originalDescription)
-		}
+		return fmt.Sprintf("%s\n\n[red]WARNING: Users have reported a memory leak in v1.13.1 of Nethermind, which will cause it to gradually use all of the system's RAM. Please use caution when selecting Nethermind until this issue has been fixed.", originalDescription)
 	}
 
 	return originalDescription
