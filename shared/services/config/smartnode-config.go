@@ -3,6 +3,8 @@ package config
 import (
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/smartnode/shared"
 )
 
@@ -14,6 +16,7 @@ const (
 	ecMigratorTag       string = "rocketpool/ec-migrator:v1.0.0"
 	NetworkID           string = "network"
 	ProjectNameID       string = "projectName"
+	SnapshotID          string = "rocketpool-dao.eth"
 )
 
 // Defaults
@@ -84,6 +87,9 @@ type SmartnodeConfig struct {
 
 	// The contract address of the RPL faucet
 	rplFaucetAddress map[Network]string `yaml:"-"`
+
+	// The contract address for Snapshot delegation
+	snapshotDelegationAddress map[Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -227,6 +233,11 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Mainnet: "",
 			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
 		},
+
+		snapshotDelegationAddress: map[Network]string{
+			Network_Mainnet: "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
+			Network_Prater:  "0xD0897D68Cd66A710dDCecDe30F7557972181BEDc",
+		},
 	}
 
 }
@@ -298,6 +309,10 @@ func (config *SmartnodeConfig) GetRplFaucetAddress() string {
 	return config.rplFaucetAddress[config.Network.Value.(Network)]
 }
 
+func (config *SmartnodeConfig) GetSnapshotDelegationAddress() string {
+	return config.snapshotDelegationAddress[config.Network.Value.(Network)]
+}
+
 func (config *SmartnodeConfig) GetSmartnodeContainerTag() string {
 	return smartnodeTag
 }
@@ -312,6 +327,10 @@ func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 
 func (config *SmartnodeConfig) GetEcMigratorContainerTag() string {
 	return ecMigratorTag
+}
+
+func (config *SmartnodeConfig) GetVotingSnapshotID() common.Hash {
+	return crypto.Keccak256Hash([]byte(SnapshotID))
 }
 
 // The the title for the config

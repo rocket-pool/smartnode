@@ -38,25 +38,27 @@ const (
 
 // Service instances & initializers
 var (
-	cfg              *config.RocketPoolConfig
-	passwordManager  *passwords.PasswordManager
-	nodeWallet       *wallet.Wallet
-	ethClientManager *ExecutionClientManager
-	rocketPool       *rocketpool.RocketPool
-	oneInchOracle    *contracts.OneInchOracle
-	rplFaucet        *contracts.RPLFaucet
-	beaconClient     beacon.Client
-	docker           *client.Client
+	cfg                *config.RocketPoolConfig
+	passwordManager    *passwords.PasswordManager
+	nodeWallet         *wallet.Wallet
+	ethClientManager   *ExecutionClientManager
+	rocketPool         *rocketpool.RocketPool
+	oneInchOracle      *contracts.OneInchOracle
+	rplFaucet          *contracts.RPLFaucet
+	snapshotDelegation *contracts.SnapshotDelegation
+	beaconClient       beacon.Client
+	docker             *client.Client
 
-	initCfg             sync.Once
-	initPasswordManager sync.Once
-	initNodeWallet      sync.Once
-	initEthClientProxy  sync.Once
-	initRocketPool      sync.Once
-	initOneInchOracle   sync.Once
-	initRplFaucet       sync.Once
-	initBeaconClient    sync.Once
-	initDocker          sync.Once
+	initCfg                sync.Once
+	initPasswordManager    sync.Once
+	initNodeWallet         sync.Once
+	initEthClientProxy     sync.Once
+	initRocketPool         sync.Once
+	initOneInchOracle      sync.Once
+	initRplFaucet          sync.Once
+	initSnapshotDelegation sync.Once
+	initBeaconClient       sync.Once
+	initDocker             sync.Once
 )
 
 //
@@ -131,6 +133,18 @@ func GetRplFaucet(c *cli.Context) (*contracts.RPLFaucet, error) {
 		return nil, err
 	}
 	return getRplFaucet(cfg, ec)
+}
+
+func GetSnapshotDelegation(c *cli.Context) (*contracts.SnapshotDelegation, error) {
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := getEthClient(c, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return getSnapshotDelegation(cfg, ec)
 }
 
 func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
@@ -247,6 +261,14 @@ func getRplFaucet(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClien
 		rplFaucet, err = contracts.NewRPLFaucet(common.HexToAddress(cfg.Smartnode.GetRplFaucetAddress()), client)
 	})
 	return rplFaucet, err
+}
+
+func getSnapshotDelegation(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.SnapshotDelegation, error) {
+	var err error
+	initSnapshotDelegation.Do(func() {
+		snapshotDelegation, err = contracts.NewSnapshotDelegation(common.HexToAddress(cfg.Smartnode.GetSnapshotDelegationAddress()), client)
+	})
+	return snapshotDelegation, err
 }
 
 func getBeaconClient(cfg *config.RocketPoolConfig) (beacon.Client, error) {
