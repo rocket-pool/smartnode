@@ -22,9 +22,6 @@ func estimateSetSnapshotDelegateGas(c *cli.Context, address common.Address) (*ap
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
-	if err := services.RequireRplFaucet(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
@@ -87,9 +84,6 @@ func setSnapshotDelegate(c *cli.Context, address common.Address) (*api.SetSnapsh
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
-	if err := services.RequireRplFaucet(c); err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
@@ -131,9 +125,6 @@ func estimateClearSnapshotDelegateGas(c *cli.Context) (*api.EstimateClearSnapsho
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRplFaucet(c); err != nil {
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
@@ -196,9 +187,6 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRplFaucet(c); err != nil {
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
