@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/smartnode/shared"
 )
 
@@ -16,6 +17,7 @@ const (
 	ecMigratorTag                      string = "rocketpool/ec-migrator:v1.0.0"
 	NetworkID                          string = "network"
 	ProjectNameID                      string = "projectName"
+	SnapshotID                         string = "rocketpool-dao.eth"
 	RewardsTreeFilenameFormat          string = "rp-rewards-%s-%d.json"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
@@ -102,6 +104,9 @@ type SmartnodeConfig struct {
 
 	// The contract address of the RPL faucet
 	rplFaucetAddress map[Network]string `yaml:"-"`
+
+	// The contract address for Snapshot delegation
+	snapshotDelegationAddress map[Network]string `yaml:"-"`
 
 	// The contract address of rETH
 	rethAddress map[Network]string `yaml:"-"`
@@ -368,6 +373,11 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Kiln:    "0x6230e0180bc24cA59D20c56F964C81DcE4fe8df6",
 			Network_Ropsten: "",
 		},
+
+		snapshotDelegationAddress: map[Network]string{
+			Network_Mainnet: "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
+			Network_Prater:  "0xD0897D68Cd66A710dDCecDe30F7557972181BEDc",
+		},
 	}
 
 }
@@ -450,6 +460,10 @@ func (config *SmartnodeConfig) GetRplFaucetAddress() string {
 	return config.rplFaucetAddress[config.Network.Value.(Network)]
 }
 
+func (config *SmartnodeConfig) GetSnapshotDelegationAddress() string {
+	return config.snapshotDelegationAddress[config.Network.Value.(Network)]
+}
+
 func (config *SmartnodeConfig) GetSmartnodeContainerTag() string {
 	return smartnodeTag
 }
@@ -464,6 +478,10 @@ func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 
 func (config *SmartnodeConfig) GetEcMigratorContainerTag() string {
 	return ecMigratorTag
+}
+
+func (config *SmartnodeConfig) GetVotingSnapshotID() common.Hash {
+	return crypto.Keccak256Hash([]byte(SnapshotID))
 }
 
 // The the title for the config

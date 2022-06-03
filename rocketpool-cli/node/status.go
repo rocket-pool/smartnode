@@ -66,6 +66,15 @@ func getStatus(c *cli.Context) error {
 		}
 		fmt.Println("")
 
+		// Voting status
+		blankAddress := common.Address{}
+		if status.VotingDelegate == blankAddress {
+			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool governance proposals.")
+		} else {
+			fmt.Printf("The node has a voting delegate of %s which can represent it when voting on Rocket Pool governance proposals.\n", status.VotingDelegate.Hex())
+		}
+		fmt.Println("")
+
 		// Withdrawal address & balances
 		if !bytes.Equal(status.AccountAddress.Bytes(), status.WithdrawalAddress.Bytes()) {
 			fmt.Printf(
@@ -78,7 +87,6 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.\n%s", colorReset)
 		}
 		fmt.Println("")
-		blankAddress := common.Address{}
 		if status.PendingWithdrawalAddress.Hex() != blankAddress.Hex() {
 			fmt.Printf("%sThe node's withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingWithdrawalAddress.Hex())
 			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)

@@ -28,11 +28,19 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	if err := services.RequireRocketStorage(c); err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	s, err := services.GetSnapshotDelegation(c)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +117,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.MinipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		if cfg.Smartnode.GetSnapshotDelegationAddress() != "" {
+			idHash := cfg.Smartnode.GetVotingSnapshotID()
+			response.VotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
+		}
 		return err
 	})
 

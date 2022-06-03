@@ -794,6 +794,86 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "estimate-set-snapshot-delegate-gas",
+				Usage:     "Estimate the gas required to set a voting snapshot delegate",
+				UsageText: "rocketpool api node estimate-set-snapshot-delegate-gas address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(estimateSetSnapshotDelegateGas(c, delegate))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-snapshot-delegate",
+				Usage:     "Set a voting snapshot delegate for the node",
+				UsageText: "rocketpool api node set-snapshot-delegate address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setSnapshotDelegate(c, delegate))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "estimate-clear-snapshot-delegate-gas",
+				Usage:     "Estimate the gas required to clear the node's voting snapshot delegate",
+				UsageText: "rocketpool api node estimate-clear-snapshot-delegate-gas",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(estimateClearSnapshotDelegateGas(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "clear-snapshot-delegate",
+				Usage:     "Clear the node's voting snapshot delegate",
+				UsageText: "rocketpool api node clear-snapshot-delegate",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(clearSnapshotDelegate(c))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "is-fee-distributor-initialized",
 				Usage:     "Check if the fee distributor contract for this node is initialized and deployed",
 				UsageText: "rocketpool api node is-fee-distributor-initialized",
@@ -823,6 +903,28 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(getInitializeFeeDistributorGas(c))
+					return nil
+				},
+			},
+
+			{
+				Name:      "estimate-set-snapshot-delegate-gas",
+				Usage:     "Estimate the gas required to set a voting snapshot delegate",
+				UsageText: "rocketpool api node estimate-set-snapshot-delegate-gas address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(estimateSetSnapshotDelegateGas(c, delegate))
 					return nil
 
 				},
@@ -858,6 +960,28 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(canDistribute(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-snapshot-delegate",
+				Usage:     "Set a voting snapshot delegate for the node",
+				UsageText: "rocketpool api node set-snapshot-delegate address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setSnapshotDelegate(c, delegate))
 					return nil
 
 				},
