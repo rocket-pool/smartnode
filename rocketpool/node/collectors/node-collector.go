@@ -269,7 +269,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 				if !intervalInfo.TreeFileExists {
 					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
 				}
-				unclaimedRewardsWei.Add(unclaimedRewardsWei, intervalInfo.CollateralRplAmount)
+				if intervalInfo.NodeExists {
+					unclaimedRewardsWei.Add(unclaimedRewardsWei, intervalInfo.CollateralRplAmount)
+				}
 			}
 		} else {
 			// Check if legacy rewards are currently available from the previous checkpoint
