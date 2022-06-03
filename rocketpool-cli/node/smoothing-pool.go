@@ -73,7 +73,7 @@ func joinSmoothingPool(c *cli.Context) error {
 	fmt.Printf("Joining the Smoothing Pool...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return err
+		return fmt.Errorf("%w\nYour fee recipient will be automatically reset to your node's distributor in a few minutes, and your validator client will restart.", err)
 	}
 
 	// Log & return
