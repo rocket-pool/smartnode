@@ -93,6 +93,13 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
+	// Get Smoothing Pool registration status
+	wg.Go(func() error {
+		var err error
+		response.IsInSmoothingPool, err = node.GetSmoothingPoolRegistrationState(rp, nodeAccount.Address, nil)
+		return err
+	})
+
 	// Get staking details
 	wg.Go(func() error {
 		var err error

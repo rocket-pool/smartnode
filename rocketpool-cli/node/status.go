@@ -99,6 +99,14 @@ func getStatus(c *cli.Context) error {
 			if !status.IsFeeDistributorInitialized {
 				fmt.Printf("%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n\n", colorYellow, colorReset)
 			}
+
+			// Smoothing Pool
+			if status.IsInSmoothingPool {
+				fmt.Println("The node is opted into the Smoothing Pool.")
+			} else {
+				fmt.Println("The node is not opted into the Smoothing Pool.")
+			}
+			fmt.Println()
 		}
 
 		// RPL stake details
