@@ -70,15 +70,19 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 
 	// Check for missing Merkle trees with rewards available
 	missingIntervals := []rprewards.IntervalInfo{}
+	invalidIntervals := []rprewards.IntervalInfo{}
 	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		if !intervalInfo.TreeFileExists {
 			fmt.Printf("You have rewards for interval %d but are missing the rewards tree file.\n", intervalInfo.Index)
 			missingIntervals = append(missingIntervals, intervalInfo)
+		} else if !intervalInfo.MerkleRootValid {
+			fmt.Printf("You have rewards for interval %d but your local copy of the rewards tree file does not match the canonical one.\n", intervalInfo.Index)
+			invalidIntervals = append(invalidIntervals, intervalInfo)
 		}
 	}
 
 	// Download the Merkle trees for all unclaimed intervals that don't exist
-	if len(missingIntervals) > 0 {
+	if len(missingIntervals) > 0 || len(invalidIntervals) > 0 {
 		fmt.Println()
 		fmt.Printf("%sNOTE: If you would like to regenerate these tree files manually, please answer `n` to the prompt below and run `rocketpool network generate-rewards-tree` before claiming your rewards.%s\n", colorBlue, colorReset)
 		if !cliutils.Confirm("Would you like to download all missing rewards tree files now?") {
@@ -96,6 +100,15 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 		for _, missingInterval := range missingIntervals {
 			fmt.Printf("Downloading interval %d file... ", missingInterval.Index)
 			err := rprewards.DownloadRewardsFile(cfg, missingInterval.Index, missingInterval.CID, false)
+			if err != nil {
+				fmt.Println()
+				return err
+			}
+			fmt.Println("done!")
+		}
+		for _, invalidInterval := range invalidIntervals {
+			fmt.Printf("Downloading interval %d file... ", invalidInterval.Index)
+			err := rprewards.DownloadRewardsFile(cfg, invalidInterval.Index, invalidInterval.CID, false)
 			if err != nil {
 				fmt.Println()
 				return err
