@@ -1120,6 +1120,66 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "get-smoothing-pool-registration-status",
+				Usage:     "Check whether or not the node is opted into the Smoothing Pool",
+				UsageText: "rocketpool api node get-smoothing-pool-registration-status",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getSmoothingPoolRegistrationStatus(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-set-smoothing-pool-status",
+				Usage:     "Check if the node's Smoothing Pool status can be changed",
+				UsageText: "rocketpool api node can-set-smoothing-pool-status status",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					status, err := cliutils.ValidateBool("status", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canSetSmoothingPoolStatus(c, status))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-smoothing-pool-status",
+				Usage:     "Sets the node's Smoothing Pool opt-in status",
+				UsageText: "rocketpool api node set-smoothing-pool-status status",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					status, err := cliutils.ValidateBool("status", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setSmoothingPoolStatus(c, status))
+					return nil
+
+				},
+			},
 		},
 	})
 }

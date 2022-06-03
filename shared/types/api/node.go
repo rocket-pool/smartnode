@@ -374,3 +374,19 @@ type NodeClaimAndStakeRewardsResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type GetSmoothingPoolRegistrationStatusResponse struct {
+	Status         string `json:"status"`
+	Error          string `json:"error"`
+	NodeRegistered bool   `json:"nodeRegistered"`
+}
+type CanSetSmoothingPoolRegistrationStatusResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type SetSmoothingPoolRegistrationStatusResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
