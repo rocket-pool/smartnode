@@ -376,9 +376,10 @@ type NodeClaimAndStakeRewardsResponse struct {
 }
 
 type GetSmoothingPoolRegistrationStatusResponse struct {
-	Status         string `json:"status"`
-	Error          string `json:"error"`
-	NodeRegistered bool   `json:"nodeRegistered"`
+	Status                  string        `json:"status"`
+	Error                   string        `json:"error"`
+	NodeRegistered          bool          `json:"nodeRegistered"`
+	TimeLeftUntilChangeable time.Duration `json:"timeLeftUntilChangeable"`
 }
 type CanSetSmoothingPoolRegistrationStatusResponse struct {
 	Status  string             `json:"status"`

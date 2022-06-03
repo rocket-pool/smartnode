@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/client"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
@@ -99,9 +100,25 @@ func (m *manageFeeRecipient) run() error {
 		return fmt.Errorf("error getting distributor address: %w", err)
 	}
 
-	// Check if the VC is using the distributor as the fee recipient
-	// TODO: Check for smoothing pool as well!
-	fileExists, correctAddress, err := m.w.CheckFeeRecipientFile(distributor)
+	// Check Smoothing Pool registration status
+	isInSmoothingPool, err := node.GetSmoothingPoolRegistrationState(m.rp, nodeAccount.Address, nil)
+	if err != nil {
+		return fmt.Errorf("error getting smoothing pool opt-in status: %w", err)
+	}
+	smoothingPoolContract, err := m.rp.GetContract("rocketSmoothingPool")
+	if err != nil {
+		return fmt.Errorf("error getting smoothing pool contract: %w", err)
+	}
+
+	var correctFeeRecipient common.Address
+	if isInSmoothingPool {
+		correctFeeRecipient = *smoothingPoolContract.Address
+	} else {
+		correctFeeRecipient = distributor
+	}
+
+	// Check if the VC is using the correct fee recipient
+	fileExists, correctAddress, err := m.w.CheckFeeRecipientFile(correctFeeRecipient)
 	if err != nil {
 		return fmt.Errorf("error validating fee recipient files: %w", err)
 	}
@@ -109,14 +126,14 @@ func (m *manageFeeRecipient) run() error {
 	if !fileExists {
 		m.log.Println("Fee recipient files don't all exist, regenerating...")
 	} else if !correctAddress {
-		m.log.Printlnf("WARNING: Fee recipient files did not contain the correct fee recipient of %s, regenerating...", distributor.Hex())
+		m.log.Printlnf("WARNING: Fee recipient files did not contain the correct fee recipient of %s, regenerating...", correctFeeRecipient.Hex())
 	} else {
 		// Files are all correct, return.
 		return nil
 	}
 
 	// Regenerate the fee recipient files
-	err = m.w.UpdateFeeRecipientFile(distributor)
+	err = m.w.UpdateFeeRecipientFile(correctFeeRecipient)
 	if err != nil {
 		m.log.Println("***ERROR***")
 		m.log.Printlnf("Error updating fee recipient files: %s", err.Error())

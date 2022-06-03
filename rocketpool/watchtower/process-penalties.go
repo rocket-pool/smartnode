@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -207,6 +208,13 @@ func (t *processPenalties) run() error {
 		t.lock.Unlock()
 		checkPrefix := "[Fee Recipients]"
 
+		// Get the address of the Smoothing Pool contract
+		smoothingPoolContract, err := t.rp.GetContract("rocketSmoothingPool")
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error getting smoothing pool contract: %w", checkPrefix, err))
+			return
+		}
+
 		// Get latest block
 		head, headExists, err := t.bc.GetBeaconBlock("finalized")
 		if err != nil {
@@ -253,7 +261,7 @@ func (t *processPenalties) run() error {
 				return
 			}
 			if exists {
-				illegalFeeRecipientFound, err := t.processBlock(&block)
+				illegalFeeRecipientFound, err := t.processBlock(&block, *smoothingPoolContract.Address)
 				if illegalFeeRecipientFound {
 					s.LatestPenaltySlot = block.Slot
 					saveErr := s.saveState(watchtowerStatePath)
@@ -282,7 +290,7 @@ func (t *processPenalties) run() error {
 		}
 
 		if headExists {
-			_, err = t.processBlock(&head)
+			_, err = t.processBlock(&head, *smoothingPoolContract.Address)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
 				return
@@ -316,7 +324,7 @@ func (t *processPenalties) handleError(err error) {
 	t.lock.Unlock()
 }
 
-func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error) {
+func (t *processPenalties) processBlock(block *beacon.BeaconBlock, smoothingPoolContract common.Address) (bool, error) {
 	illegalFeeRecipient := false
 
 	if !block.HasExecutionPayload {
@@ -361,7 +369,9 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock) (bool, error)
 	rethAddress := t.cfg.Smartnode.GetRethAddress()
 
 	// Check whether the fee recipient is set correctly
-	if block.FeeRecipient != distributorAddress && block.FeeRecipient != rethAddress {
+	if block.FeeRecipient != distributorAddress &&
+		block.FeeRecipient != rethAddress &&
+		block.FeeRecipient != smoothingPoolContract {
 		illegalFeeRecipient = true
 
 		// Check if this penalty has already been applied

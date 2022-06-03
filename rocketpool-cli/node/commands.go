@@ -506,6 +506,54 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "join-smoothing-pool",
+				Aliases:   []string{"js"},
+				Usage:     "Opt your node into the Smoothing Pool",
+				UsageText: "rocketpool node join-smoothing-pool",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm opt-in",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return joinSmoothingPool(c)
+
+				},
+			},
+
+			{
+				Name:      "leave-smoothing-pool",
+				Aliases:   []string{"ls"},
+				Usage:     "Leave the Smoothing Pool",
+				UsageText: "rocketpool node leave-smoothing-pool",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm opt-out",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return leaveSmoothingPool(c)
+
+				},
+			},
 		},
 	})
 }

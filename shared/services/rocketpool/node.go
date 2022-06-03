@@ -828,3 +828,51 @@ func (c *Client) NodeClaimAndStakeRewards(indices []uint64, stakeAmountWei *big.
 	}
 	return response, nil
 }
+
+// Check whether or not the node is opted into the Smoothing Pool
+func (c *Client) NodeGetSmoothingPoolRegistrationStatus() (api.GetSmoothingPoolRegistrationStatusResponse, error) {
+	responseBytes, err := c.callAPI("node get-smoothing-pool-registration-status")
+	if err != nil {
+		return api.GetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not get smoothing pool registration status: %w", err)
+	}
+	var response api.GetSmoothingPoolRegistrationStatusResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not decode smoothing pool registration status response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not get smoothing pool registration status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if the node's Smoothing Pool status can be changed
+func (c *Client) CanNodeSetSmoothingPoolStatus(status bool) (api.CanSetSmoothingPoolRegistrationStatusResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-smoothing-pool-status %t", status))
+	if err != nil {
+		return api.CanSetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not get can-set-smoothing-pool-status: %w", err)
+	}
+	var response api.CanSetSmoothingPoolRegistrationStatusResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanSetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not decode can-set-smoothing-pool-status response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanSetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not get can-set-smoothing-pool-status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Sets the node's Smoothing Pool opt-in status
+func (c *Client) NodeSetSmoothingPoolStatus(status bool) (api.SetSmoothingPoolRegistrationStatusResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node set-smoothing-pool-status %t", status))
+	if err != nil {
+		return api.SetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not set smoothing pool status: %w", err)
+	}
+	var response api.SetSmoothingPoolRegistrationStatusResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not decode set-smoothing-pool-status response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not set smoothing pool status: %s", response.Error)
+	}
+	return response, nil
+}

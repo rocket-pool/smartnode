@@ -8,8 +8,8 @@ import (
 type FeeRecipientManager interface {
 	// Checks if the fee recipient file exists and has the correct distributor address in it.
 	// The first return value is for file existence, the second is for validation of the fee recipient address inside.
-	CheckFeeRecipientFile(distributor common.Address) (bool, bool, error)
+	CheckFeeRecipientFile(feeRecipient common.Address) (bool, bool, error)
 
 	// Writes the given address to the fee recipient file. The VC should be restarted to pick up the new file.
-	UpdateFeeRecipientFile(distributor common.Address) error
+	UpdateFeeRecipientFile(feeRecipient common.Address) error
 }

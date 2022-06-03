@@ -192,11 +192,11 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 // Check if the fee recipient file for this wallet's validators exists, and has the correct address as the default
 // Note: only call this after the merge contracts have been deployed!
 // Use shared/utils/rp.IsMergeUpdateDeployed() to check.
-func (w *Wallet) CheckFeeRecipientFile(distributor common.Address) (bool, bool, error) {
+func (w *Wallet) CheckFeeRecipientFile(feeRecipient common.Address) (bool, bool, error) {
 
 	// Check the fee recipient for all managers in the wallet
 	for name, fm := range w.feeRecipientManagers {
-		fileExists, correctAddress, err := fm.CheckFeeRecipientFile(distributor)
+		fileExists, correctAddress, err := fm.CheckFeeRecipientFile(feeRecipient)
 		if err != nil {
 			return false, false, fmt.Errorf("error checking fee recipients for %s: %w", name, err)
 		}
@@ -219,11 +219,11 @@ func (w *Wallet) CheckFeeRecipientFile(distributor common.Address) (bool, bool, 
 // Store the fee recipient file for this wallet's validators
 // Note: only call this after the merge contracts have been deployed!
 // Use shared/utils/rp.IsMergeUpdateDeployed() to check.
-func (w *Wallet) UpdateFeeRecipientFile(distributor common.Address) error {
+func (w *Wallet) UpdateFeeRecipientFile(feeRecipient common.Address) error {
 
 	// Check the fee recipient for all managers in the wallet
 	for name, fm := range w.feeRecipientManagers {
-		err := fm.UpdateFeeRecipientFile(distributor)
+		err := fm.UpdateFeeRecipientFile(feeRecipient)
 		if err != nil {
 			return fmt.Errorf("error storing fee recipient file for %s: %w", name, err)
 		}
