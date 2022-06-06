@@ -348,11 +348,11 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 		// Get the rewards from it
 		if intervalInfo.NodeExists {
 			rplForInterval := big.NewInt(0)
-			rplForInterval.Add(rplForInterval, intervalInfo.CollateralRplAmount)
-			rplForInterval.Add(rplForInterval, intervalInfo.ODaoRplAmount)
+			rplForInterval.Add(rplForInterval, &intervalInfo.CollateralRplAmount.Int)
+			rplForInterval.Add(rplForInterval, &intervalInfo.ODaoRplAmount.Int)
 
 			ethForInterval := big.NewInt(0)
-			ethForInterval.Add(ethForInterval, intervalInfo.SmoothingPoolEthAmount)
+			ethForInterval.Add(ethForInterval, &intervalInfo.SmoothingPoolEthAmount.Int)
 
 			amountRPL = append(amountRPL, rplForInterval)
 			amountETH = append(amountETH, ethForInterval)

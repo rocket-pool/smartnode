@@ -153,7 +153,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 				if !intervalInfo.TreeFileExists {
 					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 				}
-				rewards.Add(rewards, intervalInfo.CollateralRplAmount)
+				rewards.Add(rewards, &intervalInfo.CollateralRplAmount.Int)
 			}
 
 			// Get the unclaimed rewards
@@ -166,7 +166,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
 				}
 				if intervalInfo.NodeExists {
-					unclaimedRewardsWei.Add(unclaimedRewardsWei, intervalInfo.CollateralRplAmount)
+					unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
 				}
 			}
 		} else {
@@ -332,7 +332,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 					if !intervalInfo.TreeFileExists {
 						return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 					}
-					rewards.Add(rewards, intervalInfo.ODaoRplAmount)
+					rewards.Add(rewards, &intervalInfo.ODaoRplAmount.Int)
 				}
 
 				// Get the unclaimed rewards
@@ -345,7 +345,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 						return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
 					}
 					if intervalInfo.NodeExists {
-						unclaimedRewardsWei.Add(unclaimedRewardsWei, intervalInfo.ODaoRplAmount)
+						unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.ODaoRplAmount.Int)
 					}
 				}
 			} else {

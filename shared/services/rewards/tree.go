@@ -24,15 +24,15 @@ const (
 )
 
 // Create the JSON file with the interval rewards and Merkle proof information for each node
-func GenerateTreeJson(treeRoot common.Hash, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, protocolDaoRpl *big.Int, index uint64, consensusBlock uint64, executionBlock uint64, intervalsPassed uint64) *ProofWrapper {
+func GenerateTreeJson(treeRoot common.Hash, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, protocolDaoRpl *QuotedBigInt, index uint64, consensusBlock uint64, executionBlock uint64, intervalsPassed uint64) *ProofWrapper {
 
-	totalCollateralRpl := big.NewInt(0)
-	totalODaoRpl := big.NewInt(0)
-	totalSmoothingPoolEth := big.NewInt(0)
+	totalCollateralRpl := NewQuotedBigInt(0)
+	totalODaoRpl := NewQuotedBigInt(0)
+	totalSmoothingPoolEth := NewQuotedBigInt(0)
 
-	networkCollateralRplMap := map[uint64]*big.Int{}
-	networkODaoRplMap := map[uint64]*big.Int{}
-	networkSmoothingPoolEthMap := map[uint64]*big.Int{}
+	networkCollateralRplMap := map[uint64]*QuotedBigInt{}
+	networkODaoRplMap := map[uint64]*QuotedBigInt{}
+	networkSmoothingPoolEthMap := map[uint64]*QuotedBigInt{}
 
 	// Get the highest network index with valid rewards
 	highestNetworkIndex := uint64(0)
@@ -47,9 +47,9 @@ func GenerateTreeJson(treeRoot common.Hash, nodeRewardsMap map[common.Address]No
 		rewardsForNetwork, exists := networkRewardsMap[network]
 		if !exists {
 			rewardsForNetwork = NodeRewards{
-				CollateralRpl:    big.NewInt(0),
-				OracleDaoRpl:     big.NewInt(0),
-				SmoothingPoolEth: big.NewInt(0),
+				CollateralRpl:    NewQuotedBigInt(0),
+				OracleDaoRpl:     NewQuotedBigInt(0),
+				SmoothingPoolEth: NewQuotedBigInt(0),
 			}
 		}
 
@@ -57,9 +57,9 @@ func GenerateTreeJson(treeRoot common.Hash, nodeRewardsMap map[common.Address]No
 		networkODaoRplMap[network] = rewardsForNetwork.OracleDaoRpl
 		networkSmoothingPoolEthMap[network] = rewardsForNetwork.SmoothingPoolEth
 
-		totalCollateralRpl.Add(totalCollateralRpl, rewardsForNetwork.CollateralRpl)
-		totalODaoRpl.Add(totalODaoRpl, rewardsForNetwork.OracleDaoRpl)
-		totalSmoothingPoolEth.Add(totalSmoothingPoolEth, rewardsForNetwork.SmoothingPoolEth)
+		totalCollateralRpl.Add(&totalCollateralRpl.Int, &rewardsForNetwork.CollateralRpl.Int)
+		totalODaoRpl.Add(&totalODaoRpl.Int, &rewardsForNetwork.OracleDaoRpl.Int)
+		totalSmoothingPoolEth.Add(&totalSmoothingPoolEth.Int, &rewardsForNetwork.SmoothingPoolEth.Int)
 	}
 
 	wrapper := &ProofWrapper{
@@ -110,7 +110,7 @@ func GenerateMerkleTree(nodeRewardsMap map[common.Address]NodeRewards) (*merklet
 
 		// RPL rewards
 		rplRewards := big.NewInt(0)
-		rplRewards.Add(rewardsForNode.CollateralRpl, rewardsForNode.OracleDaoRpl)
+		rplRewards.Add(&rewardsForNode.CollateralRpl.Int, &rewardsForNode.OracleDaoRpl.Int)
 		rplRewardsBytes := make([]byte, 32)
 		rplRewards.FillBytes(rplRewardsBytes)
 		nodeData = append(nodeData, rplRewardsBytes...)
@@ -156,7 +156,7 @@ func GenerateMerkleTree(nodeRewardsMap map[common.Address]NodeRewards) (*merklet
 }
 
 // Calculates the RPL rewards for the given interval
-func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration) (map[common.Address]NodeRewards, map[uint64]NodeRewards, *big.Int, map[common.Address]uint64, error) {
+func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration) (map[common.Address]NodeRewards, map[uint64]NodeRewards, *QuotedBigInt, map[common.Address]uint64, error) {
 
 	validNetworkCache := map[uint64]bool{
 		0: true,
@@ -231,12 +231,12 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 
 				rewardsForNode = NodeRewards{
 					RewardNetwork:    network,
-					CollateralRpl:    big.NewInt(0),
-					OracleDaoRpl:     big.NewInt(0),
-					SmoothingPoolEth: big.NewInt(0),
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
 			}
-			rewardsForNode.CollateralRpl.Add(rewardsForNode.CollateralRpl, nodeRplRewards)
+			rewardsForNode.CollateralRpl.Add(&rewardsForNode.CollateralRpl.Int, nodeRplRewards)
 			nodeRewardsMap[address] = rewardsForNode
 
 			// Add the rewards to the running total for the specified network
@@ -244,12 +244,12 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 			if !exists {
 				rewardsForNetwork = NodeRewards{
 					RewardNetwork:    rewardsForNode.RewardNetwork,
-					CollateralRpl:    big.NewInt(0),
-					OracleDaoRpl:     big.NewInt(0),
-					SmoothingPoolEth: big.NewInt(0),
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
 			}
-			rewardsForNetwork.CollateralRpl.Add(rewardsForNetwork.CollateralRpl, nodeRplRewards)
+			rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 			networkRewardsMap[rewardsForNode.RewardNetwork] = rewardsForNetwork
 		}
 	}
@@ -290,12 +290,12 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 
 			rewardsForNode = NodeRewards{
 				RewardNetwork:    network,
-				CollateralRpl:    big.NewInt(0),
-				OracleDaoRpl:     big.NewInt(0),
-				SmoothingPoolEth: big.NewInt(0),
+				CollateralRpl:    NewQuotedBigInt(0),
+				OracleDaoRpl:     NewQuotedBigInt(0),
+				SmoothingPoolEth: NewQuotedBigInt(0),
 			}
 		}
-		rewardsForNode.OracleDaoRpl.Add(rewardsForNode.OracleDaoRpl, individualOdaoRewards)
+		rewardsForNode.OracleDaoRpl.Add(&rewardsForNode.OracleDaoRpl.Int, individualOdaoRewards)
 		nodeRewardsMap[address] = rewardsForNode
 
 		// Add the rewards to the running total for the specified network
@@ -303,12 +303,12 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 		if !exists {
 			rewardsForNetwork = NodeRewards{
 				RewardNetwork:    rewardsForNode.RewardNetwork,
-				CollateralRpl:    big.NewInt(0),
-				OracleDaoRpl:     big.NewInt(0),
-				SmoothingPoolEth: big.NewInt(0),
+				CollateralRpl:    NewQuotedBigInt(0),
+				OracleDaoRpl:     NewQuotedBigInt(0),
+				SmoothingPoolEth: NewQuotedBigInt(0),
 			}
 		}
-		rewardsForNetwork.OracleDaoRpl.Add(rewardsForNetwork.OracleDaoRpl, individualOdaoRewards)
+		rewardsForNetwork.OracleDaoRpl.Add(&rewardsForNetwork.OracleDaoRpl.Int, individualOdaoRewards)
 		networkRewardsMap[rewardsForNode.RewardNetwork] = rewardsForNetwork
 	}
 
@@ -317,9 +317,9 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	pDaoRewards := big.NewInt(0)
+	pDaoRewards := NewQuotedBigInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
-	pDaoRewards.Div(pDaoRewards, eth.EthToWei(1))
+	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
 
 	// Return the rewards maps
 	return nodeRewardsMap, networkRewardsMap, pDaoRewards, invalidNetworkNodes, nil
@@ -341,6 +341,9 @@ func ValidateNetwork(rp *rocketpool.RocketPool, network uint64, validNetworkCach
 }
 
 /*
-func CalculateEthRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration) (map[common.Address]NodeRewards, map[uint64]NodeRewards, *big.Int, map[common.Address]uint64, error) {
+// Calculates the ETH rewards for the given interval
+func CalculateEthRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, invalidNetworkNodes map[common.Address]uint64) (error) {
 
-}*/
+
+}
+*/

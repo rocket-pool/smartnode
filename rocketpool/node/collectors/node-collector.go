@@ -255,7 +255,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 				}
 				_, exists := collector.handledIntervals[claimedInterval]
 				if !exists {
-					newRewards.Add(newRewards, intervalInfo.CollateralRplAmount)
+					newRewards.Add(newRewards, &intervalInfo.CollateralRplAmount.Int)
 					collector.handledIntervals[claimedInterval] = true
 				}
 			}
@@ -270,7 +270,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
 				}
 				if intervalInfo.NodeExists {
-					unclaimedRewardsWei.Add(unclaimedRewardsWei, intervalInfo.CollateralRplAmount)
+					unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
 				}
 			}
 		} else {

@@ -356,9 +356,9 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 			break
 		}
 
-		collateralRplRewards = append(collateralRplRewards, collateralRplForNetwork)
-		oDaoRplRewards = append(oDaoRplRewards, proofWrapper.NetworkRewards.OracleDaoRplPerNetwork[network])
-		smoothingPoolEthRewards = append(smoothingPoolEthRewards, proofWrapper.NetworkRewards.SmoothingPoolEthPerNetwork[network])
+		collateralRplRewards = append(collateralRplRewards, &collateralRplForNetwork.Int)
+		oDaoRplRewards = append(oDaoRplRewards, &proofWrapper.NetworkRewards.OracleDaoRplPerNetwork[network].Int)
+		smoothingPoolEthRewards = append(smoothingPoolEthRewards, &proofWrapper.NetworkRewards.SmoothingPoolEthPerNetwork[network].Int)
 
 		network++
 	}
@@ -377,7 +377,7 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 		MerkleRoot:      treeRoot,
 		MerkleTreeCID:   cid,
 		IntervalsPassed: intervalsPassed,
-		TreasuryRPL:     proofWrapper.TotalRewards.ProtocolDaoRpl,
+		TreasuryRPL:     &proofWrapper.TotalRewards.ProtocolDaoRpl.Int,
 		NodeRPL:         collateralRplRewards,
 		TrustedNodeRPL:  oDaoRplRewards,
 		NodeETH:         smoothingPoolEthRewards,

@@ -1,7 +1,9 @@
 package rewards
 
 import (
+	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -9,12 +11,12 @@ import (
 
 // Node operator rewards
 type NodeRewards struct {
-	RewardNetwork    uint64   `json:"rewardNetwork,omitempty"`
-	CollateralRpl    *big.Int `json:"collateralRpl,omitempty"`
-	OracleDaoRpl     *big.Int `json:"oracleDaoRpl,omitempty"`
-	SmoothingPoolEth *big.Int `json:"smoothingPoolEth,omitempty"`
-	MerkleData       []byte   `json:"-"`
-	MerkleProof      []string `json:"merkleProof,omitempty"`
+	RewardNetwork    uint64        `json:"rewardNetwork,omitempty"`
+	CollateralRpl    *QuotedBigInt `json:"collateralRpl,omitempty"`
+	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl,omitempty"`
+	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth,omitempty"`
+	MerkleData       []byte        `json:"-"`
+	MerkleProof      []string      `json:"merkleProof,omitempty"`
 }
 
 // JSON struct for a complete Merkle Tree proof list
@@ -26,15 +28,15 @@ type ProofWrapper struct {
 	IntervalsPassed    uint64 `json:"intervalsPassed,omitempty"`
 	MerkleRoot         string `json:"merkleRoot,omitempty"`
 	NetworkRewards     struct {
-		CollateralRplPerNetwork    map[uint64]*big.Int `json:"collateralRplPerNetwork,omitempty"`
-		OracleDaoRplPerNetwork     map[uint64]*big.Int `json:"oracleDaoRplPerNetwork,omitempty"`
-		SmoothingPoolEthPerNetwork map[uint64]*big.Int `json:"smoothingPoolEthPerNetwork,omitempty"`
+		CollateralRplPerNetwork    map[uint64]*QuotedBigInt `json:"collateralRplPerNetwork,omitempty"`
+		OracleDaoRplPerNetwork     map[uint64]*QuotedBigInt `json:"oracleDaoRplPerNetwork,omitempty"`
+		SmoothingPoolEthPerNetwork map[uint64]*QuotedBigInt `json:"smoothingPoolEthPerNetwork,omitempty"`
 	} `json:"networkRewards,omitempty"`
 	TotalRewards struct {
-		ProtocolDaoRpl        *big.Int `json:"protocolDaoRpl,omitempty"`
-		TotalCollateralRpl    *big.Int `json:"totalCollateralRpl,omitempty"`
-		TotalOracleDaoRpl     *big.Int `json:"totalOracleDaoRpl,omitempty"`
-		TotalSmoothingPoolEth *big.Int `json:"totalSmoothingPoolEth,omitempty"`
+		ProtocolDaoRpl        *QuotedBigInt `json:"protocolDaoRpl,omitempty"`
+		TotalCollateralRpl    *QuotedBigInt `json:"totalCollateralRpl,omitempty"`
+		TotalOracleDaoRpl     *QuotedBigInt `json:"totalOracleDaoRpl,omitempty"`
+		TotalSmoothingPoolEth *QuotedBigInt `json:"totalSmoothingPoolEth,omitempty"`
 	} `json:"totalRewards,omitempty"`
 	NodeRewards map[common.Address]NodeRewards `json:"nodeRewards,omitempty"`
 }
@@ -49,10 +51,36 @@ type IntervalInfo struct {
 	StartTime              time.Time     `json:"startTime"`
 	EndTime                time.Time     `json:"endTime"`
 	NodeExists             bool          `json:"nodeExists"`
-	CollateralRplAmount    *big.Int      `json:"collateralRplAmount"`
-	ODaoRplAmount          *big.Int      `json:"oDaoRplAmount"`
-	SmoothingPoolEthAmount *big.Int      `json:"smoothingPoolEthAmount"`
+	CollateralRplAmount    *QuotedBigInt `json:"collateralRplAmount"`
+	ODaoRplAmount          *QuotedBigInt `json:"oDaoRplAmount"`
+	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
+}
+
+type QuotedBigInt struct {
+	big.Int
+}
+
+func NewQuotedBigInt(x int64) *QuotedBigInt {
+	q := QuotedBigInt{}
+	native := big.NewInt(x)
+	q.Int = *native
+	return &q
+}
+
+func (b *QuotedBigInt) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + b.String() + "\""), nil
+}
+
+func (b *QuotedBigInt) UnmarshalJSON(p []byte) error {
+	strippedString := strings.Trim(string(p), "\"")
+	nativeInt, success := big.NewInt(0).SetString(strippedString, 0)
+	if !success {
+		return fmt.Errorf("%s is not a valid big integer", strippedString)
+	}
+
+	b.Int = *nativeInt
+	return nil
 }
 
 // Get the deserialized Merkle Proof bytes

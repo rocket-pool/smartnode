@@ -129,13 +129,13 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	totalEth := big.NewInt(0)
 	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		fmt.Printf("Rewards for Interval %d (%s to %s):\n", intervalInfo.Index, intervalInfo.StartTime.Local(), intervalInfo.EndTime.Local())
-		fmt.Printf("\tStaking:        %.6f RPL\n", eth.WeiToEth(intervalInfo.CollateralRplAmount))
-		fmt.Printf("\tOracle DAO:     %.6f RPL\n", eth.WeiToEth(intervalInfo.ODaoRplAmount))
-		fmt.Printf("\tSmoothing Pool: %.6f ETH\n\n", eth.WeiToEth(intervalInfo.SmoothingPoolEthAmount))
+		fmt.Printf("\tStaking:        %.6f RPL\n", eth.WeiToEth(&intervalInfo.CollateralRplAmount.Int))
+		fmt.Printf("\tOracle DAO:     %.6f RPL\n", eth.WeiToEth(&intervalInfo.ODaoRplAmount.Int))
+		fmt.Printf("\tSmoothing Pool: %.6f ETH\n\n", eth.WeiToEth(&intervalInfo.SmoothingPoolEthAmount.Int))
 
-		totalRpl.Add(totalRpl, intervalInfo.CollateralRplAmount)
-		totalRpl.Add(totalRpl, intervalInfo.ODaoRplAmount)
-		totalEth.Add(totalEth, intervalInfo.SmoothingPoolEthAmount)
+		totalRpl.Add(totalRpl, &intervalInfo.CollateralRplAmount.Int)
+		totalRpl.Add(totalRpl, &intervalInfo.ODaoRplAmount.Int)
+		totalEth.Add(totalEth, &intervalInfo.SmoothingPoolEthAmount.Int)
 	}
 
 	fmt.Println("Total Pending Rewards:")
@@ -204,9 +204,9 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		for _, index := range indices {
 			if intervalInfo.Index == index {
-				claimRpl.Add(claimRpl, intervalInfo.CollateralRplAmount)
-				claimRpl.Add(claimRpl, intervalInfo.ODaoRplAmount)
-				claimEth.Add(claimEth, intervalInfo.SmoothingPoolEthAmount)
+				claimRpl.Add(claimRpl, &intervalInfo.CollateralRplAmount.Int)
+				claimRpl.Add(claimRpl, &intervalInfo.ODaoRplAmount.Int)
+				claimEth.Add(claimEth, &intervalInfo.SmoothingPoolEthAmount.Int)
 			}
 		}
 	}
