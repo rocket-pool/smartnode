@@ -339,3 +339,8 @@ func ValidateNetwork(rp *rocketpool.RocketPool, network uint64, validNetworkCach
 
 	return valid, nil
 }
+
+/*
+func CalculateEthRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration) (map[common.Address]NodeRewards, map[uint64]NodeRewards, *big.Int, map[common.Address]uint64, error) {
+
+}*/

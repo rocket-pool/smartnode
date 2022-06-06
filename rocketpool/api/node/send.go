@@ -21,9 +21,6 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
-	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -70,6 +67,10 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 
 	case "rpl":
 
+		// Get RocketStorage
+		if err := services.RequireRocketStorage(c); err != nil {
+			return nil, err
+		}
 		// Check node RPL balance
 		rplBalanceWei, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
 		if err != nil {
@@ -84,6 +85,10 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 
 	case "fsrpl":
 
+		// Get RocketStorage
+		if err := services.RequireRocketStorage(c); err != nil {
+			return nil, err
+		}
 		// Check node fixed-supply RPL balance
 		fixedSupplyRplBalanceWei, err := tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
 		if err != nil {
@@ -98,6 +103,10 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 
 	case "reth":
 
+		// Get RocketStorage
+		if err := services.RequireRocketStorage(c); err != nil {
+			return nil, err
+		}
 		// Check node rETH balance
 		rethBalanceWei, err := tokens.GetRETHBalance(rp, nodeAccount.Address, nil)
 		if err != nil {
@@ -122,9 +131,6 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	if err := services.RequireRocketStorage(c); err != nil {
 		return nil, err
 	}
 	w, err := services.GetWallet(c)
@@ -169,6 +175,10 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
 	case "rpl":
 
+		// Get RocketStorage
+		if err := services.RequireRocketStorage(c); err != nil {
+			return nil, err
+		}
 		// Transfer RPL
 		hash, err := tokens.TransferRPL(rp, to, amountWei, opts)
 		if err != nil {
@@ -178,6 +188,10 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
 	case "fsrpl":
 
+		// Get RocketStorage
+		if err := services.RequireRocketStorage(c); err != nil {
+			return nil, err
+		}
 		// Transfer fixed-supply RPL
 		hash, err := tokens.TransferFixedSupplyRPL(rp, to, amountWei, opts)
 		if err != nil {
@@ -187,6 +201,10 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 
 	case "reth":
 
+		// Get RocketStorage
+		if err := services.RequireRocketStorage(c); err != nil {
+			return nil, err
+		}
 		// Transfer rETH
 		hash, err := tokens.TransferRETH(rp, to, amountWei, opts)
 		if err != nil {
