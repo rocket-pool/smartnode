@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -10,17 +11,24 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
+	"golang.org/x/sync/errgroup"
 )
 
+// Settings
 const (
-	RewardsFileVersion uint64 = 1
+	SmoothingPoolDetailsBatchSize int    = 20
+	RewardsFileVersion            uint64 = 1
 )
 
 // Create the JSON file with the interval rewards and Merkle proof information for each node
@@ -340,10 +348,131 @@ func ValidateNetwork(rp *rocketpool.RocketPool, network uint64, validNetworkCach
 	return valid, nil
 }
 
-/*
 // Calculates the ETH rewards for the given interval
-func CalculateEthRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, invalidNetworkNodes map[common.Address]uint64) (error) {
+func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc *beacon.Client, index uint64, snapshotBlockHeader *types.Header, rewardsInterval time.Duration, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, invalidNetworkNodes map[common.Address]uint64) error {
 
+	// Get services
+	opts := &bind.CallOpts{
+		BlockNumber: snapshotBlockHeader.Number,
+	}
+	ec := rp.Client
 
+	// Get the Smoothing Pool contract's balance
+	smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
+	if err != nil {
+		return fmt.Errorf("error getting smoothing pool contract: %w", err)
+	}
+
+	smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, snapshotBlockHeader.Number)
+	if err != nil {
+		return fmt.Errorf("error getting smoothing pool balance: %w", err)
+	}
+
+	// Ignore the ETH calculation if there are no rewards
+	if smoothingPoolBalance.Cmp(big.NewInt(0)) == 0 {
+		return nil
+	}
+
+	if index == 0 {
+		// This is the first interval, Smoothing Pool rewards are ignored on the first interval since it doesn't have a discrete start time
+		return nil
+	}
+
+	// Get the event log interval
+	var eventLogInterval int
+	eventLogInterval, err = cfg.GetEventLogInterval()
+	if err != nil {
+		return err
+	}
+
+	// Get the start time of this interval based on the event from the previous one
+	previousIntervalEvent, err := rewards.GetRewardSnapshotEvent(rp, index-1, big.NewInt(int64(eventLogInterval)), nil)
+	if err != nil {
+		return err
+	}
+	startElBlockNumber := big.NewInt(0).Add(previousIntervalEvent.ExecutionBlock, big.NewInt(1))
+	startElBlockHeader, err := ec.HeaderByNumber(context.Background(), startElBlockNumber)
+	if err != nil {
+		return err
+	}
+	intervalStartTime := time.Unix(int64(startElBlockHeader.Time), 0)
+
+	// Get all of the registered nodes
+	nodeAddresses, err := node.GetNodeAddresses(rp, opts)
+	if err != nil {
+		return err
+	}
+
+	// For each NO, get their opt-in status and time of last change in batches
+	nodeCount := len(nodeAddresses)
+	details := make([]NodeSmoothingDetails, nodeCount)
+	for batchStartIndex := 0; batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
+
+		// Get batch start & end index
+		iterationStartIndex := batchStartIndex
+		iterationEndIndex := batchStartIndex + SmoothingPoolDetailsBatchSize
+		if iterationEndIndex > nodeCount {
+			iterationEndIndex = nodeCount
+		}
+
+		// Load details
+		var wg errgroup.Group
+		for iterationIndex := iterationStartIndex; iterationIndex < iterationEndIndex; iterationIndex++ {
+			iterationIndex := iterationIndex
+			wg.Go(func() error {
+				var err error
+				nodeDetails := NodeSmoothingDetails{
+					Address:   nodeAddresses[iterationIndex],
+					Minipools: map[common.Address]rptypes.ValidatorPubkey{},
+				}
+
+				// Check if the node is opted into the smoothing pool
+				nodeDetails.IsOptedIn, err = node.GetSmoothingPoolRegistrationState(rp, nodeDetails.Address, opts)
+				if err != nil {
+					return fmt.Errorf("Error getting smoothing pool registration state for node %s: %w", nodeDetails.Address.Hex(), err)
+				}
+
+				// Get the time of the last registration change
+				nodeDetails.StatusChangeTime, err = node.GetSmoothingPoolRegistrationChanged(rp, nodeDetails.Address, opts)
+				if err != nil {
+					return fmt.Errorf("Error getting smoothing pool registration change time for node %s: %w", nodeDetails.Address.Hex(), err)
+				}
+
+				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
+				if intervalStartTime.Sub(nodeDetails.StatusChangeTime) > 0 && !nodeDetails.IsOptedIn {
+					return nil
+				}
+
+				// Get the details for each minipool in the node
+				minipoolDetails, err := minipool.GetNodeMinipools(rp, nodeDetails.Address, opts)
+				if err != nil {
+					return fmt.Errorf("Error getting minipool details for node %s: %w", nodeDetails.Address, err)
+				}
+				for _, mpd := range minipoolDetails {
+					if mpd.Exists {
+						mp, err := minipool.NewMinipool(rp, mpd.Address)
+						if err != nil {
+							return fmt.Errorf("Error creating minipool wrapper for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
+						}
+						status, err := mp.GetStatus(opts)
+						if err != nil {
+							return fmt.Errorf("Error getting status of minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
+						}
+						if status == rptypes.Staking {
+							nodeDetails.Minipools[mpd.Address] = mpd.Pubkey
+						}
+					}
+				}
+
+				details[iterationIndex] = nodeDetails
+				return nil
+			})
+		}
+		if err := wg.Wait(); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }
-*/

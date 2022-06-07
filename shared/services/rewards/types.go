@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/types"
 )
 
 // Node operator rewards
@@ -55,6 +56,14 @@ type IntervalInfo struct {
 	ODaoRplAmount          *QuotedBigInt `json:"oDaoRplAmount"`
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
+}
+
+// Details about a node for the Smoothing Pool
+type NodeSmoothingDetails struct {
+	Address          common.Address
+	IsOptedIn        bool
+	StatusChangeTime time.Time
+	Minipools        map[common.Address]types.ValidatorPubkey
 }
 
 type QuotedBigInt struct {
