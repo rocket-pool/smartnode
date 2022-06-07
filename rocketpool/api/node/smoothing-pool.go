@@ -107,7 +107,7 @@ func canSetSmoothingPoolStatus(c *cli.Context, status bool) (*api.CanSetSmoothin
 		response.GasInfo = gasInfo
 	}
 
-	return &response, nil
+	return &response, err
 
 }
 

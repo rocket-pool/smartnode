@@ -397,10 +397,32 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 	}
 	intervalStartTime := time.Unix(int64(startElBlockHeader.Time), 0)
 
+	// Get the details for nodes eligible for Smoothing Pool rewards
+	// This should be all of the eth1 calls, so do them all at the start of Smoothing Pool calculation to prevent the need for an archive node during normal operations
+	nodeDetails, err := GetSmoothingPoolNodeDetails(rp, opts, intervalStartTime)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%d", len(nodeDetails))
+
+	return nil
+}
+
+/*
+// Query the Beacon client to see how effective a given minipool was during the smoothing pool duration
+func GetMinipoolEffectiveness(bc *beacon.Client, pubkey rptypes.ValidatorPubkey, startClBlock uint64, endClBlock uint64) (float64, error) {
+
+}
+*/
+
+// Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
+func GetSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, intervalStartTime time.Time) ([]NodeSmoothingDetails, error) {
+
 	// Get all of the registered nodes
 	nodeAddresses, err := node.GetNodeAddresses(rp, opts)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// For each NO, get their opt-in status and time of last change in batches
@@ -422,8 +444,9 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 			wg.Go(func() error {
 				var err error
 				nodeDetails := NodeSmoothingDetails{
-					Address:   nodeAddresses[iterationIndex],
-					Minipools: map[common.Address]rptypes.ValidatorPubkey{},
+					Address:    nodeAddresses[iterationIndex],
+					IsEligible: true,
+					Minipools:  map[common.Address]rptypes.ValidatorPubkey{},
 				}
 
 				// Check if the node is opted into the smoothing pool
@@ -440,6 +463,8 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 
 				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
 				if intervalStartTime.Sub(nodeDetails.StatusChangeTime) > 0 && !nodeDetails.IsOptedIn {
+					nodeDetails.IsEligible = false
+					details[iterationIndex] = nodeDetails
 					return nil
 				}
 
@@ -469,10 +494,10 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 			})
 		}
 		if err := wg.Wait(); err != nil {
-			return err
+			return nil, err
 		}
-
 	}
 
-	return nil
+	return details, nil
+
 }

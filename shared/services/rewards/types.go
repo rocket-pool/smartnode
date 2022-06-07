@@ -61,6 +61,7 @@ type IntervalInfo struct {
 // Details about a node for the Smoothing Pool
 type NodeSmoothingDetails struct {
 	Address          common.Address
+	IsEligible       bool
 	IsOptedIn        bool
 	StatusChangeTime time.Time
 	Minipools        map[common.Address]types.ValidatorPubkey

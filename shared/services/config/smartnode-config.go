@@ -378,7 +378,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Mainnet: "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
 			Network_Prater:  "0xD0897D68Cd66A710dDCecDe30F7557972181BEDc",
 			Network_Kiln:    "",
-			Network_Ropsten: "",
+			Network_Ropsten: "0x2588C77829015080C771359eC1C3066d2f1158Db",
 		},
 	}
 
