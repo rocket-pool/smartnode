@@ -294,7 +294,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Mainnet: "https://etherscan.io/tx",
 			Network_Prater:  "https://goerli.etherscan.io/tx",
 			Network_Kiln:    "TBD",
-			Network_Ropsten: "TBD",
+			Network_Ropsten: "https://ropsten.etherscan.io/tx",
 		},
 
 		stakeUrl: map[Network]string{
@@ -315,68 +315,70 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
 			Network_Kiln:    "0x340b8bB313B9d5d79cA82c7b7416Ee1A8485326c",
-			Network_Ropsten: "",
+			Network_Ropsten: "0x2b43C0b8e44FD03aa5C2866ba380fBcB646A1D42",
 		},
 
 		oneInchOracleAddress: map[Network]string{
 			Network_Mainnet: "0x07D91f5fb9Bf7798734C3f606dB065549F6893bb",
 			Network_Prater:  "0x4eDC966Df24264C9C817295a0753804EcC46Dd22",
 			Network_Kiln:    "0xd46a870139F348C3d2596470c355E4BE26b03071",
-			Network_Ropsten: "",
+			Network_Ropsten: "0xd46a870139f348c3d2596470c355e4be26b03071",
 		},
 
 		rplTokenAddress: map[Network]string{
 			Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
-			Network_Kiln:    "0xeD962Cf44d2B4B4C3B793d2665A701Ce183DDbC6",
-			Network_Ropsten: "",
+			Network_Kiln:    "0xb4efd85c19999d84251304bda99e90b92300bd93",
+			Network_Ropsten: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 		},
 
 		rplFaucetAddress: map[Network]string{
 			Network_Mainnet: "",
 			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
 			Network_Kiln:    "0xE200d83cE0534fB28F12813617abCE01258b6673",
-			Network_Ropsten: "",
+			Network_Ropsten: "0x94e840CD58FF0F387117869A28035903a51502aa",
 		},
 
 		rethAddress: map[Network]string{
 			Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
 			Network_Prater:  "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
 			Network_Kiln:    "0xBCAB713355D265B3e3D64F02bc1Eb4F7717b4B14",
-			Network_Ropsten: "",
+			Network_Ropsten: "0x00651FC69eFd13F76fC7dEBC2540F2662A09fa8c",
 		},
 
 		legacyRewardsPoolAddress: map[Network]string{
 			Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
 			Network_Prater:  "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
 			Network_Kiln:    "0xFb62F3B5AF8099Bbd19d5d46084Bb152ECDE25A6",
-			Network_Ropsten: "",
+			Network_Ropsten: "0x401e46fA6cBC9e1E6Cc3E9666C10329f938aE1B3",
 		},
 
 		legacyClaimNodeAddress: map[Network]string{
 			Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
 			Network_Prater:  "0xc05b7A2a03A6d2736d1D0ebf4d4a0aFE2cc32cE1",
 			Network_Kiln:    "0xF98086202F8F58dad8120055Fdd6e2f36De2c6Fb",
-			Network_Ropsten: "",
+			Network_Ropsten: "0xA55F65219d7254DFde4021E4f534a7a55750C4a1",
 		},
 
 		legacyClaimTrustedNodeAddress: map[Network]string{
 			Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
 			Network_Prater:  "0x730982F4439E5AC30292333ff7d0C478907f2219",
 			Network_Kiln:    "0x2DFD22dD4474C306824d3014C6FC664012577807",
-			Network_Ropsten: "",
+			Network_Ropsten: "0x097664F6B68564B3AFEad72662fCA557350aE7Bf",
 		},
 
 		legacyMinipoolManagerAddress: map[Network]string{
 			Network_Mainnet: "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a",
 			Network_Prater:  "0xB815a94430f08dD2ab61143cE1D5739Ac81D3C6d",
 			Network_Kiln:    "0x6230e0180bc24cA59D20c56F964C81DcE4fe8df6",
-			Network_Ropsten: "",
+			Network_Ropsten: "0xcE2Fc66c58e35bF4c156ab13085826B8d26c4B7A",
 		},
 
 		snapshotDelegationAddress: map[Network]string{
 			Network_Mainnet: "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
 			Network_Prater:  "0xD0897D68Cd66A710dDCecDe30F7557972181BEDc",
+			Network_Kiln:    "",
+			Network_Ropsten: "",
 		},
 	}
 
