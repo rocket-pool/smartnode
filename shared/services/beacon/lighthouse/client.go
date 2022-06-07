@@ -2,6 +2,7 @@ package lighthouse
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -29,6 +30,7 @@ const (
 	RequestEth2ConfigPath            = "/eth/v1/config/spec"
 	RequestEth2DepositContractMethod = "/eth/v1/config/deposit_contract"
 	RequestGenesisPath               = "/eth/v1/beacon/genesis"
+	RequestCommitteePath             = "/eth/v1/beacon/states/%s/committees"
 	RequestFinalityCheckpointsPath   = "/eth/v1/beacon/states/%s/finality_checkpoints"
 	RequestForkPath                  = "/eth/v1/beacon/states/%s/fork"
 	RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
@@ -446,7 +448,44 @@ func (c *Client) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error
 		beaconBlock.FeeRecipient = common.BytesToAddress(block.Data.Message.Body.ExecutionPayload.FeeRecipient)
 	}
 
+	// Add attestation info
+	for i, attestation := range block.Data.Message.Body.Attestations {
+		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
+		info := beacon.AttestationInfo{
+			SlotIndex:      uint64(attestation.Data.Slot),
+			CommitteeIndex: uint64(attestation.Data.Index),
+		}
+		info.AggregationBits, err = hex.DecodeString(bitString)
+		if err != nil {
+			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
+		}
+		beaconBlock.Attestations = append(beaconBlock.Attestations, info)
+	}
+
 	return beaconBlock, true, nil
+}
+
+// Get the attestation committees for the given epoch, or the current epoch if nil
+func (c *Client) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Committee, error) {
+	response, err := c.getCommittees("head", epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	committees := []beacon.Committee{}
+	for _, committee := range response.Data {
+		validators := []uint64{}
+		for _, validator := range committee.Validators {
+			validators = append(validators, uint64(validator))
+		}
+		committees = append(committees, beacon.Committee{
+			Index:      uint64(committee.Index),
+			Slot:       uint64(committee.Slot),
+			Validators: validators,
+		})
+	}
+
+	return committees, nil
 }
 
 // Get sync status
@@ -634,6 +673,25 @@ func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, bool, erro
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not decode beacon block data: %w", err)
 	}
 	return beaconBlock, true, nil
+}
+
+// Get the committees for the epoch
+func (c *Client) getCommittees(stateId string, epoch *uint64) (CommitteesResponse, error) {
+	query := ""
+	if epoch != nil {
+		query = fmt.Sprintf("?epoch=%d", epoch)
+	}
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestCommitteePath, stateId) + query)
+	if err != nil {
+		return CommitteesResponse{}, fmt.Errorf("Could not get committees: %w", err)
+	} else if status != http.StatusOK {
+		return CommitteesResponse{}, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", status, string(responseBody))
+	}
+	var committees CommitteesResponse
+	if err := json.Unmarshal(responseBody, &committees); err != nil {
+		return CommitteesResponse{}, fmt.Errorf("Could not decode committees: %w", err)
+	}
+	return committees, nil
 }
 
 // Make a GET request to the beacon node

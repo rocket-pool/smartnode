@@ -2,6 +2,7 @@ package beacon
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -57,7 +58,20 @@ type BeaconBlock struct {
 	Slot                uint64
 	ProposerIndex       uint64
 	HasExecutionPayload bool
+	Attestations        []AttestationInfo
 	FeeRecipient        common.Address
+}
+
+type Committee struct {
+	Index      uint64
+	Slot       uint64
+	Validators []uint64
+}
+
+type AttestationInfo struct {
+	AggregationBits bitfield.Bitlist
+	SlotIndex       uint64
+	CommitteeIndex  uint64
 }
 
 // Beacon client type
@@ -93,4 +107,5 @@ type Client interface {
 	ExitValidator(validatorIndex, epoch uint64, signature types.ValidatorSignature) error
 	Close() error
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
+	GetCommitteesForEpoch(epoch *uint64) ([]Committee, error)
 }

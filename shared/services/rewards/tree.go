@@ -27,7 +27,7 @@ import (
 
 // Settings
 const (
-	SmoothingPoolDetailsBatchSize int    = 20
+	SmoothingPoolDetailsBatchSize uint64 = 20
 	RewardsFileVersion            uint64 = 1
 )
 
@@ -349,7 +349,7 @@ func ValidateNetwork(rp *rocketpool.RocketPool, network uint64, validNetworkCach
 }
 
 // Calculates the ETH rewards for the given interval
-func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc *beacon.Client, index uint64, snapshotBlockHeader *types.Header, rewardsInterval time.Duration, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, invalidNetworkNodes map[common.Address]uint64) error {
+func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, snapshotBlockHeader *types.Header, snapshotBeaconBlock uint64, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, invalidNetworkNodes map[common.Address]uint64) error {
 
 	// Get services
 	opts := &bind.CallOpts{
@@ -399,25 +399,197 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 
 	// Get the details for nodes eligible for Smoothing Pool rewards
 	// This should be all of the eth1 calls, so do them all at the start of Smoothing Pool calculation to prevent the need for an archive node during normal operations
-	nodeDetails, err := GetSmoothingPoolNodeDetails(rp, opts, intervalStartTime)
+	nodeDetails, err := getSmoothingPoolNodeDetails(rp, opts, intervalStartTime)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("%d", len(nodeDetails))
+	// Determine the validator indices of each minipool
+	validatorIndexMap, err := createMinipoolIndexMap(bc, nodeDetails)
+	if err != nil {
+		return err
+	}
+
+	// Create an interval duties struct
+	intervalDutiesInfo := &IntervalDutiesInfo{
+		Index: index,
+		Slots: map[uint64]*SlotInfo{},
+	}
+
+	// Process the attestation performance for each minipool during this interval
+	err = processAttestationsForInterval(bc, validatorIndexMap, intervalDutiesInfo, previousIntervalEvent.ConsensusBlock.Uint64()+1, snapshotBeaconBlock)
+	if err != nil {
+		return err
+	}
+
+	// TODO: calculate efficacy and rewards per minipool
 
 	return nil
 }
 
-/*
-// Query the Beacon client to see how effective a given minipool was during the smoothing pool duration
-func GetMinipoolEffectiveness(bc *beacon.Client, pubkey rptypes.ValidatorPubkey, startClBlock uint64, endClBlock uint64) (float64, error) {
+// Get all of the duties for a range of epochs
+func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, startSlot uint64, endSlot uint64) error {
+
+	// Determine the start and end epochs to check
+	beaconConfig, err := bc.GetEth2Config()
+	if err != nil {
+		return err
+	}
+	startEpoch := startSlot / beaconConfig.SlotsPerEpoch
+	endEpoch := endSlot / beaconConfig.SlotsPerEpoch
+
+	// Check all of the attestations for each epoch
+	for epoch := startEpoch; epoch < endEpoch+1; epoch++ {
+		startTime := time.Now()
+		// Get all of the expected duties for the epoch
+		err := getDutiesForEpoch(bc, epoch, startSlot, endSlot, validatorIndexMap, intervalDutiesInfo)
+		if err != nil {
+			return fmt.Errorf("Error getting duties for epoch %d: %w", epoch, err)
+		}
+
+		// Process all of the slots in the epoch
+		for i := uint64(0); i < 32; i++ {
+			checkDutiesForSlot(bc, epoch*32+i, intervalDutiesInfo)
+		}
+
+		// Report on missed duties
+		fmt.Printf("Epoch %d complete in %s\n", epoch, time.Since(startTime))
+	}
+
+	// Check all of the slots in the epoch after the end too
+	for i := uint64(0); i < 32; i++ {
+		checkDutiesForSlot(bc, (endSlot+1)*32+i, intervalDutiesInfo)
+	}
+
+	return nil
 
 }
-*/
+
+// Handle all of the attestations in the given slot
+func checkDutiesForSlot(bc beacon.Client, slot uint64, intervalDutiesInfo *IntervalDutiesInfo) error {
+
+	block, found, err := bc.GetBeaconBlock(fmt.Sprint(slot))
+	if !found {
+		// Ignore missing blocks
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// Go through the attestations for the block
+	for _, attestation := range block.Attestations {
+
+		// Get the RP committees for this attestation's slot and index
+		slotInfo, exists := intervalDutiesInfo.Slots[attestation.SlotIndex]
+		if exists {
+			rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]
+			if exists {
+				// Check if each RP validator attested successfully
+				for position, validator := range rpCommittee.Positions {
+					if attestation.AggregationBits.BitAt(uint64(position)) {
+						// We have a winner - remove this duty and update the scores
+						delete(rpCommittee.Positions, position)
+						if len(rpCommittee.Positions) == 0 {
+							delete(slotInfo.Committees, attestation.CommitteeIndex)
+						}
+						if len(slotInfo.Committees) == 0 {
+							delete(intervalDutiesInfo.Slots, attestation.SlotIndex)
+						}
+						validator.MissedAttestations--
+						validator.GoodAttestations++
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+
+}
+
+// Maps out the attestaion duties for the given epoch
+func getDutiesForEpoch(bc beacon.Client, epoch uint64, startSlot uint64, endSlot uint64, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo) error {
+
+	// Get the committees for the epoch
+	committees, err := bc.GetCommitteesForEpoch(&epoch)
+	if err != nil {
+		return err
+	}
+
+	// Crawl the committees
+	for _, committee := range committees {
+		slotIndex := committee.Slot
+		if slotIndex < startSlot || slotIndex > endSlot {
+			// Ignore slots that are out of bounds
+			continue
+		}
+		committeeIndex := committee.Index
+
+		// Check if there are any RP validators in this committee
+		rpValidators := map[int]*MinipoolInfo{}
+		for position, validator := range committee.Validators {
+			minipoolInfo, exists := validatorIndexMap[validator]
+			if exists {
+				rpValidators[position] = minipoolInfo
+				minipoolInfo.MissedAttestations += 1 // Consider this attestation missed until it's seen later
+			}
+		}
+
+		// If there are some RP validators, add this committee to the map
+		if len(rpValidators) > 0 {
+			slotInfo, exists := intervalDutiesInfo.Slots[slotIndex]
+			if !exists {
+				slotInfo = &SlotInfo{
+					Index:      slotIndex,
+					Committees: map[uint64]*CommitteeInfo{},
+				}
+				intervalDutiesInfo.Slots[slotIndex] = slotInfo
+			}
+			slotInfo.Committees[committeeIndex] = &CommitteeInfo{
+				Index:     committeeIndex,
+				Positions: rpValidators,
+			}
+		}
+	}
+
+	return nil
+
+}
+
+// Maps all minipools to their validator indices and creates a map of indices to minipool info
+func createMinipoolIndexMap(bc beacon.Client, nodeDetails []NodeSmoothingDetails) (map[uint64]*MinipoolInfo, error) {
+
+	// Make a slice of all minipool pubkeys
+	minipoolPubkeys := []rptypes.ValidatorPubkey{}
+	for _, details := range nodeDetails {
+		if details.IsEligible {
+			for _, minipoolInfo := range details.Minipools {
+				minipoolPubkeys = append(minipoolPubkeys, minipoolInfo.ValidatorPubkey)
+			}
+		}
+	}
+
+	// Get indices for all minipool validators
+	validatorIndexMap := map[uint64]*MinipoolInfo{}
+	statusMap, err := bc.GetValidatorStatuses(minipoolPubkeys, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting validator statuses: %w", err)
+	}
+	for _, details := range nodeDetails {
+		if details.IsEligible {
+			for _, minipoolInfo := range details.Minipools {
+				minipoolInfo.ValidatorIndex = statusMap[minipoolInfo.ValidatorPubkey].Index
+				validatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+			}
+		}
+	}
+
+	return validatorIndexMap, nil
+
+}
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
-func GetSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, intervalStartTime time.Time) ([]NodeSmoothingDetails, error) {
+func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, intervalStartTime time.Time) ([]NodeSmoothingDetails, error) {
 
 	// Get all of the registered nodes
 	nodeAddresses, err := node.GetNodeAddresses(rp, opts)
@@ -426,9 +598,9 @@ func GetSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 	}
 
 	// For each NO, get their opt-in status and time of last change in batches
-	nodeCount := len(nodeAddresses)
+	nodeCount := uint64(len(nodeAddresses))
 	details := make([]NodeSmoothingDetails, nodeCount)
-	for batchStartIndex := 0; batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
+	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
 
 		// Get batch start & end index
 		iterationStartIndex := batchStartIndex
@@ -444,9 +616,8 @@ func GetSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 			wg.Go(func() error {
 				var err error
 				nodeDetails := NodeSmoothingDetails{
-					Address:    nodeAddresses[iterationIndex],
-					IsEligible: true,
-					Minipools:  map[common.Address]rptypes.ValidatorPubkey{},
+					Address:   nodeAddresses[iterationIndex],
+					Minipools: []*MinipoolInfo{},
 				}
 
 				// Check if the node is opted into the smoothing pool
@@ -484,11 +655,17 @@ func GetSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 							return fmt.Errorf("Error getting status of minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
 						}
 						if status == rptypes.Staking {
-							nodeDetails.Minipools[mpd.Address] = mpd.Pubkey
+							nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
+								Address:         mpd.Address,
+								ValidatorPubkey: mpd.Pubkey,
+								NodeAddress:     nodeDetails.Address,
+								NodeIndex:       iterationIndex,
+							})
 						}
 					}
 				}
 
+				nodeDetails.IsEligible = len(nodeDetails.Minipools) > 0
 				details[iterationIndex] = nodeDetails
 				return nil
 			})

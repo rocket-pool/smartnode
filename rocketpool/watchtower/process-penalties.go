@@ -28,6 +28,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Number of slots to go back in time and scan for penalties if state is empty (400k is approx. 8 weeks)
@@ -208,11 +209,20 @@ func (t *processPenalties) run() error {
 		t.lock.Unlock()
 		checkPrefix := "[Fee Recipients]"
 
-		// Get the address of the Smoothing Pool contract
-		smoothingPoolContract, err := t.rp.GetContract("rocketSmoothingPool")
+		// Check if the contract upgrade has happened yet
+		smoothingPoolAddress := common.Address{}
+		isMergeUpdateDeployed, err := rp.IsMergeUpdateDeployed(t.rp)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s Error getting smoothing pool contract: %w", checkPrefix, err))
+			t.handleError(fmt.Errorf("%s Error checking if merge update has been deployed: %w", checkPrefix, err))
 			return
+		}
+		if isMergeUpdateDeployed {
+			smoothingPoolContract, err := t.rp.GetContract("rocketSmoothingPool")
+			if err != nil {
+				t.handleError(fmt.Errorf("%s Error getting smoothing pool contract: %w", checkPrefix, err))
+				return
+			}
+			smoothingPoolAddress = *smoothingPoolContract.Address
 		}
 
 		// Get latest block
@@ -261,7 +271,7 @@ func (t *processPenalties) run() error {
 				return
 			}
 			if exists {
-				illegalFeeRecipientFound, err := t.processBlock(&block, *smoothingPoolContract.Address)
+				illegalFeeRecipientFound, err := t.processBlock(&block, smoothingPoolAddress)
 				if illegalFeeRecipientFound {
 					s.LatestPenaltySlot = block.Slot
 					saveErr := s.saveState(watchtowerStatePath)
@@ -290,7 +300,7 @@ func (t *processPenalties) run() error {
 		}
 
 		if headExists {
-			_, err = t.processBlock(&head, *smoothingPoolContract.Address)
+			_, err = t.processBlock(&head, smoothingPoolAddress)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", checkPrefix, err))
 				return
@@ -324,7 +334,7 @@ func (t *processPenalties) handleError(err error) {
 	t.lock.Unlock()
 }
 
-func (t *processPenalties) processBlock(block *beacon.BeaconBlock, smoothingPoolContract common.Address) (bool, error) {
+func (t *processPenalties) processBlock(block *beacon.BeaconBlock, smoothingPoolAddress common.Address) (bool, error) {
 	illegalFeeRecipient := false
 
 	if !block.HasExecutionPayload {
@@ -370,8 +380,13 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock, smoothingPool
 
 	// Check whether the fee recipient is set correctly
 	if block.FeeRecipient != distributorAddress &&
-		block.FeeRecipient != rethAddress &&
-		block.FeeRecipient != smoothingPoolContract {
+		block.FeeRecipient != rethAddress {
+
+		// Check the smoothing pool
+		if smoothingPoolAddress != emptyAddress && block.FeeRecipient == smoothingPoolAddress {
+			return illegalFeeRecipient, nil
+		}
+
 		illegalFeeRecipient = true
 
 		// Check if this penalty has already been applied

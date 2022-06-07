@@ -58,13 +58,38 @@ type IntervalInfo struct {
 	MerkleProof            []common.Hash `json:"merkleProof"`
 }
 
+type MinipoolInfo struct {
+	Address            common.Address
+	ValidatorPubkey    types.ValidatorPubkey
+	ValidatorIndex     uint64
+	NodeAddress        common.Address
+	NodeIndex          uint64
+	MissedAttestations uint64
+	GoodAttestations   uint64
+}
+
+type IntervalDutiesInfo struct {
+	Index uint64
+	Slots map[uint64]*SlotInfo
+}
+
+type SlotInfo struct {
+	Index      uint64
+	Committees map[uint64]*CommitteeInfo
+}
+
+type CommitteeInfo struct {
+	Index     uint64
+	Positions map[int]*MinipoolInfo
+}
+
 // Details about a node for the Smoothing Pool
 type NodeSmoothingDetails struct {
 	Address          common.Address
 	IsEligible       bool
 	IsOptedIn        bool
 	StatusChangeTime time.Time
-	Minipools        map[common.Address]types.ValidatorPubkey
+	Minipools        []*MinipoolInfo
 }
 
 type QuotedBigInt struct {

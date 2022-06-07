@@ -77,6 +77,7 @@ type BeaconBlockResponse struct {
 					DepositCount uinteger  `json:"deposit_count"`
 					BlockHash    byteArray `json:"block_hash"`
 				} `json:"eth1_data"`
+				Attestations     []Attestation `json:"attestations"`
 				ExecutionPayload *struct {
 					FeeRecipient byteArray `json:"fee_recipient"`
 				} `json:"execution_payload"`
@@ -115,6 +116,24 @@ type ProposerDutiesResponse struct {
 }
 type ProposerDuty struct {
 	ValidatorIndex uinteger `json:"validator_index"`
+}
+
+type CommitteesResponse struct {
+	Data []Committee `json:"data"`
+}
+
+type Committee struct {
+	Index      uinteger   `json:"index"`
+	Slot       uinteger   `json:"slot"`
+	Validators []uinteger `json:"validators"`
+}
+
+type Attestation struct {
+	AggregationBits string `json:"aggregation_bits"`
+	Data            struct {
+		Slot  uinteger `json:"slot"`
+		Index uinteger `json:"index"`
+	} `json:"data"`
 }
 
 // Unsigned integer type

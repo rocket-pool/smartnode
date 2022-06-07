@@ -92,7 +92,13 @@ func (t *generateRewardsTree) run() error {
 	// Check for requests
 	requestDir := t.cfg.Smartnode.GetWatchtowerFolder(true)
 	files, err := ioutil.ReadDir(requestDir)
-	if err != nil {
+	if os.IsNotExist(err) {
+		t.log.Println("Watchtower storage directory doesn't exist, creating...")
+		err = os.Mkdir(requestDir, 0755)
+		if err != nil {
+			return fmt.Errorf("Error creating watchtower storage directory: %w", err)
+		}
+	} else if err != nil {
 		return fmt.Errorf("Error enumerating files in watchtower storage directory: %w", err)
 	}
 
