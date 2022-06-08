@@ -3,11 +3,12 @@ package minipool
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -227,6 +228,13 @@ func (mp *Minipool) GetNodeFee(opts *bind.CallOpts) (float64, error) {
 		return 0, fmt.Errorf("Could not get minipool %s node fee: %w", mp.Address.Hex(), err)
 	}
 	return eth.WeiToEth(*nodeFee), nil
+}
+func (mp *Minipool) GetNodeFeeRaw(opts *bind.CallOpts) (*big.Int, error) {
+	nodeFee := new(*big.Int)
+	if err := mp.Contract.Call(opts, nodeFee, "getNodeFee"); err != nil {
+		return nil, fmt.Errorf("Could not get minipool %s node fee: %w", mp.Address.Hex(), err)
+	}
+	return *nodeFee, nil
 }
 func (mp *Minipool) GetNodeDepositBalance(opts *bind.CallOpts) (*big.Int, error) {
 	nodeDepositBalance := new(*big.Int)
