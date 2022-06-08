@@ -64,6 +64,7 @@ type MinipoolInfo struct {
 	ValidatorIndex     uint64
 	NodeAddress        common.Address
 	NodeIndex          uint64
+	Fee                float64
 	MissedAttestations uint64
 	GoodAttestations   uint64
 }
@@ -90,6 +91,14 @@ type NodeSmoothingDetails struct {
 	IsOptedIn        bool
 	StatusChangeTime time.Time
 	Minipools        []*MinipoolInfo
+	ActiveFactor     float64
+	CheaterInfo      CheaterInfo
+}
+
+type CheaterInfo struct {
+	CheatingDetected bool
+	OffendingSlot    uint64
+	FeeRecipient     common.Address
 }
 
 type QuotedBigInt struct {

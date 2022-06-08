@@ -396,10 +396,11 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 		return err
 	}
 	intervalStartTime := time.Unix(int64(startElBlockHeader.Time), 0)
+	intervalEndTime := time.Unix(int64(snapshotBlockHeader.Time), 0)
 
 	// Get the details for nodes eligible for Smoothing Pool rewards
 	// This should be all of the eth1 calls, so do them all at the start of Smoothing Pool calculation to prevent the need for an archive node during normal operations
-	nodeDetails, err := getSmoothingPoolNodeDetails(rp, opts, intervalStartTime)
+	nodeDetails, err := getSmoothingPoolNodeDetails(rp, opts, intervalStartTime, intervalEndTime)
 	if err != nil {
 		return err
 	}
@@ -410,31 +411,32 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 		return err
 	}
 
-	// Create an interval duties struct
+	// Process the attestation performance for each minipool during this interval
 	intervalDutiesInfo := &IntervalDutiesInfo{
 		Index: index,
 		Slots: map[uint64]*SlotInfo{},
 	}
-
-	// Process the attestation performance for each minipool during this interval
-	err = processAttestationsForInterval(bc, validatorIndexMap, intervalDutiesInfo, previousIntervalEvent.ConsensusBlock.Uint64()+1, snapshotBeaconBlock)
+	err = processAttestationsForInterval(bc, validatorIndexMap, intervalDutiesInfo, previousIntervalEvent.ConsensusBlock.Uint64()+1, snapshotBeaconBlock, nodeDetails, *smoothingPoolContract.Address)
 	if err != nil {
 		return err
 	}
 
-	// TODO: calculate efficacy and rewards per minipool
+	// Compile a list of all eligible nodes
 
 	return nil
 }
 
 // Get all of the duties for a range of epochs
-func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, startSlot uint64, endSlot uint64) error {
+func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, startSlot uint64, endSlot uint64, nodeDetails []NodeSmoothingDetails, smoothingPoolAddress common.Address) error {
 
 	// Determine the start and end epochs to check
 	beaconConfig, err := bc.GetEth2Config()
 	if err != nil {
 		return err
 	}
+	genesisTime := time.Unix(int64(beaconConfig.GenesisTime), 0)
+	slotLength := time.Duration(beaconConfig.SecondsPerSlot) * time.Second
+
 	startEpoch := startSlot / beaconConfig.SlotsPerEpoch
 	endEpoch := endSlot / beaconConfig.SlotsPerEpoch
 
@@ -449,7 +451,7 @@ func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint
 
 		// Process all of the slots in the epoch
 		for i := uint64(0); i < 32; i++ {
-			checkDutiesForSlot(bc, epoch*32+i, intervalDutiesInfo)
+			checkDutiesForSlot(bc, epoch*32+i, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
 		}
 
 		// Report on missed duties
@@ -458,7 +460,7 @@ func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint
 
 	// Check all of the slots in the epoch after the end too
 	for i := uint64(0); i < 32; i++ {
-		checkDutiesForSlot(bc, (endSlot+1)*32+i, intervalDutiesInfo)
+		checkDutiesForSlot(bc, (endSlot+1)*32+i, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
 	}
 
 	return nil
@@ -466,7 +468,7 @@ func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint
 }
 
 // Handle all of the attestations in the given slot
-func checkDutiesForSlot(bc beacon.Client, slot uint64, intervalDutiesInfo *IntervalDutiesInfo) error {
+func checkDutiesForSlot(bc beacon.Client, slot uint64, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, nodeDetails []NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration) error {
 
 	block, found, err := bc.GetBeaconBlock(fmt.Sprint(slot))
 	if !found {
@@ -475,6 +477,9 @@ func checkDutiesForSlot(bc beacon.Client, slot uint64, intervalDutiesInfo *Inter
 	} else if err != nil {
 		return err
 	}
+
+	// Check if the minipool cheated
+	checkIfMinipoolCheated(block, validatorIndexMap, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
 
 	// Go through the attestations for the block
 	for _, attestation := range block.Attestations {
@@ -504,6 +509,46 @@ func checkDutiesForSlot(bc beacon.Client, slot uint64, intervalDutiesInfo *Inter
 	}
 
 	return nil
+
+}
+
+func checkIfMinipoolCheated(block beacon.BeaconBlock, validatorIndexMap map[uint64]*MinipoolInfo, nodeDetails []NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration) {
+
+	mpInfo, exists := validatorIndexMap[block.ProposerIndex]
+	if !exists {
+		// This proposer isn't a minipool
+		return
+	}
+
+	// Check if the fee recipient was the Smoothing Pool
+	if block.FeeRecipient == smoothingPoolAddress {
+		return
+	}
+
+	// If this node wasn't part of the Smoothing Pool this interval, ignore it
+	nodeInfo := nodeDetails[mpInfo.NodeIndex]
+	if !nodeInfo.IsEligible {
+		return
+	}
+
+	// Get the time this slot occurred
+	slotTime := genesisTime.Add(slotLength * time.Duration(block.Slot))
+
+	// If the node was opted in at the end but this block happened before they opted in, ignore it
+	if nodeInfo.IsOptedIn && nodeInfo.StatusChangeTime.Sub(slotTime) >= 0 {
+		return
+	}
+
+	// If the node was opted out at the end but this block happened after they opted out, ignore it
+	if !nodeInfo.IsOptedIn && slotTime.Sub(nodeInfo.StatusChangeTime) >= 0 {
+		return
+	}
+
+	// If we got here, the block happened while they were opted in so they cheated
+	nodeDetails[mpInfo.NodeIndex].IsEligible = false
+	nodeDetails[mpInfo.NodeIndex].CheaterInfo.CheatingDetected = true
+	nodeDetails[mpInfo.NodeIndex].CheaterInfo.OffendingSlot = block.Slot
+	nodeDetails[mpInfo.NodeIndex].CheaterInfo.FeeRecipient = block.FeeRecipient
 
 }
 
@@ -589,7 +634,9 @@ func createMinipoolIndexMap(bc beacon.Client, nodeDetails []NodeSmoothingDetails
 }
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
-func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, intervalStartTime time.Time) ([]NodeSmoothingDetails, error) {
+func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, intervalStartTime time.Time, intervalEndTime time.Time) ([]NodeSmoothingDetails, error) {
+
+	intervalDuration := float64(intervalEndTime.Sub(intervalStartTime))
 
 	// Get all of the registered nodes
 	nodeAddresses, err := node.GetNodeAddresses(rp, opts)
@@ -635,8 +682,19 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
 				if intervalStartTime.Sub(nodeDetails.StatusChangeTime) > 0 && !nodeDetails.IsOptedIn {
 					nodeDetails.IsEligible = false
+					nodeDetails.ActiveFactor = 0
 					details[iterationIndex] = nodeDetails
 					return nil
+				}
+
+				// Get the node's total active factor
+				if nodeDetails.IsOptedIn {
+					nodeDetails.ActiveFactor = float64(intervalEndTime.Sub(nodeDetails.StatusChangeTime)) / intervalDuration
+				} else {
+					nodeDetails.ActiveFactor = float64(nodeDetails.StatusChangeTime.Sub(intervalStartTime)) / intervalDuration
+				}
+				if nodeDetails.ActiveFactor > 1 {
+					nodeDetails.ActiveFactor = 1
 				}
 
 				// Get the details for each minipool in the node
@@ -655,11 +713,16 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 							return fmt.Errorf("Error getting status of minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
 						}
 						if status == rptypes.Staking {
+							fee, err := mp.GetNodeFee(opts)
+							if err != nil {
+								return fmt.Errorf("Error getting fee for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
+							}
 							nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
 								Address:         mpd.Address,
 								ValidatorPubkey: mpd.Pubkey,
 								NodeAddress:     nodeDetails.Address,
 								NodeIndex:       iterationIndex,
+								Fee:             fee,
 							})
 						}
 					}
