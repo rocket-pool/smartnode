@@ -164,7 +164,7 @@ func GenerateMerkleTree(nodeRewardsMap map[common.Address]NodeRewards) (*merklet
 }
 
 // Calculates the RPL rewards for the given interval
-func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration) (map[common.Address]NodeRewards, map[uint64]NodeRewards, *QuotedBigInt, map[common.Address]uint64, error) {
+func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration, nodeAddresses []common.Address) (map[common.Address]NodeRewards, map[uint64]NodeRewards, *QuotedBigInt, map[common.Address]uint64, error) {
 
 	validNetworkCache := map[uint64]bool{
 		0: true,
@@ -191,10 +191,6 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
 
-	nodeAddresses, err := node.GetNodeAddresses(rp, opts)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
 	totalRplStake, err := node.GetTotalEffectiveRPLStake(rp, opts)
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -349,7 +345,7 @@ func ValidateNetwork(rp *rocketpool.RocketPool, network uint64, validNetworkCach
 }
 
 // Calculates the ETH rewards for the given interval
-func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, snapshotBlockHeader *types.Header, snapshotBeaconBlock uint64, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, invalidNetworkNodes map[common.Address]uint64) error {
+func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, snapshotBlockHeader *types.Header, snapshotBeaconBlock uint64, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, invalidNetworkNodes map[common.Address]uint64, nodeAddresses []common.Address) (*big.Int, error) {
 
 	// Get services
 	opts := &bind.CallOpts{
@@ -360,55 +356,55 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 	// Get the Smoothing Pool contract's balance
 	smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
 	if err != nil {
-		return fmt.Errorf("error getting smoothing pool contract: %w", err)
+		return nil, fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
 
 	smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, snapshotBlockHeader.Number)
 	if err != nil {
-		return fmt.Errorf("error getting smoothing pool balance: %w", err)
+		return nil, fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
 
 	// Ignore the ETH calculation if there are no rewards
 	if smoothingPoolBalance.Cmp(big.NewInt(0)) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	if index == 0 {
 		// This is the first interval, Smoothing Pool rewards are ignored on the first interval since it doesn't have a discrete start time
-		return nil
+		return nil, nil
 	}
 
 	// Get the event log interval
 	var eventLogInterval int
 	eventLogInterval, err = cfg.GetEventLogInterval()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get the start time of this interval based on the event from the previous one
 	previousIntervalEvent, err := rewards.GetRewardSnapshotEvent(rp, index-1, big.NewInt(int64(eventLogInterval)), nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	startElBlockNumber := big.NewInt(0).Add(previousIntervalEvent.ExecutionBlock, big.NewInt(1))
 	startElBlockHeader, err := ec.HeaderByNumber(context.Background(), startElBlockNumber)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	intervalStartTime := time.Unix(int64(startElBlockHeader.Time), 0)
 	intervalEndTime := time.Unix(int64(snapshotBlockHeader.Time), 0)
 
 	// Get the details for nodes eligible for Smoothing Pool rewards
 	// This should be all of the eth1 calls, so do them all at the start of Smoothing Pool calculation to prevent the need for an archive node during normal operations
-	nodeDetails, err := getSmoothingPoolNodeDetails(rp, opts, intervalStartTime, intervalEndTime)
+	nodeDetails, err := getSmoothingPoolNodeDetails(rp, opts, intervalStartTime, intervalEndTime, nodeAddresses)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Determine the validator indices of each minipool
 	validatorIndexMap, err := createMinipoolIndexMap(bc, nodeDetails)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Process the attestation performance for each minipool during this interval
@@ -418,12 +414,126 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 	}
 	err = processAttestationsForInterval(bc, validatorIndexMap, intervalDutiesInfo, previousIntervalEvent.ConsensusBlock.Uint64()+1, snapshotBeaconBlock, nodeDetails, *smoothingPoolContract.Address)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Compile a list of all eligible nodes
+	// Determine how much ETH each node gets and how much the pool stakers get
+	poolStakerETH := calculateNodeRewards(nodeDetails, smoothingPoolBalance)
 
-	return nil
+	// Update the rewards maps
+	validNetworkCache := map[uint64]bool{
+		0: true,
+	}
+	for _, nodeInfo := range nodeDetails {
+		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(big.NewInt(0)) > 0 {
+			rewardsForNode, exists := nodeRewardsMap[nodeInfo.Address]
+			if !exists {
+				// Get the network the rewards should go to
+				network, err := node.GetRewardNetwork(rp, nodeInfo.Address, opts)
+				if err != nil {
+					return nil, err
+				}
+				validNetwork, err := ValidateNetwork(rp, network, validNetworkCache)
+				if err != nil {
+					return nil, err
+				}
+				if !validNetwork {
+					invalidNetworkNodes[nodeInfo.Address] = network
+					network = 0
+				}
+
+				rewardsForNode = NodeRewards{
+					RewardNetwork:    network,
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
+				}
+			}
+			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
+			nodeRewardsMap[nodeInfo.Address] = rewardsForNode
+
+			// Add the rewards to the running total for the specified network
+			rewardsForNetwork, exists := networkRewardsMap[rewardsForNode.RewardNetwork]
+			if !exists {
+				rewardsForNetwork = NodeRewards{
+					RewardNetwork:    rewardsForNode.RewardNetwork,
+					CollateralRpl:    NewQuotedBigInt(0),
+					OracleDaoRpl:     NewQuotedBigInt(0),
+					SmoothingPoolEth: NewQuotedBigInt(0),
+				}
+			}
+			rewardsForNetwork.SmoothingPoolEth.Add(&rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
+			networkRewardsMap[rewardsForNode.RewardNetwork] = rewardsForNetwork
+		}
+	}
+
+	return poolStakerETH, nil
+
+}
+
+// Calculate the distribution of Smoothing Pool ETH to each node
+func calculateNodeRewards(nodeDetails []NodeSmoothingDetails, smoothingPoolBalance *big.Int) *big.Int {
+
+	// Get the average fee for all eligible minipools and calculate their weighted share
+	one := big.NewInt(1e18) // 100%, used for dividing percentages properly
+	feeTotal := big.NewInt(0)
+	minipoolCount := int64(0)
+	minipoolShareTotal := big.NewInt(0)
+	for _, nodeInfo := range nodeDetails {
+		if nodeInfo.IsEligible {
+			for _, minipool := range nodeInfo.Minipools {
+				// Used for average fee calculation
+				feeTotal.Add(feeTotal, minipool.Fee)
+				minipoolCount++
+
+				// Minipool share calculation
+				minipoolShare := big.NewInt(0).Add(one, minipool.Fee) // Start with 1 + fee
+				if nodeInfo.EligibilityFactor != 1.0 {
+					// Scale the total shares by the eligibility factor based on how long the node has been opted in
+					minipoolShare.Mul(minipoolShare, eth.EthToWei(nodeInfo.EligibilityFactor))
+					minipoolShare.Div(minipoolShare, one)
+				}
+				if minipool.MissedAttestations > 0 && minipool.GoodAttestations > 0 {
+					// Calculate the participation rate if there are any missed attestations
+					participationRate := float64(minipool.GoodAttestations) / float64(minipool.GoodAttestations+minipool.MissedAttestations)
+					minipoolShare.Mul(minipoolShare, eth.EthToWei(participationRate))
+					minipoolShare.Div(minipoolShare, one)
+				}
+				minipoolShareTotal.Add(minipoolShareTotal, minipoolShare)
+				minipool.MinipoolShare = minipoolShare
+			}
+		}
+	}
+	averageFee := big.NewInt(0).Div(feeTotal, big.NewInt(minipoolCount))
+
+	// Calculate the staking pool share and the node op share
+	halfSmoothingPool := big.NewInt(0).Div(smoothingPoolBalance, big.NewInt(2))
+	commission := big.NewInt(0)
+	commission.Mul(halfSmoothingPool, averageFee)
+	commission.Div(commission, one)
+	poolStakerShare := big.NewInt(0).Sub(halfSmoothingPool, commission)
+	nodeOpShare := big.NewInt(0).Sub(smoothingPoolBalance, poolStakerShare)
+
+	// Calculate the amount of ETH to give each minipool based on their share
+	totalEthForMinipools := big.NewInt(0)
+	for _, nodeInfo := range nodeDetails {
+		nodeInfo.SmoothingPoolEth = big.NewInt(0)
+		if nodeInfo.IsEligible {
+			for _, minipool := range nodeInfo.Minipools {
+				// Minipool ETH = NO amount * minipool share / total minipool share
+				minipoolEth := big.NewInt(0).Set(nodeOpShare)
+				minipoolEth.Mul(minipoolEth, minipool.MinipoolShare)
+				minipoolEth.Div(minipoolEth, minipoolShareTotal)
+				nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)
+			}
+			totalEthForMinipools.Add(totalEthForMinipools, nodeInfo.SmoothingPoolEth)
+		}
+	}
+
+	// This is how much actually goes to the pool stakers - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
+	truePoolStakerAmount := big.NewInt(0).Sub(smoothingPoolBalance, totalEthForMinipools)
+	return truePoolStakerAmount
+
 }
 
 // Get all of the duties for a range of epochs
@@ -549,6 +659,7 @@ func checkIfMinipoolCheated(block beacon.BeaconBlock, validatorIndexMap map[uint
 	nodeDetails[mpInfo.NodeIndex].CheaterInfo.CheatingDetected = true
 	nodeDetails[mpInfo.NodeIndex].CheaterInfo.OffendingSlot = block.Slot
 	nodeDetails[mpInfo.NodeIndex].CheaterInfo.FeeRecipient = block.FeeRecipient
+	nodeDetails[mpInfo.NodeIndex].CheaterInfo.Minipool = mpInfo.Address
 
 }
 
@@ -634,15 +745,9 @@ func createMinipoolIndexMap(bc beacon.Client, nodeDetails []NodeSmoothingDetails
 }
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
-func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, intervalStartTime time.Time, intervalEndTime time.Time) ([]NodeSmoothingDetails, error) {
+func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, intervalStartTime time.Time, intervalEndTime time.Time, nodeAddresses []common.Address) ([]NodeSmoothingDetails, error) {
 
 	intervalDuration := float64(intervalEndTime.Sub(intervalStartTime))
-
-	// Get all of the registered nodes
-	nodeAddresses, err := node.GetNodeAddresses(rp, opts)
-	if err != nil {
-		return nil, err
-	}
 
 	// For each NO, get their opt-in status and time of last change in batches
 	nodeCount := uint64(len(nodeAddresses))
@@ -682,19 +787,19 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
 				if intervalStartTime.Sub(nodeDetails.StatusChangeTime) > 0 && !nodeDetails.IsOptedIn {
 					nodeDetails.IsEligible = false
-					nodeDetails.ActiveFactor = 0
+					nodeDetails.EligibilityFactor = 0
 					details[iterationIndex] = nodeDetails
 					return nil
 				}
 
 				// Get the node's total active factor
 				if nodeDetails.IsOptedIn {
-					nodeDetails.ActiveFactor = float64(intervalEndTime.Sub(nodeDetails.StatusChangeTime)) / intervalDuration
+					nodeDetails.EligibilityFactor = float64(intervalEndTime.Sub(nodeDetails.StatusChangeTime)) / intervalDuration
 				} else {
-					nodeDetails.ActiveFactor = float64(nodeDetails.StatusChangeTime.Sub(intervalStartTime)) / intervalDuration
+					nodeDetails.EligibilityFactor = float64(nodeDetails.StatusChangeTime.Sub(intervalStartTime)) / intervalDuration
 				}
-				if nodeDetails.ActiveFactor > 1 {
-					nodeDetails.ActiveFactor = 1
+				if nodeDetails.EligibilityFactor > 1 {
+					nodeDetails.EligibilityFactor = 1
 				}
 
 				// Get the details for each minipool in the node
@@ -713,7 +818,7 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 							return fmt.Errorf("Error getting status of minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
 						}
 						if status == rptypes.Staking {
-							fee, err := mp.GetNodeFee(opts)
+							fee, err := mp.GetNodeFeeRaw(opts)
 							if err != nil {
 								return fmt.Errorf("Error getting fee for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
 							}

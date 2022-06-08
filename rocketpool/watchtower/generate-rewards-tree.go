@@ -13,9 +13,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -186,10 +188,20 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	// Get the interval time
 	intervalTime := rewardsEvent.IntervalEndTime.Sub(rewardsEvent.IntervalStartTime)
 
+	// Get the addresses for all nodes
+	opts := &bind.CallOpts{
+		BlockNumber: rewardsEvent.ExecutionBlock,
+	}
+	nodeAddresses, err := node.GetNodeAddresses(t.rp, opts)
+	if err != nil {
+		t.handleError(fmt.Errorf("%s Error getting node addresses: %w", generationPrefix, err))
+		return
+	}
+
 	// Get the total pending rewards and respective distribution percentages
 	t.log.Printlnf("%s Calculating RPL rewards...", generationPrefix)
 	start := time.Now()
-	nodeRewardsMap, networkRewardsMap, protocolDaoRpl, invalidNodeNetworks, err := rprewards.CalculateRplRewards(rp, elBlockHeader, intervalTime)
+	nodeRewardsMap, networkRewardsMap, protocolDaoRpl, invalidNodeNetworks, err := rprewards.CalculateRplRewards(rp, elBlockHeader, intervalTime, nodeAddresses)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error calculating rewards: %w", generationPrefix, err))
 		return

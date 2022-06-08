@@ -12,10 +12,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -257,8 +259,18 @@ func (t *submitRewardsTree) run() error {
 		}
 		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
+		// Get the addresses for all nodes
+		opts := &bind.CallOpts{
+			BlockNumber: snapshotElBlockHeader.Number,
+		}
+		nodeAddresses, err := node.GetNodeAddresses(t.rp, opts)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error getting node addresses: %w", generationPrefix, err))
+			return
+		}
+
 		// Get the total pending rewards and respective distribution percentages
-		nodeRewardsMap, networkRewardsMap, pDaoRewards, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotElBlockHeader, intervalTime)
+		nodeRewardsMap, networkRewardsMap, pDaoRewards, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotElBlockHeader, intervalTime, nodeAddresses)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error calculating node operator rewards: %w", generationPrefix, err))
 			return

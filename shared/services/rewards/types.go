@@ -64,9 +64,10 @@ type MinipoolInfo struct {
 	ValidatorIndex     uint64
 	NodeAddress        common.Address
 	NodeIndex          uint64
-	Fee                float64
+	Fee                *big.Int
 	MissedAttestations uint64
 	GoodAttestations   uint64
+	MinipoolShare      *big.Int
 }
 
 type IntervalDutiesInfo struct {
@@ -86,18 +87,20 @@ type CommitteeInfo struct {
 
 // Details about a node for the Smoothing Pool
 type NodeSmoothingDetails struct {
-	Address          common.Address
-	IsEligible       bool
-	IsOptedIn        bool
-	StatusChangeTime time.Time
-	Minipools        []*MinipoolInfo
-	ActiveFactor     float64
-	CheaterInfo      CheaterInfo
+	Address           common.Address
+	IsEligible        bool
+	IsOptedIn         bool
+	StatusChangeTime  time.Time
+	Minipools         []*MinipoolInfo
+	EligibilityFactor float64
+	CheaterInfo       CheaterInfo
+	SmoothingPoolEth  *big.Int
 }
 
 type CheaterInfo struct {
 	CheatingDetected bool
 	OffendingSlot    uint64
+	Minipool         common.Address
 	FeeRecipient     common.Address
 }
 
