@@ -36,7 +36,7 @@ const (
 	RequestForkPath                  = "/eth/v1/beacon/states/%s/fork"
 	RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
 	RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
-	RequestBeaconBlockPath           = "/eth/v1/beacon/blocks/%s"
+	RequestBeaconBlockPath           = "/eth/v2/beacon/blocks/%s"
 	RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
 	RequestValidatorProposerDuties   = "/eth/v1/validator/duties/proposer/%s"
 
