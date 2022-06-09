@@ -10,38 +10,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
-// Node operator rewards
-type NodeRewards struct {
-	RewardNetwork    uint64        `json:"rewardNetwork,omitempty"`
-	CollateralRpl    *QuotedBigInt `json:"collateralRpl,omitempty"`
-	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl,omitempty"`
-	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth,omitempty"`
-	MerkleData       []byte        `json:"-"`
-	MerkleProof      []string      `json:"merkleProof,omitempty"`
-}
-
-// JSON struct for a complete Merkle Tree proof list
-type ProofWrapper struct {
-	RewardsFileVersion uint64 `json:"rewardsFileVersion,omitempty"`
-	Index              uint64 `json:"index,omitempty"`
-	ConsensusBlock     uint64 `json:"consensusBlock,omitempty"`
-	ExecutionBlock     uint64 `json:"executionBlock,omitempty"`
-	IntervalsPassed    uint64 `json:"intervalsPassed,omitempty"`
-	MerkleRoot         string `json:"merkleRoot,omitempty"`
-	NetworkRewards     struct {
-		CollateralRplPerNetwork    map[uint64]*QuotedBigInt `json:"collateralRplPerNetwork,omitempty"`
-		OracleDaoRplPerNetwork     map[uint64]*QuotedBigInt `json:"oracleDaoRplPerNetwork,omitempty"`
-		SmoothingPoolEthPerNetwork map[uint64]*QuotedBigInt `json:"smoothingPoolEthPerNetwork,omitempty"`
-	} `json:"networkRewards,omitempty"`
-	TotalRewards struct {
-		ProtocolDaoRpl        *QuotedBigInt `json:"protocolDaoRpl,omitempty"`
-		TotalCollateralRpl    *QuotedBigInt `json:"totalCollateralRpl,omitempty"`
-		TotalOracleDaoRpl     *QuotedBigInt `json:"totalOracleDaoRpl,omitempty"`
-		TotalSmoothingPoolEth *QuotedBigInt `json:"totalSmoothingPoolEth,omitempty"`
-	} `json:"totalRewards,omitempty"`
-	NodeRewards map[common.Address]NodeRewards `json:"nodeRewards,omitempty"`
-}
-
 // Information about an interval
 type IntervalInfo struct {
 	Index                  uint64        `json:"index"`
@@ -131,7 +99,7 @@ func (b *QuotedBigInt) UnmarshalJSON(p []byte) error {
 }
 
 // Get the deserialized Merkle Proof bytes
-func (n *NodeRewards) GetMerkleProof() ([]common.Hash, error) {
+func (n *NodeRewardsInfo) GetMerkleProof() ([]common.Hash, error) {
 	proof := []common.Hash{}
 	for _, proofLevel := range n.MerkleProof {
 		proof = append(proof, common.HexToHash(proofLevel))

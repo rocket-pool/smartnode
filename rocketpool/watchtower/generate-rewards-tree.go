@@ -13,11 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -185,54 +182,30 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		return
 	}
 
-	// Get the interval time
-	intervalTime := rewardsEvent.IntervalEndTime.Sub(rewardsEvent.IntervalStartTime)
-
-	// Get the addresses for all nodes
-	opts := &bind.CallOpts{
-		BlockNumber: rewardsEvent.ExecutionBlock,
-	}
-	nodeAddresses, err := node.GetNodeAddresses(t.rp, opts)
-	if err != nil {
-		t.handleError(fmt.Errorf("%s Error getting node addresses: %w", generationPrefix, err))
-		return
-	}
-
-	// Get the total pending rewards and respective distribution percentages
-	t.log.Printlnf("%s Calculating RPL rewards...", generationPrefix)
+	// Generate the rewards file
 	start := time.Now()
-	nodeRewardsMap, networkRewardsMap, protocolDaoRpl, invalidNodeNetworks, err := rprewards.CalculateRplRewards(rp, elBlockHeader, intervalTime, nodeAddresses)
-	if err != nil {
-		t.handleError(fmt.Errorf("%s Error calculating rewards: %w", generationPrefix, err))
-		return
-	}
-	for address, network := range invalidNodeNetworks {
-		t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned!\n", generationPrefix, address.Hex(), network)
-	}
-	t.log.Printlnf("%s Finished in %s", generationPrefix, time.Since(start).String())
-
-	// Generate the Merkle tree
-	t.log.Printlnf("%s Generating Merkle tree...", generationPrefix)
-	start = time.Now()
-	tree, err := rprewards.GenerateMerkleTree(nodeRewardsMap)
+	rewardsFile := rprewards.NewRewardsFile(index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
+	err = rewardsFile.GenerateTree(t.rp, t.cfg, t.bc)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 		return
 	}
+	for address, network := range rewardsFile.InvalidNetworkNodes {
+		t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
+	}
 	t.log.Printlnf("%s Finished in %s", generationPrefix, time.Since(start).String())
 
 	// Validate the Merkle root
-	root := common.BytesToHash(tree.Root())
+	root := common.BytesToHash(rewardsFile.MerkleTree.Root())
 	if root != rewardsEvent.MerkleRoot {
 		t.log.Printlnf("%s WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", generationPrefix, root.Hex(), rewardsEvent.MerkleRoot.Hex())
 	} else {
-		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, hexutil.Encode(tree.Root()))
+		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, rewardsFile.MerkleRoot)
 	}
 
 	// Create the JSON proof wrapper and encode it
 	t.log.Printlnf("%s Saving JSON file...", generationPrefix)
-	proofWrapper := rprewards.GenerateTreeJson(common.BytesToHash(tree.Root()), nodeRewardsMap, networkRewardsMap, protocolDaoRpl, index, rewardsEvent.ConsensusBlock.Uint64(), rewardsEvent.ExecutionBlock.Uint64(), rewardsEvent.IntervalsPassed.Uint64())
-	wrapperBytes, err := json.Marshal(proofWrapper)
+	wrapperBytes, err := json.Marshal(rewardsFile)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
 		return

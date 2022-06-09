@@ -112,7 +112,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 		err = fmt.Errorf("error reading %s: %w", info.TreeFilePath, err)
 		return
 	}
-	var proofWrapper ProofWrapper
+	var proofWrapper RewardsFile
 	err = json.Unmarshal(fileBytes, &proofWrapper)
 	if err != nil {
 		err = fmt.Errorf("error deserializing %s: %w", info.TreeFilePath, err)

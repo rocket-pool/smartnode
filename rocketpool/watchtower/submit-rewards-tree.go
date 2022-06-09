@@ -12,12 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -223,7 +221,7 @@ func (t *submitRewardsTree) run() error {
 			return fmt.Errorf("Error reading rewards tree file: %w", err)
 		}
 
-		proofWrapper := new(rprewards.ProofWrapper)
+		proofWrapper := new(rprewards.RewardsFile)
 		err = json.Unmarshal(wrapperBytes, proofWrapper)
 		if err != nil {
 			return fmt.Errorf("Error deserializing rewards tree file: %w", err)
@@ -259,36 +257,19 @@ func (t *submitRewardsTree) run() error {
 		}
 		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
-		// Get the addresses for all nodes
-		opts := &bind.CallOpts{
-			BlockNumber: snapshotElBlockHeader.Number,
-		}
-		nodeAddresses, err := node.GetNodeAddresses(t.rp, opts)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s Error getting node addresses: %w", generationPrefix, err))
-			return
-		}
-
-		// Get the total pending rewards and respective distribution percentages
-		nodeRewardsMap, networkRewardsMap, pDaoRewards, invalidNodeNetworks, err := rprewards.CalculateRplRewards(t.rp, snapshotElBlockHeader, intervalTime, nodeAddresses)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s Error calculating node operator rewards: %w", generationPrefix, err))
-			return
-		}
-		for address, network := range invalidNodeNetworks {
-			t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
-		}
-
-		// Generate the Merkle tree
-		tree, err := rprewards.GenerateMerkleTree(nodeRewardsMap)
+		// Generate the rewards file
+		rewardsFile := rprewards.NewRewardsFile(currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
+		err := rewardsFile.GenerateTree(t.rp, t.cfg, t.bc)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 			return
 		}
+		for address, network := range rewardsFile.InvalidNetworkNodes {
+			t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
+		}
 
-		// Create the JSON proof wrapper and encode it
-		proofWrapper := rprewards.GenerateTreeJson(common.BytesToHash(tree.Root()), nodeRewardsMap, networkRewardsMap, pDaoRewards, currentIndex, snapshotBeaconBlock, elBlockIndex, uint64(intervalsPassed))
-		wrapperBytes, err := json.Marshal(proofWrapper)
+		// Serialize the file to JSON
+		wrapperBytes, err := json.Marshal(rewardsFile)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
 			return
@@ -315,7 +296,7 @@ func (t *submitRewardsTree) run() error {
 			t.log.Printlnf("%s Uploaded Merkle tree with CID %s", generationPrefix, cid)
 
 			// Submit to the contracts
-			err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, cid, big.NewInt(int64(intervalsPassed)))
+			err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, rewardsFile, cid, big.NewInt(int64(intervalsPassed)))
 			if err != nil {
 				t.handleError(fmt.Errorf("%s Error submitting rewards snapshot: %w", generationPrefix, err))
 				return
@@ -345,9 +326,9 @@ func (t *submitRewardsTree) handleError(err error) {
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, proofWrapper *rprewards.ProofWrapper, cid string, intervalsPassed *big.Int) error {
+func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFile *rprewards.RewardsFile, cid string, intervalsPassed *big.Int) error {
 
-	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(proofWrapper.MerkleRoot))
+	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFile.MerkleRoot))
 	if err != nil {
 		return fmt.Errorf("Error decoding merkle root: %w", err)
 	}
@@ -361,16 +342,14 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	// Create the total rewards for each network
 	network := uint64(0)
 	for {
-		// Assumes that each of the rewards structures exists for the same networks, so once a missing one is hit
-		// then we're done going through the networks
-		collateralRplForNetwork, exists := proofWrapper.NetworkRewards.CollateralRplPerNetwork[network]
+		networkRewards, exists := rewardsFile.NetworkRewards[network]
 		if !exists {
 			break
 		}
 
-		collateralRplRewards = append(collateralRplRewards, &collateralRplForNetwork.Int)
-		oDaoRplRewards = append(oDaoRplRewards, &proofWrapper.NetworkRewards.OracleDaoRplPerNetwork[network].Int)
-		smoothingPoolEthRewards = append(smoothingPoolEthRewards, &proofWrapper.NetworkRewards.SmoothingPoolEthPerNetwork[network].Int)
+		collateralRplRewards = append(collateralRplRewards, &networkRewards.CollateralRpl.Int)
+		oDaoRplRewards = append(oDaoRplRewards, &networkRewards.OracleDaoRpl.Int)
+		smoothingPoolEthRewards = append(smoothingPoolEthRewards, &networkRewards.SmoothingPoolEth.Int)
 
 		network++
 	}
@@ -389,7 +368,7 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 		MerkleRoot:      treeRoot,
 		MerkleTreeCID:   cid,
 		IntervalsPassed: intervalsPassed,
-		TreasuryRPL:     &proofWrapper.TotalRewards.ProtocolDaoRpl.Int,
+		TreasuryRPL:     &rewardsFile.TotalRewards.ProtocolDaoRpl.Int,
 		NodeRPL:         collateralRplRewards,
 		TrustedNodeRPL:  oDaoRplRewards,
 		NodeETH:         smoothingPoolEthRewards,

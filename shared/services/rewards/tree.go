@@ -31,72 +31,118 @@ const (
 	RewardsFileVersion            uint64 = 1
 )
 
-// Create the JSON file with the interval rewards and Merkle proof information for each node
-func GenerateTreeJson(treeRoot common.Hash, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, protocolDaoRpl *QuotedBigInt, index uint64, consensusBlock uint64, executionBlock uint64, intervalsPassed uint64) *ProofWrapper {
+// Node operator rewards
+type NodeRewardsInfo struct {
+	RewardNetwork    uint64        `json:"rewardNetwork,omitempty"`
+	CollateralRpl    *QuotedBigInt `json:"collateralRpl,omitempty"`
+	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl,omitempty"`
+	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth,omitempty"`
+	MerkleData       []byte        `json:"-"`
+	MerkleProof      []string      `json:"merkleProof,omitempty"`
+}
 
-	totalCollateralRpl := NewQuotedBigInt(0)
-	totalODaoRpl := NewQuotedBigInt(0)
-	totalSmoothingPoolEth := NewQuotedBigInt(0)
+// Rewards per network
+type NetworkRewardsInfo struct {
+	CollateralRpl    *QuotedBigInt `json:"collateralRpl,omitempty"`
+	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl,omitempty"`
+	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth,omitempty"`
+}
 
-	networkCollateralRplMap := map[uint64]*QuotedBigInt{}
-	networkODaoRplMap := map[uint64]*QuotedBigInt{}
-	networkSmoothingPoolEthMap := map[uint64]*QuotedBigInt{}
+// Total cumulative rewards for an interval
+type TotalRewards struct {
+	ProtocolDaoRpl               *QuotedBigInt `json:"protocolDaoRpl,omitempty"`
+	TotalCollateralRpl           *QuotedBigInt `json:"totalCollateralRpl,omitempty"`
+	TotalOracleDaoRpl            *QuotedBigInt `json:"totalOracleDaoRpl,omitempty"`
+	TotalSmoothingPoolEth        *QuotedBigInt `json:"totalSmoothingPoolEth,omitempty"`
+	PoolStakerSmoothingPoolEth   *QuotedBigInt `json:"poolStakerSmoothingPoolEth,omitempty"`
+	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth,omitempty"`
+}
 
-	// Get the highest network index with valid rewards
-	highestNetworkIndex := uint64(0)
-	for network, _ := range networkRewardsMap {
-		if network > highestNetworkIndex {
-			highestNetworkIndex = network
-		}
-	}
+// JSON struct for a complete rewards file
+type RewardsFile struct {
+	// Serialized fields
+	RewardsFileVersion  uint64                              `json:"rewardsFileVersion,omitempty"`
+	Index               uint64                              `json:"index,omitempty"`
+	StartTime           time.Time                           `json:"startTime,omitempty"`
+	EndTime             time.Time                           `json:"endTime,omitempty"`
+	ConsensusStartBlock uint64                              `json:"consensusStartBlock,omitempty"`
+	ConsensusEndBlock   uint64                              `json:"consensusEndBlock,omitempty"`
+	ExecutionStartBlock uint64                              `json:"executionStartBlock,omitempty"`
+	ExecutionEndBlock   uint64                              `json:"executionEndBlock,omitempty"`
+	IntervalsPassed     uint64                              `json:"intervalsPassed,omitempty"`
+	MerkleRoot          string                              `json:"merkleRoot,omitempty"`
+	TotalRewards        *TotalRewards                       `json:"totalRewards,omitempty"`
+	NetworkRewards      map[uint64]*NetworkRewardsInfo      `json:"networkRewards,omitempty"`
+	NodeRewards         map[common.Address]*NodeRewardsInfo `json:"nodeRewards,omitempty"`
 
-	// Create the map for each network, including unused ones
-	for network := uint64(0); network <= highestNetworkIndex; network++ {
-		rewardsForNetwork, exists := networkRewardsMap[network]
-		if !exists {
-			rewardsForNetwork = NodeRewards{
-				CollateralRpl:    NewQuotedBigInt(0),
-				OracleDaoRpl:     NewQuotedBigInt(0),
-				SmoothingPoolEth: NewQuotedBigInt(0),
-			}
-		}
+	// Non-serialized fields
+	MerkleTree           *merkletree.MerkleTree    `json:"-"`
+	InvalidNetworkNodes  map[common.Address]uint64 `json:"-"`
+	executionStartHeader *types.Header             `json:"-"`
+	elSnapshotHeader     *types.Header             `json:"-"`
+}
 
-		networkCollateralRplMap[network] = rewardsForNetwork.CollateralRpl
-		networkODaoRplMap[network] = rewardsForNetwork.OracleDaoRpl
-		networkSmoothingPoolEthMap[network] = rewardsForNetwork.SmoothingPoolEth
-
-		totalCollateralRpl.Add(&totalCollateralRpl.Int, &rewardsForNetwork.CollateralRpl.Int)
-		totalODaoRpl.Add(&totalODaoRpl.Int, &rewardsForNetwork.OracleDaoRpl.Int)
-		totalSmoothingPoolEth.Add(&totalSmoothingPoolEth.Int, &rewardsForNetwork.SmoothingPoolEth.Int)
-	}
-
-	wrapper := &ProofWrapper{
+// Create a new rewards file
+func NewRewardsFile(index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *RewardsFile {
+	return &RewardsFile{
 		RewardsFileVersion: RewardsFileVersion,
 		Index:              index,
-		ConsensusBlock:     consensusBlock,
-		ExecutionBlock:     executionBlock,
+		StartTime:          startTime,
+		EndTime:            endTime,
+		ConsensusEndBlock:  consensusBlock,
+		ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
 		IntervalsPassed:    intervalsPassed,
-		MerkleRoot:         treeRoot.Hex(),
-		NodeRewards:        nodeRewardsMap,
+		TotalRewards: &TotalRewards{
+			ProtocolDaoRpl:        NewQuotedBigInt(0),
+			TotalCollateralRpl:    NewQuotedBigInt(0),
+			TotalOracleDaoRpl:     NewQuotedBigInt(0),
+			TotalSmoothingPoolEth: NewQuotedBigInt(0),
+		},
+		NetworkRewards:      map[uint64]*NetworkRewardsInfo{},
+		NodeRewards:         map[common.Address]*NodeRewardsInfo{},
+		InvalidNetworkNodes: map[common.Address]uint64{},
+		elSnapshotHeader:    elSnapshotHeader,
 	}
-	wrapper.NetworkRewards.CollateralRplPerNetwork = networkCollateralRplMap
-	wrapper.NetworkRewards.OracleDaoRplPerNetwork = networkODaoRplMap
-	wrapper.NetworkRewards.SmoothingPoolEthPerNetwork = networkSmoothingPoolEthMap
-	wrapper.TotalRewards.ProtocolDaoRpl = protocolDaoRpl
-	wrapper.TotalRewards.TotalCollateralRpl = totalCollateralRpl
-	wrapper.TotalRewards.TotalOracleDaoRpl = totalODaoRpl
-	wrapper.TotalRewards.TotalSmoothingPoolEth = totalSmoothingPoolEth
+}
 
-	return wrapper
+func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) error {
+
+	// Get the addresses for all nodes
+	opts := &bind.CallOpts{
+		BlockNumber: r.elSnapshotHeader.Number,
+	}
+	nodeAddresses, err := node.GetNodeAddresses(rp, opts)
+	if err != nil {
+		return fmt.Errorf("Error getting node addresses: %w", err)
+	}
+
+	// Calculate the RPL rewards
+	err = r.calculateRplRewards(rp, nodeAddresses, opts)
+	if err != nil {
+		return fmt.Errorf("Error calculating RPL rewards: %w", err)
+	}
+
+	// Calculate the ETH rewards
+	err = r.calculateEthRewards(rp, cfg, bc, nodeAddresses, opts)
+	if err != nil {
+		return fmt.Errorf("Error calculating ETH rewards: %w", err)
+	}
+
+	// Calculate the network reward map and the totals
+	r.updateNetworksAndTotals()
+
+	// Generate the Merkle Tree
+
+	return nil
 
 }
 
 // Generates a merkle tree from the provided rewards map
-func GenerateMerkleTree(nodeRewardsMap map[common.Address]NodeRewards) (*merkletree.MerkleTree, error) {
+func (r *RewardsFile) generateMerkleTree() error {
 
 	// Generate the leaf data for each node
-	totalData := make([][]byte, 0, len(nodeRewardsMap))
-	for address, rewardsForNode := range nodeRewardsMap {
+	totalData := make([][]byte, 0, len(r.NodeRewards))
+	for address, rewardsForNode := range r.NodeRewards {
 		// Ignore nodes that didn't receive any rewards
 		zero := big.NewInt(0)
 		if rewardsForNode.CollateralRpl.Cmp(zero) == 0 && rewardsForNode.OracleDaoRpl.Cmp(zero) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(zero) == 0 {
@@ -130,22 +176,21 @@ func GenerateMerkleTree(nodeRewardsMap map[common.Address]NodeRewards) (*merklet
 
 		// Assign it to the node rewards tracker and add it to the leaf data slice
 		rewardsForNode.MerkleData = nodeData
-		nodeRewardsMap[address] = rewardsForNode
 		totalData = append(totalData, nodeData)
 	}
 
 	// Generate the tree
 	tree, err := merkletree.NewUsing(totalData, keccak256.New(), false, true)
 	if err != nil {
-		return nil, fmt.Errorf("error generating Merkle Tree: %w", err)
+		return fmt.Errorf("error generating Merkle Tree: %w", err)
 	}
 
 	// Generate the proofs for each node
-	for address, rewardsForNode := range nodeRewardsMap {
+	for address, rewardsForNode := range r.NodeRewards {
 		// Get the proof
 		proof, err := tree.GenerateProof(rewardsForNode.MerkleData, 0)
 		if err != nil {
-			return nil, fmt.Errorf("error generating proof for node %s: %w", address.Hex(), err)
+			return fmt.Errorf("error generating proof for node %s: %w", address.Hex(), err)
 		}
 
 		// Convert the proof into hex strings
@@ -156,36 +201,61 @@ func GenerateMerkleTree(nodeRewardsMap map[common.Address]NodeRewards) (*merklet
 
 		// Assign the hex strings to the node rewards struct
 		rewardsForNode.MerkleProof = proofStrings
-		nodeRewardsMap[address] = rewardsForNode
 	}
 
-	return tree, nil
+	r.MerkleTree = tree
+	r.MerkleRoot = common.BytesToHash(tree.Root()).Hex()
+	return nil
+
+}
+
+func (r *RewardsFile) updateNetworksAndTotals() {
+
+	// Get the highest network index with valid rewards
+	highestNetworkIndex := uint64(0)
+	for network, _ := range r.NetworkRewards {
+		if network > highestNetworkIndex {
+			highestNetworkIndex = network
+		}
+	}
+
+	// Create the map for each network, including unused ones
+	for network := uint64(0); network <= highestNetworkIndex; network++ {
+		rewardsForNetwork, exists := r.NetworkRewards[network]
+		if !exists {
+			rewardsForNetwork = &NetworkRewardsInfo{
+				CollateralRpl:    NewQuotedBigInt(0),
+				OracleDaoRpl:     NewQuotedBigInt(0),
+				SmoothingPoolEth: NewQuotedBigInt(0),
+			}
+			r.NetworkRewards[network] = rewardsForNetwork
+		}
+
+		// Calculate the total RPL
+		r.TotalRewards.TotalCollateralRpl.Add(&r.TotalRewards.TotalCollateralRpl.Int, &rewardsForNetwork.CollateralRpl.Int)
+		r.TotalRewards.TotalOracleDaoRpl.Add(&r.TotalRewards.TotalOracleDaoRpl.Int, &rewardsForNetwork.OracleDaoRpl.Int)
+	}
 
 }
 
 // Calculates the RPL rewards for the given interval
-func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.Header, rewardsInterval time.Duration, nodeAddresses []common.Address) (map[common.Address]NodeRewards, map[uint64]NodeRewards, *QuotedBigInt, map[common.Address]uint64, error) {
+func (r *RewardsFile) calculateRplRewards(rp *rocketpool.RocketPool, nodeAddresses []common.Address, opts *bind.CallOpts) error {
 
 	validNetworkCache := map[uint64]bool{
 		0: true,
 	}
 
-	nodeRewardsMap := map[common.Address]NodeRewards{}
-	networkRewardsMap := map[uint64]NodeRewards{}
-	invalidNetworkNodes := map[common.Address]uint64{}
-	opts := &bind.CallOpts{
-		BlockNumber: snapshotBlockHeader.Number,
-	}
-	snapshotBlockTime := time.Unix(int64(snapshotBlockHeader.Time), 0)
+	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
+	rewardsInterval := r.EndTime.Sub(r.StartTime)
 
 	// Handle node operator rewards
 	nodeOpPercent, err := rewards.GetNodeOperatorRewardsPercent(rp, opts)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return err
 	}
 	pendingRewards, err := rewards.GetPendingRPLRewards(rp, opts)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return err
 	}
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
@@ -193,14 +263,14 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 
 	totalRplStake, err := node.GetTotalEffectiveRPLStake(rp, opts)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return err
 	}
 
 	for _, address := range nodeAddresses {
 		// Make sure this node is eligible for rewards
 		regTime, err := node.GetNodeRegistrationTime(rp, address, opts)
 		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("error getting registration time for node %s: %w", err)
+			return fmt.Errorf("error getting registration time for node %s: %w", err)
 		}
 		if snapshotBlockTime.Sub(regTime) < rewardsInterval {
 			continue
@@ -209,7 +279,7 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 		// Get how much RPL goes to this node: effective stake / total stake * total RPL rewards for nodes
 		nodeStake, err := node.GetNodeEffectiveRPLStake(rp, address, opts)
 		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("error getting effective stake for node %s: %w", address.Hex(), err)
+			return fmt.Errorf("error getting effective stake for node %s: %w", address.Hex(), err)
 		}
 		nodeRplRewards := big.NewInt(0)
 		nodeRplRewards.Mul(nodeStake, totalNodeRewards)
@@ -217,51 +287,50 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 
 		// If there are pending rewards, add it to the map
 		if nodeRplRewards.Cmp(big.NewInt(0)) == 1 {
-			rewardsForNode, exists := nodeRewardsMap[address]
+			rewardsForNode, exists := r.NodeRewards[address]
 			if !exists {
 				// Get the network the rewards should go to
 				network, err := node.GetRewardNetwork(rp, address, opts)
 				if err != nil {
-					return nil, nil, nil, nil, err
+					return err
 				}
-				validNetwork, err := ValidateNetwork(rp, network, validNetworkCache)
+				validNetwork, err := validateNetwork(rp, network, validNetworkCache)
 				if err != nil {
-					return nil, nil, nil, nil, err
+					return err
 				}
 				if !validNetwork {
-					invalidNetworkNodes[address] = network
+					r.InvalidNetworkNodes[address] = network
 					network = 0
 				}
 
-				rewardsForNode = NodeRewards{
+				rewardsForNode = &NodeRewardsInfo{
 					RewardNetwork:    network,
 					CollateralRpl:    NewQuotedBigInt(0),
 					OracleDaoRpl:     NewQuotedBigInt(0),
 					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
+				r.NodeRewards[address] = rewardsForNode
 			}
 			rewardsForNode.CollateralRpl.Add(&rewardsForNode.CollateralRpl.Int, nodeRplRewards)
-			nodeRewardsMap[address] = rewardsForNode
 
 			// Add the rewards to the running total for the specified network
-			rewardsForNetwork, exists := networkRewardsMap[rewardsForNode.RewardNetwork]
+			rewardsForNetwork, exists := r.NetworkRewards[rewardsForNode.RewardNetwork]
 			if !exists {
-				rewardsForNetwork = NodeRewards{
-					RewardNetwork:    rewardsForNode.RewardNetwork,
+				rewardsForNetwork = &NetworkRewardsInfo{
 					CollateralRpl:    NewQuotedBigInt(0),
 					OracleDaoRpl:     NewQuotedBigInt(0),
 					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
+				r.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
 			}
 			rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
-			networkRewardsMap[rewardsForNode.RewardNetwork] = rewardsForNetwork
 		}
 	}
 
 	// Handle Oracle DAO rewards
 	oDaoPercent, err := rewards.GetTrustedNodeOperatorRewardsPercent(rp, opts)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return err
 	}
 	totalODaoRewards := big.NewInt(0)
 	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
@@ -269,156 +338,139 @@ func CalculateRplRewards(rp *rocketpool.RocketPool, snapshotBlockHeader *types.H
 
 	oDaoAddresses, err := trustednode.GetMemberAddresses(rp, opts)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return err
 	}
 	memberCount := big.NewInt(int64(len(oDaoAddresses)))
 	individualOdaoRewards := big.NewInt(0)
 	individualOdaoRewards.Div(totalODaoRewards, memberCount)
 
 	for _, address := range oDaoAddresses {
-		rewardsForNode, exists := nodeRewardsMap[address]
+		rewardsForNode, exists := r.NodeRewards[address]
 		if !exists {
 			// Get the network the rewards should go to
 			network, err := node.GetRewardNetwork(rp, address, opts)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return err
 			}
-			validNetwork, err := ValidateNetwork(rp, network, validNetworkCache)
+			validNetwork, err := validateNetwork(rp, network, validNetworkCache)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return err
 			}
 			if !validNetwork {
-				invalidNetworkNodes[address] = network
+				r.InvalidNetworkNodes[address] = network
 				network = 0
 			}
 
-			rewardsForNode = NodeRewards{
+			rewardsForNode = &NodeRewardsInfo{
 				RewardNetwork:    network,
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
 				SmoothingPoolEth: NewQuotedBigInt(0),
 			}
+			r.NodeRewards[address] = rewardsForNode
+
 		}
 		rewardsForNode.OracleDaoRpl.Add(&rewardsForNode.OracleDaoRpl.Int, individualOdaoRewards)
-		nodeRewardsMap[address] = rewardsForNode
 
 		// Add the rewards to the running total for the specified network
-		rewardsForNetwork, exists := networkRewardsMap[rewardsForNode.RewardNetwork]
+		rewardsForNetwork, exists := r.NetworkRewards[rewardsForNode.RewardNetwork]
 		if !exists {
-			rewardsForNetwork = NodeRewards{
-				RewardNetwork:    rewardsForNode.RewardNetwork,
+			rewardsForNetwork = &NetworkRewardsInfo{
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
 				SmoothingPoolEth: NewQuotedBigInt(0),
 			}
+			r.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
 		}
 		rewardsForNetwork.OracleDaoRpl.Add(&rewardsForNetwork.OracleDaoRpl.Int, individualOdaoRewards)
-		networkRewardsMap[rewardsForNode.RewardNetwork] = rewardsForNetwork
 	}
 
 	// Handle Protocol DAO rewards
 	pDaoPercent, err := rewards.GetProtocolDaoRewardsPercent(rp, opts)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return err
 	}
 	pDaoRewards := NewQuotedBigInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
+	r.TotalRewards.ProtocolDaoRpl = pDaoRewards
 
-	// Return the rewards maps
-	return nodeRewardsMap, networkRewardsMap, pDaoRewards, invalidNetworkNodes, nil
-}
+	return nil
 
-// Validates that the provided network is legal
-func ValidateNetwork(rp *rocketpool.RocketPool, network uint64, validNetworkCache map[uint64]bool) (bool, error) {
-	valid, exists := validNetworkCache[network]
-	if !exists {
-		var err error
-		valid, err = tnsettings.GetNetworkEnabled(rp, big.NewInt(int64(network)), nil)
-		if err != nil {
-			return false, err
-		}
-		validNetworkCache[network] = valid
-	}
-
-	return valid, nil
 }
 
 // Calculates the ETH rewards for the given interval
-func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, snapshotBlockHeader *types.Header, snapshotBeaconBlock uint64, nodeRewardsMap map[common.Address]NodeRewards, networkRewardsMap map[uint64]NodeRewards, invalidNetworkNodes map[common.Address]uint64, nodeAddresses []common.Address) (*big.Int, error) {
-
-	// Get services
-	opts := &bind.CallOpts{
-		BlockNumber: snapshotBlockHeader.Number,
-	}
-	ec := rp.Client
+func (r *RewardsFile) calculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, nodeAddresses []common.Address, opts *bind.CallOpts) error {
 
 	// Get the Smoothing Pool contract's balance
 	smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
 	if err != nil {
-		return nil, fmt.Errorf("error getting smoothing pool contract: %w", err)
+		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
 
-	smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, snapshotBlockHeader.Number)
+	smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, r.elSnapshotHeader.Number)
 	if err != nil {
-		return nil, fmt.Errorf("error getting smoothing pool balance: %w", err)
+		return fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
 
 	// Ignore the ETH calculation if there are no rewards
 	if smoothingPoolBalance.Cmp(big.NewInt(0)) == 0 {
-		return nil, nil
+		return nil
 	}
 
-	if index == 0 {
+	if r.Index == 0 {
 		// This is the first interval, Smoothing Pool rewards are ignored on the first interval since it doesn't have a discrete start time
-		return nil, nil
+		return nil
 	}
 
 	// Get the event log interval
 	var eventLogInterval int
 	eventLogInterval, err = cfg.GetEventLogInterval()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Get the start time of this interval based on the event from the previous one
-	previousIntervalEvent, err := rewards.GetRewardSnapshotEvent(rp, index-1, big.NewInt(int64(eventLogInterval)), nil)
+	previousIntervalEvent, err := rewards.GetRewardSnapshotEvent(rp, r.Index-1, big.NewInt(int64(eventLogInterval)), nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	startElBlockNumber := big.NewInt(0).Add(previousIntervalEvent.ExecutionBlock, big.NewInt(1))
-	startElBlockHeader, err := ec.HeaderByNumber(context.Background(), startElBlockNumber)
+	startElBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), startElBlockNumber)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	intervalStartTime := time.Unix(int64(startElBlockHeader.Time), 0)
-	intervalEndTime := time.Unix(int64(snapshotBlockHeader.Time), 0)
+
+	r.ConsensusStartBlock = previousIntervalEvent.ConsensusBlock.Uint64() + 1
+	r.ExecutionStartBlock = startElBlockNumber.Uint64()
+	elStartTime := time.Unix(int64(startElBlockHeader.Time), 0)
+	elEndTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
 
 	// Get the details for nodes eligible for Smoothing Pool rewards
 	// This should be all of the eth1 calls, so do them all at the start of Smoothing Pool calculation to prevent the need for an archive node during normal operations
-	nodeDetails, err := getSmoothingPoolNodeDetails(rp, opts, intervalStartTime, intervalEndTime, nodeAddresses)
+	nodeDetails, err := getSmoothingPoolNodeDetails(rp, opts, elStartTime, elEndTime, nodeAddresses)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Determine the validator indices of each minipool
 	validatorIndexMap, err := createMinipoolIndexMap(bc, nodeDetails)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Process the attestation performance for each minipool during this interval
 	intervalDutiesInfo := &IntervalDutiesInfo{
-		Index: index,
+		Index: r.Index,
 		Slots: map[uint64]*SlotInfo{},
 	}
-	err = processAttestationsForInterval(bc, validatorIndexMap, intervalDutiesInfo, previousIntervalEvent.ConsensusBlock.Uint64()+1, snapshotBeaconBlock, nodeDetails, *smoothingPoolContract.Address)
+	err = processAttestationsForInterval(bc, validatorIndexMap, intervalDutiesInfo, previousIntervalEvent.ConsensusBlock.Uint64()+1, r.ConsensusEndBlock, nodeDetails, *smoothingPoolContract.Address)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Determine how much ETH each node gets and how much the pool stakers get
-	poolStakerETH := calculateNodeRewards(nodeDetails, smoothingPoolBalance)
+	poolStakerETH, nodeOpEth := calculateNodeRewards(nodeDetails, smoothingPoolBalance)
 
 	// Update the rewards maps
 	validNetworkCache := map[uint64]bool{
@@ -426,53 +478,56 @@ func CalculateEthRewards(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig
 	}
 	for _, nodeInfo := range nodeDetails {
 		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(big.NewInt(0)) > 0 {
-			rewardsForNode, exists := nodeRewardsMap[nodeInfo.Address]
+			rewardsForNode, exists := r.NodeRewards[nodeInfo.Address]
 			if !exists {
 				// Get the network the rewards should go to
 				network, err := node.GetRewardNetwork(rp, nodeInfo.Address, opts)
 				if err != nil {
-					return nil, err
+					return err
 				}
-				validNetwork, err := ValidateNetwork(rp, network, validNetworkCache)
+				validNetwork, err := validateNetwork(rp, network, validNetworkCache)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				if !validNetwork {
-					invalidNetworkNodes[nodeInfo.Address] = network
+					r.InvalidNetworkNodes[nodeInfo.Address] = network
 					network = 0
 				}
 
-				rewardsForNode = NodeRewards{
+				rewardsForNode = &NodeRewardsInfo{
 					RewardNetwork:    network,
 					CollateralRpl:    NewQuotedBigInt(0),
 					OracleDaoRpl:     NewQuotedBigInt(0),
 					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
+				r.NodeRewards[nodeInfo.Address] = rewardsForNode
 			}
 			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
-			nodeRewardsMap[nodeInfo.Address] = rewardsForNode
 
 			// Add the rewards to the running total for the specified network
-			rewardsForNetwork, exists := networkRewardsMap[rewardsForNode.RewardNetwork]
+			rewardsForNetwork, exists := r.NetworkRewards[rewardsForNode.RewardNetwork]
 			if !exists {
-				rewardsForNetwork = NodeRewards{
-					RewardNetwork:    rewardsForNode.RewardNetwork,
+				rewardsForNetwork = &NetworkRewardsInfo{
 					CollateralRpl:    NewQuotedBigInt(0),
 					OracleDaoRpl:     NewQuotedBigInt(0),
 					SmoothingPoolEth: NewQuotedBigInt(0),
 				}
+				r.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
 			}
 			rewardsForNetwork.SmoothingPoolEth.Add(&rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
-			networkRewardsMap[rewardsForNode.RewardNetwork] = rewardsForNetwork
 		}
 	}
 
-	return poolStakerETH, nil
+	// Set the totals
+	r.TotalRewards.PoolStakerSmoothingPoolEth.Int = *poolStakerETH
+	r.TotalRewards.NodeOperatorSmoothingPoolEth.Int = *nodeOpEth
+	r.TotalRewards.TotalSmoothingPoolEth.Int = *smoothingPoolBalance
+	return nil
 
 }
 
 // Calculate the distribution of Smoothing Pool ETH to each node
-func calculateNodeRewards(nodeDetails []NodeSmoothingDetails, smoothingPoolBalance *big.Int) *big.Int {
+func calculateNodeRewards(nodeDetails []NodeSmoothingDetails, smoothingPoolBalance *big.Int) (*big.Int, *big.Int) {
 
 	// Get the average fee for all eligible minipools and calculate their weighted share
 	one := big.NewInt(1e18) // 100%, used for dividing percentages properly
@@ -532,7 +587,7 @@ func calculateNodeRewards(nodeDetails []NodeSmoothingDetails, smoothingPoolBalan
 
 	// This is how much actually goes to the pool stakers - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
 	truePoolStakerAmount := big.NewInt(0).Sub(smoothingPoolBalance, totalEthForMinipools)
-	return truePoolStakerAmount
+	return truePoolStakerAmount, totalEthForMinipools
 
 }
 
@@ -745,9 +800,9 @@ func createMinipoolIndexMap(bc beacon.Client, nodeDetails []NodeSmoothingDetails
 }
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
-func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, intervalStartTime time.Time, intervalEndTime time.Time, nodeAddresses []common.Address) ([]NodeSmoothingDetails, error) {
+func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, elStartTime time.Time, elEndTime time.Time, nodeAddresses []common.Address) ([]NodeSmoothingDetails, error) {
 
-	intervalDuration := float64(intervalEndTime.Sub(intervalStartTime))
+	intervalDuration := float64(elEndTime.Sub(elStartTime))
 
 	// For each NO, get their opt-in status and time of last change in batches
 	nodeCount := uint64(len(nodeAddresses))
@@ -785,7 +840,7 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 				}
 
 				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
-				if intervalStartTime.Sub(nodeDetails.StatusChangeTime) > 0 && !nodeDetails.IsOptedIn {
+				if elStartTime.Sub(nodeDetails.StatusChangeTime) > 0 && !nodeDetails.IsOptedIn {
 					nodeDetails.IsEligible = false
 					nodeDetails.EligibilityFactor = 0
 					details[iterationIndex] = nodeDetails
@@ -794,9 +849,9 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 
 				// Get the node's total active factor
 				if nodeDetails.IsOptedIn {
-					nodeDetails.EligibilityFactor = float64(intervalEndTime.Sub(nodeDetails.StatusChangeTime)) / intervalDuration
+					nodeDetails.EligibilityFactor = float64(elEndTime.Sub(nodeDetails.StatusChangeTime)) / intervalDuration
 				} else {
-					nodeDetails.EligibilityFactor = float64(nodeDetails.StatusChangeTime.Sub(intervalStartTime)) / intervalDuration
+					nodeDetails.EligibilityFactor = float64(nodeDetails.StatusChangeTime.Sub(elStartTime)) / intervalDuration
 				}
 				if nodeDetails.EligibilityFactor > 1 {
 					nodeDetails.EligibilityFactor = 1
@@ -845,4 +900,19 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 
 	return details, nil
 
+}
+
+// Validates that the provided network is legal
+func validateNetwork(rp *rocketpool.RocketPool, network uint64, validNetworkCache map[uint64]bool) (bool, error) {
+	valid, exists := validNetworkCache[network]
+	if !exists {
+		var err error
+		valid, err = tnsettings.GetNetworkEnabled(rp, big.NewInt(int64(network)), nil)
+		if err != nil {
+			return false, err
+		}
+		validNetworkCache[network] = valid
+	}
+
+	return valid, nil
 }
