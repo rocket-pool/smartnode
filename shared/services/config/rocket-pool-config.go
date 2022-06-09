@@ -342,15 +342,15 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Lighthouse",
 				Description: "Select this if you will use Lighthouse as your Consensus client.",
 				Value:       ConsensusClient_Lighthouse,
-			}, /*{
-					Name:        "Prysm",
-					Description: "Select this if you will use Prysm as your Consensus client.",
-					Value:       ConsensusClient_Prysm,
-				}, */{
-					Name:        "Teku",
-					Description: "Select this if you will use Teku as your Consensus client.",
-					Value:       ConsensusClient_Teku,
-				}},
+			}, {
+				Name:        "Prysm",
+				Description: "Select this if you will use Prysm as your Consensus client.",
+				Value:       ConsensusClient_Prysm,
+			}, {
+				Name:        "Teku",
+				Description: "Select this if you will use Teku as your Consensus client.",
+				Value:       ConsensusClient_Teku,
+			}},
 		},
 
 		EnableMetrics: Parameter{
