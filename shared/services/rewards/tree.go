@@ -93,10 +93,12 @@ func NewRewardsFile(index uint64, startTime time.Time, endTime time.Time, consen
 		ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
 		IntervalsPassed:    intervalsPassed,
 		TotalRewards: &TotalRewards{
-			ProtocolDaoRpl:        NewQuotedBigInt(0),
-			TotalCollateralRpl:    NewQuotedBigInt(0),
-			TotalOracleDaoRpl:     NewQuotedBigInt(0),
-			TotalSmoothingPoolEth: NewQuotedBigInt(0),
+			ProtocolDaoRpl:               NewQuotedBigInt(0),
+			TotalCollateralRpl:           NewQuotedBigInt(0),
+			TotalOracleDaoRpl:            NewQuotedBigInt(0),
+			TotalSmoothingPoolEth:        NewQuotedBigInt(0),
+			PoolStakerSmoothingPoolEth:   NewQuotedBigInt(0),
+			NodeOperatorSmoothingPoolEth: NewQuotedBigInt(0),
 		},
 		NetworkRewards:      map[uint64]*NetworkRewardsInfo{},
 		NodeRewards:         map[common.Address]*NodeRewardsInfo{},
@@ -132,6 +134,10 @@ func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.Rocket
 	r.updateNetworksAndTotals()
 
 	// Generate the Merkle Tree
+	err = r.generateMerkleTree()
+	if err != nil {
+		return fmt.Errorf("Error generating Merkle tree: %w", err)
+	}
 
 	return nil
 
