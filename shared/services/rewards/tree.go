@@ -219,7 +219,7 @@ func (r *RewardsFile) updateNetworksAndTotals() {
 
 	// Get the highest network index with valid rewards
 	highestNetworkIndex := uint64(0)
-	for network, _ := range r.NetworkRewards {
+	for network := range r.NetworkRewards {
 		if network > highestNetworkIndex {
 			highestNetworkIndex = network
 		}
@@ -252,7 +252,10 @@ func (r *RewardsFile) calculateRplRewards(rp *rocketpool.RocketPool, nodeAddress
 	}
 
 	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
-	rewardsInterval := r.EndTime.Sub(r.StartTime)
+	requiredRegistrationLength, err := rewards.GetClaimIntervalTime(rp, opts)
+	if err != nil {
+		return fmt.Errorf("error getting required registration time: %w", err)
+	}
 
 	// Handle node operator rewards
 	nodeOpPercent, err := rewards.GetNodeOperatorRewardsPercent(rp, opts)
@@ -276,9 +279,9 @@ func (r *RewardsFile) calculateRplRewards(rp *rocketpool.RocketPool, nodeAddress
 		// Make sure this node is eligible for rewards
 		regTime, err := node.GetNodeRegistrationTime(rp, address, opts)
 		if err != nil {
-			return fmt.Errorf("error getting registration time for node %s: %w", err)
+			return fmt.Errorf("error getting registration time for node %s: %w", address, err)
 		}
-		if snapshotBlockTime.Sub(regTime) < rewardsInterval {
+		if snapshotBlockTime.Sub(regTime) < requiredRegistrationLength {
 			continue
 		}
 
@@ -351,6 +354,15 @@ func (r *RewardsFile) calculateRplRewards(rp *rocketpool.RocketPool, nodeAddress
 	individualOdaoRewards.Div(totalODaoRewards, memberCount)
 
 	for _, address := range oDaoAddresses {
+		// Make sure this node is eligible for rewards
+		regTime, err := node.GetNodeRegistrationTime(rp, address, opts)
+		if err != nil {
+			return fmt.Errorf("error getting registration time for node %s: %w", address, err)
+		}
+		if snapshotBlockTime.Sub(regTime) < requiredRegistrationLength {
+			continue
+		}
+
 		rewardsForNode, exists := r.NodeRewards[address]
 		if !exists {
 			// Get the network the rewards should go to
@@ -613,7 +625,6 @@ func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint
 
 	// Check all of the attestations for each epoch
 	for epoch := startEpoch; epoch < endEpoch+1; epoch++ {
-		startTime := time.Now()
 		// Get all of the expected duties for the epoch
 		err := getDutiesForEpoch(bc, epoch, startSlot, endSlot, validatorIndexMap, intervalDutiesInfo)
 		if err != nil {
@@ -624,9 +635,6 @@ func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint
 		for i := uint64(0); i < 32; i++ {
 			checkDutiesForSlot(bc, epoch*32+i, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
 		}
-
-		// Report on missed duties
-		fmt.Printf("Epoch %d complete in %s\n", epoch, time.Since(startTime))
 	}
 
 	// Check all of the slots in the epoch after the end too
