@@ -132,18 +132,14 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== New Execution Clients ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now supports Nethermind and Besu as execution clients. If you'd like to help support the health and diversity of the Ethereum chain, give them a try!\n")
+	fmt.Printf("%s=== [Ropsten] The Merge! ===%s\n", colorGreen, colorReset)
+	fmt.Println("The merge has happened on Ropsten! You can now collect priority fees for blocks you propose. You'll need to set up your node's fee distributor in order to claim them (but you'll still collect them even before you do this).\nCheck out `rocketpool node initialize-fee-distributor` to initialize it, and `rocketpool node distribute-fees` to claim any balance it has.\n")
 
-	fmt.Printf("%s=== Light Client Deprecation ===%s\n", colorGreen, colorReset)
-	fmt.Println("Infura and Pocket are now deprecated because light clients will not be compatible with the upcomfing Ethereum Merge. They will be removed in a later version. If you're running one of these, either as your primary or your fallback client, you should prepare to move away from them and use a full Execution client instead.\n")
+	fmt.Printf("%s=== [Ropsten] Garlic Bread! ===%s\n", colorGreen, colorReset)
+	fmt.Println("The new Merkle Tree-based rewards system is live! Each rewards interval, your rewards will be calculated and saved. That means no more dilution or changing claim amounts, and no more needing to claim every interval!\nYou can sit on the rewards for as long as you want and claim them all at once!\nYou can access this new system with `rocketpool node claim-rewards`.\n")
 
-	fmt.Printf("%s=== Misc Updates ===%s\n", colorGreen, colorReset)
-	fmt.Println("- `rocketpool node sync` now returns your EC's sync progress as an absolute percentage, so it won't drop back to 0% when the client restarts.")
-	fmt.Println("- Besu and Teku have new TUI settings that let you turn down their RAM requirements.")
-	fmt.Println("- Your EC now reports metrics to Grafana, so you can add the ones you want to see.")
-	fmt.Println("- The Smartnode will no longer query your fallback EC's sync progress if your primary EC is synced.")
-	fmt.Println("- Hybrid users will now have an `X` for their EC's graffiti letter (for eXternal).")
+	fmt.Printf("%s=== [Ropsten] Smoothing Pool! ===%s\n", colorGreen, colorReset)
+	fmt.Println("You can now opt into the Smoothing Pool, which will collect everyone's priority fees and MEV, and share them evenly between all participants.\nThis is great for smaller validators because it means if it takes a long time for you to get a proposal, no problem! You get regular, smooth ETH rewards every interval.\nCheck it out with `rocketpool node join-smoothing-pool`.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -1265,13 +1261,6 @@ func resyncEth1(c *cli.Context) error {
 	fmt.Println("This will delete the chain data of your primary ETH1 client and resync it from scratch.")
 	fmt.Printf("%sYou should only do this if your ETH1 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n", colorYellow, colorReset)
 
-	if cfg.UseFallbackExecutionClient.Value == false {
-		fmt.Printf("%sYou do not have a fallback ETH1 client configured.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
-		return nil
-	} else {
-		fmt.Printf("You have a fallback ETH1 client configured (%v). Rocket Pool (and your ETH2 client) will use that while the main client is resyncing.\n", cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
-	}
-
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)
 	if err != nil {
@@ -1521,18 +1510,6 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	fmt.Println("If your execution client is running, it will be shut down.")
 	fmt.Println("Once the export is complete, your execution client will restart automatically.\n")
 
-	if cfg.UseFallbackExecutionClient.Value == false {
-		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while exporting the chain data, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n\n", colorRed, colorReset)
-	} else {
-		var fallbackClientName string
-		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_External {
-			fallbackClientName = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
-		} else {
-			fallbackClientName = fmt.Sprint(cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
-		}
-		fmt.Printf("You have a fallback execution client configured (%s).\nRocket Pool (and your consensus client) will use that while the main client is offline.\n\n", fallbackClientName)
-	}
-
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)
 	if err != nil {
@@ -1649,18 +1626,6 @@ func importEcData(c *cli.Context, sourceDir string) error {
 	fmt.Println("This will import execution layer chain data that you previously exported into your execution client.")
 	fmt.Println("If your execution client is running, it will be shut down.")
 	fmt.Println("Once the import is complete, your execution client will restart automatically.\n")
-
-	if cfg.UseFallbackExecutionClient.Value == false {
-		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while importing the chain data, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n\n", colorRed, colorReset)
-	} else {
-		var fallbackClientName string
-		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_External {
-			fallbackClientName = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
-		} else {
-			fallbackClientName = fmt.Sprint(cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
-		}
-		fmt.Printf("You have a fallback execution client configured (%s).\nRocket Pool (and your consensus client) will use that while the main client is offline.\n\n", fallbackClientName)
-	}
 
 	// Get the volume to import into
 	executionContainerName := prefix + ExecutionContainerSuffix
