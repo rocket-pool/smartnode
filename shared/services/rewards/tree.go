@@ -119,6 +119,9 @@ func NewRewardsFile(index uint64, startTime time.Time, endTime time.Time, consen
 
 func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) error {
 
+	// Set the network name
+	r.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+
 	// Get the addresses for all nodes
 	opts := &bind.CallOpts{
 		BlockNumber: r.elSnapshotHeader.Number,
