@@ -21,11 +21,12 @@ import (
 
 // Claim RPL rewards task
 type claimRplRewards struct {
-	c   *cli.Context
-	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	w   *wallet.Wallet
-	rp  *rocketpool.RocketPool
+	c       *cli.Context
+	log     log.ColorLogger
+	cfg     *config.RocketPoolConfig
+	w       *wallet.Wallet
+	rp      *rocketpool.RocketPool
+	enabled bool
 }
 
 // Create claim RPL rewards task
@@ -45,13 +46,22 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 		return nil, err
 	}
 
+	// Check if auto-claiming is disabled
+	isEnabled := true
+	gasThreshold := cfg.Smartnode.RplClaimGasThreshold.Value.(float64)
+	if gasThreshold == 0 {
+		logger.Println("RPL claim gas threshold is set to 0, automatic claims will be disabled.")
+		isEnabled = false
+	}
+
 	// Return task
 	return &claimRplRewards{
-		c:   c,
-		log: logger,
-		cfg: cfg,
-		w:   w,
-		rp:  rp,
+		c:       c,
+		log:     logger,
+		cfg:     cfg,
+		w:       w,
+		rp:      rp,
+		enabled: isEnabled,
 	}, nil
 
 }
@@ -60,6 +70,11 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 func (t *claimRplRewards) run() (bool, error) {
 
 	legacyClaimTrustedNodeAddress := t.cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
+
+	// Check to see if autoclaim is disabled
+	if !t.enabled {
+		return nil
+	}
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
