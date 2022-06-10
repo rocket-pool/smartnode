@@ -31,14 +31,24 @@ const (
 	RewardsFileVersion            uint64 = 1
 )
 
+// Minipool stats
+type SmoothingPoolMinipoolPerformance struct {
+	SuccessfulAttestations  uint64   `json:"successfulAttestations,omitempty"`
+	MissedAttestations      uint64   `json:"missedAttestations,omitempty"`
+	ParticipationRate       float64  `json:"participationRate,omitempty"`
+	MissingAttestationSlots []uint64 `json:"missingAttestationSlots,omitempty"`
+	ShareOfRewards          float64  `json:"shareOfRewards,omitempty"`
+}
+
 // Node operator rewards
 type NodeRewardsInfo struct {
-	RewardNetwork    uint64        `json:"rewardNetwork,omitempty"`
-	CollateralRpl    *QuotedBigInt `json:"collateralRpl,omitempty"`
-	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl,omitempty"`
-	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth,omitempty"`
-	MerkleData       []byte        `json:"-"`
-	MerkleProof      []string      `json:"merkleProof,omitempty"`
+	RewardNetwork       uint64                                               `json:"rewardNetwork,omitempty"`
+	CollateralRpl       *QuotedBigInt                                        `json:"collateralRpl,omitempty"`
+	OracleDaoRpl        *QuotedBigInt                                        `json:"oracleDaoRpl,omitempty"`
+	SmoothingPoolEth    *QuotedBigInt                                        `json:"smoothingPoolEth,omitempty"`
+	MerkleData          []byte                                               `json:"-"`
+	MerkleProof         []string                                             `json:"merkleProof,omitempty"`
+	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance `json:"minipoolPerformance,omitempty"`
 }
 
 // Rewards per network
@@ -522,6 +532,22 @@ func (r *RewardsFile) calculateEthRewards(rp *rocketpool.RocketPool, cfg *config
 			}
 			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
 
+			// Add minipool rewards to the JSON
+			rewardsForNode.MinipoolPerformance = map[common.Address]*SmoothingPoolMinipoolPerformance{}
+			for _, minipoolInfo := range nodeInfo.Minipools {
+				performance := &SmoothingPoolMinipoolPerformance{
+					SuccessfulAttestations:  minipoolInfo.GoodAttestations,
+					MissedAttestations:      minipoolInfo.MissedAttestations,
+					ParticipationRate:       float64(minipoolInfo.GoodAttestations) / float64(minipoolInfo.GoodAttestations+minipoolInfo.MissedAttestations),
+					ShareOfRewards:          eth.WeiToEth(minipoolInfo.MinipoolShare),
+					MissingAttestationSlots: []uint64{},
+				}
+				for slot := range minipoolInfo.MissingAttestationSlots {
+					performance.MissingAttestationSlots = append(performance.MissingAttestationSlots, slot)
+				}
+				rewardsForNode.MinipoolPerformance[minipoolInfo.Address] = performance
+			}
+
 			// Add the rewards to the running total for the specified network
 			rewardsForNetwork, exists := r.NetworkRewards[rewardsForNode.RewardNetwork]
 			if !exists {
@@ -681,6 +707,7 @@ func checkDutiesForSlot(bc beacon.Client, slot uint64, validatorIndexMap map[uin
 						}
 						validator.MissedAttestations--
 						validator.GoodAttestations++
+						delete(validator.MissingAttestationSlots, attestation.SlotIndex)
 					}
 				}
 			}
@@ -757,6 +784,7 @@ func getDutiesForEpoch(bc beacon.Client, epoch uint64, startSlot uint64, endSlot
 			if exists {
 				rpValidators[position] = minipoolInfo
 				minipoolInfo.MissedAttestations += 1 // Consider this attestation missed until it's seen later
+				minipoolInfo.MissingAttestationSlots[slotIndex] = true
 			}
 		}
 
@@ -892,11 +920,14 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 								return fmt.Errorf("Error getting fee for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
 							}
 							nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
-								Address:         mpd.Address,
-								ValidatorPubkey: mpd.Pubkey,
-								NodeAddress:     nodeDetails.Address,
-								NodeIndex:       iterationIndex,
-								Fee:             fee,
+								Address:                 mpd.Address,
+								ValidatorPubkey:         mpd.Pubkey,
+								NodeAddress:             nodeDetails.Address,
+								NodeIndex:               iterationIndex,
+								Fee:                     fee,
+								MissedAttestations:      0,
+								GoodAttestations:        0,
+								MissingAttestationSlots: map[uint64]bool{},
 							})
 						}
 					}

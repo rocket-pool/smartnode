@@ -27,15 +27,16 @@ type IntervalInfo struct {
 }
 
 type MinipoolInfo struct {
-	Address            common.Address
-	ValidatorPubkey    types.ValidatorPubkey
-	ValidatorIndex     uint64
-	NodeAddress        common.Address
-	NodeIndex          uint64
-	Fee                *big.Int
-	MissedAttestations uint64
-	GoodAttestations   uint64
-	MinipoolShare      *big.Int
+	Address                 common.Address
+	ValidatorPubkey         types.ValidatorPubkey
+	ValidatorIndex          uint64
+	NodeAddress             common.Address
+	NodeIndex               uint64
+	Fee                     *big.Int
+	MissedAttestations      uint64
+	GoodAttestations        uint64
+	MinipoolShare           *big.Int
+	MissingAttestationSlots map[uint64]bool
 }
 
 type IntervalDutiesInfo struct {
