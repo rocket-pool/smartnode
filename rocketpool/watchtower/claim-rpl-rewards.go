@@ -71,11 +71,6 @@ func (t *claimRplRewards) run() (bool, error) {
 
 	legacyClaimTrustedNodeAddress := t.cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
 
-	// Check to see if autoclaim is disabled
-	if !t.enabled {
-		return nil
-	}
-
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return false, err
@@ -89,6 +84,11 @@ func (t *claimRplRewards) run() (bool, error) {
 	if isMergeUpdateDeployed {
 		t.log.Println("The merge update contracts have been deployed! Auto-claiming is no longer necessary. Enjoy the new rewards system!")
 		return true, nil
+	}
+
+	// Check to see if autoclaim is disabled
+	if !t.enabled {
+		return false, nil
 	}
 
 	// Get node account

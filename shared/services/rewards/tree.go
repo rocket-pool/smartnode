@@ -33,63 +33,63 @@ const (
 
 // Minipool stats
 type SmoothingPoolMinipoolPerformance struct {
-	SuccessfulAttestations  uint64   `json:"successfulAttestations,omitempty"`
-	MissedAttestations      uint64   `json:"missedAttestations,omitempty"`
-	ParticipationRate       float64  `json:"participationRate,omitempty"`
-	MissingAttestationSlots []uint64 `json:"missingAttestationSlots,omitempty"`
-	ShareOfRewards          float64  `json:"shareOfRewards,omitempty"`
+	SuccessfulAttestations  uint64   `json:"successfulAttestations"`
+	MissedAttestations      uint64   `json:"missedAttestations"`
+	ParticipationRate       float64  `json:"participationRate"`
+	MissingAttestationSlots []uint64 `json:"missingAttestationSlots"`
+	ShareOfRewards          float64  `json:"shareOfRewards"`
 }
 
 // Node operator rewards
 type NodeRewardsInfo struct {
-	RewardNetwork       uint64                                               `json:"rewardNetwork,omitempty"`
-	CollateralRpl       *QuotedBigInt                                        `json:"collateralRpl,omitempty"`
-	OracleDaoRpl        *QuotedBigInt                                        `json:"oracleDaoRpl,omitempty"`
-	SmoothingPoolEth    *QuotedBigInt                                        `json:"smoothingPoolEth,omitempty"`
+	RewardNetwork       uint64                                               `json:"rewardNetwork"`
+	CollateralRpl       *QuotedBigInt                                        `json:"collateralRpl"`
+	OracleDaoRpl        *QuotedBigInt                                        `json:"oracleDaoRpl"`
+	SmoothingPoolEth    *QuotedBigInt                                        `json:"smoothingPoolEth"`
 	MerkleData          []byte                                               `json:"-"`
-	MerkleProof         []string                                             `json:"merkleProof,omitempty"`
+	MerkleProof         []string                                             `json:"merkleProof"`
 	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance `json:"minipoolPerformance,omitempty"`
 }
 
 // Rewards per network
 type NetworkRewardsInfo struct {
-	CollateralRpl    *QuotedBigInt `json:"collateralRpl,omitempty"`
-	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl,omitempty"`
-	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth,omitempty"`
+	CollateralRpl    *QuotedBigInt `json:"collateralRpl"`
+	OracleDaoRpl     *QuotedBigInt `json:"oracleDaoRpl"`
+	SmoothingPoolEth *QuotedBigInt `json:"smoothingPoolEth"`
 }
 
 // Total cumulative rewards for an interval
 type TotalRewards struct {
-	ProtocolDaoRpl               *QuotedBigInt `json:"protocolDaoRpl,omitempty"`
-	TotalCollateralRpl           *QuotedBigInt `json:"totalCollateralRpl,omitempty"`
-	TotalOracleDaoRpl            *QuotedBigInt `json:"totalOracleDaoRpl,omitempty"`
-	TotalSmoothingPoolEth        *QuotedBigInt `json:"totalSmoothingPoolEth,omitempty"`
-	PoolStakerSmoothingPoolEth   *QuotedBigInt `json:"poolStakerSmoothingPoolEth,omitempty"`
-	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth,omitempty"`
+	ProtocolDaoRpl               *QuotedBigInt `json:"protocolDaoRpl"`
+	TotalCollateralRpl           *QuotedBigInt `json:"totalCollateralRpl"`
+	TotalOracleDaoRpl            *QuotedBigInt `json:"totalOracleDaoRpl"`
+	TotalSmoothingPoolEth        *QuotedBigInt `json:"totalSmoothingPoolEth"`
+	PoolStakerSmoothingPoolEth   *QuotedBigInt `json:"poolStakerSmoothingPoolEth"`
+	NodeOperatorSmoothingPoolEth *QuotedBigInt `json:"nodeOperatorSmoothingPoolEth"`
 }
 
 // JSON struct for a complete rewards file
 type RewardsFile struct {
 	// Serialized fields
-	RewardsFileVersion  uint64                              `json:"rewardsFileVersion,omitempty"`
-	Index               uint64                              `json:"index,omitempty"`
+	RewardsFileVersion  uint64                              `json:"rewardsFileVersion"`
+	Index               uint64                              `json:"index"`
+	Network             string                              `json:"network"`
 	StartTime           time.Time                           `json:"startTime,omitempty"`
-	EndTime             time.Time                           `json:"endTime,omitempty"`
+	EndTime             time.Time                           `json:"endTime"`
 	ConsensusStartBlock uint64                              `json:"consensusStartBlock,omitempty"`
-	ConsensusEndBlock   uint64                              `json:"consensusEndBlock,omitempty"`
+	ConsensusEndBlock   uint64                              `json:"consensusEndBlock"`
 	ExecutionStartBlock uint64                              `json:"executionStartBlock,omitempty"`
-	ExecutionEndBlock   uint64                              `json:"executionEndBlock,omitempty"`
-	IntervalsPassed     uint64                              `json:"intervalsPassed,omitempty"`
+	ExecutionEndBlock   uint64                              `json:"executionEndBlock"`
+	IntervalsPassed     uint64                              `json:"intervalsPassed"`
 	MerkleRoot          string                              `json:"merkleRoot,omitempty"`
-	TotalRewards        *TotalRewards                       `json:"totalRewards,omitempty"`
-	NetworkRewards      map[uint64]*NetworkRewardsInfo      `json:"networkRewards,omitempty"`
-	NodeRewards         map[common.Address]*NodeRewardsInfo `json:"nodeRewards,omitempty"`
+	TotalRewards        *TotalRewards                       `json:"totalRewards"`
+	NetworkRewards      map[uint64]*NetworkRewardsInfo      `json:"networkRewards"`
+	NodeRewards         map[common.Address]*NodeRewardsInfo `json:"nodeRewards"`
 
 	// Non-serialized fields
-	MerkleTree           *merkletree.MerkleTree    `json:"-"`
-	InvalidNetworkNodes  map[common.Address]uint64 `json:"-"`
-	executionStartHeader *types.Header             `json:"-"`
-	elSnapshotHeader     *types.Header             `json:"-"`
+	MerkleTree          *merkletree.MerkleTree    `json:"-"`
+	InvalidNetworkNodes map[common.Address]uint64 `json:"-"`
+	elSnapshotHeader    *types.Header             `json:"-"`
 }
 
 // Create a new rewards file
