@@ -20,6 +20,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
 	"golang.org/x/sync/errgroup"
@@ -37,7 +38,7 @@ type SmoothingPoolMinipoolPerformance struct {
 	MissedAttestations      uint64   `json:"missedAttestations"`
 	ParticipationRate       float64  `json:"participationRate"`
 	MissingAttestationSlots []uint64 `json:"missingAttestationSlots"`
-	ShareOfRewards          float64  `json:"shareOfRewards"`
+	ETHEarned               float64  `json:"ethEarned"`
 }
 
 // Node operator rewards
@@ -90,10 +91,12 @@ type RewardsFile struct {
 	MerkleTree          *merkletree.MerkleTree    `json:"-"`
 	InvalidNetworkNodes map[common.Address]uint64 `json:"-"`
 	elSnapshotHeader    *types.Header             `json:"-"`
+	log                 log.ColorLogger           `json:"-"`
+	logPrefix           string                    `json:"-"`
 }
 
 // Create a new rewards file
-func NewRewardsFile(index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *RewardsFile {
+func NewRewardsFile(log log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64) *RewardsFile {
 	return &RewardsFile{
 		RewardsFileVersion: RewardsFileVersion,
 		Index:              index,
@@ -114,6 +117,8 @@ func NewRewardsFile(index uint64, startTime time.Time, endTime time.Time, consen
 		NodeRewards:         map[common.Address]*NodeRewardsInfo{},
 		InvalidNetworkNodes: map[common.Address]uint64{},
 		elSnapshotHeader:    elSnapshotHeader,
+		log:                 log,
+		logPrefix:           logPrefix,
 	}
 }
 
@@ -130,6 +135,7 @@ func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.Rocket
 	if err != nil {
 		return fmt.Errorf("Error getting node addresses: %w", err)
 	}
+	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(nodeAddresses))
 
 	// Calculate the RPL rewards
 	err = r.calculateRplRewards(rp, nodeAddresses, opts)
@@ -279,9 +285,11 @@ func (r *RewardsFile) calculateRplRewards(rp *rocketpool.RocketPool, nodeAddress
 	if err != nil {
 		return err
 	}
+	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
+	r.log.Printlnf("%s Total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
 
 	totalRplStake, err := node.GetTotalEffectiveRPLStake(rp, opts)
 	if err != nil {
@@ -357,6 +365,7 @@ func (r *RewardsFile) calculateRplRewards(rp *rocketpool.RocketPool, nodeAddress
 	totalODaoRewards := big.NewInt(0)
 	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
+	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
 
 	oDaoAddresses, err := trustednode.GetMemberAddresses(rp, opts)
 	if err != nil {
@@ -425,6 +434,7 @@ func (r *RewardsFile) calculateRplRewards(rp *rocketpool.RocketPool, nodeAddress
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
 	r.TotalRewards.ProtocolDaoRpl = pDaoRewards
+	r.log.Printlnf("%s Total Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
 
 	return nil
 
@@ -443,6 +453,7 @@ func (r *RewardsFile) calculateEthRewards(rp *rocketpool.RocketPool, cfg *config
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
+	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, smoothingPoolBalance.String(), eth.WeiToEth(smoothingPoolBalance))
 
 	// Ignore the ETH calculation if there are no rewards
 	if smoothingPoolBalance.Cmp(big.NewInt(0)) == 0 {
@@ -483,6 +494,13 @@ func (r *RewardsFile) calculateEthRewards(rp *rocketpool.RocketPool, cfg *config
 	if err != nil {
 		return err
 	}
+	eligible := 0
+	for _, nodeInfo := range nodeDetails {
+		if nodeInfo.IsEligible {
+			eligible++
+		}
+	}
+	r.log.Printlnf("%s %d / %d nodes were eligible for Smoothing Pool rewards", r.logPrefix, eligible, len(nodeDetails))
 
 	// Determine the validator indices of each minipool
 	validatorIndexMap, err := createMinipoolIndexMap(bc, nodeDetails)
@@ -495,13 +513,15 @@ func (r *RewardsFile) calculateEthRewards(rp *rocketpool.RocketPool, cfg *config
 		Index: r.Index,
 		Slots: map[uint64]*SlotInfo{},
 	}
-	err = processAttestationsForInterval(bc, validatorIndexMap, intervalDutiesInfo, previousIntervalEvent.ConsensusBlock.Uint64()+1, r.ConsensusEndBlock, nodeDetails, *smoothingPoolContract.Address)
+	err = r.processAttestationsForInterval(bc, validatorIndexMap, intervalDutiesInfo, previousIntervalEvent.ConsensusBlock.Uint64()+1, r.ConsensusEndBlock, nodeDetails, *smoothingPoolContract.Address)
 	if err != nil {
 		return err
 	}
 
 	// Determine how much ETH each node gets and how much the pool stakers get
 	poolStakerETH, nodeOpEth := calculateNodeRewards(nodeDetails, smoothingPoolBalance)
+	r.log.Printlnf("%s Pool staker ETH: %s (%.3f)", r.logPrefix, poolStakerETH.String(), eth.WeiToEth(poolStakerETH))
+	r.log.Printlnf("%s Node Op ETH:     %s (%.3f)", r.logPrefix, nodeOpEth.String(), eth.WeiToEth(nodeOpEth))
 
 	// Update the rewards maps
 	validNetworkCache := map[uint64]bool{
@@ -538,11 +558,14 @@ func (r *RewardsFile) calculateEthRewards(rp *rocketpool.RocketPool, cfg *config
 			// Add minipool rewards to the JSON
 			rewardsForNode.MinipoolPerformance = map[common.Address]*SmoothingPoolMinipoolPerformance{}
 			for _, minipoolInfo := range nodeInfo.Minipools {
+				if !minipoolInfo.WasActive {
+					continue
+				}
 				performance := &SmoothingPoolMinipoolPerformance{
 					SuccessfulAttestations:  minipoolInfo.GoodAttestations,
 					MissedAttestations:      minipoolInfo.MissedAttestations,
 					ParticipationRate:       float64(minipoolInfo.GoodAttestations) / float64(minipoolInfo.GoodAttestations+minipoolInfo.MissedAttestations),
-					ShareOfRewards:          eth.WeiToEth(minipoolInfo.MinipoolShare),
+					ETHEarned:               eth.WeiToEth(minipoolInfo.MinipoolShare),
 					MissingAttestationSlots: []uint64{},
 				}
 				for slot := range minipoolInfo.MissingAttestationSlots {
@@ -574,7 +597,7 @@ func (r *RewardsFile) calculateEthRewards(rp *rocketpool.RocketPool, cfg *config
 }
 
 // Calculate the distribution of Smoothing Pool ETH to each node
-func calculateNodeRewards(nodeDetails []NodeSmoothingDetails, smoothingPoolBalance *big.Int) (*big.Int, *big.Int) {
+func calculateNodeRewards(nodeDetails []*NodeSmoothingDetails, smoothingPoolBalance *big.Int) (*big.Int, *big.Int) {
 
 	// Get the average fee for all eligible minipools and calculate their weighted share
 	one := big.NewInt(1e18) // 100%, used for dividing percentages properly
@@ -584,6 +607,11 @@ func calculateNodeRewards(nodeDetails []NodeSmoothingDetails, smoothingPoolBalan
 	for _, nodeInfo := range nodeDetails {
 		if nodeInfo.IsEligible {
 			for _, minipool := range nodeInfo.Minipools {
+				if minipool.GoodAttestations+minipool.MissedAttestations == 0 {
+					// Ignore minipools that weren't active for the interval
+					minipool.WasActive = false
+					continue
+				}
 				// Used for average fee calculation
 				feeTotal.Add(feeTotal, minipool.Fee)
 				minipoolCount++
@@ -622,11 +650,15 @@ func calculateNodeRewards(nodeDetails []NodeSmoothingDetails, smoothingPoolBalan
 		nodeInfo.SmoothingPoolEth = big.NewInt(0)
 		if nodeInfo.IsEligible {
 			for _, minipool := range nodeInfo.Minipools {
+				if !minipool.WasActive {
+					continue
+				}
 				// Minipool ETH = NO amount * minipool share / total minipool share
 				minipoolEth := big.NewInt(0).Set(nodeOpShare)
 				minipoolEth.Mul(minipoolEth, minipool.MinipoolShare)
 				minipoolEth.Div(minipoolEth, minipoolShareTotal)
 				nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)
+				minipool.MinipoolShare = minipoolEth // Set the minipool share to the normalized fraction for the JSON
 			}
 			totalEthForMinipools.Add(totalEthForMinipools, nodeInfo.SmoothingPoolEth)
 		}
@@ -639,7 +671,7 @@ func calculateNodeRewards(nodeDetails []NodeSmoothingDetails, smoothingPoolBalan
 }
 
 // Get all of the duties for a range of epochs
-func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, startSlot uint64, endSlot uint64, nodeDetails []NodeSmoothingDetails, smoothingPoolAddress common.Address) error {
+func (r *RewardsFile) processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, startSlot uint64, endSlot uint64, nodeDetails []*NodeSmoothingDetails, smoothingPoolAddress common.Address) error {
 
 	// Determine the start and end epochs to check
 	beaconConfig, err := bc.GetEth2Config()
@@ -653,7 +685,16 @@ func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint
 	endEpoch := endSlot / beaconConfig.SlotsPerEpoch
 
 	// Check all of the attestations for each epoch
+	r.log.Printlnf("%s Checking participation of %d minipools for epochs %d to %d", r.logPrefix, len(validatorIndexMap), startEpoch, endEpoch)
+	r.log.Printlnf("%s NOTE: this will take a long time, progress is reported every 100 epochs", r.logPrefix)
+	epochsDone := 0
+	reportStartTime := time.Now()
 	for epoch := startEpoch; epoch < endEpoch+1; epoch++ {
+		if epochsDone == 100 {
+			timeTaken := time.Since(reportStartTime)
+			r.log.Printlnf("%s On Epoch %d... (%s so far)", r.logPrefix, epoch, timeTaken)
+			epochsDone = 0
+		}
 		// Get all of the expected duties for the epoch
 		err := getDutiesForEpoch(bc, epoch, startSlot, endSlot, validatorIndexMap, intervalDutiesInfo)
 		if err != nil {
@@ -664,6 +705,7 @@ func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint
 		for i := uint64(0); i < 32; i++ {
 			checkDutiesForSlot(bc, epoch*32+i, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
 		}
+		epochsDone++
 	}
 
 	// Check all of the slots in the epoch after the end too
@@ -671,12 +713,13 @@ func processAttestationsForInterval(bc beacon.Client, validatorIndexMap map[uint
 		checkDutiesForSlot(bc, (endSlot+1)*32+i, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
 	}
 
+	r.log.Printlnf("%s Finished participation check (total time = %s)", r.logPrefix, time.Since(reportStartTime))
 	return nil
 
 }
 
 // Handle all of the attestations in the given slot
-func checkDutiesForSlot(bc beacon.Client, slot uint64, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, nodeDetails []NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration) error {
+func checkDutiesForSlot(bc beacon.Client, slot uint64, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, nodeDetails []*NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration) error {
 
 	block, found, err := bc.GetBeaconBlock(fmt.Sprint(slot))
 	if !found {
@@ -721,7 +764,7 @@ func checkDutiesForSlot(bc beacon.Client, slot uint64, validatorIndexMap map[uin
 
 }
 
-func checkIfMinipoolCheated(block beacon.BeaconBlock, validatorIndexMap map[uint64]*MinipoolInfo, nodeDetails []NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration) {
+func checkIfMinipoolCheated(block beacon.BeaconBlock, validatorIndexMap map[uint64]*MinipoolInfo, nodeDetails []*NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration) {
 
 	mpInfo, exists := validatorIndexMap[block.ProposerIndex]
 	if !exists {
@@ -813,7 +856,7 @@ func getDutiesForEpoch(bc beacon.Client, epoch uint64, startSlot uint64, endSlot
 }
 
 // Maps all minipools to their validator indices and creates a map of indices to minipool info
-func createMinipoolIndexMap(bc beacon.Client, nodeDetails []NodeSmoothingDetails) (map[uint64]*MinipoolInfo, error) {
+func createMinipoolIndexMap(bc beacon.Client, nodeDetails []*NodeSmoothingDetails) (map[uint64]*MinipoolInfo, error) {
 
 	// Make a slice of all minipool pubkeys
 	minipoolPubkeys := []rptypes.ValidatorPubkey{}
@@ -845,13 +888,13 @@ func createMinipoolIndexMap(bc beacon.Client, nodeDetails []NodeSmoothingDetails
 }
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
-func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, elStartTime time.Time, elEndTime time.Time, nodeAddresses []common.Address) ([]NodeSmoothingDetails, error) {
+func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts, elStartTime time.Time, elEndTime time.Time, nodeAddresses []common.Address) ([]*NodeSmoothingDetails, error) {
 
 	intervalDuration := float64(elEndTime.Sub(elStartTime))
 
 	// For each NO, get their opt-in status and time of last change in batches
 	nodeCount := uint64(len(nodeAddresses))
-	details := make([]NodeSmoothingDetails, nodeCount)
+	details := make([]*NodeSmoothingDetails, nodeCount)
 	for batchStartIndex := uint64(0); batchStartIndex < nodeCount; batchStartIndex += SmoothingPoolDetailsBatchSize {
 
 		// Get batch start & end index
@@ -867,9 +910,10 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 			iterationIndex := iterationIndex
 			wg.Go(func() error {
 				var err error
-				nodeDetails := NodeSmoothingDetails{
-					Address:   nodeAddresses[iterationIndex],
-					Minipools: []*MinipoolInfo{},
+				nodeDetails := &NodeSmoothingDetails{
+					Address:          nodeAddresses[iterationIndex],
+					Minipools:        []*MinipoolInfo{},
+					SmoothingPoolEth: big.NewInt(0),
 				}
 
 				// Check if the node is opted into the smoothing pool
@@ -931,6 +975,7 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 								MissedAttestations:      0,
 								GoodAttestations:        0,
 								MissingAttestationSlots: map[uint64]bool{},
+								WasActive:               true,
 							})
 						}
 					}

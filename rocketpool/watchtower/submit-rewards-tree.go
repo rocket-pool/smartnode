@@ -258,7 +258,7 @@ func (t *submitRewardsTree) run() error {
 		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 		// Generate the rewards file
-		rewardsFile := rprewards.NewRewardsFile(currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
+		rewardsFile := rprewards.NewRewardsFile(t.log, generationPrefix, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
 		err := rewardsFile.GenerateTree(t.rp, t.cfg, t.bc)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
@@ -484,11 +484,12 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
 	totalTimespan := endTime.Sub(genesisTime)
 	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
-	targetEpoch := targetSlot / eth2Config.SlotsPerEpoch
+	targetSlotEpoch := targetSlot / eth2Config.SlotsPerEpoch
+	requiredEpoch := targetSlotEpoch + 1 // The smoothing pool requires 1 epoch beyond the target to be finalized, to check for late attestations
 
-	// Check if the target epoch is finalized yet
-	if beaconHead.FinalizedEpoch < targetEpoch {
-		return 0, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d) but the latest finalized epoch is %d... waiting until the snapshot slot is finalized.", endTime, targetSlot, targetEpoch, beaconHead.FinalizedEpoch)
+	// Check if the required epoch is finalized yet
+	if beaconHead.FinalizedEpoch < requiredEpoch {
+		return 0, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
 	}
 
 	// Get the first successful block
@@ -504,12 +505,9 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 			t.log.Printlnf("Slot %d was missing, trying the next one...", targetSlot)
 			targetSlot++
 			newEpoch := targetSlot / eth2Config.SlotsPerEpoch
-			if newEpoch != targetEpoch {
-				if beaconHead.FinalizedEpoch < targetEpoch {
-					return 0, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d) but the latest finalized epoch is %d... waiting until the snapshot slot is finalized.", endTime, targetSlot, newEpoch, beaconHead.FinalizedEpoch)
-				}
+			if beaconHead.FinalizedEpoch < newEpoch {
+				return 0, time.Time{}, fmt.Errorf("Missing slots increased the epoch check to %d. Waiting until it's finalized (currently %d).", newEpoch, beaconHead.FinalizedEpoch)
 			}
-			targetEpoch = newEpoch
 			continue
 		}
 
