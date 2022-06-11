@@ -4,12 +4,14 @@ const (
 	// Param IDs
 	ecHttpPortID     string = "httpPort"
 	ecWsPortID       string = "wsPort"
+	ecEnginePortID   string = "enginePort"
 	ecOpenRpcPortsID string = "openRpcPorts"
 
 	// Defaults
 	defaultEcP2pPort     uint16 = 30303
 	defaultEcHttpPort    uint16 = 8545
 	defaultEcWsPort      uint16 = 8546
+	defaultEcEnginePort  uint16 = 8551
 	defaultOpenEcApiPort bool   = false
 )
 
@@ -22,6 +24,9 @@ type ExecutionCommonConfig struct {
 
 	// The Websocket API port
 	WsPort Parameter `yaml:"wsPort,omitempty"`
+
+	// The Engine API port
+	EnginePort Parameter `yaml:"enginePort,omitempty"`
 
 	// Toggle for forwarding the HTTP and Websocket API ports outside of Docker
 	OpenRpcPorts Parameter `yaml:"openRpcPorts,omitempty"`
@@ -72,6 +77,18 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 			Default:              map[Network]interface{}{Network_All: defaultEcWsPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1, ContainerID_Eth2},
 			EnvironmentVariables: []string{prefix + "EC_WS_PORT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		EnginePort: Parameter{
+			ID:                   ecEnginePortID,
+			Name:                 "Engine API Port",
+			Description:          "The port your Execution client should use for its Engine API endpoint (the endpoint the Consensus client will connect to post-merge).",
+			Type:                 ParameterType_Uint16,
+			Default:              map[Network]interface{}{Network_All: defaultEcEnginePort},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1, ContainerID_Eth2},
+			EnvironmentVariables: []string{prefix + "EC_ENGINE_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -131,6 +148,7 @@ func (config *ExecutionCommonConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.HttpPort,
 		&config.WsPort,
+		&config.EnginePort,
 		&config.OpenRpcPorts,
 		&config.P2pPort,
 		&config.EthstatsLabel,

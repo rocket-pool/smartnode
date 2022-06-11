@@ -908,6 +908,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		envVars["EC_CLIENT"] = fmt.Sprint(config.ExecutionClient.Value)
 		envVars["EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, config.ExecutionCommon.HttpPort.Value)
 		envVars["EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, config.ExecutionCommon.WsPort.Value)
+		envVars["EC_ENGINE_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, config.ExecutionCommon.EnginePort.Value)
 
 		// Handle open API ports
 		if config.ExecutionCommon.OpenRpcPorts.Value == true {
