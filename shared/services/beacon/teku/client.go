@@ -712,7 +712,7 @@ func (c *Client) getBeaconBlock(blockId string) (BeaconBlockResponse, bool, erro
 func (c *Client) getCommittees(stateId string, epoch *uint64) (CommitteesResponse, error) {
 	query := ""
 	if epoch != nil {
-		query = fmt.Sprintf("?epoch=%d", epoch)
+		query = fmt.Sprintf("?epoch=%d", *epoch)
 	}
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestCommitteePath, stateId) + query)
 	if err != nil {
