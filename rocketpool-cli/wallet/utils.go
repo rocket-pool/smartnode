@@ -10,6 +10,9 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
+const bold string = "\033[1m"
+const unbold string = "\033[0m"
+
 // Prompt for a wallet password
 func promptPassword() string {
 	for {
@@ -32,7 +35,7 @@ func promptPassword() string {
 func promptMnemonic() string {
 	for {
 		lengthInput := cliutils.Prompt(
-			"Please enter the number of words in your mnemonic phrase (24 by default):",
+			"Please enter the "+bold+"number"+unbold+" of words in your mnemonic phrase (24 by default):",
 			"^[1-9][0-9]*$",
 			"Please enter a valid number.")
 
@@ -50,7 +53,7 @@ func promptMnemonic() string {
 
 		i := 0
 		for mv.Filled() == false {
-			prompt := fmt.Sprintf("Enter Word Number %d of your mnemonic:", i+1)
+			prompt := fmt.Sprintf("Enter %sWord Number %d%s of your mnemonic:", bold, i+1, unbold)
 			word := cliutils.PromptPassword(prompt, "^[a-zA-Z]+$", "Please enter a single word only.")
 
 			if err := mv.AddWord(strings.ToLower(word)); err != nil {
