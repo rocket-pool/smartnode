@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -47,6 +48,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Response
 	response := api.NodeStatusResponse{}
+	response.PenalizedMinipools = map[common.Address]uint64{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -134,6 +136,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		if err == nil {
 			response.MinipoolCounts.Total = len(details)
 			for _, mpDetails := range details {
+				if mpDetails.Penalties > 0 {
+					response.PenalizedMinipools[mpDetails.Address] = mpDetails.Penalties
+				}
 				if mpDetails.Finalised {
 					response.MinipoolCounts.Finalised++
 				} else {

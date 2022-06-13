@@ -16,11 +16,13 @@ const MinipoolCountDetailsBatchSize = 10
 
 // Minipool count details
 type minipoolCountDetails struct {
+	Address             common.Address
 	Status              types.MinipoolStatus
 	RefundAvailable     bool
 	WithdrawalAvailable bool
 	CloseAvailable      bool
 	Finalised           bool
+	Penalties           uint64
 }
 
 // Get all node minipool count details
@@ -101,6 +103,7 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 	var status types.MinipoolStatus
 	var refundBalance *big.Int
 	var finalised bool
+	var penaltyCount uint64
 
 	// Load data
 	wg.Go(func() error {
@@ -118,6 +121,11 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		finalised, err = mp.GetFinalised(nil)
 		return err
 	})
+	wg.Go(func() error {
+		var err error
+		penaltyCount, err = minipool.GetMinipoolPenaltyCount(rp, minipoolAddress, nil)
+		return err
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
@@ -126,11 +134,13 @@ func getMinipoolCountDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 
 	// Return
 	return minipoolCountDetails{
+		Address:             minipoolAddress,
 		Status:              status,
 		RefundAvailable:     (refundBalance.Cmp(big.NewInt(0)) > 0),
 		WithdrawalAvailable: (status == types.Withdrawable),
 		CloseAvailable:      (status == types.Dissolved),
 		Finalised:           finalised,
+		Penalties:           penaltyCount,
 	}, nil
 
 }

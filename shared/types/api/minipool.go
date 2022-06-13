@@ -37,6 +37,7 @@ type MinipoolDetails struct {
 	PreviousDelegate    common.Address         `json:"previousDelegate"`
 	EffectiveDelegate   common.Address         `json:"effectiveDelegate"`
 	TimeUntilDissolve   time.Duration          `json:"timeUntilDissolve"`
+	Penalties           uint64                 `json:"penalties"`
 }
 type ValidatorDetails struct {
 	Exists      bool     `json:"exists"`

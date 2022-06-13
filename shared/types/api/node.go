@@ -43,10 +43,11 @@ type NodeStatusResponse struct {
 		CloseAvailable      int `json:"closeAvailable"`
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
-	IsMergeUpdateDeployed       bool           `json:"isMergeUpdateDeployed"`
-	IsFeeDistributorInitialized bool           `json:"isFeeDistributorInitialized"`
-	FeeDistributorAddress       common.Address `json:"feeDistributorAddress"`
-	FeeDistributorBalance       *big.Int       `json:"feeDistributorBalance"`
+	IsMergeUpdateDeployed       bool                      `json:"isMergeUpdateDeployed"`
+	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
+	FeeDistributorAddress       common.Address            `json:"feeDistributorAddress"`
+	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
+	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
 }
 
 type CanRegisterNodeResponse struct {

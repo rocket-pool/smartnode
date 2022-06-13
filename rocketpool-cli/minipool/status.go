@@ -16,6 +16,7 @@ import (
 )
 
 const colorReset string = "\033[0m"
+const colorRed string = "\033[31m"
 const colorYellow string = "\033[33m"
 
 func getStatus(c *cli.Context) error {
@@ -135,6 +136,13 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 
 	// Main details
 	fmt.Printf("Address:              %s\n", minipool.Address.Hex())
+	if minipool.Penalties == 0 {
+		fmt.Println("Penalties:            0")
+	} else if minipool.Penalties < 3 {
+		fmt.Printf("%sStrikes:              %d%s\n", colorYellow, minipool.Penalties, colorReset)
+	} else {
+		fmt.Printf("%sInfractions:          %d%s\n", colorRed, minipool.Penalties, colorReset)
+	}
 	fmt.Printf("Status updated:       %s\n", minipool.Status.StatusTime.Format(TimeFormat))
 	fmt.Printf("Node fee:             %f%%\n", minipool.Node.Fee*100)
 	fmt.Printf("Node deposit:         %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))

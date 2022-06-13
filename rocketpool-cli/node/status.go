@@ -16,6 +16,7 @@ import (
 
 const (
 	colorReset  string = "\033[0m"
+	colorRed    string = "\033[31m"
 	colorYellow string = "\033[33m"
 )
 
@@ -65,6 +66,40 @@ func getStatus(c *cli.Context) error {
 			fmt.Println("The node is a member of the oracle DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
 		}
 		fmt.Println("")
+
+		// Penalties
+		if len(status.PenalizedMinipools) > 0 {
+			strikeMinipools := []common.Address{}
+			infractionMinipools := []common.Address{}
+			for mp, count := range status.PenalizedMinipools {
+				if count < 3 {
+					strikeMinipools = append(strikeMinipools, mp)
+				} else {
+					infractionMinipools = append(infractionMinipools, mp)
+				}
+			}
+
+			if len(strikeMinipools) > 0 {
+				fmt.Printf("%sWARNING: The following minipools have been given strikes for cheating with an invalid fee recipient:\n", colorYellow)
+				for _, mp := range strikeMinipools {
+					fmt.Printf("\t%s: %d strikes\n", mp.Hex(), status.PenalizedMinipools[mp])
+				}
+				fmt.Println(colorReset)
+				fmt.Println()
+			}
+
+			if len(infractionMinipools) > 0 {
+				fmt.Printf("%sWARNING: The following minipools have been given infractions for cheating with an invalid fee recipient:\n", colorRed)
+				for _, mp := range infractionMinipools {
+					fmt.Printf("\t%s: %d infractions\n", mp.Hex(), status.PenalizedMinipools[mp]-2)
+				}
+				fmt.Println(colorReset)
+				fmt.Println()
+			}
+		} else {
+			fmt.Println("None of the node's minipools have been penalized for cheating with an invalid fee recipient.")
+			fmt.Println()
+		}
 
 		// Voting status
 		blankAddress := common.Address{}
