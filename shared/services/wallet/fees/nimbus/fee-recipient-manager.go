@@ -15,6 +15,7 @@ import (
 // Config
 const (
 	FileMode fs.FileMode = 0600
+	DirMode  fs.FileMode = 0700
 )
 
 type FeeRecipientManager struct {
@@ -67,6 +68,11 @@ func (fm *FeeRecipientManager) UpdateFeeRecipientFile(distributor common.Address
 	distributorAddress := distributor.Hex()
 	expectedString := distributorAddress
 	bytes := []byte(expectedString)
+
+	// Create keystore dir
+	if err := os.MkdirAll(fm.keystore.GetKeystoreDir(), DirMode); err != nil {
+		return fmt.Errorf("Could not create fee recipient folder [%s]: %w", fm.keystore.GetKeystoreDir(), err)
+	}
 
 	// Write the file
 	path := filepath.Join(fm.keystore.GetKeystoreDir(), config.NimbusFeeRecipientFilename)
