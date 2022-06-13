@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -523,6 +524,16 @@ func GetMinipoolWithdrawalCredentials(rp *rocketpool.RocketPool, minipoolAddress
 		return common.Hash{}, fmt.Errorf("Could not get minipool withdrawal credentials: %w", err)
 	}
 	return *withdrawalCredentials, nil
+}
+
+// Get the number of penalties applied to a minipool
+func GetMinipoolPenaltyCount(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+	key := crypto.Keccak256Hash([]byte("network.penalties.penalty"), minipoolAddress.Bytes())
+	penalties, err := rp.RocketStorage.GetUint(opts, key)
+	if err != nil {
+		return 0, err
+	}
+	return penalties.Uint64(), nil
 }
 
 // Get contracts
