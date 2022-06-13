@@ -729,9 +729,6 @@ func checkDutiesForSlot(bc beacon.Client, slot uint64, validatorIndexMap map[uin
 		return err
 	}
 
-	// Check if the minipool cheated
-	checkIfMinipoolCheated(block, validatorIndexMap, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
-
 	// Go through the attestations for the block
 	for _, attestation := range block.Attestations {
 
@@ -761,47 +758,6 @@ func checkDutiesForSlot(bc beacon.Client, slot uint64, validatorIndexMap map[uin
 	}
 
 	return nil
-
-}
-
-func checkIfMinipoolCheated(block beacon.BeaconBlock, validatorIndexMap map[uint64]*MinipoolInfo, nodeDetails []*NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration) {
-
-	mpInfo, exists := validatorIndexMap[block.ProposerIndex]
-	if !exists {
-		// This proposer isn't a minipool
-		return
-	}
-
-	// Check if the fee recipient was the Smoothing Pool
-	if block.FeeRecipient == smoothingPoolAddress {
-		return
-	}
-
-	// If this node wasn't part of the Smoothing Pool this interval, ignore it
-	nodeInfo := nodeDetails[mpInfo.NodeIndex]
-	if !nodeInfo.IsEligible {
-		return
-	}
-
-	// Get the time this slot occurred
-	slotTime := genesisTime.Add(slotLength * time.Duration(block.Slot))
-
-	// If the node was opted in at the end but this block happened before they opted in, ignore it
-	if nodeInfo.IsOptedIn && nodeInfo.StatusChangeTime.Sub(slotTime) >= 0 {
-		return
-	}
-
-	// If the node was opted out at the end but this block happened after they opted out, ignore it
-	if !nodeInfo.IsOptedIn && slotTime.Sub(nodeInfo.StatusChangeTime) >= 0 {
-		return
-	}
-
-	// If we got here, the block happened while they were opted in so they cheated
-	nodeDetails[mpInfo.NodeIndex].IsEligible = false
-	nodeDetails[mpInfo.NodeIndex].CheaterInfo.CheatingDetected = true
-	nodeDetails[mpInfo.NodeIndex].CheaterInfo.OffendingSlot = block.Slot
-	nodeDetails[mpInfo.NodeIndex].CheaterInfo.FeeRecipient = block.FeeRecipient
-	nodeDetails[mpInfo.NodeIndex].CheaterInfo.Minipool = mpInfo.Address
 
 }
 
@@ -962,6 +918,20 @@ func getSmoothingPoolNodeDetails(rp *rocketpool.RocketPool, opts *bind.CallOpts,
 							return fmt.Errorf("Error getting status of minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
 						}
 						if status == rptypes.Staking {
+							penaltyCount, err := minipool.GetMinipoolPenaltyCount(rp, mpd.Address, opts)
+							if err != nil {
+								return fmt.Errorf("Error getting penalty count for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
+							}
+							if penaltyCount >= 3 {
+								// This node is a cheater
+								nodeDetails.IsEligible = false
+								nodeDetails.EligibilityFactor = 0
+								nodeDetails.Minipools = []*MinipoolInfo{}
+								details[iterationIndex] = nodeDetails
+								return nil
+							}
+
+							// This minipool is below the penalty count, so include it
 							fee, err := mp.GetNodeFeeRaw(opts)
 							if err != nil {
 								return fmt.Errorf("Error getting fee for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)

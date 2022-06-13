@@ -63,15 +63,7 @@ type NodeSmoothingDetails struct {
 	StatusChangeTime  time.Time
 	Minipools         []*MinipoolInfo
 	EligibilityFactor float64
-	CheaterInfo       CheaterInfo
 	SmoothingPoolEth  *big.Int
-}
-
-type CheaterInfo struct {
-	CheatingDetected bool
-	OffendingSlot    uint64
-	Minipool         common.Address
-	FeeRecipient     common.Address
 }
 
 type QuotedBigInt struct {
