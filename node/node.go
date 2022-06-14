@@ -24,8 +24,9 @@ import (
 
 // Settings
 const (
-	NodeAddressBatchSize = 50
-	NodeDetailsBatchSize = 20
+	NodeAddressBatchSize               = 50
+	NodeDetailsBatchSize               = 20
+	SmoothingPoolCountBatchSize uint64 = 2000
 )
 
 // Node details
@@ -35,6 +36,30 @@ type NodeDetails struct {
 	WithdrawalAddress        common.Address `json:"withdrawalAddress"`
 	PendingWithdrawalAddress common.Address `json:"pendingWithdrawalAddress"`
 	TimezoneLocation         string         `json:"timezoneLocation"`
+}
+
+// Node details
+type nodeDetails_Native struct {
+	exists                           bool
+	registrationTime                 *big.Int
+	timezoneLocation                 string
+	feeDistributorInitialised        bool
+	feeDistributorAddress            common.Address
+	rewardNetwork                    *big.Int
+	rplStake                         *big.Int
+	effectiveRPLStake                *big.Int
+	minimumRPLStake                  *big.Int
+	maximumRPLStake                  *big.Int
+	minipoolLimit                    *big.Int
+	minipoolCount                    *big.Int
+	balanceETH                       *big.Int
+	balanceRETH                      *big.Int
+	balanceRPL                       *big.Int
+	balanceOldRPL                    *big.Int
+	withdrawalAddress                common.Address
+	pendingWithdrawalAddress         common.Address
+	smoothingPoolRegistrationState   bool
+	smoothingPoolRegistrationChanged *big.Int
 }
 
 // Count of nodes belonging to a timezone
@@ -66,6 +91,11 @@ func GetNodeManagerVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	}
 	return *version, nil
 }
+
+// Get the details for a node
+/*func GetNodeDetails(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) {
+
+}*/
 
 // Get all node details
 func GetNodes(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]NodeDetails, error) {
@@ -835,6 +865,56 @@ func SetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, optIn bool, op
 		return common.Hash{}, fmt.Errorf("Could not set smoothing pool registration state: %w", err)
 	}
 	return hash, nil
+}
+
+// Get the number of nodes in the Smoothing Pool
+func GetSmoothingPoolRegisteredNodeCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return 0, err
+	}
+
+	// Get the number of nodes
+	nodeCount, err := GetNodeCount(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+
+	iterations := uint64(math.Ceil(float64(nodeCount) / float64(SmoothingPoolCountBatchSize)))
+	iterationCounts := make([]*big.Int, iterations)
+
+	// Load addresses
+	var wg errgroup.Group
+	for i := uint64(0); i < iterations; i++ {
+		i := i
+		offset := i * SmoothingPoolCountBatchSize
+		limit := SmoothingPoolCountBatchSize
+		if nodeCount-offset < SmoothingPoolCountBatchSize {
+			limit = nodeCount - offset
+		}
+		wg.Go(func() error {
+			count := new(*big.Int)
+			err := rocketNodeManager.Call(opts, count, "getSmoothingPoolRegisteredNodeCount", big.NewInt(int64(offset)), big.NewInt(int64(limit)))
+			if err != nil {
+				return fmt.Errorf("Could not get smoothing pool opt-in count for batch starting at %d: %w", offset, err)
+			}
+
+			iterationCounts[i] = *count
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return 0, err
+	}
+
+	total := uint64(0)
+	for _, count := range iterationCounts {
+		total += count.Uint64()
+	}
+
+	return total, nil
+
 }
 
 // Get contracts
