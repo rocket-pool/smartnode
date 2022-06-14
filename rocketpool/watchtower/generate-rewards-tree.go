@@ -137,17 +137,15 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
 
-	var ec rocketpool.ExecutionClient
 	var rp *rocketpool.RocketPool
 	var err error
 	archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
 	if archiveEcUrl == "" {
 		t.log.Printlnf("%s WARNING: you do not have an archive Execution client node specified. If your primary EC is not in archive-mode, rewards tree generation may fail! Please specify an archive-capable EC in the Smartnode section of the `rocketpool service config` Terminal UI.\n", generationPrefix)
-		ec = t.ec
 		rp = t.rp
 	} else {
 		t.log.Printlnf("%s Using archive EC [%s]", generationPrefix, archiveEcUrl)
-		ec, err = ethclient.Dial(archiveEcUrl)
+		ec, err := ethclient.Dial(archiveEcUrl)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error connecting to archive EC: %w", generationPrefix, err))
 			return

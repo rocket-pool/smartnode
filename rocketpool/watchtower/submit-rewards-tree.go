@@ -14,6 +14,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -257,9 +258,27 @@ func (t *submitRewardsTree) run() error {
 		}
 		t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
+		// Check for an archive EC
+		rp := t.rp
+		archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
+		if archiveEcUrl != "" {
+			t.log.Printlnf("%s Using archive EC [%s]", generationPrefix, archiveEcUrl)
+			ec, err := ethclient.Dial(archiveEcUrl)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s Error connecting to archive EC: %w", generationPrefix, err))
+				return
+			}
+
+			rp, err = rocketpool.NewRocketPool(ec, *t.rp.RocketStorageContract.Address)
+			if err != nil {
+				t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", generationPrefix, err))
+				return
+			}
+		}
+
 		// Generate the rewards file
 		rewardsFile := rprewards.NewRewardsFile(t.log, generationPrefix, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed))
-		err := rewardsFile.GenerateTree(t.rp, t.cfg, t.bc)
+		err := rewardsFile.GenerateTree(rp, t.cfg, t.bc)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 			return

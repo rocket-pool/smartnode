@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"sort"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -156,6 +157,15 @@ func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.Rocket
 	err = r.generateMerkleTree()
 	if err != nil {
 		return fmt.Errorf("Error generating Merkle tree: %w", err)
+	}
+
+	// Sort all of the missed attestations so the files are always generated in the same state
+	for _, nodeInfo := range r.NodeRewards {
+		for _, minipoolInfo := range nodeInfo.MinipoolPerformance {
+			sort.Slice(minipoolInfo.MissingAttestationSlots, func(i, j int) bool {
+				return minipoolInfo.MissingAttestationSlots[i] < minipoolInfo.MissingAttestationSlots[j]
+			})
+		}
 	}
 
 	return nil
