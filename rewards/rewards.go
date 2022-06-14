@@ -228,6 +228,65 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 
 }
 
+// Get the event info for a rewards snapshot
+func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, rocketRewardsPoolAddresses []common.Address) (RewardsEvent, error) {
+	// Get contracts
+	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	if err != nil {
+		return RewardsEvent{}, err
+	}
+
+	rocketRewardsPoolAddresses = append(rocketRewardsPoolAddresses, *rocketRewardsPool.Address)
+
+	// Construct a filter query for relevant logs
+	indexBig := big.NewInt(0).SetUint64(index)
+	indexBytes := [32]byte{}
+	indexBig.FillBytes(indexBytes[:])
+	addressFilter := rocketRewardsPoolAddresses
+	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
+
+	// Get the event logs
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
+	if err != nil {
+		return RewardsEvent{}, err
+	}
+
+	// Get the log info
+	values := make(map[string]interface{})
+	if len(logs) == 0 {
+		return RewardsEvent{}, fmt.Errorf("reward snapshot for interval %d not found", index)
+	}
+	if rocketRewardsPool.ABI.Events["RewardSnapshot"].Inputs.UnpackIntoMap(values, logs[0].Data) != nil {
+		return RewardsEvent{}, err
+	}
+
+	// Get the decoded data
+	submissionPrototype := RewardSubmission{}
+	submissionType := reflect.TypeOf(submissionPrototype)
+	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
+	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
+	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
+	submissionTime := values["time"].(*big.Int)
+	eventData := RewardsEvent{
+		Index:             indexBig,
+		ExecutionBlock:    submission.ExecutionBlock,
+		ConsensusBlock:    submission.ConsensusBlock,
+		IntervalsPassed:   submission.IntervalsPassed,
+		TreasuryRPL:       submission.TreasuryRPL,
+		TrustedNodeRPL:    submission.TrustedNodeRPL,
+		NodeRPL:           submission.NodeRPL,
+		NodeETH:           submission.NodeETH,
+		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
+		MerkleTreeCID:     submission.MerkleTreeCID,
+		IntervalStartTime: time.Unix(eventIntervalStartTime.Int64(), 0),
+		IntervalEndTime:   time.Unix(eventIntervalEndTime.Int64(), 0),
+		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
+	}
+
+	return eventData, nil
+
+}
+
 // Get contracts
 var rocketRewardsPoolLock sync.Mutex
 
