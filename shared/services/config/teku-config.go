@@ -58,7 +58,7 @@ func NewTekuConfig(config *RocketPoolConfig) *TekuConfig {
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true, // TODO: CHANGE AFTER v1.4.1
+			OverwriteOnUpgrade:   false,
 		},
 
 		ContainerTag: Parameter{
