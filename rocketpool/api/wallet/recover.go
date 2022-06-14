@@ -128,24 +128,22 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 		return nil, errors.New("The wallet is already initialized")
 	}
 
-	// Try each of the derivation paths
+	// Try each derivation path across all of the iterations
 	paths := []string{
 		wallet.DefaultNodeKeyPath,
 		wallet.LedgerLiveNodeKeyPath,
 		wallet.MyEtherWalletNodeKeyPath,
 	}
-
-	// Try each derivation path across all of the iterations
-	for i := 0; i < len(paths); i++ {
-		derivationPath := paths[i]
-		for j := uint(0); j < findIterations; j++ {
+	for i := uint(0); i < findIterations; i++ {
+		for j := 0; j < len(paths); j++ {
+			derivationPath := paths[j]
 			recoveredWallet, err := wallet.NewWallet("", uint(w.GetChainID().Uint64()), nil, nil, 0, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error generating new wallet: %w", err)
 			}
-			err = recoveredWallet.TestRecovery(derivationPath, j, mnemonic)
+			err = recoveredWallet.TestRecovery(derivationPath, i, mnemonic)
 			if err != nil {
-				return nil, fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, j, err)
+				return nil, fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
 			}
 
 			// Get recovered account
@@ -157,7 +155,7 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 				// We found the correct derivation path and index
 				response.FoundWallet = true
 				response.DerivationPath = derivationPath
-				response.Index = j
+				response.Index = i
 				break
 			}
 		}

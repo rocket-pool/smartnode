@@ -61,7 +61,7 @@ func recoverWallet(c *cli.Context) error {
 
 		// Get the address to search for
 		address := common.HexToAddress(addressString)
-		fmt.Printf("Searching for the derivation path and index for wallet %s...\n", address.Hex())
+		fmt.Printf("Searching for the derivation path and index for wallet %s...\nNOTE: this may take several minutes depending on how large your wallet's index is.\n", address.Hex())
 
 		// Log
 		if skipValidatorKeyRecovery {
