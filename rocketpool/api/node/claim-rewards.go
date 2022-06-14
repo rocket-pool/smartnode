@@ -64,7 +64,12 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		response.UnclaimedIntervals = append(response.UnclaimedIntervals, intervalInfo)
+		if !intervalInfo.MerkleRootValid {
+			return nil, fmt.Errorf("Error getting rewards info for interval %d: invalid Merkle root. Please download or generate the file again.", unclaimedInterval)
+		}
+		if intervalInfo.NodeExists {
+			response.UnclaimedIntervals = append(response.UnclaimedIntervals, intervalInfo)
+		}
 	}
 
 	// Get collateral info for restaking
