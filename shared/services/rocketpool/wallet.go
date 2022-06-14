@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -56,14 +57,17 @@ func (c *Client) InitWallet(derivationPath string) (api.InitWalletResponse, erro
 }
 
 // Recover wallet
-func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string) (api.RecoverWalletResponse, error) {
-	var responseBytes []byte
-	var err error
+func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (api.RecoverWalletResponse, error) {
+	command := "wallet recover "
 	if skipValidatorKeyRecovery {
-		responseBytes, err = c.callAPI("wallet recover --skip-validator-key-recovery --derivation-path", derivationPath, mnemonic)
-	} else {
-		responseBytes, err = c.callAPI("wallet recover --derivation-path", derivationPath, mnemonic)
+		command += "--skip-validator-key-recovery "
 	}
+	if walletIndex != 0 {
+		command += fmt.Sprintf("--wallet-index %d ", walletIndex)
+	}
+	command += "--derivation-path"
+
+	responseBytes, err := c.callAPI(command, derivationPath, mnemonic)
 	if err != nil {
 		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %w", err)
 	}
@@ -73,6 +77,27 @@ func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, d
 	}
 	if response.Error != "" {
 		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Search and recover wallet
+func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (api.SearchAndRecoverWalletResponse, error) {
+	command := "wallet search-and-recover "
+	if skipValidatorKeyRecovery {
+		command += "--skip-validator-key-recovery "
+	}
+
+	responseBytes, err := c.callAPI(command, mnemonic, address.Hex())
+	if err != nil {
+		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not search and recover wallet: %w", err)
+	}
+	var response api.SearchAndRecoverWalletResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not decode search-and-recover wallet response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not search and recover wallet: %s", response.Error)
 	}
 	return response, nil
 }
@@ -94,8 +119,14 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 }
 
 // Test recovering a node wallet from a mnemonic phrase to ensure the phrase is correct
-func (c *Client) TestMnemonic(mnemonic string, derivationPath string) (api.TestMnemonicResponse, error) {
-	responseBytes, err := c.callAPI("wallet test-mnemonic --derivation-path", derivationPath, mnemonic)
+func (c *Client) TestMnemonic(mnemonic string, derivationPath string, walletIndex uint) (api.TestMnemonicResponse, error) {
+	command := "wallet test-mnemonic "
+	if walletIndex != 0 {
+		command += fmt.Sprintf("--wallet-index %d ", walletIndex)
+	}
+	command += "--derivation-path"
+
+	responseBytes, err := c.callAPI(command, derivationPath, mnemonic)
 	if err != nil {
 		return api.TestMnemonicResponse{}, fmt.Errorf("Could not test mnemonic: %w", err)
 	}

@@ -48,12 +48,15 @@ func testMnemonic(c *cli.Context, mnemonic string) (*api.TestMnemonicResponse, e
 		path = wallet.MyEtherWalletNodeKeyPath
 	}
 
+	// Get the wallet index
+	walletIndex := c.Uint("wallet-index")
+
 	// Create a new wallet and recover from the given info
 	recoveredWallet, err := wallet.NewWallet("", uint(w.GetChainID().Uint64()), nil, nil, 0, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating new wallet: %w", err)
 	}
-	err = recoveredWallet.TestRecovery(path, mnemonic)
+	err = recoveredWallet.TestRecovery(path, walletIndex, mnemonic)
 	if err != nil {
 		return nil, fmt.Errorf("error recovering wallet: %w", err)
 	}
