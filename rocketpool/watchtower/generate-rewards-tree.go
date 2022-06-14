@@ -168,7 +168,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Find the event for this interval
-	rewardsEvent, err := rewards.GetRewardSnapshotEvent(rp, index, big.NewInt(int64(eventLogInterval)), nil)
+	rewardsEvent, err := rewards.GetRewardSnapshotEventWithUpgrades(rp, index, big.NewInt(int64(eventLogInterval)), nil, t.cfg.Smartnode.GetPreviousRewardsPoolAddresses())
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return

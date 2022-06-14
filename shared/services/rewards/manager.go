@@ -87,7 +87,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 
 	// Get the event details for this interval
 	var event rewards.RewardsEvent
-	event, err = rewards.GetRewardSnapshotEvent(rp, interval, big.NewInt(int64(eventLogInterval)), nil)
+	event, err = rewards.GetRewardSnapshotEventWithUpgrades(rp, interval, big.NewInt(int64(eventLogInterval)), nil, cfg.Smartnode.GetPreviousRewardsPoolAddresses())
 	if err != nil {
 		return
 	}

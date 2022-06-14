@@ -473,7 +473,7 @@ func (r *RewardsFile) calculateEthRewards(rp *rocketpool.RocketPool, cfg *config
 	}
 
 	// Get the start time of this interval based on the event from the previous one
-	previousIntervalEvent, err := rewards.GetRewardSnapshotEvent(rp, r.Index-1, big.NewInt(int64(eventLogInterval)), nil)
+	previousIntervalEvent, err := rewards.GetRewardSnapshotEventWithUpgrades(rp, r.Index-1, big.NewInt(int64(eventLogInterval)), nil, cfg.Smartnode.GetPreviousRewardsPoolAddresses())
 	if err != nil {
 		return err
 	}
