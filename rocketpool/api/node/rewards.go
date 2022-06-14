@@ -133,8 +133,10 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	// Get claimed and pending rewards
 	wg.Go(func() error {
 		// Legacy rewards
-		unclaimedRewardsWei := big.NewInt(0)
-		rewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimNodeAddress)
+		unclaimedRplRewardsWei := big.NewInt(0)
+		rplRewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimNodeAddress)
+		unclaimedEthRewardsWei := big.NewInt(0)
+		ethRewards := big.NewInt(0)
 
 		// Modern rewards
 		if isMergeUpdateDeployed {
@@ -153,7 +155,8 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 				if !intervalInfo.TreeFileExists {
 					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 				}
-				rewards.Add(rewards, &intervalInfo.CollateralRplAmount.Int)
+				rplRewards.Add(rplRewards, &intervalInfo.CollateralRplAmount.Int)
+				ethRewards.Add(ethRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
 			}
 
 			// Get the unclaimed rewards
@@ -166,17 +169,20 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
 				}
 				if intervalInfo.NodeExists {
-					unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
+					unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.CollateralRplAmount.Int)
+					unclaimedEthRewardsWei.Add(unclaimedEthRewardsWei, &intervalInfo.SmoothingPoolEthAmount.Int)
 				}
 			}
 		} else {
 			// Check if legacy rewards are currently available from the previous checkpoint
-			unclaimedRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimNodeAddress)
+			unclaimedRplRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimNodeAddress)
 		}
 
 		if err == nil {
-			response.CumulativeRewards = eth.WeiToEth(rewards)
-			response.UnclaimedRewards = eth.WeiToEth(unclaimedRewardsWei)
+			response.CumulativeRplRewards = eth.WeiToEth(rplRewards)
+			response.UnclaimedRplRewards = eth.WeiToEth(unclaimedRplRewardsWei)
+			response.CumulativeEthRewards = eth.WeiToEth(ethRewards)
+			response.UnclaimedEthRewards = eth.WeiToEth(unclaimedEthRewardsWei)
 		}
 		return err
 	})
@@ -312,8 +318,8 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		// Get cumulative ODAO rewards
 		wg2.Go(func() error {
 			// Legacy rewards
-			unclaimedRewardsWei := big.NewInt(0)
-			rewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimTrustedNodeAddress)
+			unclaimedRplRewardsWei := big.NewInt(0)
+			rplRewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimTrustedNodeAddress)
 
 			// Modern rewards
 			if isMergeUpdateDeployed {
@@ -332,7 +338,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 					if !intervalInfo.TreeFileExists {
 						return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 					}
-					rewards.Add(rewards, &intervalInfo.ODaoRplAmount.Int)
+					rplRewards.Add(rplRewards, &intervalInfo.ODaoRplAmount.Int)
 				}
 
 				// Get the unclaimed rewards
@@ -345,17 +351,17 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 						return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
 					}
 					if intervalInfo.NodeExists {
-						unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.ODaoRplAmount.Int)
+						unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.ODaoRplAmount.Int)
 					}
 				}
 			} else {
 				// Check if legacy rewards are currently available from the previous checkpoint
-				unclaimedRewardsWei, err = legacyrewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimTrustedNodeAddress)
+				unclaimedRplRewardsWei, err = legacyrewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimTrustedNodeAddress)
 			}
 
 			if err == nil {
-				response.CumulativeTrustedRewards = eth.WeiToEth(rewards)
-				response.UnclaimedTrustedRewards = eth.WeiToEth(unclaimedRewardsWei)
+				response.CumulativeTrustedRplRewards = eth.WeiToEth(rplRewards)
+				response.UnclaimedTrustedRplRewards = eth.WeiToEth(unclaimedRplRewardsWei)
 			}
 			return err
 		})
@@ -394,7 +400,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 			return nil, err
 		}
 
-		response.EstimatedTrustedRewards = totalRplAtNextCheckpoint * trustedNodeOperatorRewardsPercent / float64(odaoSize)
+		response.EstimatedTrustedRplRewards = totalRplAtNextCheckpoint * trustedNodeOperatorRewardsPercent / float64(odaoSize)
 
 	}
 

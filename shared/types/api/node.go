@@ -255,25 +255,27 @@ type NodeClaimRplResponse struct {
 }
 
 type NodeRewardsResponse struct {
-	Status                   string        `json:"status"`
-	Error                    string        `json:"error"`
-	NodeRegistrationTime     time.Time     `json:"nodeRegistrationTime"`
-	RewardsInterval          time.Duration `json:"rewardsInterval"`
-	LastCheckpoint           time.Time     `json:"lastCheckpoint"`
-	Trusted                  bool          `json:"trusted"`
-	Registered               bool          `json:"registered"`
-	EffectiveRplStake        float64       `json:"effectiveRplStake"`
-	TotalRplStake            float64       `json:"totalRplStake"`
-	TrustedRplBond           float64       `json:"trustedRplBond"`
-	EstimatedRewards         float64       `json:"estimatedRewards"`
-	CumulativeRewards        float64       `json:"cumulativeRewards"`
-	EstimatedTrustedRewards  float64       `json:"estimatedTrustedRewards"`
-	CumulativeTrustedRewards float64       `json:"cumulativeTrustedRewards"`
-	UnclaimedRewards         float64       `json:"unclaimedRewards"`
-	UnclaimedTrustedRewards  float64       `json:"unclaimedTrustedRewards"`
-	BeaconRewards            float64       `json:"beaconRewards"`
-	IsMergeUpdateDeployed    bool          `json:"isMergeUpdateDeployed"`
-	TxHash                   common.Hash   `json:"txHash"`
+	Status                      string        `json:"status"`
+	Error                       string        `json:"error"`
+	NodeRegistrationTime        time.Time     `json:"nodeRegistrationTime"`
+	RewardsInterval             time.Duration `json:"rewardsInterval"`
+	LastCheckpoint              time.Time     `json:"lastCheckpoint"`
+	Trusted                     bool          `json:"trusted"`
+	Registered                  bool          `json:"registered"`
+	EffectiveRplStake           float64       `json:"effectiveRplStake"`
+	TotalRplStake               float64       `json:"totalRplStake"`
+	TrustedRplBond              float64       `json:"trustedRplBond"`
+	EstimatedRewards            float64       `json:"estimatedRewards"`
+	CumulativeRplRewards        float64       `json:"cumulativeRplRewards"`
+	CumulativeEthRewards        float64       `json:"cumulativeEthRewards"`
+	EstimatedTrustedRplRewards  float64       `json:"estimatedTrustedRplRewards"`
+	CumulativeTrustedRplRewards float64       `json:"cumulativeTrustedRplRewards"`
+	UnclaimedRplRewards         float64       `json:"unclaimedRplRewards"`
+	UnclaimedEthRewards         float64       `json:"unclaimedEthRewards"`
+	UnclaimedTrustedRplRewards  float64       `json:"unclaimedTrustedRplRewards"`
+	BeaconRewards               float64       `json:"beaconRewards"`
+	IsMergeUpdateDeployed       bool          `json:"isMergeUpdateDeployed"`
+	TxHash                      common.Hash   `json:"txHash"`
 }
 
 type DepositContractInfoResponse struct {

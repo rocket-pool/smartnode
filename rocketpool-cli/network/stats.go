@@ -53,6 +53,10 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("    Dissolved:           %d\n", response.DissolvedMinipoolCount)
 	fmt.Printf("Inactive Minipools:      %d\n\n", response.FinalizedMinipoolCount)
 
+	fmt.Println("========== Smoothing Pool =========")
+	fmt.Printf("Nodes Opted in:          %d\n", response.SmoothingPoolNodes)
+	fmt.Printf("Pending Balance:         %f\n", response.SmoothingPoolBalance)
+
 	fmt.Println("============== Tokens =============")
 	fmt.Printf("rETH Price (ETH / rETH): %f ETH\n", response.RethPrice)
 	fmt.Printf("RPL Price (ETH / RPL):   %f ETH\n", response.RplPrice)

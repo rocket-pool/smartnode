@@ -41,6 +41,8 @@ type NetworkStatsResponse struct {
 	TotalRplStaked            float64 `json:"totalRplStaked"`
 	EffectiveRplStaked        float64 `json:"effectiveRplStaked"`
 	RethPrice                 float64 `json:"rethPrice"`
+	SmoothingPoolNodes        uint64  `json:"smoothingPoolNodes"`
+	SmoothingPoolBalance      float64 `json:"smoothingPoolBalance"`
 }
 
 type NetworkTimezonesResponse struct {
