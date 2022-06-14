@@ -55,7 +55,7 @@ func getStats(c *cli.Context) error {
 
 	fmt.Println("========== Smoothing Pool =========")
 	fmt.Printf("Nodes Opted in:          %d\n", response.SmoothingPoolNodes)
-	fmt.Printf("Pending Balance:         %f\n", response.SmoothingPoolBalance)
+	fmt.Printf("Pending Balance:         %f\n\n", response.SmoothingPoolBalance)
 
 	fmt.Println("============== Tokens =============")
 	fmt.Printf("rETH Price (ETH / rETH): %f ETH\n", response.RethPrice)
