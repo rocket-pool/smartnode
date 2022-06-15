@@ -8,7 +8,8 @@ import (
 
 // API request options
 type ValidatorStatusOptions struct {
-	Epoch uint64
+	Epoch *uint64
+	Slot  *uint64
 }
 
 // API response types

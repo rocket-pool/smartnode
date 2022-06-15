@@ -89,7 +89,7 @@ func ExportValidators(c *cli.Context) error {
 	}
 
 	// Get minipool validator statuses
-	validators, err := rp.GetMinipoolValidators(rpl, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: blockEpoch})
+	validators, err := rp.GetMinipoolValidators(rpl, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
 	if err != nil {
 		return err
 	}

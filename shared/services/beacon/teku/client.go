@@ -637,7 +637,9 @@ func (c *Client) getValidatorsByOpts(pubkeysOrIndices []string, opts *beacon.Val
 	var stateId string
 	if opts == nil {
 		stateId = "head"
-	} else {
+	} else if opts.Slot != nil {
+		stateId = strconv.FormatInt(int64(*opts.Slot), 10)
+	} else if opts.Epoch != nil {
 
 		// Get eth2 config
 		eth2Config, err := c.getEth2Config()
@@ -646,9 +648,11 @@ func (c *Client) getValidatorsByOpts(pubkeysOrIndices []string, opts *beacon.Val
 		}
 
 		// Get slot nuimber
-		slot := opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
+		slot := *opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
 		stateId = strconv.FormatInt(int64(slot), 10)
 
+	} else {
+		return ValidatorsResponse{}, fmt.Errorf("must specify a slot or epoch when calling getValidatorsByOpts")
 	}
 
 	// Load validator data in batches & return

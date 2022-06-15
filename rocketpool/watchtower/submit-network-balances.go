@@ -404,7 +404,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 	}
 
 	// Get minipool validator statuses
-	validators, err := rp.GetMinipoolValidators(t.rp, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: blockEpoch})
+	validators, err := rp.GetMinipoolValidators(t.rp, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
 	if err != nil {
 		return []minipoolBalanceDetails{}, err
 	}

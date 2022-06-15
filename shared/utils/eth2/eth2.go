@@ -34,7 +34,7 @@ func EpochAt(config beacon.Eth2Config, time uint64) uint64 {
 func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
 
 	// Get minipool validator statuses
-	validators, err := rputils.GetMinipoolValidators(rp, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: beaconHead.Epoch})
+	validators, err := rputils.GetMinipoolValidators(rp, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &beaconHead.Epoch})
 	if err != nil {
 		return []minipoolBalanceDetails{}, err
 	}
