@@ -12,7 +12,7 @@ const (
 	nethermindTagAmd64         string = "nethermind/nethermind:1.13.3"
 	nethermindTagArm64         string = "nethermind/nethermind:1.13.3"
 	nethermindEventLogInterval int    = 25000
-	nethermindStopSignal       string = "SIGTERM"
+	nethermindStopSignal       string = "SIGINT"
 )
 
 // Configuration for Nethermind
