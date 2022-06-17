@@ -131,18 +131,12 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== New Execution Clients ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode now supports Nethermind and Besu as execution clients. If you'd like to help support the health and diversity of the Ethereum chain, give them a try!\n")
+	fmt.Printf("%s=== Voting Support ===%s\n", colorGreen, colorReset)
+	fmt.Println("`rocketpool node set-voting-delegate` can be used to specify an Ethereum address you would like represent your node when voting on Rocket Pool DAO governance proposals.\nThis should be something you can safely use with a browser.\nA full write-up of DAO voting, Snapshot, and this command will be released soon - stay tuned!\n")
 
 	fmt.Printf("%s=== Light Client Deprecation ===%s\n", colorGreen, colorReset)
-	fmt.Println("Infura and Pocket are now deprecated because light clients will not be compatible with the upcomfing Ethereum Merge. They will be removed in a later version. If you're running one of these, either as your primary or your fallback client, you should prepare to move away from them and use a full Execution client instead.\n")
+	fmt.Println("Infura and Pocket are now deprecated because light clients will not be compatible with the upcoming Ethereum Merge. They will be removed in a later version. If you're running one of these, either as your primary or your fallback client, you should prepare to move away from them and use a full Execution client instead.")
 
-	fmt.Printf("%s=== Misc Updates ===%s\n", colorGreen, colorReset)
-	fmt.Println("- `rocketpool node sync` now returns your EC's sync progress as an absolute percentage, so it won't drop back to 0% when the client restarts.")
-	fmt.Println("- Besu and Teku have new TUI settings that let you turn down their RAM requirements.")
-	fmt.Println("- Your EC now reports metrics to Grafana, so you can add the ones you want to see.")
-	fmt.Println("- The Smartnode will no longer query your fallback EC's sync progress if your primary EC is synced.")
-	fmt.Println("- Hybrid users will now have an `X` for their EC's graffiti letter (for eXternal).")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
