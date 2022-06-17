@@ -498,7 +498,10 @@ func getAugmentedEcDescription(client ExecutionClient, originalDescription strin
 			return fmt.Sprintf("%s\n\n[red]WARNING: Besu currently requires over 8 GB of RAM to run smoothly. We do not recommend it for your system. This may be improved in a future release.", originalDescription)
 		}
 	case ExecutionClient_Nethermind:
-		return fmt.Sprintf("%s\n\n[red]WARNING: Users have reported a memory leak in v1.13.1 of Nethermind, which will cause it to gradually use all of the system's RAM. Please use caution when selecting Nethermind until this issue has been fixed.", originalDescription)
+		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
+		if totalMemoryGB < 9 {
+			return fmt.Sprintf("%s\n\n[red]WARNING: Nethermind currently requires over 8 GB of RAM to run smoothly. We do not recommend it for your system. This may be improved in a future release.", originalDescription)
+		}
 	}
 
 	return originalDescription

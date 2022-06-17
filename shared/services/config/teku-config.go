@@ -3,7 +3,7 @@ package config
 import "github.com/pbnjay/memory"
 
 const (
-	tekuTag                  string = "consensys/teku:22.5.2"
+	tekuTag                  string = "consensys/teku:22.6.0"
 	defaultTekuMaxPeers      uint16 = 100
 	TekuFeeRecipientFilename string = "rp-fee-recipients.json"
 )
@@ -61,7 +61,7 @@ func NewTekuConfig(config *RocketPoolConfig) *TekuConfig {
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   true, // TODO: CHANGE AFTER v1.4.1
+			OverwriteOnUpgrade:   false,
 		},
 
 		ContainerTag: Parameter{

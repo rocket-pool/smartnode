@@ -97,7 +97,7 @@ func (w *Wallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 	}
 
 	// Get derived key
-	derivedKey, path, err := w.getNodeDerivedKey(0)
+	derivedKey, path, err := w.getNodeDerivedKey(w.ws.WalletIndex)
 	if err != nil {
 		return nil, "", err
 	}

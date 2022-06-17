@@ -41,7 +41,7 @@ func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
 	}
 
 	// Initialize wallet
-	mnemonic, err := w.Initialize(path)
+	mnemonic, err := w.Initialize(path, 0)
 	if err != nil {
 		return nil, err
 	}

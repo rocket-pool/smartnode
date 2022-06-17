@@ -1200,7 +1200,7 @@ func serviceVersion(c *cli.Context) error {
 			eth2ClientString = fmt.Sprintf(format, "Nimbus", cfg.Nimbus.ContainerTag.Value.(string))
 		case config.ConsensusClient_Prysm:
 			// Prysm is a special case, as the BN and VC image versions may differ
-			eth2ClientString = fmt.Sprintf(format+"\n\tVC image: %S", "Prysm", cfg.Prysm.BnContainerTag.Value.(string), cfg.Prysm.VcContainerTag.Value.(string))
+			eth2ClientString = fmt.Sprintf(format+"\n\tVC image: %s", "Prysm", cfg.Prysm.BnContainerTag.Value.(string), cfg.Prysm.VcContainerTag.Value.(string))
 		case config.ConsensusClient_Teku:
 			eth2ClientString = fmt.Sprintf(format, "Teku", cfg.Teku.ContainerTag.Value.(string))
 		default:

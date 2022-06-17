@@ -73,6 +73,7 @@ type walletStore struct {
 	Version        uint                   `json:"version"`
 	UUID           uuid.UUID              `json:"uuid"`
 	DerivationPath string                 `json:"derivationPath,omitempty"`
+	WalletIndex    uint                   `json:"walletIndex,omitempty"`
 	NextAccount    uint                   `json:"next_account"`
 }
 
@@ -153,7 +154,7 @@ func (w *Wallet) String() (string, error) {
 }
 
 // Initialize the wallet from a random seed
-func (w *Wallet) Initialize(derivationPath string) (string, error) {
+func (w *Wallet) Initialize(derivationPath string, walletIndex uint) (string, error) {
 
 	// Check wallet is not initialized
 	if w.IsInitialized() {
@@ -173,7 +174,7 @@ func (w *Wallet) Initialize(derivationPath string) (string, error) {
 	}
 
 	// Initialize wallet store
-	if err := w.initializeStore(derivationPath, mnemonic); err != nil {
+	if err := w.initializeStore(derivationPath, walletIndex, mnemonic); err != nil {
 		return "", err
 	}
 
@@ -183,7 +184,7 @@ func (w *Wallet) Initialize(derivationPath string) (string, error) {
 }
 
 // Recover a wallet from a mnemonic
-func (w *Wallet) Recover(derivationPath string, mnemonic string) error {
+func (w *Wallet) Recover(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Check wallet is not initialized
 	if w.IsInitialized() {
@@ -196,7 +197,7 @@ func (w *Wallet) Recover(derivationPath string, mnemonic string) error {
 	}
 
 	// Initialize wallet store
-	if err := w.initializeStore(derivationPath, mnemonic); err != nil {
+	if err := w.initializeStore(derivationPath, walletIndex, mnemonic); err != nil {
 		return err
 	}
 
@@ -206,7 +207,7 @@ func (w *Wallet) Recover(derivationPath string, mnemonic string) error {
 }
 
 // Recover a wallet from a mnemonic - only used for testing mnemonics
-func (w *Wallet) TestRecovery(derivationPath string, mnemonic string) error {
+func (w *Wallet) TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Check mnemonic
 	if !bip39.IsMnemonicValid(mnemonic) {
@@ -229,6 +230,7 @@ func (w *Wallet) TestRecovery(derivationPath string, mnemonic string) error {
 		Version:        w.encryptor.Version(),
 		UUID:           uuid.New(),
 		DerivationPath: derivationPath,
+		WalletIndex:    walletIndex,
 		NextAccount:    0,
 	}
 
@@ -339,7 +341,7 @@ func (w *Wallet) loadStore() (bool, error) {
 }
 
 // Initialize the encrypted wallet store from a mnemonic
-func (w *Wallet) initializeStore(derivationPath string, mnemonic string) error {
+func (w *Wallet) initializeStore(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Generate seed
 	w.seed = bip39.NewSeed(mnemonic, "")
@@ -370,6 +372,7 @@ func (w *Wallet) initializeStore(derivationPath string, mnemonic string) error {
 		Version:        w.encryptor.Version(),
 		UUID:           uuid.New(),
 		DerivationPath: derivationPath,
+		WalletIndex:    walletIndex,
 		NextAccount:    0,
 	}
 
