@@ -23,7 +23,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -35,19 +34,16 @@ import (
 
 // Submit rewards Merkle Tree task
 type submitRewardsTree struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	errLog         log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	ec             rocketpool.ExecutionClient
-	bc             beacon.Client
-	lock           *sync.Mutex
-	isRunning      bool
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c         *cli.Context
+	log       log.ColorLogger
+	errLog    log.ColorLogger
+	cfg       *config.RocketPoolConfig
+	w         *wallet.Wallet
+	rp        *rocketpool.RocketPool
+	ec        rocketpool.ExecutionClient
+	bc        beacon.Client
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 // Create submit rewards Merkle Tree task
@@ -75,40 +71,18 @@ func newSubmitRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger lo
 		return nil, err
 	}
 
-	// Get the user-requested max fee
-	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
-	var maxFee *big.Int
-	if maxFeeGwei == 0 {
-		maxFee = nil
-	} else {
-		maxFee = eth.GweiToWei(maxFeeGwei)
-	}
-
-	// Get the user-requested max fee
-	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
-	var priorityFee *big.Int
-	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
-	} else {
-		priorityFee = eth.GweiToWei(priorityFeeGwei)
-	}
-
 	lock := &sync.Mutex{}
 	generator := &submitRewardsTree{
-		c:              c,
-		log:            logger,
-		errLog:         errorLogger,
-		cfg:            cfg,
-		ec:             ec,
-		bc:             bc,
-		w:              w,
-		rp:             rp,
-		lock:           lock,
-		isRunning:      false,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:         c,
+		log:       logger,
+		errLog:    errorLogger,
+		cfg:       cfg,
+		ec:        ec,
+		bc:        bc,
+		w:         w,
+		rp:        rp,
+		lock:      lock,
+		isRunning: false,
 	}
 
 	return generator, nil
@@ -398,30 +372,16 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
 	}
-	var gas *big.Int
-	if t.gasLimit != 0 {
-		gas = new(big.Int).SetUint64(t.gasLimit)
-	} else {
-		gas = new(big.Int).SetUint64(gasInfo.SafeGasLimit)
-	}
-
-	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
-		if err != nil {
-			return err
-		}
-	}
 
 	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, t.gasLimit) {
+	maxFee := eth.GweiToWei(WatchtowerMaxFee)
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
-	opts.GasLimit = gas.Uint64()
+	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Submit RPL price
 	hash, err := rewards.SubmitRewardSnapshot(t.rp, submission, opts)
