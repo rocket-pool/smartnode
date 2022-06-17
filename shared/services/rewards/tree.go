@@ -698,59 +698,28 @@ func (r *RewardsFile) processAttestationsForInterval(bc beacon.Client, intervalD
 	r.log.Printlnf("%s Checking participation of %d minipools for epochs %d to %d", r.logPrefix, len(validatorIndexMap), startEpoch, endEpoch)
 	r.log.Printlnf("%s NOTE: this will take a long time, progress is reported every 100 epochs", r.logPrefix)
 
-	// Get all of the committees for each epoch
-	r.log.Printlnf("%s Querying committees...", r.logPrefix)
-	reportStartTime := time.Now()
-	batchSize := uint64(20)
-	epochCount := endEpoch - startEpoch + 1
-	committeeData := make([][]beacon.Committee, epochCount)
-	for iterationIndex := uint64(0); iterationIndex < epochCount; iterationIndex += batchSize {
-		batchStartIndex := iterationIndex + startEpoch
-		batchEndIndex := batchStartIndex + batchSize
-		if batchEndIndex > epochCount+startEpoch {
-			batchEndIndex = epochCount + startEpoch
-		}
-
-		var wg errgroup.Group
-		for index := batchStartIndex; index < batchEndIndex; index++ {
-			index := index
-			wg.Go(func() error {
-				committees, err := bc.GetCommitteesForEpoch(&index)
-				if err == nil {
-					committeeData[index-startEpoch] = committees
-				}
-				return err
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return err
-		}
-	}
-	r.log.Printlnf("%s Done (time = %s)", r.logPrefix, time.Since(reportStartTime))
-
 	epochsDone := 0
+	reportStartTime := time.Now()
 	for epoch := startEpoch; epoch < endEpoch+1; epoch++ {
 		if epochsDone == 100 {
 			timeTaken := time.Since(reportStartTime)
 			r.log.Printlnf("%s On Epoch %d... (%s so far)", r.logPrefix, epoch, timeTaken)
 			epochsDone = 0
 		}
-		// Get all of the expected duties for the epoch
-		err := getDutiesForEpoch(bc, epoch, startSlot, endSlot, validatorIndexMap, intervalDutiesInfo, committeeData[epoch-startEpoch])
+
+		err := processEpoch(true, bc, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, epoch, beaconConfig.SlotsPerEpoch, startSlot, endSlot, slotLength)
 		if err != nil {
-			return fmt.Errorf("Error getting duties for epoch %d: %w", epoch, err)
+			return err
 		}
 
-		// Process all of the slots in the epoch
-		for i := uint64(0); i < 32; i++ {
-			checkDutiesForSlot(bc, epoch*32+i, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
-		}
 		epochsDone++
 	}
 
-	// Check all of the slots in the epoch after the end too
-	for i := uint64(0); i < 32; i++ {
-		checkDutiesForSlot(bc, (endSlot+1)*32+i, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, slotLength)
+	// Check the epoch after the end of the interval for any lingering attestations
+	epoch := endEpoch + 1
+	err = processEpoch(false, bc, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, epoch, beaconConfig.SlotsPerEpoch, startSlot, endSlot, slotLength)
+	if err != nil {
+		return err
 	}
 
 	r.log.Printlnf("%s Finished participation check (total time = %s)", r.logPrefix, time.Since(reportStartTime))
@@ -758,19 +727,67 @@ func (r *RewardsFile) processAttestationsForInterval(bc beacon.Client, intervalD
 
 }
 
-// Handle all of the attestations in the given slot
-func checkDutiesForSlot(bc beacon.Client, slot uint64, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, nodeDetails []*NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration) error {
+func processEpoch(getDuties bool, bc beacon.Client, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, nodeDetails []*NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, epoch uint64, slotsPerEpoch uint64, startSlot uint64, endSlot uint64, slotLength time.Duration) error {
 
-	block, found, err := bc.GetBeaconBlock(fmt.Sprint(slot))
-	if !found {
-		// Ignore missing blocks
-		return nil
-	} else if err != nil {
-		return err
+	// Get the committee info and attestation records for this epoch
+	var committeeData []beacon.Committee
+	attestationsPerSlot := make([][]beacon.AttestationInfo, slotsPerEpoch)
+	var wg errgroup.Group
+
+	if getDuties {
+		wg.Go(func() error {
+			var err error
+			committeeData, err = bc.GetCommitteesForEpoch(&epoch)
+			return err
+		})
 	}
 
+	for i := uint64(0); i < slotsPerEpoch; i++ {
+		i := i
+		slot := epoch*slotsPerEpoch + i
+		wg.Go(func() error {
+			block, found, err := bc.GetBeaconBlock(fmt.Sprint(slot))
+			if err != nil {
+				return err
+			}
+			if found {
+				attestationsPerSlot[i] = block.Attestations
+			} else {
+				attestationsPerSlot[i] = []beacon.AttestationInfo{}
+			}
+			return nil
+		})
+	}
+	err := wg.Wait()
+	if err != nil {
+		return fmt.Errorf("Error getting committee and attestaion records for epoch %d: %w", epoch, err)
+	}
+
+	if getDuties {
+		// Get all of the expected duties for the epoch
+		err = getDutiesForEpoch(bc, epoch, startSlot, endSlot, validatorIndexMap, intervalDutiesInfo, committeeData)
+		if err != nil {
+			return fmt.Errorf("Error getting duties for epoch %d: %w", epoch, err)
+		}
+	}
+
+	// Process all of the slots in the epoch
+	for i := uint64(0); i < slotsPerEpoch; i++ {
+		attestations := attestationsPerSlot[i]
+		if len(attestations) > 0 {
+			checkDutiesForSlot(bc, validatorIndexMap, intervalDutiesInfo, nodeDetails, smoothingPoolAddress, genesisTime, slotLength, attestations)
+		}
+	}
+
+	return nil
+
+}
+
+// Handle all of the attestations in the given slot
+func checkDutiesForSlot(bc beacon.Client, validatorIndexMap map[uint64]*MinipoolInfo, intervalDutiesInfo *IntervalDutiesInfo, nodeDetails []*NodeSmoothingDetails, smoothingPoolAddress common.Address, genesisTime time.Time, slotLength time.Duration, attestations []beacon.AttestationInfo) error {
+
 	// Go through the attestations for the block
-	for _, attestation := range block.Attestations {
+	for _, attestation := range attestations {
 
 		// Get the RP committees for this attestation's slot and index
 		slotInfo, exists := intervalDutiesInfo.Slots[attestation.SlotIndex]
