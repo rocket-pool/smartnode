@@ -71,7 +71,7 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	// Check for missing Merkle trees with rewards available
 	missingIntervals := []rprewards.IntervalInfo{}
 	invalidIntervals := []rprewards.IntervalInfo{}
-	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
+	for _, intervalInfo := range rewardsInfoResponse.InvalidIntervals {
 		if !intervalInfo.TreeFileExists {
 			fmt.Printf("You have rewards for interval %d but are missing the rewards tree file.\n", intervalInfo.Index)
 			missingIntervals = append(missingIntervals, intervalInfo)

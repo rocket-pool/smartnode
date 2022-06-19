@@ -352,6 +352,7 @@ type NodeGetRewardsInfoResponse struct {
 	Error              string                 `json:"error"`
 	ClaimedIntervals   []uint64               `json:"claimedIntervals"`
 	UnclaimedIntervals []rewards.IntervalInfo `json:"unclaimedIntervals"`
+	InvalidIntervals   []rewards.IntervalInfo `json:"invalidIntervals"`
 	RplStake           *big.Int               `json:"rplStake"`
 	RplPrice           *big.Int               `json:"rplPrice"`
 	ActiveMinipools    int                    `json:"activeMinipools"`

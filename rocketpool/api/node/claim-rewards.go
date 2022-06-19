@@ -64,8 +64,9 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !intervalInfo.MerkleRootValid {
-			return nil, fmt.Errorf("Error getting rewards info for interval %d: invalid Merkle root. Please download or generate the file again.", unclaimedInterval)
+		if !intervalInfo.TreeFileExists || !intervalInfo.MerkleRootValid {
+			response.InvalidIntervals = append(response.InvalidIntervals, intervalInfo)
+			continue
 		}
 		if intervalInfo.NodeExists {
 			response.UnclaimedIntervals = append(response.UnclaimedIntervals, intervalInfo)
