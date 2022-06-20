@@ -76,6 +76,9 @@ type SmartnodeConfig struct {
 	// The path within the daemon Docker container of the validator key folder
 	validatorKeychainPath string `yaml:"-"`
 
+	// The path that custom validator keys will be stored (ones for minipools that aren't derived from the node wallet)
+	customKeyRecoverPath string `yaml:"-"`
+
 	// The contract address of RocketStorage
 	storageAddress map[Network]string `yaml:"-"`
 
@@ -214,6 +217,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 		validatorKeychainPath: "/.rocketpool/data/validators",
 
+		customKeyRecoverPath: "/.rocketpool/data/custom-keys",
+
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
@@ -290,6 +295,14 @@ func (config *SmartnodeConfig) GetValidatorKeychainPath() string {
 		return filepath.Join(config.DataPath.Value.(string), "validators")
 	} else {
 		return config.validatorKeychainPath
+	}
+}
+
+func (config *SmartnodeConfig) GetCustomKeyPath() string {
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "custom-keys")
+	} else {
+		return config.customKeyRecoverPath
 	}
 }
 

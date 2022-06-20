@@ -101,6 +101,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						Usage: "Specify the index to use with the derivation path when recovering your wallet",
 						Value: 0,
 					},
+					cli.StringSliceFlag{
+						Name:  "password",
+						Usage: "Specify the password for a minipool's predefined validator private key file; format is `--password 0xabcd...=\"password goes here\"",
+					},
 				},
 				Action: func(c *cli.Context) error {
 
