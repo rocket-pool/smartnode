@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -54,43 +55,96 @@ func recoverWallet(c *cli.Context) error {
 	// Handle validator key recovery skipping
 	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
 
-	// Get the derivation path
-	derivationPath := c.String("derivation-path")
-	if derivationPath != "" {
-		fmt.Printf("Using a custom derivation path (%s).\n\n", derivationPath)
-	}
+	// Check for a search-by-address operation
+	addressString := c.String("address")
+	if addressString != "" {
 
-	// Log
-	if skipValidatorKeyRecovery {
-		fmt.Println("Recovering node wallet only (ignoring validator keys)...")
-	} else {
-		// Check and assign the EC status
-		err = cliutils.CheckExecutionClientStatus(rp)
+		// Get the address to search for
+		address := common.HexToAddress(addressString)
+		fmt.Printf("Searching for the derivation path and index for wallet %s...\nNOTE: this may take several minutes depending on how large your wallet's index is.\n", address.Hex())
+
+		// Log
+		if skipValidatorKeyRecovery {
+			fmt.Println("Ignoring validator keys, searching for wallet only...")
+		} else {
+			// Check and assign the EC status
+			err = cliutils.CheckExecutionClientStatus(rp)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Recover wallet
+		response, err := rp.SearchAndRecoverWallet(mnemonic, address, skipValidatorKeyRecovery)
 		if err != nil {
 			return err
 		}
-		fmt.Println("Recovering node wallet and validator keys...")
-	}
 
-	// Recover wallet
-	response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath)
-	if err != nil {
-		return err
-	}
-
-	// Log & return
-	fmt.Println("The node wallet was successfully recovered.")
-	fmt.Printf("Node account: %s\n", response.AccountAddress.Hex())
-	if !skipValidatorKeyRecovery {
-		if len(response.ValidatorKeys) > 0 {
-			fmt.Println("Validator keys:")
-			for _, key := range response.ValidatorKeys {
-				fmt.Println(key.Hex())
+		// Log & return
+		fmt.Println("The node wallet was successfully recovered.")
+		fmt.Printf("Derivation path: %s\n", response.DerivationPath)
+		fmt.Printf("Wallet index:    %d\n", response.Index)
+		fmt.Printf("Node account:    %s\n", response.AccountAddress.Hex())
+		if !skipValidatorKeyRecovery {
+			if len(response.ValidatorKeys) > 0 {
+				fmt.Println("Validator keys:")
+				for _, key := range response.ValidatorKeys {
+					fmt.Println(key.Hex())
+				}
+			} else {
+				fmt.Println("No validator keys were found.")
 			}
+		}
+
+	} else {
+
+		// Get the derivation path
+		derivationPath := c.String("derivation-path")
+		if derivationPath != "" {
+			fmt.Printf("Using a custom derivation path (%s).\n", derivationPath)
+		}
+
+		// Get the wallet index
+		walletIndex := c.Uint("wallet-index")
+		if walletIndex != 0 {
+			fmt.Printf("Using a custom wallet index (%d).\n", walletIndex)
+		}
+
+		fmt.Println()
+
+		// Log
+		if skipValidatorKeyRecovery {
+			fmt.Println("Recovering node wallet only (ignoring validator keys)...")
 		} else {
-			fmt.Println("No validator keys were found.")
+			// Check and assign the EC status
+			err = cliutils.CheckExecutionClientStatus(rp)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Recovering node wallet and validator keys...")
+		}
+
+		// Recover wallet
+		response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath, walletIndex)
+		if err != nil {
+			return err
+		}
+
+		// Log & return
+		fmt.Println("The node wallet was successfully recovered.")
+		fmt.Printf("Node account: %s\n", response.AccountAddress.Hex())
+		if !skipValidatorKeyRecovery {
+			if len(response.ValidatorKeys) > 0 {
+				fmt.Println("Validator keys:")
+				for _, key := range response.ValidatorKeys {
+					fmt.Println(key.Hex())
+				}
+			} else {
+				fmt.Println("No validator keys were found.")
+			}
 		}
 	}
+
 	return nil
 
 }

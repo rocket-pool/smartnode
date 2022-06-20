@@ -27,6 +27,7 @@ type NodeStatusResponse struct {
 	MinimumRplStake          *big.Int        `json:"minimumRplStake"`
 	MaximumRplStake          *big.Int        `json:"maximumRplStake"`
 	CollateralRatio          float64         `json:"collateralRatio"`
+	VotingDelegate           common.Address  `json:"votingDelegate"`
 	MinipoolLimit            uint64          `json:"minipoolLimit"`
 	MinipoolCounts           struct {
 		Total               int `json:"total"`
@@ -282,4 +283,26 @@ type NodeSignResponse struct {
 	Status     string `json:"status"`
 	Error      string `json:"error"`
 	SignedData string `json:"signedData"`
+}
+
+type EstimateSetSnapshotDelegateGasResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type SetSnapshotDelegateResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type EstimateClearSnapshotDelegateGasResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type ClearSnapshotDelegateResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
 }

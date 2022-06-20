@@ -3,6 +3,8 @@ package config
 import (
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/smartnode/shared"
 )
 
@@ -14,6 +16,7 @@ const (
 	ecMigratorTag       string = "rocketpool/ec-migrator:v1.0.0"
 	NetworkID           string = "network"
 	ProjectNameID       string = "projectName"
+	SnapshotID          string = "rocketpool-dao.eth"
 )
 
 // Defaults
@@ -73,6 +76,9 @@ type SmartnodeConfig struct {
 	// The path within the daemon Docker container of the validator key folder
 	validatorKeychainPath string `yaml:"-"`
 
+	// The path that custom validator keys will be stored (ones for minipools that aren't derived from the node wallet)
+	customKeyRecoverPath string `yaml:"-"`
+
 	// The contract address of RocketStorage
 	storageAddress map[Network]string `yaml:"-"`
 
@@ -84,6 +90,9 @@ type SmartnodeConfig struct {
 
 	// The contract address of the RPL faucet
 	rplFaucetAddress map[Network]string `yaml:"-"`
+
+	// The contract address for Snapshot delegation
+	snapshotDelegationAddress map[Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -208,6 +217,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 		validatorKeychainPath: "/.rocketpool/data/validators",
 
+		customKeyRecoverPath: "/.rocketpool/data/custom-keys",
+
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
@@ -226,6 +237,11 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		rplFaucetAddress: map[Network]string{
 			Network_Mainnet: "",
 			Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
+		},
+
+		snapshotDelegationAddress: map[Network]string{
+			Network_Mainnet: "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
+			Network_Prater:  "0xD0897D68Cd66A710dDCecDe30F7557972181BEDc",
 		},
 	}
 
@@ -282,6 +298,14 @@ func (config *SmartnodeConfig) GetValidatorKeychainPath() string {
 	}
 }
 
+func (config *SmartnodeConfig) GetCustomKeyPath() string {
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "custom-keys")
+	} else {
+		return config.customKeyRecoverPath
+	}
+}
+
 func (config *SmartnodeConfig) GetStorageAddress() string {
 	return config.storageAddress[config.Network.Value.(Network)]
 }
@@ -298,6 +322,10 @@ func (config *SmartnodeConfig) GetRplFaucetAddress() string {
 	return config.rplFaucetAddress[config.Network.Value.(Network)]
 }
 
+func (config *SmartnodeConfig) GetSnapshotDelegationAddress() string {
+	return config.snapshotDelegationAddress[config.Network.Value.(Network)]
+}
+
 func (config *SmartnodeConfig) GetSmartnodeContainerTag() string {
 	return smartnodeTag
 }
@@ -312,6 +340,10 @@ func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 
 func (config *SmartnodeConfig) GetEcMigratorContainerTag() string {
 	return ecMigratorTag
+}
+
+func (config *SmartnodeConfig) GetVotingSnapshotID() common.Hash {
+	return crypto.Keccak256Hash([]byte(SnapshotID))
 }
 
 // The the title for the config

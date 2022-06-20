@@ -32,6 +32,16 @@ type RecoverWalletResponse struct {
 	ValidatorKeys  []types.ValidatorPubkey `json:"validatorKeys"`
 }
 
+type SearchAndRecoverWalletResponse struct {
+	Status         string                  `json:"status"`
+	Error          string                  `json:"error"`
+	FoundWallet    bool                    `json:"foundWallet"`
+	AccountAddress common.Address          `json:"accountAddress"`
+	DerivationPath string                  `json:"derivationPath"`
+	Index          uint                    `json:"index"`
+	ValidatorKeys  []types.ValidatorPubkey `json:"validatorKeys"`
+}
+
 type RebuildWalletResponse struct {
 	Status        string                  `json:"status"`
 	Error         string                  `json:"error"`

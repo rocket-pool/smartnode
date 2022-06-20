@@ -59,11 +59,19 @@ func testMnemonic(c *cli.Context) error {
 	// Get the derivation path
 	derivationPath := c.String("derivation-path")
 	if derivationPath != "" {
-		fmt.Printf("Using a custom derivation path (%s).\n\n", derivationPath)
+		fmt.Printf("Using a custom derivation path (%s).\n", derivationPath)
 	}
 
+	// Get the wallet index
+	walletIndex := c.Uint("wallet-index")
+	if walletIndex != 0 {
+		fmt.Printf("Using a custom wallet index (%d).\n", walletIndex)
+	}
+
+	fmt.Println()
+
 	// Test wallet recovery
-	response, err := rp.TestMnemonic(mnemonic, derivationPath)
+	response, err := rp.TestMnemonic(mnemonic, derivationPath, walletIndex)
 	if err != nil {
 		return err
 	}
