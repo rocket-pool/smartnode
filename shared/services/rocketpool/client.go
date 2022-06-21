@@ -1440,7 +1440,7 @@ func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, othe
 		envArgs := ""
 		for key, value := range envVars {
 			os.Setenv(key, shellescape.Quote(value))
-			envArgs = fmt.Sprintf("%s -e %s", envArgs, key)
+			envArgs += fmt.Sprintf("-e %s ", key)
 		}
 		containerName, err := c.getAPIContainerName()
 		if err != nil {
@@ -1450,7 +1450,7 @@ func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, othe
 	} else {
 		envArgs := ""
 		for key, value := range envVars {
-			envArgs = fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
+			envArgs += fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
 		}
 		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
 			envArgs,
