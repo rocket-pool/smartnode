@@ -150,7 +150,7 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client) (map[string]string, erro
 	pubkeyPasswords := map[string]string{}
 	for _, pubkey := range customPubkeys {
 		password := cliutils.PromptPassword(
-			fmt.Sprintf("Please enter a password that the keystore for %s was encrypted with:", pubkey.Hex()), "^.*$", "",
+			fmt.Sprintf("Please enter the password that the keystore for %s was encrypted with:", pubkey.Hex()), "^.*$", "",
 		)
 
 		formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(pubkey.Hex()))
