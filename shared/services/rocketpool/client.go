@@ -1387,6 +1387,16 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
 	}
 
+	// Create the custom keys dir
+	customKeyDir, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys"))
+	if err != nil {
+		return []string{}, fmt.Errorf("error expanding custom validator key directory: %w", err)
+	}
+	err = os.MkdirAll(customKeyDir, 0775)
+	if err != nil {
+		return []string{}, fmt.Errorf("error creating custom validator key directory: %w", err)
+	}
+
 	return deployedContainers, nil
 
 }
