@@ -1,13 +1,25 @@
 package wallet
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet/bip39"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
+)
+
+const (
+	passwordKeyFormat string = "PASSWORD_%s"
 )
 
 // Prompt for a wallet password
@@ -85,4 +97,67 @@ func confirmMnemonic(mnemonic string) {
 			fmt.Println("")
 		}
 	}
+}
+
+// Check for custom keys and prompt for their passwords
+func promptForCustomKeyPasswords(rp *rocketpool.Client) (map[string]string, error) {
+
+	// Load the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// Check for the custom key directory
+	customKeyDir := filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys")
+	info, err := os.Stat(customKeyDir)
+	if os.IsNotExist(err) || !info.IsDir() {
+		return nil, nil
+	}
+
+	// Get the custom keystore files
+	files, err := ioutil.ReadDir(customKeyDir)
+	if err != nil {
+		return nil, fmt.Errorf("error enumerating custom keystores: %w", err)
+	}
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	// Get the pubkeys for the custom keystores
+	customPubkeys := []types.ValidatorPubkey{}
+	for _, file := range files {
+		// Read the file
+		bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
+		}
+
+		// Deserialize it
+		keystore := api.ValidatorKeystore{}
+		err = json.Unmarshal(bytes, &keystore)
+		if err != nil {
+			return nil, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
+		}
+
+		customPubkeys = append(customPubkeys, keystore.Pubkey)
+	}
+
+	// Notify the user
+	fmt.Println("It looks like you have some custom keystores for your minipool's validators.\nYou will be prompted for the passwords each one was encrypted with, so they can be loaded into the Validator Client that Rocket Pool manages for you.\n")
+
+	// Get the passwords for each one
+	pubkeyPasswords := map[string]string{}
+	for _, pubkey := range customPubkeys {
+		password := cliutils.PromptPassword(
+			fmt.Sprintf("Please enter the password that the keystore for %s was encrypted with:", pubkey.Hex()), "^.*$", "",
+		)
+
+		formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(pubkey.Hex()))
+		pubkeyPasswords[fmt.Sprintf(passwordKeyFormat, formattedPubkey)] = password
+
+		fmt.Println()
+	}
+	return pubkeyPasswords, nil
+
 }

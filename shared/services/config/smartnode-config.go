@@ -459,6 +459,14 @@ func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
 	}
 }
 
+func (config *SmartnodeConfig) GetCustomKeyPath() string {
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "custom-keys")
+	} else {
+		return filepath.Join(DaemonDataPath, "custom-keys")
+	}
+}
+
 func (config *SmartnodeConfig) GetStorageAddress() string {
 	return config.storageAddress[config.Network.Value.(Network)]
 }

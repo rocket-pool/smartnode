@@ -55,6 +55,15 @@ func recoverWallet(c *cli.Context) error {
 	// Handle validator key recovery skipping
 	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
 
+	// Check for custom keys
+	var customKeyPasswordVars map[string]string
+	if !skipValidatorKeyRecovery {
+		customKeyPasswordVars, err = promptForCustomKeyPasswords(rp)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Check for a search-by-address operation
 	addressString := c.String("address")
 	if addressString != "" {
@@ -75,7 +84,7 @@ func recoverWallet(c *cli.Context) error {
 		}
 
 		// Recover wallet
-		response, err := rp.SearchAndRecoverWallet(mnemonic, address, skipValidatorKeyRecovery)
+		response, err := rp.SearchAndRecoverWallet(mnemonic, address, skipValidatorKeyRecovery, customKeyPasswordVars)
 		if err != nil {
 			return err
 		}
@@ -125,7 +134,7 @@ func recoverWallet(c *cli.Context) error {
 		}
 
 		// Recover wallet
-		response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath, walletIndex)
+		response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath, walletIndex, customKeyPasswordVars)
 		if err != nil {
 			return err
 		}

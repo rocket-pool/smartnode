@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	walletutils "github.com/rocket-pool/smartnode/shared/utils/wallet"
 )
 
 const (
@@ -44,7 +44,7 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 
 	// Check if wallet is already initialized
 	if w.IsInitialized() {
-		return nil, errors.New("The wallet is already initialized")
+		return nil, errors.New("the wallet is already initialized")
 	}
 
 	// Get the derivation path
@@ -74,18 +74,9 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 	response.AccountAddress = nodeAccount.Address
 
 	if !c.Bool("skip-validator-key-recovery") {
-		// Get node's validating pubkeys
-		pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAccount.Address, nil)
+		response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, nodeAccount.Address, w)
 		if err != nil {
 			return nil, err
-		}
-		response.ValidatorKeys = pubkeys
-
-		// Recover validator keys
-		for _, pubkey := range pubkeys {
-			if err := w.RecoverValidatorKey(pubkey); err != nil {
-				return nil, err
-			}
 		}
 	}
 
@@ -125,7 +116,7 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 
 	// Check if wallet is already initialized
 	if w.IsInitialized() {
-		return nil, errors.New("The wallet is already initialized")
+		return nil, errors.New("the wallet is already initialized")
 	}
 
 	// Try each derivation path across all of the iterations
@@ -165,7 +156,7 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 	}
 
 	if !response.FoundWallet {
-		return nil, fmt.Errorf("Exhausted all derivation paths and indices from 0 to %d, wallet not found.", findIterations)
+		return nil, fmt.Errorf("exhausted all derivation paths and indices from 0 to %d, wallet not found", findIterations)
 	}
 
 	// Recover wallet
@@ -181,18 +172,9 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 	response.AccountAddress = nodeAccount.Address
 
 	if !c.Bool("skip-validator-key-recovery") {
-		// Get node's validating pubkeys
-		pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAccount.Address, nil)
+		response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, nodeAccount.Address, w)
 		if err != nil {
 			return nil, err
-		}
-		response.ValidatorKeys = pubkeys
-
-		// Recover validator keys
-		for _, pubkey := range pubkeys {
-			if err := w.RecoverValidatorKey(pubkey); err != nil {
-				return nil, err
-			}
 		}
 	}
 

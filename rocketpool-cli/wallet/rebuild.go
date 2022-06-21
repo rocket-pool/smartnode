@@ -34,11 +34,17 @@ func rebuildWallet(c *cli.Context) error {
 		return nil
 	}
 
+	// Check for custom keys
+	customKeyPasswordVars, err := promptForCustomKeyPasswords(rp)
+	if err != nil {
+		return err
+	}
+
 	// Log
 	fmt.Println("Rebuilding node validator keystores...")
 
 	// Rebuild wallet
-	response, err := rp.RebuildWallet()
+	response, err := rp.RebuildWallet(customKeyPasswordVars)
 	if err != nil {
 		return err
 	}
