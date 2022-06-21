@@ -1393,6 +1393,71 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 
 // Call the Rocket Pool API
 func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
+	// Sanitize and parse the args
+	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
+
+	// Create the command to run
+	var cmd string
+	if c.daemonPath == "" {
+		containerName, err := c.getAPIContainerName()
+		if err != nil {
+			return []byte{}, err
+		}
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
+	} else {
+		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
+			c.daemonPath,
+			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
+			ignoreSyncCheckFlag,
+			forceFallbackECFlag,
+			c.getGasOpts(),
+			c.getCustomNonce(),
+			args)
+	}
+
+	// Run the command
+	return c.runApiCall(cmd)
+}
+
+// Call the Rocket Pool API
+func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, otherArgs ...string) ([]byte, error) {
+	// Sanitize and parse the args
+	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
+
+	// Create the command to run
+	var cmd string
+	if c.daemonPath == "" {
+		envArgs := ""
+		for key, value := range envVars {
+			os.Setenv(key, shellescape.Quote(value))
+			envArgs = fmt.Sprintf("%s -e %s", envArgs, key)
+		}
+		containerName, err := c.getAPIContainerName()
+		if err != nil {
+			return []byte{}, err
+		}
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s %s api %s", envArgs, shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
+	} else {
+		envArgs := ""
+		for key, value := range envVars {
+			envArgs = fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
+		}
+		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
+			envArgs,
+			c.daemonPath,
+			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
+			ignoreSyncCheckFlag,
+			forceFallbackECFlag,
+			c.getGasOpts(),
+			c.getCustomNonce(),
+			args)
+	}
+
+	// Run the command
+	return c.runApiCall(cmd)
+}
+
+func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, string, string) {
 	// Sanitize arguments
 	var sanitizedArgs []string
 	for _, arg := range strings.Fields(args) {
@@ -1416,25 +1481,10 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		forceFallbackECFlag = "--force-fallback-ec"
 	}
 
-	// Run the command
-	var cmd string
-	if c.daemonPath == "" {
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return []byte{}, err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
-	} else {
-		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
-			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
-			ignoreSyncCheckFlag,
-			forceFallbackECFlag,
-			c.getGasOpts(),
-			c.getCustomNonce(),
-			args)
-	}
+	return ignoreSyncCheckFlag, forceFallbackECFlag, args
+}
 
+func (c *Client) runApiCall(cmd string) ([]byte, error) {
 	if c.debugPrint {
 		fmt.Println("To API:")
 		fmt.Println(cmd)
