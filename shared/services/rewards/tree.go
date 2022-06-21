@@ -302,7 +302,7 @@ func (r *RewardsFile) updateNetworksAndTotals() {
 func (r *RewardsFile) calculateRplRewards() error {
 
 	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
-	requiredRegistrationLength, err := rewards.GetClaimIntervalTime(r.rp, r.opts)
+	intervalDuration, err := rewards.GetClaimIntervalTime(r.rp, r.opts)
 	if err != nil {
 		return fmt.Errorf("error getting required registration time: %w", err)
 	}
@@ -327,23 +327,40 @@ func (r *RewardsFile) calculateRplRewards() error {
 		return err
 	}
 
+	// Calculate the true effective stake of each node based on their participation in this interval
+	totalNodeEffectiveStake := big.NewInt(0)
+	trueNodeEffectiveStakes := map[common.Address]*big.Int{}
+	intervalDurationBig := big.NewInt(int64(intervalDuration.Seconds()))
 	for _, address := range r.nodeAddresses {
-		// Make sure this node is eligible for rewards
-		regTime, err := node.GetNodeRegistrationTime(r.rp, address, r.opts)
-		if err != nil {
-			return fmt.Errorf("error getting registration time for node %s: %w", address, err)
-		}
-		if snapshotBlockTime.Sub(regTime) < requiredRegistrationLength {
-			continue
-		}
-
-		// Get how much RPL goes to this node: effective stake / total stake * total RPL rewards for nodes
+		// Get the node's effective stake
 		nodeStake, err := node.GetNodeEffectiveRPLStake(r.rp, address, r.opts)
 		if err != nil {
 			return fmt.Errorf("error getting effective stake for node %s: %w", address.Hex(), err)
 		}
+
+		// Get the timestamp of the node's registration
+		regTime, err := node.GetNodeRegistrationTime(r.rp, address, r.opts)
+		if err != nil {
+			return fmt.Errorf("error getting registration time for node %s: %w", address, err)
+		}
+
+		// Get the actual effective stake, scaled based on participation
+		eligibleDuration := snapshotBlockTime.Sub(regTime)
+		if eligibleDuration < intervalDuration {
+			eligibleSeconds := big.NewInt(int64(eligibleDuration.Seconds()))
+			nodeStake.Mul(nodeStake, eligibleSeconds)
+			nodeStake.Div(nodeStake, intervalDurationBig)
+		}
+		trueNodeEffectiveStakes[address] = nodeStake
+
+		// Add it to the total
+		totalNodeEffectiveStake.Add(totalNodeEffectiveStake, nodeStake)
+	}
+
+	for _, address := range r.nodeAddresses {
+		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
-		nodeRplRewards.Mul(nodeStake, totalNodeRewards)
+		nodeRplRewards.Mul(trueNodeEffectiveStakes[address], totalNodeRewards)
 		nodeRplRewards.Div(nodeRplRewards, totalRplStake)
 
 		// If there are pending rewards, add it to the map
@@ -402,19 +419,34 @@ func (r *RewardsFile) calculateRplRewards() error {
 	if err != nil {
 		return err
 	}
-	memberCount := big.NewInt(int64(len(oDaoAddresses)))
-	individualOdaoRewards := big.NewInt(0)
-	individualOdaoRewards.Div(totalODaoRewards, memberCount)
 
+	// Calculate the true effective time of each oDAO node based on their participation in this interval
+	totalODaoNodeTime := big.NewInt(0)
+	trueODaoNodeTimes := map[common.Address]*big.Int{}
 	for _, address := range oDaoAddresses {
-		// Make sure this node is eligible for rewards
+		// Get the timestamp of the node's registration
 		regTime, err := node.GetNodeRegistrationTime(r.rp, address, r.opts)
 		if err != nil {
 			return fmt.Errorf("error getting registration time for node %s: %w", address, err)
 		}
-		if snapshotBlockTime.Sub(regTime) < requiredRegistrationLength {
-			continue
+
+		// Get the actual effective time, scaled based on participation
+		participationTime := big.NewInt(0).Set(intervalDurationBig)
+		eligibleDuration := snapshotBlockTime.Sub(regTime)
+		if eligibleDuration < intervalDuration {
+			participationTime = big.NewInt(int64(eligibleDuration.Seconds()))
 		}
+		trueODaoNodeTimes[address] = participationTime
+
+		// Add it to the total
+		totalODaoNodeTime.Add(totalODaoNodeTime, participationTime)
+	}
+
+	for _, address := range oDaoAddresses {
+		// Calculate the oDAO rewards for the node: (participation time) * (total oDAO rewards) / (total participation time)
+		individualOdaoRewards := big.NewInt(0)
+		individualOdaoRewards.Mul(trueODaoNodeTimes[address], totalODaoRewards)
+		individualOdaoRewards.Div(individualOdaoRewards, totalODaoNodeTime)
 
 		rewardsForNode, exists := r.NodeRewards[address]
 		if !exists {
