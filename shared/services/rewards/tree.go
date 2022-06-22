@@ -39,18 +39,19 @@ type SmoothingPoolMinipoolPerformance struct {
 	MissedAttestations      uint64   `json:"missedAttestations"`
 	ParticipationRate       float64  `json:"participationRate"`
 	MissingAttestationSlots []uint64 `json:"missingAttestationSlots"`
-	ETHEarned               float64  `json:"ethEarned"`
+	EthEarned               float64  `json:"ethEarned"`
 }
 
 // Node operator rewards
 type NodeRewardsInfo struct {
-	RewardNetwork       uint64                                               `json:"rewardNetwork"`
-	CollateralRpl       *QuotedBigInt                                        `json:"collateralRpl"`
-	OracleDaoRpl        *QuotedBigInt                                        `json:"oracleDaoRpl"`
-	SmoothingPoolEth    *QuotedBigInt                                        `json:"smoothingPoolEth"`
-	MerkleData          []byte                                               `json:"-"`
-	MerkleProof         []string                                             `json:"merkleProof"`
-	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance `json:"minipoolPerformance,omitempty"`
+	RewardNetwork                uint64                                               `json:"rewardNetwork"`
+	CollateralRpl                *QuotedBigInt                                        `json:"collateralRpl"`
+	OracleDaoRpl                 *QuotedBigInt                                        `json:"oracleDaoRpl"`
+	SmoothingPoolEth             *QuotedBigInt                                        `json:"smoothingPoolEth"`
+	SmoothingPoolEligibilityRate float64                                              `json:"smoothingPoolEligibilityRate"`
+	MerkleData                   []byte                                               `json:"-"`
+	MerkleProof                  []string                                             `json:"merkleProof"`
+	MinipoolPerformance          map[common.Address]*SmoothingPoolMinipoolPerformance `json:"minipoolPerformance,omitempty"`
 }
 
 // Rewards per network
@@ -109,6 +110,7 @@ type RewardsFile struct {
 	elEndTime            time.Time                 `json:"-"`
 	validNetworkCache    map[uint64]bool           `json:"-"`
 	epsilon              *big.Int                  `json:"-"`
+	intervalSeconds      *big.Int                  `json:"-"`
 }
 
 // Create a new rewards file
@@ -297,10 +299,6 @@ func (r *RewardsFile) updateNetworksAndTotals() {
 			}
 			r.NetworkRewards[network] = rewardsForNetwork
 		}
-
-		// Calculate the total RPL
-		r.TotalRewards.TotalCollateralRpl.Add(&r.TotalRewards.TotalCollateralRpl.Int, &rewardsForNetwork.CollateralRpl.Int)
-		r.TotalRewards.TotalOracleDaoRpl.Add(&r.TotalRewards.TotalOracleDaoRpl.Int, &rewardsForNetwork.OracleDaoRpl.Int)
 	}
 
 }
@@ -584,6 +582,7 @@ func (r *RewardsFile) calculateEthRewards() error {
 	r.ExecutionStartBlock = startElBlockNumber.Uint64()
 	r.elStartTime = time.Unix(int64(startElBlockHeader.Time), 0)
 	r.elEndTime = time.Unix(int64(r.elSnapshotHeader.Time), 0)
+	r.intervalSeconds = big.NewInt(int64(r.elEndTime.Sub(r.elStartTime) / time.Second))
 
 	// Get the details for nodes eligible for Smoothing Pool rewards
 	// This should be all of the eth1 calls, so do them all at the start of Smoothing Pool calculation to prevent the need for an archive node during normal operations
@@ -643,6 +642,7 @@ func (r *RewardsFile) calculateEthRewards() error {
 				r.NodeRewards[nodeInfo.Address] = rewardsForNode
 			}
 			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
+			rewardsForNode.SmoothingPoolEligibilityRate = float64(nodeInfo.EligibleSeconds.Uint64()) / float64(r.intervalSeconds.Uint64())
 
 			// Add minipool rewards to the JSON
 			rewardsForNode.MinipoolPerformance = map[common.Address]*SmoothingPoolMinipoolPerformance{}
@@ -654,7 +654,7 @@ func (r *RewardsFile) calculateEthRewards() error {
 					SuccessfulAttestations:  minipoolInfo.GoodAttestations,
 					MissedAttestations:      minipoolInfo.MissedAttestations,
 					ParticipationRate:       float64(minipoolInfo.GoodAttestations) / float64(minipoolInfo.GoodAttestations+minipoolInfo.MissedAttestations),
-					ETHEarned:               eth.WeiToEth(minipoolInfo.MinipoolShare),
+					EthEarned:               eth.WeiToEth(minipoolInfo.MinipoolShare),
 					MissingAttestationSlots: []uint64{},
 				}
 				for slot := range minipoolInfo.MissingAttestationSlots {
@@ -707,10 +707,10 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 
 				// Minipool share calculation
 				minipoolShare := big.NewInt(0).Add(one, minipool.Fee) // Start with 1 + fee
-				if nodeInfo.EligibilityFactor != 1.0 {
+				if r.intervalSeconds.Cmp(nodeInfo.EligibleSeconds) == 1 {
 					// Scale the total shares by the eligibility factor based on how long the node has been opted in
-					minipoolShare.Mul(minipoolShare, eth.EthToWei(nodeInfo.EligibilityFactor))
-					minipoolShare.Div(minipoolShare, one)
+					minipoolShare.Mul(minipoolShare, nodeInfo.EligibleSeconds)
+					minipoolShare.Div(minipoolShare, r.intervalSeconds)
 				}
 				if minipool.MissedAttestations > 0 && minipool.GoodAttestations > 0 {
 					// Calculate the participation rate if there are any missed attestations
@@ -768,7 +768,7 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 	r.log.Printlnf("%s Pool staker ETH:    %s (%.3f)", r.logPrefix, poolStakerShare.String(), eth.WeiToEth(truePoolStakerAmount))
 	r.log.Printlnf("%s Node Op ETH:        %s (%.3f)", r.logPrefix, nodeOpShare.String(), eth.WeiToEth(nodeOpShare))
 	r.log.Printlnf("%s Calculated NO ETH:  %s (error = %s wei)", r.logPrefix, totalEthForMinipools.String(), delta.String())
-	r.log.Printlnf("%s Adjusting pool staker ETH to %s to handle rounding errors", r.logPrefix, truePoolStakerAmount.String())
+	r.log.Printlnf("%s Adjusting pool staker ETH to %s to acount for truncation", r.logPrefix, truePoolStakerAmount.String())
 
 	return truePoolStakerAmount, totalEthForMinipools, nil
 
@@ -999,8 +999,6 @@ func (r *RewardsFile) createMinipoolIndexMap() error {
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
 func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 
-	intervalDuration := float64(r.elEndTime.Sub(r.elStartTime))
-
 	// For each NO, get their opt-in status and time of last change in batches
 	nodeCount := uint64(len(r.nodeAddresses))
 	r.nodeDetails = make([]*NodeSmoothingDetails, nodeCount)
@@ -1040,19 +1038,19 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 				// If the node isn't opted into the Smoothing Pool and they didn't opt out during this interval, ignore them
 				if r.elStartTime.Sub(nodeDetails.StatusChangeTime) > 0 && !nodeDetails.IsOptedIn {
 					nodeDetails.IsEligible = false
-					nodeDetails.EligibilityFactor = 0
+					nodeDetails.EligibleSeconds = big.NewInt(0)
 					r.nodeDetails[iterationIndex] = nodeDetails
 					return nil
 				}
 
 				// Get the node's total active factor
 				if nodeDetails.IsOptedIn {
-					nodeDetails.EligibilityFactor = float64(r.elEndTime.Sub(nodeDetails.StatusChangeTime)) / intervalDuration
+					nodeDetails.EligibleSeconds = big.NewInt(int64(r.elEndTime.Sub(nodeDetails.StatusChangeTime) / time.Second))
 				} else {
-					nodeDetails.EligibilityFactor = float64(nodeDetails.StatusChangeTime.Sub(r.elStartTime)) / intervalDuration
+					nodeDetails.EligibleSeconds = big.NewInt(int64(nodeDetails.StatusChangeTime.Sub(r.elStartTime) / time.Second))
 				}
-				if nodeDetails.EligibilityFactor > 1 {
-					nodeDetails.EligibilityFactor = 1
+				if nodeDetails.EligibleSeconds.Cmp(r.intervalSeconds) == 1 {
+					nodeDetails.EligibleSeconds.Set(r.intervalSeconds)
 				}
 
 				// Get the details for each minipool in the node
@@ -1078,7 +1076,7 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 							if penaltyCount >= 3 {
 								// This node is a cheater
 								nodeDetails.IsEligible = false
-								nodeDetails.EligibilityFactor = 0
+								nodeDetails.EligibleSeconds = big.NewInt(0)
 								nodeDetails.Minipools = []*MinipoolInfo{}
 								r.nodeDetails[iterationIndex] = nodeDetails
 								return nil

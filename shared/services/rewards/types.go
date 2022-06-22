@@ -57,13 +57,13 @@ type CommitteeInfo struct {
 
 // Details about a node for the Smoothing Pool
 type NodeSmoothingDetails struct {
-	Address           common.Address
-	IsEligible        bool
-	IsOptedIn         bool
-	StatusChangeTime  time.Time
-	Minipools         []*MinipoolInfo
-	EligibilityFactor float64
-	SmoothingPoolEth  *big.Int
+	Address          common.Address
+	IsEligible       bool
+	IsOptedIn        bool
+	StatusChangeTime time.Time
+	Minipools        []*MinipoolInfo
+	EligibleSeconds  *big.Int
+	SmoothingPoolEth *big.Int
 }
 
 type QuotedBigInt struct {
