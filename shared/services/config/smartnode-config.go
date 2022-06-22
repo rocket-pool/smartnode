@@ -72,13 +72,13 @@ type SmartnodeConfig struct {
 	MinipoolStakeGasThreshold Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
 
 	// Mode for acquiring Merkle rewards trees
-	RewardsTreeMode Parameter `yaml:"rewardsTreeMode"`
+	RewardsTreeMode Parameter `yaml:"rewardsTreeMode,omitempty"`
 
 	// URL for an EC with archive mode, for manual rewards tree generation
-	ArchiveECUrl Parameter `yaml:"archiveEcUrl"`
+	ArchiveECUrl Parameter `yaml:"archiveEcUrl,omitempty"`
 
 	// Token for Oracle DAO members to use when uploading Merkle trees to Web3.Storage
-	Web3StorageApiToken Parameter `yaml:"web3StorageApiToken"`
+	Web3StorageApiToken Parameter `yaml:"web3StorageApiToken,omitempty"`
 
 	///////////////////////////
 	// Non-editable settings //

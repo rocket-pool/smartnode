@@ -77,8 +77,8 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
-	isUpdateDeployed := false
 	go func() {
+		isUpdateDeployed := false
 		for {
 			// Check the EC status
 			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status

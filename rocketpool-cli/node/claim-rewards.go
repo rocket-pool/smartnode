@@ -55,18 +55,14 @@ func nodeClaimRewards(c *cli.Context) error {
 
 func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 
+	// Provide a notice
+	fmt.Printf("%sWelcome to the new rewards system!\nYou no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.\nHere you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.%s\n\n", colorBlue, colorReset)
+
 	// Get eligible intervals
 	rewardsInfoResponse, err := rp.GetRewardsInfo()
 	if err != nil {
 		return fmt.Errorf("error getting rewards info: %w", err)
 	}
-	if len(rewardsInfoResponse.UnclaimedIntervals) == 0 {
-		fmt.Println("Your node does not have any unclaimed rewards yet.")
-		return nil
-	}
-
-	// Provide a notice
-	fmt.Printf("%sWelcome to the new rewards system!\nYou no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.\nHere you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.%s\n\n", colorBlue, colorReset)
 
 	// Check for missing Merkle trees with rewards available
 	missingIntervals := []rprewards.IntervalInfo{}
@@ -122,6 +118,11 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 		if err != nil {
 			return fmt.Errorf("error getting rewards info: %w", err)
 		}
+	}
+
+	if len(rewardsInfoResponse.UnclaimedIntervals) == 0 {
+		fmt.Println("Your node does not have any unclaimed rewards yet.")
+		return nil
 	}
 
 	// Print the info for all available periods
