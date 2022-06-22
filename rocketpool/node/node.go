@@ -78,7 +78,6 @@ func run(c *cli.Context) error {
 
 	// Run task loop
 	go func() {
-		isUpdateDeployed := false
 		for {
 			// Check the EC status
 			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
@@ -91,21 +90,17 @@ func run(c *cli.Context) error {
 				}
 				time.Sleep(taskCooldown)
 
-				if !isUpdateDeployed {
-					// Run auto-claims during the legacy period
-					isUpdateDeployed, err = claimRplRewards.run()
-					if err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
+				// Run auto-claims during the legacy period
+				if err := claimRplRewards.run(); err != nil {
+					errorLog.Println(err)
 				}
-				if isUpdateDeployed {
-					// Run the rewards download check
-					if err := downloadRewardsTrees.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
+				time.Sleep(taskCooldown)
+
+				// Run the rewards download check
+				if err := downloadRewardsTrees.run(); err != nil {
+					errorLog.Println(err)
 				}
+				time.Sleep(taskCooldown)
 
 				// Run the minipool stake check
 				if err := stakePrelaunchMinipools.run(); err != nil {

@@ -16,17 +16,19 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Manage download rewards trees task
 type downloadRewardsTrees struct {
-	c   *cli.Context
-	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	w   *wallet.Wallet
-	rp  *rocketpool.RocketPool
-	d   *client.Client
-	bc  beacon.Client
+	c                     *cli.Context
+	log                   log.ColorLogger
+	cfg                   *config.RocketPoolConfig
+	w                     *wallet.Wallet
+	rp                    *rocketpool.RocketPool
+	d                     *client.Client
+	bc                    beacon.Client
+	isMergeUpdateDeployed bool
 }
 
 // Create manage fee recipient task
@@ -56,13 +58,14 @@ func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger) (*downloadR
 
 	// Return task
 	return &downloadRewardsTrees{
-		c:   c,
-		log: logger,
-		cfg: cfg,
-		w:   w,
-		rp:  rp,
-		d:   d,
-		bc:  bc,
+		c:                     c,
+		log:                   logger,
+		cfg:                   cfg,
+		w:                     w,
+		rp:                    rp,
+		d:                     d,
+		bc:                    bc,
+		isMergeUpdateDeployed: false,
 	}, nil
 
 }
@@ -73,6 +76,19 @@ func (d *downloadRewardsTrees) run() error {
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(d.c, true); err != nil {
 		return err
+	}
+
+	// Check if the contract upgrade has happened yet
+	if !d.isMergeUpdateDeployed {
+		isMergeUpdateDeployed, err := rp.IsMergeUpdateDeployed(d.rp)
+		if err != nil {
+			return fmt.Errorf("error checking if merge update has been deployed: %w", err)
+		}
+		if isMergeUpdateDeployed {
+			d.isMergeUpdateDeployed = true
+		} else {
+			return nil
+		}
 	}
 
 	// Check if the user opted into downloading rewards files

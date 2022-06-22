@@ -22,15 +22,16 @@ import (
 
 // Claim RPL rewards task
 type claimRplRewards struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c                     *cli.Context
+	log                   log.ColorLogger
+	cfg                   *config.RocketPoolConfig
+	w                     *wallet.Wallet
+	rp                    *rocketpool.RocketPool
+	gasThreshold          float64
+	maxFee                *big.Int
+	maxPriorityFee        *big.Int
+	gasLimit              uint64
+	isMergeUpdateDeployed bool
 }
 
 // Create claim RPL rewards task
@@ -77,42 +78,49 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 
 	// Return task
 	return &claimRplRewards{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		w:              w,
-		rp:             rp,
-		gasThreshold:   gasThreshold,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:                     c,
+		log:                   logger,
+		cfg:                   cfg,
+		w:                     w,
+		rp:                    rp,
+		gasThreshold:          gasThreshold,
+		maxFee:                maxFee,
+		maxPriorityFee:        priorityFee,
+		gasLimit:              0,
+		isMergeUpdateDeployed: false,
 	}, nil
 
 }
 
 // Claim RPL rewards
-func (t *claimRplRewards) run() (bool, error) {
+func (t *claimRplRewards) run() error {
 
 	legacyClaimNodeAddress := t.cfg.Smartnode.GetLegacyClaimNodeAddress()
 
 	// Check to see if autoclaim is disabled
 	if t.gasThreshold == 0 {
-		return false, nil
+		return nil
+	}
+
+	// Ignore if Redstone is deployed
+	if t.isMergeUpdateDeployed {
+		return nil
 	}
 
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
-		return false, err
+		return err
 	}
 
 	// Check if the contract upgrade has happened yet
 	isMergeUpdateDeployed, err := rp.IsMergeUpdateDeployed(t.rp)
 	if err != nil {
-		return false, fmt.Errorf("error checking if merge update has been deployed: %w", err)
+		return fmt.Errorf("error checking if merge update has been deployed: %w", err)
 	}
 	if isMergeUpdateDeployed {
 		t.log.Println("The merge update contracts have been deployed! Auto-claiming is no longer necessary. Enjoy the new rewards system!")
-		return true, nil
+		t.isMergeUpdateDeployed = true
+		return nil
 	}
 
 	// Log
@@ -121,25 +129,25 @@ func (t *claimRplRewards) run() (bool, error) {
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Check for rewards
 	rewardsAmountWei, err := rewards.GetNodeClaimRewardsAmount(t.rp, nodeAccount.Address, nil, &legacyClaimNodeAddress)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if rewardsAmountWei.Cmp(big.NewInt(0)) == 0 {
-		return false, nil
+		return nil
 	}
 
 	// Don't claim unless the oDAO has claimed first (prevent known issue yet to be patched in smart contracts)
 	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(t.rp, nil, &legacyClaimNodeAddress)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if trustedNodeClaimed.Cmp(big.NewInt(0)) == 0 {
-		return false, nil
+		return nil
 	}
 
 	// Log
@@ -149,13 +157,13 @@ func (t *claimRplRewards) run() (bool, error) {
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Get the gas limit
 	gasInfo, err := rewards.EstimateClaimNodeRewardsGas(t.rp, opts, &legacyClaimNodeAddress)
 	if err != nil {
-		return false, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
+		return fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
 	}
 	var gas *big.Int
 	if t.gasLimit != 0 {
@@ -169,19 +177,19 @@ func (t *claimRplRewards) run() (bool, error) {
 	if maxFee == nil || maxFee.Uint64() == 0 {
 		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
 
 	// Check the threshold
 	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
-		return false, nil
+		return nil
 	}
 
 	// Check if it's worth more than the gas to claim it
 	rplPriceWei, err := network.GetRPLPrice(t.rp, nil)
 	if err != nil {
-		return false, err
+		return err
 	}
 	rewardsInEth := eth.WeiToEth(rplPriceWei) * rewardsAmount
 	totalGasWei := new(big.Int).Mul(maxFee, gas)
@@ -190,7 +198,7 @@ func (t *claimRplRewards) run() (bool, error) {
 	if totalEthCost >= rewardsInEth {
 		t.log.Printlnf("Transaction would cost up to %f ETH in gas but only provide %f ETH worth of RPL. Ignoring until gas is cheaper.",
 			totalEthCost, rewardsInEth)
-		return false, nil
+		return nil
 	}
 
 	opts.GasFeeCap = maxFee
@@ -200,17 +208,17 @@ func (t *claimRplRewards) run() (bool, error) {
 	// Claim rewards
 	hash, err := rewards.ClaimNodeRewards(t.rp, opts, &legacyClaimNodeAddress)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Print TX info and wait for it to be mined
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Log & return
 	t.log.Printlnf("Successfully claimed %.6f RPL in rewards.", rewardsAmount)
-	return false, nil
+	return nil
 
 }
