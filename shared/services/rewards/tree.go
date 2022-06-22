@@ -31,7 +31,6 @@ import (
 const (
 	SmoothingPoolDetailsBatchSize uint64 = 20
 	RewardsFileVersion            uint64 = 1
-	Epsilon                       int64  = 1000 // Math is allowed to be off by this much, in wei, due to division truncation
 )
 
 // Minipool stats
@@ -109,6 +108,7 @@ type RewardsFile struct {
 	elStartTime          time.Time                 `json:"-"`
 	elEndTime            time.Time                 `json:"-"`
 	validNetworkCache    map[uint64]bool           `json:"-"`
+	epsilon              *big.Int                  `json:"-"`
 }
 
 // Create a new rewards file
@@ -155,13 +155,19 @@ func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.Rocket
 	r.opts = &bind.CallOpts{
 		BlockNumber: r.elSnapshotHeader.Number,
 	}
-
 	nodeAddresses, err := node.GetNodeAddresses(rp, r.opts)
 	if err != nil {
 		return fmt.Errorf("Error getting node addresses: %w", err)
 	}
 	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(nodeAddresses))
 	r.nodeAddresses = nodeAddresses
+
+	// Get the minipool count - this will be used for an error epsilon due to division truncation
+	minipoolCount, err := minipool.GetMinipoolCount(rp, r.opts)
+	if err != nil {
+		return fmt.Errorf("Error getting minipool count: %w", err)
+	}
+	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Calculate the RPL rewards
 	err = r.calculateRplRewards()
@@ -402,19 +408,16 @@ func (r *RewardsFile) calculateRplRewards() error {
 	}
 
 	// Sanity check to make sure we arrived at the correct total
-	epsilon := big.NewInt(Epsilon)
 	delta := big.NewInt(0)
 	totalCalculatedNodeRewards := big.NewInt(0)
 	for _, networkRewards := range r.NetworkRewards {
 		totalCalculatedNodeRewards.Add(totalCalculatedNodeRewards, &networkRewards.CollateralRpl.Int)
 	}
-	if totalCalculatedNodeRewards.Cmp(totalNodeRewards) == 1 {
-		return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; calculated is greater than available", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
-	}
-	delta.Sub(totalNodeRewards, totalCalculatedNodeRewards)
-	if delta.Cmp(epsilon) == 1 {
+	delta.Sub(totalNodeRewards, totalCalculatedNodeRewards).Abs(delta)
+	if delta.Cmp(r.epsilon) == 1 {
 		return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
 	}
+	r.TotalRewards.TotalCollateralRpl.Int = *totalCalculatedNodeRewards
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
@@ -506,16 +509,14 @@ func (r *RewardsFile) calculateRplRewards() error {
 	for _, networkRewards := range r.NetworkRewards {
 		totalCalculatedOdaoRewards.Add(totalCalculatedOdaoRewards, &networkRewards.OracleDaoRpl.Int)
 	}
-	if totalCalculatedOdaoRewards.Cmp(totalODaoRewards) == 1 {
-		return fmt.Errorf("error calculating ODao RPL: total was %s, but expected %s; calculated is greater than available", totalCalculatedOdaoRewards.String(), totalODaoRewards.String())
-	}
-	delta.Sub(totalODaoRewards, totalCalculatedOdaoRewards)
-	if delta.Cmp(epsilon) == 1 {
+	delta.Sub(totalODaoRewards, totalCalculatedOdaoRewards).Abs(delta)
+	if delta.Cmp(r.epsilon) == 1 {
 		return fmt.Errorf("error calculating ODao RPL: total was %s, but expected %s; error was too large", totalCalculatedOdaoRewards.String(), totalODaoRewards.String())
 	}
+	r.TotalRewards.TotalOracleDaoRpl.Int = *totalCalculatedOdaoRewards
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
-	// Handle Protocol DAO rewards
+	// Get expected Protocol DAO rewards
 	pDaoPercent, err := rewards.GetProtocolDaoRewardsPercent(r.rp, r.opts)
 	if err != nil {
 		return err
@@ -523,19 +524,13 @@ func (r *RewardsFile) calculateRplRewards() error {
 	pDaoRewards := NewQuotedBigInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
-	r.TotalRewards.ProtocolDaoRpl = pDaoRewards
-	r.log.Printlnf("%s Total Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
+	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
 
-	// Sanity check the grand total
-	grandTotal := big.NewInt(0)
-	grandTotal.Add(totalCalculatedNodeRewards, totalCalculatedOdaoRewards)
-	grandTotal.Add(grandTotal, &pDaoRewards.Int)
-	if grandTotal.Cmp(pendingRewards) == 1 {
-		delta.Sub(grandTotal, pendingRewards)
-		return fmt.Errorf("calculated RPL rewards = %s, which is larger than pending RPL of %s (delta = %s)", grandTotal.String(), pendingRewards.String(), delta.String())
-	}
-	delta.Sub(pendingRewards, grandTotal)
-	r.log.Printlnf("%s Total RPL to be distributed = %s (error = %s wei)", r.logPrefix, grandTotal.String(), delta.String())
+	// Get actual protocol DAO rewards
+	pDaoRewards.Sub(pendingRewards, totalCalculatedNodeRewards)
+	pDaoRewards.Sub(&pDaoRewards.Int, totalCalculatedOdaoRewards)
+	r.TotalRewards.ProtocolDaoRpl = pDaoRewards
+	r.log.Printlnf("%s Actual Protocol DAO rewards:   %s to account for truncation", r.logPrefix, pDaoRewards.String())
 
 	return nil
 
@@ -764,10 +759,9 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 	truePoolStakerAmount := big.NewInt(0).Sub(r.smoothingPoolBalance, totalEthForMinipools)
 
 	// Sanity check to make sure we arrived at the correct total
-	epsilon := big.NewInt(Epsilon)
 	delta := big.NewInt(0).Sub(totalEthForMinipools, nodeOpShare)
 	delta.Abs(delta)
-	if delta.Cmp(epsilon) == 1 {
+	if delta.Cmp(r.epsilon) == 1 {
 		return nil, nil, fmt.Errorf("error calculating smoothing pool ETH: total was %s, but expected %s; error was too large (%s wei)", totalEthForMinipools.String(), nodeOpShare.String(), delta.String())
 	}
 
