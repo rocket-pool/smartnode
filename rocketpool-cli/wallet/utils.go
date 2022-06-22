@@ -20,10 +20,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	passwordKeyFormat string = "PASSWORD_%s"
-)
-
 // Prompt for a wallet password
 func promptPassword() string {
 	for {
@@ -150,7 +146,7 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		)
 
 		formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(pubkey.Hex()))
-		pubkeyPasswords[fmt.Sprintf(passwordKeyFormat, formattedPubkey)] = password
+		pubkeyPasswords[formattedPubkey] = password
 
 		fmt.Println()
 	}
