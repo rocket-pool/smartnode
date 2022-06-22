@@ -77,6 +77,9 @@ type SmartnodeConfig struct {
 	// The path that custom validator keys will be stored (ones for minipools that aren't derived from the node wallet)
 	customKeyRecoverPath string `yaml:"-"`
 
+	// The path of the password file for custom validator keys
+	customKeyPasswordFilePath string `yaml:"-"`
+
 	// The contract address of RocketStorage
 	storageAddress map[Network]string `yaml:"-"`
 
@@ -217,6 +220,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 
 		customKeyRecoverPath: "/.rocketpool/data/custom-keys",
 
+		customKeyPasswordFilePath: "/.rocketpool/data/custom-key-passwords",
+
 		storageAddress: map[Network]string{
 			Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
@@ -301,6 +306,14 @@ func (config *SmartnodeConfig) GetCustomKeyPath() string {
 		return filepath.Join(config.DataPath.Value.(string), "custom-keys")
 	} else {
 		return config.customKeyRecoverPath
+	}
+}
+
+func (config *SmartnodeConfig) GetCustomKeyPasswordFilePath() string {
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "custom-key-passwords")
+	} else {
+		return config.customKeyPasswordFilePath
 	}
 }
 

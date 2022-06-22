@@ -1429,7 +1429,7 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 	return c.runApiCall(cmd)
 }
 
-// Call the Rocket Pool API
+// Call the Rocket Pool API with some custom environment variables
 func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, otherArgs ...string) ([]byte, error) {
 	// Sanitize and parse the args
 	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)

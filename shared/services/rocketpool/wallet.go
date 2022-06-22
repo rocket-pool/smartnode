@@ -57,7 +57,7 @@ func (c *Client) InitWallet(derivationPath string) (api.InitWalletResponse, erro
 }
 
 // Recover wallet
-func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint, customKeyPasswordVars map[string]string) (api.RecoverWalletResponse, error) {
+func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (api.RecoverWalletResponse, error) {
 	command := "wallet recover "
 	if skipValidatorKeyRecovery {
 		command += "--skip-validator-key-recovery "
@@ -67,14 +67,7 @@ func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, d
 	}
 	command += "--derivation-path"
 
-	var responseBytes []byte
-	var err error
-	if customKeyPasswordVars == nil || len(customKeyPasswordVars) == 0 {
-		responseBytes, err = c.callAPI(command, derivationPath, mnemonic)
-	} else {
-		responseBytes, err = c.callAPIWithEnvVars(customKeyPasswordVars, command, derivationPath, mnemonic)
-	}
-
+	responseBytes, err := c.callAPI(command, derivationPath, mnemonic)
 	if err != nil {
 		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %w", err)
 	}
@@ -89,20 +82,13 @@ func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, d
 }
 
 // Search and recover wallet
-func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address, skipValidatorKeyRecovery bool, customKeyPasswordVars map[string]string) (api.SearchAndRecoverWalletResponse, error) {
+func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (api.SearchAndRecoverWalletResponse, error) {
 	command := "wallet search-and-recover "
 	if skipValidatorKeyRecovery {
 		command += "--skip-validator-key-recovery "
 	}
 
-	var responseBytes []byte
-	var err error
-	if customKeyPasswordVars == nil || len(customKeyPasswordVars) == 0 {
-		responseBytes, err = c.callAPI(command, mnemonic, address.Hex())
-	} else {
-		responseBytes, err = c.callAPIWithEnvVars(customKeyPasswordVars, command, mnemonic, address.Hex())
-	}
-
+	responseBytes, err := c.callAPI(command, mnemonic, address.Hex())
 	if err != nil {
 		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not search and recover wallet: %w", err)
 	}
@@ -117,15 +103,8 @@ func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address,
 }
 
 // Rebuild wallet
-func (c *Client) RebuildWallet(customKeyPasswordVars map[string]string) (api.RebuildWalletResponse, error) {
-	var responseBytes []byte
-	var err error
-	if customKeyPasswordVars == nil || len(customKeyPasswordVars) == 0 {
-		responseBytes, err = c.callAPI("wallet rebuild")
-	} else {
-		responseBytes, err = c.callAPIWithEnvVars(customKeyPasswordVars, "wallet rebuild")
-	}
-
+func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
+	responseBytes, err := c.callAPI("wallet rebuild")
 	if err != nil {
 		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %w", err)
 	}

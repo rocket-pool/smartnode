@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,6 +20,12 @@ func recoverWallet(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Load the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return err
+	}
 
 	// Get & check wallet status
 	status, err := rp.WalletStatus()
@@ -56,11 +63,24 @@ func recoverWallet(c *cli.Context) error {
 	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
 
 	// Check for custom keys
-	var customKeyPasswordVars map[string]string
 	if !skipValidatorKeyRecovery {
-		customKeyPasswordVars, err = promptForCustomKeyPasswords(rp)
+		customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg)
 		if err != nil {
 			return err
+		}
+		if customKeyPasswordFile != "" {
+			// Defer deleting the custom keystore password file
+			defer func(customKeyPasswordFile string) {
+				_, err := os.Stat(customKeyPasswordFile)
+				if os.IsNotExist(err) {
+					return
+				}
+
+				err = os.Remove(customKeyPasswordFile)
+				if err != nil {
+					fmt.Printf("*** WARNING ***\nAn error occurred while removing the custom keystore password file: %s\n\nThis file contains the passwords to your custom validator keys.\nYou *must* delete it manually as soon as possible so nobody can read it.\n\nThe file is located here:\n\n\t%s\n\n", err.Error(), customKeyPasswordFile)
+				}
+			}(customKeyPasswordFile)
 		}
 	}
 
@@ -84,7 +104,7 @@ func recoverWallet(c *cli.Context) error {
 		}
 
 		// Recover wallet
-		response, err := rp.SearchAndRecoverWallet(mnemonic, address, skipValidatorKeyRecovery, customKeyPasswordVars)
+		response, err := rp.SearchAndRecoverWallet(mnemonic, address, skipValidatorKeyRecovery)
 		if err != nil {
 			return err
 		}
@@ -134,7 +154,7 @@ func recoverWallet(c *cli.Context) error {
 		}
 
 		// Recover wallet
-		response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath, walletIndex, customKeyPasswordVars)
+		response, err := rp.RecoverWallet(mnemonic, skipValidatorKeyRecovery, derivationPath, walletIndex)
 		if err != nil {
 			return err
 		}
