@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/smartnode/shared"
 )
 
@@ -467,6 +466,14 @@ func (config *SmartnodeConfig) GetCustomKeyPath() string {
 	}
 }
 
+func (config *SmartnodeConfig) GetCustomKeyPasswordFilePath() string {
+	if config.parent.IsNativeMode {
+		return filepath.Join(config.DataPath.Value.(string), "custom-key-passwords")
+	} else {
+		return filepath.Join(DaemonDataPath, "custom-key-passwords")
+	}
+}
+
 func (config *SmartnodeConfig) GetStorageAddress() string {
 	return config.storageAddress[config.Network.Value.(Network)]
 }
@@ -503,8 +510,12 @@ func (config *SmartnodeConfig) GetEcMigratorContainerTag() string {
 	return ecMigratorTag
 }
 
-func (config *SmartnodeConfig) GetVotingSnapshotID() common.Hash {
-	return crypto.Keccak256Hash([]byte(SnapshotID))
+func (config *SmartnodeConfig) GetVotingSnapshotID() [32]byte {
+	// So the contract wants a Keccak'd hash of the voting ID, but Snapshot's service wants ASCII so it can display the ID in plain text; we have to do this to make it play nicely with Snapshot
+	buffer := [32]byte{}
+	idBytes := []byte(SnapshotID)
+	copy(buffer[0:], idBytes)
+	return buffer
 }
 
 // The the title for the config

@@ -11,15 +11,13 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet/bip39"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
-)
-
-const (
-	passwordKeyFormat string = "PASSWORD_%s"
+	"gopkg.in/yaml.v2"
 )
 
 // Prompt for a wallet password
@@ -99,29 +97,23 @@ func confirmMnemonic(mnemonic string) {
 	}
 }
 
-// Check for custom keys and prompt for their passwords
-func promptForCustomKeyPasswords(rp *rocketpool.Client) (map[string]string, error) {
-
-	// Load the config
-	cfg, _, err := rp.LoadConfig()
-	if err != nil {
-		return nil, err
-	}
+// Check for custom keys, prompt for their passwords, and store them in the custom keys file
+func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolConfig) (string, error) {
 
 	// Check for the custom key directory
 	customKeyDir := filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys")
 	info, err := os.Stat(customKeyDir)
 	if os.IsNotExist(err) || !info.IsDir() {
-		return nil, nil
+		return "", nil
 	}
 
 	// Get the custom keystore files
 	files, err := ioutil.ReadDir(customKeyDir)
 	if err != nil {
-		return nil, fmt.Errorf("error enumerating custom keystores: %w", err)
+		return "", fmt.Errorf("error enumerating custom keystores: %w", err)
 	}
 	if len(files) == 0 {
-		return nil, nil
+		return "", nil
 	}
 
 	// Get the pubkeys for the custom keystores
@@ -130,14 +122,14 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client) (map[string]string, erro
 		// Read the file
 		bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
 		if err != nil {
-			return nil, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
+			return "", fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
 		}
 
 		// Deserialize it
 		keystore := api.ValidatorKeystore{}
 		err = json.Unmarshal(bytes, &keystore)
 		if err != nil {
-			return nil, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
+			return "", fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
 		}
 
 		customPubkeys = append(customPubkeys, keystore.Pubkey)
@@ -154,10 +146,33 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client) (map[string]string, erro
 		)
 
 		formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(pubkey.Hex()))
-		pubkeyPasswords[fmt.Sprintf(passwordKeyFormat, formattedPubkey)] = password
+		pubkeyPasswords[formattedPubkey] = password
 
 		fmt.Println()
 	}
-	return pubkeyPasswords, nil
 
+	// Store them in the file
+	fileBytes, err := yaml.Marshal(pubkeyPasswords)
+	if err != nil {
+		return "", fmt.Errorf("error serializing keystore passwords file: %w", err)
+	}
+	passwordFile := filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-key-passwords")
+	err = ioutil.WriteFile(passwordFile, fileBytes, 0600)
+	if err != nil {
+		return "", fmt.Errorf("error writing keystore passwords file: %w", err)
+	}
+
+	return passwordFile, nil
+
+}
+
+// Deletes the custom key password file
+func deleteCustomKeyPasswordFile(passwordFile string) error {
+	_, err := os.Stat(passwordFile)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
+	err = os.Remove(passwordFile)
+	return err
 }

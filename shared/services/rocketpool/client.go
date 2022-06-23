@@ -313,9 +313,11 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	}
 
 	// Migrate the fallback EC
-	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.FallbackProvider, legacyCfg.Chains.Eth1.FallbackWsProvider, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExternalExecution.HttpUrl, &cfg.FallbackExternalExecution.WsUrl)
-	if err != nil {
-		return nil, fmt.Errorf("error migrating fallback eth1 provider info: %w", err)
+	if legacyCfg.Chains.Eth1.FallbackProvider != "" { // Ignore pre-v1.2 where fallback didn't exist
+		err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.FallbackProvider, legacyCfg.Chains.Eth1.FallbackWsProvider, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExternalExecution.HttpUrl, &cfg.FallbackExternalExecution.WsUrl)
+		if err != nil {
+			return nil, fmt.Errorf("error migrating fallback eth1 provider info: %w", err)
+		}
 	}
 
 	err = c.migrateEcSelection(legacyCfg.Chains.Eth1Fallback.Client.Selected, &cfg.FallbackExecutionClient, &cfg.FallbackExecutionClientMode)
@@ -1485,7 +1487,7 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 	return c.runApiCall(cmd)
 }
 
-// Call the Rocket Pool API
+// Call the Rocket Pool API with some custom environment variables
 func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, otherArgs ...string) ([]byte, error) {
 	// Sanitize and parse the args
 	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)

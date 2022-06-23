@@ -19,10 +19,7 @@ import (
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
-)
-
-const (
-	passwordKeyFormat string = "PASSWORD_%s"
+	"gopkg.in/yaml.v2"
 )
 
 func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address common.Address, w *wallet.Wallet) ([]types.ValidatorPubkey, error) {
@@ -59,72 +56,87 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 			return nil, fmt.Errorf("error initializing BLS: %w", err)
 		}
 
-		// Process every custom key
-		for _, file := range files {
-			// Read the file
-			bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
+		if len(files) > 0 {
+
+			// Deserialize the password file
+			passwordFile := cfg.Smartnode.GetCustomKeyPasswordFilePath()
+			fileBytes, err := ioutil.ReadFile(passwordFile)
 			if err != nil {
-				return nil, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
+				return nil, fmt.Errorf("%d custom keystores were found but the password file could not be loaded: %w", len(files), err)
 			}
-
-			// Deserialize it
-			keystore := api.ValidatorKeystore{}
-			err = json.Unmarshal(bytes, &keystore)
+			passwords := map[string]string{}
+			err = yaml.Unmarshal(fileBytes, &passwords)
 			if err != nil {
-				return nil, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
+				return nil, fmt.Errorf("error unmarshalling custom keystore password file: %w", err)
 			}
 
-			// Check if it's one of the pubkeys for the minipool
-			_, exists := pubkeyMap[keystore.Pubkey]
-			if !exists {
-				// This pubkey isn't for any of this node's minipools so ignore it
-				continue
-			}
+			// Process every custom key
+			for _, file := range files {
+				// Read the file
+				bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
+				if err != nil {
+					return nil, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
+				}
 
-			// Get the password for it
-			formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(keystore.Pubkey.Hex()))
-			password, exists := os.LookupEnv(fmt.Sprintf(passwordKeyFormat, formattedPubkey))
-			if !exists {
-				return nil, fmt.Errorf("custom keystore for pubkey %s needs a password, but none was provided", keystore.Pubkey.Hex())
-			}
+				// Deserialize it
+				keystore := api.ValidatorKeystore{}
+				err = json.Unmarshal(bytes, &keystore)
+				if err != nil {
+					return nil, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
+				}
 
-			// Get the encryption function it uses
-			kdf, exists := keystore.Crypto["kdf"]
-			if !exists {
-				return nil, fmt.Errorf("error processing custom keystore %s: \"crypto\" didn't contain a subkey named \"kdf\"", file.Name())
-			}
-			kdfMap := kdf.(map[string]interface{})
-			function, exists := kdfMap["function"]
-			if !exists {
-				return nil, fmt.Errorf("error processing custom keystore %s: \"crypto.kdf\" didn't contain a subkey named \"function\"", file.Name())
-			}
-			functionString := function.(string)
+				// Check if it's one of the pubkeys for the minipool
+				_, exists := pubkeyMap[keystore.Pubkey]
+				if !exists {
+					// This pubkey isn't for any of this node's minipools so ignore it
+					continue
+				}
 
-			// Decrypt the private key
-			encryptor := eth2ks.New(eth2ks.WithCipher(functionString))
-			decryptedKey, err := encryptor.Decrypt(keystore.Crypto, password)
-			if err != nil {
-				return nil, fmt.Errorf("error decrypting keystore for validator %s: %w", keystore.Pubkey.Hex(), err)
-			}
-			privateKey, err := eth2types.BLSPrivateKeyFromBytes(decryptedKey)
-			if err != nil {
-				return nil, fmt.Errorf("error recreating private key for validator %s: %w", keystore.Pubkey.Hex(), err)
-			}
+				// Get the password for it
+				formattedPubkey := strings.ToUpper(hexutils.RemovePrefix(keystore.Pubkey.Hex()))
+				password, exists := passwords[formattedPubkey]
+				if !exists {
+					return nil, fmt.Errorf("custom keystore for pubkey %s needs a password, but none was provided", keystore.Pubkey.Hex())
+				}
 
-			// Verify the private key matches the public key
-			reconstructedPubkey := types.BytesToValidatorPubkey(privateKey.PublicKey().Marshal())
-			if reconstructedPubkey != keystore.Pubkey {
-				return nil, fmt.Errorf("private keystore file %s claims to be for validator %s but it's for validator %s", file.Name(), keystore.Pubkey.Hex(), reconstructedPubkey.Hex())
-			}
+				// Get the encryption function it uses
+				kdf, exists := keystore.Crypto["kdf"]
+				if !exists {
+					return nil, fmt.Errorf("error processing custom keystore %s: \"crypto\" didn't contain a subkey named \"kdf\"", file.Name())
+				}
+				kdfMap := kdf.(map[string]interface{})
+				function, exists := kdfMap["function"]
+				if !exists {
+					return nil, fmt.Errorf("error processing custom keystore %s: \"crypto.kdf\" didn't contain a subkey named \"function\"", file.Name())
+				}
+				functionString := function.(string)
 
-			// Store the key
-			err = w.StoreValidatorKey(privateKey, keystore.Path)
-			if err != nil {
-				return nil, fmt.Errorf("error storing private keystore for %s: %w", reconstructedPubkey.Hex(), err)
-			}
+				// Decrypt the private key
+				encryptor := eth2ks.New(eth2ks.WithCipher(functionString))
+				decryptedKey, err := encryptor.Decrypt(keystore.Crypto, password)
+				if err != nil {
+					return nil, fmt.Errorf("error decrypting keystore for validator %s: %w", keystore.Pubkey.Hex(), err)
+				}
+				privateKey, err := eth2types.BLSPrivateKeyFromBytes(decryptedKey)
+				if err != nil {
+					return nil, fmt.Errorf("error recreating private key for validator %s: %w", keystore.Pubkey.Hex(), err)
+				}
 
-			// Remove the pubkey from pending minipools to handle
-			delete(pubkeyMap, reconstructedPubkey)
+				// Verify the private key matches the public key
+				reconstructedPubkey := types.BytesToValidatorPubkey(privateKey.PublicKey().Marshal())
+				if reconstructedPubkey != keystore.Pubkey {
+					return nil, fmt.Errorf("private keystore file %s claims to be for validator %s but it's for validator %s", file.Name(), keystore.Pubkey.Hex(), reconstructedPubkey.Hex())
+				}
+
+				// Store the key
+				err = w.StoreValidatorKey(privateKey, keystore.Path)
+				if err != nil {
+					return nil, fmt.Errorf("error storing private keystore for %s: %w", reconstructedPubkey.Hex(), err)
+				}
+
+				// Remove the pubkey from pending minipools to handle
+				delete(pubkeyMap, reconstructedPubkey)
+			}
 		}
 	}
 
