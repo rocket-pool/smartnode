@@ -55,11 +55,10 @@ type RocketPoolConfig struct {
 	ExecutionClientMode Parameter `yaml:"executionClientMode"`
 	ExecutionClient     Parameter `yaml:"executionClient"`
 
-	// Fallback execution client settings
-	UseFallbackExecutionClient  Parameter `yaml:"useFallbackExecutionClient,omitempty"`
-	FallbackExecutionClientMode Parameter `yaml:"fallbackExecutionClientMode,omitempty"`
-	FallbackExecutionClient     Parameter `yaml:"fallbackExecutionClient,omitempty"`
-	ReconnectDelay              Parameter `yaml:"reconnectDelay,omitempty"`
+	// Fallback settings
+	UseFallbackClients      Parameter `yaml:"useFallbackClients,omitempty"`
+	FallbackConsensusClient Parameter `yaml:"fallbackConsensusClient,omitempty"`
+	ReconnectDelay          Parameter `yaml:"reconnectDelay,omitempty"`
 
 	// Consensus client settings
 	ConsensusClientMode     Parameter `yaml:"consensusClientMode,omitempty"`
@@ -88,11 +87,11 @@ type RocketPoolConfig struct {
 	Pocket            *PocketConfig            `yaml:"pocket,omitempty"`
 	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
 
-	// Fallback Execution client configurations
-	FallbackExecutionCommon   *ExecutionCommonConfig   `yaml:"fallbackExecutionCommon,omitempty"`
-	FallbackInfura            *InfuraConfig            `yaml:"fallbackInfura,omitempty"`
-	FallbackPocket            *PocketConfig            `yaml:"fallbackPocket,omitempty"`
-	FallbackExternalExecution *ExternalExecutionConfig `yaml:"fallbackExternalExecution,omitempty"`
+	// Fallback client configurations
+	FallbackExternalExecution  *ExternalExecutionConfig  `yaml:"fallbackExternalExecution,omitempty"`
+	FallbackExternalLighthouse *ExternalLighthouseConfig `yaml:"fallbackExternalLighthouse,omitempty"`
+	FallbackExternalPrysm      *ExternalPrysmConfig      `yaml:"fallbackExternalPrysm,omitempty"`
+	FallbackExternalTeku       *ExternalTekuConfig       `yaml:"fallbackExternalTeku,omitempty"`
 
 	// Consensus client configurations
 	ConsensusCommon    *ConsensusCommonConfig    `yaml:"consensusCommon,omitempty"`
@@ -197,73 +196,44 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Besu",
 				Description: getAugmentedEcDescription(ExecutionClient_Besu, "Hyperledger Besu is a robust full Ethereum protocol client. It uses a novel system called \"Bonsai Trees\" to store its chain data efficiently, which allows it to access block states from the past and does not require pruning. Besu is fully open source and written in Java."),
 				Value:       ExecutionClient_Besu,
-			}, /*{
-				Name:        "*Infura",
-				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. We strongly recommend you choose a Full Execution client instead.",
-				Value:       ExecutionClient_Infura,
-			}, {
-				Name:        "*Pocket",
-				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. We strongly recommend you choose a Full Execution client instead.",
-				Value:       ExecutionClient_Pocket,
-			}*/},
+			}},
 		},
 
-		UseFallbackExecutionClient: Parameter{
-			ID:                   "useFallbackExecutionClient",
-			Name:                 "Use Fallback Execution Client",
-			Description:          "Enable this if you would like to specify a fallback Execution client, which will temporarily be used by the Smartnode and your Consensus client if your primary Execution client ever goes offline.",
+		UseFallbackClients: Parameter{
+			ID:                   "useFallbackClients",
+			Name:                 "Use Fallback Clients",
+			Description:          "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by the Smartnode and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
 			Type:                 ParameterType_Bool,
 			Default:              map[Network]interface{}{Network_All: false},
-			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Eth1Fallback, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
+			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Validator, ContainerID_Node, ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		FallbackExecutionClientMode: Parameter{
-			ID:                   "fallbackExecutionClientMode",
-			Name:                 "Fallback Execution Client Mode",
-			Description:          "Choose which mode to use for your fallback Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
+		FallbackConsensusClient: Parameter{
+			ID:                   "fallbackConsensusClient",
+			Name:                 "Fallback Consensus Client",
+			Description:          "Select which Consensus client you are using for your fallback.",
 			Type:                 ParameterType_Choice,
-			Default:              map[Network]interface{}{Network_All: nil},
-			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Eth1Fallback, ContainerID_Eth2, ContainerID_Node, ContainerID_Watchtower},
+			Default:              map[Network]interface{}{Network_All: ConsensusClient_Lighthouse},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []ParameterOption{{
-				Name:        "Locally Managed",
-				Description: "Allow the Smartnode to manage a fallback Execution client for you (Docker Mode)",
-				Value:       Mode_Local,
+				Name:        "Lighthouse",
+				Description: "Select this if you will use Lighthouse as your fallback Consensus client.",
+				Value:       ConsensusClient_Lighthouse,
 			}, {
-				Name:        "Externally Managed",
-				Description: "Use an existing fallback Execution client that you manage on your own (Hybrid Mode)",
-				Value:       Mode_External,
+				Name:        "Prysm",
+				Description: "Select this if you will use Prysm as your fallback Consensus client.",
+				Value:       ConsensusClient_Prysm,
+			}, {
+				Name:        "Teku",
+				Description: "Select this if you will use Teku as your fallback Consensus client.",
+				Value:       ConsensusClient_Teku,
 			}},
-		},
-
-		FallbackExecutionClient: Parameter{
-			ID:                   "fallbackExecutionClient",
-			Name:                 "Fallback Execution Client",
-			Description:          "Select which fallback Execution client you would like to run.",
-			Type:                 ParameterType_Choice,
-			Default:              map[Network]interface{}{Network_All: ExecutionClient_Pocket},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1Fallback},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-			Options: []ParameterOption{ /*{
-					Name:        "*Infura",
-					Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
-					Value:       ExecutionClient_Infura,
-				}, {
-					Name:        "*Pocket",
-					Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
-					Value:       ExecutionClient_Pocket,
-				},*/{
-					Name:        "*Dummy",
-					Description: "Ignore me",
-					Value:       ExecutionClient_Unknown,
-				}},
 		},
 
 		ReconnectDelay: Parameter{
@@ -452,7 +422,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	// Set the defaults for choices
 	config.ExecutionClientMode.Default[Network_All] = config.ExecutionClientMode.Options[0].Value
-	config.FallbackExecutionClientMode.Default[Network_All] = config.FallbackExecutionClientMode.Options[0].Value
 	config.ConsensusClientMode.Default[Network_All] = config.ConsensusClientMode.Options[0].Value
 
 	config.Smartnode = NewSmartnodeConfig(config)
@@ -463,10 +432,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Infura = NewInfuraConfig(config, false)
 	config.Pocket = NewPocketConfig(config, false)
 	config.ExternalExecution = NewExternalExecutionConfig(config, false)
-	config.FallbackExecutionCommon = NewExecutionCommonConfig(config, true)
-	config.FallbackInfura = NewInfuraConfig(config, true)
-	config.FallbackPocket = NewPocketConfig(config, true)
 	config.FallbackExternalExecution = NewExternalExecutionConfig(config, true)
+	config.FallbackExternalLighthouse = NewExternalLighthouseConfig(config, true)
+	config.FallbackExternalPrysm = NewExternalPrysmConfig(config, true)
+	config.FallbackExternalTeku = NewExternalTekuConfig(config, true)
 	config.ConsensusCommon = NewConsensusCommonConfig(config)
 	config.Lighthouse = NewLighthouseConfig(config)
 	config.Nimbus = NewNimbusConfig(config)
@@ -533,9 +502,8 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.ExecutionClientMode,
 		&config.ExecutionClient,
-		&config.UseFallbackExecutionClient,
-		&config.FallbackExecutionClientMode,
-		&config.FallbackExecutionClient,
+		&config.UseFallbackClients,
+		&config.FallbackConsensusClient,
 		&config.ReconnectDelay,
 		&config.ConsensusClientMode,
 		&config.ConsensusClient,
@@ -554,31 +522,31 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 // Get the subconfigurations for this config
 func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 	return map[string]Config{
-		"smartnode":                 config.Smartnode,
-		"executionCommon":           config.ExecutionCommon,
-		"geth":                      config.Geth,
-		"nethermind":                config.Nethermind,
-		"besu":                      config.Besu,
-		"infura":                    config.Infura,
-		"pocket":                    config.Pocket,
-		"externalExecution":         config.ExternalExecution,
-		"fallbackExecutionCommon":   config.FallbackExecutionCommon,
-		"fallbackInfura":            config.FallbackInfura,
-		"fallbackPocket":            config.FallbackPocket,
-		"fallbackExternalExecution": config.FallbackExternalExecution,
-		"consensusCommon":           config.ConsensusCommon,
-		"lighthouse":                config.Lighthouse,
-		"nimbus":                    config.Nimbus,
-		"prysm":                     config.Prysm,
-		"teku":                      config.Teku,
-		"externalLighthouse":        config.ExternalLighthouse,
-		"externalPrysm":             config.ExternalPrysm,
-		"externalTeku":              config.ExternalTeku,
-		"grafana":                   config.Grafana,
-		"prometheus":                config.Prometheus,
-		"exporter":                  config.Exporter,
-		"bitflyNodeMetrics":         config.BitflyNodeMetrics,
-		"native":                    config.Native,
+		"smartnode":                  config.Smartnode,
+		"executionCommon":            config.ExecutionCommon,
+		"geth":                       config.Geth,
+		"nethermind":                 config.Nethermind,
+		"besu":                       config.Besu,
+		"infura":                     config.Infura,
+		"pocket":                     config.Pocket,
+		"externalExecution":          config.ExternalExecution,
+		"fallbackExternalExecution":  config.FallbackExternalExecution,
+		"fallbackExternalLighthouse": config.ExternalLighthouse,
+		"fallbackExternalPrysm":      config.ExternalPrysm,
+		"fallbackExternalTeku":       config.ExternalTeku,
+		"consensusCommon":            config.ConsensusCommon,
+		"lighthouse":                 config.Lighthouse,
+		"nimbus":                     config.Nimbus,
+		"prysm":                      config.Prysm,
+		"teku":                       config.Teku,
+		"externalLighthouse":         config.ExternalLighthouse,
+		"externalPrysm":              config.ExternalPrysm,
+		"externalTeku":               config.ExternalTeku,
+		"grafana":                    config.Grafana,
+		"prometheus":                 config.Prometheus,
+		"exporter":                   config.Exporter,
+		"bitflyNodeMetrics":          config.BitflyNodeMetrics,
+		"native":                     config.Native,
 	}
 }
 
