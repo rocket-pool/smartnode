@@ -3,7 +3,7 @@ package config
 import "runtime"
 
 const (
-	nimbusTag                  string = "statusim/nimbus-eth2:multiarch-v22.5.2"
+	nimbusTag                  string = "statusim/nimbus-eth2:multiarch-v22.6.0"
 	defaultNimbusMaxPeersArm   uint16 = 100
 	defaultNimbusMaxPeersAmd   uint16 = 160
 	NimbusFeeRecipientFilename string = "rp-fee-recipient.txt"
