@@ -1185,6 +1185,25 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
+	// Make sure the selected CC is compatible with the selected EC
+	var consensusClient config.ConsensusClient
+	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+		consensusClient = cfg.ConsensusClient.Value.(config.ConsensusClient)
+	} else {
+		consensusClient = cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+	}
+	badClients, badFallbackClients := cfg.GetIncompatibleConsensusClients()
+	for _, badClient := range badClients {
+		if consensusClient == badClient.Value {
+			return "", fmt.Errorf("Consensus client [%v] is incompatible with your selected Execution client choice.\nPlease run 'rocketpool service config' and select compatible clients.", consensusClient)
+		}
+	}
+	for _, badClient := range badFallbackClients {
+		if consensusClient == badClient.Value {
+			return "", fmt.Errorf("Consensus client [%v] is incompatible with your selected fallback Execution client choice.\nPlease run 'rocketpool service config' and select compatible clients.", consensusClient)
+		}
+	}
+
 	// Get the external IP address
 	var externalIP string
 	consensus := externalip.DefaultConsensus(nil, nil)

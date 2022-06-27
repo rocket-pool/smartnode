@@ -101,7 +101,6 @@ type RocketPoolConfig struct {
 	Prysm              *PrysmConfig              `yaml:"prysm,omitempty"`
 	Teku               *TekuConfig               `yaml:"teku,omitempty"`
 	ExternalLighthouse *ExternalLighthouseConfig `yaml:"externalLighthouse,omitempty"`
-	ExternalNimbus     *ExternalNimbusConfig     `yaml:"externalNimbus,omitempty"`
 	ExternalPrysm      *ExternalPrysmConfig      `yaml:"externalPrysm,omitempty"`
 	ExternalTeku       *ExternalTekuConfig       `yaml:"externalTeku,omitempty"`
 
@@ -198,7 +197,15 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Name:        "Besu",
 				Description: getAugmentedEcDescription(ExecutionClient_Besu, "Hyperledger Besu is a robust full Ethereum protocol client. It uses a novel system called \"Bonsai Trees\" to store its chain data efficiently, which allows it to access block states from the past and does not require pruning. Besu is fully open source and written in Java."),
 				Value:       ExecutionClient_Besu,
-			}},
+			}, /*{
+				Name:        "*Infura",
+				Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. We strongly recommend you choose a Full Execution client instead.",
+				Value:       ExecutionClient_Infura,
+			}, {
+				Name:        "*Pocket",
+				Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. We strongly recommend you choose a Full Execution client instead.",
+				Value:       ExecutionClient_Pocket,
+			}*/},
 		},
 
 		UseFallbackExecutionClient: Parameter{
@@ -239,16 +246,24 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Name:                 "Fallback Execution Client",
 			Description:          "Select which fallback Execution client you would like to run.",
 			Type:                 ParameterType_Choice,
-			Default:              map[Network]interface{}{Network_All: ExecutionClient_Unknown},
+			Default:              map[Network]interface{}{Network_All: ExecutionClient_Pocket},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1Fallback},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
-			Options: []ParameterOption{{
-				Name:        "*Dummy",
-				Description: "Ignore me",
-				Value:       ExecutionClient_Unknown,
-			}},
+			Options: []ParameterOption{ /*{
+					Name:        "*Infura",
+					Description: "Use infura.io as a light client for Eth 1.0. Not recommended for use in production.\n\n[orange]*WARNING: Infura is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
+					Value:       ExecutionClient_Infura,
+				}, {
+					Name:        "*Pocket",
+					Description: "Use Pocket Network as a decentralized light client for Eth 1.0. Suitable for use in production.\n\n[orange]*WARNING: Pocket is deprecated and will NOT BE COMPATIBLE with the upcoming Ethereum Merge. It will be removed in a future version of the Smartnode. If you want to use a fallback Execution client, you will need to use an Externally Managed one that you control on a separate machine.",
+					Value:       ExecutionClient_Pocket,
+				},*/{
+					Name:        "*Dummy",
+					Description: "Ignore me",
+					Value:       ExecutionClient_Unknown,
+				}},
 		},
 
 		ReconnectDelay: Parameter{
@@ -326,10 +341,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Options: []ParameterOption{{
 				Name:        "Lighthouse",
 				Description: "Select this if you will use Lighthouse as your Consensus client.",
-				Value:       ConsensusClient_Lighthouse,
-			}, {
-				Name:        "Nimbus",
-				Description: "Select this if you will use Nimbus as your Consensus client.",
 				Value:       ConsensusClient_Lighthouse,
 			}, {
 				Name:        "Prysm",
@@ -462,7 +473,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Prysm = NewPrysmConfig(config)
 	config.Teku = NewTekuConfig(config)
 	config.ExternalLighthouse = NewExternalLighthouseConfig(config)
-	config.ExternalNimbus = NewExternalNimbusConfig(config)
 	config.ExternalPrysm = NewExternalPrysmConfig(config)
 	config.ExternalTeku = NewExternalTekuConfig(config)
 	config.Grafana = NewGrafanaConfig(config)
@@ -562,7 +572,6 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"prysm":                     config.Prysm,
 		"teku":                      config.Teku,
 		"externalLighthouse":        config.ExternalLighthouse,
-		"externalNimbus":            config.ExternalNimbus,
 		"externalPrysm":             config.ExternalPrysm,
 		"externalTeku":              config.ExternalTeku,
 		"grafana":                   config.Grafana,
@@ -599,6 +608,90 @@ func (config *RocketPoolConfig) ChangeNetwork(newNetwork Network) {
 			param.changeNetwork(oldNetwork, newNetwork)
 		}
 	}
+
+}
+
+// Get the Consensus clients incompatible with the config's EC and fallback EC selection
+func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOption, []ParameterOption) {
+
+	// Get the compatible clients based on the EC choice
+	var compatibleConsensusClients []ConsensusClient
+	if config.ExecutionClientMode.Value == Mode_Local {
+		executionClient := config.ExecutionClient.Value.(ExecutionClient)
+		switch executionClient {
+		case ExecutionClient_Geth:
+			compatibleConsensusClients = config.Geth.CompatibleConsensusClients
+		case ExecutionClient_Nethermind:
+			compatibleConsensusClients = config.Nethermind.CompatibleConsensusClients
+		case ExecutionClient_Besu:
+			compatibleConsensusClients = config.Besu.CompatibleConsensusClients
+		case ExecutionClient_Infura:
+			compatibleConsensusClients = config.Infura.CompatibleConsensusClients
+		case ExecutionClient_Pocket:
+			compatibleConsensusClients = config.Pocket.CompatibleConsensusClients
+		}
+	}
+
+	// Get the compatible clients based on the fallback EC choice
+	var fallbackCompatibleConsensusClients []ConsensusClient
+	if config.UseFallbackExecutionClient.Value == true && config.FallbackExecutionClientMode.Value == Mode_Local {
+		fallbackExecutionClient := config.FallbackExecutionClient.Value.(ExecutionClient)
+		switch fallbackExecutionClient {
+		case ExecutionClient_Infura:
+			fallbackCompatibleConsensusClients = config.FallbackInfura.CompatibleConsensusClients
+		case ExecutionClient_Pocket:
+			fallbackCompatibleConsensusClients = config.FallbackPocket.CompatibleConsensusClients
+		}
+	}
+
+	// Sort every consensus client into good and bad lists
+	var badClients []ParameterOption
+	var badFallbackClients []ParameterOption
+	var consensusClientOptions []ParameterOption
+	if config.ConsensusClientMode.Value.(Mode) == Mode_Local {
+		consensusClientOptions = config.ConsensusClient.Options
+	} else {
+		consensusClientOptions = config.ExternalConsensusClient.Options
+	}
+	for _, consensusClient := range consensusClientOptions {
+		// Get the value for one of the consensus client options
+		clientValue := consensusClient.Value.(ConsensusClient)
+
+		// Check if it's in the list of clients compatible with the EC
+		if len(compatibleConsensusClients) > 0 {
+			isGood := false
+			for _, compatibleWithEC := range compatibleConsensusClients {
+				if compatibleWithEC == clientValue {
+					isGood = true
+					break
+				}
+			}
+
+			// If it isn't, append it to the list of bad clients and move on
+			if !isGood {
+				badClients = append(badClients, consensusClient)
+				continue
+			}
+		}
+
+		// Check the fallback EC too
+		if len(fallbackCompatibleConsensusClients) > 0 {
+			isGood := false
+			for _, compatibleWithFallbackEC := range fallbackCompatibleConsensusClients {
+				if compatibleWithFallbackEC == clientValue {
+					isGood = true
+					break
+				}
+			}
+
+			if !isGood {
+				badFallbackClients = append(badFallbackClients, consensusClient)
+				continue
+			}
+		}
+	}
+
+	return badClients, badFallbackClients
 
 }
 
@@ -663,8 +756,6 @@ func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusCon
 		switch client {
 		case ConsensusClient_Lighthouse:
 			return config.ExternalLighthouse, nil
-		case ConsensusClient_Nimbus:
-			return config.ExternalNimbus, nil
 		case ConsensusClient_Prysm:
 			return config.ExternalPrysm, nil
 		case ConsensusClient_Teku:
@@ -706,8 +797,6 @@ func (config *RocketPoolConfig) IsDoppelgangerEnabled() (bool, error) {
 		switch client {
 		case ConsensusClient_Lighthouse:
 			return config.ExternalLighthouse.DoppelgangerDetection.Value.(bool), nil
-		case ConsensusClient_Nimbus:
-			return config.ExternalNimbus.DoppelgangerDetection.Value.(bool), nil
 		case ConsensusClient_Prysm:
 			return config.ExternalPrysm.DoppelgangerDetection.Value.(bool), nil
 		case ConsensusClient_Teku:
@@ -946,9 +1035,6 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.ExternalLighthouse.GetParameters(), envVars)
 			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
-		case ConsensusClient_Nimbus:
-			addParametersToEnvVars(config.ExternalNimbus.GetParameters(), envVars)
-			envVars["FEE_RECIPIENT_FILE"] = NimbusFeeRecipientFilename
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.ExternalPrysm.GetParameters(), envVars)
 			envVars["FEE_RECIPIENT_FILE"] = PrysmFeeRecipientFilename
@@ -1060,6 +1146,24 @@ func (config *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[str
 func (config *RocketPoolConfig) Validate() []string {
 	errors := []string{}
 
+	// Check for client incompatibility
+	badClients, badFallbackClients := config.GetIncompatibleConsensusClients()
+	if config.ConsensusClientMode.Value == Mode_Local {
+		selectedCC := config.ConsensusClient.Value.(ConsensusClient)
+		for _, badClient := range badClients {
+			if badClient.Value == selectedCC {
+				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected Execution client:\n\t%v", badClient.Name, config.ExecutionClient.Value))
+				break
+			}
+		}
+		for _, badClient := range badFallbackClients {
+			if badClient.Value == selectedCC {
+				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected fallback Execution client:\n\t%v", badClient.Name, config.FallbackExecutionClient.Value))
+				break
+			}
+		}
+	}
+
 	// Check for illegal blank strings
 	/* TODO - this needs to be smarter and ignore irrelevant settings
 	for _, param := range config.GetParameters() {
@@ -1163,6 +1267,15 @@ func getAffectedContainers(param *Parameter, cfg *RocketPoolConfig) map[Containe
 		affectedContainers[container] = true
 	}
 
+	// Nimbus doesn't operate in split mode, so all of the VC parameters need to get redirected to the BN instead
+	if cfg.ConsensusClientMode.Value.(Mode) == Mode_Local &&
+		cfg.ConsensusClient.Value.(ConsensusClient) == ConsensusClient_Nimbus {
+		for _, container := range param.AffectsContainers {
+			if container == ContainerID_Validator {
+				affectedContainers[ContainerID_Eth2] = true
+			}
+		}
+	}
 	return affectedContainers
 
 }

@@ -61,7 +61,7 @@ func (c *Client) Close() error {
 
 // Get the beacon client type
 func (c *Client) GetClientType() beacon.BeaconClientType {
-	return beacon.SplitProcess
+	return beacon.SingleProcess
 }
 
 func (c *Client) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {

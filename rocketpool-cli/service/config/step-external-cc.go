@@ -13,7 +13,7 @@ func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		clientNames = append(clientNames, client.Name)
 	}
 
-	helperText := "Which Consensus client are you externally managing? Each of them has small behavioral differences, so we'll need to know which one you're using in order to connect to it properly."
+	helperText := "Which Consensus client are you externally managing? Each of them has small behavioral differences, so we'll need to know which one you're using in order to connect to it properly.\n\n[orange]Note: if your client is not listed here, it isn't compatible with external management mode (Hybrid Mode)."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -33,8 +33,6 @@ func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		switch selectedClient {
 		case config.ConsensusClient_Lighthouse:
 			wiz.lighthouseExternalSettingsModal.show()
-		case config.ConsensusClient_Nimbus:
-			wiz.nimbusExternalSettingsModal.show()
 		case config.ConsensusClient_Prysm:
 			wiz.prysmExternalSettingsModal.show()
 		case config.ConsensusClient_Teku:
