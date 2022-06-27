@@ -3,7 +3,7 @@ package config
 import "runtime"
 
 const (
-	nimbusTag                  string = "statusim/nimbus-eth2:multiarch-v22.6.0"
+	nimbusTag                  string = "rocketpool/nimbus-eth2:e5569f4" //"statusim/nimbus-eth2:multiarch-v22.6.0"
 	defaultNimbusMaxPeersArm   uint16 = 100
 	defaultNimbusMaxPeersAmd   uint16 = 160
 	NimbusFeeRecipientFilename string = "rp-fee-recipient.txt"
@@ -22,8 +22,11 @@ type NimbusConfig struct {
 	// The Docker Hub tag for Nimbus
 	ContainerTag Parameter `yaml:"containerTag,omitempty"`
 
-	// Custom command line flags for Nimbus
-	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
+	// Custom command line flags for the BN
+	AdditionalBnFlags Parameter `yaml:"additionalBnFlags,omitempty"`
+
+	// Custom command line flags for the VC
+	AdditionalVcFlags Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
 // Generates a new Nimbus configuration
@@ -55,14 +58,26 @@ func NewNimbusConfig(config *RocketPoolConfig) *NimbusConfig {
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalFlags: Parameter{
-			ID:                   "additionalFlags",
-			Name:                 "Additional Flags",
-			Description:          "Additional custom command line flags you want to pass to Nimbus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+		AdditionalBnFlags: Parameter{
+			ID:                   "additionalBnFlags",
+			Name:                 "Additional Beacon Client Flags",
+			Description:          "Additional custom command line flags you want to pass to Nimbus's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		AdditionalVcFlags: Parameter{
+			ID:                   "additionalVcFlags",
+			Name:                 "Additional Validator Client Flags",
+			Description:          "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
@@ -74,7 +89,8 @@ func (config *NimbusConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.MaxPeers,
 		&config.ContainerTag,
-		&config.AdditionalFlags,
+		&config.AdditionalBnFlags,
+		&config.AdditionalVcFlags,
 	}
 }
 

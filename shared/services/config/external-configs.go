@@ -31,6 +31,26 @@ type ExternalLighthouseConfig struct {
 	AdditionalVcFlags Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
+// Configuration for external Consensus clients
+type ExternalNimbusConfig struct {
+	Title string `yaml:"-"`
+
+	// The URL of the HTTP endpoint
+	HttpUrl Parameter `yaml:"httpUrl,omitempty"`
+
+	// Custom proposal graffiti
+	Graffiti Parameter `yaml:"graffiti,omitempty"`
+
+	// Toggle for enabling doppelganger detection
+	DoppelgangerDetection Parameter `yaml:"doppelgangerDetection,omitempty"`
+
+	// The Docker Hub tag for Lighthouse
+	ContainerTag Parameter `yaml:"containerTag,omitempty"`
+
+	// Custom command line flags for the VC
+	AdditionalVcFlags Parameter `yaml:"additionalVcFlags,omitempty"`
+}
+
 // Configuration for an external Prysm clients
 type ExternalPrysmConfig struct {
 	Title string `yaml:"-"`
@@ -168,6 +188,74 @@ func NewExternalLighthouseConfig(config *RocketPoolConfig) *ExternalLighthouseCo
 			ID:                   "additionalVcFlags",
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+	}
+}
+
+// Generates a new ExternalNimbusClient configuration
+func NewExternalNimbusConfig(config *RocketPoolConfig) *ExternalNimbusConfig {
+	return &ExternalNimbusConfig{
+		Title: "External Nimbus Settings",
+
+		HttpUrl: Parameter{
+			ID:                   "httpUrl",
+			Name:                 "HTTP URL",
+			Description:          "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: ""},
+			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		Graffiti: Parameter{
+			ID:                   GraffitiID,
+			Name:                 "Custom Graffiti",
+			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: defaultGraffiti},
+			MaxLength:            16,
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"CUSTOM_GRAFFITI"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		DoppelgangerDetection: Parameter{
+			ID:                   DoppelgangerDetectionID,
+			Name:                 "Enable Doppelgänger Detection",
+			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:                 ParameterType_Bool,
+			Default:              map[Network]interface{}{Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		ContainerTag: Parameter{
+			ID:                   "containerTag",
+			Name:                 "Container Tag",
+			Description:          "The tag name of the Nimbus container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
+			Type:                 ParameterType_String,
+			Default:              map[Network]interface{}{Network_All: nimbusTag},
+			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		AdditionalVcFlags: Parameter{
+			ID:                   "additionalVcFlags",
+			Name:                 "Additional Validator Client Flags",
+			Description:          "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
@@ -334,6 +422,17 @@ func (config *ExternalLighthouseConfig) GetParameters() []*Parameter {
 }
 
 // Get the parameters for this config
+func (config *ExternalNimbusConfig) GetParameters() []*Parameter {
+	return []*Parameter{
+		&config.HttpUrl,
+		&config.Graffiti,
+		&config.DoppelgangerDetection,
+		&config.ContainerTag,
+		&config.AdditionalVcFlags,
+	}
+}
+
+// Get the parameters for this config
 func (config *ExternalPrysmConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.HttpUrl,
@@ -361,6 +460,11 @@ func (config *ExternalLighthouseConfig) GetValidatorImage() string {
 }
 
 // Get the Docker container name of the validator client
+func (config *ExternalNimbusConfig) GetValidatorImage() string {
+	return config.ContainerTag.Value.(string)
+}
+
+// Get the Docker container name of the validator client
 func (config *ExternalPrysmConfig) GetValidatorImage() string {
 	return config.ContainerTag.Value.(string)
 }
@@ -372,6 +476,11 @@ func (config *ExternalTekuConfig) GetValidatorImage() string {
 
 // Get the API url from the config
 func (config *ExternalLighthouseConfig) GetApiUrl() string {
+	return config.HttpUrl.Value.(string)
+}
+
+// Get the API url from the config
+func (config *ExternalNimbusConfig) GetApiUrl() string {
 	return config.HttpUrl.Value.(string)
 }
 
@@ -391,6 +500,11 @@ func (config *ExternalLighthouseConfig) GetName() string {
 }
 
 // Get the name of the client
+func (config *ExternalNimbusConfig) GetName() string {
+	return "Nimbus"
+}
+
+// Get the name of the client
 func (config *ExternalPrysmConfig) GetName() string {
 	return "Prysm"
 }
@@ -407,6 +521,11 @@ func (config *ExternalExecutionConfig) GetConfigTitle() string {
 
 // The the title for the config
 func (config *ExternalLighthouseConfig) GetConfigTitle() string {
+	return config.Title
+}
+
+// The the title for the config
+func (config *ExternalNimbusConfig) GetConfigTitle() string {
 	return config.Title
 }
 
