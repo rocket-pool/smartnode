@@ -96,6 +96,7 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 func (t *claimRplRewards) run() error {
 
 	legacyClaimNodeAddress := t.cfg.Smartnode.GetLegacyClaimNodeAddress()
+	legacyRewardsPoolAddress := t.cfg.Smartnode.GetLegacyRewardsPoolAddress()
 
 	// Check to see if autoclaim is disabled
 	if t.gasThreshold == 0 {
@@ -142,7 +143,7 @@ func (t *claimRplRewards) run() error {
 	}
 
 	// Don't claim unless the oDAO has claimed first (prevent known issue yet to be patched in smart contracts)
-	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(t.rp, nil, &legacyClaimNodeAddress)
+	trustedNodeClaimed, err := rewards.GetTrustedNodeTotalClaimed(t.rp, nil, &legacyRewardsPoolAddress)
 	if err != nil {
 		return err
 	}
