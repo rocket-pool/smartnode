@@ -896,9 +896,9 @@ func pruneExecutionClient(c *cli.Context) error {
 		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
 	}
 	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
-	/*case config.ExecutionClient_Nethermind:
-	fmt.Println("You are using Nethermind as your Execution client.\nNethermind pruning is not supported yet.")
-	return nil*/
+	case config.ExecutionClient_Nethermind:
+		fmt.Println("You are using Nethermind as your Execution client.\nNethermind pruning is not supported yet.")
+		return nil
 	case config.ExecutionClient_Besu:
 		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
 		return nil
