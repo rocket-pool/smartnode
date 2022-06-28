@@ -611,14 +611,6 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		fmt.Printf("%sNOTE: You currently have Doppelganger Protection enabled.\nYour validator will miss up to 3 attestations when it starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, colorReset)
 	}
 
-	// Warn about light ECs
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && (cfg.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura || cfg.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Pocket) {
-		fmt.Printf("==========\n%sWARNING: you are using a light client (Infura or Pocket) as your primary Execution client.\nLight clients are NOT COMPATIBLE with the upcoming Ethereum Merge, and will be removed in a future version of the Smartnode.\n\nPlease switch to a full client such as Geth, Nethermind, or Besu as soon as possible.\n\nThis can be done via the `rocketpool service config` Terminal UI by simply selecting a different client from the Execution Client drop-down menu in the Execution Client (ETH1) section.%s\n==========\n\n", colorRed, colorReset)
-	}
-	if cfg.UseFallbackExecutionClient.Value == true && cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local && (cfg.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura || cfg.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Pocket) {
-		fmt.Printf("==========\n%sWARNING: you are using a light client (Infura or Pocket) as your fallback Execution client.\nLight clients are NOT COMPATIBLE with the upcoming Ethereum Merge, and will be removed in a future version of the Smartnode.\n\nIf you wish to continue using a fallback Execution client after light clients have been removed, you will need to run one on a separate machine and use Externally Managed mode for your fallback Execution client in the `rocketpool service config` Terminal UI.%s\n==========\n\n", colorRed, colorReset)
-	}
-
 	// Start service
 	err = rp.StartService(getComposeFiles(c))
 	if err != nil {
@@ -907,33 +899,16 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
 
-	if cfg.UseFallbackExecutionClient.Value == false {
+	if cfg.UseFallbackClients.Value == false {
 		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 	} else {
-		var fallbackClientName string
-		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_External {
-			fallbackClientName = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
-		} else {
-			fallbackClientName = fmt.Sprint(cfg.FallbackExecutionClient.Value.(config.ExecutionClient))
-		}
-		fmt.Printf("You have a fallback execution client configured (%s). Rocket Pool (and your consensus client) will use that while the main client is pruning.\n", fallbackClientName)
+		fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 	}
 
 	// Get the container prefix
 	prefix, err := getContainerPrefix(rp)
 	if err != nil {
 		return fmt.Errorf("Error getting container prefix: %w", err)
-	}
-
-	// Prompt for stopping the node container if using Infura to prevent people from hitting the rate limit
-	if cfg.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura {
-		fmt.Printf("\n%s=== NOTE ===\n\n", colorYellow)
-		fmt.Printf("If you are using Infura's free tier, you may hit its rate limit if pruning takes a long time.\n")
-		fmt.Printf("If this happens, you should temporarily disable the `%s` container until pruning is complete. This will:\n", prefix+NodeContainerSuffix)
-		fmt.Println("\t- Stop collecting Rocket Pool's network metrics in the Grafana dashboard")
-		fmt.Println("\t- Stop automatic operations (claiming RPL rewards and staking new minipools)\n")
-		fmt.Printf("To disable the container, run: `docker stop %s`\n", prefix+NodeContainerSuffix)
-		fmt.Printf("To re-enable the container one pruning is complete, run: `docker start %s`%s\n\n", prefix+NodeContainerSuffix, colorReset)
 	}
 
 	// Prompt for confirmation
@@ -1257,7 +1232,7 @@ func resyncEth1(c *cli.Context) error {
 	defer rp.Close()
 
 	// Get the config
-	cfg, isNew, err := rp.LoadConfig()
+	_, isNew, err := rp.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -1272,17 +1247,6 @@ func resyncEth1(c *cli.Context) error {
 	prefix, err := getContainerPrefix(rp)
 	if err != nil {
 		return fmt.Errorf("Error getting container prefix: %w", err)
-	}
-
-	// Prompt for stopping the node container if using Infura to prevent people from hitting the rate limit
-	if cfg.FallbackExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Infura {
-		fmt.Printf("\n%s=== NOTE ===\n\n", colorYellow)
-		fmt.Printf("If you are using Infura's free tier, you will very likely hit its rate limit while resyncing.\n")
-		fmt.Printf("You should temporarily disable the `%s` container until resyncing is complete. This will:\n", prefix+NodeContainerSuffix)
-		fmt.Println("\t- Stop collecting Rocket Pool's network metrics in the Grafana dashboard")
-		fmt.Println("\t- Stop automatic operations (claiming RPL rewards and staking new minipools)\n")
-		fmt.Printf("To disable the container, run: `docker stop %s`\n", prefix+NodeContainerSuffix)
-		fmt.Printf("To re-enable the container one resyncing is complete, run: `docker start %s`%s\n\n", prefix+NodeContainerSuffix, colorReset)
 	}
 
 	// Prompt for confirmation

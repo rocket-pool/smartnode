@@ -317,7 +317,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 
 	// Migrate the fallback EC
 	if legacyCfg.Chains.Eth1.FallbackProvider != "" { // Ignore pre-v1.2 where fallback didn't exist
-		err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.FallbackProvider, legacyCfg.Chains.Eth1.FallbackWsProvider, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExternalExecution.HttpUrl, &cfg.FallbackExternalExecution.WsUrl)
+		err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.FallbackProvider, legacyCfg.Chains.Eth1.FallbackWsProvider, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExecution.HttpUrl, &cfg.FallbackExecution.WsUrl)
 		if err != nil {
 			return nil, fmt.Errorf("error migrating fallback eth1 provider info: %w", err)
 		}
@@ -328,7 +328,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating fallback eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1Fallback.Client.Selected, network, legacyCfg.Chains.Eth1Fallback.Client.Params, nil, nil, cfg.FallbackInfura, cfg.FallbackPocket, cfg.FallbackExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1Fallback.Client.Selected, network, legacyCfg.Chains.Eth1Fallback.Client.Params, nil, nil, cfg.FallbackInfura, cfg.FallbackPocket, cfg.FallbackExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating fallback eth1 params: %w", err)
 	}

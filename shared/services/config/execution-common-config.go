@@ -42,20 +42,9 @@ type ExecutionCommonConfig struct {
 }
 
 // Create a new ExecutionCommonConfig struct
-func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *ExecutionCommonConfig {
-
-	prefix := ""
-	if isFallback {
-		prefix = "FALLBACK_"
-	}
-
-	title := "Common Execution Client Settings"
-	if isFallback {
-		title = "Common Fallback Execution Client Settings"
-	}
-
+func NewExecutionCommonConfig(config *RocketPoolConfig) *ExecutionCommonConfig {
 	return &ExecutionCommonConfig{
-		Title: title,
+		Title: "Common Execution Client Settings",
 
 		HttpPort: Parameter{
 			ID:                   ecHttpPortID,
@@ -64,7 +53,7 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultEcHttpPort},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower, ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariables: []string{prefix + "EC_HTTP_PORT"},
+			EnvironmentVariables: []string{"EC_HTTP_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -76,7 +65,7 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultEcWsPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariables: []string{prefix + "EC_WS_PORT"},
+			EnvironmentVariables: []string{"EC_WS_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -88,7 +77,7 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultEcEnginePort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1, ContainerID_Eth2},
-			EnvironmentVariables: []string{prefix + "EC_ENGINE_PORT"},
+			EnvironmentVariables: []string{"EC_ENGINE_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -112,7 +101,7 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: defaultEcP2pPort},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_P2P_PORT"},
+			EnvironmentVariables: []string{"EC_P2P_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -124,7 +113,7 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "ETHSTATS_LABEL"},
+			EnvironmentVariables: []string{"ETHSTATS_LABEL"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
@@ -136,7 +125,7 @@ func NewExecutionCommonConfig(config *RocketPoolConfig, isFallback bool) *Execut
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "ETHSTATS_LOGIN"},
+			EnvironmentVariables: []string{"ETHSTATS_LOGIN"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},

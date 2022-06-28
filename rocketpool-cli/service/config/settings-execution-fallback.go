@@ -82,7 +82,7 @@ func (configPage *FallbackExecutionConfigPage) createContent() {
 	configPage.fallbackEcCommonItems = createParameterizedFormItems(configPage.masterConfig.FallbackExecutionCommon.GetParameters(), configPage.layout.descriptionBox)
 	configPage.fallbackInfuraItems = createParameterizedFormItems(configPage.masterConfig.FallbackInfura.GetParameters(), configPage.layout.descriptionBox)
 	configPage.fallbackPocketItems = createParameterizedFormItems(configPage.masterConfig.FallbackPocket.GetParameters(), configPage.layout.descriptionBox)
-	configPage.fallbackExternalECItems = createParameterizedFormItems(configPage.masterConfig.FallbackExternalExecution.GetParameters(), configPage.layout.descriptionBox)
+	configPage.fallbackExternalECItems = createParameterizedFormItems(configPage.masterConfig.FallbackExecution.GetParameters(), configPage.layout.descriptionBox)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.useFallbackEcBox, configPage.reconnectDelay, configPage.fallbackEcModeDropdown, configPage.fallbackEcDropdown)

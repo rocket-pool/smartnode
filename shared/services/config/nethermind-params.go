@@ -45,20 +45,9 @@ type NethermindConfig struct {
 }
 
 // Generates a new Nethermind configuration
-func NewNethermindConfig(config *RocketPoolConfig, isFallback bool) *NethermindConfig {
-
-	prefix := ""
-	if isFallback {
-		prefix = "FALLBACK_"
-	}
-
-	title := "Nethermind Settings"
-	if isFallback {
-		title = "Fallback Nethermind Settings"
-	}
-
+func NewNethermindConfig(config *RocketPoolConfig) *NethermindConfig {
 	return &NethermindConfig{
-		Title: title,
+		Title: "Nethermind Settings",
 
 		UnsupportedCommonParams: []string{},
 
@@ -78,7 +67,7 @@ func NewNethermindConfig(config *RocketPoolConfig, isFallback bool) *NethermindC
 			Type:                 ParameterType_Uint,
 			Default:              map[Network]interface{}{Network_All: calculateNethermindCache()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_CACHE_SIZE"},
+			EnvironmentVariables: []string{"EC_CACHE_SIZE"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -90,7 +79,7 @@ func NewNethermindConfig(config *RocketPoolConfig, isFallback bool) *NethermindC
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: calculateNethermindPeers()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_MAX_PEERS"},
+			EnvironmentVariables: []string{"EC_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -102,7 +91,7 @@ func NewNethermindConfig(config *RocketPoolConfig, isFallback bool) *NethermindC
 			Type:                 ParameterType_Uint,
 			Default:              map[Network]interface{}{Network_All: calculateNethermindPruneMemSize()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "NETHERMIND_PRUNE_MEM_SIZE"},
+			EnvironmentVariables: []string{"NETHERMIND_PRUNE_MEM_SIZE"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -114,7 +103,7 @@ func NewNethermindConfig(config *RocketPoolConfig, isFallback bool) *NethermindC
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: getNethermindTag()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_CONTAINER_TAG"},
+			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
@@ -126,7 +115,7 @@ func NewNethermindConfig(config *RocketPoolConfig, isFallback bool) *NethermindC
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_ADDITIONAL_FLAGS"},
+			EnvironmentVariables: []string{"EC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},

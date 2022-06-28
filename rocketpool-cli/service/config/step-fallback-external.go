@@ -7,8 +7,8 @@ import (
 func createFallbackExternalEcStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
 
 	// Create the labels
-	httpLabel := wiz.md.Config.FallbackExternalExecution.HttpUrl.Name
-	wsLabel := wiz.md.Config.FallbackExternalExecution.WsUrl.Name
+	httpLabel := wiz.md.Config.FallbackExecution.HttpUrl.Name
+	wsLabel := wiz.md.Config.FallbackExecution.WsUrl.Name
 
 	helperText := "Please enter the URL of the HTTP-based RPC API and the URL of the Websocket-based RPC API for your existing client.\n\nFor example: `http://192.168.1.45:8545` and `ws://192.168.1.45:8546`"
 
@@ -16,7 +16,7 @@ func createFallbackExternalEcStep(wiz *wizard, currentStep int, totalSteps int) 
 		wiz.md.setPage(modal.page)
 		modal.focus()
 		for label, box := range modal.textboxes {
-			for _, param := range wiz.md.Config.FallbackExternalExecution.GetParameters() {
+			for _, param := range wiz.md.Config.FallbackExecution.GetParameters() {
 				if param.Name == label {
 					box.SetText(fmt.Sprint(param.Value))
 				}
@@ -25,8 +25,8 @@ func createFallbackExternalEcStep(wiz *wizard, currentStep int, totalSteps int) 
 	}
 
 	done := func(text map[string]string) {
-		wiz.md.Config.FallbackExternalExecution.HttpUrl.Value = text[httpLabel]
-		wiz.md.Config.FallbackExternalExecution.WsUrl.Value = text[wsLabel]
+		wiz.md.Config.FallbackExecution.HttpUrl.Value = text[httpLabel]
+		wiz.md.Config.FallbackExecution.WsUrl.Value = text[wsLabel]
 		wiz.consensusModeModal.show()
 	}
 
@@ -42,8 +42,8 @@ func createFallbackExternalEcStep(wiz *wizard, currentStep int, totalSteps int) 
 		70,
 		"Fallback Execution Client (External)",
 		[]string{httpLabel, wsLabel},
-		[]int{wiz.md.Config.FallbackExternalExecution.HttpUrl.MaxLength, wiz.md.Config.FallbackExternalExecution.WsUrl.MaxLength},
-		[]string{wiz.md.Config.FallbackExternalExecution.HttpUrl.Regex, wiz.md.Config.FallbackExternalExecution.WsUrl.Regex},
+		[]int{wiz.md.Config.FallbackExecution.HttpUrl.MaxLength, wiz.md.Config.FallbackExecution.WsUrl.MaxLength},
+		[]string{wiz.md.Config.FallbackExecution.HttpUrl.Regex, wiz.md.Config.FallbackExecution.WsUrl.Regex},
 		show,
 		done,
 		back,

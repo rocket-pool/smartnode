@@ -46,20 +46,9 @@ type BesuConfig struct {
 }
 
 // Generates a new Besu configuration
-func NewBesuConfig(config *RocketPoolConfig, isFallback bool) *BesuConfig {
-
-	prefix := ""
-	if isFallback {
-		prefix = "FALLBACK_"
-	}
-
-	title := "Besu Settings"
-	if isFallback {
-		title = "Fallback Besu Settings"
-	}
-
+func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 	return &BesuConfig{
-		Title: title,
+		Title: "Besu Settings",
 
 		UnsupportedCommonParams: []string{},
 
@@ -79,7 +68,7 @@ func NewBesuConfig(config *RocketPoolConfig, isFallback bool) *BesuConfig {
 			Type:                 ParameterType_Uint,
 			Default:              map[Network]interface{}{Network_All: getBesuHeapSize()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "BESU_JVM_HEAP_SIZE"},
+			EnvironmentVariables: []string{"BESU_JVM_HEAP_SIZE"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -91,7 +80,7 @@ func NewBesuConfig(config *RocketPoolConfig, isFallback bool) *BesuConfig {
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: besuMaxPeers},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_MAX_PEERS"},
+			EnvironmentVariables: []string{"EC_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -103,7 +92,7 @@ func NewBesuConfig(config *RocketPoolConfig, isFallback bool) *BesuConfig {
 			Type:                 ParameterType_Uint,
 			Default:              map[Network]interface{}{Network_All: uint64(512)},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "BESU_MAX_BACK_LAYERS"},
+			EnvironmentVariables: []string{"BESU_MAX_BACK_LAYERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -115,7 +104,7 @@ func NewBesuConfig(config *RocketPoolConfig, isFallback bool) *BesuConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: getBesuTag()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_CONTAINER_TAG"},
+			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
@@ -127,7 +116,7 @@ func NewBesuConfig(config *RocketPoolConfig, isFallback bool) *BesuConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_ADDITIONAL_FLAGS"},
+			EnvironmentVariables: []string{"EC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},

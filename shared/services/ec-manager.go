@@ -49,12 +49,8 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 	}
 
 	// Get the fallback EC url, if applicable
-	if cfg.UseFallbackExecutionClient.Value == true {
-		if cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-			fallbackEcUrl = fmt.Sprintf("http://%s:%d", config.Eth1FallbackContainerName, cfg.FallbackExecutionCommon.HttpPort.Value)
-		} else {
-			fallbackEcUrl = cfg.FallbackExternalExecution.HttpUrl.Value.(string)
-		}
+	if cfg.UseFallbackClients.Value == true {
+		fallbackEcUrl = cfg.FallbackExecution.HttpUrl.Value.(string)
 	}
 
 	primaryEc, err := ethclient.Dial(primaryEcUrl)

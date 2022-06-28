@@ -40,20 +40,9 @@ type GethConfig struct {
 }
 
 // Generates a new Geth configuration
-func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
-
-	prefix := ""
-	if isFallback {
-		prefix = "FALLBACK_"
-	}
-
-	title := "Geth Settings"
-	if isFallback {
-		title = "Fallback Geth Settings"
-	}
-
+func NewGethConfig(config *RocketPoolConfig) *GethConfig {
 	return &GethConfig{
-		Title: title,
+		Title: "Geth Settings",
 
 		UnsupportedCommonParams: []string{},
 
@@ -73,7 +62,7 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 			Type:                 ParameterType_Uint,
 			Default:              map[Network]interface{}{Network_All: calculateGethCache()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_CACHE_SIZE"},
+			EnvironmentVariables: []string{"EC_CACHE_SIZE"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -85,7 +74,7 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 			Type:                 ParameterType_Uint16,
 			Default:              map[Network]interface{}{Network_All: calculateGethPeers()},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_MAX_PEERS"},
+			EnvironmentVariables: []string{"EC_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -97,7 +86,7 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: gethTag},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_CONTAINER_TAG"},
+			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
@@ -109,7 +98,7 @@ func NewGethConfig(config *RocketPoolConfig, isFallback bool) *GethConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
-			EnvironmentVariables: []string{prefix + "EC_ADDITIONAL_FLAGS"},
+			EnvironmentVariables: []string{"EC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},

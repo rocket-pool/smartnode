@@ -56,9 +56,8 @@ type RocketPoolConfig struct {
 	ExecutionClient     Parameter `yaml:"executionClient"`
 
 	// Fallback settings
-	UseFallbackClients      Parameter `yaml:"useFallbackClients,omitempty"`
-	FallbackConsensusClient Parameter `yaml:"fallbackConsensusClient,omitempty"`
-	ReconnectDelay          Parameter `yaml:"reconnectDelay,omitempty"`
+	UseFallbackClients Parameter `yaml:"useFallbackClients,omitempty"`
+	ReconnectDelay     Parameter `yaml:"reconnectDelay,omitempty"`
 
 	// Consensus client settings
 	ConsensusClientMode     Parameter `yaml:"consensusClientMode,omitempty"`
@@ -83,15 +82,7 @@ type RocketPoolConfig struct {
 	Geth              *GethConfig              `yaml:"geth,omitempty"`
 	Nethermind        *NethermindConfig        `yaml:"nethermind,omitempty"`
 	Besu              *BesuConfig              `yaml:"besu,omitempty"`
-	Infura            *InfuraConfig            `yaml:"infura,omitempty"`
-	Pocket            *PocketConfig            `yaml:"pocket,omitempty"`
 	ExternalExecution *ExternalExecutionConfig `yaml:"externalExecution,omitempty"`
-
-	// Fallback client configurations
-	FallbackExternalExecution  *ExternalExecutionConfig  `yaml:"fallbackExternalExecution,omitempty"`
-	FallbackExternalLighthouse *ExternalLighthouseConfig `yaml:"fallbackExternalLighthouse,omitempty"`
-	FallbackExternalPrysm      *ExternalPrysmConfig      `yaml:"fallbackExternalPrysm,omitempty"`
-	FallbackExternalTeku       *ExternalTekuConfig       `yaml:"fallbackExternalTeku,omitempty"`
 
 	// Consensus client configurations
 	ConsensusCommon    *ConsensusCommonConfig    `yaml:"consensusCommon,omitempty"`
@@ -102,6 +93,11 @@ type RocketPoolConfig struct {
 	ExternalLighthouse *ExternalLighthouseConfig `yaml:"externalLighthouse,omitempty"`
 	ExternalPrysm      *ExternalPrysmConfig      `yaml:"externalPrysm,omitempty"`
 	ExternalTeku       *ExternalTekuConfig       `yaml:"externalTeku,omitempty"`
+
+	// Fallback client configurations
+	FallbackLighthouse *FallbackLighthouseConfig `yaml:"fallbackLighthouse,omitempty"`
+	FallbackPrysm      *FallbackPrysmConfig      `yaml:"fallbackPrysm,omitempty"`
+	FallbackTeku       *FallbackTekuConfig       `yaml:"fallbackTeku,omitempty"`
 
 	// Metrics
 	Grafana           *GrafanaConfig           `yaml:"grafana,omitempty"`
@@ -209,31 +205,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
-		},
-
-		FallbackConsensusClient: Parameter{
-			ID:                   "fallbackConsensusClient",
-			Name:                 "Fallback Consensus Client",
-			Description:          "Select which Consensus client you are using for your fallback.",
-			Type:                 ParameterType_Choice,
-			Default:              map[Network]interface{}{Network_All: ConsensusClient_Lighthouse},
-			AffectsContainers:    []ContainerID{ContainerID_Validator},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-			Options: []ParameterOption{{
-				Name:        "Lighthouse",
-				Description: "Select this if you will use Lighthouse as your fallback Consensus client.",
-				Value:       ConsensusClient_Lighthouse,
-			}, {
-				Name:        "Prysm",
-				Description: "Select this if you will use Prysm as your fallback Consensus client.",
-				Value:       ConsensusClient_Prysm,
-			}, {
-				Name:        "Teku",
-				Description: "Select this if you will use Teku as your fallback Consensus client.",
-				Value:       ConsensusClient_Teku,
-			}},
 		},
 
 		ReconnectDelay: Parameter{
@@ -425,17 +396,14 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.ConsensusClientMode.Default[Network_All] = config.ConsensusClientMode.Options[0].Value
 
 	config.Smartnode = NewSmartnodeConfig(config)
-	config.ExecutionCommon = NewExecutionCommonConfig(config, false)
-	config.Geth = NewGethConfig(config, false)
-	config.Nethermind = NewNethermindConfig(config, false)
-	config.Besu = NewBesuConfig(config, false)
-	config.Infura = NewInfuraConfig(config, false)
-	config.Pocket = NewPocketConfig(config, false)
-	config.ExternalExecution = NewExternalExecutionConfig(config, false)
-	config.FallbackExternalExecution = NewExternalExecutionConfig(config, true)
-	config.FallbackExternalLighthouse = NewExternalLighthouseConfig(config, true)
-	config.FallbackExternalPrysm = NewExternalPrysmConfig(config, true)
-	config.FallbackExternalTeku = NewExternalTekuConfig(config, true)
+	config.ExecutionCommon = NewExecutionCommonConfig(config)
+	config.Geth = NewGethConfig(config)
+	config.Nethermind = NewNethermindConfig(config)
+	config.Besu = NewBesuConfig(config)
+	config.ExternalExecution = NewExternalExecutionConfig(config)
+	config.FallbackLighthouse = NewFallbackLighthouseConfig(config)
+	config.FallbackPrysm = NewFallbackPrysmConfig(config)
+	config.FallbackTeku = NewFallbackTekuConfig(config)
 	config.ConsensusCommon = NewConsensusCommonConfig(config)
 	config.Lighthouse = NewLighthouseConfig(config)
 	config.Nimbus = NewNimbusConfig(config)
@@ -503,7 +471,6 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 		&config.ExecutionClientMode,
 		&config.ExecutionClient,
 		&config.UseFallbackClients,
-		&config.FallbackConsensusClient,
 		&config.ReconnectDelay,
 		&config.ConsensusClientMode,
 		&config.ConsensusClient,
@@ -522,31 +489,28 @@ func (config *RocketPoolConfig) GetParameters() []*Parameter {
 // Get the subconfigurations for this config
 func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 	return map[string]Config{
-		"smartnode":                  config.Smartnode,
-		"executionCommon":            config.ExecutionCommon,
-		"geth":                       config.Geth,
-		"nethermind":                 config.Nethermind,
-		"besu":                       config.Besu,
-		"infura":                     config.Infura,
-		"pocket":                     config.Pocket,
-		"externalExecution":          config.ExternalExecution,
-		"fallbackExternalExecution":  config.FallbackExternalExecution,
-		"fallbackExternalLighthouse": config.ExternalLighthouse,
-		"fallbackExternalPrysm":      config.ExternalPrysm,
-		"fallbackExternalTeku":       config.ExternalTeku,
-		"consensusCommon":            config.ConsensusCommon,
-		"lighthouse":                 config.Lighthouse,
-		"nimbus":                     config.Nimbus,
-		"prysm":                      config.Prysm,
-		"teku":                       config.Teku,
-		"externalLighthouse":         config.ExternalLighthouse,
-		"externalPrysm":              config.ExternalPrysm,
-		"externalTeku":               config.ExternalTeku,
-		"grafana":                    config.Grafana,
-		"prometheus":                 config.Prometheus,
-		"exporter":                   config.Exporter,
-		"bitflyNodeMetrics":          config.BitflyNodeMetrics,
-		"native":                     config.Native,
+		"smartnode":          config.Smartnode,
+		"executionCommon":    config.ExecutionCommon,
+		"geth":               config.Geth,
+		"nethermind":         config.Nethermind,
+		"besu":               config.Besu,
+		"externalExecution":  config.ExternalExecution,
+		"consensusCommon":    config.ConsensusCommon,
+		"lighthouse":         config.Lighthouse,
+		"nimbus":             config.Nimbus,
+		"prysm":              config.Prysm,
+		"teku":               config.Teku,
+		"externalLighthouse": config.ExternalLighthouse,
+		"externalPrysm":      config.ExternalPrysm,
+		"externalTeku":       config.ExternalTeku,
+		"fallbackLighthouse": config.FallbackLighthouse,
+		"fallbackPrysm":      config.FallbackPrysm,
+		"fallbackTeku":       config.FallbackTeku,
+		"grafana":            config.Grafana,
+		"prometheus":         config.Prometheus,
+		"exporter":           config.Exporter,
+		"bitflyNodeMetrics":  config.BitflyNodeMetrics,
+		"native":             config.Native,
 	}
 }
 
@@ -579,90 +543,6 @@ func (config *RocketPoolConfig) ChangeNetwork(newNetwork Network) {
 
 }
 
-// Get the Consensus clients incompatible with the config's EC and fallback EC selection
-func (config *RocketPoolConfig) GetIncompatibleConsensusClients() ([]ParameterOption, []ParameterOption) {
-
-	// Get the compatible clients based on the EC choice
-	var compatibleConsensusClients []ConsensusClient
-	if config.ExecutionClientMode.Value == Mode_Local {
-		executionClient := config.ExecutionClient.Value.(ExecutionClient)
-		switch executionClient {
-		case ExecutionClient_Geth:
-			compatibleConsensusClients = config.Geth.CompatibleConsensusClients
-		case ExecutionClient_Nethermind:
-			compatibleConsensusClients = config.Nethermind.CompatibleConsensusClients
-		case ExecutionClient_Besu:
-			compatibleConsensusClients = config.Besu.CompatibleConsensusClients
-		case ExecutionClient_Infura:
-			compatibleConsensusClients = config.Infura.CompatibleConsensusClients
-		case ExecutionClient_Pocket:
-			compatibleConsensusClients = config.Pocket.CompatibleConsensusClients
-		}
-	}
-
-	// Get the compatible clients based on the fallback EC choice
-	var fallbackCompatibleConsensusClients []ConsensusClient
-	if config.UseFallbackExecutionClient.Value == true && config.FallbackExecutionClientMode.Value == Mode_Local {
-		fallbackExecutionClient := config.FallbackExecutionClient.Value.(ExecutionClient)
-		switch fallbackExecutionClient {
-		case ExecutionClient_Infura:
-			fallbackCompatibleConsensusClients = config.FallbackInfura.CompatibleConsensusClients
-		case ExecutionClient_Pocket:
-			fallbackCompatibleConsensusClients = config.FallbackPocket.CompatibleConsensusClients
-		}
-	}
-
-	// Sort every consensus client into good and bad lists
-	var badClients []ParameterOption
-	var badFallbackClients []ParameterOption
-	var consensusClientOptions []ParameterOption
-	if config.ConsensusClientMode.Value.(Mode) == Mode_Local {
-		consensusClientOptions = config.ConsensusClient.Options
-	} else {
-		consensusClientOptions = config.ExternalConsensusClient.Options
-	}
-	for _, consensusClient := range consensusClientOptions {
-		// Get the value for one of the consensus client options
-		clientValue := consensusClient.Value.(ConsensusClient)
-
-		// Check if it's in the list of clients compatible with the EC
-		if len(compatibleConsensusClients) > 0 {
-			isGood := false
-			for _, compatibleWithEC := range compatibleConsensusClients {
-				if compatibleWithEC == clientValue {
-					isGood = true
-					break
-				}
-			}
-
-			// If it isn't, append it to the list of bad clients and move on
-			if !isGood {
-				badClients = append(badClients, consensusClient)
-				continue
-			}
-		}
-
-		// Check the fallback EC too
-		if len(fallbackCompatibleConsensusClients) > 0 {
-			isGood := false
-			for _, compatibleWithFallbackEC := range fallbackCompatibleConsensusClients {
-				if compatibleWithFallbackEC == clientValue {
-					isGood = true
-					break
-				}
-			}
-
-			if !isGood {
-				badFallbackClients = append(badFallbackClients, consensusClient)
-				continue
-			}
-		}
-	}
-
-	return badClients, badFallbackClients
-
-}
-
 // Get the configuration for the selected execution client
 func (config *RocketPoolConfig) GetEventLogInterval() (int, error) {
 	if config.IsNativeMode {
@@ -678,12 +558,8 @@ func (config *RocketPoolConfig) GetEventLogInterval() (int, error) {
 			return config.Besu.EventLogInterval, nil
 		case ExecutionClient_Geth:
 			return config.Geth.EventLogInterval, nil
-		case ExecutionClient_Infura:
-			return config.Infura.EventLogInterval, nil
 		case ExecutionClient_Nethermind:
 			return config.Nethermind.EventLogInterval, nil
-		case ExecutionClient_Pocket:
-			return config.Pocket.EventLogInterval, nil
 		default:
 			return 0, fmt.Errorf("can't get event log interval of unknown execution client [%v]", client)
 		}
@@ -908,12 +784,6 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		case ExecutionClient_Besu:
 			addParametersToEnvVars(config.Besu.GetParameters(), envVars)
 			envVars["EC_STOP_SIGNAL"] = besuStopSignal
-		case ExecutionClient_Infura:
-			addParametersToEnvVars(config.Infura.GetParameters(), envVars)
-			envVars["EC_STOP_SIGNAL"] = powProxyStopSignal
-		case ExecutionClient_Pocket:
-			addParametersToEnvVars(config.Pocket.GetParameters(), envVars)
-			envVars["EC_STOP_SIGNAL"] = powProxyStopSignal
 		}
 	} else {
 		envVars["EC_CLIENT"] = "X" // X is for external / unknown
@@ -925,44 +795,10 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		envVars["EC_HOSTNAME"] = ecUrl.Hostname()
 	}
 
-	// Fallback EC parameters
-	envVars["FALLBACK_EC_CLIENT"] = fmt.Sprint(config.FallbackExecutionClient.Value)
-	if config.UseFallbackExecutionClient.Value == true {
-		if config.FallbackExecutionClientMode.Value.(Mode) == Mode_Local {
-			envVars["FALLBACK_EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1FallbackContainerName, config.FallbackExecutionCommon.HttpPort.Value)
-			envVars["FALLBACK_EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1FallbackContainerName, config.FallbackExecutionCommon.WsPort.Value)
-
-			// Handle open API ports
-			if config.FallbackExecutionCommon.OpenRpcPorts.Value == true {
-				switch config.FallbackExecutionClient.Value.(ExecutionClient) {
-				case ExecutionClient_Pocket:
-					ecHttpPort := config.FallbackExecutionCommon.HttpPort.Value.(uint16)
-					envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf("\"%d:%d/tcp\"", ecHttpPort, ecHttpPort)
-				default:
-					ecHttpPort := config.FallbackExecutionCommon.HttpPort.Value.(uint16)
-					ecWsPort := config.FallbackExecutionCommon.WsPort.Value.(uint16)
-					envVars["FALLBACK_EC_OPEN_API_PORTS"] = fmt.Sprintf("\"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
-				}
-			}
-
-			// Common params
-			addParametersToEnvVars(config.FallbackExecutionCommon.GetParameters(), envVars)
-
-			// Client-specific params
-			switch config.FallbackExecutionClient.Value.(ExecutionClient) {
-			case ExecutionClient_Infura:
-				addParametersToEnvVars(config.FallbackInfura.GetParameters(), envVars)
-			case ExecutionClient_Pocket:
-				addParametersToEnvVars(config.FallbackPocket.GetParameters(), envVars)
-			}
-		} else {
-			addParametersToEnvVars(config.FallbackExternalExecution.GetParameters(), envVars)
-		}
-	}
-
 	// CC parameters
+	var consensusClient ConsensusClient
 	if config.ConsensusClientMode.Value.(Mode) == Mode_Local {
-		envVars["CC_CLIENT"] = fmt.Sprint(config.ConsensusClient.Value)
+		consensusClient = config.ConsensusClient.Value.(ConsensusClient)
 		envVars["CC_API_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth2ContainerName, config.ConsensusCommon.ApiPort.Value)
 
 		// Handle open API ports
@@ -971,7 +807,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			ccApiPort := config.ConsensusCommon.ApiPort.Value.(uint16)
 			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", ccApiPort, ccApiPort)
 		}
-		if config.ConsensusClient.Value.(ConsensusClient) == ConsensusClient_Prysm && config.Prysm.OpenRpcPort.Value == true {
+		if consensusClient == ConsensusClient_Prysm && config.Prysm.OpenRpcPort.Value == true {
 			prysmRpcPort := config.Prysm.RpcPort.Value.(uint16)
 			bnOpenPorts += fmt.Sprintf(", \"%d:%d/tcp\"", prysmRpcPort, prysmRpcPort)
 		}
@@ -981,7 +817,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		addParametersToEnvVars(config.ConsensusCommon.GetParameters(), envVars)
 
 		// Client-specific params
-		switch config.ConsensusClient.Value.(ConsensusClient) {
+		switch consensusClient {
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.Lighthouse.GetParameters(), envVars)
 			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
@@ -997,9 +833,9 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			envVars["FEE_RECIPIENT_FILE"] = TekuFeeRecipientFilename
 		}
 	} else {
-		envVars["CC_CLIENT"] = fmt.Sprint(config.ExternalConsensusClient.Value)
+		consensusClient = config.ExternalConsensusClient.Value.(ConsensusClient)
 
-		switch config.ExternalConsensusClient.Value.(ConsensusClient) {
+		switch consensusClient {
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.ExternalLighthouse.GetParameters(), envVars)
 			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
@@ -1011,10 +847,24 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 			envVars["FEE_RECIPIENT_FILE"] = TekuFeeRecipientFilename
 		}
 	}
+	envVars["CC_CLIENT"] = fmt.Sprint(consensusClient)
+
 	// Get the hostname of the Consensus client, necessary for Prometheus to work in hybrid mode
 	ccUrl, err := url.Parse(envVars["CC_API_ENDPOINT"])
 	if err == nil && ccUrl != nil {
 		envVars["CC_HOSTNAME"] = ccUrl.Hostname()
+	}
+
+	// Fallback parameters
+	if config.UseFallbackClients.Value == true {
+		switch consensusClient {
+		case ConsensusClient_Lighthouse:
+			addParametersToEnvVars(config.FallbackLighthouse.GetParameters(), envVars)
+		case ConsensusClient_Prysm:
+			addParametersToEnvVars(config.FallbackPrysm.GetParameters(), envVars)
+		case ConsensusClient_Teku:
+			addParametersToEnvVars(config.FallbackTeku.GetParameters(), envVars)
+		}
 	}
 
 	// Metrics
@@ -1113,24 +963,6 @@ func (config *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[str
 // Checks to see if the current configuration is valid; if not, returns a list of errors
 func (config *RocketPoolConfig) Validate() []string {
 	errors := []string{}
-
-	// Check for client incompatibility
-	badClients, badFallbackClients := config.GetIncompatibleConsensusClients()
-	if config.ConsensusClientMode.Value == Mode_Local {
-		selectedCC := config.ConsensusClient.Value.(ConsensusClient)
-		for _, badClient := range badClients {
-			if badClient.Value == selectedCC {
-				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected Execution client:\n\t%v", badClient.Name, config.ExecutionClient.Value))
-				break
-			}
-		}
-		for _, badClient := range badFallbackClients {
-			if badClient.Value == selectedCC {
-				errors = append(errors, fmt.Sprintf("Selected Consensus client:\n\t%s\nis not compatible with selected fallback Execution client:\n\t%v", badClient.Name, config.FallbackExecutionClient.Value))
-				break
-			}
-		}
-	}
 
 	// Check for illegal blank strings
 	/* TODO - this needs to be smarter and ignore irrelevant settings
