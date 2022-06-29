@@ -4,13 +4,13 @@ import (
 	"fmt"
 )
 
-func createFallbackExternalEcStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
+func createFallbackLighthouseStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
 
 	// Create the labels
-	httpLabel := wiz.md.Config.FallbackExecution.HttpUrl.Name
-	wsLabel := wiz.md.Config.FallbackExecution.WsUrl.Name
+	ecHttpLabel := wiz.md.Config.FallbackExecution.HttpUrl.Name
+	ecWsLabel := wiz.md.Config.FallbackExecution.WsUrl.Name
 
-	helperText := "Please enter the URL of the HTTP-based RPC API and the URL of the Websocket-based RPC API for your existing client.\n\nFor example: `http://192.168.1.45:8545` and `ws://192.168.1.45:8546`"
+	helperText := "Please enter the URLs of the HTTP APIs for your fallback clients.\n\nFor example: `http://192.168.1.45:8545` and `ws://192.168.1.45:8546`"
 
 	show := func(modal *textBoxModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -25,8 +25,8 @@ func createFallbackExternalEcStep(wiz *wizard, currentStep int, totalSteps int) 
 	}
 
 	done := func(text map[string]string) {
-		wiz.md.Config.FallbackExecution.HttpUrl.Value = text[httpLabel]
-		wiz.md.Config.FallbackExecution.WsUrl.Value = text[wsLabel]
+		wiz.md.Config.FallbackExecution.HttpUrl.Value = text[ecHttpLabel]
+		wiz.md.Config.FallbackExecution.WsUrl.Value = text[ecWsLabel]
 		wiz.consensusModeModal.show()
 	}
 
@@ -47,7 +47,7 @@ func createFallbackExternalEcStep(wiz *wizard, currentStep int, totalSteps int) 
 		show,
 		done,
 		back,
-		"step-fallback-ec-external",
+		"step-fallback-lighthouse",
 	)
 
 }

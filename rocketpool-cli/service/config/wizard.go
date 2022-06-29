@@ -77,7 +77,9 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.tekuExternalSettingsModal = createExternalTekuStep(wiz, 6, totalDockerSteps)
 	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 6, totalDockerSteps)
 	wiz.externalDoppelgangerModal = createExternalDoppelgangerStep(wiz, 6, totalDockerSteps)
-	wiz.fallbackExternalExecutionModal = createFallbackExternalEcStep(wiz, 7, totalDockerSteps)
+	wiz.fallbackLighthouseModal = createFallbackLighthouseStep(wiz, 7, totalDockerSteps)
+	wiz.fallbackPrysmModal = createFallbackExternalEcStep(wiz, 7, totalDockerSteps)
+	wiz.fallbackTekuModal = createFallbackExternalEcStep(wiz, 7, totalDockerSteps)
 	wiz.metricsModal = createMetricsStep(wiz, 8, totalDockerSteps)
 	wiz.finishedModal = createFinishedStep(wiz, 9, totalDockerSteps)
 

@@ -572,6 +572,18 @@ func (config *RocketPoolConfig) GetEventLogInterval() (int, error) {
 	}
 }
 
+// Get the selected CC and mode
+func (config *RocketPoolConfig) GetSelectedConsensusClient() (ConsensusClient, Mode) {
+	mode := config.ConsensusClientMode.Value.(Mode)
+	var cc ConsensusClient
+	if mode == Mode_Local {
+		cc = config.ConsensusClient.Value.(ConsensusClient)
+	} else {
+		cc = config.ExternalConsensusClient.Value.(ConsensusClient)
+	}
+	return cc, mode
+}
+
 // Get the configuration for the selected consensus client
 func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusConfig, error) {
 	if config.IsNativeMode {
