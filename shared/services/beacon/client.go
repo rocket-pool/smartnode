@@ -56,11 +56,12 @@ type Eth1Data struct {
 	BlockHash    common.Hash
 }
 type BeaconBlock struct {
-	Slot                uint64
-	ProposerIndex       uint64
-	HasExecutionPayload bool
-	Attestations        []AttestationInfo
-	FeeRecipient        common.Address
+	Slot                 uint64
+	ProposerIndex        uint64
+	HasExecutionPayload  bool
+	Attestations         []AttestationInfo
+	FeeRecipient         common.Address
+	ExecutionBlockNumber uint64
 }
 
 type Committee struct {
