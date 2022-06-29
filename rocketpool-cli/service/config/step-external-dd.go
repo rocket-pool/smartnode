@@ -34,7 +34,7 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 		case config.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.DoppelgangerDetection.Value = ddEnabled
 		}
-		wiz.metricsModal.show()
+		wiz.useFallbackModal.show()
 	}
 
 	back := func() {

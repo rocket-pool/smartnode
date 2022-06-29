@@ -91,13 +91,6 @@ func processConfigAfterQuit(md *mainDisplay) {
 			totalAffectedContainers[config.ContainerID_Api] = true
 			totalAffectedContainers[config.ContainerID_Node] = true
 			totalAffectedContainers[config.ContainerID_Watchtower] = true
-
-			if md.Config.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && md.Config.ExecutionClient.Value.(config.ExecutionClient) != config.ExecutionClient_Geth {
-				totalAffectedContainers[config.ContainerID_Eth1] = true
-			}
-			if md.Config.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-				totalAffectedContainers[config.ContainerID_Eth1Fallback] = true
-			}
 		}
 
 		var containersToRestart []config.ContainerID

@@ -310,34 +310,13 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 		return nil, fmt.Errorf("error migrating eth1 client selection: %w", err)
 	}
 
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.ExecutionCommon, cfg.Geth, cfg.Infura, cfg.Pocket, cfg.ExternalExecution)
+	err = c.migrateEth1Params(legacyCfg.Chains.Eth1.Client.Selected, network, legacyCfg.Chains.Eth1.Client.Params, cfg.ExecutionCommon, cfg.Geth, cfg.ExternalExecution)
 	if err != nil {
 		return nil, fmt.Errorf("error migrating eth1 params: %w", err)
 	}
 
-	// Migrate the fallback EC
-	if legacyCfg.Chains.Eth1.FallbackProvider != "" { // Ignore pre-v1.2 where fallback didn't exist
-		err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.FallbackProvider, legacyCfg.Chains.Eth1.FallbackWsProvider, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExecution.HttpUrl, &cfg.FallbackExecution.WsUrl)
-		if err != nil {
-			return nil, fmt.Errorf("error migrating fallback eth1 provider info: %w", err)
-		}
-	}
-
-	err = c.migrateEcSelection(legacyCfg.Chains.Eth1Fallback.Client.Selected, &cfg.FallbackExecutionClient, &cfg.FallbackExecutionClientMode)
-	if err != nil {
-		return nil, fmt.Errorf("error migrating fallback eth1 client selection: %w", err)
-	}
-
-	err = c.migrateEth1Params(legacyCfg.Chains.Eth1Fallback.Client.Selected, network, legacyCfg.Chains.Eth1Fallback.Client.Params, nil, nil, cfg.FallbackInfura, cfg.FallbackPocket, cfg.FallbackExecution)
-	if err != nil {
-		return nil, fmt.Errorf("error migrating fallback eth1 params: %w", err)
-	}
-
-	if legacyCfg.Chains.Eth1Fallback.Client.Selected != "" {
-		cfg.UseFallbackExecutionClient.Value = true
-	} else {
-		cfg.UseFallbackExecutionClient.Value = false
-	}
+	// Disable fallback migration which didn't exist in the same sense with v1.2.x
+	cfg.UseFallbackClients.Value = false
 
 	// Migrate the CC
 	ccProvider := legacyCfg.Chains.Eth2.Provider
@@ -1066,7 +1045,7 @@ func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *config
 }
 
 // Migrates the parameters from a legacy eth1 config to a modern one
-func (c *Client) migrateEth1Params(client string, network config.Network, params []config.UserParam, ecCommon *config.ExecutionCommonConfig, geth *config.GethConfig, infura *config.InfuraConfig, pocket *config.PocketConfig, externalEc *config.ExternalExecutionConfig) error {
+func (c *Client) migrateEth1Params(client string, network config.Network, params []config.UserParam, ecCommon *config.ExecutionCommonConfig, geth *config.GethConfig, externalEc *config.ExternalExecutionConfig) error {
 	for _, param := range params {
 		switch param.Env {
 		case "ETHSTATS_LABEL":
@@ -1088,18 +1067,6 @@ func (c *Client) migrateEth1Params(client string, network config.Network, params
 		case "ETH1_P2P_PORT":
 			if ecCommon != nil {
 				convertUintParam(param, &ecCommon.P2pPort, network, 16)
-			}
-		case "INFURA_PROJECT_ID":
-			infura.ProjectID.Value = param.Value
-		case "POCKET_PROJECT_ID":
-			if param.Value == "" {
-				valIface, err := pocket.GatewayID.GetDefault(network)
-				if err != nil {
-					return fmt.Errorf("error getting default Pocket gateway for network %v: %w", network, err)
-				}
-				pocket.GatewayID.Value = valIface
-			} else {
-				pocket.GatewayID.Value = param.Value
 			}
 		case "HTTP_PROVIDER_URL":
 			if client == "custom" {
@@ -1183,25 +1150,6 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", fmt.Errorf("You haven't selected local or external mode for your Consensus (ETH2) client.\nPlease run 'rocketpool service config' before running this command.")
 	} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Unknown {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
-	}
-
-	// Make sure the selected CC is compatible with the selected EC
-	var consensusClient config.ConsensusClient
-	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
-		consensusClient = cfg.ConsensusClient.Value.(config.ConsensusClient)
-	} else {
-		consensusClient = cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
-	}
-	badClients, badFallbackClients := cfg.GetIncompatibleConsensusClients()
-	for _, badClient := range badClients {
-		if consensusClient == badClient.Value {
-			return "", fmt.Errorf("Consensus client [%v] is incompatible with your selected Execution client choice.\nPlease run 'rocketpool service config' and select compatible clients.", consensusClient)
-		}
-	}
-	for _, badClient := range badFallbackClients {
-		if consensusClient == badClient.Value {
-			return "", fmt.Errorf("Consensus client [%v] is incompatible with your selected fallback Execution client choice.\nPlease run 'rocketpool service config' and select compatible clients.", consensusClient)
-		}
 	}
 
 	// Get the external IP address
@@ -1353,21 +1301,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		}
 		deployedContainers = append(deployedContainers, eth1ComposePath)
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.Eth1ContainerName+composeFileSuffix))
-	}
-
-	// Check the Fallback EC mode
-	if cfg.UseFallbackExecutionClient.Value == true && cfg.FallbackExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.Eth1FallbackContainerName+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting fallback execution client container template: %w", err)
-		}
-		eth1FallbackComposePath := filepath.Join(runtimeFolder, config.Eth1FallbackContainerName+composeFileSuffix)
-		err = ioutil.WriteFile(eth1FallbackComposePath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write fallback execution client container file to %s: %w", eth1FallbackComposePath, err)
-		}
-		deployedContainers = append(deployedContainers, eth1FallbackComposePath)
-		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.Eth1FallbackContainerName+composeFileSuffix))
 	}
 
 	// Check the Consensus mode

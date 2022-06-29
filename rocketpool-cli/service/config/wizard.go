@@ -4,37 +4,32 @@ type wizard struct {
 	md *mainDisplay
 
 	// Docker mode
-	welcomeModal                        *choiceWizardStep
-	networkModal                        *choiceWizardStep
-	executionModeModal                  *choiceWizardStep
-	executionLocalModal                 *choiceWizardStep
-	executionExternalModal              *textBoxWizardStep
-	infuraModal                         *textBoxWizardStep
-	fallbackInfuraModal                 *textBoxWizardStep
-	fallbackExecutionModal              *choiceWizardStep
-	consensusModeModal                  *choiceWizardStep
-	consensusLocalModal                 *choiceWizardStep
-	consensusExternalSelectModal        *choiceWizardStep
-	graffitiModal                       *textBoxWizardStep
-	checkpointSyncProviderModal         *textBoxWizardStep
-	doppelgangerDetectionModal          *choiceWizardStep
-	lighthouseExternalSettingsModal     *textBoxWizardStep
-	prysmExternalSettingsModal          *textBoxWizardStep
-	tekuExternalSettingsModal           *textBoxWizardStep
-	externalGraffitiModal               *textBoxWizardStep
-	metricsModal                        *choiceWizardStep
-	finishedModal                       *choiceWizardStep
-	consensusLocalRandomModal           *choiceWizardStep
-	consensusLocalRandomPrysmModal      *choiceWizardStep
-	consensusLocalPrysmWarning          *choiceWizardStep
-	consensusLocalTekuWarning           *choiceWizardStep
-	externalDoppelgangerModal           *choiceWizardStep
-	fallbackExternalExecutionModal      *textBoxWizardStep
-	executionLocalInfuraWarning         *choiceWizardStep
-	executionLocalPocketWarning         *choiceWizardStep
-	fallbackExecutionLocalInfuraWarning *choiceWizardStep
-	fallbackExecutionLocalPocketWarning *choiceWizardStep
-	executionLocalRandomModal           *choiceWizardStep
+	welcomeModal                    *choiceWizardStep
+	networkModal                    *choiceWizardStep
+	executionModeModal              *choiceWizardStep
+	executionLocalModal             *choiceWizardStep
+	executionExternalModal          *textBoxWizardStep
+	consensusModeModal              *choiceWizardStep
+	consensusLocalModal             *choiceWizardStep
+	consensusExternalSelectModal    *choiceWizardStep
+	graffitiModal                   *textBoxWizardStep
+	checkpointSyncProviderModal     *textBoxWizardStep
+	doppelgangerDetectionModal      *choiceWizardStep
+	lighthouseExternalSettingsModal *textBoxWizardStep
+	prysmExternalSettingsModal      *textBoxWizardStep
+	tekuExternalSettingsModal       *textBoxWizardStep
+	externalGraffitiModal           *textBoxWizardStep
+	metricsModal                    *choiceWizardStep
+	finishedModal                   *choiceWizardStep
+	consensusLocalRandomModal       *choiceWizardStep
+	consensusLocalRandomPrysmModal  *choiceWizardStep
+	consensusLocalPrysmWarning      *choiceWizardStep
+	consensusLocalTekuWarning       *choiceWizardStep
+	externalDoppelgangerModal       *choiceWizardStep
+	executionLocalRandomModal       *choiceWizardStep
+	useFallbackModal                *choiceWizardStep
+	fallbackNormalModal             *textBoxWizardStep
+	fallbackPrysmModal              *textBoxWizardStep
 
 	// Native mode
 	nativeWelcomeModal  *choiceWizardStep
@@ -62,9 +57,6 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.executionModeModal = createEcModeStep(wiz, 3, totalDockerSteps)
 	wiz.executionLocalModal = createLocalEcStep(wiz, 4, totalDockerSteps)
 	wiz.executionExternalModal = createExternalEcStep(wiz, 4, totalDockerSteps)
-	wiz.infuraModal = createInfuraStep(wiz, 4, totalDockerSteps)
-	wiz.executionLocalInfuraWarning = createInfuraWarningStep(wiz, 4, totalDockerSteps)
-	wiz.executionLocalPocketWarning = createPocketWarningStep(wiz, 4, totalDockerSteps)
 	wiz.consensusModeModal = createCcModeStep(wiz, 5, totalDockerSteps)
 	wiz.consensusExternalSelectModal = createExternalCcStep(wiz, 6, totalDockerSteps)
 	wiz.consensusLocalPrysmWarning = createPrysmWarningStep(wiz, 6, totalDockerSteps)
@@ -77,9 +69,9 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.tekuExternalSettingsModal = createExternalTekuStep(wiz, 6, totalDockerSteps)
 	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 6, totalDockerSteps)
 	wiz.externalDoppelgangerModal = createExternalDoppelgangerStep(wiz, 6, totalDockerSteps)
-	wiz.fallbackLighthouseModal = createFallbackLighthouseStep(wiz, 7, totalDockerSteps)
-	wiz.fallbackPrysmModal = createFallbackExternalEcStep(wiz, 7, totalDockerSteps)
-	wiz.fallbackTekuModal = createFallbackExternalEcStep(wiz, 7, totalDockerSteps)
+	wiz.useFallbackModal = createUseFallbackStep(wiz, 7, totalDockerSteps)
+	wiz.fallbackNormalModal = createFallbackNormalStep(wiz, 7, totalDockerSteps)
+	wiz.fallbackPrysmModal = createFallbackPrysmStep(wiz, 7, totalDockerSteps)
 	wiz.metricsModal = createMetricsStep(wiz, 8, totalDockerSteps)
 	wiz.finishedModal = createFinishedStep(wiz, 9, totalDockerSteps)
 

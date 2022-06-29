@@ -27,7 +27,7 @@ func createRandomECStep(wiz *wizard, currentStep int, totalSteps int, goodOption
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		wiz.fallbackExecutionModal.show()
+		wiz.consensusModeModal.show()
 	}
 
 	back := func() {

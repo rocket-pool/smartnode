@@ -95,9 +95,8 @@ type RocketPoolConfig struct {
 	ExternalTeku       *ExternalTekuConfig       `yaml:"externalTeku,omitempty"`
 
 	// Fallback client configurations
-	FallbackLighthouse *FallbackLighthouseConfig `yaml:"fallbackLighthouse,omitempty"`
-	FallbackPrysm      *FallbackPrysmConfig      `yaml:"fallbackPrysm,omitempty"`
-	FallbackTeku       *FallbackTekuConfig       `yaml:"fallbackTeku,omitempty"`
+	FallbackNormal *FallbackNormalConfig `yaml:"fallbackNormal,omitempty"`
+	FallbackPrysm  *FallbackPrysmConfig  `yaml:"fallbackPrysm,omitempty"`
 
 	// Metrics
 	Grafana           *GrafanaConfig           `yaml:"grafana,omitempty"`
@@ -210,7 +209,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		ReconnectDelay: Parameter{
 			ID:                   "reconnectDelay",
 			Name:                 "Reconnect Delay",
-			Description:          "The delay to wait after the primary Execution client fails before trying to reconnect to it. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
+			Description:          "The delay to wait after your primary Execution or Consensus clients fail before trying to reconnect to them. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: "60s"},
 			AffectsContainers:    []ContainerID{ContainerID_Api, ContainerID_Node, ContainerID_Watchtower},
@@ -401,9 +400,8 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Nethermind = NewNethermindConfig(config)
 	config.Besu = NewBesuConfig(config)
 	config.ExternalExecution = NewExternalExecutionConfig(config)
-	config.FallbackLighthouse = NewFallbackLighthouseConfig(config)
+	config.FallbackNormal = NewFallbackNormalConfig(config)
 	config.FallbackPrysm = NewFallbackPrysmConfig(config)
-	config.FallbackTeku = NewFallbackTekuConfig(config)
 	config.ConsensusCommon = NewConsensusCommonConfig(config)
 	config.Lighthouse = NewLighthouseConfig(config)
 	config.Nimbus = NewNimbusConfig(config)
@@ -503,9 +501,8 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"externalLighthouse": config.ExternalLighthouse,
 		"externalPrysm":      config.ExternalPrysm,
 		"externalTeku":       config.ExternalTeku,
-		"fallbackLighthouse": config.FallbackLighthouse,
+		"fallbackNormal":     config.FallbackNormal,
 		"fallbackPrysm":      config.FallbackPrysm,
-		"fallbackTeku":       config.FallbackTeku,
 		"grafana":            config.Grafana,
 		"prometheus":         config.Prometheus,
 		"exporter":           config.Exporter,
@@ -870,12 +867,10 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	// Fallback parameters
 	if config.UseFallbackClients.Value == true {
 		switch consensusClient {
-		case ConsensusClient_Lighthouse:
-			addParametersToEnvVars(config.FallbackLighthouse.GetParameters(), envVars)
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.FallbackPrysm.GetParameters(), envVars)
-		case ConsensusClient_Teku:
-			addParametersToEnvVars(config.FallbackTeku.GetParameters(), envVars)
+		default:
+			addParametersToEnvVars(config.FallbackNormal.GetParameters(), envVars)
 		}
 	}
 

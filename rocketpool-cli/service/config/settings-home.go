@@ -5,6 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 const settingsHomeID string = "settings-home"
@@ -16,7 +17,7 @@ type settingsHome struct {
 	wizardButton     *tview.Button
 	smartnodePage    *SmartnodeConfigPage
 	ecPage           *ExecutionConfigPage
-	fallbackEcPage   *FallbackExecutionConfigPage
+	fallbackPage     *FallbackConfigPage
 	ccPage           *ConsensusConfigPage
 	metricsPage      *MetricsConfigPage
 	addonsPage       *AddonsPage
@@ -40,15 +41,15 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	// Create the settings subpages
 	home.smartnodePage = NewSmartnodeConfigPage(home)
 	home.ecPage = NewExecutionConfigPage(home)
-	home.fallbackEcPage = NewFallbackExecutionConfigPage(home)
 	home.ccPage = NewConsensusConfigPage(home)
+	home.fallbackPage = NewFallbackConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
 	home.addonsPage = NewAddonsPage(home.md)
 	settingsSubpages := []settingsPage{
 		home.smartnodePage,
 		home.ecPage,
-		home.fallbackEcPage,
 		home.ccPage,
+		home.fallbackPage,
 		home.metricsPage,
 		home.addonsPage,
 	}
@@ -73,6 +74,14 @@ func (home *settingsHome) createContent() {
 	// Create the category list
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
+			if mainText == home.fallbackPage.page.title {
+				// Temp block of Nimbus for the fallback page until it supports split mode
+				cc, _ := home.md.Config.GetSelectedConsensusClient()
+				if cc == config.ConsensusClient_Nimbus {
+					layout.descriptionBox.SetText("You have Nimbus selected for your Consensus client.\n\nNimbus does not support fallback clients at this time, so this option is disabled.")
+					return
+				}
+			}
 			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
 		})
 	categoryList.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
@@ -93,6 +102,13 @@ func (home *settingsHome) createContent() {
 		categoryList.AddItem(subpage.getPage().title, "", 0, nil)
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
+		if s1 == home.fallbackPage.page.title {
+			// Temp block of Nimbus for the fallback page until it supports split mode
+			cc, _ := home.md.Config.GetSelectedConsensusClient()
+			if cc == config.ConsensusClient_Nimbus {
+				return
+			}
+		}
 		home.settingsSubpages[i].handleLayoutChanged()
 		home.md.setPage(home.settingsSubpages[i].getPage())
 	})
@@ -212,12 +228,12 @@ func (home *settingsHome) refresh() {
 		home.ecPage.layout.refresh()
 	}
 
-	if home.fallbackEcPage != nil {
-		home.fallbackEcPage.layout.refresh()
-	}
-
 	if home.ccPage != nil {
 		home.ccPage.layout.refresh()
+	}
+
+	if home.fallbackPage != nil {
+		home.fallbackPage.layout.refresh()
 	}
 
 	if home.metricsPage != nil {

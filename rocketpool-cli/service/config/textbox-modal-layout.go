@@ -44,7 +44,8 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 		SetText(text).
 		SetTextAlign(tview.AlignCenter).
 		SetWordWrap(true).
-		SetTextColor(tview.Styles.PrimaryTextColor)
+		SetTextColor(tview.Styles.PrimaryTextColor).
+		SetDynamicColors(true)
 	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 	textView.SetBorderPadding(0, 0, 1, 1)
 
@@ -90,7 +91,7 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 	// Get the total content height, including spacers and borders
 	lines := tview.WordWrap(text, width-4)
 	textViewHeight := len(lines) + 4
-	borderGrid.SetRows(0, textViewHeight+height+2, 0, 2)
+	borderGrid.SetRows(0, textViewHeight+height+3, 0, 2)
 
 	// Create the nav footer text view
 	navString1 := "Arrow keys: Navigate     Space/Enter: Select"
@@ -134,7 +135,7 @@ func (layout *textBoxModalLayout) createControlGrid(labels []string, maxLengths 
 
 	controlGrid := tview.NewGrid().
 		SetRows(0).
-		SetColumns(-1, -3, -1)
+		SetColumns(-1, -5, -1)
 	controlGrid.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 
 	// Create the form for the controls

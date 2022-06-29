@@ -27,7 +27,7 @@ func createExternalEcStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 	done := func(text map[string]string) {
 		wiz.md.Config.ExternalExecution.HttpUrl.Value = text[httpLabel]
 		wiz.md.Config.ExternalExecution.WsUrl.Value = text[wsLabel]
-		wiz.fallbackExecutionModal.show()
+		wiz.consensusModeModal.show()
 	}
 
 	back := func() {

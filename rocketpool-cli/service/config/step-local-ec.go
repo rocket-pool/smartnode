@@ -67,15 +67,7 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 			if selectedClient == config.ExecutionClient_Unknown {
 				panic(fmt.Sprintf("Local EC selection buttons didn't match any known clients, buttonLabel = %s\n", buttonLabel))
 			}
-			wiz.md.Config.ExecutionClient.Value = selectedClient
-			switch selectedClient {
-			case config.ExecutionClient_Infura:
-				wiz.executionLocalInfuraWarning.show()
-			case config.ExecutionClient_Pocket:
-				wiz.executionLocalPocketWarning.show()
-			default:
-				wiz.fallbackExecutionModal.show()
-			}
+			wiz.consensusModeModal.show()
 		}
 	}
 

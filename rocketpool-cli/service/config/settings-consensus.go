@@ -113,6 +113,11 @@ func (configPage *ConsensusConfigPage) createContent() {
 			return
 		}
 		configPage.masterConfig.ConsensusClient.Value = configPage.masterConfig.ConsensusClient.Options[index].Value
+		if configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Nimbus {
+			// Temp until Nimbus supports split mode
+			configPage.home.md.Config.UseFallbackClients.Value = false
+			configPage.home.refresh()
+		}
 		configPage.handleLocalCcChanged()
 	})
 	configPage.externalCcDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {

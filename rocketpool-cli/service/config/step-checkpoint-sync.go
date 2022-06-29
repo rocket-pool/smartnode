@@ -47,7 +47,7 @@ func createCheckpointSyncStep(wiz *wizard, currentStep int, totalSteps int) *tex
 		if supportsDoppelganger {
 			wiz.doppelgangerDetectionModal.show()
 		} else {
-			wiz.metricsModal.show()
+			wiz.useFallbackModal.show()
 		}
 	}
 

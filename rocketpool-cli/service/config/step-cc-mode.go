@@ -46,7 +46,7 @@ func createCcModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizar
 	}
 
 	back := func() {
-		wiz.fallbackExecutionModal.show()
+		wiz.executionModeModal.show()
 	}
 
 	return newChoiceStep(

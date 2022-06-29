@@ -23,11 +23,7 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	}
 
 	back := func() {
-		if wiz.md.Config.ConsensusClientMode.Value == true {
-			wiz.consensusLocalModal.show()
-		} else {
-			wiz.consensusModeModal.show()
-		}
+		wiz.useFallbackModal.show()
 	}
 
 	return newChoiceStep(
