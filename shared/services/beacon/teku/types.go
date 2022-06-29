@@ -80,6 +80,7 @@ type BeaconBlockResponse struct {
 				Attestations     []Attestation `json:"attestations"`
 				ExecutionPayload *struct {
 					FeeRecipient byteArray `json:"fee_recipient"`
+					BlockNumber  uinteger  `json:"block_number"`
 				} `json:"execution_payload"`
 			} `json:"body"`
 		} `json:"message"`

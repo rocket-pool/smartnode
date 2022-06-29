@@ -448,6 +448,7 @@ func (c *Client) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error
 	} else {
 		beaconBlock.HasExecutionPayload = true
 		beaconBlock.FeeRecipient = common.BytesToAddress(block.Data.Message.Body.ExecutionPayload.FeeRecipient)
+		beaconBlock.ExecutionBlockNumber = uint64(block.Data.Message.Body.ExecutionPayload.BlockNumber)
 	}
 
 	// Add attestation info
