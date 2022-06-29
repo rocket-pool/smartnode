@@ -1153,10 +1153,6 @@ func serviceVersion(c *cli.Context) error {
 			eth1ClientString = fmt.Sprintf(format, "Nethermind", cfg.Nethermind.ContainerTag.Value.(string))
 		case config.ExecutionClient_Besu:
 			eth1ClientString = fmt.Sprintf(format, "Besu", cfg.Besu.ContainerTag.Value.(string))
-		case config.ExecutionClient_Infura:
-			eth1ClientString = fmt.Sprintf(format, "Infura", cfg.Smartnode.GetPowProxyContainerTag())
-		case config.ExecutionClient_Pocket:
-			eth1ClientString = fmt.Sprintf(format, "Pocket", cfg.Smartnode.GetPowProxyContainerTag())
 		default:
 			return fmt.Errorf("unknown local execution client [%v]", eth1Client)
 		}

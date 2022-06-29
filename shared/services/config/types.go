@@ -11,18 +11,16 @@ type RewardsMode string
 // Enum to describe which container(s) a parameter impacts, so the Smartnode knows which
 // ones to restart upon a settings change
 const (
-	ContainerID_Unknown      ContainerID = ""
-	ContainerID_Api          ContainerID = "api"
-	ContainerID_Node         ContainerID = "node"
-	ContainerID_Watchtower   ContainerID = "watchtower"
-	ContainerID_Eth1         ContainerID = "eth1"
-	ContainerID_Eth1Fallback ContainerID = "eth1-fallback"
-	ContainerID_Eth2         ContainerID = "eth2"
-	ContainerID_Validator    ContainerID = "validator"
-	ContainerID_Grafana      ContainerID = "grafana"
-	ContainerID_Prometheus   ContainerID = "prometheus"
-	ContainerID_Exporter     ContainerID = "exporter"
-	ContainerID_Ipfs         ContainerID = "ipfs"
+	ContainerID_Unknown    ContainerID = ""
+	ContainerID_Api        ContainerID = "api"
+	ContainerID_Node       ContainerID = "node"
+	ContainerID_Watchtower ContainerID = "watchtower"
+	ContainerID_Eth1       ContainerID = "eth1"
+	ContainerID_Eth2       ContainerID = "eth2"
+	ContainerID_Validator  ContainerID = "validator"
+	ContainerID_Grafana    ContainerID = "grafana"
+	ContainerID_Prometheus ContainerID = "prometheus"
+	ContainerID_Exporter   ContainerID = "exporter"
 )
 
 // Enum to describe which network the system is on
@@ -61,8 +59,6 @@ const (
 	ExecutionClient_Geth       ExecutionClient = "geth"
 	ExecutionClient_Nethermind ExecutionClient = "nethermind"
 	ExecutionClient_Besu       ExecutionClient = "besu"
-	ExecutionClient_Infura     ExecutionClient = "infura"
-	ExecutionClient_Pocket     ExecutionClient = "pocket"
 )
 
 // Enum to describe the Consensus client options

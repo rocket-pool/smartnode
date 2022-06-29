@@ -1011,9 +1011,9 @@ func (c *Client) migrateEcSelection(legacySelectedClient string, ecParam *config
 	case "geth":
 		ecParam.Value = config.ExecutionClient_Geth
 	case "infura":
-		ecParam.Value = config.ExecutionClient_Infura
+		ecParam.Value = config.ExecutionClient_Geth
 	case "pocket":
-		ecParam.Value = config.ExecutionClient_Pocket
+		ecParam.Value = config.ExecutionClient_Geth
 	case "custom":
 		ecModeParam.Value = config.Mode_External
 	case "":

@@ -768,15 +768,9 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 
 		// Handle open API ports
 		if config.ExecutionCommon.OpenRpcPorts.Value == true {
-			switch config.ExecutionClient.Value.(ExecutionClient) {
-			case ExecutionClient_Pocket:
-				ecHttpPort := config.ExecutionCommon.HttpPort.Value.(uint16)
-				envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort)
-			default:
-				ecHttpPort := config.ExecutionCommon.HttpPort.Value.(uint16)
-				ecWsPort := config.ExecutionCommon.WsPort.Value.(uint16)
-				envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
-			}
+			ecHttpPort := config.ExecutionCommon.HttpPort.Value.(uint16)
+			ecWsPort := config.ExecutionCommon.WsPort.Value.(uint16)
+			envVars["EC_OPEN_API_PORTS"] = fmt.Sprintf(", \"%d:%d/tcp\", \"%d:%d/tcp\"", ecHttpPort, ecHttpPort, ecWsPort, ecWsPort)
 		}
 
 		// Common params
