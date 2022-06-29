@@ -14,9 +14,8 @@ This repository contains the source code for:
 
 * The Rocket Pool smart node client (CLI), which is used to manage a smart node either locally or remotely (over SSH)
 * The Rocket Pool smart node service, which provides an API for client communication and performs background node tasks
-* The Rocket Pool smart node PoW proxy, a simple Eth 1.0 client proxy server for communicating with remote Eth 1.0 services such as Infura
 
-The smart node service and PoW proxy are designed to be run as part of a docker stack and generally do not need to be installed manually.
+The smart node service is designed to be run as part of a docker stack and generally does not need to be installed manually.
 See the [Rocket Pool dockerhub](https://hub.docker.com/u/rocketpool) page for a complete list of docker images.
 
 

@@ -11,7 +11,6 @@ import (
 // Constants
 const (
 	smartnodeTag                       string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-	powProxyTag                        string = "rocketpool/smartnode-pow-proxy:v" + shared.RocketPoolVersion
 	pruneProvisionerTag                string = "rocketpool/eth1-prune-provision:v0.0.1"
 	ecMigratorTag                      string = "rocketpool/ec-migrator:v1.0.0"
 	NetworkID                          string = "network"
@@ -496,10 +495,6 @@ func (config *SmartnodeConfig) GetSnapshotDelegationAddress() string {
 
 func (config *SmartnodeConfig) GetSmartnodeContainerTag() string {
 	return smartnodeTag
-}
-
-func (config *SmartnodeConfig) GetPowProxyContainerTag() string {
-	return powProxyTag
 }
 
 func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
