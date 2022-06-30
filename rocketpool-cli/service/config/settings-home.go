@@ -75,7 +75,7 @@ func (home *settingsHome) createContent() {
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 			if mainText == home.fallbackPage.page.title {
-				// Temp block of Nimbus for the fallback page until it supports split mode
+				// Temp block of Nimbus for the fallback page until they support fallback
 				cc, _ := home.md.Config.GetSelectedConsensusClient()
 				switch cc {
 				case config.ConsensusClient_Nimbus:
@@ -107,9 +107,10 @@ func (home *settingsHome) createContent() {
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
 		if s1 == home.fallbackPage.page.title {
-			// Temp block of Nimbus for the fallback page until it supports split mode
+			// Temp block of Nimbus and Teku for the fallback page until they support fallback
 			cc, _ := home.md.Config.GetSelectedConsensusClient()
-			if cc == config.ConsensusClient_Nimbus {
+			switch cc {
+			case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
 				return
 			}
 		}

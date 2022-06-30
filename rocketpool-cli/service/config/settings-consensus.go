@@ -113,8 +113,9 @@ func (configPage *ConsensusConfigPage) createContent() {
 			return
 		}
 		configPage.masterConfig.ConsensusClient.Value = configPage.masterConfig.ConsensusClient.Options[index].Value
-		if configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Nimbus {
-			// Temp until Nimbus supports split mode
+		switch configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient) {
+		case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
+			// Temp until Nimbus and Teku support fallbacks
 			configPage.home.md.Config.UseFallbackClients.Value = false
 			configPage.home.refresh()
 		}
