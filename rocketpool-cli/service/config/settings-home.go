@@ -77,8 +77,12 @@ func (home *settingsHome) createContent() {
 			if mainText == home.fallbackPage.page.title {
 				// Temp block of Nimbus for the fallback page until it supports split mode
 				cc, _ := home.md.Config.GetSelectedConsensusClient()
-				if cc == config.ConsensusClient_Nimbus {
+				switch cc {
+				case config.ConsensusClient_Nimbus:
 					layout.descriptionBox.SetText("You have Nimbus selected for your Consensus client.\n\nNimbus does not support fallback clients at this time, so this option is disabled.")
+					return
+				case config.ConsensusClient_Teku:
+					layout.descriptionBox.SetText("You have Teku selected for your Consensus client.\n\nTeku does not support fallback clients at this time, so this option is disabled.")
 					return
 				}
 			}

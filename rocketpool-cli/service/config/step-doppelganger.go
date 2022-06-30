@@ -22,10 +22,11 @@ func createDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choic
 			wiz.md.Config.ConsensusCommon.DoppelgangerDetection.Value = false
 		}
 		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
-		if cc == config.ConsensusClient_Nimbus {
+		switch cc {
+		case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
 			wiz.md.Config.UseFallbackClients.Value = false
 			wiz.metricsModal.show()
-		} else {
+		default:
 			wiz.useFallbackModal.show()
 		}
 	}

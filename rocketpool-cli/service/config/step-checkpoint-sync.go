@@ -47,7 +47,14 @@ func createCheckpointSyncStep(wiz *wizard, currentStep int, totalSteps int) *tex
 		if supportsDoppelganger {
 			wiz.doppelgangerDetectionModal.show()
 		} else {
-			wiz.useFallbackModal.show()
+			cc, _ := wiz.md.Config.GetSelectedConsensusClient()
+			switch cc {
+			case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
+				wiz.md.Config.UseFallbackClients.Value = false
+				wiz.metricsModal.show()
+			default:
+				wiz.useFallbackModal.show()
+			}
 		}
 	}
 
