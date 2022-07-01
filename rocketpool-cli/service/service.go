@@ -891,10 +891,8 @@ func pruneExecutionClient(c *cli.Context) error {
 	if cfg.IsNativeMode {
 		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
 	}
-	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
-	case config.ExecutionClient_Nethermind:
-		fmt.Println("You are using Nethermind as your Execution client.\nNethermind pruning is not supported yet.")
-		return nil
+	selectedEc := cfg.ExecutionClient.Value.(config.ExecutionClient)
+	switch selectedEc {
 	case config.ExecutionClient_Besu:
 		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
 		return nil
@@ -1002,6 +1000,13 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 	if result != executionContainerName {
 		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+	}
+
+	if selectedEc == config.ExecutionClient_Nethermind {
+		err = rp.RunNethermindPruneStarter(executionContainerName)
+		if err != nil {
+			return err
+		}
 	}
 
 	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")
