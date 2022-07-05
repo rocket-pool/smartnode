@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet/bip39"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -101,7 +102,11 @@ func confirmMnemonic(mnemonic string) {
 func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolConfig) (string, error) {
 
 	// Check for the custom key directory
-	customKeyDir := filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys")
+	datapath, err := homedir.Expand(cfg.Smartnode.DataPath.Value.(string))
+	if err != nil {
+		return "", fmt.Errorf("error expanding data directory: %w", err)
+	}
+	customKeyDir := filepath.Join(datapath, "custom-keys")
 	info, err := os.Stat(customKeyDir)
 	if os.IsNotExist(err) || !info.IsDir() {
 		return "", nil
@@ -156,7 +161,7 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 	if err != nil {
 		return "", fmt.Errorf("error serializing keystore passwords file: %w", err)
 	}
-	passwordFile := filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-key-passwords")
+	passwordFile := filepath.Join(datapath, "custom-key-passwords")
 	err = ioutil.WriteFile(passwordFile, fileBytes, 0600)
 	if err != nil {
 		return "", fmt.Errorf("error writing keystore passwords file: %w", err)
