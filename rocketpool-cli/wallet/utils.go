@@ -121,6 +121,14 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		return "", nil
 	}
 
+	// Prompt the user with a warning message
+	fmt.Printf("%sWARNING:\nThe Smartnode has detected that you have custom (externally-derived) validator keys for your minipools.\nIf these keys were actively used for validation by a service such as Allnodes, you MUST CONFIRM WITH THAT SERVICE that they have stopped validating and disabled those keys, and will NEVER validate with them again.\nOtherwise, you may both run the same keys at the same time which WILL RESULT IN YOUR VALIDATORS BEING SLASHED.%s\n\n", colorRed, colorReset)
+
+	if !cliutils.Confirm("Please confirm that you have coordinated with the service that was running your minipool validators previously to ensure they have STOPPED validation for your minipools, will NEVER start them again, and you have manually confirmed on a Blockchain explorer such as https://beaconcha.in that your minipools are no longer attesting.") {
+		fmt.Print("Cancelled.")
+		os.Exit(0)
+	}
+
 	// Get the pubkeys for the custom keystores
 	customPubkeys := []types.ValidatorPubkey{}
 	for _, file := range files {

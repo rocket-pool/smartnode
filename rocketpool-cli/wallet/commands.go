@@ -147,10 +147,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "test-mnemonic",
+				Name:      "test-recovery",
 				Aliases:   []string{"t"},
-				Usage:     "Test recovering a node wallet from a mnemonic phrase to ensure the phrase is correct",
-				UsageText: "rocketpool wallet test-mnemonic [options]",
+				Usage:     "Test recovering a node wallet without actually generating any of the node wallet or validator key files to ensure the process works as expected",
+				UsageText: "rocketpool wallet test-recovery [options]",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "password, p",
