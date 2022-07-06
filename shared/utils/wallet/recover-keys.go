@@ -22,7 +22,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address common.Address, w *wallet.Wallet) ([]types.ValidatorPubkey, error) {
+func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address common.Address, w *wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -129,9 +129,11 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 				}
 
 				// Store the key
-				err = w.StoreValidatorKey(privateKey, keystore.Path)
-				if err != nil {
-					return nil, fmt.Errorf("error storing private keystore for %s: %w", reconstructedPubkey.Hex(), err)
+				if !testOnly {
+					err = w.StoreValidatorKey(privateKey, keystore.Path)
+					if err != nil {
+						return nil, fmt.Errorf("error storing private keystore for %s: %w", reconstructedPubkey.Hex(), err)
+					}
 				}
 
 				// Remove the pubkey from pending minipools to handle
@@ -142,7 +144,12 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 
 	// Recover remaining validator keys normally
 	for pubkey := range pubkeyMap {
-		if err := w.RecoverValidatorKey(pubkey); err != nil {
+		if testOnly {
+			err = w.TestRecoverValidatorKey(pubkey)
+		} else {
+			err = w.RecoverValidatorKey(pubkey)
+		}
+		if err != nil {
 			return nil, err
 		}
 	}

@@ -190,7 +190,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return testMnemonic(c)
+					return testRecovery(c)
 
 				},
 			},
