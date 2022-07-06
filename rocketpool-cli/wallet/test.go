@@ -51,7 +51,7 @@ func testRecovery(c *cli.Context) error {
 
 	// Check for custom keys
 	if !skipValidatorKeyRecovery {
-		customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg)
+		customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg, true)
 		if err != nil {
 			return err
 		}

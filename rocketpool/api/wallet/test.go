@@ -1,10 +1,7 @@
 package wallet
 
 import (
-	"errors"
 	"fmt"
-	"math/big"
-	"os"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -36,7 +33,7 @@ func testRecoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletRespo
 
 	// Create a blank wallet
 	chainId := cfg.Smartnode.GetChainID()
-	w, err := wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, big.NewInt(0), big.NewInt(0), 0, nil)
+	w, err := wallet.NewWallet("", chainId, nil, nil, 0, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +56,7 @@ func testRecoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletRespo
 	walletIndex := c.Uint("wallet-index")
 
 	// Recover wallet
-	if err := w.Recover(path, walletIndex, mnemonic); err != nil {
+	if err := w.TestRecovery(path, walletIndex, mnemonic); err != nil {
 		return nil, err
 	}
 
@@ -102,18 +99,13 @@ func testSearchAndRecoverWallet(c *cli.Context, mnemonic string, address common.
 
 	// Create a blank wallet
 	chainId := cfg.Smartnode.GetChainID()
-	w, err := wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, big.NewInt(0), big.NewInt(0), 0, nil)
+	w, err := wallet.NewWallet("", chainId, nil, nil, 0, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Response
 	response := api.SearchAndRecoverWalletResponse{}
-
-	// Check if wallet is already initialized
-	if w.IsInitialized() {
-		return nil, errors.New("the wallet is already initialized")
-	}
 
 	// Try each derivation path across all of the iterations
 	paths := []string{
@@ -156,7 +148,7 @@ func testSearchAndRecoverWallet(c *cli.Context, mnemonic string, address common.
 	}
 
 	// Recover wallet
-	if err := w.Recover(response.DerivationPath, response.Index, mnemonic); err != nil {
+	if err := w.TestRecovery(response.DerivationPath, response.Index, mnemonic); err != nil {
 		return nil, err
 	}
 
