@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createCheckpointSyncStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
@@ -35,7 +36,7 @@ func createCheckpointSyncStep(wiz *wizard, currentStep int, totalSteps int) *tex
 		}
 
 		// Check to see if it supports doppelganger detection
-		unsupportedParams := client.(config.LocalConsensusConfig).GetUnsupportedCommonParams()
+		unsupportedParams := client.(cfgtypes.LocalConsensusConfig).GetUnsupportedCommonParams()
 		supportsDoppelganger := true
 		for _, param := range unsupportedParams {
 			if param == config.DoppelgangerDetectionID {
@@ -49,7 +50,7 @@ func createCheckpointSyncStep(wiz *wizard, currentStep int, totalSteps int) *tex
 		} else {
 			cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 			switch cc {
-			case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
+			case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku:
 				wiz.md.Config.UseFallbackClients.Value = false
 				wiz.metricsModal.show()
 			default:

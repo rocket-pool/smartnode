@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -20,7 +20,7 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		clientDescriptions = append(clientDescriptions, client.Description)
 	}
 
-	goodClients := []config.ParameterOption{}
+	goodClients := []cfgtypes.ParameterOption{}
 	for _, client := range wiz.md.Config.ExecutionClient.Options {
 		if !strings.HasPrefix(client.Name, "*") {
 			goodClients = append(goodClients, client)
@@ -57,18 +57,18 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 			selectRandomEC(goodClients, wiz, currentStep, totalSteps)
 		} else {
 			buttonLabel = strings.TrimSpace(buttonLabel)
-			selectedClient := config.ExecutionClient_Unknown
+			selectedClient := cfgtypes.ExecutionClient_Unknown
 			for _, client := range wiz.md.Config.ExecutionClient.Options {
 				if client.Name == buttonLabel {
-					selectedClient = client.Value.(config.ExecutionClient)
+					selectedClient = client.Value.(cfgtypes.ExecutionClient)
 					break
 				}
 			}
-			if selectedClient == config.ExecutionClient_Unknown {
+			if selectedClient == cfgtypes.ExecutionClient_Unknown {
 				panic(fmt.Sprintf("Local EC selection buttons didn't match any known clients, buttonLabel = %s\n", buttonLabel))
 			}
 			wiz.md.Config.ExecutionClient.Value = selectedClient
-			if wiz.md.Config.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+			if wiz.md.Config.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 				wiz.consensusLocalModal.show()
 			} else {
 				wiz.consensusExternalSelectModal.show()
@@ -98,16 +98,16 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 }
 
 // Get a random execution client
-func selectRandomEC(goodOptions []config.ParameterOption, wiz *wizard, currentStep int, totalSteps int) {
+func selectRandomEC(goodOptions []cfgtypes.ParameterOption, wiz *wizard, currentStep int, totalSteps int) {
 
 	// Get system specs
 	//totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 	//isLowPower := (totalMemoryGB < 15 || runtime.GOARCH == "arm64")
 
 	// Filter out the clients based on system specs
-	filteredClients := []config.ExecutionClient{}
+	filteredClients := []cfgtypes.ExecutionClient{}
 	for _, clientOption := range goodOptions {
-		client := clientOption.Value.(config.ExecutionClient)
+		client := clientOption.Value.(cfgtypes.ExecutionClient)
 		switch client {
 		default:
 			filteredClients = append(filteredClients, client)

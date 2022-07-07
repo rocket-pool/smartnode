@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // v2.1.3
@@ -26,29 +28,29 @@ type PrysmConfig struct {
 	UnsupportedCommonParams []string `yaml:"unsupportedCommonParams,omitempty"`
 
 	// The max number of P2P peers to connect to
-	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
+	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
 
 	// The RPC port for BN / VC connections
-	RpcPort Parameter `yaml:"rpcPort,omitempty"`
+	RpcPort config.Parameter `yaml:"rpcPort,omitempty"`
 
 	// Toggle for forwarding the RPC API outside of Docker
-	OpenRpcPort Parameter `yaml:"openRpcPort,omitempty"`
+	OpenRpcPort config.Parameter `yaml:"openRpcPort,omitempty"`
 
 	// The Docker Hub tag for the Prysm BN
-	BnContainerTag Parameter `yaml:"bnContainerTag,omitempty"`
+	BnContainerTag config.Parameter `yaml:"bnContainerTag,omitempty"`
 
 	// The Docker Hub tag for the Prysm VC
-	VcContainerTag Parameter `yaml:"vcContainerTag,omitempty"`
+	VcContainerTag config.Parameter `yaml:"vcContainerTag,omitempty"`
 
 	// Custom command line flags for the BN
-	AdditionalBnFlags Parameter `yaml:"additionalBnFlags,omitempty"`
+	AdditionalBnFlags config.Parameter `yaml:"additionalBnFlags,omitempty"`
 
 	// Custom command line flags for the VC
-	AdditionalVcFlags Parameter `yaml:"additionalVcFlags,omitempty"`
+	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
 // Generates a new Prysm configuration
-func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
+func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 	return &PrysmConfig{
 		Title: "Prysm Settings",
 
@@ -56,95 +58,95 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 			//CheckpointSyncUrlID,
 		},
 
-		MaxPeers: Parameter{
+		MaxPeers: config.Parameter{
 			ID:                   "maxPeers",
 			Name:                 "Max Peers",
 			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                 ParameterType_Uint16,
-			Default:              map[Network]interface{}{Network_All: defaultPrysmMaxPeers},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			Type:                 config.ParameterType_Uint16,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmMaxPeers},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		RpcPort: Parameter{
+		RpcPort: config.Parameter{
 			ID:                   "rpcPort",
 			Name:                 "RPC Port",
 			Description:          "The port Prysm should run its JSON-RPC API on.",
-			Type:                 ParameterType_Uint16,
-			Default:              map[Network]interface{}{Network_All: defaultPrysmRpcPort},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
+			Type:                 config.ParameterType_Uint16,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmRpcPort},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_RPC_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		OpenRpcPort: Parameter{
+		OpenRpcPort: config.Parameter{
 			ID:                   "openRpcPort",
 			Name:                 "Expose RPC Port",
 			Description:          "Enable this to expose Prysm's JSON-RPC port to your local network, so other machines can access it too.",
-			Type:                 ParameterType_Bool,
-			Default:              map[Network]interface{}{Network_All: defaultPrysmOpenRpcPort},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultPrysmOpenRpcPort},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_OPEN_RPC_PORT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		BnContainerTag: Parameter{
+		BnContainerTag: config.Parameter{
 			ID:          "bnContainerTag",
 			Name:        "Beacon Node Container Tag",
 			Description: "The tag name of the Prysm Beacon Node container you want to use on Docker Hub.",
-			Type:        ParameterType_String,
-			Default: map[Network]interface{}{
-				Network_Mainnet: getPrysmBnProdTag(),
-				Network_Prater:  getPrysmBnTestTag(),
-				Network_Kiln:    getPrysmBnTestTag(),
-				Network_Ropsten: getPrysmBnTestTag(),
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: getPrysmBnProdTag(),
+				config.Network_Prater:  getPrysmBnTestTag(),
+				config.Network_Kiln:    getPrysmBnTestTag(),
+				config.Network_Ropsten: getPrysmBnTestTag(),
 			},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
 
-		VcContainerTag: Parameter{
+		VcContainerTag: config.Parameter{
 			ID:          "vcContainerTag",
 			Name:        "Validator Client Container Tag",
 			Description: "The tag name of the Prysm Validator Client container you want to use on Docker Hub.",
-			Type:        ParameterType_String,
-			Default: map[Network]interface{}{
-				Network_Mainnet: getPrysmVcProdTag(),
-				Network_Prater:  getPrysmVcTestTag(),
-				Network_Kiln:    getPrysmVcTestTag(),
-				Network_Ropsten: getPrysmVcTestTag(),
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: getPrysmVcProdTag(),
+				config.Network_Prater:  getPrysmVcTestTag(),
+				config.Network_Kiln:    getPrysmVcTestTag(),
+				config.Network_Ropsten: getPrysmVcTestTag(),
 			},
-			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalBnFlags: Parameter{
+		AdditionalBnFlags: config.Parameter{
 			ID:                   "additionalBnFlags",
 			Name:                 "Additional Beacon Node Flags",
 			Description:          "Additional custom command line flags you want to pass Prysm's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
-		AdditionalVcFlags: Parameter{
+		AdditionalVcFlags: config.Parameter{
 			ID:                   "additionalVcFlags",
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
@@ -197,34 +199,34 @@ func getPrysmVcTestTag() string {
 }
 
 // Get the parameters for this config
-func (config *PrysmConfig) GetParameters() []*Parameter {
-	return []*Parameter{
-		&config.MaxPeers,
-		&config.RpcPort,
-		&config.OpenRpcPort,
-		&config.BnContainerTag,
-		&config.VcContainerTag,
-		&config.AdditionalBnFlags,
-		&config.AdditionalVcFlags,
+func (cfg *PrysmConfig) GetParameters() []*config.Parameter {
+	return []*config.Parameter{
+		&cfg.MaxPeers,
+		&cfg.RpcPort,
+		&cfg.OpenRpcPort,
+		&cfg.BnContainerTag,
+		&cfg.VcContainerTag,
+		&cfg.AdditionalBnFlags,
+		&cfg.AdditionalVcFlags,
 	}
 }
 
 // Get the common params that this client doesn't support
-func (config *PrysmConfig) GetUnsupportedCommonParams() []string {
-	return config.UnsupportedCommonParams
+func (cfg *PrysmConfig) GetUnsupportedCommonParams() []string {
+	return cfg.UnsupportedCommonParams
 }
 
 // Get the Docker container name of the validator client
-func (config *PrysmConfig) GetValidatorImage() string {
-	return config.VcContainerTag.Value.(string)
+func (cfg *PrysmConfig) GetValidatorImage() string {
+	return cfg.VcContainerTag.Value.(string)
 }
 
 // Get the name of the client
-func (config *PrysmConfig) GetName() string {
+func (cfg *PrysmConfig) GetName() string {
 	return "Prysm"
 }
 
 // The the title for the config
-func (config *PrysmConfig) GetConfigTitle() string {
-	return config.Title
+func (cfg *PrysmConfig) GetConfigTitle() string {
+	return cfg.Title
 }

@@ -33,7 +33,7 @@ type ParameterOption struct {
 }
 
 // Apply a network change to a parameter
-func (param *Parameter) changeNetwork(oldNetwork Network, newNetwork Network) {
+func (param *Parameter) ChangeNetwork(oldNetwork Network, newNetwork Network) {
 
 	// Get the current value and the defaults per-network
 	currentValue := param.Value
@@ -54,7 +54,7 @@ func (param *Parameter) changeNetwork(oldNetwork Network, newNetwork Network) {
 }
 
 // Serializes the parameter's value into a string
-func (param *Parameter) serialize(serializedParams map[string]string) {
+func (param *Parameter) Serialize(serializedParams map[string]string) {
 	var value string
 	if param.Value == nil {
 		value = ""
@@ -66,10 +66,10 @@ func (param *Parameter) serialize(serializedParams map[string]string) {
 }
 
 // Deserializes a map of settings into this parameter
-func (param *Parameter) deserialize(serializedParams map[string]string, network Network) error {
+func (param *Parameter) Deserialize(serializedParams map[string]string, network Network) error {
 	value, exists := serializedParams[param.ID]
 	if !exists {
-		return param.setToDefault(network)
+		return param.SetToDefault(network)
 	}
 
 	var err error
@@ -97,7 +97,7 @@ func (param *Parameter) deserialize(serializedParams map[string]string, network 
 			}
 		}
 		if !param.CanBeBlank && value == "" {
-			return param.setToDefault(network)
+			return param.SetToDefault(network)
 		}
 		param.Value = value
 	case ParameterType_Choice:
@@ -125,7 +125,7 @@ func (param *Parameter) deserialize(serializedParams map[string]string, network 
 }
 
 // Set the value to the default for the provided config's network
-func (param *Parameter) setToDefault(network Network) error {
+func (param *Parameter) SetToDefault(network Network) error {
 	defaultSetting, err := param.GetDefault(network)
 	if err != nil {
 		return err

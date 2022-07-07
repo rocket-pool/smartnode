@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createExternalEcStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
@@ -29,7 +29,7 @@ func createExternalEcStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 	done := func(text map[string]string) {
 		wiz.md.Config.ExternalExecution.HttpUrl.Value = text[httpLabel]
 		wiz.md.Config.ExternalExecution.WsUrl.Value = text[wsLabel]
-		if wiz.md.Config.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+		if wiz.md.Config.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 			wiz.consensusLocalModal.show()
 		} else {
 			wiz.consensusExternalSelectModal.show()

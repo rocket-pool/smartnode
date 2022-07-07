@@ -7,6 +7,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Constants
@@ -15,14 +16,14 @@ const reviewNativePageID string = "review-native-settings"
 // The changed settings review page
 type ReviewNativePage struct {
 	md              *mainDisplay
-	changedSettings map[string][]config.ChangedSetting
+	changedSettings map[string][]cfgtypes.ChangedSetting
 	page            *page
 }
 
 // Create a page to review any changes
 func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
-	var changedSettings map[string][]config.ChangedSetting
+	var changedSettings map[string][]cfgtypes.ChangedSetting
 
 	// Create the visual list for all of the changed settings
 	changeBox := tview.NewTextView().

@@ -8,11 +8,12 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Creates CLI argument flags from the parameters of the configuration struct
-func createFlagsFromConfigParams(sectionName string, params []*config.Parameter, configFlags []cli.Flag, network config.Network) []cli.Flag {
+func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Parameter, configFlags []cli.Flag, network cfgtypes.Network) []cli.Flag {
 	for _, param := range params {
 		var paramName string
 		if sectionName == "" {
@@ -27,42 +28,42 @@ func createFlagsFromConfigParams(sectionName string, params []*config.Parameter,
 		}
 
 		switch param.Type {
-		case config.ParameterType_Bool:
+		case cfgtypes.ParameterType_Bool:
 			configFlags = append(configFlags, cli.BoolFlag{
 				Name:  paramName,
 				Usage: fmt.Sprintf("%s\n\tType: bool\n", param.Description),
 			})
-		case config.ParameterType_Int:
+		case cfgtypes.ParameterType_Int:
 			configFlags = append(configFlags, cli.IntFlag{
 				Name:  paramName,
 				Usage: fmt.Sprintf("%s\n\tType: int\n", param.Description),
 				Value: int(defaultVal.(int64)),
 			})
-		case config.ParameterType_Float:
+		case cfgtypes.ParameterType_Float:
 			configFlags = append(configFlags, cli.Float64Flag{
 				Name:  paramName,
 				Usage: fmt.Sprintf("%s\n\tType: float\n", param.Description),
 				Value: defaultVal.(float64),
 			})
-		case config.ParameterType_String:
+		case cfgtypes.ParameterType_String:
 			configFlags = append(configFlags, cli.StringFlag{
 				Name:  paramName,
 				Usage: fmt.Sprintf("%s\n\tType: string\n", param.Description),
 				Value: defaultVal.(string),
 			})
-		case config.ParameterType_Uint:
+		case cfgtypes.ParameterType_Uint:
 			configFlags = append(configFlags, cli.UintFlag{
 				Name:  paramName,
 				Usage: fmt.Sprintf("%s\n\tType: uint\n", param.Description),
 				Value: uint(defaultVal.(uint64)),
 			})
-		case config.ParameterType_Uint16:
+		case cfgtypes.ParameterType_Uint16:
 			configFlags = append(configFlags, cli.UintFlag{
 				Name:  paramName,
 				Usage: fmt.Sprintf("%s\n\tType: uint16\n", param.Description),
 				Value: uint(defaultVal.(uint16)),
 			})
-		case config.ParameterType_Choice:
+		case cfgtypes.ParameterType_Choice:
 			optionStrings := []string{}
 			for _, option := range param.Options {
 				optionStrings = append(optionStrings, fmt.Sprint(option.Value))
@@ -83,7 +84,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 	configFlags := []cli.Flag{}
 	cfgTemplate := config.NewRocketPoolConfig("", false)
-	network := cfgTemplate.Smartnode.Network.Value.(config.Network)
+	network := cfgTemplate.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Root params
 	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags, network)

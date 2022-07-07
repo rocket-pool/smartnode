@@ -1,6 +1,8 @@
 package config
 
-import "github.com/rocket-pool/smartnode/shared/services/config"
+import (
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+)
 
 func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
@@ -9,10 +11,10 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
 		ddEnabled := true
-		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
-		case config.ConsensusClient_Lighthouse:
+		switch wiz.md.Config.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient) {
+		case cfgtypes.ConsensusClient_Lighthouse:
 			ddEnabled = (wiz.md.Config.ExternalLighthouse.DoppelgangerDetection.Value == true)
-		case config.ConsensusClient_Prysm:
+		case cfgtypes.ConsensusClient_Prysm:
 			ddEnabled = (wiz.md.Config.ExternalPrysm.DoppelgangerDetection.Value == true)
 		}
 
@@ -28,15 +30,15 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 		if buttonIndex == 1 {
 			ddEnabled = true
 		}
-		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
-		case config.ConsensusClient_Lighthouse:
+		switch wiz.md.Config.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient) {
+		case cfgtypes.ConsensusClient_Lighthouse:
 			wiz.md.Config.ExternalLighthouse.DoppelgangerDetection.Value = ddEnabled
-		case config.ConsensusClient_Prysm:
+		case cfgtypes.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.DoppelgangerDetection.Value = ddEnabled
 		}
 		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 		switch cc {
-		case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku:
 			// Temp until Nimbus and Teku support fallback clients
 			wiz.md.Config.UseFallbackClients.Value = false
 			wiz.metricsModal.show()

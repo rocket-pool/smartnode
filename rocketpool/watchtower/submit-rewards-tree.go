@@ -28,6 +28,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -115,7 +116,7 @@ func (t *submitRewardsTree) run() error {
 	if err != nil {
 		return err
 	}
-	if !nodeTrusted && t.cfg.Smartnode.RewardsTreeMode.Value.(config.RewardsMode) != config.RewardsMode_Generate {
+	if !nodeTrusted && t.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Generate {
 		return nil
 	}
 

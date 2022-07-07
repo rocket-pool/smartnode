@@ -5,7 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // A layout container with the standard elements and design
@@ -16,7 +16,7 @@ type standardLayout struct {
 	footer         tview.Primitive
 	form           *Form
 	parameters     map[tview.FormItem]*parameterizedFormItem
-	cfg            config.Config
+	cfg            cfgtypes.Config
 }
 
 // Creates a new StandardLayout instance, which includes the grid and description box preconstructed.
@@ -75,7 +75,7 @@ func (layout *standardLayout) setFooter(footer tview.Primitive, height int) {
 }
 
 // Create a standard form for this layout (for settings pages)
-func (layout *standardLayout) createForm(networkParam *config.Parameter, title string) {
+func (layout *standardLayout) createForm(networkParam *cfgtypes.Parameter, title string) {
 
 	layout.parameters = map[tview.FormItem]*parameterizedFormItem{}
 
@@ -91,7 +91,7 @@ func (layout *standardLayout) createForm(networkParam *config.Parameter, title s
 		if index < form.GetFormItemCount() {
 			formItem := form.GetFormItem(index)
 			param := layout.parameters[formItem].parameter
-			defaultValue, _ := param.GetDefault(networkParam.Value.(config.Network))
+			defaultValue, _ := param.GetDefault(networkParam.Value.(cfgtypes.Network))
 			descriptionText := fmt.Sprintf("Default: %v\n\n%s", defaultValue, param.Description)
 			layout.descriptionBox.SetText(descriptionText)
 			layout.descriptionBox.ScrollToBeginning()
@@ -112,13 +112,13 @@ func (layout *standardLayout) refresh() {
 
 		// Set the form item to the current value
 		switch param.Type {
-		case config.ParameterType_Bool:
+		case cfgtypes.ParameterType_Bool:
 			formItem.(*tview.Checkbox).SetChecked(param.Value == true)
 
-		case config.ParameterType_Int, config.ParameterType_Uint, config.ParameterType_Uint16, config.ParameterType_String, config.ParameterType_Float:
+		case cfgtypes.ParameterType_Int, cfgtypes.ParameterType_Uint, cfgtypes.ParameterType_Uint16, cfgtypes.ParameterType_String, cfgtypes.ParameterType_Float:
 			formItem.(*tview.InputField).SetText(fmt.Sprint(param.Value))
 
-		case config.ParameterType_Choice:
+		case cfgtypes.ParameterType_Choice:
 			for i := 0; i < len(param.Options); i++ {
 				if param.Options[i].Value == param.Value {
 					formItem.(*DropDown).SetCurrentOption(i)

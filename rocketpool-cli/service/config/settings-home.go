@@ -5,7 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const settingsHomeID string = "settings-home"
@@ -81,16 +81,16 @@ func (home *settingsHome) createContent() {
 				// Temp block of Nimbus for the fallback page until they support fallback
 				cc, _ := home.md.Config.GetSelectedConsensusClient()
 				switch cc {
-				case config.ConsensusClient_Nimbus:
+				case cfgtypes.ConsensusClient_Nimbus:
 					layout.descriptionBox.SetText("You have Nimbus selected for your Consensus client.\n\nNimbus does not support fallback clients at this time, so this option is disabled.")
 					return
-				case config.ConsensusClient_Teku:
+				case cfgtypes.ConsensusClient_Teku:
 					layout.descriptionBox.SetText("You have Teku selected for your Consensus client.\n\nTeku does not support fallback clients at this time, so this option is disabled.")
 					return
 				}
 			} else if mainText == home.mevBoostPage.page.title {
-				switch home.md.Config.Smartnode.Network.Value.(config.Network) {
-				case config.Network_Mainnet:
+				switch home.md.Config.Smartnode.Network.Value.(cfgtypes.Network) {
+				case cfgtypes.Network_Mainnet:
 					layout.descriptionBox.SetText("MEV Boost is currently not available on Mainnet.")
 					return
 				}
@@ -119,12 +119,12 @@ func (home *settingsHome) createContent() {
 			// Temp block of Nimbus and Teku for the fallback page until they support fallback
 			cc, _ := home.md.Config.GetSelectedConsensusClient()
 			switch cc {
-			case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
+			case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku:
 				return
 			}
 		} else if s1 == home.mevBoostPage.page.title {
-			switch home.md.Config.Smartnode.Network.Value.(config.Network) {
-			case config.Network_Mainnet, config.Network_Prater:
+			switch home.md.Config.Smartnode.Network.Value.(cfgtypes.Network) {
+			case cfgtypes.Network_Mainnet, cfgtypes.Network_Prater:
 				return
 			}
 		}

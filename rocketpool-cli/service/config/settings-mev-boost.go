@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // The page wrapper for the MEV boost config
@@ -71,8 +72,8 @@ func (configPage *MevBoostConfigPage) createContent() {
 	// Set up the form items
 	configPage.modeBox = createParameterizedDropDown(&configPage.masterConfig.MevBoost.Mode, configPage.layout.descriptionBox)
 
-	localParams := []*config.Parameter{&configPage.masterConfig.MevBoost.Relays, &configPage.masterConfig.MevBoost.Port, &configPage.masterConfig.MevBoost.ContainerTag, &configPage.masterConfig.MevBoost.AdditionalFlags}
-	externalParams := []*config.Parameter{&configPage.masterConfig.MevBoost.ExternalUrl}
+	localParams := []*cfgtypes.Parameter{&configPage.masterConfig.MevBoost.Relays, &configPage.masterConfig.MevBoost.Port, &configPage.masterConfig.MevBoost.ContainerTag, &configPage.masterConfig.MevBoost.AdditionalFlags}
+	externalParams := []*cfgtypes.Parameter{&configPage.masterConfig.MevBoost.ExternalUrl}
 
 	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout.descriptionBox)
 	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout.descriptionBox)
@@ -100,11 +101,11 @@ func (configPage *MevBoostConfigPage) handleModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.modeBox.item)
 
-	selectedMode := configPage.masterConfig.MevBoost.Mode.Value.(config.Mode)
+	selectedMode := configPage.masterConfig.MevBoost.Mode.Value.(cfgtypes.Mode)
 	switch selectedMode {
-	case config.Mode_Local:
+	case cfgtypes.Mode_Local:
 		configPage.layout.addFormItems(configPage.localItems)
-	case config.Mode_External:
+	case cfgtypes.Mode_External:
 		configPage.layout.addFormItems(configPage.externalItems)
 	}
 
