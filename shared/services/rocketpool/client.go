@@ -137,16 +137,20 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 		return nil, false, fmt.Errorf("error expanding settings file path: %w", err)
 	}
 
-	cfg, err := rp.LoadConfigFromFile(expandedPath)
-	if err != nil {
-		return nil, false, err
-	}
-
+	var cfg *config.RocketPoolConfig
 	isNew := false
-	if cfg == nil {
+
+	_, err = os.Stat(expandedPath)
+	if os.IsNotExist(err) {
 		cfg = config.NewRocketPoolConfig(c.configPath, c.daemonPath != "")
 		isNew = true
+	} else {
+		cfg, err = rp.LoadConfigFromFile(expandedPath)
+		if err != nil {
+			return nil, false, err
+		}
 	}
+
 	return cfg, isNew, nil
 }
 
