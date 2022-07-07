@@ -11,5 +11,6 @@ type SmartnodeAddon interface {
 	GetConfig() cfgtypes.Config
 	GetContainerName() string
 	GetContainerTag() string
+	GetEnabledParameter() *cfgtypes.Parameter
 	UpdateEnvVars(envVars map[string]string) error
 }

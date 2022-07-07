@@ -116,7 +116,7 @@ type RocketPoolConfig struct {
 	MevBoost *MevBoostConfig `yaml:"mevBoost,omitempty"`
 
 	// Addons
-	GraffitiWallWriter addontypes.SmartnodeAddon
+	GraffitiWallWriter addontypes.SmartnodeAddon `yaml:"addon-gww,omitempty"`
 }
 
 // Load configuration settings from a file

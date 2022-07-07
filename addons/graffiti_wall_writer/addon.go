@@ -3,6 +3,7 @@ package graffiti_wall_writer
 import (
 	"fmt"
 
+	"github.com/rocket-pool/smartnode/shared/types/addons"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -14,7 +15,13 @@ const (
 )
 
 type GraffitiWallWriter struct {
-	cfg *GraffitiWallWriterConfig
+	cfg *GraffitiWallWriterConfig `yaml:"config,omitempty"`
+}
+
+func NewGraffitiWallWriter() addons.SmartnodeAddon {
+	return &GraffitiWallWriter{
+		cfg: NewConfig(),
+	}
 }
 
 func (gww *GraffitiWallWriter) GetName() string {
@@ -26,14 +33,15 @@ func (gww *GraffitiWallWriter) GetDescription() string {
 }
 
 func (gww *GraffitiWallWriter) GetConfig() cfgtypes.Config {
-	if gww.cfg == nil {
-		gww.cfg = NewConfig()
-	}
 	return gww.cfg
 }
 
 func (gww *GraffitiWallWriter) GetContainerName() string {
 	return fmt.Sprint(ContainerID_GraffitiWallWriter)
+}
+
+func (gww *GraffitiWallWriter) GetEnabledParameter() *cfgtypes.Parameter {
+	return &gww.cfg.Enabled
 }
 
 func (gww *GraffitiWallWriter) GetContainerTag() string {

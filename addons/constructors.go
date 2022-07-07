@@ -6,5 +6,5 @@ import (
 )
 
 func NewGraffitiWallWriter() addons.SmartnodeAddon {
-	return &graffiti_wall_writer.GraffitiWallWriter{}
+	return graffiti_wall_writer.NewGraffitiWallWriter()
 }
