@@ -5,11 +5,11 @@ import (
 	"runtime"
 )
 
-// v2.1.3-rc.0
+// v2.1.3
 const (
 	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-4de92b-debug"
 	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-4de92b-debug"
-	prysmTagArm64             string = "rocketpool/prysm:v2.1.3-rc.4"
+	prysmTagArm64             string = "rocketpool/prysm:v2.1.3"
 	defaultPrysmRpcPort       uint16 = 5053
 	defaultPrysmOpenRpcPort   bool   = false
 	defaultPrysmMaxPeers      uint16 = 45
@@ -51,7 +51,7 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 		Title: "Prysm Settings",
 
 		UnsupportedCommonParams: []string{
-			CheckpointSyncUrlID,
+			//CheckpointSyncUrlID,
 		},
 
 		MaxPeers: Parameter{
