@@ -40,17 +40,12 @@ func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
 		path = wallet.MyEtherWalletNodeKeyPath
 	}
 
-	// Initialize wallet
+	// Initialize wallet but don't save it
 	mnemonic, err := w.Initialize(path, 0)
 	if err != nil {
 		return nil, err
 	}
 	response.Mnemonic = mnemonic
-
-	// Save wallet
-	if err := w.Save(); err != nil {
-		return nil, err
-	}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

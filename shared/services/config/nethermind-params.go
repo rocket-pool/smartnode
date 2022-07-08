@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	nethermindTagAmd64         string = "nethermind/nethermind:1.13.3" //string = "rocketpool/nethermind:full-prune-shutdown-amd64"
-	nethermindTagArm64         string = "nethermind/nethermind:1.13.3"
+	nethermindTagAmd64         string = "nethermind/nethermind:1.13.4"
+	nethermindTagArm64         string = "nethermind/nethermind:1.13.4"
 	nethermindEventLogInterval int    = 25000
 	nethermindStopSignal       string = "SIGTERM"
 )

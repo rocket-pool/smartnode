@@ -37,6 +37,9 @@ func recoverWallet(c *cli.Context) error {
 		return nil
 	}
 
+	// Prompt a notice about test recovery
+	fmt.Printf("%sNOTE:\nThis command will fully regenerate your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools.\nIf you just want to test recovery to ensure it works without actually regenerating the files, please use `rocketpool wallet test-recovery` instead.%s\n\n", colorYellow, colorReset)
+
 	// Set password if not set
 	if !status.PasswordSet {
 		var password string
@@ -64,7 +67,7 @@ func recoverWallet(c *cli.Context) error {
 
 	// Check for custom keys
 	if !skipValidatorKeyRecovery {
-		customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg)
+		customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg, false)
 		if err != nil {
 			return err
 		}

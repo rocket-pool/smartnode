@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet/bip39"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -98,10 +99,14 @@ func confirmMnemonic(mnemonic string) {
 }
 
 // Check for custom keys, prompt for their passwords, and store them in the custom keys file
-func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolConfig) (string, error) {
+func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolConfig, testOnly bool) (string, error) {
 
 	// Check for the custom key directory
-	customKeyDir := filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys")
+	datapath, err := homedir.Expand(cfg.Smartnode.DataPath.Value.(string))
+	if err != nil {
+		return "", fmt.Errorf("error expanding data directory: %w", err)
+	}
+	customKeyDir := filepath.Join(datapath, "custom-keys")
 	info, err := os.Stat(customKeyDir)
 	if os.IsNotExist(err) || !info.IsDir() {
 		return "", nil
@@ -114,6 +119,16 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 	}
 	if len(files) == 0 {
 		return "", nil
+	}
+
+	// Prompt the user with a warning message
+	if !testOnly {
+		fmt.Printf("%sWARNING:\nThe Smartnode has detected that you have custom (externally-derived) validator keys for your minipools.\nIf these keys were actively used for validation by a service such as Allnodes, you MUST CONFIRM WITH THAT SERVICE that they have stopped validating and disabled those keys, and will NEVER validate with them again.\nOtherwise, you may both run the same keys at the same time which WILL RESULT IN YOUR VALIDATORS BEING SLASHED.%s\n\n", colorRed, colorReset)
+
+		if !cliutils.Confirm("Please confirm that you have coordinated with the service that was running your minipool validators previously to ensure they have STOPPED validation for your minipools, will NEVER start them again, and you have manually confirmed on a Blockchain explorer such as https://beaconcha.in that your minipools are no longer attesting.") {
+			fmt.Println("Cancelled.")
+			os.Exit(0)
+		}
 	}
 
 	// Get the pubkeys for the custom keystores
@@ -156,7 +171,7 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 	if err != nil {
 		return "", fmt.Errorf("error serializing keystore passwords file: %w", err)
 	}
-	passwordFile := filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-key-passwords")
+	passwordFile := filepath.Join(datapath, "custom-key-passwords")
 	err = ioutil.WriteFile(passwordFile, fileBytes, 0600)
 	if err != nil {
 		return "", fmt.Errorf("error writing keystore passwords file: %w", err)

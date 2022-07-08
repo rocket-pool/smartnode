@@ -42,7 +42,7 @@ func rebuildWallet(c *cli.Context) error {
 	}
 
 	// Check for custom keys
-	customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg)
+	customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg, false)
 	if err != nil {
 		return err
 	}
