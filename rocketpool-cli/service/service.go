@@ -511,6 +511,19 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		return fmt.Errorf("Error loading user settings: %w", err)
 	}
 
+	// Check for unsupported clients
+	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+		selectedEc := cfg.ExecutionClient.Value.(config.ExecutionClient)
+		switch selectedEc {
+		case config.ExecutionClient_Obs_Infura:
+			fmt.Printf("%sYou currently have Infura configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge.\nPlease run `rocketpool service config` and select a full Execution client.%s\n", colorRed, colorReset)
+			return nil
+		case config.ExecutionClient_Obs_Pocket:
+			fmt.Printf("%sYou currently have Pocket configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge.\nPlease run `rocketpool service config` and select a full Execution client.%s\n", colorRed, colorReset)
+			return nil
+		}
+	}
+
 	isMigration := false
 	if isNew {
 		// Look for a legacy config to migrate
