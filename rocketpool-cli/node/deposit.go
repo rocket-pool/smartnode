@@ -63,30 +63,53 @@ func nodeDeposit(c *cli.Context) error {
 
 	} else {
 
-		// Get node status
-		status, err := rp.NodeStatus()
-		if err != nil {
-			return err
-		}
+		/*
+		 * Remove the 32 ETH option from the interview.
+		 *
+		 * This was done to avoid buyer's remorse from NOs who didn't realize they would be
+		 * tying up their funds until the entire minipool queue was empty, which felt like
+		 * ages during the great crypto winter of 2022.
+		 *
+		 * See: https://dao.rocketpool.net/t/proposal-to-turn-off-32-full-node-operator-deposits/827
+		 * for additional context.
+		 *
+		 * Uncomment this code to reinstate it.
+		 *
+		 * Should a NO understand the risk/downside of a 32 ETH deposit, they can still
+		 * make use of the --amount flag.
+		 *
+		 * N.B. unbonded minipools are not currently possible to create, so the option
+		 * is also commented out here. Should the smart contracts be changed to allow them
+		 * in the future, the oDAO members can still create them using the --amount flag.
+		 */
+		if false {
+			// Get node status
+			status, err := rp.NodeStatus()
+			if err != nil {
+				return err
+			}
 
-		// Get deposit amount options
-		amountOptions := []string{
-			"32 ETH (minipool begins staking immediately)",
-			"16 ETH (minipool begins staking after ETH is assigned)",
-		}
-		if status.Trusted {
-			amountOptions = append(amountOptions, "0 ETH  (minipool begins staking after ETH is assigned)")
-		}
+			// Get deposit amount options
+			amountOptions := []string{
+				"32 ETH (minipool begins staking immediately)",
+				"16 ETH (minipool begins staking after ETH is assigned)",
+			}
+			if status.Trusted {
+				amountOptions = append(amountOptions, "0 ETH  (minipool begins staking after ETH is assigned)")
+			}
 
-		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-		switch selected {
-		case 0:
-			amount = 32
-		case 1:
+			// Prompt for amount
+			selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+			switch selected {
+			case 0:
+				amount = 32
+			case 1:
+				amount = 16
+			case 2:
+				amount = 0
+			}
+		} else {
 			amount = 16
-		case 2:
-			amount = 0
 		}
 
 	}
