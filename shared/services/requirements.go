@@ -395,6 +395,46 @@ func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool
 	}
 }
 
+func checkBeaconClientStatus(bcMgr *BeaconClientManager) (bool, error) {
+
+	// Check the BC status
+	mgrStatus := bcMgr.CheckStatus(false)
+	if bcMgr.primaryReady {
+		return true, nil
+	}
+
+	// If the primary isn't synced but there's a fallback and it is, return true
+	if bcMgr.fallbackReady {
+		if mgrStatus.PrimaryClientStatus.Error != "" {
+			log.Printf("Primary consensus client is unavailable (%s), using fallback consensus client...\n", mgrStatus.PrimaryClientStatus.Error)
+		} else {
+			log.Printf("Primary consensus client is still syncing (%.2f%%), using fallback consensus client...\n", mgrStatus.PrimaryClientStatus.SyncProgress*100)
+		}
+		return true, nil
+	}
+
+	// If neither is synced, go through the status to figure out what to do
+
+	// Is the primary working and syncing? If so, wait for it
+	if mgrStatus.PrimaryClientStatus.IsWorking && mgrStatus.PrimaryClientStatus.Error == "" {
+		log.Printf("Fallback consensus client is not configured or unavailable, waiting for primary consensus client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryClientStatus.SyncProgress*100)
+		return false, nil
+	}
+
+	// Is the fallback working and syncing? If so, wait for it
+	if mgrStatus.FallbackEnabled && mgrStatus.FallbackClientStatus.IsWorking && mgrStatus.FallbackClientStatus.Error == "" {
+		log.Printf("Primary cosnensus client is unavailable (%s), waiting for the fallback consensus client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.SyncProgress*100)
+		return false, nil
+	}
+
+	// If neither client is working, report the errors
+	if mgrStatus.FallbackEnabled {
+		return false, fmt.Errorf("Primary consensus client is unavailable (%s) and fallback consensus client is unavailable (%s), no consensus clients are ready.", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.Error)
+	} else {
+		return false, fmt.Errorf("Primary consensus client is unavailable (%s) and no fallback consensus client is configured.", mgrStatus.PrimaryClientStatus.Error)
+	}
+}
+
 func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
 
 	// Prevent multiple waiting goroutines from requesting sync progress
@@ -402,7 +442,6 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 	defer ethClientSyncLock.Unlock()
 
 	// Get eth client
-	var err error
 	ecMgr, err := GetEthClient(c)
 	if err != nil {
 		return false, err
@@ -490,24 +529,48 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 	defer beaconClientSyncLock.Unlock()
 
 	// Get beacon client
-	bc, err := GetBeaconClient(c)
+	bcMgr, err := GetBeaconClient(c)
 	if err != nil {
 		return false, err
 	}
 
+	synced, err := checkBeaconClientStatus(bcMgr)
+	if err != nil {
+		return false, err
+	}
+	if synced {
+		return true, nil
+	}
+
 	// Get wait start time
-	startTime := time.Now().Unix()
+	startTime := time.Now()
+
+	// Get BC status refresh time
+	bcRefreshTime := startTime
 
 	// Wait for sync
 	for {
 
 		// Check timeout
-		if (timeout > 0) && (time.Now().Unix()-startTime > timeout) {
+		if (timeout > 0) && (time.Since(startTime).Seconds() > float64(timeout)) {
 			return false, nil
 		}
 
+		// Check if the BC status needs to be refreshed
+		if time.Since(bcRefreshTime) > ethClientStatusRefreshInterval {
+			log.Println("Refreshing primary / fallback consensus client status...")
+			bcRefreshTime = time.Now()
+			synced, err = checkBeaconClientStatus(bcMgr)
+			if err != nil {
+				return false, err
+			}
+			if synced {
+				return true, nil
+			}
+		}
+
 		// Get sync status
-		syncStatus, err := bc.GetSyncStatus()
+		syncStatus, err := bcMgr.GetSyncStatus()
 		if err != nil {
 			return false, err
 		}
@@ -515,7 +578,7 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 		// Check sync status
 		if syncStatus.Syncing {
 			if verbose {
-				log.Println("Eth 2.0 node syncing...")
+				log.Println("Eth 2.0 node syncing: %.2f%%\n", syncStatus.Progress*100)
 			}
 		} else {
 			return true, nil

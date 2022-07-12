@@ -21,7 +21,7 @@ func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, membe
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}

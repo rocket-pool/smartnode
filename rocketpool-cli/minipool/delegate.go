@@ -22,7 +22,7 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}

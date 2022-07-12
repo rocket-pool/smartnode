@@ -84,13 +84,26 @@ func getSyncProgress(c *cli.Context) error {
 		fmt.Printf("You do not have a fallback execution client enabled.\n")
 	}
 
-	// Print eth2 status
-	if status.Eth2Synced {
-		fmt.Print("Your consensus client is fully synced.\n")
-	} else if status.Eth2Progress != -1 {
-		fmt.Printf("Your consensus client is still syncing (%0.2f%%).\n", status.Eth2Progress*100)
+	// Print CC status
+	if status.BcStatus.PrimaryClientStatus.Error != "" {
+		fmt.Printf("Your primary consensus client is unavailable (%s).\n", status.BcStatus.PrimaryClientStatus.Error)
+	} else if status.BcStatus.PrimaryClientStatus.IsSynced {
+		fmt.Print("Your primary consensus client is fully synced.\n")
 	} else {
-		fmt.Print("Your consensus client is still syncing (but does not provide its progress).\n")
+		fmt.Printf("Your primary consensus client is still syncing (%0.2f%%).\n", status.BcStatus.PrimaryClientStatus.SyncProgress*100)
+	}
+
+	// Print fallback CC status
+	if status.BcStatus.FallbackEnabled {
+		if status.BcStatus.FallbackClientStatus.Error != "" {
+			fmt.Printf("Your fallback consensus client is unavailable (%s).\n", status.BcStatus.FallbackClientStatus.Error)
+		} else if status.BcStatus.FallbackClientStatus.IsSynced {
+			fmt.Print("Your fallback consensus client is fully synced.\n")
+		} else {
+			fmt.Printf("Your fallback consensus client is still syncing (%0.2f%%).\n", status.BcStatus.FallbackClientStatus.SyncProgress*100)
+		}
+	} else {
+		fmt.Printf("You do not have a fallback consensus client enabled.\n")
 	}
 
 	// Return

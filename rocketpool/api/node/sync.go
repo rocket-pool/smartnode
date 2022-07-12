@@ -12,34 +12,25 @@ func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
 	// Response
 	response := api.NodeSyncProgressResponse{}
 
-	// Get EC manager
+	// Get the EC manager
 	ecMgr, err := services.GetEthClient(c)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get status of EC and fallback EC
-	status := ecMgr.CheckStatus(true)
-	response.EcStatus = *status
+	// Get the status of the EC and fallback EC
+	ecStatus := ecMgr.CheckStatus(true)
+	response.EcStatus = *ecStatus
 
-	// Get CC client
-	bc, err := services.GetBeaconClient(c)
+	// Get the BC manager
+	bcMgr, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get CC sync progress
-	syncStatus, err := bc.GetSyncStatus()
-	if err != nil {
-		return nil, err
-	}
-	if syncStatus.Syncing {
-		response.Eth2Progress = syncStatus.Progress
-		response.Eth2Synced = false
-	} else {
-		response.Eth2Progress = 1
-		response.Eth2Synced = true
-	}
+	// Get the status of the BC and fallback BC
+	bcStatus := bcMgr.CheckStatus(true)
+	response.BcStatus = *bcStatus
 
 	// Return response
 	return &response, nil

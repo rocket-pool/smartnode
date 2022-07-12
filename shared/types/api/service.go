@@ -29,8 +29,9 @@ type ClientManagerStatus struct {
 	FallbackClientStatus ClientStatus `json:"fallbackEcStatus"`
 }
 
-type ExecutionClientStatusResponse struct {
-	Status        string              `json:"status"`
-	Error         string              `json:"error"`
-	ManagerStatus ClientManagerStatus `json:"managerStatus"`
+type ClientStatusResponse struct {
+	Status          string              `json:"status"`
+	Error           string              `json:"error"`
+	EcManagerStatus ClientManagerStatus `json:"ecManagerStatus"`
+	BcManagerStatus ClientManagerStatus `json:"bcManagerStatus"`
 }

@@ -22,7 +22,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan str
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan str
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimesp
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -391,7 +391,7 @@ func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimesp
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -456,7 +456,7 @@ func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -521,7 +521,7 @@ func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod string) error {
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}

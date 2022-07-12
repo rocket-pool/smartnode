@@ -28,7 +28,7 @@ func findVanitySalt(c *cli.Context) error {
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}

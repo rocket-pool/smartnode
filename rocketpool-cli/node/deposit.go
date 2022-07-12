@@ -28,7 +28,7 @@ func nodeDeposit(c *cli.Context) error {
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}
@@ -202,13 +202,19 @@ func nodeDeposit(c *cli.Context) error {
 	colorYellow := "\033[33m"
 	syncResponse, err := rp.NodeSync()
 	if err != nil {
-		fmt.Printf("%s**WARNING**: Can't verify the sync status of your eth2 client.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n"+
+		fmt.Printf("%s**WARNING**: Can't verify the sync status of your consensus client.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n"+
 			"Reason: %s\n%s", colorRed, err, colorReset)
 	} else {
-		if !syncResponse.Eth2Synced {
-			fmt.Printf("%s**WARNING**: your eth2 client is still syncing.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n%s", colorRed, colorReset)
+		if syncResponse.BcStatus.PrimaryClientStatus.IsSynced {
+			fmt.Printf("Your consensus client is synced, you may safely create a minipool.\n")
+		} else if syncResponse.BcStatus.FallbackEnabled {
+			if syncResponse.BcStatus.FallbackClientStatus.IsSynced {
+				fmt.Printf("Your fallback consensus client is synced, you may safely create a minipool.\n")
+			} else {
+				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYOU WILL LOSE ETH if your minipool is activated before they are fully synced.\n%s", colorRed, colorReset)
+			}
 		} else {
-			fmt.Printf("Your eth2 client is synced, you may safely create a minipool.\n")
+			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n%s", colorRed, colorReset)
 		}
 	}
 

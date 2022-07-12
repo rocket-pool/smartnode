@@ -100,7 +100,7 @@ func recoverWallet(c *cli.Context) error {
 			fmt.Println("Ignoring validator keys, searching for wallet only...")
 		} else {
 			// Check and assign the EC status
-			err = cliutils.CheckExecutionClientStatus(rp)
+			err = cliutils.CheckClientStatus(rp)
 			if err != nil {
 				return err
 			}
@@ -149,7 +149,7 @@ func recoverWallet(c *cli.Context) error {
 			fmt.Println("Recovering node wallet only (ignoring validator keys)...")
 		} else {
 			// Check and assign the EC status
-			err = cliutils.CheckExecutionClientStatus(rp)
+			err = cliutils.CheckClientStatus(rp)
 			if err != nil {
 				return err
 			}

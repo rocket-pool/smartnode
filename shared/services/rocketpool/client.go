@@ -74,7 +74,7 @@ type Client struct {
 	originalGasLimit   uint64
 	debugPrint         bool
 	ignoreSyncCheck    bool
-	forceFallbackEc    bool
+	forceFallbacks     bool
 }
 
 // Create new Rocket Pool client from CLI context
@@ -115,7 +115,7 @@ func NewClient(configPath string, daemonPath string, maxFee float64, maxPrioFee 
 		customNonce:        customNonceBigInt,
 		client:             sshClient,
 		debugPrint:         debug,
-		forceFallbackEc:    false,
+		forceFallbacks:     false,
 		ignoreSyncCheck:    false,
 	}
 
@@ -924,10 +924,10 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 	c.gasLimit = gasLimit
 }
 
-// Set the flags for ignoring EC sync check and fallback forcing to prevent unnecessary duplication of effort by the API during CLI commands
-func (c *Client) SetEcStatusFlags(ignoreSyncCheck bool, forceFallbackEc bool) {
+// Set the flags for ignoring EC and CC sync checks and forcing fallbacks to prevent unnecessary duplication of effort by the API during CLI commands
+func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool) {
 	c.ignoreSyncCheck = ignoreSyncCheck
-	c.forceFallbackEc = forceFallbackEc
+	c.forceFallbacks = forceFallbacks
 }
 
 // Get the provider mode and port from a legacy config's provider URL
@@ -1491,12 +1491,12 @@ func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, strin
 	if c.ignoreSyncCheck {
 		ignoreSyncCheckFlag = "--ignore-sync-check"
 	}
-	forceFallbackECFlag := ""
-	if c.forceFallbackEc {
-		forceFallbackECFlag = "--force-fallback-ec"
+	forceFallbacksFlag := ""
+	if c.forceFallbacks {
+		forceFallbacksFlag = "--force-fallbacks"
 	}
 
-	return ignoreSyncCheckFlag, forceFallbackECFlag, args
+	return ignoreSyncCheckFlag, forceFallbacksFlag, args
 }
 
 func (c *Client) runApiCall(cmd string) ([]byte, error) {

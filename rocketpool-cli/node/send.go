@@ -23,7 +23,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
 	defer rp.Close()
 
 	// Check and assign the EC status
-	err = cliutils.CheckExecutionClientStatus(rp)
+	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
 	}

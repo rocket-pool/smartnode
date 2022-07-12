@@ -149,7 +149,7 @@ func GetSnapshotDelegation(c *cli.Context) (*contracts.SnapshotDelegation, error
 	return getSnapshotDelegation(cfg, ec)
 }
 
-func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
+func GetBeaconClient(c *cli.Context) (*BeaconClientManager, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -245,7 +245,7 @@ func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (*ExecutionClien
 			if c.GlobalBool("ignore-sync-check") {
 				ecManager.ignoreSyncCheck = true
 			}
-			if c.GlobalBool("force-fallback-ec") {
+			if c.GlobalBool("force-fallbacks") {
 				ecManager.primaryReady = false
 			}
 		}
@@ -285,7 +285,7 @@ func getSnapshotDelegation(cfg *config.RocketPoolConfig, client rocketpool.Execu
 	return snapshotDelegation, err
 }
 
-func getBeaconClient(c *cli.Context, cfg *config.RocketPoolConfig) (beacon.Client, error) {
+func getBeaconClient(c *cli.Context, cfg *config.RocketPoolConfig) (*BeaconClientManager, error) {
 	var err error
 	initBCManager.Do(func() {
 		// Create a new client manager
@@ -295,7 +295,7 @@ func getBeaconClient(c *cli.Context, cfg *config.RocketPoolConfig) (beacon.Clien
 			if c.GlobalBool("ignore-sync-check") {
 				bcManager.ignoreSyncCheck = true
 			}
-			if c.GlobalBool("force-fallback-bc") {
+			if c.GlobalBool("force-fallbacks") {
 				bcManager.primaryReady = false
 			}
 		}
