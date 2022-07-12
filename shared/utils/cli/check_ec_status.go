@@ -18,41 +18,41 @@ func CheckExecutionClientStatus(rp *rocketpool.Client) error {
 	mgrStatus := response.ManagerStatus
 
 	// Primary EC is good
-	if mgrStatus.PrimaryEcStatus.IsSynced {
+	if mgrStatus.PrimaryClientStatus.IsSynced {
 		rp.SetEcStatusFlags(true, false)
 		return nil
 	}
 
 	// Fallback EC is good
-	if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.IsSynced {
-		if mgrStatus.PrimaryEcStatus.Error != "" {
-			fmt.Printf("%sNOTE: primary execution client is unavailable (%s), using fallback execution client...%s\n\n", colorYellow, mgrStatus.PrimaryEcStatus.Error, colorReset)
+	if mgrStatus.FallbackEnabled && mgrStatus.FallbackClientStatus.IsSynced {
+		if mgrStatus.PrimaryClientStatus.Error != "" {
+			fmt.Printf("%sNOTE: primary execution client is unavailable (%s), using fallback execution client...%s\n\n", colorYellow, mgrStatus.PrimaryClientStatus.Error, colorReset)
 		} else {
-			fmt.Printf("%sNOTE: primary execution client is still syncing (%.2f%%), using fallback execution client...%s\n\n", colorYellow, mgrStatus.PrimaryEcStatus.SyncProgress*100, colorReset)
+			fmt.Printf("%sNOTE: primary execution client is still syncing (%.2f%%), using fallback execution client...%s\n\n", colorYellow, mgrStatus.PrimaryClientStatus.SyncProgress*100, colorReset)
 		}
 		rp.SetEcStatusFlags(true, true)
 		return nil
 	}
 
 	// Is the primary working and syncing?
-	if mgrStatus.PrimaryEcStatus.IsWorking && mgrStatus.PrimaryEcStatus.Error == "" {
-		if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.Error != "" {
-			return fmt.Errorf("Error: fallback execution client is unavailable (%s), and primary execution client is still syncing (%.2f%%). Please try again later once the client has synced.", mgrStatus.FallbackEcStatus.Error, mgrStatus.PrimaryEcStatus.SyncProgress*100)
+	if mgrStatus.PrimaryClientStatus.IsWorking && mgrStatus.PrimaryClientStatus.Error == "" {
+		if mgrStatus.FallbackEnabled && mgrStatus.FallbackClientStatus.Error != "" {
+			return fmt.Errorf("Error: fallback execution client is unavailable (%s), and primary execution client is still syncing (%.2f%%). Please try again later once the client has synced.", mgrStatus.FallbackClientStatus.Error, mgrStatus.PrimaryClientStatus.SyncProgress*100)
 		} else {
-			return fmt.Errorf("Error: fallback execution client is not configured or unavailable, and primary execution client is still syncing (%.2f%%). Please try again later once the client has synced.", mgrStatus.PrimaryEcStatus.SyncProgress*100)
+			return fmt.Errorf("Error: fallback execution client is not configured or unavailable, and primary execution client is still syncing (%.2f%%). Please try again later once the client has synced.", mgrStatus.PrimaryClientStatus.SyncProgress*100)
 		}
 	}
 
 	// Is the fallback working and syncing?
-	if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.IsWorking && mgrStatus.FallbackEcStatus.Error == "" {
-		return fmt.Errorf("Error: primary execution client is unavailable (%s), and fallback execution client is still syncing (%.2f%%). Please try again later.", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.SyncProgress*100)
+	if mgrStatus.FallbackEnabled && mgrStatus.FallbackClientStatus.IsWorking && mgrStatus.FallbackClientStatus.Error == "" {
+		return fmt.Errorf("Error: primary execution client is unavailable (%s), and fallback execution client is still syncing (%.2f%%). Please try again later.", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.SyncProgress*100)
 	}
 
 	// Report if neither client is working
 	if mgrStatus.FallbackEnabled {
-		return fmt.Errorf("Error: primary execution client is unavailable (%s) and fallback execution client is unavailable (%s), no execution clients are ready.", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.Error)
+		return fmt.Errorf("Error: primary execution client is unavailable (%s) and fallback execution client is unavailable (%s), no execution clients are ready.", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.Error)
 	} else {
-		return fmt.Errorf("Error: primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryEcStatus.Error)
+		return fmt.Errorf("Error: primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryClientStatus.Error)
 	}
 
 }

@@ -57,7 +57,8 @@ func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.C
 		if cfg.Smartnode.ProjectName.Value == "" {
 			return errors.New("Rocket Pool docker project name not set")
 		}
-		switch clientType := bc.GetClientType(); clientType {
+		clientType, _ := bc.GetClientType()
+		switch clientType {
 		case beacon.SplitProcess:
 			containerName = cfg.Smartnode.ProjectName.Value.(string) + ValidatorContainerSuffix
 			clientTypeLabel = "validator"
@@ -137,7 +138,8 @@ func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.Colo
 		if cfg.Smartnode.ProjectName.Value == "" {
 			return errors.New("Rocket Pool docker project name not set")
 		}
-		switch clientType := bc.GetClientType(); clientType {
+		clientType, _ := bc.GetClientType()
+		switch clientType {
 		case beacon.SplitProcess:
 			containerName = cfg.Smartnode.ProjectName.Value.(string) + ValidatorContainerSuffix
 			clientTypeLabel = "validator"

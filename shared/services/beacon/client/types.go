@@ -1,4 +1,4 @@
-package nimbus
+package client
 
 import (
 	"encoding/hex"
@@ -65,7 +65,7 @@ type ForkResponse struct {
 		PreviousVersion byteArray `json:"previous_version"`
 		CurrentVersion  byteArray `json:"current_version"`
 		Epoch           uinteger  `json:"epoch"`
-	}
+	} `json:"data"`
 }
 type BeaconBlockResponse struct {
 	Data struct {
@@ -91,9 +91,9 @@ type ValidatorsResponse struct {
 	Data []Validator `json:"data"`
 }
 type Validator struct {
-	Index   uinteger `json:"index"`
-	Balance uinteger `json:"balance"`
-	//Status string                       `json:"status"`
+	Index     uinteger `json:"index"`
+	Balance   uinteger `json:"balance"`
+	Status    string   `json:"status"`
 	Validator struct {
 		Pubkey                     byteArray `json:"pubkey"`
 		WithdrawalCredentials      byteArray `json:"withdrawal_credentials"`

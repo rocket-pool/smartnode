@@ -57,26 +57,26 @@ func getSyncProgress(c *cli.Context) error {
 	}
 
 	// Print EC status
-	if status.EcStatus.PrimaryEcStatus.Error != "" {
-		fmt.Printf("Your primary execution client is unavailable (%s).\n", status.EcStatus.PrimaryEcStatus.Error)
-	} else if status.EcStatus.PrimaryEcStatus.IsSynced {
+	if status.EcStatus.PrimaryClientStatus.Error != "" {
+		fmt.Printf("Your primary execution client is unavailable (%s).\n", status.EcStatus.PrimaryClientStatus.Error)
+	} else if status.EcStatus.PrimaryClientStatus.IsSynced {
 		fmt.Print("Your primary execution client is fully synced.\n")
 	} else {
-		fmt.Printf("Your primary execution client is still syncing (%0.2f%%).\n", status.EcStatus.PrimaryEcStatus.SyncProgress*100)
-		if status.EcStatus.PrimaryEcStatus.SyncProgress == 0 {
+		fmt.Printf("Your primary execution client is still syncing (%0.2f%%).\n", status.EcStatus.PrimaryClientStatus.SyncProgress*100)
+		if status.EcStatus.PrimaryClientStatus.SyncProgress == 0 {
 			fmt.Println("\tNOTE: your execution client may not report sync progress.\n\tYou should check your its logs to review it.")
 		}
 	}
 
 	// Print fallback EC status
 	if status.EcStatus.FallbackEnabled {
-		if status.EcStatus.FallbackEcStatus.Error != "" {
-			fmt.Printf("Your fallback execution client is unavailable (%s).\n", status.EcStatus.FallbackEcStatus.Error)
-		} else if status.EcStatus.FallbackEcStatus.IsSynced {
+		if status.EcStatus.FallbackClientStatus.Error != "" {
+			fmt.Printf("Your fallback execution client is unavailable (%s).\n", status.EcStatus.FallbackClientStatus.Error)
+		} else if status.EcStatus.FallbackClientStatus.IsSynced {
 			fmt.Print("Your fallback execution client is fully synced.\n")
 		} else {
-			fmt.Printf("Your fallback execution client is still syncing (%0.2f%%).\n", status.EcStatus.FallbackEcStatus.SyncProgress*100)
-			if status.EcStatus.FallbackEcStatus.SyncProgress == 0 {
+			fmt.Printf("Your fallback execution client is still syncing (%0.2f%%).\n", status.EcStatus.FallbackClientStatus.SyncProgress*100)
+			if status.EcStatus.FallbackClientStatus.SyncProgress == 0 {
 				fmt.Println("\tNOTE: your execution client may not report sync progress.\n\tYou should check your its logs to review it.")
 			}
 		}

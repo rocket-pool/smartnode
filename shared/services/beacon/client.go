@@ -89,11 +89,14 @@ const (
 	// validator run in the same process (or run as separate processes
 	// within the same docker container)
 	SingleProcess
+
+	// Unknown / missing client type
+	Unknown
 )
 
 // Beacon client interface
 type Client interface {
-	GetClientType() BeaconClientType
+	GetClientType() (BeaconClientType, error)
 	GetSyncStatus() (SyncStatus, error)
 	GetEth2Config() (Eth2Config, error)
 	GetEth2DepositContract() (Eth2DepositContract, error)

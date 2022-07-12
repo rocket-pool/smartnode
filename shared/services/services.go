@@ -13,10 +13,6 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/beacon/lighthouse"
-	"github.com/rocket-pool/smartnode/shared/services/beacon/nimbus"
-	"github.com/rocket-pool/smartnode/shared/services/beacon/prysm"
-	"github.com/rocket-pool/smartnode/shared/services/beacon/teku"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
@@ -45,7 +41,8 @@ var (
 	cfg                *config.RocketPoolConfig
 	passwordManager    *passwords.PasswordManager
 	nodeWallet         *wallet.Wallet
-	ethClientManager   *ExecutionClientManager
+	ecManager          *ExecutionClientManager
+	bcManager          *BeaconClientManager
 	rocketPool         *rocketpool.RocketPool
 	oneInchOracle      *contracts.OneInchOracle
 	rplFaucet          *contracts.RPLFaucet
@@ -56,7 +53,8 @@ var (
 	initCfg                sync.Once
 	initPasswordManager    sync.Once
 	initNodeWallet         sync.Once
-	initEthClientProxy     sync.Once
+	initECManager          sync.Once
+	initBCManager          sync.Once
 	initRocketPool         sync.Once
 	initOneInchOracle      sync.Once
 	initRplFaucet          sync.Once
@@ -156,7 +154,7 @@ func GetBeaconClient(c *cli.Context) (beacon.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return getBeaconClient(cfg)
+	return getBeaconClient(c, cfg)
 }
 
 func GetDocker(c *cli.Context) (*client.Client, error) {
@@ -239,20 +237,20 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 
 func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (*ExecutionClientManager, error) {
 	var err error
-	initEthClientProxy.Do(func() {
+	initECManager.Do(func() {
 		// Create a new client manager
-		ethClientManager, err = NewExecutionClientManager(cfg)
+		ecManager, err = NewExecutionClientManager(cfg)
 		if err == nil {
 			// Check if the manager should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
 			if c.GlobalBool("ignore-sync-check") {
-				ethClientManager.ignoreSyncCheck = true
+				ecManager.ignoreSyncCheck = true
 			}
 			if c.GlobalBool("force-fallback-ec") {
-				ethClientManager.primaryReady = false
+				ecManager.primaryReady = false
 			}
 		}
 	})
-	return ethClientManager, err
+	return ecManager, err
 }
 
 func getRocketPool(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*rocketpool.RocketPool, error) {
@@ -287,44 +285,22 @@ func getSnapshotDelegation(cfg *config.RocketPoolConfig, client rocketpool.Execu
 	return snapshotDelegation, err
 }
 
-func getBeaconClient(cfg *config.RocketPoolConfig) (beacon.Client, error) {
+func getBeaconClient(c *cli.Context, cfg *config.RocketPoolConfig) (beacon.Client, error) {
 	var err error
-	initBeaconClient.Do(func() {
-		var provider string
-		var selectedCC config.ConsensusClient
-		if cfg.IsNativeMode {
-			provider = cfg.Native.CcHttpUrl.Value.(string)
-			selectedCC = cfg.Native.ConsensusClient.Value.(config.ConsensusClient)
-		} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
-			provider = fmt.Sprintf("http://%s:%d", BnContainerName, cfg.ConsensusCommon.ApiPort.Value.(uint16))
-			selectedCC = cfg.ConsensusClient.Value.(config.ConsensusClient)
-		} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External {
-			var selectedConsensusConfig config.ConsensusConfig
-			selectedConsensusConfig, err = cfg.GetSelectedConsensusClientConfig()
-			if err != nil {
-				return
+	initBCManager.Do(func() {
+		// Create a new client manager
+		bcManager, err = NewBeaconClientManager(cfg)
+		if err == nil {
+			// Check if the manager should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
+			if c.GlobalBool("ignore-sync-check") {
+				bcManager.ignoreSyncCheck = true
 			}
-			provider = selectedConsensusConfig.(config.ExternalConsensusConfig).GetApiUrl()
-			selectedCC = cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
-		} else {
-			err = fmt.Errorf("Unknown Consensus client mode '%v'", cfg.ConsensusClientMode.Value)
+			if c.GlobalBool("force-fallback-bc") {
+				bcManager.primaryReady = false
+			}
 		}
-
-		switch selectedCC {
-		case config.ConsensusClient_Lighthouse:
-			beaconClient = lighthouse.NewClient(provider)
-		case config.ConsensusClient_Nimbus:
-			beaconClient = nimbus.NewClient(provider)
-		case config.ConsensusClient_Prysm:
-			beaconClient = prysm.NewClient(provider)
-		case config.ConsensusClient_Teku:
-			beaconClient = teku.NewClient(provider)
-		default:
-			err = fmt.Errorf("Unknown Consensus client '%v' selected", cfg.ConsensusClient.Value)
-		}
-
 	})
-	return beaconClient, err
+	return bcManager, err
 }
 
 func getDocker() (*client.Client, error) {

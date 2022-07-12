@@ -31,7 +31,7 @@ type ExecutionClientManager struct {
 }
 
 // This is a signature for a wrapped ethclient.Client function
-type clientFunction func(*ethclient.Client) (interface{}, error)
+type ecFunction func(*ethclient.Client) (interface{}, error)
 
 // Creates a new ExecutionClientManager instance based on the Rocket Pool config
 func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientManager, error) {
@@ -316,45 +316,45 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 /// Internal functions
 /// ==================
 
-func (p *ExecutionClientManager) CheckStatus(alwaysCheckFallback bool) *api.ExecutionClientManagerStatus {
+func (p *ExecutionClientManager) CheckStatus(alwaysCheckFallback bool) *api.ClientManagerStatus {
 
-	status := &api.ExecutionClientManagerStatus{
+	status := &api.ClientManagerStatus{
 		FallbackEnabled: p.fallbackEc != nil,
 	}
 
 	// Ignore the sync check and just use the predefined settings if requested
 	if p.ignoreSyncCheck {
-		status.PrimaryEcStatus.IsWorking = p.primaryReady
-		status.PrimaryEcStatus.IsSynced = p.primaryReady
+		status.PrimaryClientStatus.IsWorking = p.primaryReady
+		status.PrimaryClientStatus.IsSynced = p.primaryReady
 		if status.FallbackEnabled {
-			status.FallbackEcStatus.IsWorking = p.fallbackReady
-			status.FallbackEcStatus.IsSynced = p.fallbackReady
+			status.FallbackClientStatus.IsWorking = p.fallbackReady
+			status.FallbackClientStatus.IsSynced = p.fallbackReady
 		}
 		return status
 	}
 
 	// Get the primary EC status
-	status.PrimaryEcStatus = checkClientStatus(p.primaryEc)
+	status.PrimaryClientStatus = checkEcStatus(p.primaryEc)
 
 	// Get the fallback EC status if applicable
 	if status.FallbackEnabled {
-		if alwaysCheckFallback || !status.PrimaryEcStatus.IsSynced {
-			status.FallbackEcStatus = checkClientStatus(p.fallbackEc)
+		if alwaysCheckFallback || !status.PrimaryClientStatus.IsSynced {
+			status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
 		}
 	}
 
 	// Flag the ready clients
-	p.primaryReady = (status.PrimaryEcStatus.IsWorking && status.PrimaryEcStatus.IsSynced)
-	p.fallbackReady = (status.FallbackEnabled && status.FallbackEcStatus.IsWorking && status.FallbackEcStatus.IsSynced)
+	p.primaryReady = (status.PrimaryClientStatus.IsWorking && status.PrimaryClientStatus.IsSynced)
+	p.fallbackReady = (status.FallbackEnabled && status.FallbackClientStatus.IsWorking && status.FallbackClientStatus.IsSynced)
 
 	return status
 
 }
 
 // Check the client status
-func checkClientStatus(client *ethclient.Client) api.ExecutionClientStatus {
+func checkEcStatus(client *ethclient.Client) api.ClientStatus {
 
-	status := api.ExecutionClientStatus{}
+	status := api.ClientStatus{}
 
 	// Get the fallback's sync progress
 	progress, err := client.SyncProgress(context.Background())
@@ -408,16 +408,16 @@ func checkClientStatus(client *ethclient.Client) api.ExecutionClientStatus {
 }
 
 // Attempts to run a function progressively through each client until one succeeds or they all fail.
-func (p *ExecutionClientManager) runFunction(function clientFunction) (interface{}, error) {
+func (p *ExecutionClientManager) runFunction(function ecFunction) (interface{}, error) {
 
 	// Check if we can use the primary
 	if p.primaryReady {
 		// Try to run the function on the primary
 		result, err := function(p.primaryEc)
 		if err != nil {
-			if isDisconnected(err) {
+			if p.isDisconnected(err) {
 				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("WARNING: Primary execution client disconnected (%s), using fallback...", err.Error())
+				p.logger.Printlnf("WARNING: Primary Execution client disconnected (%s), using fallback...", err.Error())
 				p.primaryReady = false
 				return p.runFunction(function)
 			} else {
@@ -432,11 +432,11 @@ func (p *ExecutionClientManager) runFunction(function clientFunction) (interface
 		// Try to run the function on the fallback
 		result, err := function(p.fallbackEc)
 		if err != nil {
-			if isDisconnected(err) {
+			if p.isDisconnected(err) {
 				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("WARNING: Fallback execution client disconnected (%s)", err.Error())
+				p.logger.Printlnf("WARNING: Fallback Execution client disconnected (%s)", err.Error())
 				p.fallbackReady = false
-				return nil, fmt.Errorf("all execution clients failed")
+				return nil, fmt.Errorf("all Execution clients failed")
 			} else {
 				// If it's a different error, just return it
 				return nil, err
@@ -446,12 +446,12 @@ func (p *ExecutionClientManager) runFunction(function clientFunction) (interface
 			return result, nil
 		}
 	} else {
-		return nil, fmt.Errorf("no execution clients were ready")
+		return nil, fmt.Errorf("no Execution clients were ready")
 	}
 
 }
 
 // Returns true if the error was a connection failure and a backup client is available
-func isDisconnected(err error) bool {
+func (p *ExecutionClientManager) isDisconnected(err error) bool {
 	return strings.Contains(err.Error(), "dial tcp")
 }

@@ -365,10 +365,10 @@ func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool
 
 	// If the primary isn't synced but there's a fallback and it is, return true
 	if ecMgr.fallbackReady {
-		if mgrStatus.PrimaryEcStatus.Error != "" {
-			log.Printf("Primary execution client is unavailable (%s), using fallback execution client...\n", mgrStatus.PrimaryEcStatus.Error)
+		if mgrStatus.PrimaryClientStatus.Error != "" {
+			log.Printf("Primary execution client is unavailable (%s), using fallback execution client...\n", mgrStatus.PrimaryClientStatus.Error)
 		} else {
-			log.Printf("Primary execution client is still syncing (%.2f%%), using fallback execution client...\n", mgrStatus.PrimaryEcStatus.SyncProgress*100)
+			log.Printf("Primary execution client is still syncing (%.2f%%), using fallback execution client...\n", mgrStatus.PrimaryClientStatus.SyncProgress*100)
 		}
 		return true, nil, nil
 	}
@@ -376,22 +376,22 @@ func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool
 	// If neither is synced, go through the status to figure out what to do
 
 	// Is the primary working and syncing? If so, wait for it
-	if mgrStatus.PrimaryEcStatus.IsWorking && mgrStatus.PrimaryEcStatus.Error == "" {
-		log.Printf("Fallback execution client is not configured or unavailable, waiting for primary execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryEcStatus.SyncProgress*100)
+	if mgrStatus.PrimaryClientStatus.IsWorking && mgrStatus.PrimaryClientStatus.Error == "" {
+		log.Printf("Fallback execution client is not configured or unavailable, waiting for primary execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryClientStatus.SyncProgress*100)
 		return false, ecMgr.primaryEc, nil
 	}
 
 	// Is the fallback working and syncing? If so, wait for it
-	if mgrStatus.FallbackEnabled && mgrStatus.FallbackEcStatus.IsWorking && mgrStatus.FallbackEcStatus.Error == "" {
-		log.Printf("Primary execution client is unavailable (%s), waiting for the fallback execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.SyncProgress*100)
+	if mgrStatus.FallbackEnabled && mgrStatus.FallbackClientStatus.IsWorking && mgrStatus.FallbackClientStatus.Error == "" {
+		log.Printf("Primary execution client is unavailable (%s), waiting for the fallback execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.SyncProgress*100)
 		return false, ecMgr.fallbackEc, nil
 	}
 
 	// If neither client is working, report the errors
 	if mgrStatus.FallbackEnabled {
-		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and fallback execution client is unavailable (%s), no execution clients are ready.", mgrStatus.PrimaryEcStatus.Error, mgrStatus.FallbackEcStatus.Error)
+		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and fallback execution client is unavailable (%s), no execution clients are ready.", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.Error)
 	} else {
-		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryEcStatus.Error)
+		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryClientStatus.Error)
 	}
 }
 

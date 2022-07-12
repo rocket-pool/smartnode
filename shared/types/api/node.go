@@ -235,11 +235,11 @@ type NodeBurnResponse struct {
 }
 
 type NodeSyncProgressResponse struct {
-	Status       string                       `json:"status"`
-	Error        string                       `json:"error"`
-	EcStatus     ExecutionClientManagerStatus `json:"ecStatus"`
-	Eth2Progress float64                      `json:"eth2Progress"`
-	Eth2Synced   bool                         `json:"eth2Synced"`
+	Status       string              `json:"status"`
+	Error        string              `json:"error"`
+	EcStatus     ClientManagerStatus `json:"ecStatus"`
+	Eth2Progress float64             `json:"eth2Progress"`
+	Eth2Synced   bool                `json:"eth2Synced"`
 }
 
 type CanNodeClaimRplResponse struct {
