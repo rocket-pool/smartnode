@@ -13,6 +13,9 @@ type MevBoostConfig struct {
 	// Ownership mode
 	Mode Parameter `yaml:"mode,omitempty"`
 
+	// MEV Boost relays
+	Relays Parameter `yaml:"relays,omitempty"`
+
 	// The RPC port
 	Port Parameter `yaml:"port,omitempty"`
 
@@ -50,6 +53,23 @@ func NewMevBoostConfig(config *RocketPoolConfig) *MevBoostConfig {
 				Description: "Use an existing MEV boost client that you manage on your own",
 				Value:       Mode_External,
 			}},
+		},
+
+		Relays: Parameter{
+			ID:          "relays",
+			Name:        "Relays",
+			Description: "A comma-separated list of MEV Boost relay URLs you want to connect to",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: "",
+				Network_Prater:  "",
+				Network_Kiln:    "https://0xb5246e299aeb782fbc7c91b41b3284245b1ed5206134b0028b81dfb974e5900616c67847c2354479934fc4bb75519ee1@builder-relay-kiln.flashbots.net",
+				Network_Ropsten: "https://0xb124d80a00b80815397b4e7f1f05377ccc83aeeceb6be87963ba3649f1e6efa32ca870a88845917ec3f26a8e2aa25c77@builder-relay-ropsten.flashbots.net",
+			},
+			AffectsContainers:    []ContainerID{ContainerID_MevBoost},
+			EnvironmentVariables: []string{"MEV_BOOST_RELAYS"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
 		},
 
 		Port: Parameter{
@@ -106,6 +126,7 @@ func NewMevBoostConfig(config *RocketPoolConfig) *MevBoostConfig {
 func (config *MevBoostConfig) GetParameters() []*Parameter {
 	return []*Parameter{
 		&config.Mode,
+		&config.Relays,
 		&config.Port,
 		&config.ContainerTag,
 		&config.AdditionalFlags,

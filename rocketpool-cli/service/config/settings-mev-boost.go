@@ -71,7 +71,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 	// Set up the form items
 	configPage.modeBox = createParameterizedDropDown(&configPage.masterConfig.MevBoost.Mode, configPage.layout.descriptionBox)
 
-	localParams := []*config.Parameter{&configPage.masterConfig.MevBoost.Port, &configPage.masterConfig.MevBoost.ContainerTag, &configPage.masterConfig.MevBoost.AdditionalFlags}
+	localParams := []*config.Parameter{&configPage.masterConfig.MevBoost.Relays, &configPage.masterConfig.MevBoost.Port, &configPage.masterConfig.MevBoost.ContainerTag, &configPage.masterConfig.MevBoost.AdditionalFlags}
 	externalParams := []*config.Parameter{&configPage.masterConfig.MevBoost.ExternalUrl}
 
 	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout.descriptionBox)
