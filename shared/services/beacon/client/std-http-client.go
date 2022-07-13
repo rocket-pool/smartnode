@@ -370,12 +370,13 @@ func (c *StandardHttpClient) GetValidatorProposerDuties(indices []uint64, epoch 
 func (c *StandardHttpClient) GetValidatorIndex(pubkey types.ValidatorPubkey) (uint64, error) {
 
 	// Get validator
-	validators, err := c.getValidatorsByOpts([]string{pubkey.Hex()}, nil)
+	pubkeyString := hexutil.AddPrefix(pubkey.Hex())
+	validators, err := c.getValidatorsByOpts([]string{pubkeyString}, nil)
 	if err != nil {
 		return 0, err
 	}
 	if len(validators.Data) == 0 {
-		return 0, fmt.Errorf("Validator %s index not found.", pubkey.Hex())
+		return 0, fmt.Errorf("Validator %s index not found.", pubkeyString)
 	}
 	validator := validators.Data[0]
 
