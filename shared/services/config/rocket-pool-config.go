@@ -982,6 +982,16 @@ func (config *RocketPoolConfig) Validate() []string {
 	}
 	*/
 
+	if config.ExecutionClientMode.Value.(Mode) == Mode_Local {
+		selectedEc := config.ExecutionClient.Value.(ExecutionClient)
+		switch selectedEc {
+		case ExecutionClient_Obs_Infura:
+			errors = append(errors, "You currently have Infura configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge. Please go back and choose a full Execution client.")
+		case ExecutionClient_Obs_Pocket:
+			errors = append(errors, "You currently have Pocket configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge. Please go back and choose a full Execution client.")
+		}
+	}
+
 	return errors
 }
 
