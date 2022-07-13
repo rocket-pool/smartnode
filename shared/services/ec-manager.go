@@ -338,7 +338,7 @@ func (p *ExecutionClientManager) CheckStatus(alwaysCheckFallback bool) *api.Clie
 
 	// Get the fallback EC status if applicable
 	if status.FallbackEnabled {
-		if alwaysCheckFallback || !status.PrimaryClientStatus.IsSynced {
+		if alwaysCheckFallback {
 			status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
 		}
 	}

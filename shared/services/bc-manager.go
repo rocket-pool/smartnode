@@ -306,7 +306,7 @@ func (m *BeaconClientManager) CheckStatus(alwaysCheckFallback bool) *api.ClientM
 
 	// Get the fallback BC status if applicable
 	if status.FallbackEnabled {
-		if alwaysCheckFallback || !status.PrimaryClientStatus.IsSynced {
+		if alwaysCheckFallback {
 			status.FallbackClientStatus = checkBcStatus(m.fallbackBc)
 		}
 	}

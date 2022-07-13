@@ -42,7 +42,7 @@ func CheckClientStatus(rp *rocketpool.Client) error {
 		}
 
 		// Both pairs aren't ready
-		return fmt.Errorf("Error: neither primary nor fallback client pairs are ready.\n\tPrimary EC status: %s\n\tPrimary CC status: %s\n\tFallback EC status: %s\n\tFallback CC status: %s", primaryEcStatus, primaryBcStatus, fallbackEcStatus, fallbackBcStatus)
+		return fmt.Errorf("Error: neither primary nor fallback client pairs are ready.\n\tPrimary EC status: %s\n\tFallback EC status: %s\n\tPrimary CC status: %s\n\tFallback CC status: %s", primaryEcStatus, fallbackEcStatus, primaryBcStatus, fallbackBcStatus)
 
 	}
 
@@ -55,7 +55,7 @@ func getClientStatusString(clientStatus api.ClientStatus) string {
 	if clientStatus.IsSynced {
 		return "synced and ready"
 	} else if clientStatus.IsWorking {
-		return fmt.Sprintf("syncing (%.2f%%)", clientStatus.SyncProgress)
+		return fmt.Sprintf("syncing (%.2f%%)", clientStatus.SyncProgress*100)
 	} else {
 		return fmt.Sprintf("unavailable (%s)", clientStatus.Error)
 	}
