@@ -21,6 +21,7 @@ const (
 	ContainerID_Grafana    ContainerID = "grafana"
 	ContainerID_Prometheus ContainerID = "prometheus"
 	ContainerID_Exporter   ContainerID = "exporter"
+	ContainerID_MevBoost   ContainerID = "mev-boost"
 )
 
 // Enum to describe which network the system is on
