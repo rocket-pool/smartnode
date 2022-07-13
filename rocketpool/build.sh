@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GO_VERSION=1.18.3
+GO_VERSION=1.18.4
 
 # Get CPU architecture
 UNAME_VAL=$(uname -m)
