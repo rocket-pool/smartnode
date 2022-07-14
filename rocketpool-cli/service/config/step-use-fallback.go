@@ -20,15 +20,16 @@ func createUseFallbackStep(wiz *wizard, currentStep int, totalSteps int) *choice
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 1 {
 			wiz.md.Config.UseFallbackClients.Value = true
+			cc, _ := wiz.md.Config.GetSelectedConsensusClient()
+			switch cc {
+			case config.ConsensusClient_Prysm:
+				wiz.fallbackPrysmModal.show()
+			default:
+				wiz.fallbackNormalModal.show()
+			}
 		} else {
 			wiz.md.Config.UseFallbackClients.Value = false
-		}
-		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
-		switch cc {
-		case config.ConsensusClient_Prysm:
-			wiz.fallbackPrysmModal.show()
-		default:
-			wiz.fallbackNormalModal.show()
+			wiz.metricsModal.show()
 		}
 	}
 

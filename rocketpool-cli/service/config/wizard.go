@@ -32,14 +32,16 @@ type wizard struct {
 	fallbackPrysmModal              *textBoxWizardStep
 
 	// Native mode
-	nativeWelcomeModal  *choiceWizardStep
-	nativeNetworkModal  *choiceWizardStep
-	nativeEcModal       *textBoxWizardStep
-	nativeCcModal       *choiceWizardStep
-	nativeCcUrlModal    *textBoxWizardStep
-	nativeDataModal     *textBoxWizardStep
-	nativeMetricsModal  *choiceWizardStep
-	nativeFinishedModal *choiceWizardStep
+	nativeWelcomeModal     *choiceWizardStep
+	nativeNetworkModal     *choiceWizardStep
+	nativeEcModal          *textBoxWizardStep
+	nativeCcModal          *choiceWizardStep
+	nativeCcUrlModal       *textBoxWizardStep
+	nativeDataModal        *textBoxWizardStep
+	nativeUseFallbackModal *choiceWizardStep
+	nativeFallbackModal    *textBoxWizardStep
+	nativeMetricsModal     *choiceWizardStep
+	nativeFinishedModal    *choiceWizardStep
 }
 
 func newWizard(md *mainDisplay) *wizard {
@@ -82,8 +84,10 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.nativeCcModal = createNativeCcStep(wiz, 4, totalNativeSteps)
 	wiz.nativeCcUrlModal = createNativeCcUrlStep(wiz, 5, totalNativeSteps)
 	wiz.nativeDataModal = createNativeDataStep(wiz, 6, totalNativeSteps)
-	wiz.nativeMetricsModal = createNativeMetricsStep(wiz, 7, totalNativeSteps)
-	wiz.nativeFinishedModal = createNativeFinishedStep(wiz, 8, totalNativeSteps)
+	wiz.nativeUseFallbackModal = createNativeUseFallbackStep(wiz, 7, totalNativeSteps)
+	wiz.nativeFallbackModal = createNativeFallbackStep(wiz, 7, totalNativeSteps)
+	wiz.nativeMetricsModal = createNativeMetricsStep(wiz, 8, totalNativeSteps)
+	wiz.nativeFinishedModal = createNativeFinishedStep(wiz, 9, totalNativeSteps)
 
 	return wiz
 

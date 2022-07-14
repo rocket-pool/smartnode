@@ -59,7 +59,7 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 	var fallbackProvider string
 	if cfg.UseFallbackClients.Value == true {
 		if cfg.IsNativeMode {
-			// TODO: fallbackProvider = cfg.Native.FallbackCcHttpUrl.Value.(string)
+			fallbackProvider = cfg.FallbackNormal.CcHttpUrl.Value.(string)
 		} else {
 			switch selectedCC {
 			case config.ConsensusClient_Prysm:

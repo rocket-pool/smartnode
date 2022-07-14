@@ -30,7 +30,7 @@ func createNativeDataStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 	done := func(text map[string]string) {
 		wiz.md.Config.Smartnode.DataPath.Value = text[dataPathLabel]
 		wiz.md.Config.Native.ValidatorRestartCommand.Value = text[vrcLabel]
-		wiz.nativeMetricsModal.show()
+		wiz.nativeUseFallbackModal.show()
 	}
 
 	back := func() {

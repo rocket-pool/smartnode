@@ -50,12 +50,16 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 
 	// Get the fallback EC url, if applicable
 	if cfg.UseFallbackClients.Value == true {
-		cc, _ := cfg.GetSelectedConsensusClient()
-		switch cc {
-		case config.ConsensusClient_Prysm:
-			fallbackEcUrl = cfg.FallbackPrysm.EcHttpUrl.Value.(string)
-		default:
+		if cfg.IsNativeMode {
 			fallbackEcUrl = cfg.FallbackNormal.EcHttpUrl.Value.(string)
+		} else {
+			cc, _ := cfg.GetSelectedConsensusClient()
+			switch cc {
+			case config.ConsensusClient_Prysm:
+				fallbackEcUrl = cfg.FallbackPrysm.EcHttpUrl.Value.(string)
+			default:
+				fallbackEcUrl = cfg.FallbackNormal.EcHttpUrl.Value.(string)
+			}
 		}
 	}
 

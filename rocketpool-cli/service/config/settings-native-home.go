@@ -16,6 +16,7 @@ type settingsNativeHome struct {
 	wizardButton     *tview.Button
 	smartnodePage    *NativeSmartnodeConfigPage
 	nativePage       *NativePage
+	fallbackPage     *NativeFallbackConfigPage
 	metricsPage      *NativeMetricsConfigPage
 	categoryList     *tview.List
 	settingsSubpages []*page
@@ -37,10 +38,12 @@ func newSettingsNativeHome(md *mainDisplay) *settingsNativeHome {
 	// Create the settings subpages
 	home.smartnodePage = NewNativeSmartnodeConfigPage(home)
 	home.nativePage = NewNativePage(home)
+	home.fallbackPage = NewNativeFallbackConfigPage(home)
 	home.metricsPage = NewNativeMetricsConfigPage(home)
 	settingsSubpages := []*page{
 		home.smartnodePage.page,
 		home.nativePage.page,
+		home.fallbackPage.page,
 		home.metricsPage.page,
 	}
 	home.settingsSubpages = settingsSubpages
