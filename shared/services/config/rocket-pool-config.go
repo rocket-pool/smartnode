@@ -905,7 +905,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	// MEV Boost
 	addParametersToEnvVars(config.MevBoost.GetParameters(), envVars)
 	if config.MevBoost.Mode.Value == Mode_Local {
-		envVars[mevBoostExternalUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, config.MevBoost.Port.Value)
+		envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, config.MevBoost.Port.Value)
 	}
 
 	return envVars
