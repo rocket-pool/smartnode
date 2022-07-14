@@ -1360,6 +1360,24 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
 	}
 
+	// Check MEV Boost
+	switch cfg.Smartnode.Network.Value.(config.Network) {
+	case config.Network_Kiln, config.Network_Ropsten:
+		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
+			contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
+			if err != nil {
+				return []string{}, fmt.Errorf("error reading and substituting MEV Boost container template: %w", err)
+			}
+			mevBoostComposePath := filepath.Join(runtimeFolder, config.MevBoostContainerName+composeFileSuffix)
+			err = ioutil.WriteFile(mevBoostComposePath, contents, 0664)
+			if err != nil {
+				return []string{}, fmt.Errorf("could not write MEV Boost container file to %s: %w", mevBoostComposePath, err)
+			}
+			deployedContainers = append(deployedContainers, mevBoostComposePath)
+			deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))
+		}
+	}
+
 	// Deploy the fee recipient templates
 	defaultFrTemplatesFolder := filepath.Join(templatesFolder, defaultFeeRecipientDir)
 	defaultFrDeploymentPath, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), defaultFeeRecipientDir))
@@ -1400,6 +1418,18 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	err = os.MkdirAll(customKeyDir, 0775)
 	if err != nil {
 		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), customKeyDir, colorReset)
+	}
+
+	// Create the rewards file dir
+	rewardsFilePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(0, false))
+	if err != nil {
+		fmt.Printf("%sWARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		return deployedContainers, nil
+	}
+	rewardsFileDir := filepath.Dir(rewardsFilePath)
+	err = os.MkdirAll(rewardsFileDir, 0775)
+	if err != nil {
+		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), rewardsFileDir, colorReset)
 	}
 
 	return deployedContainers, nil

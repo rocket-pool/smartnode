@@ -19,6 +19,7 @@ type settingsHome struct {
 	ecPage           *ExecutionConfigPage
 	fallbackPage     *FallbackConfigPage
 	ccPage           *ConsensusConfigPage
+	mevBoostPage     *MevBoostConfigPage
 	metricsPage      *MetricsConfigPage
 	addonsPage       *AddonsPage
 	categoryList     *tview.List
@@ -43,6 +44,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	home.ecPage = NewExecutionConfigPage(home)
 	home.ccPage = NewConsensusConfigPage(home)
 	home.fallbackPage = NewFallbackConfigPage(home)
+	home.mevBoostPage = NewMevBoostConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
 	home.addonsPage = NewAddonsPage(home.md)
 	settingsSubpages := []settingsPage{
@@ -50,6 +52,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 		home.ecPage,
 		home.ccPage,
 		home.fallbackPage,
+		home.mevBoostPage,
 		home.metricsPage,
 		home.addonsPage,
 	}

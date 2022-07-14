@@ -26,7 +26,7 @@ const (
 	Eth2ContainerName         string = "eth2"
 	ExporterContainerName     string = "exporter"
 	GrafanaContainerName      string = "grafana"
-	IpfsContainerName         string = "ipfs"
+	MevBoostContainerName     string = "mev-boost"
 	NodeContainerName         string = "node"
 	PrometheusContainerName   string = "prometheus"
 	ValidatorContainerName    string = "validator"
@@ -52,8 +52,8 @@ type RocketPoolConfig struct {
 	IsNativeMode bool `yaml:"-"`
 
 	// Execution client settings
-	ExecutionClientMode Parameter `yaml:"executionClientMode"`
-	ExecutionClient     Parameter `yaml:"executionClient"`
+	ExecutionClientMode Parameter `yaml:"executionClientMode,omitempty"`
+	ExecutionClient     Parameter `yaml:"executionClient,omitempty"`
 
 	// Fallback settings
 	UseFallbackClients Parameter `yaml:"useFallbackClients,omitempty"`
@@ -75,7 +75,7 @@ type RocketPoolConfig struct {
 	EnableBitflyNodeMetrics Parameter `yaml:"enableBitflyNodeMetrics,omitempty"`
 
 	// The Smartnode configuration
-	Smartnode *SmartnodeConfig `yaml:"smartnode"`
+	Smartnode *SmartnodeConfig `yaml:"smartnode,omitempty"`
 
 	// Execution client configurations
 	ExecutionCommon   *ExecutionCommonConfig   `yaml:"executionCommon,omitempty"`
@@ -106,6 +106,9 @@ type RocketPoolConfig struct {
 
 	// Native mode
 	Native *NativeConfig `yaml:"native,omitempty"`
+
+	// MEV Boost
+	MevBoost *MevBoostConfig `yaml:"mevBoost,omitempty"`
 }
 
 // Load configuration settings from a file
@@ -415,6 +418,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Exporter = NewExporterConfig(config)
 	config.BitflyNodeMetrics = NewBitflyNodeMetricsConfig(config)
 	config.Native = NewNativeConfig(config)
+	config.MevBoost = NewMevBoostConfig(config)
 
 	// Apply the default values for mainnet
 	config.Smartnode.Network.Value = config.Smartnode.Network.Options[0].Value
@@ -508,6 +512,7 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"exporter":           config.Exporter,
 		"bitflyNodeMetrics":  config.BitflyNodeMetrics,
 		"native":             config.Native,
+		"mevBoost":           config.MevBoost,
 	}
 }
 
@@ -895,6 +900,12 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	// Bitfly Node Metrics
 	if config.EnableBitflyNodeMetrics.Value == true {
 		addParametersToEnvVars(config.BitflyNodeMetrics.GetParameters(), envVars)
+	}
+
+	// MEV Boost
+	addParametersToEnvVars(config.MevBoost.GetParameters(), envVars)
+	if config.MevBoost.Mode.Value == Mode_Local {
+		envVars[mevBoostExternalUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, config.MevBoost.Port.Value)
 	}
 
 	return envVars

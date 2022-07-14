@@ -69,10 +69,10 @@ func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
 	invalidIntervals := []rprewards.IntervalInfo{}
 	for _, intervalInfo := range rewardsInfoResponse.InvalidIntervals {
 		if !intervalInfo.TreeFileExists {
-			fmt.Printf("You have rewards for interval %d but are missing the rewards tree file.\n", intervalInfo.Index)
+			fmt.Printf("You are missing the rewards tree file for interval %d.\n", intervalInfo.Index)
 			missingIntervals = append(missingIntervals, intervalInfo)
 		} else if !intervalInfo.MerkleRootValid {
-			fmt.Printf("You have rewards for interval %d but your local copy of the rewards tree file does not match the canonical one.\n", intervalInfo.Index)
+			fmt.Printf("Your local copy of the rewards tree file for interval %d does not match the canonical one.\n", intervalInfo.Index)
 			invalidIntervals = append(invalidIntervals, intervalInfo)
 		}
 	}
