@@ -69,7 +69,7 @@ func NewMevBoostConfig(config *RocketPoolConfig) *MevBoostConfig {
 			AffectsContainers:    []ContainerID{ContainerID_MevBoost},
 			EnvironmentVariables: []string{"MEV_BOOST_RELAYS"},
 			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
+			OverwriteOnUpgrade:   true,
 		},
 
 		Port: Parameter{

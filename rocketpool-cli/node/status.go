@@ -17,6 +17,7 @@ import (
 const (
 	colorReset  string = "\033[0m"
 	colorRed    string = "\033[31m"
+	colorGreen  string = "\033[32m"
 	colorYellow string = "\033[33m"
 )
 
@@ -48,9 +49,12 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Account address & balances
+	fmt.Printf("%s=== Account and Balances ===%s\n", colorGreen, colorReset)
 	fmt.Printf(
-		"The node %s has a balance of %.6f ETH and %.6f RPL.\n",
+		"The node %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
+		colorBlue,
 		status.AccountAddress.Hex(),
+		colorReset,
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6),
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6))
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
@@ -63,11 +67,12 @@ func getStatus(c *cli.Context) error {
 		// Node status
 		fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.TimezoneLocation)
 		if status.Trusted {
-			fmt.Println("The node is a member of the oracle DAO - it can create unbonded minipools, vote on DAO proposals and perform watchtower duties.")
+			fmt.Println("The node is a member of the oracle DAO - it can vote on DAO proposals and perform watchtower duties.")
 		}
 		fmt.Println("")
 
 		// Penalties
+		fmt.Printf("%s=== Penalty Status ===%s\n", colorGreen, colorReset)
 		if len(status.PenalizedMinipools) > 0 {
 			strikeMinipools := []common.Address{}
 			infractionMinipools := []common.Address{}
@@ -97,24 +102,28 @@ func getStatus(c *cli.Context) error {
 				fmt.Println()
 			}
 		} else {
-			fmt.Println("None of the node's minipools have been penalized for cheating with an invalid fee recipient.")
+			fmt.Println("The node does not have any penalties for cheating with an invalid fee recipient.")
 			fmt.Println()
 		}
 
 		// Voting status
+		fmt.Printf("%s=== DAO Voting ===%s\n", colorGreen, colorReset)
 		blankAddress := common.Address{}
 		if status.VotingDelegate == blankAddress {
 			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool governance proposals.")
 		} else {
-			fmt.Printf("The node has a voting delegate of %s which can represent it when voting on Rocket Pool governance proposals.\n", status.VotingDelegate.Hex())
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegate.Hex(), colorReset)
 		}
 		fmt.Println("")
 
 		// Withdrawal address & balances
+		fmt.Printf("%s=== Withdrawal Address ===%s\n", colorGreen, colorReset)
 		if !bytes.Equal(status.AccountAddress.Bytes(), status.WithdrawalAddress.Bytes()) {
 			fmt.Printf(
-				"The node's withdrawal address %s has a balance of %.6f ETH and %.6f RPL.\n",
+				"The node's withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
+				colorBlue,
 				status.WithdrawalAddress.Hex(),
+				colorReset,
 				math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
 				math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6))
 		} else {
@@ -129,8 +138,9 @@ func getStatus(c *cli.Context) error {
 		}
 
 		// Fee distributor details
+		fmt.Printf("%s=== Fee Distributor and Smoothing Pool ===%s\n", colorGreen, colorReset)
 		if status.IsMergeUpdateDeployed {
-			fmt.Printf("The node's fee distributor %s has a balance of %.6f ETH.\n", status.FeeDistributorAddress.Hex(), math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
+			fmt.Printf("The node's fee distributor %s%s%s has a balance of %.6f ETH.\n", colorBlue, status.FeeDistributorAddress.Hex(), colorReset, math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
 			if !status.IsFeeDistributorInitialized {
 				fmt.Printf("%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n\n", colorYellow, colorReset)
 			}
@@ -145,6 +155,7 @@ func getStatus(c *cli.Context) error {
 		}
 
 		// RPL stake details
+		fmt.Printf("%s=== RPL Stake and Minipools ===%s\n", colorGreen, colorReset)
 		fmt.Printf(
 			"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL, allowing it to run %d minipool(s) in total.\n",
 			math.RoundDown(eth.WeiToEth(status.RplStake), 6),

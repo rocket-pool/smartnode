@@ -80,19 +80,10 @@ func nodeDeposit(c *cli.Context) error {
 
 	} else {
 
-		// Get node status
-		status, err := rp.NodeStatus()
-		if err != nil {
-			return err
-		}
-
 		// Get deposit amount options
 		amountOptions := []string{
 			"32 ETH (minipool begins staking immediately)",
 			"16 ETH (minipool begins staking after ETH is assigned)",
-		}
-		if status.Trusted {
-			amountOptions = append(amountOptions, "0 ETH  (minipool begins staking after ETH is assigned)")
 		}
 
 		// Prompt for amount
@@ -102,8 +93,6 @@ func nodeDeposit(c *cli.Context) error {
 			amount = 32
 		case 1:
 			amount = 16
-		case 2:
-			amount = 0
 		}
 
 	}
