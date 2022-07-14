@@ -2,8 +2,8 @@ package config
 
 // Constants
 const (
-	mevBoostTag               string = "flashbots/mev-boost:v0.7.3"
-	mevBoostExternalUrlEnvVar string = "MEV_BOOST_URL"
+	mevBoostTag       string = "flashbots/mev-boost:v0.7.3"
+	mevBoostUrlEnvVar string = "MEV_BOOST_URL"
 )
 
 // Configuration for MEV Boost
@@ -115,7 +115,7 @@ func NewMevBoostConfig(config *RocketPoolConfig) *MevBoostConfig {
 			Type:                 ParameterType_String,
 			Default:              map[Network]interface{}{Network_All: ""},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
-			EnvironmentVariables: []string{mevBoostExternalUrlEnvVar},
+			EnvironmentVariables: []string{mevBoostUrlEnvVar},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
