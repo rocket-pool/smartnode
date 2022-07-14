@@ -29,7 +29,12 @@ type FeeRecipientFileContents struct {
 }
 
 type ProposerFeeRecipient struct {
-	FeeRecipient string `json:"fee_recipient"`
+	FeeRecipient          string                `json:"fee_recipient"`
+	ValidatorRegistration ValidatorRegistration `json:"validator_registration"`
+}
+
+type ValidatorRegistration struct {
+	Enable bool `json:"enable"`
 }
 
 // Creates a new fee recipient manager
@@ -74,6 +79,9 @@ func (fm *FeeRecipientManager) CheckFeeRecipientFile(distributor common.Address)
 	if existingStruct.DefaultConfig.FeeRecipient != expectedStruct.DefaultConfig.FeeRecipient || len(existingStruct.ProposerConfig) > 0 {
 		return true, false, nil
 	}
+	if !existingStruct.DefaultConfig.ValidatorRegistration.Enable {
+		return true, false, nil
+	}
 
 	// The file existed and had the expected address, all set.
 	return true, true, nil
@@ -88,6 +96,9 @@ func (fm *FeeRecipientManager) UpdateFeeRecipientFile(distributor common.Address
 	expectedStruct := FeeRecipientFileContents{
 		DefaultConfig: ProposerFeeRecipient{
 			FeeRecipient: distributorAddress,
+			ValidatorRegistration: ValidatorRegistration{
+				Enable: true,
+			},
 		},
 		ProposerConfig: map[string]ProposerFeeRecipient{},
 	}
