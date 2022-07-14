@@ -119,7 +119,7 @@ func (d *downloadRewardsTrees) run() error {
 			return err
 		}
 		if !intervalInfo.TreeFileExists {
-			d.log.Printlnf("You have rewards for interval %d but are missing the rewards tree file.", intervalInfo.Index)
+			d.log.Printlnf("You are missing the rewards tree file for interval %d.", intervalInfo.Index)
 			missingIntervals = append(missingIntervals, intervalInfo)
 		}
 	}
