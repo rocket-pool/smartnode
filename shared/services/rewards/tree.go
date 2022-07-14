@@ -712,7 +712,7 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 					minipoolShare.Mul(minipoolShare, nodeInfo.EligibleSeconds)
 					minipoolShare.Div(minipoolShare, r.intervalSeconds)
 				}
-				if minipool.MissedAttestations > 0 && minipool.GoodAttestations > 0 {
+				if minipool.MissedAttestations > 0 {
 					// Calculate the participation rate if there are any missed attestations
 					goodCount := big.NewInt(int64(minipool.GoodAttestations))
 					missedCount := big.NewInt(int64(minipool.MissedAttestations))
