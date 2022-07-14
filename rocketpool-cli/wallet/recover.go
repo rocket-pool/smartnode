@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -20,6 +21,12 @@ func recoverWallet(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Load the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return err
+	}
+
 	// Get & check wallet status
 	status, err := rp.WalletStatus()
 	if err != nil {
@@ -29,6 +36,9 @@ func recoverWallet(c *cli.Context) error {
 		fmt.Println("The node wallet is already initialized.")
 		return nil
 	}
+
+	// Prompt a notice about test recovery
+	fmt.Printf("%sNOTE:\nThis command will fully regenerate your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools.\nIf you just want to test recovery to ensure it works without actually regenerating the files, please use `rocketpool wallet test-recovery` instead.%s\n\n", colorYellow, colorReset)
 
 	// Set password if not set
 	if !status.PasswordSet {
@@ -54,6 +64,28 @@ func recoverWallet(c *cli.Context) error {
 
 	// Handle validator key recovery skipping
 	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
+
+	// Check for custom keys
+	if !skipValidatorKeyRecovery {
+		customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg, false)
+		if err != nil {
+			return err
+		}
+		if customKeyPasswordFile != "" {
+			// Defer deleting the custom keystore password file
+			defer func(customKeyPasswordFile string) {
+				_, err := os.Stat(customKeyPasswordFile)
+				if os.IsNotExist(err) {
+					return
+				}
+
+				err = os.Remove(customKeyPasswordFile)
+				if err != nil {
+					fmt.Printf("*** WARNING ***\nAn error occurred while removing the custom keystore password file: %s\n\nThis file contains the passwords to your custom validator keys.\nYou *must* delete it manually as soon as possible so nobody can read it.\n\nThe file is located here:\n\n\t%s\n\n", err.Error(), customKeyPasswordFile)
+				}
+			}(customKeyPasswordFile)
+		}
+	}
 
 	// Check for a search-by-address operation
 	addressString := c.String("address")

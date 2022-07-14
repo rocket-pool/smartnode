@@ -200,6 +200,42 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 
 }
 
+// Test recovery of a validator key by public key
+func (w *Wallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
+
+	// Check wallet is initialized
+	if !w.IsInitialized() {
+		return errors.New("Wallet is not initialized")
+	}
+
+	// Find matching validator key
+	var index uint
+	var validatorKey *eth2types.BLSPrivateKey
+	for index = 0; index < w.ws.NextAccount+MaxValidatorKeyRecoverAttempts; index++ {
+		if key, _, err := w.getValidatorPrivateKey(index); err != nil {
+			return err
+		} else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
+			validatorKey = key
+			break
+		}
+	}
+
+	// Check validator key
+	if validatorKey == nil {
+		return fmt.Errorf("Validator %s key not found", pubkey.Hex())
+	}
+
+	// Update account index
+	nextIndex := index + 1
+	if nextIndex > w.ws.NextAccount {
+		w.ws.NextAccount = nextIndex
+	}
+
+	// Return
+	return nil
+
+}
+
 // Get a validator private key by index
 func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, string, error) {
 

@@ -53,6 +53,9 @@ const (
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
 
+	nethermindPruneStarterCommand string = "dotnet /setup/NethermindPruneStarter/NethermindPruneStarter.dll"
+	nethermindAdminUrl            string = "http://127.0.0.1:7434"
+
 	DebugColor = color.FgYellow
 )
 
@@ -312,9 +315,11 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	}
 
 	// Migrate the fallback EC
-	err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.FallbackProvider, legacyCfg.Chains.Eth1.FallbackWsProvider, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExternalExecution.HttpUrl, &cfg.FallbackExternalExecution.WsUrl)
-	if err != nil {
-		return nil, fmt.Errorf("error migrating fallback eth1 provider info: %w", err)
+	if legacyCfg.Chains.Eth1.FallbackProvider != "" { // Ignore pre-v1.2 where fallback didn't exist
+		err = c.migrateProviderInfo(legacyCfg.Chains.Eth1.FallbackProvider, legacyCfg.Chains.Eth1.FallbackWsProvider, "eth1-fallback", &cfg.FallbackExecutionClientMode, &cfg.FallbackExecutionCommon.HttpPort, &cfg.FallbackExecutionCommon.WsPort, &cfg.FallbackExternalExecution.HttpUrl, &cfg.FallbackExternalExecution.WsUrl)
+		if err != nil {
+			return nil, fmt.Errorf("error migrating fallback eth1 provider info: %w", err)
+		}
 	}
 
 	err = c.migrateEcSelection(legacyCfg.Chains.Eth1Fallback.Client.Selected, &cfg.FallbackExecutionClient, &cfg.FallbackExecutionClientMode)
@@ -865,6 +870,16 @@ func (c *Client) RunPruneProvisioner(container string, volume string, image stri
 
 }
 
+// Runs the prune provisioner
+func (c *Client) RunNethermindPruneStarter(container string) error {
+	cmd := fmt.Sprintf("docker exec %s %s %s", container, nethermindPruneStarterCommand, nethermindAdminUrl)
+	err := c.printOutput(cmd)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Runs the EC migrator
 func (c *Client) RunEcMigrator(container string, volume string, targetDir string, mode string, image string) error {
 	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, image)
@@ -1387,12 +1402,88 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
 	}
 
+	// Create the custom keys dir
+	customKeyDir, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys"))
+	if err != nil {
+		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		return deployedContainers, nil
+	}
+	err = os.MkdirAll(customKeyDir, 0775)
+	if err != nil {
+		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), customKeyDir, colorReset)
+	}
+
 	return deployedContainers, nil
 
 }
 
 // Call the Rocket Pool API
 func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
+	// Sanitize and parse the args
+	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
+
+	// Create the command to run
+	var cmd string
+	if c.daemonPath == "" {
+		containerName, err := c.getAPIContainerName()
+		if err != nil {
+			return []byte{}, err
+		}
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
+	} else {
+		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
+			c.daemonPath,
+			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
+			ignoreSyncCheckFlag,
+			forceFallbackECFlag,
+			c.getGasOpts(),
+			c.getCustomNonce(),
+			args)
+	}
+
+	// Run the command
+	return c.runApiCall(cmd)
+}
+
+// Call the Rocket Pool API with some custom environment variables
+func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, otherArgs ...string) ([]byte, error) {
+	// Sanitize and parse the args
+	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
+
+	// Create the command to run
+	var cmd string
+	if c.daemonPath == "" {
+		envArgs := ""
+		for key, value := range envVars {
+			os.Setenv(key, shellescape.Quote(value))
+			envArgs += fmt.Sprintf("-e %s ", key)
+		}
+		containerName, err := c.getAPIContainerName()
+		if err != nil {
+			return []byte{}, err
+		}
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s %s api %s", envArgs, shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
+	} else {
+		envArgs := ""
+		for key, value := range envVars {
+			envArgs += fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
+		}
+		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
+			envArgs,
+			c.daemonPath,
+			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
+			ignoreSyncCheckFlag,
+			forceFallbackECFlag,
+			c.getGasOpts(),
+			c.getCustomNonce(),
+			args)
+	}
+
+	// Run the command
+	return c.runApiCall(cmd)
+}
+
+func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, string, string) {
 	// Sanitize arguments
 	var sanitizedArgs []string
 	for _, arg := range strings.Fields(args) {
@@ -1416,25 +1507,10 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		forceFallbackECFlag = "--force-fallback-ec"
 	}
 
-	// Run the command
-	var cmd string
-	if c.daemonPath == "" {
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return []byte{}, err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
-	} else {
-		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
-			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
-			ignoreSyncCheckFlag,
-			forceFallbackECFlag,
-			c.getGasOpts(),
-			c.getCustomNonce(),
-			args)
-	}
+	return ignoreSyncCheckFlag, forceFallbackECFlag, args
+}
 
+func (c *Client) runApiCall(cmd string) ([]byte, error) {
 	if c.debugPrint {
 		fmt.Println("To API:")
 		fmt.Println(cmd)

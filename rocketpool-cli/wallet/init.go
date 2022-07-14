@@ -75,6 +75,17 @@ func initWallet(c *cli.Context) error {
 		confirmMnemonic(response.Mnemonic)
 	}
 
+	// Do a recover to save the wallet
+	recoverResponse, err := rp.RecoverWallet(response.Mnemonic, true, derivationPath, 0)
+	if err != nil {
+		return fmt.Errorf("error saving wallet: %w", err)
+	}
+
+	// Sanity check the addresses
+	if recoverResponse.AccountAddress != response.AccountAddress {
+		return fmt.Errorf("Expected %s, but generated %s upon saving", response.AccountAddress, recoverResponse.AccountAddress)
+	}
+
 	// Clear terminal output
 	_ = term.Clear()
 

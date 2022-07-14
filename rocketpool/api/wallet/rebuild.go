@@ -1,11 +1,11 @@
 package wallet
 
 import (
-	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	walletutils "github.com/rocket-pool/smartnode/shared/utils/wallet"
 )
 
 func rebuildWallet(c *cli.Context) (*api.RebuildWalletResponse, error) {
@@ -35,18 +35,10 @@ func rebuildWallet(c *cli.Context) (*api.RebuildWalletResponse, error) {
 		return nil, err
 	}
 
-	// Get node's validating pubkeys
-	pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAccount.Address, nil)
+	// Recover validator keys
+	response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, nodeAccount.Address, w, false)
 	if err != nil {
 		return nil, err
-	}
-	response.ValidatorKeys = pubkeys
-
-	// Recover validator keys
-	for _, pubkey := range pubkeys {
-		if err := w.RecoverValidatorKey(pubkey); err != nil {
-			return nil, err
-		}
 	}
 
 	// Save wallet

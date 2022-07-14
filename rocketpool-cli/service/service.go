@@ -134,6 +134,12 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Voting Support ===%s\n", colorGreen, colorReset)
 	fmt.Println("`rocketpool node set-voting-delegate` can be used to specify an Ethereum address you would like represent your node when voting on Rocket Pool DAO governance proposals.\nThis should be something you can safely use with a browser.\nA full write-up of DAO voting, Snapshot, and this command will be released soon - stay tuned!\n")
 
+	fmt.Printf("%s=== Nethermind Pruning ===%s\n", colorGreen, colorReset)
+	fmt.Println("You can now use `rocketpool service prune-eth1` to prune Nethermind when your disk space is running low.\n")
+
+	fmt.Printf("%s=== Custom Validator Key Importing ===%s\n", colorGreen, colorReset)
+	fmt.Println("`rocketpool wallet recover` now lets you recover validator keys for your minipools that were generated outside of the Smartnode stack (e.g. via Allnodes). You can use this to migrate them to your own self-managed node!\nTake a look at the guides to learn more: https://docs.rocketpool.net/guides/node/recovering-rp.html\n")
+
 	fmt.Printf("%s=== Light Client Deprecation ===%s\n", colorGreen, colorReset)
 	fmt.Println("Infura and Pocket are now deprecated because light clients will not be compatible with the upcoming Ethereum Merge. They will be removed in a later version. If you're running one of these, either as your primary or your fallback client, you should prepare to move away from them and use a full Execution client instead.")
 
@@ -891,10 +897,8 @@ func pruneExecutionClient(c *cli.Context) error {
 	if cfg.IsNativeMode {
 		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
 	}
-	switch cfg.ExecutionClient.Value.(config.ExecutionClient) {
-	case config.ExecutionClient_Nethermind:
-		fmt.Println("You are using Nethermind as your Execution client.\nNethermind pruning is not supported yet.")
-		return nil
+	selectedEc := cfg.ExecutionClient.Value.(config.ExecutionClient)
+	switch selectedEc {
 	case config.ExecutionClient_Besu:
 		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
 		return nil
@@ -1002,6 +1006,13 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 	if result != executionContainerName {
 		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
+	}
+
+	if selectedEc == config.ExecutionClient_Nethermind {
+		err = rp.RunNethermindPruneStarter(executionContainerName)
+		if err != nil {
+			return err
+		}
 	}
 
 	fmt.Printf("\nDone! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.\n")

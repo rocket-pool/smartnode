@@ -2,7 +2,7 @@ package config
 
 import "runtime"
 
-const nimbusTag string = "statusim/nimbus-eth2:multiarch-v22.5.2"
+const nimbusTag string = "statusim/nimbus-eth2:multiarch-v22.6.1"
 const defaultNimbusMaxPeersArm uint16 = 100
 const defaultNimbusMaxPeersAmd uint16 = 160
 
