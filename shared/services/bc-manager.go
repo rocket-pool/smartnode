@@ -335,6 +335,7 @@ func checkBcStatus(client beacon.Client) api.ClientStatus {
 
 	// Return the sync status
 	if !syncStatus.Syncing {
+		status.IsWorking = true
 		status.IsSynced = true
 		status.SyncProgress = 1
 	} else {
