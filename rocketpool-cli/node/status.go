@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -85,6 +86,9 @@ func getStatus(c *cli.Context) error {
 			}
 
 			if len(strikeMinipools) > 0 {
+				sort.Slice(strikeMinipools, func(i, j int) bool { // Sort them lexicographically
+					return strikeMinipools[i].Hex() < strikeMinipools[j].Hex()
+				})
 				fmt.Printf("%sWARNING: The following minipools have been given strikes for cheating with an invalid fee recipient:\n", colorYellow)
 				for _, mp := range strikeMinipools {
 					fmt.Printf("\t%s: %d strikes\n", mp.Hex(), status.PenalizedMinipools[mp])
@@ -94,6 +98,9 @@ func getStatus(c *cli.Context) error {
 			}
 
 			if len(infractionMinipools) > 0 {
+				sort.Slice(infractionMinipools, func(i, j int) bool { // Sort them lexicographically
+					return infractionMinipools[i].Hex() < infractionMinipools[j].Hex()
+				})
 				fmt.Printf("%sWARNING: The following minipools have been given infractions for cheating with an invalid fee recipient:\n", colorRed)
 				for _, mp := range infractionMinipools {
 					fmt.Printf("\t%s: %d infractions\n", mp.Hex(), status.PenalizedMinipools[mp]-2)
