@@ -7,8 +7,8 @@ import (
 
 // v2.1.3
 const (
-	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-4de92b-debug"
-	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-4de92b-debug"
+	prysmBnTagAmd64           string = "prysmaticlabs/prysm-beacon-chain:HEAD-f9b3cd-debug"
+	prysmVcTagAmd64           string = "prysmaticlabs/prysm-validator:HEAD-f9b3cd-debug"
 	prysmTagArm64             string = "rocketpool/prysm:v2.1.3"
 	defaultPrysmRpcPort       uint16 = 5053
 	defaultPrysmOpenRpcPort   bool   = false
