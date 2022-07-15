@@ -139,7 +139,10 @@ ______           _        _    ______           _
 	fmt.Println("The new Merkle Tree-based rewards system is live! Each rewards interval, your rewards will be calculated and saved. That means no more dilution or changing claim amounts, and no more needing to claim every interval!\nYou can sit on the rewards for as long as you want and claim them all at once!\nYou can access this new system with `rocketpool node claim-rewards`.\n")
 
 	fmt.Printf("%s=== [Ropsten] Smoothing Pool! ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now opt into the Smoothing Pool, which will collect everyone's priority fees and MEV, and share them evenly between all participants.\nThis is great for smaller validators because it means if it takes a long time for you to get a proposal, no problem! You get regular, smooth ETH rewards every interval.\nCheck it out with `rocketpool node join-smoothing-pool`.")
+	fmt.Println("You can now opt into the Smoothing Pool, which will collect everyone's priority fees and MEV, and share them evenly between all participants.\nThis is great for smaller validators because it means if it takes a long time for you to get a proposal, no problem! You get regular, smooth ETH rewards every interval.\nCheck it out with `rocketpool node join-smoothing-pool`.\n")
+
+	fmt.Printf("%s=== [Ropsten] MEV Boost! ===%s\n", colorGreen, colorReset)
+	fmt.Println("You are now automatically set up to use MEV Boost, the MEV system provided by Flashbots to let you participate in its network, propose its blocks, and receive MEV rewards. For more information on Flashbots, MEV, and MEV Boost, please see https://writings.flashbots.net/writings/why-run-mevboost/")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard

@@ -205,6 +205,10 @@ func (home *settingsNativeHome) refresh() {
 		home.nativePage.layout.refresh()
 	}
 
+	if home.fallbackPage != nil {
+		home.fallbackPage.layout.refresh()
+	}
+
 	if home.metricsPage != nil {
 		home.metricsPage.layout.refresh()
 	}

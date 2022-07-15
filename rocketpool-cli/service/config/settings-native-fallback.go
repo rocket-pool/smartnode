@@ -28,7 +28,7 @@ func NewNativeFallbackConfigPage(home *settingsNativeHome) *NativeFallbackConfig
 
 	configPage.page = newPage(
 		home.homePage,
-		"settings-fallback",
+		"settings-native-fallback",
 		"Fallback Clients",
 		"Select this to manage a separate pair of externally-managed Execution and Consensus clients that the Smartnode will use if your main Execution or Consensus clients ever go offline.",
 		configPage.layout.grid,
@@ -102,6 +102,8 @@ func (configPage *NativeFallbackConfigPage) handleUseFallbackChanged() {
 	}
 	configPage.layout.form.AddFormItem(configPage.reconnectDelay.item)
 	configPage.layout.addFormItems(configPage.fallbackItems)
+
+	configPage.layout.refresh()
 }
 
 // Handle a bulk redraw request

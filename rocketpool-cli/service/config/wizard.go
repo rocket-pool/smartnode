@@ -51,7 +51,7 @@ func newWizard(md *mainDisplay) *wizard {
 	}
 
 	totalDockerSteps := 9
-	totalNativeSteps := 8
+	totalNativeSteps := 9
 
 	// Docker mode
 	wiz.welcomeModal = createWelcomeStep(wiz, 1, totalDockerSteps)

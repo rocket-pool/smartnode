@@ -244,6 +244,14 @@ func (home *settingsHome) refresh() {
 		home.fallbackPage.layout.refresh()
 	}
 
+	if home.fallbackPage != nil {
+		home.fallbackPage.layout.refresh()
+	}
+
+	if home.mevBoostPage != nil {
+		home.mevBoostPage.layout.refresh()
+	}
+
 	if home.metricsPage != nil {
 		home.metricsPage.layout.refresh()
 	}

@@ -112,6 +112,8 @@ func (configPage *FallbackConfigPage) handleUseFallbackChanged() {
 	default:
 		configPage.layout.addFormItems(configPage.fallbackNormalItems)
 	}
+
+	configPage.layout.refresh()
 }
 
 // Handle a bulk redraw request
