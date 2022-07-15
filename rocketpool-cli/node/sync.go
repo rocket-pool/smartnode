@@ -64,7 +64,7 @@ func getSyncProgress(c *cli.Context) error {
 	} else {
 		fmt.Printf("Your primary execution client is still syncing (%0.2f%%).\n", status.EcStatus.PrimaryClientStatus.SyncProgress*100)
 		if status.EcStatus.PrimaryClientStatus.SyncProgress == 0 {
-			fmt.Println("\tNOTE: your execution client may not report sync progress.\n\tYou should check your its logs to review it.")
+			fmt.Println("\tNOTE: your execution client may not report sync progress.\n\tYou should check its logs to review it.")
 		}
 	}
 
