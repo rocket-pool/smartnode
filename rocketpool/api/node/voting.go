@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func estimateSetSnapshotDelegateGas(c *cli.Context, address common.Address) (*api.EstimateSetSnapshotDelegateGasResponse, error) {
@@ -104,6 +105,12 @@ func setSnapshotDelegate(c *cli.Context, address common.Address) (*api.SetSnapsh
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Create the ID hash
@@ -209,6 +216,12 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Create the ID hash
