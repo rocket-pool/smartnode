@@ -183,7 +183,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	// Generate the rewards file
 	start := time.Now()
 	rewardsFile := rprewards.NewRewardsFile(t.log, generationPrefix, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
-	err = rewardsFile.GenerateTree(t.rp, t.cfg, t.bc)
+	err = rewardsFile.GenerateTree(rp, t.cfg, t.bc)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 		return
