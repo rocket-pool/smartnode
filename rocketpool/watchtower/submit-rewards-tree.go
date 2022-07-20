@@ -177,9 +177,12 @@ func (t *submitRewardsTree) run() error {
 	}
 	t.lock.Unlock()
 
-	// Check if the file is already generated and reupload it without rebuilding it
+	// Check if the rewards file is already generated and reupload it without rebuilding it
+	// NOTE - this can only be reached if the missing attestations file has already been uploaded successfully so it isn't checked here
 	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
-	compressedPath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true) + config.RewardsTreeIpfsExtension
+	compressedPath := path + config.RewardsTreeIpfsExtension
+	missedAttestationsPath := t.cfg.Smartnode.GetMissedAttestationsPath(currentIndex, true)
+	compressedMissedAttestationsPath := missedAttestationsPath + config.RewardsTreeIpfsExtension
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
 		if !nodeTrusted {
@@ -211,7 +214,7 @@ func (t *submitRewardsTree) run() error {
 		}
 
 		// Upload the file
-		cid, err := t.uploadRewardsTreeToWeb3Storage(wrapperBytes, compressedPath)
+		cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedPath, "compressed rewards tree")
 		if err != nil {
 			return fmt.Errorf("Error uploading Merkle tree to Web3.Storage: %w", err)
 		}
@@ -269,7 +272,45 @@ func (t *submitRewardsTree) run() error {
 			t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
 		}
 
-		// Serialize the file to JSON
+		// Generate the missing attestations file
+		missedAttestationMap := map[common.Address][]uint64{}
+		t.log.Println(fmt.Sprintf("%s Creating missed attestation file...", generationPrefix))
+		for _, nodeRewards := range rewardsFile.NodeRewards {
+			for minipoolAddress, performance := range nodeRewards.MinipoolPerformance {
+				missedAttestationMap[minipoolAddress] = performance.MissingAttestationSlots
+			}
+		}
+
+		// Serialize it
+		missedAttestationWrapperBytes, err := json.Marshal(rewardsFile)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error serializing missing attestations file into JSON: %w", generationPrefix, err))
+			return
+		}
+
+		// Write it to disk
+		err = ioutil.WriteFile(missedAttestationsPath, missedAttestationWrapperBytes, 0644)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s Error saving missed attestations file to %s: %w", generationPrefix, missedAttestationsPath, err))
+			return
+		}
+
+		// Upload it if this is an Oracle DAO node
+		if nodeTrusted {
+			t.log.Println(fmt.Sprintf("%s Uploading missed attestations file to Web3.Storage...", generationPrefix))
+			missedAttestationsCid, err := t.uploadFileToWeb3Storage(missedAttestationWrapperBytes, compressedMissedAttestationsPath, "compressed missed attestations")
+			if err != nil {
+				t.handleError(fmt.Errorf("%s Error uploading missed attestations file to Web3.Storage: %w", generationPrefix, err))
+				return
+			}
+			t.log.Printlnf("%s Uploaded missed attestations file with CID %s", generationPrefix, missedAttestationsCid)
+			rewardsFile.MissedAttestationFileCID = missedAttestationsCid
+		} else {
+			t.log.Printlnf("%s Saved missed attestations file. %s", generationPrefix)
+			rewardsFile.MissedAttestationFileCID = "---"
+		}
+
+		// Serialize the rewards tree to JSON
 		wrapperBytes, err := json.Marshal(rewardsFile)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
@@ -277,19 +318,18 @@ func (t *submitRewardsTree) run() error {
 		}
 		t.log.Println(fmt.Sprintf("%s Generation complete! Saving tree...", generationPrefix))
 
-		// Write the file
-		path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
+		// Write the rewards tree to disk
 		err = ioutil.WriteFile(path, wrapperBytes, 0644)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s Error saving file to %s: %w", generationPrefix, path, err))
+			t.handleError(fmt.Errorf("%s Error saving rewards tree file to %s: %w", generationPrefix, path, err))
 			return
 		}
 
 		// Only do the upload and submission process if this is an Oracle DAO node
 		if nodeTrusted {
+			// Upload the rewards tree file
 			t.log.Println(fmt.Sprintf("%s Uploading to Web3.Storage and submitting results to the contracts...", generationPrefix))
-			// Upload the file
-			cid, err := t.uploadRewardsTreeToWeb3Storage(wrapperBytes, compressedPath)
+			cid, err := t.uploadFileToWeb3Storage(wrapperBytes, compressedPath, "compressed rewards tree")
 			if err != nil {
 				t.handleError(fmt.Errorf("%s Error uploading Merkle tree to Web3.Storage: %w", generationPrefix, err))
 				return
@@ -407,8 +447,8 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 	return nil
 }
 
-// Upload the Merkle rewards tree to Web3.Storage and get the CID for it
-func (t *submitRewardsTree) uploadRewardsTreeToWeb3Storage(wrapperBytes []byte, compressedPath string) (string, error) {
+// Compress and upload a file to Web3.Storage and get the CID for it
+func (t *submitRewardsTree) uploadFileToWeb3Storage(wrapperBytes []byte, compressedPath string, description string) (string, error) {
 
 	// Get the API token
 	apiToken := t.cfg.Smartnode.Web3StorageApiToken.Value.(string)
@@ -429,14 +469,14 @@ func (t *submitRewardsTree) uploadRewardsTreeToWeb3Storage(wrapperBytes []byte, 
 	// Create the compressed tree file
 	compressedFile, err := os.Create(compressedPath)
 	if err != nil {
-		return "", fmt.Errorf("Error creating compressed rewards tree file [%s]: %w", compressedPath, err)
+		return "", fmt.Errorf("Error creating %s file [%s]: %w", description, compressedPath, err)
 	}
 	defer compressedFile.Close()
 
-	// Write the compressed data to the tree file
+	// Write the compressed data to the file
 	_, err = compressedFile.Write(compressedBytes)
 	if err != nil {
-		return "", fmt.Errorf("Error writing compressed rewards tree to %s: %w", compressedPath, err)
+		return "", fmt.Errorf("Error writing %s to %s: %w", description, compressedPath, err)
 	}
 
 	// Rewind it to the start
@@ -445,7 +485,7 @@ func (t *submitRewardsTree) uploadRewardsTreeToWeb3Storage(wrapperBytes []byte, 
 	// Upload it
 	cid, err := w3sClient.Put(context.Background(), compressedFile)
 	if err != nil {
-		return "", fmt.Errorf("Error uploading compressed rewards tree: %w", err)
+		return "", fmt.Errorf("Error uploading %s: %w", description, err)
 	}
 
 	return cid.String(), nil

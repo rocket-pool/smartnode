@@ -38,7 +38,7 @@ type SmoothingPoolMinipoolPerformance struct {
 	SuccessfulAttestations  uint64   `json:"successfulAttestations"`
 	MissedAttestations      uint64   `json:"missedAttestations"`
 	ParticipationRate       float64  `json:"participationRate"`
-	MissingAttestationSlots []uint64 `json:"missingAttestationSlots"`
+	MissingAttestationSlots []uint64 `json:"-"`
 	EthEarned               float64  `json:"ethEarned"`
 }
 
@@ -74,20 +74,21 @@ type TotalRewards struct {
 // JSON struct for a complete rewards file
 type RewardsFile struct {
 	// Serialized fields
-	RewardsFileVersion  uint64                              `json:"rewardsFileVersion"`
-	Index               uint64                              `json:"index"`
-	Network             string                              `json:"network"`
-	StartTime           time.Time                           `json:"startTime,omitempty"`
-	EndTime             time.Time                           `json:"endTime"`
-	ConsensusStartBlock uint64                              `json:"consensusStartBlock,omitempty"`
-	ConsensusEndBlock   uint64                              `json:"consensusEndBlock"`
-	ExecutionStartBlock uint64                              `json:"executionStartBlock,omitempty"`
-	ExecutionEndBlock   uint64                              `json:"executionEndBlock"`
-	IntervalsPassed     uint64                              `json:"intervalsPassed"`
-	MerkleRoot          string                              `json:"merkleRoot,omitempty"`
-	TotalRewards        *TotalRewards                       `json:"totalRewards"`
-	NetworkRewards      map[uint64]*NetworkRewardsInfo      `json:"networkRewards"`
-	NodeRewards         map[common.Address]*NodeRewardsInfo `json:"nodeRewards"`
+	RewardsFileVersion       uint64                              `json:"rewardsFileVersion"`
+	Index                    uint64                              `json:"index"`
+	Network                  string                              `json:"network"`
+	StartTime                time.Time                           `json:"startTime,omitempty"`
+	EndTime                  time.Time                           `json:"endTime"`
+	ConsensusStartBlock      uint64                              `json:"consensusStartBlock,omitempty"`
+	ConsensusEndBlock        uint64                              `json:"consensusEndBlock"`
+	ExecutionStartBlock      uint64                              `json:"executionStartBlock,omitempty"`
+	ExecutionEndBlock        uint64                              `json:"executionEndBlock"`
+	IntervalsPassed          uint64                              `json:"intervalsPassed"`
+	MerkleRoot               string                              `json:"merkleRoot,omitempty"`
+	TotalRewards             *TotalRewards                       `json:"totalRewards"`
+	NetworkRewards           map[uint64]*NetworkRewardsInfo      `json:"networkRewards"`
+	NodeRewards              map[common.Address]*NodeRewardsInfo `json:"nodeRewards"`
+	MissedAttestationFileCID string                              `json:"missedAttestationFileCid,omitempty"`
 
 	// Non-serialized fields
 	MerkleTree           *merkletree.MerkleTree    `json:"-"`

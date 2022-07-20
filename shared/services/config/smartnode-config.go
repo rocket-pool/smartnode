@@ -17,6 +17,7 @@ const (
 	ProjectNameID                      string = "projectName"
 	SnapshotID                         string = "rocketpool-dao.eth"
 	RewardsTreeFilenameFormat          string = "rp-rewards-%s-%d.json"
+	MissedAttestationsFilenameFormat   string = "rp-missed-attestations-%s-%d.json"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	DaemonDataPath                     string = "/.rocketpool/data"
@@ -531,6 +532,14 @@ func (config *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) 
 		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
 	} else {
 		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(config.Network.Value.(Network)), interval))
+	}
+}
+
+func (config *SmartnodeConfig) GetMissedAttestationsPath(interval uint64, daemon bool) string {
+	if daemon && !config.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(MissedAttestationsFilenameFormat, string(config.Network.Value.(Network)), interval))
+	} else {
+		return filepath.Join(config.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(MissedAttestationsFilenameFormat, string(config.Network.Value.(Network)), interval))
 	}
 }
 

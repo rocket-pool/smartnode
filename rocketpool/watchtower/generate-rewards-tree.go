@@ -201,19 +201,40 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, rewardsFile.MerkleRoot)
 	}
 
-	// Create the JSON proof wrapper and encode it
-	t.log.Printlnf("%s Saving JSON file...", generationPrefix)
+	// Save the missing attestations file
+	missedAttestationMap := map[common.Address][]uint64{}
+	t.log.Println(fmt.Sprintf("%s Creating missed attestation file...", generationPrefix))
+	for _, nodeRewards := range rewardsFile.NodeRewards {
+		for minipoolAddress, performance := range nodeRewards.MinipoolPerformance {
+			missedAttestationMap[minipoolAddress] = performance.MissingAttestationSlots
+		}
+	}
+	rewardsFile.MissedAttestationFileCID = "---"
+
+	// Create the JSON files
+	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
+	missedAttestationWrapperBytes, err := json.Marshal(rewardsFile)
+	if err != nil {
+		t.handleError(fmt.Errorf("%s Error serializing missing attestations file into JSON: %w", generationPrefix, err))
+		return
+	}
 	wrapperBytes, err := json.Marshal(rewardsFile)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error serializing proof wrapper into JSON: %w", generationPrefix, err))
 		return
 	}
 
-	// Write the file
+	// Write the files
 	path := t.cfg.Smartnode.GetRewardsTreePath(index, true)
+	missedAttestationsPath := t.cfg.Smartnode.GetMissedAttestationsPath(index, true)
+	err = ioutil.WriteFile(missedAttestationsPath, missedAttestationWrapperBytes, 0644)
+	if err != nil {
+		t.handleError(fmt.Errorf("%s Error saving missed attestations file to %s: %w", generationPrefix, missedAttestationsPath, err))
+		return
+	}
 	err = ioutil.WriteFile(path, wrapperBytes, 0644)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error saving file to %s: %w", generationPrefix, path, err))
+		t.handleError(fmt.Errorf("%s Error saving rewards file to %s: %w", generationPrefix, path, err))
 		return
 	}
 
