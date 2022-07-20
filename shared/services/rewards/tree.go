@@ -1137,25 +1137,23 @@ func (r *RewardsFile) getStartBlocksForInterval(previousIntervalEvent rewards.Re
 	r.ConsensusStartBlock = nextEpoch * r.beaconConfig.SlotsPerEpoch
 
 	// Get the first block that isn't missing
-	var eth1Data beacon.Eth1Data
+	var elBlockNumber uint64
 	for {
-		var exists bool
-		var err error
-		eth1Data, exists, err = r.bc.GetEth1DataForEth2Block(fmt.Sprint(r.ConsensusStartBlock))
+		beaconBlock, exists, err := r.bc.GetBeaconBlock(fmt.Sprint(r.ConsensusStartBlock))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL data for BC slot %d: %w", r.ConsensusStartBlock, err)
 		}
 		if !exists {
 			r.ConsensusStartBlock++
 		} else {
+			elBlockNumber = beaconBlock.ExecutionBlockNumber
 			break
 		}
 	}
 
-	emptyHash := common.Hash{}
 	var startElHeader *types.Header
 	var err error
-	if eth1Data.BlockHash == emptyHash {
+	if elBlockNumber == 0 {
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
 		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(r.ExecutionStartBlock)))
@@ -1164,11 +1162,11 @@ func (r *RewardsFile) getStartBlocksForInterval(previousIntervalEvent rewards.Re
 		}
 	} else {
 		// We are post-merge, so get the EL block corresponding to the BC block
-		startElHeader, err = r.rp.Client.HeaderByHash(context.Background(), eth1Data.BlockHash)
+		r.ExecutionStartBlock = elBlockNumber
+		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 		if err != nil {
-			return nil, fmt.Errorf("error getting EL header for BC slot %d (hash %s): %w", r.ConsensusStartBlock, eth1Data.BlockHash.Hex(), err)
+			return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)
 		}
-		r.ExecutionStartBlock = startElHeader.Number.Uint64()
 	}
 
 	return startElHeader, nil

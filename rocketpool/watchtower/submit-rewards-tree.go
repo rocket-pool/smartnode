@@ -142,19 +142,18 @@ func (t *submitRewardsTree) run() error {
 	}
 
 	// Get the block and timestamp of the consensus block that best matches the end time
-	snapshotBeaconBlock, snapshotBeaconBlockExecutionInfo, nextIntervalEpochTime, err := t.getSnapshotConsensusBlock(endTime)
+	snapshotBeaconBlock, elBlockNumber, nextIntervalEpochTime, err := t.getSnapshotConsensusBlock(endTime)
 	if err != nil {
 		return err
 	}
 
 	// Get the number of the EL block matching the CL snapshot block
 	var snapshotElBlockHeader *types.Header
-	blankHash := common.Hash{}
-	if snapshotBeaconBlockExecutionInfo.BlockHash == blankHash {
+	if elBlockNumber == 0 {
 		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
 		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(nextIntervalEpochTime, t.ec)
 	} else {
-		snapshotElBlockHeader, err = t.ec.HeaderByHash(context.Background(), snapshotBeaconBlockExecutionInfo.BlockHash)
+		snapshotElBlockHeader, err = t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 	}
 	if err != nil {
 		return err
@@ -493,18 +492,18 @@ func (t *submitRewardsTree) uploadFileToWeb3Storage(wrapperBytes []byte, compres
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64, beacon.Eth1Data, time.Time, error) {
+func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64, uint64, time.Time, error) {
 
 	// Get the config
 	eth2Config, err := t.bc.GetEth2Config()
 	if err != nil {
-		return 0, beacon.Eth1Data{}, time.Time{}, fmt.Errorf("Error getting Beacon config: %w", err)
+		return 0, 0, time.Time{}, fmt.Errorf("Error getting Beacon config: %w", err)
 	}
 
 	// Get the beacon head
 	beaconHead, err := t.bc.GetBeaconHead()
 	if err != nil {
-		return 0, beacon.Eth1Data{}, time.Time{}, fmt.Errorf("Error getting Beacon head: %w", err)
+		return 0, 0, time.Time{}, fmt.Errorf("Error getting Beacon head: %w", err)
 	}
 
 	// Get the target block number
@@ -517,15 +516,15 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 
 	// Check if the required epoch is finalized yet
 	if beaconHead.FinalizedEpoch < requiredEpoch {
-		return 0, beacon.Eth1Data{}, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
+		return 0, 0, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
 	}
 
 	// Get the first successful block
 	for {
 		// Try to get the current block
-		eth1Data, exists, err := t.bc.GetEth1DataForEth2Block(fmt.Sprint(targetSlot))
+		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
 		if err != nil {
-			return 0, beacon.Eth1Data{}, time.Time{}, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
+			return 0, 0, time.Time{}, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
 		}
 
 		// If the block was missing, try the previous one
@@ -535,7 +534,7 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 		} else {
 			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
 			blockTime := genesisTime.Add(time.Duration(requiredEpoch*eth2Config.SecondsPerEpoch) * time.Second)
-			return targetSlot, eth1Data, blockTime, nil
+			return targetSlot, block.ExecutionBlockNumber, blockTime, nil
 		}
 	}
 
