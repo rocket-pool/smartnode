@@ -111,6 +111,7 @@ type RewardsFile struct {
 	validNetworkCache    map[uint64]bool           `json:"-"`
 	epsilon              *big.Int                  `json:"-"`
 	intervalSeconds      *big.Int                  `json:"-"`
+	beaconConfig         beacon.Eth2Config         `json:"-"`
 }
 
 // Create a new rewards file
@@ -567,19 +568,23 @@ func (r *RewardsFile) calculateEthRewards() error {
 		return err
 	}
 
+	// Get the Beacon config
+	r.beaconConfig, err = r.bc.GetEth2Config()
+	if err != nil {
+		return err
+	}
+	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
+
 	// Get the start time of this interval based on the event from the previous one
 	previousIntervalEvent, err := rewards.GetRewardSnapshotEventWithUpgrades(r.rp, r.Index-1, big.NewInt(int64(eventLogInterval)), nil, r.cfg.Smartnode.GetPreviousRewardsPoolAddresses())
 	if err != nil {
 		return err
 	}
-	startElBlockNumber := big.NewInt(0).Add(previousIntervalEvent.ExecutionBlock, big.NewInt(1))
-	startElBlockHeader, err := r.rp.Client.HeaderByNumber(context.Background(), startElBlockNumber)
+	startElBlockHeader, err := r.getStartBlocksForInterval(previousIntervalEvent)
 	if err != nil {
 		return err
 	}
 
-	r.ConsensusStartBlock = previousIntervalEvent.ConsensusBlock.Uint64() + 1
-	r.ExecutionStartBlock = startElBlockNumber.Uint64()
 	r.elStartTime = time.Unix(int64(startElBlockHeader.Time), 0)
 	r.elEndTime = time.Unix(int64(r.elSnapshotHeader.Time), 0)
 	r.intervalSeconds = big.NewInt(int64(r.elEndTime.Sub(r.elStartTime) / time.Second))
@@ -777,18 +782,11 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 // Get all of the duties for a range of epochs
 func (r *RewardsFile) processAttestationsForInterval() error {
 
-	// Determine the start and end epochs to check
-	beaconConfig, err := r.bc.GetEth2Config()
-	if err != nil {
-		return err
-	}
-	r.slotsPerEpoch = beaconConfig.SlotsPerEpoch
-
-	startEpoch := r.ConsensusStartBlock / beaconConfig.SlotsPerEpoch
-	endEpoch := r.ConsensusEndBlock / beaconConfig.SlotsPerEpoch
+	startEpoch := r.ConsensusStartBlock / r.beaconConfig.SlotsPerEpoch
+	endEpoch := r.ConsensusEndBlock / r.beaconConfig.SlotsPerEpoch
 
 	// Determine the validator indices of each minipool
-	err = r.createMinipoolIndexMap()
+	err := r.createMinipoolIndexMap()
 	if err != nil {
 		return err
 	}
@@ -1129,4 +1127,48 @@ func (r *RewardsFile) validateNetwork(network uint64) (bool, error) {
 	}
 
 	return valid, nil
+}
+
+// Gets the start blocks for the given interval
+func (r *RewardsFile) getStartBlocksForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
+	previousEpoch := previousIntervalEvent.ConsensusBlock.Uint64() / r.beaconConfig.SlotsPerEpoch
+	nextEpoch := previousEpoch + 1
+	r.ConsensusStartBlock = nextEpoch * r.beaconConfig.SlotsPerEpoch
+
+	// Get the first block that isn't missing
+	var eth1Data beacon.Eth1Data
+	for {
+		var exists bool
+		var err error
+		eth1Data, exists, err = r.bc.GetEth1DataForEth2Block(fmt.Sprint(r.ConsensusStartBlock))
+		if err != nil {
+			return nil, fmt.Errorf("error getting EL data for BC slot %d: %w", r.ConsensusStartBlock, err)
+		}
+		if !exists {
+			r.ConsensusStartBlock++
+		} else {
+			break
+		}
+	}
+
+	emptyHash := common.Hash{}
+	var startElHeader *types.Header
+	var err error
+	if eth1Data.BlockHash == emptyHash {
+		// We are pre-merge, so get the first block after the one from the previous interval
+		r.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
+		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(r.ExecutionStartBlock)))
+		if err != nil {
+			return nil, fmt.Errorf("error getting EL start block %d: %w", r.ExecutionStartBlock, err)
+		}
+	} else {
+		// We are post-merge, so get the EL block corresponding to the BC block
+		startElHeader, err = r.rp.Client.HeaderByHash(context.Background(), eth1Data.BlockHash)
+		if err != nil {
+			return nil, fmt.Errorf("error getting EL header for BC slot %d (hash %s): %w", r.ConsensusStartBlock, eth1Data.BlockHash.Hex(), err)
+		}
+		r.ExecutionStartBlock = startElHeader.Number.Uint64()
+	}
+
+	return startElHeader, nil
 }

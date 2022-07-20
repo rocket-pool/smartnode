@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/klauspost/compress/zstd"
@@ -141,13 +142,20 @@ func (t *submitRewardsTree) run() error {
 	}
 
 	// Get the block and timestamp of the consensus block that best matches the end time
-	snapshotBeaconBlock, snapshotBeaconBlockTime, err := t.getSnapshotConsensusBlock(endTime)
+	snapshotBeaconBlock, snapshotBeaconBlockExecutionInfo, nextIntervalEpochTime, err := t.getSnapshotConsensusBlock(endTime)
 	if err != nil {
 		return err
 	}
 
 	// Get the number of the EL block matching the CL snapshot block
-	snapshotElBlockHeader, err := rprewards.GetELBlockHeaderForTime(snapshotBeaconBlockTime, t.ec)
+	var snapshotElBlockHeader *types.Header
+	blankHash := common.Hash{}
+	if snapshotBeaconBlockExecutionInfo.BlockHash == blankHash {
+		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
+		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(nextIntervalEpochTime, t.ec)
+	} else {
+		snapshotElBlockHeader, err = t.ec.HeaderByHash(context.Background(), snapshotBeaconBlockExecutionInfo.BlockHash)
+	}
 	if err != nil {
 		return err
 	}
@@ -445,18 +453,18 @@ func (t *submitRewardsTree) uploadRewardsTreeToWeb3Storage(wrapperBytes []byte, 
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64, time.Time, error) {
+func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64, beacon.Eth1Data, time.Time, error) {
 
 	// Get the config
 	eth2Config, err := t.bc.GetEth2Config()
 	if err != nil {
-		return 0, time.Time{}, fmt.Errorf("Error getting Beacon config: %w", err)
+		return 0, beacon.Eth1Data{}, time.Time{}, fmt.Errorf("Error getting Beacon config: %w", err)
 	}
 
 	// Get the beacon head
 	beaconHead, err := t.bc.GetBeaconHead()
 	if err != nil {
-		return 0, time.Time{}, fmt.Errorf("Error getting Beacon head: %w", err)
+		return 0, beacon.Eth1Data{}, time.Time{}, fmt.Errorf("Error getting Beacon head: %w", err)
 	}
 
 	// Get the target block number
@@ -464,35 +472,31 @@ func (t *submitRewardsTree) getSnapshotConsensusBlock(endTime time.Time) (uint64
 	totalTimespan := endTime.Sub(genesisTime)
 	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
 	targetSlotEpoch := targetSlot / eth2Config.SlotsPerEpoch
-	requiredEpoch := targetSlotEpoch + 1 // The smoothing pool requires 1 epoch beyond the target to be finalized, to check for late attestations
+	targetSlot = targetSlotEpoch*eth2Config.SlotsPerEpoch + (eth2Config.SlotsPerEpoch - 1) // The target slot becomes the last one in the Epoch
+	requiredEpoch := targetSlotEpoch + 1                                                   // The smoothing pool requires 1 epoch beyond the target to be finalized, to check for late attestations
 
 	// Check if the required epoch is finalized yet
 	if beaconHead.FinalizedEpoch < requiredEpoch {
-		return 0, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
+		return 0, beacon.Eth1Data{}, time.Time{}, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
 	}
 
 	// Get the first successful block
 	for {
 		// Try to get the current block
-		_, exists, err := t.bc.GetEth1DataForEth2Block(fmt.Sprint(targetSlot))
+		eth1Data, exists, err := t.bc.GetEth1DataForEth2Block(fmt.Sprint(targetSlot))
 		if err != nil {
-			return 0, time.Time{}, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
+			return 0, beacon.Eth1Data{}, time.Time{}, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
 		}
 
-		// If the block was missing, try the next one (and make sure its epoch is finalized)
+		// If the block was missing, try the previous one
 		if !exists {
-			t.log.Printlnf("Slot %d was missing, trying the next one...", targetSlot)
-			targetSlot++
-			newEpoch := targetSlot / eth2Config.SlotsPerEpoch
-			if beaconHead.FinalizedEpoch < newEpoch {
-				return 0, time.Time{}, fmt.Errorf("Missing slots increased the epoch check to %d. Waiting until it's finalized (currently %d).", newEpoch, beaconHead.FinalizedEpoch)
-			}
-			continue
+			t.log.Printlnf("Slot %d was missing, trying the previous one...", targetSlot)
+			targetSlot--
+		} else {
+			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
+			blockTime := genesisTime.Add(time.Duration(requiredEpoch*eth2Config.SecondsPerEpoch) * time.Second)
+			return targetSlot, eth1Data, blockTime, nil
 		}
-
-		// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
-		blockTime := genesisTime.Add(time.Duration(targetSlot*eth2Config.SecondsPerSlot) * time.Second)
-		return targetSlot, blockTime, nil
 	}
 
 }

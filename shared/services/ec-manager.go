@@ -120,6 +120,17 @@ func (p *ExecutionClientManager) CallContract(ctx context.Context, call ethereum
 /// ContractTransactor Functions
 /// ============================
 
+// HeaderByHash returns the block header with the given hash.
+func (p *ExecutionClientManager) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+	result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
+		return client.HeaderByHash(ctx, hash)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*types.Header), err
+}
+
 // HeaderByNumber returns a block header from the current canonical chain. If number is
 // nil, the latest known header is returned.
 func (p *ExecutionClientManager) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {

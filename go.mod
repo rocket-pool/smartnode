@@ -22,7 +22,6 @@ require (
 	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1
 	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/go-version v1.4.0
 	github.com/herumi/bls-eth-go-binary v0.0.0-20211108015406-b5186ba08dc7 // indirect
 	github.com/imdario/mergo v0.3.12
@@ -35,7 +34,7 @@ require (
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v2 v2.0.1
 	github.com/rivo/tview v0.0.0-20220106183741-90d72bc664f5
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20220614051519-46f5d79fd1b5
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20220720044540-2570b69954c2
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/tyler-smith/go-bip39 v1.1.0

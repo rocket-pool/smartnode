@@ -147,7 +147,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	return
 }
 
-// Get the number of the first EL block that was created after the given timestamp
+// Get the number of the latest EL block that was created before the given timestamp
 func GetELBlockHeaderForTime(targetTime time.Time, ec rocketpool.ExecutionClient) (*types.Header, error) {
 
 	// Get the latest block's timestamp
@@ -180,6 +180,16 @@ func GetELBlockHeaderForTime(targetTime time.Time, ec rocketpool.ExecutionClient
 			bestBlock = candidateBlock
 		} else if pivotSize == 1 {
 			// If the pivot is down to size 1 and we didn't find anything better after another iteration, this is the best block!
+			for candidateTime > targetTimeUnix {
+				// Get the previous block if this one happened after the target time
+				candidateBlockNumber.Sub(candidateBlockNumber, big.NewInt(1))
+				candidateBlock, err = ec.HeaderByNumber(context.Background(), candidateBlockNumber)
+				if err != nil {
+					return nil, err
+				}
+				candidateTime = float64(candidateBlock.Time)
+				bestBlock = candidateBlock
+			}
 			return bestBlock, nil
 		}
 
@@ -187,10 +197,10 @@ func GetELBlockHeaderForTime(targetTime time.Time, ec rocketpool.ExecutionClient
 		pivotSize = uint64(math.Ceil(float64(pivotSize) / 2))
 		if delta < 0 {
 			// Go left
-			candidateBlockNumber = big.NewInt(0).Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
+			candidateBlockNumber.Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
 		} else {
 			// Go right
-			candidateBlockNumber = big.NewInt(0).Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
+			candidateBlockNumber.Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
 		}
 
 		// Clamp the new candidate to the latest block
