@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -50,6 +51,7 @@ type processPenalties struct {
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
+	beaconConfig   beacon.Eth2Config
 }
 
 type state struct {
@@ -99,6 +101,12 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
 
+	// Get the Beacon config
+	beaconConfig, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+
 	// Return task
 	lock := &sync.Mutex{}
 	return &processPenalties{
@@ -115,6 +123,7 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
+		beaconConfig:   beaconConfig,
 	}, nil
 }
 
@@ -412,6 +421,37 @@ func (t *processPenalties) processBlock(block *beacon.BeaconBlock, smoothingPool
 		isIllegalFeeRecipient = true
 		err = t.submitPenalty(minipoolAddress, block)
 		return isIllegalFeeRecipient, err
+	}
+
+	// Make sure they didn't opt out in order to steal a block
+	if !isOptedIn {
+		// Get the opt out time
+		optOutTime, err := node.GetSmoothingPoolRegistrationChanged(t.rp, nodeAddress, &opts)
+		if err != nil {
+			t.log.Printlnf("*** WARNING: Couldn't check when node %s opted out of the smoothing pool for slot %d (execution block %d), skipping check... error: %w\n***", nodeAddress.Hex(), block.Slot, block.ExecutionBlockNumber, err)
+		} else if optOutTime != time.Unix(0, 0) {
+			// Get the time of the epoch before this one
+			blockEpoch := block.Slot / t.beaconConfig.SlotsPerEpoch
+			previousEpoch := blockEpoch - 1
+			genesisTime := time.Unix(int64(t.beaconConfig.GenesisTime), 0)
+			epochStartTime := genesisTime.Add(time.Second * time.Duration(t.beaconConfig.SecondsPerEpoch*previousEpoch))
+
+			// If they opted out after the start of the previous epoch, they cheated
+			if optOutTime.Sub(epochStartTime) > 0 {
+				t.log.Println("=== SMOOTHING POOL THEFT DETECTED ===")
+				t.log.Printlnf("Beacon Block:         %d", block.Slot)
+				t.log.Printlnf("Safe Opt Out Time:    %s", epochStartTime)
+				t.log.Printlnf("ACTUAL OPT OUT TIME:  %s", optOutTime)
+				t.log.Printlnf("Minipool:             %s", minipoolAddress.Hex())
+				t.log.Printlnf("Node:                 %s", nodeAddress.Hex())
+				t.log.Printlnf("FEE RECIPIENT:        %s", block.FeeRecipient.Hex())
+				t.log.Println("=====================================")
+
+				isIllegalFeeRecipient = true
+				err = t.submitPenalty(minipoolAddress, block)
+				return isIllegalFeeRecipient, err
+			}
+		}
 	}
 
 	// Check for distributor address theft
