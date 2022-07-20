@@ -28,6 +28,9 @@ type ExecutionClient interface {
 	/// ContractTransactor Functions
 	/// ============================
 
+	// HeaderByHash returns the block header with the given hash.
+	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
+
 	// HeaderByNumber returns a block header from the current canonical chain. If number is
 	// nil, the latest known header is returned.
 	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
