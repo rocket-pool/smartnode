@@ -88,6 +88,15 @@ func (home *settingsHome) createContent() {
 					layout.descriptionBox.SetText("You have Teku selected for your Consensus client.\n\nTeku does not support fallback clients at this time, so this option is disabled.")
 					return
 				}
+			} else if mainText == home.mevBoostPage.page.title {
+				switch home.md.Config.Smartnode.Network.Value.(config.Network) {
+				case config.Network_Mainnet:
+					layout.descriptionBox.SetText("MEV Boost is currently not available on Mainnet.")
+					return
+				case config.Network_Prater:
+					layout.descriptionBox.SetText("MEV Boost is currently not available on Prater.")
+					return
+				}
 			}
 			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
 		})
@@ -114,6 +123,11 @@ func (home *settingsHome) createContent() {
 			cc, _ := home.md.Config.GetSelectedConsensusClient()
 			switch cc {
 			case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
+				return
+			}
+		} else if s1 == home.mevBoostPage.page.title {
+			switch home.md.Config.Smartnode.Network.Value.(config.Network) {
+			case config.Network_Mainnet, config.Network_Prater:
 				return
 			}
 		}
