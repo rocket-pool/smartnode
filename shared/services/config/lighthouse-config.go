@@ -1,7 +1,8 @@
 package config
 
 const (
-	lighthouseTag                  string = "rocketpool/lighthouse:mevboost-d12d03b"
+	lighthouseTagTest              string = "rocketpool/lighthouse:mevboost-44a88e7"
+	lighthouseTagProd              string = "sigp/lighthouse:v2.3.1"
 	defaultLhMaxPeers              uint16 = 80
 	LighthouseFeeRecipientFilename string = "rp-fee-recipients.txt"
 )
@@ -48,7 +49,7 @@ func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Lighthouse container you want to use from Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: lighthouseTag},
+			Default:              map[Network]interface{}{Network_All: getLighthouseTag(config)},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -78,6 +79,15 @@ func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
+	}
+}
+
+// Get the container tag for Besu based on the current network
+func getLighthouseTag(config *RocketPoolConfig) string {
+	if config.Smartnode.Network.Value.(Network) == Network_Mainnet {
+		return lighthouseTagProd
+	} else {
+		return lighthouseTagTest
 	}
 }
 

@@ -1,7 +1,7 @@
 package config
 
 // Constants
-const prometheusTag string = "prom/prometheus:v2.36.2"
+const prometheusTag string = "prom/prometheus:v2.37.0"
 
 // Defaults
 const defaultPrometheusPort uint16 = 9091

@@ -1,7 +1,7 @@
 package config
 
 // Constants
-const grafanaTag string = "grafana/grafana:8.5.6"
+const grafanaTag string = "grafana/grafana:8.5.9"
 
 // Defaults
 const defaultGrafanaPort uint16 = 3100

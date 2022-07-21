@@ -1,16 +1,13 @@
 package config
 
 import (
-	"fmt"
-	"runtime"
-
 	"github.com/pbnjay/memory"
 )
 
 // Constants
 const (
-	besuTagAmd64         string = "hyperledger/besu:22.4.4-openjdk-latest"
-	besuTagArm64         string = "hyperledger/besu:22.4.4-openjdk-latest"
+	besuTagTest          string = "hyperledger/besu:22.7.0-SNAPSHOT-openjdk-latest"
+	besuTagProd          string = "hyperledger/besu:22.4.4-openjdk-latest"
 	besuEventLogInterval int    = 25000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -102,7 +99,7 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Besu container you want to use on Docker Hub.",
 			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getBesuTag()},
+			Default:              map[Network]interface{}{Network_All: getBesuTag(config)},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -123,14 +120,12 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 	}
 }
 
-// Get the container tag for Besu based on the current architecture
-func getBesuTag() string {
-	if runtime.GOARCH == "arm64" {
-		return besuTagArm64
-	} else if runtime.GOARCH == "amd64" {
-		return besuTagAmd64
+// Get the container tag for Besu based on the current network
+func getBesuTag(config *RocketPoolConfig) string {
+	if config.Smartnode.Network.Value.(Network) == Network_Mainnet {
+		return besuTagProd
 	} else {
-		panic(fmt.Sprintf("Besu doesn't support architecture %s", runtime.GOARCH))
+		return besuTagTest
 	}
 }
 

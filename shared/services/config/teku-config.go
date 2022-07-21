@@ -3,7 +3,7 @@ package config
 import "github.com/pbnjay/memory"
 
 const (
-	tekuTag                  string = "consensys/teku:22.6.1"
+	tekuTag                  string = "consensys/teku:22.7.0"
 	defaultTekuMaxPeers      uint16 = 100
 	TekuFeeRecipientFilename string = "rp-fee-recipients.json"
 )
