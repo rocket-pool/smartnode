@@ -105,6 +105,7 @@ func (configPage *ConsensusConfigPage) createContent() {
 		if configPage.masterConfig.ConsensusClientMode.Value == configPage.masterConfig.ConsensusClientMode.Options[index].Value {
 			return
 		}
+		configPage.masterConfig.ExecutionClientMode.Value = configPage.masterConfig.ExecutionClientMode.Options[index].Value
 		configPage.masterConfig.ConsensusClientMode.Value = configPage.masterConfig.ConsensusClientMode.Options[index].Value
 		configPage.handleCcModeChanged()
 	})

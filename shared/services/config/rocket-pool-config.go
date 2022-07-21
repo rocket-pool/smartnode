@@ -146,6 +146,16 @@ func LoadFromFile(path string) (*RocketPoolConfig, error) {
 // Creates a new Rocket Pool configuration instance
 func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
+	clientModes := []ParameterOption{{
+		Name:        "Locally Managed",
+		Description: "Allow the Smartnode to manage the Execution and Consensus clients for you (Docker Mode)",
+		Value:       Mode_Local,
+	}, {
+		Name:        "Externally Managed",
+		Description: "Use existing Execution and Consensus clients that you manage on your own (Hybrid Mode)",
+		Value:       Mode_External,
+	}}
+
 	config := &RocketPoolConfig{
 		Title:               "Top-level Settings",
 		RocketPoolDirectory: rpDir,
@@ -161,15 +171,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
-			Options: []ParameterOption{{
-				Name:        "Locally Managed",
-				Description: "Allow the Smartnode to manage an Execution client for you (Docker Mode)",
-				Value:       Mode_Local,
-			}, {
-				Name:        "Externally Managed",
-				Description: "Use an existing Execution client that you manage on your own (Hybrid Mode)",
-				Value:       Mode_External,
-			}},
+			Options:              clientModes,
 		},
 
 		ExecutionClient: Parameter{
@@ -231,15 +233,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
-			Options: []ParameterOption{{
-				Name:        "Locally Managed",
-				Description: "Allow the Smartnode to manage a Consensus client for you (Docker Mode)",
-				Value:       Mode_Local,
-			}, {
-				Name:        "Externally Managed",
-				Description: "Use an existing Consensus client that you manage on your own (Hybrid Mode)",
-				Value:       Mode_External,
-			}},
+			Options:              clientModes,
 		},
 
 		ConsensusClient: Parameter{

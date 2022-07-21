@@ -95,6 +95,7 @@ func (configPage *ExecutionConfigPage) createContent() {
 			return
 		}
 		configPage.masterConfig.ExecutionClientMode.Value = configPage.masterConfig.ExecutionClientMode.Options[index].Value
+		configPage.masterConfig.ConsensusClientMode.Value = configPage.masterConfig.ConsensusClientMode.Options[index].Value
 		configPage.handleEcModeChanged()
 	})
 	configPage.ecDropdown.item.(*DropDown).SetSelectedFunc(func(text string, index int) {
