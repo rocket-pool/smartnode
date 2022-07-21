@@ -993,6 +993,7 @@ func (config *RocketPoolConfig) Validate() []string {
 	}
 	*/
 
+	// Force switching of Pocket and Infura
 	if config.ExecutionClientMode.Value.(Mode) == Mode_Local {
 		selectedEc := config.ExecutionClient.Value.(ExecutionClient)
 		switch selectedEc {
@@ -1001,6 +1002,13 @@ func (config *RocketPoolConfig) Validate() []string {
 		case ExecutionClient_Obs_Pocket:
 			errors = append(errors, "You currently have Pocket configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge. Please go back and choose a full Execution client.")
 		}
+	}
+
+	// Force all Docker or all Hybrid
+	if config.ExecutionClientMode.Value.(Mode) == Mode_Local && config.ConsensusClientMode.Value.(Mode) == Mode_External {
+		errors = append(errors, "You are using a locally-managed Execution client and an externally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
+	} else if config.ExecutionClientMode.Value.(Mode) == Mode_External && config.ConsensusClientMode.Value.(Mode) == Mode_Local {
+		errors = append(errors, "You are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	}
 
 	return errors
