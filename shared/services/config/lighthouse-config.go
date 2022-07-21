@@ -45,11 +45,16 @@ func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 		},
 
 		ContainerTag: Parameter{
-			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Lighthouse container you want to use from Docker Hub.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getLighthouseTag(config)},
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Lighthouse container you want to use from Docker Hub.",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: lighthouseTagProd,
+				Network_Prater:  lighthouseTagTest,
+				Network_Kiln:    lighthouseTagTest,
+				Network_Ropsten: lighthouseTagTest,
+			},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -79,15 +84,6 @@ func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
-	}
-}
-
-// Get the container tag for Besu based on the current network
-func getLighthouseTag(config *RocketPoolConfig) string {
-	if config.Smartnode.Network.Value.(Network) == Network_Mainnet {
-		return lighthouseTagProd
-	} else {
-		return lighthouseTagTest
 	}
 }
 

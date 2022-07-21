@@ -146,11 +146,16 @@ func NewExternalLighthouseConfig(config *RocketPoolConfig) *ExternalLighthouseCo
 		},
 
 		ContainerTag: Parameter{
-			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Lighthouse container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getLighthouseTag(config)},
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Lighthouse container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: lighthouseTagProd,
+				Network_Prater:  lighthouseTagTest,
+				Network_Kiln:    lighthouseTagTest,
+				Network_Ropsten: lighthouseTagTest,
+			},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -226,11 +231,16 @@ func NewExternalPrysmConfig(config *RocketPoolConfig) *ExternalPrysmConfig {
 		},
 
 		ContainerTag: Parameter{
-			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Prysm validator container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getPrysmVcTag(config)},
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Prysm validator container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: getPrysmVcProdTag(),
+				Network_Prater:  getPrysmVcTestTag(),
+				Network_Kiln:    getPrysmVcTestTag(),
+				Network_Ropsten: getPrysmVcTestTag(),
+			},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
 			CanBeBlank:           false,

@@ -95,11 +95,16 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 		},
 
 		ContainerTag: Parameter{
-			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Besu container you want to use on Docker Hub.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getBesuTag(config)},
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Besu container you want to use on Docker Hub.",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: besuTagProd,
+				Network_Prater:  besuTagTest,
+				Network_Kiln:    besuTagTest,
+				Network_Ropsten: besuTagTest,
+			},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -117,15 +122,6 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
-	}
-}
-
-// Get the container tag for Besu based on the current network
-func getBesuTag(config *RocketPoolConfig) string {
-	if config.Smartnode.Network.Value.(Network) == Network_Mainnet {
-		return besuTagProd
-	} else {
-		return besuTagTest
 	}
 }
 

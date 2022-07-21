@@ -94,11 +94,16 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 		},
 
 		BnContainerTag: Parameter{
-			ID:                   "bnContainerTag",
-			Name:                 "Beacon Node Container Tag",
-			Description:          "The tag name of the Prysm Beacon Node container you want to use on Docker Hub.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getPrysmBnTag(config)},
+			ID:          "bnContainerTag",
+			Name:        "Beacon Node Container Tag",
+			Description: "The tag name of the Prysm Beacon Node container you want to use on Docker Hub.",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: getPrysmBnProdTag(),
+				Network_Prater:  getPrysmBnTestTag(),
+				Network_Kiln:    getPrysmBnTestTag(),
+				Network_Ropsten: getPrysmBnTestTag(),
+			},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -106,11 +111,16 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 		},
 
 		VcContainerTag: Parameter{
-			ID:                   "vcContainerTag",
-			Name:                 "Validator Client Container Tag",
-			Description:          "The tag name of the Prysm Validator Client container you want to use on Docker Hub.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getPrysmVcTag(config)},
+			ID:          "vcContainerTag",
+			Name:        "Validator Client Container Tag",
+			Description: "The tag name of the Prysm Validator Client container you want to use on Docker Hub.",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: getPrysmVcProdTag(),
+				Network_Prater:  getPrysmVcTestTag(),
+				Network_Kiln:    getPrysmVcTestTag(),
+				Network_Ropsten: getPrysmVcTestTag(),
+			},
 			AffectsContainers:    []ContainerID{ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -143,39 +153,45 @@ func NewPrysmConfig(config *RocketPoolConfig) *PrysmConfig {
 	}
 }
 
-// Get the container tag for the Prysm BN based on the current architecture and network
-func getPrysmBnTag(config *RocketPoolConfig) string {
+// Get the container tag for the Prysm BN based on the current architecture
+func getPrysmBnProdTag() string {
 	if runtime.GOARCH == "arm64" {
-		if config.Smartnode.Network.Value.(Network) == Network_Mainnet {
-			return prysmTagArm64Prod
-		} else {
-			return prysmTagArm64Test
-		}
+		return prysmTagArm64Prod
 	} else if runtime.GOARCH == "amd64" {
-		if config.Smartnode.Network.Value.(Network) == Network_Mainnet {
-			return prysmBnTagAmd64Prod
-		} else {
-			return prysmBnTagAmd64Test
-		}
+		return prysmBnTagAmd64Prod
+	} else {
+		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+	}
+}
+
+// Get the container tag for the Prysm BN based on the current architecture
+func getPrysmBnTestTag() string {
+	if runtime.GOARCH == "arm64" {
+		return prysmTagArm64Test
+	} else if runtime.GOARCH == "amd64" {
+		return prysmBnTagAmd64Test
 	} else {
 		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
 	}
 }
 
 // Get the container tag for the Prysm VC based on the current architecture
-func getPrysmVcTag(config *RocketPoolConfig) string {
+func getPrysmVcProdTag() string {
 	if runtime.GOARCH == "arm64" {
-		if config.Smartnode.Network.Value.(Network) == Network_Mainnet {
-			return prysmTagArm64Prod
-		} else {
-			return prysmTagArm64Test
-		}
+		return prysmTagArm64Prod
 	} else if runtime.GOARCH == "amd64" {
-		if config.Smartnode.Network.Value.(Network) == Network_Mainnet {
-			return prysmVcTagAmd64Prod
-		} else {
-			return prysmVcTagAmd64Test
-		}
+		return prysmVcTagAmd64Prod
+	} else {
+		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
+	}
+}
+
+// Get the container tag for the Prysm VC based on the current architecture
+func getPrysmVcTestTag() string {
+	if runtime.GOARCH == "arm64" {
+		return prysmTagArm64Test
+	} else if runtime.GOARCH == "amd64" {
+		return prysmVcTagAmd64Test
 	} else {
 		panic(fmt.Sprintf("Prysm doesn't support architecture %s", runtime.GOARCH))
 	}
