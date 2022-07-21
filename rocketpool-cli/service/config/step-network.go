@@ -32,7 +32,7 @@ func createNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	done := func(buttonIndex int, buttonLabel string) {
 		newNetwork := networks[buttonIndex].Value.(config.Network)
 		wiz.md.Config.ChangeNetwork(newNetwork)
-		wiz.executionModeModal.show()
+		wiz.modeModal.show()
 	}
 
 	back := func() {

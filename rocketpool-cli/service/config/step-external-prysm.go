@@ -31,7 +31,7 @@ func createExternalPrysmStep(wiz *wizard, currentStep int, totalSteps int) *text
 	}
 
 	back := func() {
-		wiz.consensusModeModal.show()
+		wiz.consensusExternalSelectModal.show()
 	}
 
 	return newTextBoxWizardStep(

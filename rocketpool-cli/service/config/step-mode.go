@@ -6,10 +6,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
-func createCcModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
+func createModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
 	// Create the button names and descriptions from the config
-	modes := wiz.md.Config.ConsensusClientMode.Options
+	modes := wiz.md.Config.ExecutionClientMode.Options
 	modeNames := []string{}
 	modeDescriptions := []string{}
 	for _, mode := range modes {
@@ -17,14 +17,14 @@ func createCcModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizar
 		modeDescriptions = append(modeDescriptions, mode.Description)
 	}
 
-	helperText := "Next, let's decide which mode you'd like to use for the Consensus client (formerly eth2 client).\n\nWould you like Rocket Pool to run and manage its own client, or would you like it to use an existing client you run and manage outside of Rocket Pool (also known as \"Hybrid Mode\")?"
+	helperText := "Now let's decide which mode you'd like to use for the Execution and Consensus clients.\n\nWould you like Rocket Pool to run and manage its own clients, or would you like it to use an existing clients you run and manage outside of Rocket Pool (also known as \"Hybrid Mode\")?"
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
 		modal.focus(0) // Catch-all for safety
 
-		for i, option := range wiz.md.Config.ConsensusClientMode.Options {
-			if option.Value == wiz.md.Config.ConsensusClientMode.Value {
+		for i, option := range wiz.md.Config.ExecutionClientMode.Options {
+			if option.Value == wiz.md.Config.ExecutionClientMode.Value {
 				modal.focus(i)
 				break
 			}
@@ -32,21 +32,20 @@ func createCcModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizar
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
+		wiz.md.Config.ExecutionClientMode.Value = modes[buttonIndex].Value
 		wiz.md.Config.ConsensusClientMode.Value = modes[buttonIndex].Value
 		switch modes[buttonIndex].Value {
 		case config.Mode_Local:
-			wiz.md.pages.RemovePage(localCcStepID)
-			wiz.consensusLocalModal = createLocalCcStep(wiz, currentStep+1, totalSteps)
-			wiz.consensusLocalModal.show()
+			wiz.executionLocalModal.show()
 		case config.Mode_External:
-			wiz.consensusExternalSelectModal.show()
+			wiz.executionExternalModal.show()
 		default:
-			panic(fmt.Sprintf("Unknown execution client mode %s", modes[buttonIndex].Value))
+			panic(fmt.Sprintf("Unknown client mode %s", modes[buttonIndex].Value))
 		}
 	}
 
 	back := func() {
-		wiz.executionModeModal.show()
+		wiz.networkModal.show()
 	}
 
 	return newChoiceStep(
@@ -57,12 +56,11 @@ func createCcModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizar
 		modeNames,
 		modeDescriptions,
 		76,
-		"Consensus Client Mode",
+		"Client Mode",
 		DirectionalModalVertical,
 		show,
 		done,
 		back,
-		"step-cc-mode",
+		"step-mode",
 	)
-
 }

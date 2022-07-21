@@ -29,7 +29,7 @@ func createExternalTekuStep(wiz *wizard, currentStep int, totalSteps int) *textB
 	}
 
 	back := func() {
-		wiz.consensusModeModal.show()
+		wiz.consensusExternalSelectModal.show()
 	}
 
 	return newTextBoxWizardStep(

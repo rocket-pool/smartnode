@@ -42,7 +42,11 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 	}
 
 	back := func() {
-		wiz.consensusModeModal.show()
+		if wiz.md.Config.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+			wiz.consensusLocalModal.show()
+		} else {
+			wiz.consensusExternalSelectModal.show()
+		}
 	}
 
 	return newTextBoxWizardStep(

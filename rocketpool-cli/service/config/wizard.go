@@ -6,10 +6,9 @@ type wizard struct {
 	// Docker mode
 	welcomeModal                    *choiceWizardStep
 	networkModal                    *choiceWizardStep
-	executionModeModal              *choiceWizardStep
+	modeModal                       *choiceWizardStep
 	executionLocalModal             *choiceWizardStep
 	executionExternalModal          *textBoxWizardStep
-	consensusModeModal              *choiceWizardStep
 	consensusLocalModal             *choiceWizardStep
 	consensusExternalSelectModal    *choiceWizardStep
 	graffitiModal                   *textBoxWizardStep
@@ -50,32 +49,32 @@ func newWizard(md *mainDisplay) *wizard {
 		md: md,
 	}
 
-	totalDockerSteps := 9
+	totalDockerSteps := 8
 	totalNativeSteps := 9
 
 	// Docker mode
 	wiz.welcomeModal = createWelcomeStep(wiz, 1, totalDockerSteps)
 	wiz.networkModal = createNetworkStep(wiz, 2, totalDockerSteps)
-	wiz.executionModeModal = createEcModeStep(wiz, 3, totalDockerSteps)
+	wiz.modeModal = createModeStep(wiz, 3, totalDockerSteps)
 	wiz.executionLocalModal = createLocalEcStep(wiz, 4, totalDockerSteps)
 	wiz.executionExternalModal = createExternalEcStep(wiz, 4, totalDockerSteps)
-	wiz.consensusModeModal = createCcModeStep(wiz, 5, totalDockerSteps)
-	wiz.consensusExternalSelectModal = createExternalCcStep(wiz, 6, totalDockerSteps)
-	wiz.consensusLocalPrysmWarning = createPrysmWarningStep(wiz, 6, totalDockerSteps)
-	wiz.consensusLocalTekuWarning = createTekuWarningStep(wiz, 6, totalDockerSteps)
-	wiz.graffitiModal = createGraffitiStep(wiz, 6, totalDockerSteps)
-	wiz.checkpointSyncProviderModal = createCheckpointSyncStep(wiz, 6, totalDockerSteps)
-	wiz.doppelgangerDetectionModal = createDoppelgangerStep(wiz, 6, totalDockerSteps)
-	wiz.lighthouseExternalSettingsModal = createExternalLhStep(wiz, 6, totalDockerSteps)
-	wiz.prysmExternalSettingsModal = createExternalPrysmStep(wiz, 6, totalDockerSteps)
-	wiz.tekuExternalSettingsModal = createExternalTekuStep(wiz, 6, totalDockerSteps)
-	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 6, totalDockerSteps)
-	wiz.externalDoppelgangerModal = createExternalDoppelgangerStep(wiz, 6, totalDockerSteps)
-	wiz.useFallbackModal = createUseFallbackStep(wiz, 7, totalDockerSteps)
-	wiz.fallbackNormalModal = createFallbackNormalStep(wiz, 7, totalDockerSteps)
-	wiz.fallbackPrysmModal = createFallbackPrysmStep(wiz, 7, totalDockerSteps)
-	wiz.metricsModal = createMetricsStep(wiz, 8, totalDockerSteps)
-	wiz.finishedModal = createFinishedStep(wiz, 9, totalDockerSteps)
+	wiz.consensusLocalModal = createLocalCcStep(wiz, 5, totalDockerSteps)
+	wiz.consensusExternalSelectModal = createExternalCcStep(wiz, 5, totalDockerSteps)
+	wiz.consensusLocalPrysmWarning = createPrysmWarningStep(wiz, 5, totalDockerSteps)
+	wiz.consensusLocalTekuWarning = createTekuWarningStep(wiz, 5, totalDockerSteps)
+	wiz.graffitiModal = createGraffitiStep(wiz, 5, totalDockerSteps)
+	wiz.checkpointSyncProviderModal = createCheckpointSyncStep(wiz, 5, totalDockerSteps)
+	wiz.doppelgangerDetectionModal = createDoppelgangerStep(wiz, 5, totalDockerSteps)
+	wiz.lighthouseExternalSettingsModal = createExternalLhStep(wiz, 5, totalDockerSteps)
+	wiz.prysmExternalSettingsModal = createExternalPrysmStep(wiz, 5, totalDockerSteps)
+	wiz.tekuExternalSettingsModal = createExternalTekuStep(wiz, 5, totalDockerSteps)
+	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 5, totalDockerSteps)
+	wiz.externalDoppelgangerModal = createExternalDoppelgangerStep(wiz, 5, totalDockerSteps)
+	wiz.useFallbackModal = createUseFallbackStep(wiz, 6, totalDockerSteps)
+	wiz.fallbackNormalModal = createFallbackNormalStep(wiz, 6, totalDockerSteps)
+	wiz.fallbackPrysmModal = createFallbackPrysmStep(wiz, 6, totalDockerSteps)
+	wiz.metricsModal = createMetricsStep(wiz, 7, totalDockerSteps)
+	wiz.finishedModal = createFinishedStep(wiz, 8, totalDockerSteps)
 
 	// Native mode
 	wiz.nativeWelcomeModal = createNativeWelcomeStep(wiz, 1, totalNativeSteps)

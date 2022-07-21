@@ -41,7 +41,7 @@ func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 	}
 
 	back := func() {
-		wiz.consensusModeModal.show()
+		wiz.modeModal.show()
 	}
 
 	return newChoiceStep(

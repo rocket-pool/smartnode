@@ -27,7 +27,11 @@ func createRandomECStep(wiz *wizard, currentStep int, totalSteps int, goodOption
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		wiz.consensusModeModal.show()
+		if wiz.md.Config.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+			wiz.consensusLocalModal.show()
+		} else {
+			wiz.consensusExternalSelectModal.show()
+		}
 	}
 
 	back := func() {

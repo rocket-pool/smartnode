@@ -29,7 +29,7 @@ func createExternalLhStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 	}
 
 	back := func() {
-		wiz.consensusModeModal.show()
+		wiz.consensusExternalSelectModal.show()
 	}
 
 	return newTextBoxWizardStep(

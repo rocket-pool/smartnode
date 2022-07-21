@@ -83,7 +83,7 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	}
 
 	back := func() {
-		wiz.consensusModeModal.show()
+		wiz.modeModal.show()
 	}
 
 	return newChoiceStep(

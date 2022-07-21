@@ -30,7 +30,11 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
 			// Temp until Nimbus / Teku supports fallback clients
 			wiz.md.Config.UseFallbackClients.Value = false
-			wiz.consensusModeModal.show()
+			if wiz.md.Config.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+				wiz.consensusLocalModal.show()
+			} else {
+				wiz.consensusExternalSelectModal.show()
+			}
 		default:
 			wiz.useFallbackModal.show()
 		}
