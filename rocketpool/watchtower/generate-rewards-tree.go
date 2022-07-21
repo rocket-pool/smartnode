@@ -213,7 +213,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 
 	// Create the JSON files
 	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
-	missedAttestationWrapperBytes, err := json.Marshal(rewardsFile)
+	missedAttestationWrapperBytes, err := json.Marshal(missedAttestationMap)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error serializing missing attestations file into JSON: %w", generationPrefix, err))
 		return

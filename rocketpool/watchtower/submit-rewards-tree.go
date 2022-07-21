@@ -281,7 +281,7 @@ func (t *submitRewardsTree) run() error {
 		}
 
 		// Serialize it
-		missedAttestationWrapperBytes, err := json.Marshal(rewardsFile)
+		missedAttestationWrapperBytes, err := json.Marshal(missedAttestationMap)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error serializing missing attestations file into JSON: %w", generationPrefix, err))
 			return
