@@ -67,6 +67,7 @@ func createLocalEcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 			if selectedClient == config.ExecutionClient_Unknown {
 				panic(fmt.Sprintf("Local EC selection buttons didn't match any known clients, buttonLabel = %s\n", buttonLabel))
 			}
+			wiz.md.Config.ExecutionClient.Value = selectedClient
 			if wiz.md.Config.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
 				wiz.consensusLocalModal.show()
 			} else {
