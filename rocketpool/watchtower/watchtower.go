@@ -103,10 +103,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
+	/*processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
 		return err
-	}
+	}*/
 	generateRewardsTree, err := newGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
 	if err != nil {
 		return err
@@ -195,12 +195,13 @@ func run(c *cli.Context) error {
 				if err := submitScrubMinipools.run(); err != nil {
 					errorLog.Println(err)
 				}
-				time.Sleep(taskCooldown)
+				/*time.Sleep(taskCooldown)
 
 				// Run the fee recipient penalty check
 				if err := processPenalties.run(); err != nil {
 					errorLog.Println(err)
-				}
+				}*/
+				// DISABLED until MEV Boost can support it
 			}
 			time.Sleep(interval)
 		}
