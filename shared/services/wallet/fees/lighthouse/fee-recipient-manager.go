@@ -44,7 +44,7 @@ func (fm *FeeRecipientManager) CheckFeeRecipientFile(distributor common.Address)
 
 	// Create the distributor address string for the node
 	distributorAddress := distributor.Hex()
-	expectedString := fmt.Sprintf("default: %s\n", distributorAddress)
+	expectedString := distributorAddress
 
 	// Compare the file contents with the expected string
 	bytes, err := ioutil.ReadFile(path)
@@ -66,7 +66,7 @@ func (fm *FeeRecipientManager) UpdateFeeRecipientFile(distributor common.Address
 
 	// Create the distributor address string for the node
 	distributorAddress := distributor.Hex()
-	expectedString := fmt.Sprintf("default: %s\n", distributorAddress)
+	expectedString := distributorAddress
 	bytes := []byte(expectedString)
 
 	// Create keystore dir

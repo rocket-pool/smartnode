@@ -1,10 +1,10 @@
 package config
 
 const (
-	lighthouseTagTest              string = "rocketpool/lighthouse:mevboost-44a88e7"
-	lighthouseTagProd              string = "sigp/lighthouse:v2.3.1"
+	lighthouseTagTest              string = "rocketpool/lighthouse:mevboost-0edf7cc"
+	lighthouseTagProd              string = "sigp/lighthouse:v2.4.0"
 	defaultLhMaxPeers              uint16 = 80
-	LighthouseFeeRecipientFilename string = "rp-fee-recipients.txt"
+	LighthouseFeeRecipientFilename string = "rp-fee-recipient.txt"
 )
 
 // Configuration for Lighthouse
