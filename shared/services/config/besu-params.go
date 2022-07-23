@@ -56,7 +56,7 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 			ConsensusClient_Teku,
 		},
 
-		EventLogInterval: nethermindEventLogInterval,
+		EventLogInterval: besuEventLogInterval,
 
 		JvmHeapSize: Parameter{
 			ID:                   "jvmHeapSize",
@@ -129,7 +129,7 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 func getBesuHeapSize() uint64 {
 	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 	if totalMemoryGB < 9 {
-		return 512
+		return 3052
 	}
 	return 0
 }

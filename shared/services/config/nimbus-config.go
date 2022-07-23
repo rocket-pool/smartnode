@@ -3,7 +3,8 @@ package config
 import "runtime"
 
 const (
-	nimbusTag                  string = "statusim/nimbus-eth2:multiarch-v22.6.1"
+	nimbusTagTest              string = "rocketpool/nimbus-eth2:mevboost-7488319"
+	nimbusTagProd              string = "statusim/nimbus-eth2:multiarch-v22.6.1"
 	defaultNimbusMaxPeersArm   uint16 = 100
 	defaultNimbusMaxPeersAmd   uint16 = 160
 	NimbusFeeRecipientFilename string = "rp-fee-recipient.txt"
@@ -44,11 +45,16 @@ func NewNimbusConfig(config *RocketPoolConfig) *NimbusConfig {
 		},
 
 		ContainerTag: Parameter{
-			ID:                   "containerTag",
-			Name:                 "Container Tag",
-			Description:          "The tag name of the Nimbus container you want to use on Docker Hub.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: nimbusTag},
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Nimbus container you want to use on Docker Hub.",
+			Type:        ParameterType_String,
+			Default: map[Network]interface{}{
+				Network_Mainnet: nimbusTagProd,
+				Network_Prater:  nimbusTagTest,
+				Network_Kiln:    nimbusTagTest,
+				Network_Ropsten: nimbusTagTest,
+			},
 			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
