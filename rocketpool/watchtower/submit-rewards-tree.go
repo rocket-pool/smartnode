@@ -180,8 +180,8 @@ func (t *submitRewardsTree) run() error {
 	// NOTE - this can only be reached if the missing attestations file has already been uploaded successfully so it isn't checked here
 	path := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
 	compressedPath := path + config.RewardsTreeIpfsExtension
-	missedAttestationsPath := t.cfg.Smartnode.GetMissedAttestationsPath(currentIndex, true)
-	compressedMissedAttestationsPath := missedAttestationsPath + config.RewardsTreeIpfsExtension
+	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
+	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 	_, err = os.Stat(path)
 	if !os.IsNotExist(err) {
 		if !nodeTrusted {
@@ -271,33 +271,33 @@ func (t *submitRewardsTree) run() error {
 			t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
 		}
 
-		// Serialize the missing attestations file
-		missedAttestationWrapperBytes, err := json.Marshal(rewardsFile.MinipoolPerformanceFile)
+		// Serialize the minipool performance file
+		minipoolPerformanceBytes, err := json.Marshal(rewardsFile.MinipoolPerformanceFile)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s Error serializing missing attestations file into JSON: %w", generationPrefix, err))
+			t.handleError(fmt.Errorf("%s Error serializing minipool performance file into JSON: %w", generationPrefix, err))
 			return
 		}
 
 		// Write it to disk
-		err = ioutil.WriteFile(missedAttestationsPath, missedAttestationWrapperBytes, 0644)
+		err = ioutil.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s Error saving missed attestations file to %s: %w", generationPrefix, missedAttestationsPath, err))
+			t.handleError(fmt.Errorf("%s Error saving minipool performance file to %s: %w", generationPrefix, minipoolPerformancePath, err))
 			return
 		}
 
 		// Upload it if this is an Oracle DAO node
 		if nodeTrusted {
-			t.log.Println(fmt.Sprintf("%s Uploading missed attestations file to Web3.Storage...", generationPrefix))
-			missedAttestationsCid, err := t.uploadFileToWeb3Storage(missedAttestationWrapperBytes, compressedMissedAttestationsPath, "compressed missed attestations")
+			t.log.Println(fmt.Sprintf("%s Uploading minipool performance file to Web3.Storage...", generationPrefix))
+			minipoolPerformanceCid, err := t.uploadFileToWeb3Storage(minipoolPerformanceBytes, compressedMinipoolPerformancePath, "compressed minipool performance")
 			if err != nil {
-				t.handleError(fmt.Errorf("%s Error uploading missed attestations file to Web3.Storage: %w", generationPrefix, err))
+				t.handleError(fmt.Errorf("%s Error uploading minipool performance file to Web3.Storage: %w", generationPrefix, err))
 				return
 			}
-			t.log.Printlnf("%s Uploaded missed attestations file with CID %s", generationPrefix, missedAttestationsCid)
-			rewardsFile.MissedAttestationFileCID = missedAttestationsCid
+			t.log.Printlnf("%s Uploaded minipool performance file with CID %s", generationPrefix, minipoolPerformanceCid)
+			rewardsFile.MinipoolPerformanceFileCID = minipoolPerformanceCid
 		} else {
-			t.log.Printlnf("%s Saved missed attestations file. %s", generationPrefix)
-			rewardsFile.MissedAttestationFileCID = "---"
+			t.log.Printlnf("%s Saved minipool performance file. %s", generationPrefix)
+			rewardsFile.MinipoolPerformanceFileCID = "---"
 		}
 
 		// Serialize the rewards tree to JSON

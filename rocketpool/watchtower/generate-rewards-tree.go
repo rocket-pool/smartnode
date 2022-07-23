@@ -202,11 +202,11 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Create the JSON files
-	rewardsFile.MissedAttestationFileCID = "---"
+	rewardsFile.MinipoolPerformanceFileCID = "---"
 	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
-	missedAttestationWrapperBytes, err := json.Marshal(rewardsFile.MinipoolPerformanceFile)
+	minipoolPerformanceBytes, err := json.Marshal(rewardsFile.MinipoolPerformanceFile)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error serializing missing attestations file into JSON: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("%s Error serializing minipool performance file into JSON: %w", generationPrefix, err))
 		return
 	}
 	wrapperBytes, err := json.Marshal(rewardsFile)
@@ -217,10 +217,10 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 
 	// Write the files
 	path := t.cfg.Smartnode.GetRewardsTreePath(index, true)
-	missedAttestationsPath := t.cfg.Smartnode.GetMissedAttestationsPath(index, true)
-	err = ioutil.WriteFile(missedAttestationsPath, missedAttestationWrapperBytes, 0644)
+	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(index, true)
+	err = ioutil.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error saving missed attestations file to %s: %w", generationPrefix, missedAttestationsPath, err))
+		t.handleError(fmt.Errorf("%s Error saving minipool performance file to %s: %w", generationPrefix, minipoolPerformancePath, err))
 		return
 	}
 	err = ioutil.WriteFile(path, wrapperBytes, 0644)
