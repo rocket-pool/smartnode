@@ -33,25 +33,32 @@ const (
 	RewardsFileVersion            uint64 = 1
 )
 
+// Holds information
+type MinipoolPerformanceFile struct {
+	Index               uint64                                               `json:"index"`
+	Network             string                                               `json:"network"`
+	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance `json:"minipoolPerformance"`
+}
+
 // Minipool stats
 type SmoothingPoolMinipoolPerformance struct {
+	Pubkey                  string   `json:"pubkey"`
 	SuccessfulAttestations  uint64   `json:"successfulAttestations"`
 	MissedAttestations      uint64   `json:"missedAttestations"`
 	ParticipationRate       float64  `json:"participationRate"`
-	MissingAttestationSlots []uint64 `json:"-"`
+	MissingAttestationSlots []uint64 `json:"missingAttestationSlots"`
 	EthEarned               float64  `json:"ethEarned"`
 }
 
 // Node operator rewards
 type NodeRewardsInfo struct {
-	RewardNetwork                uint64                                               `json:"rewardNetwork"`
-	CollateralRpl                *QuotedBigInt                                        `json:"collateralRpl"`
-	OracleDaoRpl                 *QuotedBigInt                                        `json:"oracleDaoRpl"`
-	SmoothingPoolEth             *QuotedBigInt                                        `json:"smoothingPoolEth"`
-	SmoothingPoolEligibilityRate float64                                              `json:"smoothingPoolEligibilityRate"`
-	MerkleData                   []byte                                               `json:"-"`
-	MerkleProof                  []string                                             `json:"merkleProof"`
-	MinipoolPerformance          map[common.Address]*SmoothingPoolMinipoolPerformance `json:"minipoolPerformance,omitempty"`
+	RewardNetwork                uint64        `json:"rewardNetwork"`
+	CollateralRpl                *QuotedBigInt `json:"collateralRpl"`
+	OracleDaoRpl                 *QuotedBigInt `json:"oracleDaoRpl"`
+	SmoothingPoolEth             *QuotedBigInt `json:"smoothingPoolEth"`
+	SmoothingPoolEligibilityRate float64       `json:"smoothingPoolEligibilityRate"`
+	MerkleData                   []byte        `json:"-"`
+	MerkleProof                  []string      `json:"merkleProof"`
 }
 
 // Rewards per network
@@ -85,10 +92,11 @@ type RewardsFile struct {
 	ExecutionEndBlock        uint64                              `json:"executionEndBlock"`
 	IntervalsPassed          uint64                              `json:"intervalsPassed"`
 	MerkleRoot               string                              `json:"merkleRoot,omitempty"`
+	MissedAttestationFileCID string                              `json:"missedAttestationFileCid,omitempty"`
 	TotalRewards             *TotalRewards                       `json:"totalRewards"`
 	NetworkRewards           map[uint64]*NetworkRewardsInfo      `json:"networkRewards"`
 	NodeRewards              map[common.Address]*NodeRewardsInfo `json:"nodeRewards"`
-	MissedAttestationFileCID string                              `json:"missedAttestationFileCid,omitempty"`
+	MinipoolPerformanceFile  MinipoolPerformanceFile             `json:"-"`
 
 	// Non-serialized fields
 	MerkleTree           *merkletree.MerkleTree    `json:"-"`
@@ -136,9 +144,13 @@ func NewRewardsFile(log log.ColorLogger, logPrefix string, index uint64, startTi
 		NetworkRewards:      map[uint64]*NetworkRewardsInfo{},
 		NodeRewards:         map[common.Address]*NodeRewardsInfo{},
 		InvalidNetworkNodes: map[common.Address]uint64{},
-		elSnapshotHeader:    elSnapshotHeader,
-		log:                 log,
-		logPrefix:           logPrefix,
+		MinipoolPerformanceFile: MinipoolPerformanceFile{
+			Index:               index,
+			MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance{},
+		},
+		elSnapshotHeader: elSnapshotHeader,
+		log:              log,
+		logPrefix:        logPrefix,
 	}
 }
 
@@ -154,6 +166,7 @@ func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.Rocket
 
 	// Set the network name
 	r.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.MinipoolPerformanceFile.Network = r.Network
 
 	// Get the addresses for all nodes
 	r.opts = &bind.CallOpts{
@@ -195,12 +208,10 @@ func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.Rocket
 	}
 
 	// Sort all of the missed attestations so the files are always generated in the same state
-	for _, nodeInfo := range r.NodeRewards {
-		for _, minipoolInfo := range nodeInfo.MinipoolPerformance {
-			sort.Slice(minipoolInfo.MissingAttestationSlots, func(i, j int) bool {
-				return minipoolInfo.MissingAttestationSlots[i] < minipoolInfo.MissingAttestationSlots[j]
-			})
-		}
+	for _, minipoolInfo := range r.MinipoolPerformanceFile.MinipoolPerformance {
+		sort.Slice(minipoolInfo.MissingAttestationSlots, func(i, j int) bool {
+			return minipoolInfo.MissingAttestationSlots[i] < minipoolInfo.MissingAttestationSlots[j]
+		})
 	}
 
 	return nil
@@ -651,12 +662,12 @@ func (r *RewardsFile) calculateEthRewards() error {
 			rewardsForNode.SmoothingPoolEligibilityRate = float64(nodeInfo.EligibleSeconds.Uint64()) / float64(r.intervalSeconds.Uint64())
 
 			// Add minipool rewards to the JSON
-			rewardsForNode.MinipoolPerformance = map[common.Address]*SmoothingPoolMinipoolPerformance{}
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				if !minipoolInfo.WasActive {
 					continue
 				}
 				performance := &SmoothingPoolMinipoolPerformance{
+					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  minipoolInfo.GoodAttestations,
 					MissedAttestations:      minipoolInfo.MissedAttestations,
 					ParticipationRate:       float64(minipoolInfo.GoodAttestations) / float64(minipoolInfo.GoodAttestations+minipoolInfo.MissedAttestations),
@@ -666,7 +677,7 @@ func (r *RewardsFile) calculateEthRewards() error {
 				for slot := range minipoolInfo.MissingAttestationSlots {
 					performance.MissingAttestationSlots = append(performance.MissingAttestationSlots, slot)
 				}
-				rewardsForNode.MinipoolPerformance[minipoolInfo.Address] = performance
+				r.MinipoolPerformanceFile.MinipoolPerformance[minipoolInfo.Address] = performance
 			}
 
 			// Add the rewards to the running total for the specified network

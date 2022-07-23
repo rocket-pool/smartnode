@@ -201,19 +201,10 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, rewardsFile.MerkleRoot)
 	}
 
-	// Save the missing attestations file
-	missedAttestationMap := map[common.Address][]uint64{}
-	t.log.Println(fmt.Sprintf("%s Creating missed attestation file...", generationPrefix))
-	for _, nodeRewards := range rewardsFile.NodeRewards {
-		for minipoolAddress, performance := range nodeRewards.MinipoolPerformance {
-			missedAttestationMap[minipoolAddress] = performance.MissingAttestationSlots
-		}
-	}
-	rewardsFile.MissedAttestationFileCID = "---"
-
 	// Create the JSON files
+	rewardsFile.MissedAttestationFileCID = "---"
 	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
-	missedAttestationWrapperBytes, err := json.Marshal(missedAttestationMap)
+	missedAttestationWrapperBytes, err := json.Marshal(rewardsFile.MinipoolPerformanceFile)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error serializing missing attestations file into JSON: %w", generationPrefix, err))
 		return

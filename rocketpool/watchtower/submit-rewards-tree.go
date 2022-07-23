@@ -271,17 +271,8 @@ func (t *submitRewardsTree) run() error {
 			t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
 		}
 
-		// Generate the missing attestations file
-		missedAttestationMap := map[common.Address][]uint64{}
-		t.log.Println(fmt.Sprintf("%s Creating missed attestation file...", generationPrefix))
-		for _, nodeRewards := range rewardsFile.NodeRewards {
-			for minipoolAddress, performance := range nodeRewards.MinipoolPerformance {
-				missedAttestationMap[minipoolAddress] = performance.MissingAttestationSlots
-			}
-		}
-
-		// Serialize it
-		missedAttestationWrapperBytes, err := json.Marshal(missedAttestationMap)
+		// Serialize the missing attestations file
+		missedAttestationWrapperBytes, err := json.Marshal(rewardsFile.MinipoolPerformanceFile)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s Error serializing missing attestations file into JSON: %w", generationPrefix, err))
 			return
