@@ -132,17 +132,17 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== [Ropsten] The Merge! ===%s\n", colorGreen, colorReset)
-	fmt.Println("The merge has happened on Ropsten! You can now collect priority fees for blocks you propose. You'll need to set up your node's fee distributor in order to claim them (but you'll still collect them even before you do this).\nCheck out `rocketpool node initialize-fee-distributor` to initialize it, and `rocketpool node distribute-fees` to claim any balance it has.\n")
+	fmt.Printf("%s=== The Redstone Update ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Redstone update has happened on Ropsten and Prater, and will soon happen on Mainnet\n**A LOT** has changed.\nPlease see the guide for all of the details, including the new \"eternal\" rewards claim system and the Smoothing Pool:\nhttps://docs.rocketpool.net/guides/node/v1.5-update.html\n")
 
-	fmt.Printf("%s=== [Ropsten] Garlic Bread! ===%s\n", colorGreen, colorReset)
-	fmt.Println("The new Merkle Tree-based rewards system is live! Each rewards interval, your rewards will be calculated and saved. That means no more dilution or changing claim amounts, and no more needing to claim every interval!\nYou can sit on the rewards for as long as you want and claim them all at once!\nYou can access this new system with `rocketpool node claim-rewards`.\n")
+	fmt.Printf("%s=== The Merge ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Merge has happened on Ropsten, and will soon happen on Prater! You can now collect priority fees for blocks you propose, and receive MEV rewards from Flashbots' MEV Boost network.\nPlease see the guide for all of the details, including the new \"eternal\" rewards claim system and the Smoothing Pool:\nhttps://docs.rocketpool.net/guides/node/v1.5-update.html\n")
 
-	fmt.Printf("%s=== [Ropsten] Smoothing Pool! ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now opt into the Smoothing Pool, which will collect everyone's priority fees and MEV, and share them evenly between all participants.\nThis is great for smaller validators because it means if it takes a long time for you to get a proposal, no problem! You get regular, smooth ETH rewards every interval.\nCheck it out with `rocketpool node join-smoothing-pool`.\n")
+	fmt.Printf("%s=== Light Client Removal ===%s\n", colorGreen, colorReset)
+	fmt.Println("In preparation for The Merge, light clients (Infura and Pocket) are no longer supported.\nYou will need to switch to a Full Execution client before The Merge in order to continue validating!\n")
 
-	fmt.Printf("%s=== [Ropsten] MEV Boost! ===%s\n", colorGreen, colorReset)
-	fmt.Println("You are now automatically set up to use MEV Boost, the MEV system provided by Flashbots to let you participate in its network, propose its blocks, and receive MEV rewards. For more information on Flashbots, MEV, and MEV Boost, please see https://writings.flashbots.net/writings/why-run-mevboost/")
+	fmt.Printf("%s=== New Fallback System ===%s\n", colorGreen, colorReset)
+	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
