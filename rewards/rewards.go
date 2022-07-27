@@ -26,6 +26,7 @@ type RewardsEvent struct {
 	TrustedNodeRPL    []*big.Int
 	NodeRPL           []*big.Int
 	NodeETH           []*big.Int
+	UserETH           *big.Int
 	IntervalStartTime time.Time
 	IntervalEndTime   time.Time
 	SubmissionTime    time.Time
@@ -218,6 +219,7 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 		TrustedNodeRPL:    submission.TrustedNodeRPL,
 		NodeRPL:           submission.NodeRPL,
 		NodeETH:           submission.NodeETH,
+		UserETH:           submission.UserETH,
 		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
 		MerkleTreeCID:     submission.MerkleTreeCID,
 		IntervalStartTime: time.Unix(eventIntervalStartTime.Int64(), 0),
