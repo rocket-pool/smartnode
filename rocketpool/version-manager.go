@@ -20,15 +20,17 @@ type LegacyVersionWrapper interface {
 }
 
 type VersionManager struct {
-	V1_0_0 LegacyVersionWrapper
+	V1_0_0     LegacyVersionWrapper
+	V1_5_0_RC1 LegacyVersionWrapper
 
 	rp *RocketPool
 }
 
 func NewVersionManager(rp *RocketPool) *VersionManager {
 	return &VersionManager{
-		V1_0_0: newLegacyVersionWrapper_v1_0_0(rp),
-		rp:     rp,
+		V1_0_0:     newLegacyVersionWrapper_v1_0_0(rp),
+		V1_5_0_RC1: newLegacyVersionWrapper_v1_5_0_rc1(rp),
+		rp:         rp,
 	}
 }
 
@@ -37,7 +39,7 @@ func getLegacyContract(rp *RocketPool, contractName string, m LegacyVersionWrapp
 
 	legacyName, exists := m.GetVersionedContractName(contractName)
 	if !exists {
-		// This wasn't upgraded in v1.0.0
+		// This wasn't upgraded in previous versions
 		return rp.GetContract(contractName)
 	}
 
@@ -58,7 +60,7 @@ func getLegacyContract(rp *RocketPool, contractName string, m LegacyVersionWrapp
 	}
 
 	if address == emptyAddress {
-		// Not found, so v1.0.0 is still on the network - try loading the original contract name instead
+		// Not found, so the legacy contract is still on the network - try loading the original contract name instead
 		return rp.GetContract(contractName)
 	}
 

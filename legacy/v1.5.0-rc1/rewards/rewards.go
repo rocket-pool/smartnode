@@ -46,8 +46,8 @@ type RewardSubmission struct {
 }
 
 // Get the index of the active rewards period
-func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, e
 }
 
 // Get the timestamp that the current rewards interval started
-func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Time, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (time.Time, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -72,8 +72,8 @@ func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 }
 
 // Get the number of seconds in a claim interval
-func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (time.Duration, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return 0, err
 	}
@@ -85,8 +85,8 @@ func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.
 }
 
 // Get the percent of checkpoint rewards that goes to node operators
-func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +98,8 @@ func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpt
 }
 
 // Get the percent of checkpoint rewards that goes to ODAO members
-func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +111,8 @@ func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.
 }
 
 // Get the percent of checkpoint rewards that goes to the PDAO
-func GetProtocolDaoRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetProtocolDaoRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +124,8 @@ func GetProtocolDaoRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts
 }
 
 // Get the amount of RPL rewards that will be provided to node operators
-func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +137,8 @@ func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 }
 
 // Get the amount of ETH rewards that will be provided to node operators
-func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketRewardsPoolAddress *common.Address) (*big.Int, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -150,8 +150,8 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 }
 
 // Estimate the gas for submiting a Merkle Tree-based snapshot for a rewards interval
-func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts, legacyRocketRewardsPoolAddress *common.Address) (rocketpool.GasInfo, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -159,8 +159,8 @@ func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission Rewar
 }
 
 // Submit a Merkle Tree-based snapshot for a rewards interval
-func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts, legacyRocketRewardsPoolAddress *common.Address) (common.Hash, error) {
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -172,9 +172,9 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 }
 
 // Get the event info for a rewards snapshot
-func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int) (RewardsEvent, error) {
+func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, legacyRocketRewardsPoolAddress *common.Address) (RewardsEvent, error) {
 	// Get contracts
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress)
 	if err != nil {
 		return RewardsEvent{}, err
 	}
@@ -230,13 +230,16 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 
 // Get the event info for a rewards snapshot
 func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, rocketRewardsPoolAddresses []common.Address) (bool, RewardsEvent, error) {
+
+	if len(rocketRewardsPoolAddresses) == 0 {
+		return false, RewardsEvent{}, fmt.Errorf("rocketRewardsPoolAddresses must have at least one element.")
+	}
+
 	// Get contracts
-	rocketRewardsPool, err := getRocketRewardsPool(rp)
+	rocketRewardsPool, err := getRocketRewardsPool(rp, &rocketRewardsPoolAddresses[0])
 	if err != nil {
 		return false, RewardsEvent{}, err
 	}
-
-	rocketRewardsPoolAddresses = append(rocketRewardsPoolAddresses, *rocketRewardsPool.Address)
 
 	// Construct a filter query for relevant logs
 	indexBig := big.NewInt(0).SetUint64(index)
@@ -290,8 +293,12 @@ func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64,
 // Get contracts
 var rocketRewardsPoolLock sync.Mutex
 
-func getRocketRewardsPool(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketRewardsPool(rp *rocketpool.RocketPool, address *common.Address) (*rocketpool.Contract, error) {
 	rocketRewardsPoolLock.Lock()
 	defer rocketRewardsPoolLock.Unlock()
-	return rp.GetContract("rocketRewardsPool")
+	if address == nil {
+		return rp.VersionManager.V1_5_0_RC1.GetContract("rocketRewardsPool")
+	} else {
+		return rp.VersionManager.V1_5_0_RC1.GetContractWithAddress("rocketRewardsPool", *address)
+	}
 }
