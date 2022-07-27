@@ -229,11 +229,11 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 }
 
 // Get the event info for a rewards snapshot
-func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, rocketRewardsPoolAddresses []common.Address) (RewardsEvent, error) {
+func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, rocketRewardsPoolAddresses []common.Address) (bool, RewardsEvent, error) {
 	// Get contracts
 	rocketRewardsPool, err := getRocketRewardsPool(rp)
 	if err != nil {
-		return RewardsEvent{}, err
+		return false, RewardsEvent{}, err
 	}
 
 	rocketRewardsPoolAddresses = append(rocketRewardsPoolAddresses, *rocketRewardsPool.Address)
@@ -248,16 +248,16 @@ func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64,
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
 	if err != nil {
-		return RewardsEvent{}, err
+		return false, RewardsEvent{}, err
 	}
 
 	// Get the log info
 	values := make(map[string]interface{})
 	if len(logs) == 0 {
-		return RewardsEvent{}, fmt.Errorf("reward snapshot for interval %d not found", index)
+		return false, RewardsEvent{}, nil
 	}
 	if rocketRewardsPool.ABI.Events["RewardSnapshot"].Inputs.UnpackIntoMap(values, logs[0].Data) != nil {
-		return RewardsEvent{}, err
+		return false, RewardsEvent{}, err
 	}
 
 	// Get the decoded data
@@ -283,7 +283,7 @@ func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64,
 		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
 	}
 
-	return eventData, nil
+	return true, eventData, nil
 
 }
 
