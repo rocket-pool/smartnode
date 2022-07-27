@@ -588,7 +588,7 @@ func (r *RewardsFile) calculateEthRewards() error {
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 
 	// Get the start time of this interval based on the event from the previous one
-	previousIntervalEvent, err := rewards.GetRewardSnapshotEventWithUpgrades(r.rp, r.Index-1, big.NewInt(int64(eventLogInterval)), nil, r.cfg.Smartnode.GetPreviousRewardsPoolAddresses())
+	previousIntervalEvent, err := GetUpgradedRewardSnapshotEvent(r.cfg, r.rp, r.Index-1, big.NewInt(int64(eventLogInterval)), nil)
 	if err != nil {
 		return err
 	}

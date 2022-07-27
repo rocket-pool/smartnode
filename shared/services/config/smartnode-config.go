@@ -123,7 +123,7 @@ type SmartnodeConfig struct {
 	legacyMinipoolManagerAddress map[Network]string `yaml:"-"`
 
 	// Addresses for RocketRewardsPool that have been upgraded during development
-	previousRewardsPoolAddresses map[Network][]string `yaml:"-"`
+	previousRewardsPoolAddresses map[Network]map[string][]common.Address `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -384,12 +384,19 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Ropsten: "0x2588C77829015080C771359eC1C3066d2f1158Db",
 		},
 
-		previousRewardsPoolAddresses: map[Network][]string{
+		previousRewardsPoolAddresses: map[Network]map[string][]common.Address{
 			Network_Mainnet: {},
-			Network_Prater:  {},
-			Network_Kiln:    {},
+			Network_Prater: {
+				"v1.5.0-rc1": []common.Address{
+					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
+				},
+			},
+			Network_Kiln: {},
 			Network_Ropsten: {
-				"0x594fb75d3dc2dfa0150ad03f99f97817747dd4e1",
+				"v1.5.0-rc1": []common.Address{
+					common.HexToAddress("0x594fb75d3dc2dfa0150ad03f99f97817747dd4e1"),
+					common.HexToAddress("0x762e79b27feE0C0975f9caBEa9E9976006A7aD98"),
+				},
 			},
 		},
 	}
@@ -575,11 +582,6 @@ func (config *SmartnodeConfig) GetLegacyMinipoolManagerAddress() common.Address 
 	return common.HexToAddress(config.legacyMinipoolManagerAddress[config.Network.Value.(Network)])
 }
 
-func (config *SmartnodeConfig) GetPreviousRewardsPoolAddresses() []common.Address {
-	addressStrings := config.previousRewardsPoolAddresses[config.Network.Value.(Network)]
-	addresses := []common.Address{}
-	for _, address := range addressStrings {
-		addresses = append(addresses, common.HexToAddress(address))
-	}
-	return addresses
+func (config *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]common.Address {
+	return config.previousRewardsPoolAddresses[config.Network.Value.(Network)]
 }

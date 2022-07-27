@@ -15,7 +15,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -166,7 +165,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Find the event for this interval
-	rewardsEvent, err := rewards.GetRewardSnapshotEventWithUpgrades(rp, index, big.NewInt(int64(eventLogInterval)), nil, t.cfg.Smartnode.GetPreviousRewardsPoolAddresses())
+	rewardsEvent, err := rprewards.GetUpgradedRewardSnapshotEvent(t.cfg, rp, index, big.NewInt(int64(eventLogInterval)), nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return
