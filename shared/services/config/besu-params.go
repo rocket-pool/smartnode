@@ -6,7 +6,7 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:22.7.0-SNAPSHOT-openjdk-latest"
+	besuTagTest          string = "hyperledger/besu:22.7.0-RC2-openjdk-latest"
 	besuTagProd          string = "hyperledger/besu:22.4.4-openjdk-latest"
 	besuEventLogInterval int    = 25000
 	besuMaxPeers         uint16 = 25
@@ -129,7 +129,7 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 func getBesuHeapSize() uint64 {
 	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 	if totalMemoryGB < 9 {
-		return 3052
+		return 2560
 	}
 	return 0
 }
