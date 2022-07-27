@@ -3,8 +3,8 @@ package config
 import "runtime"
 
 const (
-	nimbusTagTest              string = "rocketpool/nimbus-eth2:mevboost-7488319"
-	nimbusTagProd              string = "statusim/nimbus-eth2:multiarch-v22.6.1"
+	nimbusTagTest              string = "rocketpool/nimbus-eth2:mevboost-33c8a1b"
+	nimbusTagProd              string = "statusim/nimbus-eth2:multiarch-v22.7.0"
 	defaultNimbusMaxPeersArm   uint16 = 100
 	defaultNimbusMaxPeersAmd   uint16 = 160
 	NimbusFeeRecipientFilename string = "rp-fee-recipient.txt"
