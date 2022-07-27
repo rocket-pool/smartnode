@@ -16,6 +16,7 @@ func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool
 	// Get the version map
 	versionMap := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
 
+	// Check old versions
 	for version, addresses := range versionMap {
 		switch version {
 		case "v1.5.0-rc1":
@@ -29,7 +30,9 @@ func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool
 		}
 	}
 
-	return rewards.RewardsEvent{}, fmt.Errorf("event for interval %d not found", index)
+	// Check the current contract
+	return rewards.GetRewardSnapshotEvent(rp, index, intervalSize, startBlock)
+
 }
 
 func update_v150rc1_to_v150(oldEvent rewards_v150rc1.RewardsEvent) rewards.RewardsEvent {
