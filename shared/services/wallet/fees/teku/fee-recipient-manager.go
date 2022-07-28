@@ -1,7 +1,6 @@
 package teku
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
@@ -21,20 +20,6 @@ const (
 
 type FeeRecipientManager struct {
 	keystore keystore.Keystore
-}
-
-type FeeRecipientFileContents struct {
-	DefaultConfig  ProposerFeeRecipient            `json:"default_config"`
-	ProposerConfig map[string]ProposerFeeRecipient `json:"proposer_config"`
-}
-
-type ProposerFeeRecipient struct {
-	FeeRecipient          string                `json:"fee_recipient"`
-	ValidatorRegistration ValidatorRegistration `json:"validator_registration"`
-}
-
-type ValidatorRegistration struct {
-	Enabled bool `json:"enabled"`
 }
 
 // Creates a new fee recipient manager
@@ -59,27 +44,16 @@ func (fm *FeeRecipientManager) CheckFeeRecipientFile(distributor common.Address)
 
 	// Create the expected structure
 	distributorAddress := distributor.Hex()
-	expectedStruct := FeeRecipientFileContents{
-		DefaultConfig: ProposerFeeRecipient{
-			FeeRecipient: distributorAddress,
-		},
-		ProposerConfig: map[string]ProposerFeeRecipient{},
-	}
+	expectedString := distributorAddress
 
 	// Compare the file contents with the expected string
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return false, false, fmt.Errorf("error reading fee recipient file: %w", err)
 	}
-	existingStruct := &FeeRecipientFileContents{}
-	err = json.Unmarshal(bytes, existingStruct)
-	if err != nil {
-		return false, false, fmt.Errorf("error deserializing fee recipient JSON: %w", err)
-	}
-	if existingStruct.DefaultConfig.FeeRecipient != expectedStruct.DefaultConfig.FeeRecipient || len(existingStruct.ProposerConfig) > 0 {
-		return true, false, nil
-	}
-	if !existingStruct.DefaultConfig.ValidatorRegistration.Enabled {
+	existingString := string(bytes)
+	if existingString != expectedString {
+		// If it wrote properly, indicate a success but that the file needed to be updated
 		return true, false, nil
 	}
 
@@ -93,19 +67,8 @@ func (fm *FeeRecipientManager) UpdateFeeRecipientFile(distributor common.Address
 
 	// Create the expected structure
 	distributorAddress := distributor.Hex()
-	expectedStruct := FeeRecipientFileContents{
-		DefaultConfig: ProposerFeeRecipient{
-			FeeRecipient: distributorAddress,
-			ValidatorRegistration: ValidatorRegistration{
-				Enabled: true,
-			},
-		},
-		ProposerConfig: map[string]ProposerFeeRecipient{},
-	}
-	bytes, err := json.Marshal(expectedStruct)
-	if err != nil {
-		return fmt.Errorf("error serializing file contents to JSON: %w", err)
-	}
+	expectedString := distributorAddress
+	bytes := []byte(expectedString)
 
 	// Create keystore dir
 	if err := os.MkdirAll(fm.keystore.GetKeystoreDir(), DirMode); err != nil {
@@ -114,7 +77,7 @@ func (fm *FeeRecipientManager) UpdateFeeRecipientFile(distributor common.Address
 
 	// Write the file
 	path := filepath.Join(fm.keystore.GetKeystoreDir(), config.TekuFeeRecipientFilename)
-	err = ioutil.WriteFile(path, bytes, FileMode)
+	err := ioutil.WriteFile(path, bytes, FileMode)
 	if err != nil {
 		return fmt.Errorf("error writing fee recipient file: %w", err)
 	}
