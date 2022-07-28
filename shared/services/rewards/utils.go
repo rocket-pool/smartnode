@@ -68,7 +68,7 @@ func GetClaimIntervalTime(cfg *config.RocketPoolConfig, index uint64, rp *rocket
 			return rewards_v150rc1.GetClaimIntervalTime(rp, opts, &contractAddress)
 		}
 	case config.Network_Ropsten:
-		if index < 43 {
+		if index < 44 {
 			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
 			return rewards_v150rc1.GetClaimIntervalTime(rp, opts, &contractAddress)
 		}
@@ -86,7 +86,7 @@ func GetNodeOperatorRewardsPercent(cfg *config.RocketPoolConfig, index uint64, r
 			return rewards_v150rc1.GetNodeOperatorRewardsPercent(rp, opts, &contractAddress)
 		}
 	case config.Network_Ropsten:
-		if index < 43 {
+		if index < 44 {
 			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
 			return rewards_v150rc1.GetNodeOperatorRewardsPercent(rp, opts, &contractAddress)
 		}
@@ -104,7 +104,7 @@ func GetTrustedNodeOperatorRewardsPercent(cfg *config.RocketPoolConfig, index ui
 			return rewards_v150rc1.GetTrustedNodeOperatorRewardsPercent(rp, opts, &contractAddress)
 		}
 	case config.Network_Ropsten:
-		if index < 43 {
+		if index < 44 {
 			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
 			return rewards_v150rc1.GetTrustedNodeOperatorRewardsPercent(rp, opts, &contractAddress)
 		}
@@ -122,7 +122,7 @@ func GetProtocolDaoRewardsPercent(cfg *config.RocketPoolConfig, index uint64, rp
 			return rewards_v150rc1.GetProtocolDaoRewardsPercent(rp, opts, &contractAddress)
 		}
 	case config.Network_Ropsten:
-		if index < 43 {
+		if index < 44 {
 			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
 			return rewards_v150rc1.GetProtocolDaoRewardsPercent(rp, opts, &contractAddress)
 		}
@@ -140,7 +140,7 @@ func GetPendingRPLRewards(cfg *config.RocketPoolConfig, index uint64, rp *rocket
 			return rewards_v150rc1.GetPendingRPLRewards(rp, opts, &contractAddress)
 		}
 	case config.Network_Ropsten:
-		if index < 43 {
+		if index < 44 {
 			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
 			return rewards_v150rc1.GetPendingRPLRewards(rp, opts, &contractAddress)
 		}
