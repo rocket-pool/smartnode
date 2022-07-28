@@ -133,10 +133,7 @@ ______           _        _    ______           _
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== The Redstone Update ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Redstone update has happened on Ropsten and Prater, and will soon happen on Mainnet\n**A LOT** has changed.\nPlease see the guide for all of the details, including the new \"eternal\" rewards claim system and the Smoothing Pool:\nhttps://docs.rocketpool.net/guides/node/v1.5-update.html\n")
-
-	fmt.Printf("%s=== The Merge ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Merge has happened on Ropsten, and will soon happen on Prater! You can now collect priority fees for blocks you propose, and receive MEV rewards from Flashbots' MEV Boost network.\nPlease see the guide for all of the details, including the new \"eternal\" rewards claim system and the Smoothing Pool:\nhttps://docs.rocketpool.net/guides/node/v1.5-update.html\n")
+	fmt.Println("The Redstone update has happened on Ropsten and Prater, and is scheduled for August 29th on Mainnet\n**A LOT** has changed. Too much to fit into these notes!\nPlease see the guide for all of the details, including the new \"eternal\" rewards claim system and the Smoothing Pool:\nhttps://docs.rocketpool.net/guides/redstone/whats-new.html\n")
 
 	fmt.Printf("%s=== Light Client Removal ===%s\n", colorGreen, colorReset)
 	fmt.Println("In preparation for The Merge, light clients (Infura and Pocket) are no longer supported.\nYou will need to switch to a Full Execution client before The Merge in order to continue validating!\n")
