@@ -1,9 +1,12 @@
 package watchtower
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,9 +29,33 @@ import (
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+const MessengerAbi = `[
+    {
+      "inputs": [],
+      "name": "rateStale",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "submitRate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ]`
+
 // Settings
 const SubmitFollowDistancePrices = 2
 const ConfirmDistancePrices = 30
+const BlocksPerTurn = 75 // Approx. 15 minutes
 
 // Submit RPL price task
 type submitRplPrice struct {
@@ -118,6 +145,13 @@ func (t *submitRplPrice) run() error {
 	// Check node trusted status & settings
 	if !(nodeTrusted && submitPricesEnabled) {
 		return nil
+	}
+
+	// Check if Optimism rate is stale and submit
+	err = t.submitOptimismPrice()
+	if err != nil {
+		// Error is not fatal for this task so print and continue
+		t.log.Printf("%q\n", err)
 	}
 
 	// Log
@@ -323,4 +357,97 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 	// Return
 	return nil
 
+}
+
+// Checks if Optimism rate is stale and if it's our turn to submit, calls submitRate on the messenger
+func (t *submitRplPrice) submitOptimismPrice() error {
+	priceMessengerAddress := t.cfg.Smartnode.GetOptimismMessengerAddress()
+
+	if priceMessengerAddress == "" {
+		// No price messenger deployed on the current network
+		return nil
+	}
+
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return fmt.Errorf("Failed getting transactor: %q", err)
+	}
+
+	// Construct the price messenger contract instance
+	parsed, err := abi.JSON(strings.NewReader(MessengerAbi))
+	if err != nil {
+		return fmt.Errorf("Failed decoding ABI: %q", err)
+	}
+
+	addr := common.HexToAddress(priceMessengerAddress)
+	priceMessengerContract := bind.NewBoundContract(addr, parsed, t.ec, t.ec, t.ec)
+	priceMessenger := rocketpool.Contract{
+		Contract: priceMessengerContract,
+		Address:  &addr,
+		ABI:      &parsed,
+		Client:   t.ec,
+	}
+
+	// Check if the rate is stale
+	var out []interface{}
+	err = priceMessengerContract.Call(nil, &out, "rateStale")
+
+	if err != nil {
+		return fmt.Errorf("Failed to query rate staleness: %q", err)
+	}
+
+	rateStale := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	if !rateStale {
+		// Nothing to do
+		return nil
+	}
+
+	// Get total number of ODAO members
+	count, err := trustednode.GetMemberCount(t.rp, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to get member count: %q", err)
+	}
+
+	// Find out which index we are
+	var index = uint64(0)
+	for i := uint64(0); i < count; i++ {
+		addr, err := trustednode.GetMemberAt(t.rp, i, nil)
+		if err != nil {
+			return fmt.Errorf("Failed to get member at %d: %q", i, err)
+		}
+
+		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+			index = i
+			break
+		}
+	}
+
+	// Get current block number
+	blockNumber, err := t.ec.BlockNumber(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to get block number: %q", err)
+	}
+
+	// Calculate whose turn it is to submit
+	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+
+	if index == indexToSubmit {
+		t.log.Println("Submitting rate to Optimism...")
+
+		// Submit rates
+		hash, err := priceMessenger.Transact(opts, "submitRate")
+		if err != nil {
+			return fmt.Errorf("Failed to submit rate: %q", err)
+		}
+
+		// Print TX info and wait for it to be mined
+		err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
