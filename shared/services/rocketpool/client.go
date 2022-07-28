@@ -1398,14 +1398,11 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 			return []string{}, fmt.Errorf("error reading and substituting template for %s fee recipient file: %w", clientString, err)
 		}
 
-		// Write the file if it doesn't exist
+		// Write the file
 		targetPath := filepath.Join(defaultFrDeploymentPath, clientString)
-		_, err = os.Stat(targetPath)
-		if os.IsNotExist(err) {
-			err = ioutil.WriteFile(targetPath, contents, 0664)
-			if err != nil {
-				return []string{}, fmt.Errorf("could not write default fee recipient file for %s to %s: %w", clientString, targetPath, err)
-			}
+		err = ioutil.WriteFile(targetPath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write default fee recipient file for %s to %s: %w", clientString, targetPath, err)
 		}
 	}
 
