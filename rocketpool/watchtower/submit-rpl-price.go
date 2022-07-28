@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"math/big"
 	"strings"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -226,7 +228,7 @@ func (t *submitRplPrice) run() error {
 		return err
 	}
 	if hasSubmitted {
-		t.log.Printlnf("Have previously submitted out-of-date prices for block $d, trying again...", blockNumber)
+		t.log.Printlnf("Have previously submitted out-of-date prices for block %d, trying again...", blockNumber)
 	}
 
 	// Log
@@ -434,6 +436,43 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 	indexToSubmit := (blockNumber / BlocksPerTurn) % count
 
 	if index == indexToSubmit {
+
+		// Temporary gas calculations until this gets put into a binding
+		// Estimate gas limit
+		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+			From:     opts.From,
+			To:       priceMessenger.Address,
+			GasPrice: big.NewInt(0), // use 0 gwei for simulation
+			Value:    opts.Value,
+		})
+		if err != nil {
+			return fmt.Errorf("Error estimating gas limit of submitOptimismPrice: %w", err)
+		}
+
+		// Get the safe gas limit
+		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+		if gasLimit > rocketpool.MaxGasLimit {
+			gasLimit = rocketpool.MaxGasLimit
+		}
+		if safeGasLimit > rocketpool.MaxGasLimit {
+			safeGasLimit = rocketpool.MaxGasLimit
+		}
+		gasInfo := rocketpool.GasInfo{
+			EstGasLimit:  gasLimit,
+			SafeGasLimit: safeGasLimit,
+		}
+
+		// Print the gas info
+		maxFee := eth.GweiToWei(WatchtowerMaxFee)
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+			return nil
+		}
+
+		// Set the gas settings
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+		opts.GasLimit = gasInfo.SafeGasLimit
+
 		t.log.Println("Submitting rate to Optimism...")
 
 		// Submit rates
@@ -447,6 +486,10 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		if err != nil {
 			return err
 		}
+
+		// Log
+		t.log.Printlnf("Successfully submitted Optimism price for block %d.", blockNumber)
+
 	}
 
 	return nil
