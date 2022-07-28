@@ -425,11 +425,6 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 func getAugmentedEcDescription(client ExecutionClient, originalDescription string) string {
 
 	switch client {
-	case ExecutionClient_Besu:
-		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
-		if totalMemoryGB < 9 {
-			return fmt.Sprintf("%s\n\n[red]WARNING: Besu currently requires over 8 GB of RAM to run smoothly. We do not recommend it for your system. This may be improved in a future release.", originalDescription)
-		}
 	case ExecutionClient_Nethermind:
 		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 		if totalMemoryGB < 9 {

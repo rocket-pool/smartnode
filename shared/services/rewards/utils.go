@@ -3,7 +3,9 @@ package rewards
 import (
 	"fmt"
 	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	rewards_v150rc1 "github.com/rocket-pool/rocketpool-go/legacy/v1.5.0-rc1/rewards"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -35,6 +37,7 @@ func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool
 
 }
 
+// Upgrade a rewards event from v1.5.0-RC1 to v1.5.0
 func update_v150rc1_to_v150(oldEvent rewards_v150rc1.RewardsEvent) rewards.RewardsEvent {
 	newEvent := rewards.RewardsEvent{
 		Index:             oldEvent.Index,
@@ -54,4 +57,64 @@ func update_v150rc1_to_v150(oldEvent rewards_v150rc1.RewardsEvent) rewards.Rewar
 	}
 
 	return newEvent
+}
+
+// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
+func GetClaimIntervalTime(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+	if cfg.Smartnode.Network.Value.(config.Network) == config.Network_Prater {
+		if index == 0 || index == 1 {
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
+			return rewards_v150rc1.GetClaimIntervalTime(rp, opts, &contractAddress)
+		}
+	}
+
+	return rewards.GetClaimIntervalTime(rp, opts)
+}
+
+// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
+func GetNodeOperatorRewardsPercent(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	if cfg.Smartnode.Network.Value.(config.Network) == config.Network_Prater {
+		if index == 0 || index == 1 {
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
+			return rewards_v150rc1.GetNodeOperatorRewardsPercent(rp, opts, &contractAddress)
+		}
+	}
+
+	return rewards.GetNodeOperatorRewardsPercent(rp, opts)
+}
+
+// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
+func GetTrustedNodeOperatorRewardsPercent(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	if cfg.Smartnode.Network.Value.(config.Network) == config.Network_Prater {
+		if index == 0 || index == 1 {
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
+			return rewards_v150rc1.GetTrustedNodeOperatorRewardsPercent(rp, opts, &contractAddress)
+		}
+	}
+
+	return rewards.GetTrustedNodeOperatorRewardsPercent(rp, opts)
+}
+
+// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
+func GetProtocolDaoRewardsPercent(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	if cfg.Smartnode.Network.Value.(config.Network) == config.Network_Prater {
+		if index == 0 || index == 1 {
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
+			return rewards_v150rc1.GetProtocolDaoRewardsPercent(rp, opts, &contractAddress)
+		}
+	}
+
+	return rewards.GetProtocolDaoRewardsPercent(rp, opts)
+}
+
+// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
+func GetPendingRPLRewards(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	if cfg.Smartnode.Network.Value.(config.Network) == config.Network_Prater {
+		if index == 0 || index == 1 {
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
+			return rewards_v150rc1.GetPendingRPLRewards(rp, opts, &contractAddress)
+		}
+	}
+
+	return rewards.GetPendingRPLRewards(rp, opts)
 }

@@ -320,17 +320,17 @@ func (r *RewardsFile) updateNetworksAndTotals() {
 func (r *RewardsFile) calculateRplRewards() error {
 
 	snapshotBlockTime := time.Unix(int64(r.elSnapshotHeader.Time), 0)
-	intervalDuration, err := rewards.GetClaimIntervalTime(r.rp, r.opts)
+	intervalDuration, err := GetClaimIntervalTime(r.cfg, r.Index, r.rp, r.opts)
 	if err != nil {
 		return fmt.Errorf("error getting required registration time: %w", err)
 	}
 
 	// Handle node operator rewards
-	nodeOpPercent, err := rewards.GetNodeOperatorRewardsPercent(r.rp, r.opts)
+	nodeOpPercent, err := GetNodeOperatorRewardsPercent(r.cfg, r.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
-	pendingRewards, err := rewards.GetPendingRPLRewards(r.rp, r.opts)
+	pendingRewards, err := GetPendingRPLRewards(r.cfg, r.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
@@ -432,7 +432,7 @@ func (r *RewardsFile) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 
 	// Handle Oracle DAO rewards
-	oDaoPercent, err := rewards.GetTrustedNodeOperatorRewardsPercent(r.rp, r.opts)
+	oDaoPercent, err := GetTrustedNodeOperatorRewardsPercent(r.cfg, r.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}
@@ -528,7 +528,7 @@ func (r *RewardsFile) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get expected Protocol DAO rewards
-	pDaoPercent, err := rewards.GetProtocolDaoRewardsPercent(r.rp, r.opts)
+	pDaoPercent, err := GetProtocolDaoRewardsPercent(r.cfg, r.Index, r.rp, r.opts)
 	if err != nil {
 		return err
 	}

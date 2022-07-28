@@ -1,13 +1,9 @@
 package config
 
-import (
-	"github.com/pbnjay/memory"
-)
-
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:22.7.0-RC2-openjdk-latest"
-	besuTagProd          string = "hyperledger/besu:22.4.4-openjdk-latest"
+	besuTagTest          string = "hyperledger/besu:22.7.0-RC3-openjdk-latest"
+	besuTagProd          string = "hyperledger/besu:22.7.0-RC3-openjdk-latest" // Besu asked for RC3 on prod, this is intentional
 	besuEventLogInterval int    = 25000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -63,7 +59,7 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 			Name:                 "JVM Heap Size",
 			Description:          "The max amount of RAM, in MB, that Besu's JVM should limit itself to. Setting this lower will cause Besu to use less RAM, though it will always use more than this limit.\n\nUse 0 for automatic allocation.",
 			Type:                 ParameterType_Uint,
-			Default:              map[Network]interface{}{Network_All: getBesuHeapSize()},
+			Default:              map[Network]interface{}{Network_All: uint64(0)},
 			AffectsContainers:    []ContainerID{ContainerID_Eth1},
 			EnvironmentVariables: []string{"BESU_JVM_HEAP_SIZE"},
 			CanBeBlank:           false,
@@ -123,15 +119,6 @@ func NewBesuConfig(config *RocketPoolConfig) *BesuConfig {
 			OverwriteOnUpgrade:   false,
 		},
 	}
-}
-
-// Get the recommended heap size for Besu
-func getBesuHeapSize() uint64 {
-	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
-	if totalMemoryGB < 9 {
-		return 2560
-	}
-	return 0
 }
 
 // Get the parameters for this config
