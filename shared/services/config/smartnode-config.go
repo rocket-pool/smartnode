@@ -124,6 +124,9 @@ type SmartnodeConfig struct {
 
 	// Addresses for RocketRewardsPool that have been upgraded during development
 	previousRewardsPoolAddresses map[Network]map[string][]common.Address `yaml:"-"`
+
+	// The RocketOvmPriceMessenger address for each network
+	optimismPriceMessengerAddress map[Network]string `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -399,6 +402,13 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 				},
 			},
 		},
+
+		optimismPriceMessengerAddress: map[Network]string{
+			Network_Mainnet: "",
+			Network_Prater:  "0x87E2deCE7d0A080D579f63cbcD7e1629BEcd7E7d",
+			Network_Kiln:    "",
+			Network_Ropsten: "",
+		},
 	}
 
 }
@@ -584,4 +594,8 @@ func (config *SmartnodeConfig) GetLegacyMinipoolManagerAddress() common.Address 
 
 func (config *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]common.Address {
 	return config.previousRewardsPoolAddresses[config.Network.Value.(Network)]
+}
+
+func (config *SmartnodeConfig) GetOptimismMessengerAddress() string {
+	return config.optimismPriceMessengerAddress[config.Network.Value.(Network)]
 }
