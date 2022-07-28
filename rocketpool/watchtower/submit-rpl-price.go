@@ -153,7 +153,7 @@ func (t *submitRplPrice) run() error {
 	err = t.submitOptimismPrice()
 	if err != nil {
 		// Error is not fatal for this task so print and continue
-		t.log.Printf("%q\n", err)
+		t.log.Printf("Error submitting Optimism price: %q\n", err)
 	}
 
 	// Log
@@ -438,12 +438,18 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 	if index == indexToSubmit {
 
 		// Temporary gas calculations until this gets put into a binding
+		input, err := priceMessenger.ABI.Pack("submitRate")
+		if err != nil {
+			return fmt.Errorf("Could not encode input data: %w", err)
+		}
+
 		// Estimate gas limit
 		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
 			From:     opts.From,
 			To:       priceMessenger.Address,
 			GasPrice: big.NewInt(0), // use 0 gwei for simulation
 			Value:    opts.Value,
+			Data:     input,
 		})
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitOptimismPrice: %w", err)
