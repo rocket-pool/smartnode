@@ -163,7 +163,7 @@ func nodeDeposit(c *cli.Context) error {
 
 		// Prompt for min node fee
 		if nodeFees.MinNodeFee == nodeFees.MaxNodeFee {
-			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.", nodeFees.MinNodeFee*100)
+			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
 			minNodeFee = nodeFees.MinNodeFee
 		} else {
 			minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)
