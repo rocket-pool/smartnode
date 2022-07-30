@@ -358,7 +358,7 @@ var ethClientSyncLock sync.Mutex
 func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool.ExecutionClient, error) {
 
 	// Check the EC status
-	mgrStatus := ecMgr.CheckStatus(false)
+	mgrStatus := ecMgr.CheckStatus()
 	if ecMgr.primaryReady {
 		return true, nil, nil
 	}
@@ -398,7 +398,7 @@ func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool
 func checkBeaconClientStatus(bcMgr *BeaconClientManager) (bool, error) {
 
 	// Check the BC status
-	mgrStatus := bcMgr.CheckStatus(false)
+	mgrStatus := bcMgr.CheckStatus()
 	if bcMgr.primaryReady {
 		return true, nil
 	}
