@@ -3,7 +3,7 @@ package config
 import "runtime"
 
 const (
-	nimbusTagTest              string = "rocketpool/nimbus-eth2:mevboost-33c8a1b"
+	nimbusTagTest              string = "rocketpool/nimbus-eth2:mevboost-3793103"
 	nimbusTagProd              string = "statusim/nimbus-eth2:multiarch-v22.7.0"
 	defaultNimbusMaxPeersArm   uint16 = 100
 	defaultNimbusMaxPeersAmd   uint16 = 160
