@@ -30,6 +30,9 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 		case config.ConsensusClient_Lighthouse:
 			wiz.md.Config.ExternalLighthouse.Graffiti.Value = text[graffitiLabel]
 			wiz.externalDoppelgangerModal.show()
+		case config.ConsensusClient_Nimbus:
+			wiz.md.Config.ExternalNimbus.Graffiti.Value = text[graffitiLabel]
+			wiz.externalDoppelgangerModal.show()
 		case config.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.Graffiti.Value = text[graffitiLabel]
 			wiz.externalDoppelgangerModal.show()

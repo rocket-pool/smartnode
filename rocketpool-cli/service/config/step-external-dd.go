@@ -31,13 +31,15 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
 		case config.ConsensusClient_Lighthouse:
 			wiz.md.Config.ExternalLighthouse.DoppelgangerDetection.Value = ddEnabled
+		case config.ConsensusClient_Nimbus:
+			wiz.md.Config.ExternalNimbus.DoppelgangerDetection.Value = ddEnabled
 		case config.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.DoppelgangerDetection.Value = ddEnabled
 		}
 		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 		switch cc {
-		case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
-			// Temp until Nimbus and Teku support fallback clients
+		case config.ConsensusClient_Teku:
+			// Temp until Teku supports fallback clients
 			wiz.md.Config.UseFallbackClients.Value = false
 			wiz.metricsModal.show()
 		default:

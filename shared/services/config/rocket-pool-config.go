@@ -91,6 +91,7 @@ type RocketPoolConfig struct {
 	Prysm              *PrysmConfig              `yaml:"prysm,omitempty"`
 	Teku               *TekuConfig               `yaml:"teku,omitempty"`
 	ExternalLighthouse *ExternalLighthouseConfig `yaml:"externalLighthouse,omitempty"`
+	ExternalNimbus     *ExternalNimbusConfig     `yaml:"externalNimbus,omitempty"`
 	ExternalPrysm      *ExternalPrysmConfig      `yaml:"externalPrysm,omitempty"`
 	ExternalTeku       *ExternalTekuConfig       `yaml:"externalTeku,omitempty"`
 
@@ -280,6 +281,10 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Description: "Select this if you will use Lighthouse as your Consensus client.",
 				Value:       ConsensusClient_Lighthouse,
 			}, {
+				Name:        "Nimbus",
+				Description: "Select this if you will use Nimbus as your Consensus client.",
+				Value:       ConsensusClient_Nimbus,
+			}, {
 				Name:        "Prysm",
 				Description: "Select this if you will use Prysm as your Consensus client.",
 				Value:       ConsensusClient_Prysm,
@@ -405,6 +410,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	config.Prysm = NewPrysmConfig(config)
 	config.Teku = NewTekuConfig(config)
 	config.ExternalLighthouse = NewExternalLighthouseConfig(config)
+	config.ExternalNimbus = NewExternalNimbusConfig(config)
 	config.ExternalPrysm = NewExternalPrysmConfig(config)
 	config.ExternalTeku = NewExternalTekuConfig(config)
 	config.Grafana = NewGrafanaConfig(config)
@@ -492,6 +498,7 @@ func (config *RocketPoolConfig) GetSubconfigs() map[string]Config {
 		"prysm":              config.Prysm,
 		"teku":               config.Teku,
 		"externalLighthouse": config.ExternalLighthouse,
+		"externalNimbus":     config.ExternalNimbus,
 		"externalPrysm":      config.ExternalPrysm,
 		"externalTeku":       config.ExternalTeku,
 		"fallbackNormal":     config.FallbackNormal,
@@ -603,6 +610,8 @@ func (config *RocketPoolConfig) GetSelectedConsensusClientConfig() (ConsensusCon
 		switch client {
 		case ConsensusClient_Lighthouse:
 			return config.ExternalLighthouse, nil
+		case ConsensusClient_Nimbus:
+			return config.ExternalNimbus, nil
 		case ConsensusClient_Prysm:
 			return config.ExternalPrysm, nil
 		case ConsensusClient_Teku:
@@ -644,6 +653,8 @@ func (config *RocketPoolConfig) IsDoppelgangerEnabled() (bool, error) {
 		switch client {
 		case ConsensusClient_Lighthouse:
 			return config.ExternalLighthouse.DoppelgangerDetection.Value.(bool), nil
+		case ConsensusClient_Nimbus:
+			return config.ExternalNimbus.DoppelgangerDetection.Value.(bool), nil
 		case ConsensusClient_Prysm:
 			return config.ExternalPrysm.DoppelgangerDetection.Value.(bool), nil
 		case ConsensusClient_Teku:
@@ -836,6 +847,9 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.ExternalLighthouse.GetParameters(), envVars)
 			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
+		case ConsensusClient_Nimbus:
+			addParametersToEnvVars(config.ExternalNimbus.GetParameters(), envVars)
+			envVars["FEE_RECIPIENT_FILE"] = NimbusFeeRecipientFilename
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.ExternalPrysm.GetParameters(), envVars)
 			envVars["FEE_RECIPIENT_FILE"] = PrysmFeeRecipientFilename
