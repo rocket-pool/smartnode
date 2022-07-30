@@ -15,7 +15,7 @@ type BitflyNodeMetricsConfig struct {
 
 	Endpoint Parameter `yaml:"endpoint,omitempty"`
 
-	MachineName Parameter `yaml:"machineName, omitempty"`
+	MachineName Parameter `yaml:"machineName,omitempty"`
 }
 
 // Generates a new Bitfly Node Metrics config
