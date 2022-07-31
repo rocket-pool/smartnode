@@ -1,6 +1,7 @@
 package odao
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -52,6 +53,12 @@ func getProposals(c *cli.Context, stateFilter string) error {
 		return err
 	}
 
+	// Get oracle DAO members
+	allMembers, err := rp.TNDAOMembers()
+	if err != nil {
+		return err
+	}
+
 	// Get proposals by state
 	stateProposals := map[string][]dao.ProposalDetails{}
 	for _, proposal := range allProposals.Proposals {
@@ -85,7 +92,11 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 		// Proposals
 		for _, proposal := range proposals {
-			fmt.Printf("%d: %s\n", proposal.ID, proposal.Message)
+			for _, member := range allMembers.Members {
+				if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
+					fmt.Printf("%d: %s - Proposed by: %s (%s)\n", proposal.ID, proposal.Message, member.ID, proposal.ProposerAddress)
+				}
+			}
 		}
 
 		count += len(proposals)
@@ -119,6 +130,12 @@ func getProposal(c *cli.Context, id uint64) error {
 		return err
 	}
 
+	// Get oracle DAO members
+	allMembers, err := rp.TNDAOMembers()
+	if err != nil {
+		return err
+	}
+
 	// Find the proposal
 	var proposal *dao.ProposalDetails
 
@@ -126,6 +143,14 @@ func getProposal(c *cli.Context, id uint64) error {
 		if p.ID == id {
 			proposal = &allProposals.Proposals[i]
 			break
+		}
+	}
+
+	// Find the proposer
+	var memberID string
+	for _, member := range allMembers.Members {
+		if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
+			memberID = member.ID
 		}
 	}
 
@@ -139,7 +164,7 @@ func getProposal(c *cli.Context, id uint64) error {
 	fmt.Printf("Message:              %s\n", proposal.Message)
 	fmt.Printf("Payload:              %s\n", proposal.PayloadStr)
 	fmt.Printf("Payload (bytes):      %s\n", hex.EncodeToString(proposal.Payload))
-	fmt.Printf("Proposed by:          %s\n", proposal.ProposerAddress.Hex())
+	fmt.Printf("Proposed by:          %s (%s)\n", memberID, proposal.ProposerAddress.Hex())
 	fmt.Printf("Created at:           %s\n", cliutils.GetDateTimeString(proposal.CreatedTime))
 
 	// Start block - pending proposals
