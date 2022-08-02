@@ -20,14 +20,14 @@ func LoadConfigFromFile(path string) (*config.RocketPoolConfig, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return nil, nil
-	} else {
-		cfg, err := config.LoadFromFile(path)
-		if err != nil {
-			return nil, err
-		}
-
-		return cfg, nil
 	}
+
+	cfg, err := config.LoadFromFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
 }
 
 // Saves a config and removes the upgrade flag file
