@@ -554,6 +554,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "sign-message",
+				Aliases:   []string{"sm"},
+				Usage:     "Sign an arbitrary message with the node's private key",
+				UsageText: "rocketpool node sign-message",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return signMessage(c)
+				},
+			},
 		},
 	})
 }

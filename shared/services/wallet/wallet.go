@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/tyler-smith/go-bip39"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -289,6 +290,27 @@ func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
 	}
 
 	return signedData, nil
+}
+
+// Signs an arbitrary message using the wallet's private key
+func (w *Wallet) SignMessage(message string) ([]byte, error) {
+	// Get private key
+	privateKey, _, err := w.getNodePrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	fullMessage := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), message)
+	hash := crypto.Keccak256Hash([]byte(fullMessage))
+
+	signedMessage, err := crypto.Sign(hash.Bytes(), privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error signing message: %w", err)
+	}
+
+	// fix the ECDSA 'v' (see https://bitcoin.stackexchange.com/questions/38351/ecdsa-v-r-s-what-is-v/38909#38909)
+	signedMessage[64] += 27
+	return signedMessage, nil
 }
 
 // Reloads wallet from disk
