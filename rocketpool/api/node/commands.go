@@ -804,10 +804,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					// Validate args
 					lenArgs := len(c.Args())
 					var message string
-					if lenArgs < 1 {
+					if lenArgs == 0 {
 						return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
-					} else if lenArgs == 1 {
-						message = c.Args().Get(0)
 					} else {
 						message = c.Args().Get(0) + strings.Join(c.Args().Tail(), " ")
 					}

@@ -1,6 +1,8 @@
 package node
 
 import (
+	"strings"
+
 	"github.com/urfave/cli"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -559,16 +561,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "sign-message",
 				Aliases:   []string{"sm"},
 				Usage:     "Sign an arbitrary message with the node's private key",
-				UsageText: "rocketpool node sign-message",
+				UsageText: "rocketpool node sign-message [message]",
 				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
+					var message string
+					if len(c.Args()) >= 1 {
+						// A message can contain one or more words
+						message = c.Args().Get(0) + strings.Join(c.Args().Tail(), " ")
 					}
 
 					// Run
-					return signMessage(c)
+					return signMessage(c, message)
 				},
 			},
 		},
