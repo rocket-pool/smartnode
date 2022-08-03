@@ -879,7 +879,7 @@ func (c *Client) NodeSetSmoothingPoolStatus(status bool) (api.SetSmoothingPoolRe
 
 // Use the node private key to sign an arbitrary message
 func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node sign-message %s", message))
+	responseBytes, err := c.callAPI(fmt.Sprintf("node sign-message -m %s", message))
 	if err != nil {
 		return api.NodeSignResponse{}, fmt.Errorf("Could not sign message: %w", err)
 	}

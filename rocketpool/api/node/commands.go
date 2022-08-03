@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/urfave/cli"
 
@@ -799,19 +798,21 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "sign-message",
 				Usage:     "Signs an arbitrary message with the node's private key.",
-				UsageText: "rocketpool api node sign-message message",
+				UsageText: "rocketpool api node sign-message -m message",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "message, m",
+						Usage: "The 'quoted message' to be signed",
+					},
+				},
 				Action: func(c *cli.Context) error {
-					// Validate args
-					lenArgs := len(c.Args())
-					var message string
-					if lenArgs == 0 {
+					// Validate flags
+					if c.String("message") == "" {
 						return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
-					} else {
-						message = c.Args().Get(0) + strings.Join(c.Args().Tail(), " ")
 					}
 
 					// Run
-					api.PrintResponse(signMessage(c, message))
+					api.PrintResponse(signMessage(c))
 					return nil
 
 				},

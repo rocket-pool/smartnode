@@ -9,7 +9,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func signMessage(c *cli.Context, message string) error {
+func signMessage(c *cli.Context) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
@@ -29,6 +29,7 @@ func signMessage(c *cli.Context, message string) error {
 		return nil
 	}
 
+	message := c.String("message")
 	if message == "" {
 		message = cliutils.Prompt("Please enter the message you want to sign: (EIP-191 personal_sign)", "^.+$", "Please enter the message you want to sign: (EIP-191 personal_sign)")
 	}
@@ -38,12 +39,18 @@ func signMessage(c *cli.Context, message string) error {
 		return err
 	}
 
-	fmt.Printf(`{ 
+	// Print the signature
+	fmt.Printf("Message: %s\n", message)
+	fmt.Printf("Signed data: %s\n\n", response.SignedData)
+
+	if cliutils.Confirm("Do you want to use this message on beaconcha.in?") {
+		fmt.Printf(`{ 
     "address": "%s",
     "msg": "%s",
     "sig": "%s",
     "version": "2"
 }`, status.AccountAddress, message, response.SignedData)
+	}
 
 	return nil
 

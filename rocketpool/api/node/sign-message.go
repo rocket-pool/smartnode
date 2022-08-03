@@ -12,7 +12,7 @@ import (
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
-func signMessage(c *cli.Context, message string) (*api.NodeSignResponse, error) {
+func signMessage(c *cli.Context) (*api.NodeSignResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -24,8 +24,7 @@ func signMessage(c *cli.Context, message string) (*api.NodeSignResponse, error) 
 
 	// Response
 	response := api.NodeSignResponse{}
-
-	signedBytes, err := w.SignMessage(message)
+	signedBytes, err := w.SignMessage(c.String("message"))
 	if err != nil {
 		return nil, fmt.Errorf("Error signing message [%s]: %w", message, err)
 	}
