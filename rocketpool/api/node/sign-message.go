@@ -24,7 +24,8 @@ func signMessage(c *cli.Context) (*api.NodeSignResponse, error) {
 
 	// Response
 	response := api.NodeSignResponse{}
-	signedBytes, err := w.SignMessage(c.String("message"))
+	message := c.String("message")
+	signedBytes, err := w.SignMessage(message)
 	if err != nil {
 		return nil, fmt.Errorf("Error signing message [%s]: %w", message, err)
 	}
