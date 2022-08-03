@@ -43,7 +43,7 @@ func signMessage(c *cli.Context) error {
 	fmt.Printf("Message: %s\n", message)
 	fmt.Printf("Signed data: %s\n\n", response.SignedData)
 
-	if cliutils.Confirm("Do you want to use this message on beaconcha.in?") {
+	if cliutils.Confirm("Do you want to use this message on beaconcha.in? (Prints the message in the expected format)") {
 		fmt.Printf(`{ 
     "address": "%s",
     "msg": "%s",
