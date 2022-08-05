@@ -9,6 +9,8 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
+const signatureVersion = 1
+
 func signMessage(c *cli.Context) error {
 
 	// Get RP client
@@ -30,7 +32,7 @@ func signMessage(c *cli.Context) error {
 	}
 
 	message := c.String("message")
-	if message == "" {
+	for message == "" {
 		message = cliutils.Prompt("Please enter the message you want to sign: (EIP-191 personal_sign)", "^.+$", "Please enter the message you want to sign: (EIP-191 personal_sign)")
 	}
 
@@ -48,8 +50,8 @@ func signMessage(c *cli.Context) error {
     "address": "%s",
     "msg": "%s",
     "sig": "%s",
-    "version": "2"
-}`, status.AccountAddress, message, response.SignedData)
+    "version": "%d"
+}`, status.AccountAddress, message, response.SignedData, signatureVersion)
 	}
 
 	return nil

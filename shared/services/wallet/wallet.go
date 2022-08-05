@@ -294,7 +294,7 @@ func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
 
 // Signs an arbitrary message using the wallet's private key
 func (w *Wallet) SignMessage(message string) ([]byte, error) {
-	// Get private key
+	// Get the wallet's private key
 	privateKey, _, err := w.getNodePrivateKey()
 	if err != nil {
 		return nil, err
@@ -308,7 +308,7 @@ func (w *Wallet) SignMessage(message string) ([]byte, error) {
 		return nil, fmt.Errorf("Error signing message: %w", err)
 	}
 
-	// fix the ECDSA 'v' (see https://bitcoin.stackexchange.com/questions/38351/ecdsa-v-r-s-what-is-v/38909#38909)
+	// fix the ECDSA 'v' (see https://medium.com/mycrypto/the-magic-of-digital-signatures-on-ethereum-98fe184dc9c7#:~:text=The%20version%20number,2%E2%80%9D%20was%20introduced)
 	signedMessage[64] += 27
 	return signedMessage, nil
 }
