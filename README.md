@@ -55,6 +55,7 @@ The following commands are available via the smart node client:
 - `rocketpool node deposit` - Make a deposit to create a minipool and begin staking
 - `rocketpool node send [amount] [token] [to]` - Send an amount of ETH or tokens to an address
 - `rocketpool node burn [amount] [token]` - Burn reward tokens for ETH
+- `rocketpool node sign-message` - Signs a arbitrary message using the node wallet's private key
 
 - `rocketpool minipool status` - Display the current status of all minipools run by the node
 - `rocketpool minipool refund` - Refund ETH from minipools which have had user-deposited ETH assigned to them
