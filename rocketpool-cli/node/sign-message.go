@@ -3,6 +3,9 @@ package node
 import (
 	"fmt"
 
+	"encoding/json"
+
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -10,6 +13,13 @@ import (
 )
 
 const signatureVersion = 1
+
+type PersonalSignature struct {
+	Address   common.Address `json:"address"`
+	Message   string         `json:"msg"`
+	Signature string         `json:"sig"`
+	Version   string         `json:"version"` // beaconcha.in expects a string
+}
 
 func signMessage(c *cli.Context) error {
 
@@ -46,12 +56,12 @@ func signMessage(c *cli.Context) error {
 	fmt.Printf("Signed data: %s\n\n", response.SignedData)
 
 	if cliutils.Confirm("Do you want to use this message on beaconcha.in? (Prints the message in the expected format)") {
-		fmt.Printf(`{ 
-    "address": "%s",
-    "msg": "%s",
-    "sig": "%s",
-    "version": "%d"
-}`, status.AccountAddress, message, response.SignedData, signatureVersion)
+		bytes, err := json.MarshalIndent(PersonalSignature{status.AccountAddress, message, response.SignedData, fmt.Sprint(signatureVersion)}, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(string(bytes))
 	}
 
 	return nil
