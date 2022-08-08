@@ -1170,6 +1170,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
+	// Get the external IP address
 	var externalIP string
 	ip, err := getExternalIP()
 	if err != nil {
