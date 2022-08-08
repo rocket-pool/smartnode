@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -1152,18 +1153,26 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
-	// Get the external IP address
+	// Get the external IP address. Try finding an IPv4 address first to:
+	//   * Improve peer discovery and node performance
+	//   * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
 	var externalIP string
+	var ip net.IP
 	consensus := externalip.DefaultConsensus(nil, nil)
-	ip, err := consensus.ExternalIP()
+	ipVersions := []uint{4, 6}
+	for _, v := range ipVersions {
+		consensus.UseIPProtocol(v)
+		ip, err = consensus.ExternalIP()
+		if err == nil {
+			externalIP = ip.String()
+			break
+		}
+	}
 	if err != nil {
 		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
 		fmt.Println(err.Error())
-	} else {
-		if ip.To4() == nil {
-			fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
-		}
-		externalIP = ip.String()
+	} else if ip.To4() == nil {
+		fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
 	}
 
 	// Set up environment variables and deploy the template config files
