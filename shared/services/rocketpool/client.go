@@ -61,6 +61,29 @@ const (
 	DebugColor = color.FgYellow
 )
 
+// Get the external IP address. Try finding an IPv4 address first to:
+// * Improve peer discovery and node performance
+// * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
+func getExternalIP() (net.IP, error) {
+	var err error
+
+	// Try IPv4 first
+	ip4Consensus := externalip.DefaultConsensus(nil, nil)
+	ip4Consensus.UseIPProtocol(4)
+	if ip, err := ip4Consensus.ExternalIP(); err == nil {
+		return ip, nil
+	}
+
+	// Try IPv6 as fallback
+	ip6Consensus := externalip.DefaultConsensus(nil, nil)
+	ip6Consensus.UseIPProtocol(6)
+	if ip, err := ip6Consensus.ExternalIP(); err == nil {
+		return ip, nil
+	}
+
+	return nil, err
+}
+
 // Rocket Pool client
 type Client struct {
 	configPath         string
@@ -1153,26 +1176,16 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
-	// Get the external IP address. Try finding an IPv4 address first to:
-	//   * Improve peer discovery and node performance
-	//   * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
 	var externalIP string
-	var ip net.IP
-	consensus := externalip.DefaultConsensus(nil, nil)
-	ipVersions := []uint{4, 6}
-	for _, v := range ipVersions {
-		consensus.UseIPProtocol(v)
-		ip, err = consensus.ExternalIP()
-		if err == nil {
-			externalIP = ip.String()
-			break
-		}
-	}
+	ip, err := getExternalIP()
 	if err != nil {
 		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
 		fmt.Println(err.Error())
-	} else if ip.To4() == nil {
-		fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
+	} else {
+		if ip.To4() == nil {
+			fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
+		}
+		externalIP = ip.String()
 	}
 
 	// Set up environment variables and deploy the template config files
