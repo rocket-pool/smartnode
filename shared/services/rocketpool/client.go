@@ -65,8 +65,6 @@ const (
 // * Improve peer discovery and node performance
 // * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
 func getExternalIP() (net.IP, error) {
-	var err error
-
 	// Try IPv4 first
 	ip4Consensus := externalip.DefaultConsensus(nil, nil)
 	ip4Consensus.UseIPProtocol(4)
@@ -77,11 +75,7 @@ func getExternalIP() (net.IP, error) {
 	// Try IPv6 as fallback
 	ip6Consensus := externalip.DefaultConsensus(nil, nil)
 	ip6Consensus.UseIPProtocol(6)
-	if ip, err := ip6Consensus.ExternalIP(); err == nil {
-		return ip, nil
-	}
-
-	return nil, err
+	return ip6Consensus.ExternalIP()
 }
 
 // Rocket Pool client
