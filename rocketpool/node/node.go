@@ -84,27 +84,33 @@ func run(c *cli.Context) error {
 			if err != nil {
 				errorLog.Println(err)
 			} else {
-				// Manage the fee recipient for the node
-				if err := manageFeeRecipient.run(); err != nil {
+				// Check the BC status
+				err := services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+				if err != nil {
 					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
+				} else {
+					// Manage the fee recipient for the node
+					if err := manageFeeRecipient.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 
-				// Run auto-claims during the legacy period
-				if err := claimRplRewards.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
+					// Run auto-claims during the legacy period
+					if err := claimRplRewards.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 
-				// Run the rewards download check
-				if err := downloadRewardsTrees.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
+					// Run the rewards download check
+					if err := downloadRewardsTrees.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 
-				// Run the minipool stake check
-				if err := stakePrelaunchMinipools.run(); err != nil {
-					errorLog.Println(err)
+					// Run the minipool stake check
+					if err := stakePrelaunchMinipools.run(); err != nil {
+						errorLog.Println(err)
+					}
 				}
 			}
 			time.Sleep(tasksInterval)
