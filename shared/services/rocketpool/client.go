@@ -1382,7 +1382,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 
 	// Check MEV Boost
 	switch cfg.Smartnode.Network.Value.(config.Network) {
-	case config.Network_Kiln, config.Network_Ropsten:
+	case config.Network_Kiln, config.Network_Ropsten, config.Network_Prater:
 		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
 			contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
 			if err != nil {

@@ -93,9 +93,6 @@ func (home *settingsHome) createContent() {
 				case config.Network_Mainnet:
 					layout.descriptionBox.SetText("MEV Boost is currently not available on Mainnet.")
 					return
-				case config.Network_Prater:
-					layout.descriptionBox.SetText("MEV Boost is currently not available on Prater.")
-					return
 				}
 			}
 			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
