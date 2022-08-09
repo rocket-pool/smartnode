@@ -331,7 +331,7 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 /// Internal functions
 /// ==================
 
-func (p *ExecutionClientManager) CheckStatus(alwaysCheckFallback bool) *api.ClientManagerStatus {
+func (p *ExecutionClientManager) CheckStatus() *api.ClientManagerStatus {
 
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: p.fallbackEc != nil,
@@ -352,7 +352,7 @@ func (p *ExecutionClientManager) CheckStatus(alwaysCheckFallback bool) *api.Clie
 	status.PrimaryClientStatus = checkEcStatus(p.primaryEc)
 
 	// Get the fallback EC status if applicable
-	if status.FallbackEnabled && alwaysCheckFallback {
+	if status.FallbackEnabled {
 		status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
 	}
 
