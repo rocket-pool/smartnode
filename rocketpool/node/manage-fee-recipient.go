@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -118,7 +119,7 @@ func (m *manageFeeRecipient) run() error {
 	}
 
 	// Check if the VC is using the correct fee recipient
-	fileExists, correctAddress, err := m.w.CheckFeeRecipientFile(correctFeeRecipient)
+	fileExists, correctAddress, err := rpsvc.CheckFeeRecipientFile(correctFeeRecipient, m.cfg)
 	if err != nil {
 		return fmt.Errorf("error validating fee recipient files: %w", err)
 	}
@@ -133,7 +134,7 @@ func (m *manageFeeRecipient) run() error {
 	}
 
 	// Regenerate the fee recipient files
-	err = m.w.UpdateFeeRecipientFile(correctFeeRecipient)
+	err = rpsvc.UpdateFeeRecipientFile(correctFeeRecipient, m.cfg)
 	if err != nil {
 		m.log.Println("***ERROR***")
 		m.log.Printlnf("Error updating fee recipient files: %s", err.Error())

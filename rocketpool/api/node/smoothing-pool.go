@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
@@ -173,7 +174,7 @@ func setSmoothingPoolStatus(c *cli.Context, status bool) (*api.SetSmoothingPoolR
 			return nil, err
 		}
 
-		err = w.UpdateFeeRecipientFile(*smoothingPoolContract.Address)
+		err = rocketpool.UpdateFeeRecipientFile(*smoothingPoolContract.Address, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -182,7 +183,7 @@ func setSmoothingPoolStatus(c *cli.Context, status bool) (*api.SetSmoothingPoolR
 		err = validator.RestartValidator(cfg, bc, nil, d)
 		if err != nil {
 			// Set the fee recipient back to the node distributor
-			err2 := w.UpdateFeeRecipientFile(distributor)
+			err2 := rocketpool.UpdateFeeRecipientFile(distributor, cfg)
 			if err2 != nil {
 				return nil, fmt.Errorf("***WARNING***\nError restarting validator: [%s]\nError setting fee recipient back to your node's distributor: [%w]\nYour node now has the Smoothing Pool as its fee recipient, even though you aren't opted in!\nPlease visit the Rocket Pool Discord server for help with these errors, so it can be set back to your node's distributor.", err.Error(), err2)
 			}

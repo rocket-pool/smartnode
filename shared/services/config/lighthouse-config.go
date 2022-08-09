@@ -1,10 +1,9 @@
 package config
 
 const (
-	lighthouseTagTest              string = "sigp/lighthouse:v2.5.1"
-	lighthouseTagProd              string = "sigp/lighthouse:v2.5.1"
-	defaultLhMaxPeers              uint16 = 80
-	LighthouseFeeRecipientFilename string = "rp-fee-recipient.txt"
+	lighthouseTagTest string = "sigp/lighthouse:v2.5.1"
+	lighthouseTagProd string = "sigp/lighthouse:v2.5.1"
+	defaultLhMaxPeers uint16 = 80
 )
 
 // Configuration for Lighthouse

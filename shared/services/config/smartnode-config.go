@@ -27,6 +27,8 @@ const (
 	RegenerateRewardsTreeRequestFormat string = "%d" + RegenerateRewardsTreeRequestSuffix
 	PrimaryRewardsFileUrl              string = "https://%s.ipfs.dweb.link/%s"
 	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
+	FeeRecipientFilename               string = "rp-fee-recipient.txt"
+	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
 )
 
 // Defaults
@@ -573,6 +575,14 @@ func (config *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
 		return filepath.Join(DaemonDataPath, WatchtowerFolder)
 	} else {
 		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder)
+	}
+}
+
+func (config *SmartnodeConfig) GetFeeRecipientFilePath() string {
+	if !config.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, FeeRecipientFilename)
+	} else {
+		return filepath.Join(config.DataPath.Value.(string), NativeFeeRecipientFilename)
 	}
 }
 
