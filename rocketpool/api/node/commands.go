@@ -1,8 +1,6 @@
 package node
 
 import (
-	"fmt"
-
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -798,21 +796,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "sign-message",
 				Usage:     "Signs an arbitrary message with the node's private key.",
-				UsageText: "rocketpool api node sign-message -m message",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "message, m",
-						Usage: "The 'quoted message' to be signed",
-					},
-				},
+				UsageText: "rocketpool api node sign-message 'message'",
 				Action: func(c *cli.Context) error {
-					// Validate flags
-					if c.String("message") == "" {
-						return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
 					}
 
+					message := c.Args().Get(0)
+
 					// Run
-					api.PrintResponse(signMessage(c))
+					api.PrintResponse(signMessage(c, message))
 					return nil
 
 				},

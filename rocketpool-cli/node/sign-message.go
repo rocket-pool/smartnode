@@ -52,17 +52,18 @@ func signMessage(c *cli.Context) error {
 	}
 
 	// Print the signature
-	fmt.Printf("Message: %s\n", message)
-	fmt.Printf("Signed data: %s\n\n", response.SignedData)
-
-	if cliutils.Confirm("Do you want to use this message on beaconcha.in? (Prints the message in the expected format)") {
-		bytes, err := json.MarshalIndent(PersonalSignature{status.AccountAddress, message, response.SignedData, fmt.Sprint(signatureVersion)}, "", "  ")
-		if err != nil {
-			return err
-		}
-
-		fmt.Println(string(bytes))
+	formattedSignature := PersonalSignature{
+		Address:   status.AccountAddress,
+		Message:   message,
+		Signature: response.SignedData,
+		Version:   fmt.Sprint(signatureVersion),
 	}
+	bytes, err := json.MarshalIndent(formattedSignature, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Signed Message:\n\n%s\n", string(bytes))
 
 	return nil
 

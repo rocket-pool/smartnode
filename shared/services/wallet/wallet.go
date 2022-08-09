@@ -10,6 +10,7 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
@@ -300,16 +301,14 @@ func (w *Wallet) SignMessage(message string) ([]byte, error) {
 		return nil, err
 	}
 
-	fullMessage := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), message)
-	hash := crypto.Keccak256Hash([]byte(fullMessage))
-
-	signedMessage, err := crypto.Sign(hash.Bytes(), privateKey)
+	messageHash := accounts.TextHash([]byte(message))
+	signedMessage, err := crypto.Sign(messageHash, privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("Error signing message: %w", err)
 	}
 
 	// fix the ECDSA 'v' (see https://medium.com/mycrypto/the-magic-of-digital-signatures-on-ethereum-98fe184dc9c7#:~:text=The%20version%20number,2%E2%80%9D%20was%20introduced)
-	signedMessage[64] += 27
+	signedMessage[crypto.RecoveryIDOffset] += 27
 	return signedMessage, nil
 }
 
