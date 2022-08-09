@@ -471,7 +471,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 }
 
 // Install the Rocket Pool service
-func (c *Client) InstallService(verbose, noDeps bool, network, version, path string) error {
+func (c *Client) InstallService(verbose, noDeps bool, network, version, path string, dataPath string) error {
 
 	// Get installation script downloader type
 	downloader, err := c.getDownloader()
@@ -489,6 +489,9 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version, path str
 	}
 	if noDeps {
 		flags = append(flags, "-d")
+	}
+	if dataPath != "" {
+		flags = append(flags, fmt.Sprintf("-u %s", dataPath))
 	}
 
 	// Initialize installation command

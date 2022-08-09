@@ -50,6 +50,7 @@ const (
 
 // Install the Rocket Pool service
 func installService(c *cli.Context) error {
+	dataPath := ""
 
 	if c.String("network") != "" {
 		fmt.Printf("%sNOTE: The --network flag is deprecated. You no longer need to specify it.%s\n\n", colorLightBlue, colorReset)
@@ -71,8 +72,21 @@ func installService(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Attempt to load the config to see if any settings need to be passed along to the install script
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading old configuration: %w", err)
+	}
+	if !isNew {
+		dataPath = cfg.Smartnode.DataPath.Value.(string)
+		dataPath, err = homedir.Expand(dataPath)
+		if err != nil {
+			return fmt.Errorf("error getting data path from old configuration: %w", err)
+		}
+	}
+
 	// Install service
-	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("network"), c.String("version"), c.String("path"))
+	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("network"), c.String("version"), c.String("path"), dataPath)
 	if err != nil {
 		return err
 	}
@@ -83,8 +97,8 @@ func installService(c *cli.Context) error {
 
 	printPatchNotes(c)
 
-	// Check if this is a new installation
-	_, isNew, err := rp.LoadConfig()
+	// Reload the config after installation
+	_, isNew, err = rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading new configuration: %w", err)
 	}
