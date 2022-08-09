@@ -75,10 +75,14 @@ func installService(c *cli.Context) error {
 	// Attempt to load the config to see if any settings need to be passed along to the install script
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("error loading new configuration: %w", err)
+		return fmt.Errorf("error loading old configuration: %w", err)
 	}
-	if isNew == false {
+	if !isNew {
 		dataPath = cfg.Smartnode.DataPath.Value.(string)
+		dataPath, err = homedir.Expand(dataPath)
+		if err != nil {
+			return fmt.Errorf("error getting data path from old configuration: %w", err)
+		}
 	}
 
 	// Install service
@@ -92,6 +96,12 @@ func installService(c *cli.Context) error {
 	fmt.Println("The Rocket Pool service was successfully installed!")
 
 	printPatchNotes(c)
+
+	// Reload the config after installation
+	_, isNew, err = rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading new configuration: %w", err)
+	}
 
 	// Check if this is a migration
 	isMigration := false
