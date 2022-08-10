@@ -146,3 +146,14 @@ func (param *Parameter) GetDefault(network Network) (interface{}, error) {
 
 	return defaultSetting, nil
 }
+
+// Add the parameters to the collection of environment variabes
+func AddParametersToEnvVars(params []*Parameter, envVars map[string]string) {
+	for _, param := range params {
+		for _, envVar := range param.EnvironmentVariables {
+			if envVar != "" {
+				envVars[envVar] = fmt.Sprint(param.Value)
+			}
+		}
+	}
+}

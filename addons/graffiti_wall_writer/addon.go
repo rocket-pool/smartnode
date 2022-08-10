@@ -3,7 +3,6 @@ package graffiti_wall_writer
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -18,10 +17,6 @@ type GraffitiWallWriter struct {
 	cfg *GraffitiWallWriterConfig
 }
 
-func NewGraffitiWallWriter() *GraffitiWallWriter {
-	return &GraffitiWallWriter{}
-}
-
 func (gww *GraffitiWallWriter) GetName() string {
 	return "Graffiti Wall Writer"
 }
@@ -30,9 +25,9 @@ func (gww *GraffitiWallWriter) GetDescription() string {
 	return "This addon adds support for drawing on the Beaconcha.in graffiti wall (https://beaconcha.in/graffitiwall) using by replacing your validator's static graffiti message with a special message indicating a pixel to draw on the wall.\n\nMade with love by BenV and RamiRond!"
 }
 
-func (gww *GraffitiWallWriter) GetConfig(baseConfig *config.RocketPoolConfig) *GraffitiWallWriterConfig {
+func (gww *GraffitiWallWriter) GetConfig() cfgtypes.Config {
 	if gww.cfg == nil {
-		gww.cfg = NewConfig(baseConfig)
+		gww.cfg = NewConfig()
 	}
 	return gww.cfg
 }
@@ -47,7 +42,7 @@ func (gww *GraffitiWallWriter) GetContainerTag() string {
 
 func (gww *GraffitiWallWriter) UpdateEnvVars(envVars map[string]string) error {
 	if gww.cfg.Enabled.Value == true {
-		config.AddParametersToEnvVars(gww.cfg.GetParameters(), envVars)
+		cfgtypes.AddParametersToEnvVars(gww.cfg.GetParameters(), envVars)
 	}
 	return nil
 }

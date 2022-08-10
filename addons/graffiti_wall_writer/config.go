@@ -1,7 +1,6 @@
 package graffiti_wall_writer
 
 import (
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -21,7 +20,7 @@ type GraffitiWallWriterConfig struct {
 }
 
 // Creates a new configuration instance
-func NewConfig(cfg *config.RocketPoolConfig) *GraffitiWallWriterConfig {
+func NewConfig() *GraffitiWallWriterConfig {
 	return &GraffitiWallWriterConfig{
 		Title: "Graffiti Wall Writer Settings",
 
