@@ -395,3 +395,8 @@ type SetSmoothingPoolRegistrationStatusResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+type ResolveEnsNameResponse struct {
+	Status  string         `json:"status"`
+	Error   string         `json:"error"`
+	Address common.Address `json:"address"`
+}

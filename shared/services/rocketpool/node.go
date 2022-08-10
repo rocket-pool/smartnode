@@ -876,3 +876,18 @@ func (c *Client) NodeSetSmoothingPoolStatus(status bool) (api.SetSmoothingPoolRe
 	}
 	return response, nil
 }
+
+func (c *Client) ResolveEnsName(name string) (api.ResolveEnsNameResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node resolve-ens-name %s", name))
+	if err != nil {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not resolve ENS name: %w", err)
+	}
+	var response api.ResolveEnsNameResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not decode resolve-ens-name: %w", err)
+	}
+	if response.Error != "" {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not resolve ENS name: %w", response.Error)
+	}
+	return response, nil
+}

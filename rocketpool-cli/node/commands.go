@@ -425,10 +425,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
+					delegate:= c.Args().Get(0)
 
 					// Run
 					return nodeSetVotingDelegate(c, delegate)
