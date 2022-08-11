@@ -33,6 +33,7 @@ const (
 	WatchtowerContainerName   string = "watchtower"
 
 	FeeRecipientFileEnvVar string = "FEE_RECIPIENT_FILE"
+	FeeRecipientEnvVar     string = "FEE_RECIPIENT"
 )
 
 // Defaults

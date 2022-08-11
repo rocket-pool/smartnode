@@ -47,10 +47,11 @@ const (
 	APIContainerSuffix string = "_api"
 	APIBinPath         string = "/go/bin/rocketpool"
 
-	templatesDir           string = "templates"
-	overrideDir            string = "override"
-	runtimeDir             string = "runtime"
-	defaultFeeRecipientDir string = "fr-default"
+	templatesDir                  string = "templates"
+	overrideDir                   string = "override"
+	runtimeDir                    string = "runtime"
+	defaultFeeRecipientFile       string = "fr-default.tmpl"
+	defaultNativeFeeRecipientFile string = "fr-default-env.tmpl"
 
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
@@ -1398,32 +1399,28 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		}
 	}
 
-	// Deploy the fee recipient templates
-	defaultFrTemplatesFolder := filepath.Join(templatesFolder, defaultFeeRecipientDir)
-	defaultFrDeploymentPath, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), defaultFeeRecipientDir))
-	if err != nil {
-		return []string{}, fmt.Errorf("error expanding default fee recipient directory: %w", err)
+	// Get the fee recipient template
+	var defaultFrTemplateFile string
+	if cfg.IsNativeMode {
+		defaultFrTemplateFile = filepath.Join(templatesFolder, defaultNativeFeeRecipientFile)
+	} else {
+		defaultFrTemplateFile = filepath.Join(templatesFolder, defaultFeeRecipientFile)
 	}
-	err = os.MkdirAll(defaultFrDeploymentPath, 0775)
+	defaultFrDeploymentPath, err := homedir.Expand(cfg.Smartnode.GetDefaultFeeRecipientFilePath(false))
 	if err != nil {
-		return []string{}, fmt.Errorf("error creating default fee recipient directory: %w", err)
+		return []string{}, fmt.Errorf("error expanding default fee recipient path: %w", err)
 	}
-	for _, option := range cfg.ConsensusClient.Options {
-		client := option.Value.(config.ConsensusClient)
-		clientString := string(client)
 
-		// Do the environment var substitution
-		contents, err = envsubst.ReadFile(filepath.Join(defaultFrTemplatesFolder, clientString+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting template for %s fee recipient file: %w", clientString, err)
-		}
+	// Do the environment var substitution
+	contents, err = envsubst.ReadFile(defaultFrTemplateFile)
+	if err != nil {
+		return []string{}, fmt.Errorf("error reading and substituting fee recipient file template: %w", err)
+	}
 
-		// Write the file
-		targetPath := filepath.Join(defaultFrDeploymentPath, clientString)
-		err = ioutil.WriteFile(targetPath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write default fee recipient file for %s to %s: %w", clientString, targetPath, err)
-		}
+	// Write the file
+	err = ioutil.WriteFile(defaultFrDeploymentPath, contents, 0664)
+	if err != nil {
+		return []string{}, fmt.Errorf("could not write default fee recipient file to %s: %w", defaultFrDeploymentPath, err)
 	}
 
 	// Create the custom keys dir

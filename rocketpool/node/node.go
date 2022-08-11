@@ -1,7 +1,11 @@
 package node
 
 import (
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -76,6 +80,12 @@ func run(c *cli.Context) error {
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
 
+	// Handle the initial fee recipient file deployment
+	err = deployFeeRecipientFile(c)
+	if err != nil {
+		return err
+	}
+
 	// Run task loop
 	go func() {
 		for {
@@ -140,5 +150,45 @@ func configureHTTP() {
 	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
 	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
+
+}
+
+// Copy the default fee recipient file into the proper location
+func deployFeeRecipientFile(c *cli.Context) error {
+
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
+
+	feeRecipientPath := cfg.Smartnode.GetFeeRecipientFilePath()
+	_, err = os.Stat(feeRecipientPath)
+	if os.IsNotExist(err) {
+		// Fee recipient file didn't exist so copy the default over
+		defaultFeeRecipientPath := cfg.Smartnode.GetDefaultFeeRecipientFilePath(true)
+		_, err = os.Stat(defaultFeeRecipientPath)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("default fee recipient file did not exist at %s.", defaultFeeRecipientPath)
+		}
+
+		// Make sure the validators dir is created
+		validatorsFolder := filepath.Dir(defaultFeeRecipientPath)
+		err = os.MkdirAll(validatorsFolder, 0755)
+		if err != nil {
+			return fmt.Errorf("could not create validators directory: %w", err)
+		}
+
+		// Copy the file
+		bytes, err := ioutil.ReadFile(defaultFeeRecipientPath)
+		if err != nil {
+			return fmt.Errorf("could not read default fee recipient file: %w", err)
+		}
+		err = ioutil.WriteFile(feeRecipientPath, bytes, 0664)
+		if err != nil {
+			return fmt.Errorf("could not write default fee recipient file to %s: %w", feeRecipientPath, err)
+		}
+	}
+
+	return nil
 
 }
