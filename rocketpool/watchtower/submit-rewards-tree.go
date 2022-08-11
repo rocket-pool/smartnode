@@ -321,6 +321,7 @@ func (t *submitRewardsTree) generateTree(intervalsPassed time.Duration, nodeTrus
 					client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()))
 					if err != nil {
 						t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err))
+						return
 					}
 
 					// Get the rETH address from the archive EC
@@ -329,11 +330,12 @@ func (t *submitRewardsTree) generateTree(intervalsPassed time.Duration, nodeTrus
 						t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err))
 						return
 					}
+				} else {
+					// No archive node specified
+					t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", snapshotElBlockHeader.Number.Uint64()))
+					return
 				}
 
-				// No archive node specified
-				t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", snapshotElBlockHeader.Number.Uint64()))
-				return
 			}
 		}
 
