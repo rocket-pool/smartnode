@@ -336,8 +336,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		rplTokenAddress: map[Network]string{
-			Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
-			Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
+			Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
+			Network_Prater:  "0x5e932688e81a182e3de211db6544f98b8e4f89c7",
 			Network_Kiln:    "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			Network_Ropsten: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 		},
