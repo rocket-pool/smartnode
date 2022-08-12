@@ -124,7 +124,7 @@ func (home *settingsHome) createContent() {
 			}
 		} else if s1 == home.mevBoostPage.page.title {
 			switch home.md.Config.Smartnode.Network.Value.(config.Network) {
-			case config.Network_Mainnet, config.Network_Prater:
+			case config.Network_Mainnet:
 				return
 			}
 		}
