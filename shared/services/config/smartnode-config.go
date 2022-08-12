@@ -408,7 +408,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		optimismPriceMessengerAddress: map[Network]string{
-			Network_Mainnet: "",
+			Network_Mainnet: "0xdddcf2c25d50ec22e67218e873d46938650d03a7",
 			Network_Prater:  "0x87E2deCE7d0A080D579f63cbcD7e1629BEcd7E7d",
 			Network_Kiln:    "",
 			Network_Ropsten: "",
