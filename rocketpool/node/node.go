@@ -47,6 +47,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 // Run daemon
 func run(c *cli.Context) error {
 
+	// Handle the initial fee recipient file deployment
+	err := deployFeeRecipientFile(c)
+	if err != nil {
+		return err
+	}
+
 	// Configure
 	configureHTTP()
 
@@ -79,12 +85,6 @@ func run(c *cli.Context) error {
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
-
-	// Handle the initial fee recipient file deployment
-	err = deployFeeRecipientFile(c)
-	if err != nil {
-		return err
-	}
 
 	// Run task loop
 	go func() {
