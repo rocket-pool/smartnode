@@ -174,12 +174,6 @@ func installUpdateTracker(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return fmt.Errorf("Error getting validator container prefix: %w", err)
-	}
-
 	// Install service
 	err = rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
 	if err != nil {
@@ -192,7 +186,7 @@ func installUpdateTracker(c *cli.Context) error {
 	fmt.Println("")
 	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
 	fmt.Println("")
-	fmt.Printf("%sNOTE:\nPlease run 'docker restart %s%s' to enable update tracking on the metrics dashboard.%s\n", colorYellow, prefix, ExporterContainerSuffix, colorReset)
+	fmt.Printf("%sNOTE:\nPlease restart the Smartnode stack to enable update tracking on the metrics dashboard.%s\n", colorYellow, colorReset)
 	fmt.Println("")
 	return nil
 
