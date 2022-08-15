@@ -199,11 +199,11 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 					Name:        "Kiln Testnet",
 					Description: "This is the Kiln test network, which uses free \"test\" ETH and free \"test\" RPL.\n\nUse this if you want to practice running a node on a post-merge network to learn how it differs from Mainnet today.",
 					Value:       Network_Kiln,
-				},*/{
+				},{
 					Name:        "Ropsten Testnet",
 					Description: "This is the Ropsten test network, which uses free \"test\" ETH and free \"test\" RPL.\n\nUse this if you want to practice running a node on a post-merge network to learn how it differs from Mainnet today.",
 					Value:       Network_Ropsten,
-				}},
+				}*/},
 		},
 
 		ManualMaxFee: Parameter{
