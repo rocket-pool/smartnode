@@ -195,7 +195,7 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("could not write default fee recipient file to %s: %w", feeRecipientPath, err)
 		}
-	} else {
+	} else if err != nil {
 		return fmt.Errorf("Error checking fee recipient file status: %w", err)
 	}
 
@@ -225,7 +225,7 @@ func removeLegacyFeeRecipientFiles(c *cli.Context) error {
 			if err != nil {
 				fmt.Printf("NOTE: Couldn't remove old fee recipient file (%s): %s\nThis file is no longer used, you may remove it manually if you wish.\n", oldFile, err.Error())
 			}
-		} else {
+		} else if err != nil {
 			fmt.Printf("NOTE: Couldn't check if old fee recipient file exists (%s): %s\nThis file is no longer used, you may remove it manually if you wish.\n", oldFile, err.Error())
 		}
 	}
