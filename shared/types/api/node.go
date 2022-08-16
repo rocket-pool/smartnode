@@ -30,7 +30,6 @@ type NodeStatusResponse struct {
 	MaximumRplStake          *big.Int        `json:"maximumRplStake"`
 	CollateralRatio          float64         `json:"collateralRatio"`
 	VotingDelegate           common.Address  `json:"votingDelegate"`
-	IsInSmoothingPool        bool            `json:"isInSmoothingPool"`
 	MinipoolLimit            uint64          `json:"minipoolLimit"`
 	MinipoolCounts           struct {
 		Total               int `json:"total"`

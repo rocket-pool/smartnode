@@ -2,7 +2,7 @@ package config
 
 // Constants
 const (
-	mevBoostTag       string = "flashbots/mev-boost:v0.7.9"
+	mevBoostTag       string = "flashbots/mev-boost:v0.7.10"
 	mevBoostUrlEnvVar string = "MEV_BOOST_URL"
 )
 
