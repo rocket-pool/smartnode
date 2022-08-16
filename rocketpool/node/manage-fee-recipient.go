@@ -5,7 +5,6 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
 
@@ -95,27 +94,18 @@ func (m *manageFeeRecipient) run() error {
 		return err
 	}
 
-	// Get the distributor address for the node
-	distributor, err := node.GetDistributorAddress(m.rp, nodeAccount.Address, nil)
+	// Get the fee recipient info for the node
+	feeRecipientInfo, err := rputils.GetFeeRecipientInfo(m.rp, m.bc, nodeAccount.Address)
 	if err != nil {
-		return fmt.Errorf("error getting distributor address: %w", err)
+		return fmt.Errorf("error getting fee recipient info: %w", err)
 	}
 
-	// Check Smoothing Pool registration status
-	isInSmoothingPool, err := node.GetSmoothingPoolRegistrationState(m.rp, nodeAccount.Address, nil)
-	if err != nil {
-		return fmt.Errorf("error getting smoothing pool opt-in status: %w", err)
-	}
-	smoothingPoolContract, err := m.rp.GetContract("rocketSmoothingPool")
-	if err != nil {
-		return fmt.Errorf("error getting smoothing pool contract: %w", err)
-	}
-
+	// Get the correct fee recipient address
 	var correctFeeRecipient common.Address
-	if isInSmoothingPool {
-		correctFeeRecipient = *smoothingPoolContract.Address
+	if feeRecipientInfo.IsInSmoothingPool || feeRecipientInfo.IsInOptOutCooldown {
+		correctFeeRecipient = feeRecipientInfo.SmoothingPoolAddress
 	} else {
-		correctFeeRecipient = distributor
+		correctFeeRecipient = feeRecipientInfo.FeeDistributorAddress
 	}
 
 	// Check if the VC is using the correct fee recipient
