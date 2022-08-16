@@ -153,7 +153,10 @@ ______           _        _    ______           _
 	fmt.Println("In preparation for The Merge, light clients (Infura and Pocket) are no longer supported.\nYou will need to switch to a Full Execution client before The Merge in order to continue validating!\n")
 
 	fmt.Printf("%s=== New Fallback System ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.")
+	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.\n")
+
+	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
+	fmt.Println("`rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
