@@ -785,7 +785,7 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 	r.log.Printlnf("%s Pool staker ETH:    %s (%.3f)", r.logPrefix, poolStakerShare.String(), eth.WeiToEth(truePoolStakerAmount))
 	r.log.Printlnf("%s Node Op ETH:        %s (%.3f)", r.logPrefix, nodeOpShare.String(), eth.WeiToEth(nodeOpShare))
 	r.log.Printlnf("%s Calculated NO ETH:  %s (error = %s wei)", r.logPrefix, totalEthForMinipools.String(), delta.String())
-	r.log.Printlnf("%s Adjusting pool staker ETH to %s to acount for truncation", r.logPrefix, truePoolStakerAmount.String())
+	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
 
 	return truePoolStakerAmount, totalEthForMinipools, nil
 
