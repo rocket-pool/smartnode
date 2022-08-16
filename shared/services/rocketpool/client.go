@@ -1399,30 +1399,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		}
 	}
 
-	// Get the fee recipient template
-	var defaultFrTemplateFile string
-	if cfg.IsNativeMode {
-		defaultFrTemplateFile = filepath.Join(templatesFolder, defaultNativeFeeRecipientFile)
-	} else {
-		defaultFrTemplateFile = filepath.Join(templatesFolder, defaultFeeRecipientFile)
-	}
-	defaultFrDeploymentPath, err := homedir.Expand(cfg.Smartnode.GetDefaultFeeRecipientFilePath(false))
-	if err != nil {
-		return []string{}, fmt.Errorf("error expanding default fee recipient path: %w", err)
-	}
-
-	// Do the environment var substitution
-	contents, err = envsubst.ReadFile(defaultFrTemplateFile)
-	if err != nil {
-		return []string{}, fmt.Errorf("error reading and substituting fee recipient file template: %w", err)
-	}
-
-	// Write the file
-	err = ioutil.WriteFile(defaultFrDeploymentPath, contents, 0664)
-	if err != nil {
-		return []string{}, fmt.Errorf("could not write default fee recipient file to %s: %w", defaultFrDeploymentPath, err)
-	}
-
 	// Create the custom keys dir
 	customKeyDir, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys"))
 	if err != nil {

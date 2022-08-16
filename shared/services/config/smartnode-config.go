@@ -29,8 +29,6 @@ const (
 	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
 	FeeRecipientFilename               string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
-	DefaultFeeRecipientFileName        string = "fr-default.txt"
-	DefaultNativeFeeRecipientFileName  string = "fr-default-env.txt"
 )
 
 // Defaults
@@ -585,21 +583,6 @@ func (config *SmartnodeConfig) GetFeeRecipientFilePath() string {
 		return filepath.Join(DaemonDataPath, "validators", FeeRecipientFilename)
 	} else {
 		return filepath.Join(config.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
-	}
-}
-
-func (config *SmartnodeConfig) GetDefaultFeeRecipientFilePath(daemon bool) string {
-	var defaultFrFileName string
-	if config.parent.IsNativeMode {
-		defaultFrFileName = DefaultNativeFeeRecipientFileName
-	} else {
-		defaultFrFileName = DefaultFeeRecipientFileName
-	}
-
-	if daemon && !config.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, defaultFrFileName)
-	} else {
-		return filepath.Join(config.DataPath.Value.(string), defaultFrFileName)
 	}
 }
 

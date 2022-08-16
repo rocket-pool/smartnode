@@ -13,6 +13,11 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
+	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
+	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
+	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -48,7 +53,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 func run(c *cli.Context) error {
 
 	// Handle the initial fee recipient file deployment
-	err := deployFeeRecipientFile(c)
+	err := deployDefaultFeeRecipientFile(c)
+	if err != nil {
+		return err
+	}
+
+	// Clean up old fee recipient files
+	err = removeLegacyFeeRecipientFiles(c)
 	if err != nil {
 		return err
 	}
@@ -154,7 +165,7 @@ func configureHTTP() {
 }
 
 // Copy the default fee recipient file into the proper location
-func deployFeeRecipientFile(c *cli.Context) error {
+func deployDefaultFeeRecipientFile(c *cli.Context) error {
 
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -164,28 +175,58 @@ func deployFeeRecipientFile(c *cli.Context) error {
 	feeRecipientPath := cfg.Smartnode.GetFeeRecipientFilePath()
 	_, err = os.Stat(feeRecipientPath)
 	if os.IsNotExist(err) {
-		// Fee recipient file didn't exist so copy the default over
-		defaultFeeRecipientPath := cfg.Smartnode.GetDefaultFeeRecipientFilePath(true)
-		_, err = os.Stat(defaultFeeRecipientPath)
-		if os.IsNotExist(err) {
-			return fmt.Errorf("default fee recipient file did not exist at %s.", defaultFeeRecipientPath)
-		}
-
 		// Make sure the validators dir is created
-		validatorsFolder := filepath.Dir(defaultFeeRecipientPath)
+		validatorsFolder := filepath.Dir(feeRecipientPath)
 		err = os.MkdirAll(validatorsFolder, 0755)
 		if err != nil {
 			return fmt.Errorf("could not create validators directory: %w", err)
 		}
 
-		// Copy the file
-		bytes, err := ioutil.ReadFile(defaultFeeRecipientPath)
-		if err != nil {
-			return fmt.Errorf("could not read default fee recipient file: %w", err)
+		// Create the file
+		var defaultFeeRecipientFileContents string
+		if cfg.IsNativeMode {
+			// Native mode needs an environment variable definition
+			defaultFeeRecipientFileContents = fmt.Sprintf("%s=%s", config.FeeRecipientEnvVar, cfg.Smartnode.GetRethAddress().Hex())
+		} else {
+			// Docker and Hybrid just need the address itself
+			defaultFeeRecipientFileContents = cfg.Smartnode.GetRethAddress().Hex()
 		}
-		err = ioutil.WriteFile(feeRecipientPath, bytes, 0664)
+		err := ioutil.WriteFile(feeRecipientPath, []byte(defaultFeeRecipientFileContents), 0664)
 		if err != nil {
 			return fmt.Errorf("could not write default fee recipient file to %s: %w", feeRecipientPath, err)
+		}
+	} else {
+		return fmt.Errorf("Error checking fee recipient file status: %w", err)
+	}
+
+	return nil
+
+}
+
+// Remove the old fee recipient files that were created in v1.5.0
+func removeLegacyFeeRecipientFiles(c *cli.Context) error {
+
+	legacyFeeRecipientFile := "rp-fee-recipient.txt"
+
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
+
+	validatorsFolder := cfg.Smartnode.GetValidatorKeychainPath()
+
+	// Remove the legacy files
+	keystoreDirs := []string{lighthouse.KeystoreDir, nimbus.KeystoreDir, prysm.KeystoreDir, teku.KeystoreDir}
+	for _, keystoreDir := range keystoreDirs {
+		oldFile := filepath.Join(validatorsFolder, keystoreDir, legacyFeeRecipientFile)
+		_, err = os.Stat(oldFile)
+		if !os.IsNotExist(err) {
+			err = os.Remove(oldFile)
+			if err != nil {
+				fmt.Printf("NOTE: Couldn't remove old fee recipient file (%s): %s\nThis file is no longer used, you may remove it manually if you wish.\n", oldFile, err.Error())
+			}
+		} else {
+			fmt.Printf("NOTE: Couldn't check if old fee recipient file exists (%s): %s\nThis file is no longer used, you may remove it manually if you wish.\n", oldFile, err.Error())
 		}
 	}
 
