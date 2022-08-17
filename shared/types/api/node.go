@@ -397,12 +397,14 @@ type SetSmoothingPoolRegistrationStatusResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 type SnapshotProposal struct {
-	Id       string `json:"id"`
-	Title    string `json:"title"`
-	Start    int    `json:"start"`
-	End      int    `json:"end"`
-	Snapshot string `json:"snapshot"`
-	Author   string `json:"author"`
+	Id       string   `json:"id"`
+	Title    string   `json:"title"`
+	Start    int      `json:"start"`
+	End      int      `json:"end"`
+	State    string   `json:"state"`
+	Snapshot string   `json:"snapshot"`
+	Author   string   `json:"author"`
+	Choices  []string `json:"choices"`
 }
 type SnapshotResponse struct {
 	Data struct {
