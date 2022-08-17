@@ -121,6 +121,22 @@ func getStatus(c *cli.Context) error {
 		} else {
 			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegate.Hex(), colorReset)
 		}
+
+		switch len(status.ActiveSnapshotProposals) {
+		case 0:
+			fmt.Print("Rocket Pool has no active proposals on Snapshot.\n")
+		case 1:
+			fmt.Print("Rocket Pool has 1 active proposal on Snapshot:\n")
+		default:
+			fmt.Printf("Rocket Pool has %d active proposals on Snapshot:\n", len(status.ActiveSnapshotProposals))
+		}
+
+		for _, proposal := range status.ActiveSnapshotProposals {
+			fmt.Printf("\nProposal ID: %s\n", proposal.Id)
+			fmt.Printf("Title: %s\n", proposal.Title)
+			fmt.Printf("Start: %s\n", cliutils.GetDateTimeString(uint64(proposal.Start)))
+			fmt.Printf("End: %s\n", cliutils.GetDateTimeString(uint64(proposal.End)))
+		}
 		fmt.Println("")
 
 		// Withdrawal address & balances

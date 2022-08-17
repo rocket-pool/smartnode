@@ -1,7 +1,11 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -237,4 +241,43 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 	// Return response
 	return &response, nil
 
+}
+
+func getSnapshotProposals(space string, state string) (*api.SnapshotResponse, error) {
+	query := fmt.Sprintf(`query Proposals {
+	proposals(first: 5, skip: 0, where: {space_in: ["%s"], state: "%s"}, orderBy: "created", orderDirection: desc) {
+	    id
+	    title
+	    choices
+	    start
+	    end
+	    snapshot
+	    state
+	    author
+	  }
+    }`, space, state)
+
+	url := fmt.Sprintf("https://hub.snapshot.org/graphql?operationName=Proposals&query=%s", url.PathEscape(query))
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	// Check the response code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	// Get response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var snapshotResponse api.SnapshotResponse
+	if err := json.Unmarshal(body, &snapshotResponse); err != nil {
+		return nil, fmt.Errorf("Could not decode snapshot response: %w", err)
+
+	}
+
+	return &snapshotResponse, nil
 }

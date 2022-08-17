@@ -129,6 +129,15 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		}
 		return err
 	})
+	// Get snapshot latest vote
+	wg.Go(func() error {
+		snapshotResponse, err := getSnapshotProposals(cfg.Smartnode.GetSnapshotID(), "active")
+		if err != nil {
+			return err
+		}
+		response.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
+		return nil
+	})
 
 	// Get node minipool counts
 	wg.Go(func() error {

@@ -43,6 +43,7 @@ type NodeStatusResponse struct {
 		CloseAvailable      int `json:"closeAvailable"`
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
+	ActiveSnapshotProposals     []SnapshotProposal        `json:"activeSnapshotProposals"`
 	IsMergeUpdateDeployed       bool                      `json:"isMergeUpdateDeployed"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
 	FeeDistributorAddress       common.Address            `json:"feeDistributorAddress"`
@@ -394,4 +395,17 @@ type SetSmoothingPoolRegistrationStatusResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
+}
+type SnapshotProposal struct {
+	Id       string `json:"id"`
+	Title    string `json:"title"`
+	Start    int    `json:"start"`
+	End      int    `json:"end"`
+	Snapshot string `json:"snapshot"`
+	Author   string `json:"author"`
+}
+type SnapshotResponse struct {
+	Data struct {
+		Proposals []SnapshotProposal `json:"proposals"`
+	}
 }

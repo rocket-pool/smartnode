@@ -531,6 +531,10 @@ func (config *SmartnodeConfig) GetVotingSnapshotID() [32]byte {
 	return buffer
 }
 
+func (config *SmartnodeConfig) GetSnapshotID() string {
+	return SnapshotID
+}
+
 // The the title for the config
 func (config *SmartnodeConfig) GetConfigTitle() string {
 	return config.Title
