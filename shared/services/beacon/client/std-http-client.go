@@ -308,7 +308,8 @@ func (c *StandardHttpClient) GetValidatorSyncDuties(indices []uint64, epoch uint
 
 	if err != nil {
 		return nil, fmt.Errorf("Could not get validator sync duties: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return nil, fmt.Errorf("Could not get validator sync duties: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 
@@ -341,7 +342,8 @@ func (c *StandardHttpClient) GetValidatorProposerDuties(indices []uint64, epoch 
 
 	if err != nil {
 		return nil, fmt.Errorf("Could not get validator proposer duties: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return nil, fmt.Errorf("Could not get validator proposer duties: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 
@@ -527,7 +529,8 @@ func (c *StandardHttpClient) getSyncStatus() (SyncStatusResponse, error) {
 	responseBody, status, err := c.getRequest(RequestSyncStatusPath)
 	if err != nil {
 		return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var syncStatus SyncStatusResponse
@@ -542,7 +545,8 @@ func (c *StandardHttpClient) getEth2Config() (Eth2ConfigResponse, error) {
 	responseBody, status, err := c.getRequest(RequestEth2ConfigPath)
 	if err != nil {
 		return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var eth2Config Eth2ConfigResponse
@@ -557,7 +561,8 @@ func (c *StandardHttpClient) getEth2DepositContract() (Eth2DepositContractRespon
 	responseBody, status, err := c.getRequest(RequestEth2DepositContractMethod)
 	if err != nil {
 		return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var eth2DepositContract Eth2DepositContractResponse
@@ -572,7 +577,8 @@ func (c *StandardHttpClient) getGenesis() (GenesisResponse, error) {
 	responseBody, status, err := c.getRequest(RequestGenesisPath)
 	if err != nil {
 		return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return GenesisResponse{}, fmt.Errorf("Could not get genesis data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var genesis GenesisResponse
@@ -587,7 +593,8 @@ func (c *StandardHttpClient) getFinalityCheckpoints(stateId string) (FinalityChe
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestFinalityCheckpointsPath, stateId))
 	if err != nil {
 		return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var finalityCheckpoints FinalityCheckpointsResponse
@@ -602,7 +609,8 @@ func (c *StandardHttpClient) getFork(stateId string) (ForkResponse, error) {
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
 	if err != nil {
 		return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var fork ForkResponse
@@ -621,7 +629,8 @@ func (c *StandardHttpClient) getValidators(stateId string, pubkeys []string) (Va
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId) + query)
 	if err != nil {
 		return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return ValidatorsResponse{}, fmt.Errorf("Could not get validators: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var validators ValidatorsResponse
@@ -690,7 +699,8 @@ func (c *StandardHttpClient) postVoluntaryExit(request VoluntaryExitRequest) err
 	responseBody, status, err := c.postRequest(RequestVoluntaryExitPath, request)
 	if err != nil {
 		return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
 	}
 	return nil
@@ -701,9 +711,11 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
 	if err != nil {
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: %w", err)
-	} else if status == http.StatusNotFound {
+	}
+	if status == http.StatusNotFound {
 		return BeaconBlockResponse{}, false, nil
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var beaconBlock BeaconBlockResponse
@@ -722,7 +734,8 @@ func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (Commi
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestCommitteePath, stateId) + query)
 	if err != nil {
 		return CommitteesResponse{}, fmt.Errorf("Could not get committees: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return CommitteesResponse{}, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var committees CommitteesResponse

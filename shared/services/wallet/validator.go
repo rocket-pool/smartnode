@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
@@ -197,50 +196,6 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey) error {
 	}
 
 	// Return
-	return nil
-
-}
-
-// Check if the fee recipient file for this wallet's validators exists, and has the correct address as the default
-// Note: only call this after the merge contracts have been deployed!
-// Use shared/utils/rp.IsMergeUpdateDeployed() to check.
-func (w *Wallet) CheckFeeRecipientFile(feeRecipient common.Address) (bool, bool, error) {
-
-	// Check the fee recipient for all managers in the wallet
-	for name, fm := range w.feeRecipientManagers {
-		fileExists, correctAddress, err := fm.CheckFeeRecipientFile(feeRecipient)
-		if err != nil {
-			return false, false, fmt.Errorf("error checking fee recipients for %s: %w", name, err)
-		}
-
-		// If any of them don't have the correct file, fail
-		if !fileExists {
-			return false, false, nil
-		}
-
-		// If any of them don't have the correct address, fail
-		if !correctAddress {
-			return true, false, nil
-		}
-	}
-
-	// If all of them are good, return a success
-	return true, true, nil
-}
-
-// Store the fee recipient file for this wallet's validators
-// Note: only call this after the merge contracts have been deployed!
-// Use shared/utils/rp.IsMergeUpdateDeployed() to check.
-func (w *Wallet) UpdateFeeRecipientFile(feeRecipient common.Address) error {
-
-	// Check the fee recipient for all managers in the wallet
-	for name, fm := range w.feeRecipientManagers {
-		err := fm.UpdateFeeRecipientFile(feeRecipient)
-		if err != nil {
-			return fmt.Errorf("error storing fee recipient file for %s: %w", name, err)
-		}
-	}
-
 	return nil
 
 }

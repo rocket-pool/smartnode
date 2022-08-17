@@ -284,7 +284,7 @@ func (m *BeaconClientManager) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Com
 /// Internal Functions
 /// ==================
 
-func (m *BeaconClientManager) CheckStatus(alwaysCheckFallback bool) *api.ClientManagerStatus {
+func (m *BeaconClientManager) CheckStatus() *api.ClientManagerStatus {
 
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: m.fallbackBc != nil,
@@ -306,9 +306,7 @@ func (m *BeaconClientManager) CheckStatus(alwaysCheckFallback bool) *api.ClientM
 
 	// Get the fallback BC status if applicable
 	if status.FallbackEnabled {
-		if alwaysCheckFallback {
-			status.FallbackClientStatus = checkBcStatus(m.fallbackBc)
-		}
+		status.FallbackClientStatus = checkBcStatus(m.fallbackBc)
 	}
 
 	// Flag the ready clients

@@ -876,3 +876,20 @@ func (c *Client) NodeSetSmoothingPoolStatus(status bool) (api.SetSmoothingPoolRe
 	}
 	return response, nil
 }
+
+// Use the node private key to sign an arbitrary message
+func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
+	responseBytes, err := c.callAPI("node sign-message", message)
+	if err != nil {
+		return api.NodeSignResponse{}, fmt.Errorf("Could not sign message: %w", err)
+	}
+
+	var response api.NodeSignResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeSignResponse{}, fmt.Errorf("Could not decode node sign response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeSignResponse{}, fmt.Errorf("Could not sign message: %s", response.Error)
+	}
+	return response, nil
+}

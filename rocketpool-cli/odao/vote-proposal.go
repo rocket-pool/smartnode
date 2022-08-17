@@ -1,6 +1,7 @@
 package odao
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 
@@ -30,6 +31,12 @@ func voteOnProposal(c *cli.Context) error {
 
 	// Get oracle DAO proposals
 	proposals, err := rp.TNDAOProposals()
+	if err != nil {
+		return err
+	}
+
+	// Get oracle DAO members
+	allMembers, err := rp.TNDAOMembers()
 	if err != nil {
 		return err
 	}
@@ -74,17 +81,25 @@ func voteOnProposal(c *cli.Context) error {
 	} else {
 
 		// Prompt for proposal selection
+		var memberID string
 		options := make([]string, len(votableProposals))
 		for pi, proposal := range votableProposals {
+			for _, member := range allMembers.Members {
+				if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
+					memberID = member.ID
+				}
+			}
 			options[pi] = fmt.Sprintf(
-				"proposal %d (message: '%s', payload: %s, end time: %s, votes required: %.2f, votes for: %.2f, votes against: %.2f)",
+				"proposal %d (message: '%s', payload: %s, end time: %s, votes required: %.2f, votes for: %.2f, votes against: %.2f, proposed by: %s (%s))",
 				proposal.ID,
 				proposal.Message,
 				proposal.PayloadStr,
 				cliutils.GetDateTimeString(proposal.EndTime),
 				proposal.VotesRequired,
 				proposal.VotesFor,
-				proposal.VotesAgainst)
+				proposal.VotesAgainst,
+				memberID,
+				proposal.ProposerAddress)
 		}
 		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
 		selectedProposal = votableProposals[selected]

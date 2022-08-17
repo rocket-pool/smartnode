@@ -31,6 +31,9 @@ const (
 	PrometheusContainerName   string = "prometheus"
 	ValidatorContainerName    string = "validator"
 	WatchtowerContainerName   string = "watchtower"
+
+	FeeRecipientFileEnvVar string = "FEE_RECIPIENT_FILE"
+	FeeRecipientEnvVar     string = "FEE_RECIPIENT"
 )
 
 // Defaults
@@ -761,6 +764,7 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 	envVars["SMARTNODE_IMAGE"] = config.Smartnode.GetSmartnodeContainerTag()
 	envVars["ROCKETPOOL_FOLDER"] = config.RocketPoolDirectory
 	envVars["RETH_ADDRESS"] = config.Smartnode.GetRethAddress().Hex()
+	envVars[FeeRecipientFileEnvVar] = FeeRecipientFilename // If this is running, we're in Docker mode by definition so use the Docker fee recipient filename
 	addParametersToEnvVars(config.Smartnode.GetParameters(), envVars)
 	addParametersToEnvVars(config.GetParameters(), envVars)
 
@@ -828,17 +832,13 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		switch consensusClient {
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.Lighthouse.GetParameters(), envVars)
-			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
 		case ConsensusClient_Nimbus:
 			addParametersToEnvVars(config.Nimbus.GetParameters(), envVars)
-			envVars["FEE_RECIPIENT_FILE"] = NimbusFeeRecipientFilename
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.Prysm.GetParameters(), envVars)
 			envVars["CC_RPC_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth2ContainerName, config.Prysm.RpcPort.Value)
-			envVars["FEE_RECIPIENT_FILE"] = PrysmFeeRecipientFilename
 		case ConsensusClient_Teku:
 			addParametersToEnvVars(config.Teku.GetParameters(), envVars)
-			envVars["FEE_RECIPIENT_FILE"] = TekuFeeRecipientFilename
 		}
 	} else {
 		consensusClient = config.ExternalConsensusClient.Value.(ConsensusClient)
@@ -846,16 +846,12 @@ func (config *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string
 		switch consensusClient {
 		case ConsensusClient_Lighthouse:
 			addParametersToEnvVars(config.ExternalLighthouse.GetParameters(), envVars)
-			envVars["FEE_RECIPIENT_FILE"] = LighthouseFeeRecipientFilename
 		case ConsensusClient_Nimbus:
 			addParametersToEnvVars(config.ExternalNimbus.GetParameters(), envVars)
-			envVars["FEE_RECIPIENT_FILE"] = NimbusFeeRecipientFilename
 		case ConsensusClient_Prysm:
 			addParametersToEnvVars(config.ExternalPrysm.GetParameters(), envVars)
-			envVars["FEE_RECIPIENT_FILE"] = PrysmFeeRecipientFilename
 		case ConsensusClient_Teku:
 			addParametersToEnvVars(config.ExternalTeku.GetParameters(), envVars)
-			envVars["FEE_RECIPIENT_FILE"] = TekuFeeRecipientFilename
 		}
 	}
 	envVars["CC_CLIENT"] = fmt.Sprint(consensusClient)

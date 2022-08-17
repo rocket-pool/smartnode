@@ -794,6 +794,26 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "sign-message",
+				Usage:     "Signs an arbitrary message with the node's private key.",
+				UsageText: "rocketpool api node sign-message 'message'",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					message := c.Args().Get(0)
+
+					// Run
+					api.PrintResponse(signMessage(c, message))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "estimate-set-snapshot-delegate-gas",
 				Usage:     "Estimate the gas required to set a voting snapshot delegate",
 				UsageText: "rocketpool api node estimate-set-snapshot-delegate-gas address",

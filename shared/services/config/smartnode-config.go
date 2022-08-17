@@ -27,6 +27,8 @@ const (
 	RegenerateRewardsTreeRequestFormat string = "%d" + RegenerateRewardsTreeRequestSuffix
 	PrimaryRewardsFileUrl              string = "https://%s.ipfs.dweb.link/%s"
 	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
+	FeeRecipientFilename               string = "rp-fee-recipient.txt"
+	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
 )
 
 // Defaults
@@ -195,11 +197,11 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 					Name:        "Kiln Testnet",
 					Description: "This is the Kiln test network, which uses free \"test\" ETH and free \"test\" RPL.\n\nUse this if you want to practice running a node on a post-merge network to learn how it differs from Mainnet today.",
 					Value:       Network_Kiln,
-				},*/{
+				},{
 					Name:        "Ropsten Testnet",
 					Description: "This is the Ropsten test network, which uses free \"test\" ETH and free \"test\" RPL.\n\nUse this if you want to practice running a node on a post-merge network to learn how it differs from Mainnet today.",
 					Value:       Network_Ropsten,
-				}},
+				}*/},
 		},
 
 		ManualMaxFee: Parameter{
@@ -332,8 +334,8 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		rplTokenAddress: map[Network]string{
-			Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
-			Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
+			Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
+			Network_Prater:  "0x5e932688e81a182e3de211db6544f98b8e4f89c7",
 			Network_Kiln:    "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			Network_Ropsten: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 		},
@@ -404,7 +406,7 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		optimismPriceMessengerAddress: map[Network]string{
-			Network_Mainnet: "",
+			Network_Mainnet: "0xdddcf2c25d50ec22e67218e873d46938650d03a7",
 			Network_Prater:  "0x87E2deCE7d0A080D579f63cbcD7e1629BEcd7E7d",
 			Network_Kiln:    "",
 			Network_Ropsten: "",
@@ -573,6 +575,14 @@ func (config *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
 		return filepath.Join(DaemonDataPath, WatchtowerFolder)
 	} else {
 		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder)
+	}
+}
+
+func (config *SmartnodeConfig) GetFeeRecipientFilePath() string {
+	if !config.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, "validators", FeeRecipientFilename)
+	} else {
+		return filepath.Join(config.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
 	}
 }
 

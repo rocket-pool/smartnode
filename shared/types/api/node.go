@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 type NodeStatusResponse struct {
@@ -29,7 +30,6 @@ type NodeStatusResponse struct {
 	MaximumRplStake          *big.Int        `json:"maximumRplStake"`
 	CollateralRatio          float64         `json:"collateralRatio"`
 	VotingDelegate           common.Address  `json:"votingDelegate"`
-	IsInSmoothingPool        bool            `json:"isInSmoothingPool"`
 	MinipoolLimit            uint64          `json:"minipoolLimit"`
 	MinipoolCounts           struct {
 		Total               int `json:"total"`
@@ -45,7 +45,7 @@ type NodeStatusResponse struct {
 	} `json:"minipoolCounts"`
 	IsMergeUpdateDeployed       bool                      `json:"isMergeUpdateDeployed"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
-	FeeDistributorAddress       common.Address            `json:"feeDistributorAddress"`
+	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
 }

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -46,10 +47,11 @@ const (
 	APIContainerSuffix string = "_api"
 	APIBinPath         string = "/go/bin/rocketpool"
 
-	templatesDir           string = "templates"
-	overrideDir            string = "override"
-	runtimeDir             string = "runtime"
-	defaultFeeRecipientDir string = "fr-default"
+	templatesDir                  string = "templates"
+	overrideDir                   string = "override"
+	runtimeDir                    string = "runtime"
+	defaultFeeRecipientFile       string = "fr-default.tmpl"
+	defaultNativeFeeRecipientFile string = "fr-default-env.tmpl"
 
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
@@ -59,6 +61,23 @@ const (
 
 	DebugColor = color.FgYellow
 )
+
+// Get the external IP address. Try finding an IPv4 address first to:
+// * Improve peer discovery and node performance
+// * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
+func getExternalIP() (net.IP, error) {
+	// Try IPv4 first
+	ip4Consensus := externalip.DefaultConsensus(nil, nil)
+	ip4Consensus.UseIPProtocol(4)
+	if ip, err := ip4Consensus.ExternalIP(); err == nil {
+		return ip, nil
+	}
+
+	// Try IPv6 as fallback
+	ip6Consensus := externalip.DefaultConsensus(nil, nil)
+	ip6Consensus.UseIPProtocol(6)
+	return ip6Consensus.ExternalIP()
+}
 
 // Rocket Pool client
 type Client struct {
@@ -453,7 +472,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 }
 
 // Install the Rocket Pool service
-func (c *Client) InstallService(verbose, noDeps bool, network, version, path string) error {
+func (c *Client) InstallService(verbose, noDeps bool, network, version, path string, dataPath string) error {
 
 	// Get installation script downloader type
 	downloader, err := c.getDownloader()
@@ -471,6 +490,9 @@ func (c *Client) InstallService(verbose, noDeps bool, network, version, path str
 	}
 	if noDeps {
 		flags = append(flags, "-d")
+	}
+	if dataPath != "" {
+		flags = append(flags, fmt.Sprintf("-u %s", dataPath))
 	}
 
 	// Initialize installation command
@@ -1154,8 +1176,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	// Get the external IP address
 	var externalIP string
-	consensus := externalip.DefaultConsensus(nil, nil)
-	ip, err := consensus.ExternalIP()
+	ip, err := getExternalIP()
 	if err != nil {
 		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
 		fmt.Println(err.Error())
@@ -1362,7 +1383,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 
 	// Check MEV Boost
 	switch cfg.Smartnode.Network.Value.(config.Network) {
-	case config.Network_Kiln, config.Network_Ropsten:
+	case config.Network_Kiln, config.Network_Ropsten, config.Network_Prater:
 		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
 			contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
 			if err != nil {
@@ -1375,34 +1396,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 			}
 			deployedContainers = append(deployedContainers, mevBoostComposePath)
 			deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))
-		}
-	}
-
-	// Deploy the fee recipient templates
-	defaultFrTemplatesFolder := filepath.Join(templatesFolder, defaultFeeRecipientDir)
-	defaultFrDeploymentPath, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), defaultFeeRecipientDir))
-	if err != nil {
-		return []string{}, fmt.Errorf("error expanding default fee recipient directory: %w", err)
-	}
-	err = os.MkdirAll(defaultFrDeploymentPath, 0775)
-	if err != nil {
-		return []string{}, fmt.Errorf("error creating default fee recipient directory: %w", err)
-	}
-	for _, option := range cfg.ConsensusClient.Options {
-		client := option.Value.(config.ConsensusClient)
-		clientString := string(client)
-
-		// Do the environment var substitution
-		contents, err = envsubst.ReadFile(filepath.Join(defaultFrTemplatesFolder, clientString+templateSuffix))
-		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting template for %s fee recipient file: %w", clientString, err)
-		}
-
-		// Write the file
-		targetPath := filepath.Join(defaultFrDeploymentPath, clientString)
-		err = ioutil.WriteFile(targetPath, contents, 0664)
-		if err != nil {
-			return []string{}, fmt.Errorf("could not write default fee recipient file for %s to %s: %w", clientString, targetPath, err)
 		}
 	}
 

@@ -90,9 +90,6 @@ func (home *settingsHome) createContent() {
 				case config.Network_Mainnet:
 					layout.descriptionBox.SetText("MEV Boost is currently not available on Mainnet.")
 					return
-				case config.Network_Prater:
-					layout.descriptionBox.SetText("MEV Boost is currently not available on Prater.")
-					return
 				}
 			}
 			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
@@ -124,7 +121,7 @@ func (home *settingsHome) createContent() {
 			}
 		} else if s1 == home.mevBoostPage.page.title {
 			switch home.md.Config.Smartnode.Network.Value.(config.Network) {
-			case config.Network_Mainnet, config.Network_Prater:
+			case config.Network_Mainnet:
 				return
 			}
 		}
