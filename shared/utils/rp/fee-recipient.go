@@ -30,7 +30,6 @@ func GetFeeRecipientInfo(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddres
 	var wg errgroup.Group
 
 	// Get the smoothing pool address
-
 	wg.Go(func() error {
 		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
 		if err != nil {

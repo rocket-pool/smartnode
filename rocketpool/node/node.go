@@ -225,8 +225,6 @@ func removeLegacyFeeRecipientFiles(c *cli.Context) error {
 			if err != nil {
 				fmt.Printf("NOTE: Couldn't remove old fee recipient file (%s): %s\nThis file is no longer used, you may remove it manually if you wish.\n", oldFile, err.Error())
 			}
-		} else if err != nil {
-			fmt.Printf("NOTE: Couldn't check if old fee recipient file exists (%s): %s\nThis file is no longer used, you may remove it manually if you wish.\n", oldFile, err.Error())
 		}
 	}
 
