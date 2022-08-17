@@ -182,7 +182,7 @@ func getStatus(c *cli.Context) error {
 				fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
 			}
 			if !status.IsFeeDistributorInitialized {
-				fmt.Printf("\n%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n\n", colorYellow, colorReset)
+				fmt.Printf("\n%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n", colorYellow, colorReset)
 			}
 
 			fmt.Println()
