@@ -245,7 +245,7 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 
 func getSnapshotProposals(space string, state string) (*api.SnapshotResponse, error) {
 	query := fmt.Sprintf(`query Proposals {
-	proposals(first: 5, skip: 0, where: {space_in: ["%s"], state: "%s"}, orderBy: "created", orderDirection: desc) {
+	proposals(where: {space_in: ["%s"], state: "%s"}, orderBy: "created", orderDirection: desc) {
 	    id
 	    title
 	    choices
