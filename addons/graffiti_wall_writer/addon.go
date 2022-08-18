@@ -8,10 +8,8 @@ import (
 )
 
 const (
-	ContainerID_GraffitiWallWriter cfgtypes.ContainerID = "gww"
-
-	// Internal variables
-	graffitiWallOutputFile string = "/validators/graffiti_wall.json"
+	ContainerID_GraffitiWallWriter  cfgtypes.ContainerID = "gww"
+	GraffitiWallWriterContainerName string               = "addon_gww"
 )
 
 type GraffitiWallWriter struct {

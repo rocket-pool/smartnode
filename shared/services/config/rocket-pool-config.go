@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/alessio/shellescape"
 	"github.com/pbnjay/memory"
@@ -852,6 +853,22 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		}
 	}
 	envVars["CC_CLIENT"] = fmt.Sprint(consensusClient)
+
+	// Graffiti
+	identifier := ""
+	versionString := fmt.Sprintf("v%s", shared.RocketPoolVersion)
+	envVars["ROCKET_POOL_VERSION"] = versionString
+	if len(versionString) < 8 {
+		ecInitial := strings.ToUpper(string(envVars["EC_CLIENT"][0]))
+		ccInitial := strings.ToUpper(string(envVars["CC_CLIENT"][0]))
+		identifier = fmt.Sprintf("-%s%s", ecInitial, ccInitial)
+	}
+	customGraffiti := envVars[CustomGraffitiEnvVar]
+	if customGraffiti == "" {
+		envVars["GRAFFITI"] = fmt.Sprintf("RP%s %s", identifier, versionString)
+	} else {
+		envVars["GRAFFITI"] = fmt.Sprintf("RP%s %s (%s)", identifier, versionString, customGraffiti)
+	}
 
 	// Get the hostname of the Consensus client, necessary for Prometheus to work in hybrid mode
 	ccUrl, err := url.Parse(envVars["CC_API_ENDPOINT"])

@@ -26,7 +26,7 @@ import (
 	"github.com/blang/semver/v4"
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
-	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -365,7 +365,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 
 	for _, param := range legacyCfg.Chains.Eth2.Client.Params {
 		switch param.Env {
-		case "CUSTOM_GRAFFITI":
+		case config.CustomGraffitiEnvVar:
 			cfg.ConsensusCommon.Graffiti.Value = param.Value
 			cfg.ExternalLighthouse.Graffiti.Value = param.Value
 			cfg.ExternalPrysm.Graffiti.Value = param.Value
@@ -1191,7 +1191,6 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	// Set up environment variables and deploy the template config files
 	settings := cfg.GenerateEnvironmentVariables()
 	settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
-	settings["ROCKET_POOL_VERSION"] = fmt.Sprintf("v%s", shared.RocketPoolVersion)
 
 	// Deploy the templates and run environment variable substitution on them
 	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
@@ -1421,6 +1420,32 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	err = os.MkdirAll(rewardsFileDir, 0775)
 	if err != nil {
 		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), rewardsFileDir, colorReset)
+	}
+
+	return c.composeAddons(cfg, rocketpoolDir, settings, deployedContainers)
+
+}
+
+// Handle composing for addons
+func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir string, settings map[string]string, deployedContainers []string) ([]string, error) {
+
+	// GWW
+	if cfg.GraffitiWallWriter.GetEnabledParameter().Value == true {
+		runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir, "addons", "gww")
+		templatesFolder := filepath.Join(rocketpoolDir, templatesDir, "addons", "gww")
+		overrideFolder := filepath.Join(rocketpoolDir, overrideDir, "addons", "gww")
+
+		contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+templateSuffix))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting GWW addon container template: %w", err)
+		}
+		composePath := filepath.Join(runtimeFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+composeFileSuffix)
+		err = ioutil.WriteFile(composePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write GWW addon container file to %s: %w", composePath, err)
+		}
+		deployedContainers = append(deployedContainers, composePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+composeFileSuffix))
 	}
 
 	return deployedContainers, nil
