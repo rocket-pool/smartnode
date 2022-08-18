@@ -9,6 +9,7 @@ FROM golang:alpine AS builder
 # Copy source files
 ADD ./rocketpool /src/rocketpool
 ADD ./shared /src/shared
+ADD ./addons /src/addons
 ADD ./go.mod /src/go.mod
 ADD ./go.sum /src/go.sum
 
