@@ -198,11 +198,11 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 					Name:        "Kiln Testnet",
 					Description: "This is the Kiln test network, which uses free \"test\" ETH and free \"test\" RPL.\n\nUse this if you want to practice running a node on a post-merge network to learn how it differs from Mainnet today.",
 					Value:       config.Network_Kiln,
-				},*/{
+				},{
 					Name:        "Ropsten Testnet",
 					Description: "This is the Ropsten test network, which uses free \"test\" ETH and free \"test\" RPL.\n\nUse this if you want to practice running a node on a post-merge network to learn how it differs from Mainnet today.",
 					Value:       config.Network_Ropsten,
-				}},
+				}*/},
 		},
 
 		ManualMaxFee: config.Parameter{
@@ -335,8 +335,8 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		rplTokenAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xb4efd85c19999d84251304bda99e90b92300bd93",
-			config.Network_Prater:  "0xb4efd85c19999d84251304bda99e90b92300bd93",
+			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
+			config.Network_Prater:  "0x5e932688e81a182e3de211db6544f98b8e4f89c7",
 			config.Network_Kiln:    "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			config.Network_Ropsten: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 		},
@@ -407,7 +407,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		optimismPriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "",
+			config.Network_Mainnet: "0xdddcf2c25d50ec22e67218e873d46938650d03a7",
 			config.Network_Prater:  "0x87E2deCE7d0A080D579f63cbcD7e1629BEcd7E7d",
 			config.Network_Kiln:    "",
 			config.Network_Ropsten: "",
@@ -581,9 +581,9 @@ func (cfg *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
 
 func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
 	if !cfg.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, FeeRecipientFilename)
+		return filepath.Join(DaemonDataPath, "validators", FeeRecipientFilename)
 	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), NativeFeeRecipientFilename)
+		return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
 	}
 }
 

@@ -159,6 +159,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 			if err != nil {
 				return fmt.Errorf("error getting smoothing pool contract: %w", err)
 			}
+			response.SmoothingPoolAddress = *smoothingPoolContract.Address
 
 			smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, nil)
 			if err != nil {

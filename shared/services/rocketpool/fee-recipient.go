@@ -69,6 +69,6 @@ func getFeeRecipientFileContents(feeRecipient common.Address, cfg *config.Rocket
 		return feeRecipient.Hex()
 	} else {
 		// Native mode
-		return fmt.Sprintf("%s=%s", config.FeeRecipientFileEnvVar, feeRecipient.Hex())
+		return fmt.Sprintf("%s=%s", config.FeeRecipientEnvVar, feeRecipient.Hex())
 	}
 }

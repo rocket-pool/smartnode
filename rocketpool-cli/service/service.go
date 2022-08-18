@@ -154,7 +154,10 @@ ______           _        _    ______           _
 	fmt.Println("In preparation for The Merge, light clients (Infura and Pocket) are no longer supported.\nYou will need to switch to a Full Execution client before The Merge in order to continue validating!\n")
 
 	fmt.Printf("%s=== New Fallback System ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.")
+	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.\n")
+
+	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
+	fmt.Println("`rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -175,12 +178,6 @@ func installUpdateTracker(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return fmt.Errorf("Error getting validator container prefix: %w", err)
-	}
-
 	// Install service
 	err = rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
 	if err != nil {
@@ -193,7 +190,7 @@ func installUpdateTracker(c *cli.Context) error {
 	fmt.Println("")
 	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
 	fmt.Println("")
-	fmt.Printf("%sNOTE:\nPlease run 'docker restart %s%s' to enable update tracking on the metrics dashboard.%s\n", colorYellow, prefix, ExporterContainerSuffix, colorReset)
+	fmt.Printf("%sNOTE:\nPlease restart the Smartnode stack to enable update tracking on the metrics dashboard.%s\n", colorYellow, colorReset)
 	fmt.Println("")
 	return nil
 
