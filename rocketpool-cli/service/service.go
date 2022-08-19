@@ -763,6 +763,12 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 		fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
 	} else {
 
+		consensusClient, _ := cfg.GetSelectedConsensusClient()
+		// Warn about Lodestar
+		if consensusClient == cfgtypes.ConsensusClient_Lodestar {
+			fmt.Printf("%sNOTE:\nIf this is your first time running Lodestar and you have existing minipools, you must run `rocketpool wallet rebuild` after the Smartnode starts to generate the validator keys for it.\nIf you have run it before or you don't have any minipools, you can ignore this message.%s\n\n", colorYellow, colorReset)
+		}
+
 		// Get the time that the container responsible for validator duties exited
 		validatorDutyContainerName, err := getContainerNameForValidatorDuties(currentValidatorName, rp)
 		if err != nil {

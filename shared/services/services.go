@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
+	lokeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lodestar"
 	nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 	tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
@@ -210,10 +211,12 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 
 		// Keystores
 		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
+		lodestarKeystore := lokeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
 		nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
 		prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
 		tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
 		nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
+		nodeWallet.AddKeystore("lodestar", lodestarKeystore)
 		nodeWallet.AddKeystore("nimbus", nimbusKeystore)
 		nodeWallet.AddKeystore("prysm", prysmKeystore)
 		nodeWallet.AddKeystore("teku", tekuKeystore)
