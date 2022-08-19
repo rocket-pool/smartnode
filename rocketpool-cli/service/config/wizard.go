@@ -15,6 +15,7 @@ type wizard struct {
 	checkpointSyncProviderModal     *textBoxWizardStep
 	doppelgangerDetectionModal      *choiceWizardStep
 	lighthouseExternalSettingsModal *textBoxWizardStep
+	lodestarExternalSettingsModal   *textBoxWizardStep
 	prysmExternalSettingsModal      *textBoxWizardStep
 	tekuExternalSettingsModal       *textBoxWizardStep
 	externalGraffitiModal           *textBoxWizardStep
@@ -66,6 +67,7 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.checkpointSyncProviderModal = createCheckpointSyncStep(wiz, 5, totalDockerSteps)
 	wiz.doppelgangerDetectionModal = createDoppelgangerStep(wiz, 5, totalDockerSteps)
 	wiz.lighthouseExternalSettingsModal = createExternalLhStep(wiz, 5, totalDockerSteps)
+	wiz.lodestarExternalSettingsModal = createExternalLodestarStep(wiz, 5, totalDockerSteps)
 	wiz.prysmExternalSettingsModal = createExternalPrysmStep(wiz, 5, totalDockerSteps)
 	wiz.tekuExternalSettingsModal = createExternalTekuStep(wiz, 5, totalDockerSteps)
 	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 5, totalDockerSteps)

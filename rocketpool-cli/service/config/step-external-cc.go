@@ -33,6 +33,8 @@ func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 		switch selectedClient {
 		case cfgtypes.ConsensusClient_Lighthouse:
 			wiz.lighthouseExternalSettingsModal.show()
+		case cfgtypes.ConsensusClient_Lodestar:
+			wiz.lodestarExternalSettingsModal.show()
 		case cfgtypes.ConsensusClient_Prysm:
 			wiz.prysmExternalSettingsModal.show()
 		case cfgtypes.ConsensusClient_Teku:

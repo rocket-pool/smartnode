@@ -54,6 +54,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 
 		CompatibleConsensusClients: []config.ConsensusClient{
 			config.ConsensusClient_Lighthouse,
+			config.ConsensusClient_Lodestar,
 			config.ConsensusClient_Nimbus,
 			config.ConsensusClient_Prysm,
 			config.ConsensusClient_Teku,

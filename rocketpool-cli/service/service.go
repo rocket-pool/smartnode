@@ -1204,6 +1204,8 @@ func serviceVersion(c *cli.Context) error {
 		switch eth2Client {
 		case cfgtypes.ConsensusClient_Lighthouse:
 			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.Lighthouse.ContainerTag.Value.(string))
+		case cfgtypes.ConsensusClient_Lodestar:
+			eth2ClientString = fmt.Sprintf(format, "Lodestar", cfg.Lodestar.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Nimbus:
 			eth2ClientString = fmt.Sprintf(format, "Nimbus", cfg.Nimbus.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Prysm:
@@ -1221,6 +1223,8 @@ func serviceVersion(c *cli.Context) error {
 		switch eth2Client {
 		case cfgtypes.ConsensusClient_Lighthouse:
 			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.ExternalLighthouse.ContainerTag.Value.(string))
+		case cfgtypes.ConsensusClient_Lodestar:
+			eth2ClientString = fmt.Sprintf(format, "Lodestar", cfg.ExternalLodestar.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Prysm:
 			eth2ClientString = fmt.Sprintf(format, "Prysm", cfg.ExternalPrysm.ContainerTag.Value.(string))
 		case cfgtypes.ConsensusClient_Teku:

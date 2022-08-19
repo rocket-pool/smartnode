@@ -35,6 +35,26 @@ type ExternalLighthouseConfig struct {
 	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
+// Configuration for external Consensus clients
+type ExternalLodestarConfig struct {
+	Title string `yaml:"-"`
+
+	// The URL of the HTTP endpoint
+	HttpUrl config.Parameter `yaml:"httpUrl,omitempty"`
+
+	// Custom proposal graffiti
+	Graffiti config.Parameter `yaml:"graffiti,omitempty"`
+
+	// Toggle for enabling doppelganger detection
+	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
+
+	// The Docker Hub tag for Lighthouse
+	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
+
+	// Custom command line flags for the VC
+	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
+}
+
 // Configuration for an external Prysm clients
 type ExternalPrysmConfig struct {
 	Title string `yaml:"-"`
@@ -169,6 +189,79 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 			ID:                   "additionalVcFlags",
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
+			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+	}
+}
+
+// Generates a new ExternalLodestarClient configuration
+func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
+	return &ExternalLodestarConfig{
+		Title: "External Lodestar Settings",
+
+		HttpUrl: config.Parameter{
+			ID:                   "httpUrl",
+			Name:                 "HTTP URL",
+			Description:          "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
+			EnvironmentVariables: []string{"CC_API_ENDPOINT"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		Graffiti: config.Parameter{
+			ID:                   GraffitiID,
+			Name:                 "Custom Graffiti",
+			Description:          "Add a short message to any blocks you propose, so the world can see what you have to say!\nIt has a 16 character limit.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultGraffiti},
+			MaxLength:            16,
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
+			EnvironmentVariables: []string{CustomGraffitiEnvVar},
+			CanBeBlank:           true,
+			OverwriteOnUpgrade:   false,
+		},
+
+		DoppelgangerDetection: config.Parameter{
+			ID:                   DoppelgangerDetectionID,
+			Name:                 "Enable Doppelgänger Detection",
+			Description:          "If enabled, your client will *intentionally* miss 1 or 2 attestations on startup to check if validator keys are already running elsewhere. If they are, it will disable validation duties for them to prevent you from being slashed.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultDoppelgangerDetection},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
+			EnvironmentVariables: []string{"DOPPELGANGER_DETECTION"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		ContainerTag: config.Parameter{
+			ID:          "containerTag",
+			Name:        "Container Tag",
+			Description: "The tag name of the Lodestar container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: lodestarTagProd,
+				config.Network_Prater:  lodestarTagTest,
+				config.Network_Kiln:    lodestarTagTest,
+				config.Network_Ropsten: lodestarTagTest,
+			},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
+			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   true,
+		},
+
+		AdditionalVcFlags: config.Parameter{
+			ID:                   "additionalVcFlags",
+			Name:                 "Additional Validator Client Flags",
+			Description:          "Additional custom command line flags you want to pass Lodestar's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
@@ -340,6 +433,17 @@ func (cfg *ExternalLighthouseConfig) GetParameters() []*config.Parameter {
 }
 
 // Get the parameters for this config
+func (cfg *ExternalLodestarConfig) GetParameters() []*config.Parameter {
+	return []*config.Parameter{
+		&cfg.HttpUrl,
+		&cfg.Graffiti,
+		&cfg.DoppelgangerDetection,
+		&cfg.ContainerTag,
+		&cfg.AdditionalVcFlags,
+	}
+}
+
+// Get the parameters for this config
 func (cfg *ExternalPrysmConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.HttpUrl,
@@ -367,6 +471,11 @@ func (cfg *ExternalLighthouseConfig) GetValidatorImage() string {
 }
 
 // Get the Docker container name of the validator client
+func (cfg *ExternalLodestarConfig) GetValidatorImage() string {
+	return cfg.ContainerTag.Value.(string)
+}
+
+// Get the Docker container name of the validator client
 func (cfg *ExternalPrysmConfig) GetValidatorImage() string {
 	return cfg.ContainerTag.Value.(string)
 }
@@ -378,6 +487,11 @@ func (cfg *ExternalTekuConfig) GetValidatorImage() string {
 
 // Get the API url from the config
 func (cfg *ExternalLighthouseConfig) GetApiUrl() string {
+	return cfg.HttpUrl.Value.(string)
+}
+
+// Get the API url from the config
+func (cfg *ExternalLodestarConfig) GetApiUrl() string {
 	return cfg.HttpUrl.Value.(string)
 }
 
@@ -397,6 +511,11 @@ func (cfg *ExternalLighthouseConfig) GetName() string {
 }
 
 // Get the name of the client
+func (cfg *ExternalLodestarConfig) GetName() string {
+	return "Lodestar"
+}
+
+// Get the name of the client
 func (cfg *ExternalPrysmConfig) GetName() string {
 	return "Prysm"
 }
@@ -413,6 +532,11 @@ func (cfg *ExternalExecutionConfig) GetConfigTitle() string {
 
 // The the title for the config
 func (cfg *ExternalLighthouseConfig) GetConfigTitle() string {
+	return cfg.Title
+}
+
+// The the title for the config
+func (cfg *ExternalLodestarConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
