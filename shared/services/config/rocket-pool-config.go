@@ -421,10 +421,12 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.FallbackPrysm = NewFallbackPrysmConfig(cfg)
 	cfg.ConsensusCommon = NewConsensusCommonConfig(cfg)
 	cfg.Lighthouse = NewLighthouseConfig(cfg)
+	cfg.Lodestar = NewLodestarConfig(cfg)
 	cfg.Nimbus = NewNimbusConfig(cfg)
 	cfg.Prysm = NewPrysmConfig(cfg)
 	cfg.Teku = NewTekuConfig(cfg)
 	cfg.ExternalLighthouse = NewExternalLighthouseConfig(cfg)
+	cfg.ExternalLodestar = NewExternalLodestarConfig(cfg)
 	cfg.ExternalPrysm = NewExternalPrysmConfig(cfg)
 	cfg.ExternalTeku = NewExternalTekuConfig(cfg)
 	cfg.Grafana = NewGrafanaConfig(cfg)
@@ -511,10 +513,12 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"externalExecution":  cfg.ExternalExecution,
 		"consensusCommon":    cfg.ConsensusCommon,
 		"lighthouse":         cfg.Lighthouse,
+		"lodestar":           cfg.Lodestar,
 		"nimbus":             cfg.Nimbus,
 		"prysm":              cfg.Prysm,
 		"teku":               cfg.Teku,
 		"externalLighthouse": cfg.ExternalLighthouse,
+		"externalLodestar":   cfg.ExternalLodestar,
 		"externalPrysm":      cfg.ExternalPrysm,
 		"externalTeku":       cfg.ExternalTeku,
 		"fallbackNormal":     cfg.FallbackNormal,
