@@ -12,7 +12,7 @@ import (
 
 // The page wrapper for the Graffiti Wall Writer addon config
 type AddonGwwPage struct {
-	home         *settingsHome
+	addonsPage   *AddonsPage
 	page         *page
 	layout       *standardLayout
 	masterConfig *config.RocketPoolConfig
@@ -22,17 +22,17 @@ type AddonGwwPage struct {
 }
 
 // Creates a new page for the Graffiti Wall Writer addon settings
-func NewAddonGwwPage(home *settingsHome, addon addons.SmartnodeAddon) *AddonGwwPage {
+func NewAddonGwwPage(addonsPage *AddonsPage, addon addons.SmartnodeAddon) *AddonGwwPage {
 
 	configPage := &AddonGwwPage{
-		home:         home,
-		masterConfig: home.md.Config,
+		addonsPage:   addonsPage,
+		masterConfig: addonsPage.home.md.Config,
 		addon:        addon,
 	}
 	configPage.createContent()
 
 	configPage.page = newPage(
-		home.homePage,
+		addonsPage.page,
 		"settings-addon-gww",
 		addon.GetName(),
 		addon.GetDescription(),
@@ -62,13 +62,13 @@ func (configPage *AddonGwwPage) createContent() {
 			for _, param := range configPage.layout.parameters {
 				dropDown, ok := param.item.(*DropDown)
 				if ok && dropDown.open {
-					dropDown.CloseList(configPage.home.md.app)
+					dropDown.CloseList(configPage.addonsPage.home.md.app)
 					return nil
 				}
 			}
 
 			// Return to the home page
-			configPage.home.md.setPage(configPage.home.homePage)
+			configPage.addonsPage.home.md.setPage(configPage.addonsPage.page)
 			return nil
 		}
 		return event

@@ -132,7 +132,7 @@ func (layout *standardLayout) refresh() {
 
 }
 
-// Create the footer, including the nav bar and the save / quit buttons
+// Create the footer, including the nav bar
 func (layout *standardLayout) createSettingFooter() {
 
 	// Nav bar
