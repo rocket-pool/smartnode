@@ -129,6 +129,8 @@ func (cfg *GraffitiWallWriterConfig) GetParameters() []*config.Parameter {
 		&cfg.UpdateWallTime,
 		&cfg.UpdateInputTime,
 		&cfg.UpdatePixelTime,
+		&cfg.ContainerTag,
+		&cfg.AdditionalFlags,
 	}
 }
 
