@@ -112,15 +112,15 @@ func GetHeadlessMaxFeeWei() (*big.Int, error) {
 	etherchainData, err := etherchain.GetGasPrices()
 	if err == nil {
 		return etherchainData.RapidWei, nil
-	} else {
-		fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
-		etherscanData, err := etherscan.GetGasPrices()
-		if err == nil {
-			return eth.GweiToWei(etherscanData.FastGwei), nil
-		} else {
-			return nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
-		}
 	}
+
+	fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
+	etherscanData, err := etherscan.GetGasPrices()
+	if err == nil {
+		return eth.GweiToWei(etherscanData.FastGwei), nil
+	}
+
+	return nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
 }
 
 func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {

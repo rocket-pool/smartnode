@@ -186,9 +186,9 @@ func approveRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveRes
 	}
 	if hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts); err != nil {
 		return nil, err
-	} else {
-		response.ApproveTxHash = hash
 	}
+
+	response.ApproveTxHash = hash
 
 	// Return response
 	return &response, nil
@@ -246,9 +246,9 @@ func stakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplStakeRespons
 	}
 	if hash, err := node.StakeRPL(rp, amountWei, opts); err != nil {
 		return nil, err
-	} else {
-		response.StakeTxHash = hash
 	}
+
+	response.StakeTxHash = hash
 
 	// Return response
 	return &response, nil

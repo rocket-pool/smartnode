@@ -45,20 +45,18 @@ func PrintMultiTransactionNonceWarning() {
 // Implementation of PrintTransactionHash and PrintTransactionHashNoCancel
 func printTransactionHashImpl(rp *rocketpool.Client, hash common.Hash, finalMessage string) {
 
-	txWatchUrl := ""
-
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
 		return
-	} else {
-		txWatchUrl = cfg.Smartnode.GetTxWatchUrl()
 	}
+
 	if isNew {
 		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 		return
 	}
 
+	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
 	hashString := hash.String()
 
 	fmt.Printf("Transaction has been submitted with hash %s.\n", hashString)

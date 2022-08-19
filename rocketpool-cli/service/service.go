@@ -333,9 +333,8 @@ func configureService(c *cli.Context) error {
 			if !cliutils.Confirm("Would you like to start the Smartnode services automatically now?") {
 				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
 				return nil
-			} else {
-				return startService(c, true)
 			}
+			return startService(c, true)
 		}
 
 		// Query for service start if this is old and there are containers to change
@@ -831,9 +830,9 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 
 	if CurrentValidatorClientName == "nimbus" {
 		return prefix + BeaconContainerSuffix, nil
-	} else {
-		return prefix + ValidatorContainerSuffix, nil
 	}
+
+	return prefix + ValidatorContainerSuffix, nil
 
 }
 
@@ -977,9 +976,9 @@ func pruneExecutionClient(c *cli.Context) error {
 	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
 	if diskUsage.Free < PruneFreeSpaceRequired {
 		return fmt.Errorf("%sYour disk must have 50 GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, freeSpaceHuman, colorReset)
-	} else {
-		fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 	}
+
+	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 
 	fmt.Printf("Stopping %s...\n", executionContainerName)
 	result, err := rp.StopContainer(executionContainerName)
@@ -1535,9 +1534,9 @@ func exportEcData(c *cli.Context, targetDir string) error {
 			fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 			if targetFree < volumeBytes {
 				return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
-			} else {
-				fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 			}
+
+			fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 		}
 	}
 
@@ -1651,9 +1650,9 @@ func importEcData(c *cli.Context, sourceDir string) error {
 				fmt.Printf("%sDocker drive free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 				if targetFree < sourceBytes {
 					return fmt.Errorf("%sYour Docker drive does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
-				} else {
-					fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 				}
+
+				fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 			}
 		}
 	}

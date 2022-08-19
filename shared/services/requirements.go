@@ -390,9 +390,9 @@ func checkExecutionClientStatus(ecMgr *ExecutionClientManager) (bool, rocketpool
 	// If neither client is working, report the errors
 	if mgrStatus.FallbackEnabled {
 		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and fallback execution client is unavailable (%s), no execution clients are ready.", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.Error)
-	} else {
-		return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryClientStatus.Error)
 	}
+
+	return false, nil, fmt.Errorf("Primary execution client is unavailable (%s) and no fallback execution client is configured.", mgrStatus.PrimaryClientStatus.Error)
 }
 
 func checkBeaconClientStatus(bcMgr *BeaconClientManager) (bool, error) {
@@ -430,9 +430,9 @@ func checkBeaconClientStatus(bcMgr *BeaconClientManager) (bool, error) {
 	// If neither client is working, report the errors
 	if mgrStatus.FallbackEnabled {
 		return false, fmt.Errorf("Primary consensus client is unavailable (%s) and fallback consensus client is unavailable (%s), no consensus clients are ready.", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.Error)
-	} else {
-		return false, fmt.Errorf("Primary consensus client is unavailable (%s) and no fallback consensus client is configured.", mgrStatus.PrimaryClientStatus.Error)
 	}
+
+	return false, fmt.Errorf("Primary consensus client is unavailable (%s) and no fallback consensus client is configured.", mgrStatus.PrimaryClientStatus.Error)
 }
 
 func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, error) {
@@ -602,7 +602,7 @@ func IsSyncWithinThreshold(ec rocketpool.ExecutionClient) (bool, time.Time, erro
 	blockTime := time.Unix(int64(timestamp), 0)
 	if time.Since(blockTime) < ethClientRecentBlockThreshold {
 		return true, blockTime, nil
-	} else {
-		return false, blockTime, nil
 	}
+
+	return false, blockTime, nil
 }

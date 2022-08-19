@@ -80,9 +80,8 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 		if event.Key() == tcell.KeyUp || event.Key() == tcell.KeyDown {
 			changeBox.InputHandler()(event, nil)
 			return nil
-		} else {
-			return event
 		}
+		return event
 	})
 	// Save when selected
 	saveButton.SetSelectedFunc(func() {

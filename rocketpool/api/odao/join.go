@@ -171,9 +171,9 @@ func approveRpl(c *cli.Context) (*api.JoinTNDAOApproveResponse, error) {
 	}
 	if hash, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts); err != nil {
 		return nil, err
-	} else {
-		response.ApproveTxHash = hash
 	}
+
+	response.ApproveTxHash = hash
 
 	// Return response
 	return &response, nil
@@ -215,9 +215,9 @@ func waitForApprovalAndJoin(c *cli.Context, hash common.Hash) (*api.JoinTNDAOJoi
 	}
 	if hash, err := tndao.Join(rp, opts); err != nil {
 		return nil, err
-	} else {
-		response.JoinTxHash = hash
 	}
+
+	response.JoinTxHash = hash
 
 	// Return response
 	return &response, nil

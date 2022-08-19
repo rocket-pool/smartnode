@@ -717,9 +717,8 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 			paramType := reflect.TypeOf(network)
 			if !valueType.ConvertibleTo(paramType) {
 				return fmt.Errorf("can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
-			} else {
-				network = reflect.ValueOf(networkString).Convert(paramType).Interface().(config.Network)
 			}
+			network = reflect.ValueOf(networkString).Convert(paramType).Interface().(config.Network)
 		}
 	}
 

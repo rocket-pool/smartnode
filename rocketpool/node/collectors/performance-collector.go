@@ -96,9 +96,9 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		_ethUtilizationRate, err := network.GetETHUtilizationRate(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting ETH utilization rate: %w", err)
-		} else {
-			ethUtilizationRate = _ethUtilizationRate
 		}
+
+		ethUtilizationRate = _ethUtilizationRate
 		return nil
 	})
 
@@ -107,9 +107,9 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		totalStakingBalance, err := network.GetStakingETHBalance(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total ETH staking balance: %w", err)
-		} else {
-			balanceFloat = eth.WeiToEth(totalStakingBalance)
 		}
+
+		balanceFloat = eth.WeiToEth(totalStakingBalance)
 		return nil
 	})
 
@@ -118,9 +118,9 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		_exchangeRate, err := tokens.GetRETHExchangeRate(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting ETH-rETH exchange rate: %w", err)
-		} else {
-			exchangeRate = _exchangeRate
 		}
+
+		exchangeRate = _exchangeRate
 		return nil
 	})
 
@@ -129,9 +129,9 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		tvl, err := network.GetTotalETHBalance(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total ETH balance (TVL): %w", err)
-		} else {
-			tvlFloat = eth.WeiToEth(tvl)
 		}
+
+		tvlFloat = eth.WeiToEth(tvl)
 		return nil
 	})
 
@@ -140,14 +140,14 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		rETHContract, err := collector.rp.GetContract("rocketTokenRETH")
 		if err != nil {
 			return fmt.Errorf("Error getting ETH balance of rETH staking contract: %w", err)
-		} else {
-			balance, err := collector.rp.Client.BalanceAt(context.Background(), *rETHContract.Address, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting ETH balance of rETH staking contract: %w", err)
-			} else {
-				rETHBalance = eth.WeiToEth(balance)
-			}
 		}
+
+		balance, err := collector.rp.Client.BalanceAt(context.Background(), *rETHContract.Address, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting ETH balance of rETH staking contract: %w", err)
+		}
+
+		rETHBalance = eth.WeiToEth(balance)
 		return nil
 	})
 
@@ -156,9 +156,9 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		totalRethSupply, err := tokens.GetRETHTotalSupply(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total rETH supply: %w", err)
-		} else {
-			rethFloat = eth.WeiToEth(totalRethSupply)
 		}
+
+		rethFloat = eth.WeiToEth(totalRethSupply)
 		return nil
 	})
 
