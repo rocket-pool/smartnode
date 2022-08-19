@@ -1435,6 +1435,12 @@ func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir strin
 		templatesFolder := filepath.Join(rocketpoolDir, templatesDir, "addons", "gww")
 		overrideFolder := filepath.Join(rocketpoolDir, overrideDir, "addons", "gww")
 
+		// Make the addon folder
+		err := os.MkdirAll(runtimeFolder, 0775)
+		if err != nil {
+			return []string{}, fmt.Errorf("error creating addon runtime folder (%s): %w", runtimeFolder, err)
+		}
+
 		contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting GWW addon container template: %w", err)
