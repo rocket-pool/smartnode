@@ -884,7 +884,7 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		var ccInitial string
 		switch consensusClient {
 		case config.ConsensusClient_Lodestar:
-			ccInitial = "O" // Lodestar is special because it conflicts with Lighthouse
+			ccInitial = "S" // Lodestar is special because it conflicts with Lighthouse
 		default:
 			ccInitial = strings.ToUpper(string(envVars["CC_CLIENT"][0]))
 		}
