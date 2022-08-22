@@ -78,7 +78,7 @@ func (home *settingsHome) createContent() {
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 			if mainText == home.fallbackPage.page.title {
-				// Temp block of Nimbus for the fallback page until they support fallback
+				// Temp block of Nimbus, Teku, and Lodestar for the fallback page until they support fallback
 				cc, _ := home.md.Config.GetSelectedConsensusClient()
 				switch cc {
 				case cfgtypes.ConsensusClient_Nimbus:
@@ -86,6 +86,9 @@ func (home *settingsHome) createContent() {
 					return
 				case cfgtypes.ConsensusClient_Teku:
 					layout.descriptionBox.SetText("You have Teku selected for your Consensus client.\n\nTeku does not support fallback clients at this time, so this option is disabled.")
+					return
+				case cfgtypes.ConsensusClient_Lodestar:
+					layout.descriptionBox.SetText("You have Lodestar selected for your Consensus client.\n\nLodestar does not support fallback clients at this time, so this option is disabled.")
 					return
 				}
 			} else if mainText == home.mevBoostPage.page.title {
@@ -116,10 +119,10 @@ func (home *settingsHome) createContent() {
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
 		if s1 == home.fallbackPage.page.title {
-			// Temp block of Nimbus and Teku for the fallback page until they support fallback
+			// Temp block of Nimbus, Teku, and Lodestar for the fallback page until they support fallback
 			cc, _ := home.md.Config.GetSelectedConsensusClient()
 			switch cc {
-			case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku:
+			case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku, cfgtypes.ConsensusClient_Lodestar:
 				return
 			}
 		} else if s1 == home.mevBoostPage.page.title {

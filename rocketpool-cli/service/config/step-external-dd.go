@@ -42,8 +42,8 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 		}
 		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 		switch cc {
-		case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku:
-			// Temp until Nimbus and Teku support fallback clients
+		case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku, cfgtypes.ConsensusClient_Lodestar:
+			// Temp until Nimbus, Teku, and Lodestar support fallback clients
 			wiz.md.Config.UseFallbackClients.Value = false
 			wiz.metricsModal.show()
 		default:

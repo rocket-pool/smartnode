@@ -122,8 +122,8 @@ func (configPage *ConsensusConfigPage) createContent() {
 		}
 		configPage.masterConfig.ConsensusClient.Value = configPage.masterConfig.ConsensusClient.Options[index].Value
 		switch configPage.masterConfig.ConsensusClient.Value.(cfgtypes.ConsensusClient) {
-		case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku:
-			// Temp until Nimbus and Teku support fallbacks
+		case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku, cfgtypes.ConsensusClient_Lodestar:
+			// Temp until Nimbus, Teku, and Lodestar support fallbacks
 			configPage.home.md.Config.UseFallbackClients.Value = false
 			configPage.home.refresh()
 		}

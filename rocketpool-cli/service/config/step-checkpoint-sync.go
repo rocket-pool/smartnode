@@ -50,7 +50,8 @@ func createCheckpointSyncStep(wiz *wizard, currentStep int, totalSteps int) *tex
 		} else {
 			cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 			switch cc {
-			case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku:
+			case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku, cfgtypes.ConsensusClient_Lodestar:
+				// Temp until Nimbus, Teku, and Lodestar support fallbacks
 				wiz.md.Config.UseFallbackClients.Value = false
 				wiz.metricsModal.show()
 			default:
