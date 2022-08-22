@@ -144,6 +144,17 @@ func (m *BeaconClientManager) GetEth2DepositContract() (beacon.Eth2DepositContra
 	return result.(beacon.Eth2DepositContract), nil
 }
 
+// Get the attestations in a Beacon chain block
+func (m *BeaconClientManager) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
+	result1, result2, err := m.runFunction2(func(client beacon.Client) (interface{}, interface{}, error) {
+		return client.GetAttestations(blockId)
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return result1.([]beacon.AttestationInfo), result2.(bool), nil
+}
+
 // Get a Beacon chain block
 func (m *BeaconClientManager) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {
 	result1, result2, err := m.runFunction2(func(client beacon.Client) (interface{}, interface{}, error) {

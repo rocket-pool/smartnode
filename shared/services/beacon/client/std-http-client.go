@@ -36,6 +36,7 @@ const (
 	RequestForkPath                  = "/eth/v1/beacon/states/%s/fork"
 	RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
 	RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
+	RequestAttestationsPath          = "/eth/v1/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath           = "/eth/v2/beacon/blocks/%s"
 	RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
 	RequestValidatorProposerDuties   = "/eth/v1/validator/duties/proposer/%s"
@@ -461,6 +462,30 @@ func (c *StandardHttpClient) GetEth1DataForEth2Block(blockId string) (beacon.Eth
 
 }
 
+func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
+	attestations, exists, err := c.getAttestations(blockId)
+	if !exists {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Add attestation info
+	attestationInfo := make([]beacon.AttestationInfo, len(attestations.Data))
+	for i, attestation := range attestations.Data {
+		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
+		attestationInfo[i].SlotIndex = uint64(attestation.Data.Slot)
+		attestationInfo[i].CommitteeIndex = uint64(attestation.Data.Index)
+		attestationInfo[i].AggregationBits, err = hex.DecodeString(bitString)
+		if err != nil {
+			return nil, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
+		}
+	}
+
+	return attestationInfo, true, nil
+}
+
 func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {
 	block, exists, err := c.getBeaconBlock(blockId)
 	if !exists {
@@ -704,6 +729,25 @@ func (c *StandardHttpClient) postVoluntaryExit(request VoluntaryExitRequest) err
 		return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
 	}
 	return nil
+}
+
+// Get the target beacon block
+func (c *StandardHttpClient) getAttestations(blockId string) (AttestationsResponse, bool, error) {
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestAttestationsPath, blockId))
+	if err != nil {
+		return AttestationsResponse{}, false, fmt.Errorf("Could not get attestations data for slot %s: %w", blockId, err)
+	}
+	if status == http.StatusNotFound {
+		return AttestationsResponse{}, false, nil
+	}
+	if status != http.StatusOK {
+		return AttestationsResponse{}, false, fmt.Errorf("Could not get attestations data for slot %s: HTTP status %d; response body: '%s'", blockId, status, string(responseBody))
+	}
+	var attestations AttestationsResponse
+	if err := json.Unmarshal(responseBody, &attestations); err != nil {
+		return AttestationsResponse{}, false, fmt.Errorf("Could not decode attestations data for slot %s: %w", blockId, err)
+	}
+	return attestations, true, nil
 }
 
 // Get the target beacon block
