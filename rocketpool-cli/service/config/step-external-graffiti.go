@@ -35,9 +35,7 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 			wiz.externalDoppelgangerModal.show()
 		case cfgtypes.ConsensusClient_Teku:
 			wiz.md.Config.ExternalTeku.Graffiti.Value = text[graffitiLabel]
-			// Temp until Teku supports fallback clients
-			wiz.md.Config.UseFallbackClients.Value = false
-			wiz.metricsModal.show()
+			wiz.externalDoppelgangerModal.show()
 		}
 	}
 
