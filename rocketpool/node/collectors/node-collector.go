@@ -198,7 +198,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Handle update checking and new rewards status
 	isMergeUpdateDeployed, err := rp.IsMergeUpdateDeployed(collector.rp)
 	if err != nil {
-		log.Printf("Error checking for merge contract update deployment: %w\n", err.Error())
+		log.Printf("Error checking for merge contract update deployment: %s\n", err.Error())
 		return
 	}
 
