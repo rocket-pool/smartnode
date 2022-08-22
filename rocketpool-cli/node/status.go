@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -132,10 +134,24 @@ func getStatus(c *cli.Context) error {
 		}
 
 		for _, proposal := range status.ActiveSnapshotProposals {
-			fmt.Printf("\nProposal ID: %s\n", proposal.Id)
-			fmt.Printf("Title: %s\n", proposal.Title)
-			fmt.Printf("Start: %s\n", cliutils.GetDateTimeString(uint64(proposal.Start)))
-			fmt.Printf("End: %s\n", cliutils.GetDateTimeString(uint64(proposal.End)))
+			fmt.Printf("\nTitle: %s\n", proposal.Title)
+			currentTimestamp := time.Now().Unix()
+			if currentTimestamp < proposal.Start {
+				fmt.Printf("Starts %s (in %s)\n", cliutils.GetDateTimeString(uint64(proposal.Start)), cliutils.GetDateTimeDiffString(uint64(proposal.Start), uint64(currentTimestamp)))
+
+			} else {
+				fmt.Printf("Ends %s (in %s) \n", cliutils.GetDateTimeString(uint64(proposal.End)), cliutils.GetDateTimeDiffString(uint64(proposal.End), uint64(currentTimestamp)))
+				scoresBuilder := strings.Builder{}
+				for i, score := range proposal.Scores {
+					scoresBuilder.WriteString(fmt.Sprintf("[%s = %f] ", proposal.Choices[i], score))
+				}
+				fmt.Printf("Scores: %s\n", scoresBuilder.String())
+				quorumResult := ""
+				if proposal.ScoresTotal > float64(proposal.Quorum) {
+					quorumResult += "✓"
+				}
+				fmt.Printf("Quorum: %f of %d %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
+			}
 		}
 		fmt.Println("")
 

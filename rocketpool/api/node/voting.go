@@ -254,6 +254,11 @@ func getSnapshotProposals(space string, state string) (*api.SnapshotResponse, er
 	    snapshot
 	    state
 	    author
+		scores
+		scores_total
+		scores_updated
+		quorum
+		link
 	  }
     }`, space, state)
 
