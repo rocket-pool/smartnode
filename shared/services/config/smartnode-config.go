@@ -61,6 +61,9 @@ type SmartnodeConfig struct {
 	// Which network we're on
 	Network config.Parameter `yaml:"network,omitempty"`
 
+	// The terminal total difficulty override for the Merge
+	TTD config.Parameter `yaml:"ttd,omitempty"`
+
 	// Manual max fee override
 	ManualMaxFee config.Parameter `yaml:"manualMaxFee,omitempty"`
 
@@ -148,6 +151,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
 			EnvironmentVariables: []string{"COMPOSE_PROJECT_NAME"},
 			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		TTD: config.Parameter{
+			ID:                   "ttd",
+			Name:                 "TTD Override",
+			Description:          "Use this to manually override the terminal total difficulty value for the network. This is the number used by the Execution and Consensus clients to know when to trigger The Merge.\n\nNOTE: This should only be used in special situations where the Core Developers have felt it necessary to change the TTD from the previously-agreed-upon value.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Eth2},
+			EnvironmentVariables: []string{"TTD_OVERRIDE"},
+			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
@@ -420,6 +435,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.Network,
+		&cfg.TTD,
 		&cfg.ProjectName,
 		&cfg.DataPath,
 		&cfg.ManualMaxFee,
