@@ -49,6 +49,7 @@ type NodeStatusResponse struct {
 	FeeDistributorAddress       common.Address            `json:"feeDistributorAddress"`
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
+	VotedOnProposals            []SnapshotProposal        `json:"votedOnProposals"`
 }
 
 type CanRegisterNodeResponse struct {
@@ -412,7 +413,16 @@ type SnapshotProposal struct {
 	Link          string    `json:"link"`
 }
 type SnapshotResponse struct {
-	Data struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+	Data   struct {
 		Proposals []SnapshotProposal `json:"proposals"`
+	}
+}
+type SnapshotVotedProposals struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+	Data   struct {
+		VotedProposals []SnapshotProposal `json:"votes"`
 	}
 }

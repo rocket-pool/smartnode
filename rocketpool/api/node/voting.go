@@ -243,7 +243,45 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 
 }
 
-func getSnapshotProposals(space string, state string) (*api.SnapshotResponse, error) {
+func getSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
+	query := fmt.Sprintf(`query Votes{
+		votes(
+		  where: {
+			space_in: ["%s"],
+			voter_in: ["%s", "%s"],
+		  },
+		  orderBy: "created",
+		  orderDirection: desc
+		) {
+		  id
+		}
+	  }`, space, nodeAddress, delegate)
+	url := fmt.Sprintf("https://%s/graphql?operationName=Votes&query=%s", apiDomain, url.PathEscape(query))
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	// Check the response code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	// Get response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var votedProposals api.SnapshotVotedProposals
+	if err := json.Unmarshal(body, &votedProposals); err != nil {
+		return nil, fmt.Errorf("could not decode snapshot response: %w", err)
+
+	}
+
+	return &votedProposals, nil
+}
+
+func getSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
 	query := fmt.Sprintf(`query Proposals {
 	proposals(where: {space_in: ["%s"], state: "%s"}, orderBy: "created", orderDirection: desc) {
 	    id
@@ -262,7 +300,7 @@ func getSnapshotProposals(space string, state string) (*api.SnapshotResponse, er
 	  }
     }`, space, state)
 
-	url := fmt.Sprintf("https://hub.snapshot.org/graphql?operationName=Proposals&query=%s", url.PathEscape(query))
+	url := fmt.Sprintf("https://%s/graphql?operationName=Proposals&query=%s", apiDomain, url.PathEscape(query))
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err

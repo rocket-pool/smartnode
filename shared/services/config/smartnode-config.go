@@ -107,6 +107,9 @@ type SmartnodeConfig struct {
 	// The contract address for Snapshot delegation
 	snapshotDelegationAddress map[Network]string `yaml:"-"`
 
+	// The Snapshot API domain
+	snapshotApiDomain map[Network]string `yaml:"-"`
+
 	// The contract address of rETH
 	rethAddress map[Network]string `yaml:"-"`
 
@@ -387,6 +390,13 @@ func NewSmartnodeConfig(config *RocketPoolConfig) *SmartnodeConfig {
 			Network_Ropsten: "0x2588C77829015080C771359eC1C3066d2f1158Db",
 		},
 
+		snapshotApiDomain: map[Network]string{
+			Network_Mainnet: "hub.snapshot.org",
+			Network_Prater:  "testnet.snapshot.org",
+			Network_Kiln:    "",
+			Network_Ropsten: "",
+		},
+
 		previousRewardsPoolAddresses: map[Network]map[string][]common.Address{
 			Network_Mainnet: {},
 			Network_Prater: {
@@ -521,6 +531,10 @@ func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 
 func (config *SmartnodeConfig) GetEcMigratorContainerTag() string {
 	return ecMigratorTag
+}
+
+func (config *SmartnodeConfig) GetSnapshotApiDomain() string {
+	return config.snapshotApiDomain[config.Network.Value.(Network)]
 }
 
 func (config *SmartnodeConfig) GetVotingSnapshotID() [32]byte {

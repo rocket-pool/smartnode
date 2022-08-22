@@ -150,6 +150,16 @@ func getStatus(c *cli.Context) error {
 					quorumResult += "✓"
 				}
 				fmt.Printf("Quorum: %.2f of %d needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
+				voted := false
+				for _, votedProposal := range status.VotedOnProposals {
+					if votedProposal.Id == proposal.Id {
+						fmt.Printf("%sYou have voted on this proposal\n%s", colorGreen, colorReset)
+						voted = true
+					}
+				}
+				if !voted {
+					fmt.Printf("%sYou have NOT voted on this proposal yet\n%s", colorYellow, colorReset)
+				}
 			}
 		}
 		fmt.Println("")

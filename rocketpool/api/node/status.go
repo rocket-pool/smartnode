@@ -126,12 +126,20 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		if cfg.Smartnode.GetSnapshotDelegationAddress() != "" {
 			idHash := cfg.Smartnode.GetVotingSnapshotID()
 			response.VotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
+			if err != nil {
+				return err
+			}
+			votedProposals, err := getSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
+			if err != nil {
+				return err
+			}
+			response.VotedOnProposals = votedProposals.Data.VotedProposals
 		}
 		return err
 	})
-	// Get snapshot latest vote
+	// Get snapshot active proposals
 	wg.Go(func() error {
-		snapshotResponse, err := getSnapshotProposals(cfg.Smartnode.GetSnapshotID(), "active")
+		snapshotResponse, err := getSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
 		if err != nil {
 			return err
 		}
