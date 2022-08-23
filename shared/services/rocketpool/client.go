@@ -1381,16 +1381,16 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
 	}
 
-	// Check MEV Boost
+	// Check MEV-Boost
 	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
 		if err != nil {
-			return []string{}, fmt.Errorf("error reading and substituting MEV Boost container template: %w", err)
+			return []string{}, fmt.Errorf("error reading and substituting MEV-Boost container template: %w", err)
 		}
 		mevBoostComposePath := filepath.Join(runtimeFolder, config.MevBoostContainerName+composeFileSuffix)
 		err = ioutil.WriteFile(mevBoostComposePath, contents, 0664)
 		if err != nil {
-			return []string{}, fmt.Errorf("could not write MEV Boost container file to %s: %w", mevBoostComposePath, err)
+			return []string{}, fmt.Errorf("could not write MEV-Boost container file to %s: %w", mevBoostComposePath, err)
 		}
 		deployedContainers = append(deployedContainers, mevBoostComposePath)
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))

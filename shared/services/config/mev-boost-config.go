@@ -11,38 +11,38 @@ const (
 	mevBoostUrlEnvVar string = "MEV_BOOST_URL"
 )
 
-// Configuration for MEV Boost
+// Configuration for MEV-Boost
 type MevBoostConfig struct {
 	Title string `yaml:"-"`
 
 	// Ownership mode
 	Mode config.Parameter `yaml:"mode,omitempty"`
 
-	// MEV Boost relays
+	// MEV-Boost relays
 	Relays config.Parameter `yaml:"relays,omitempty"`
 
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
 
-	// The Docker Hub tag for MEV Boost
+	// The Docker Hub tag for MEV-Boost
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags
 	AdditionalFlags config.Parameter `yaml:"additionalFlags,omitempty"`
 
-	// The URL of an external MEV Boost client
+	// The URL of an external MEV-Boost client
 	ExternalUrl config.Parameter `yaml:"externalUrl"`
 }
 
-// Generates a new MEV Boost configuration
+// Generates a new MEV-Boost configuration
 func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 	return &MevBoostConfig{
-		Title: "MEV Boost Settings",
+		Title: "MEV-Boost Settings",
 
 		Mode: config.Parameter{
 			ID:                   "mode",
-			Name:                 "MEV Boost Mode",
-			Description:          "Choose whether to let the Smartnode manage your MEV boost instance (Locally Managed), or if you manage your own outside of the Smartnode stack (Externally Managed).",
+			Name:                 "MEV-Boost Mode",
+			Description:          "Choose whether to let the Smartnode manage your MEV-Boost instance (Locally Managed), or if you manage your own outside of the Smartnode stack (Externally Managed).",
 			Type:                 config.ParameterType_Choice,
 			Default:              map[config.Network]interface{}{config.Network_All: config.Mode_Local},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
@@ -51,11 +51,11 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			OverwriteOnUpgrade:   false,
 			Options: []config.ParameterOption{{
 				Name:        "Locally Managed",
-				Description: "Allow the Smartnode to manage an MEV boost client for you",
+				Description: "Allow the Smartnode to manage the MEV-Boost client for you",
 				Value:       config.Mode_Local,
 			}, {
 				Name:        "Externally Managed",
-				Description: "Use an existing MEV boost client that you manage on your own",
+				Description: "Use an existing MEV-Boost client that you manage on your own",
 				Value:       config.Mode_External,
 			}},
 		},
@@ -63,7 +63,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		Relays: config.Parameter{
 			ID:          "relays",
 			Name:        "Relays",
-			Description: "A comma-separated list of MEV Boost relay URLs you want to connect to",
+			Description: "A comma-separated list of MEV-Boost relay URLs you want to connect to",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: "",
@@ -80,7 +80,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		Port: config.Parameter{
 			ID:                   "port",
 			Name:                 "Port",
-			Description:          "The port that MEV Boost should serve its API on.",
+			Description:          "The port that MEV-Boost should serve its API on.",
 			Type:                 config.ParameterType_Uint16,
 			Default:              map[config.Network]interface{}{config.Network_All: uint16(18550)},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
@@ -92,7 +92,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		ContainerTag: config.Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
-			Description:          "The tag name of the MEV Boost container you want to use on Docker Hub.",
+			Description:          "The tag name of the MEV-Boost container you want to use on Docker Hub.",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: mevBoostTag},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -104,7 +104,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		AdditionalFlags: config.Parameter{
 			ID:                   "additionalFlags",
 			Name:                 "Additional Flags",
-			Description:          "Additional custom command line flags you want to pass to MEV Boost, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:          "Additional custom command line flags you want to pass to MEV-Boost, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -116,7 +116,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		ExternalUrl: config.Parameter{
 			ID:                   "externalUrl",
 			Name:                 "External URL",
-			Description:          "The URL of the external MEV Boost client or provider",
+			Description:          "The URL of the external MEV-Boost client or provider",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},

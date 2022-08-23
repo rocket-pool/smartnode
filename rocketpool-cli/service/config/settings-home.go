@@ -85,12 +85,6 @@ func (home *settingsHome) createContent() {
 					layout.descriptionBox.SetText("You have Nimbus selected for your Consensus client.\n\nNimbus does not support fallback clients at this time, so this option is disabled.")
 					return
 				}
-			} else if mainText == home.mevBoostPage.page.title {
-				switch home.md.Config.Smartnode.Network.Value.(cfgtypes.Network) {
-				case cfgtypes.Network_Mainnet:
-					layout.descriptionBox.SetText("MEV Boost is currently not available on Mainnet.")
-					return
-				}
 			}
 			layout.descriptionBox.SetText(home.settingsSubpages[index].getPage().description)
 		})

@@ -114,7 +114,7 @@ type RocketPoolConfig struct {
 	// Native mode
 	Native *NativeConfig `yaml:"native,omitempty"`
 
-	// MEV Boost
+	// MEV-Boost
 	EnableMevBoost config.Parameter `yaml:"enableMevBoost,omitempty"`
 	MevBoost       *MevBoostConfig  `yaml:"mevBoost,omitempty"`
 
@@ -929,7 +929,7 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		config.AddParametersToEnvVars(cfg.BitflyNodeMetrics.GetParameters(), envVars)
 	}
 
-	// MEV Boost
+	// MEV-Boost
 	if cfg.EnableMevBoost.Value == true {
 		config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
 		if cfg.MevBoost.Mode.Value == config.Mode_Local {

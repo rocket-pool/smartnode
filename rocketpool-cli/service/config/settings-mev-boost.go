@@ -7,7 +7,7 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// The page wrapper for the MEV boost config
+// The page wrapper for the MEV-boost config
 type MevBoostConfigPage struct {
 	home          *settingsHome
 	page          *page
@@ -19,7 +19,7 @@ type MevBoostConfigPage struct {
 	externalItems []*parameterizedFormItem
 }
 
-// Creates a new page for the MEV Boost settings
+// Creates a new page for the MEV-Boost settings
 func NewMevBoostConfigPage(home *settingsHome) *MevBoostConfigPage {
 
 	configPage := &MevBoostConfigPage{
@@ -31,8 +31,8 @@ func NewMevBoostConfigPage(home *settingsHome) *MevBoostConfigPage {
 	configPage.page = newPage(
 		home.homePage,
 		"settings-mev-boost",
-		"MEV Boost",
-		"Select this to configure the settings for the Flashbots MEV Boost client, the source of blocks with MEV rewards for your minipools.\n\nFor more information on Flashbots, MEV, and MEV Boost, please see https://writings.flashbots.net/writings/why-run-mevboost/",
+		"MEV-Boost",
+		"Select this to configure the settings for the Flashbots MEV-Boost client, the source of blocks with MEV rewards for your minipools.\n\nFor more information on Flashbots, MEV, and MEV-Boost, please see https://writings.flashbots.net/writings/why-run-mevboost/",
 		configPage.layout.grid,
 	)
 
@@ -45,12 +45,12 @@ func (configPage *MevBoostConfigPage) getPage() *page {
 	return configPage.page
 }
 
-// Creates the content for the MEV Boost settings page
+// Creates the content for the MEV-Boost settings page
 func (configPage *MevBoostConfigPage) createContent() {
 
 	// Create the layout
 	configPage.layout = newStandardLayout()
-	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "MEV Boost Settings")
+	configPage.layout.createForm(&configPage.masterConfig.Smartnode.Network, "MEV-Boost Settings")
 
 	// Return to the home page after pressing Escape
 	configPage.layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -106,7 +106,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 	configPage.handleLayoutChanged()
 }
 
-// Handle all of the form changes when the MEV Boost mode has changed
+// Handle all of the form changes when the MEV-Boost mode has changed
 func (configPage *MevBoostConfigPage) handleModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableBox.item)
