@@ -133,7 +133,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			if err != nil {
 				return err
 			}
-			response.VotedOnProposals = votedProposals.Data.VotedProposals
+			for _, vote := range votedProposals.Data.Votes {
+				response.VotedOnProposals = append(response.VotedOnProposals, vote.Proposal.ID)
+			}
 		}
 		return err
 	})

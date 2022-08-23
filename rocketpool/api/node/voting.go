@@ -253,7 +253,7 @@ func getSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 		  orderBy: "created",
 		  orderDirection: desc
 		) {
-		  id
+		  proposal {id}
 		}
 	  }`, space, nodeAddress, delegate)
 	url := fmt.Sprintf("https://%s/graphql?operationName=Votes&query=%s", apiDomain, url.PathEscape(query))
