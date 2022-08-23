@@ -253,6 +253,7 @@ func getSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 		  orderBy: "created",
 		  orderDirection: desc
 		) {
+		  choice
 		  proposal {id}
 		}
 	  }`, space, nodeAddress, delegate)
