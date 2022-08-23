@@ -113,11 +113,6 @@ func (home *settingsHome) createContent() {
 			case cfgtypes.ConsensusClient_Nimbus:
 				return
 			}
-		} else if s1 == home.mevBoostPage.page.title {
-			switch home.md.Config.Smartnode.Network.Value.(cfgtypes.Network) {
-			case cfgtypes.Network_Mainnet:
-				return
-			}
 		}
 		home.settingsSubpages[i].handleLayoutChanged()
 		home.md.setPage(home.settingsSubpages[i].getPage())
