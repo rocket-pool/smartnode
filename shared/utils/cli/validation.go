@@ -49,9 +49,8 @@ func ValidateBool(name, value string) (bool, error) {
 	}
 	if val == "true" || val == "yes" {
 		return true, nil
-	} else {
-		return false, nil
 	}
+	return false, nil
 }
 
 // Validate an unsigned integer value

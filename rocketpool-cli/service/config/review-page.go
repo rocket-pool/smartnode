@@ -111,9 +111,8 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 			if event.Key() == tcell.KeyUp || event.Key() == tcell.KeyDown {
 				changeBox.InputHandler()(event, nil)
 				return nil
-			} else {
-				return event
 			}
+			return event
 		})
 		// Save when selected
 		saveButton.SetSelectedFunc(func() {

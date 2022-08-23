@@ -152,16 +152,16 @@ func (metrics *Metrics) GetParamByEnvName(env string) *ClientParam {
 func (client *ClientOption) GetBeaconImage() string {
 	if client.BeaconImage != "" {
 		return client.BeaconImage
-	} else {
-		return client.Image
 	}
+
+	return client.Image
 }
 func (client *ClientOption) GetValidatorImage() string {
 	if client.ValidatorImage != "" {
 		return client.ValidatorImage
-	} else {
-		return client.Image
 	}
+
+	return client.Image
 }
 
 // Serialize a config to yaml bytes
@@ -294,9 +294,9 @@ func loadFile(path string, required bool) (LegacyRocketPoolConfig, error) {
 	if err != nil {
 		if required {
 			return LegacyRocketPoolConfig{}, fmt.Errorf("Could not find config file at %s: %w", path, err)
-		} else {
-			return LegacyRocketPoolConfig{}, nil
 		}
+
+		return LegacyRocketPoolConfig{}, nil
 	}
 
 	// Parse config

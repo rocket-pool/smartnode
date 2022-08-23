@@ -313,9 +313,9 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
 		if !isDue {
 			t.log.Printlnf("Time until staking will be forced for safety: %s", timeUntilDue)
 			return false, nil
-		} else {
-			t.log.Println("NOTICE: The minipool has exceeded half of the timeout period, so it will be force-staked at the current gas price.")
 		}
+
+		t.log.Println("NOTICE: The minipool has exceeded half of the timeout period, so it will be force-staked at the current gas price.")
 	}
 
 	opts.GasFeeCap = maxFee

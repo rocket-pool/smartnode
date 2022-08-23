@@ -35,10 +35,9 @@ func promptPassword() string {
 		confirmation := cliutils.PromptPassword("Please confirm your password:", "^.*$", "")
 		if password == confirmation {
 			return password
-		} else {
-			fmt.Println("Password confirmation does not match.")
-			fmt.Println("")
 		}
+		fmt.Println("Password confirmation does not match.")
+		fmt.Println("")
 	}
 }
 
@@ -94,10 +93,9 @@ func confirmMnemonic(mnemonic string) {
 		confirmation := promptMnemonic()
 		if mnemonic == confirmation {
 			return
-		} else {
-			fmt.Println("The mnemonic phrase you entered does not match your recovery phrase. Please try again.")
-			fmt.Println("")
 		}
+		fmt.Println("The mnemonic phrase you entered does not match your recovery phrase. Please try again.")
+		fmt.Println("")
 	}
 }
 

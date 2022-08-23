@@ -79,9 +79,9 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 		depositPoolBalance, err := deposit.GetBalance(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting deposit pool balance: %w", err)
-		} else {
-			balanceFloat = eth.WeiToEth(depositPoolBalance)
 		}
+
+		balanceFloat = eth.WeiToEth(depositPoolBalance)
 		return nil
 	})
 
@@ -90,9 +90,9 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 		depositPoolExcess, err := deposit.GetExcessBalance(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting deposit pool excess: %w", err)
-		} else {
-			excessFloat = eth.WeiToEth(depositPoolExcess)
 		}
+
+		excessFloat = eth.WeiToEth(depositPoolExcess)
 		return nil
 	})
 
@@ -101,10 +101,9 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 		minipoolQueueCapacity, err := minipool.GetQueueCapacity(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting minipool queue capacity: %w", err)
-		} else {
-			totalFloat = eth.WeiToEth(minipoolQueueCapacity.Total)
-			effectiveFloat = eth.WeiToEth(minipoolQueueCapacity.Effective)
 		}
+		totalFloat = eth.WeiToEth(minipoolQueueCapacity.Total)
+		effectiveFloat = eth.WeiToEth(minipoolQueueCapacity.Effective)
 		return nil
 	})
 

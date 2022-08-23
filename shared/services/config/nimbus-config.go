@@ -110,7 +110,7 @@ func (cfg *NimbusConfig) GetConfigTitle() string {
 func getNimbusDefaultPeers() uint16 {
 	if runtime.GOARCH == "arm64" {
 		return defaultNimbusMaxPeersArm
-	} else {
-		return defaultNimbusMaxPeersAmd
 	}
+
+	return defaultNimbusMaxPeersAmd
 }

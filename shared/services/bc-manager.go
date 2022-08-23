@@ -370,15 +370,15 @@ func (m *BeaconClientManager) runFunction0(function bcFunction0) error {
 				m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
 				m.primaryReady = false
 				return m.runFunction0(function)
-			} else {
-				// If it's a different error, just return it
-				return err
 			}
-		} else {
-			// If there's no error, return the result
-			return nil
+			// If it's a different error, just return it
+			return err
 		}
-	} else if m.fallbackReady {
+		// If there's no error, return the result
+		return nil
+	}
+
+	if m.fallbackReady {
 		// Try to run the function on the fallback
 		err := function(m.fallbackBc)
 		if err != nil {
@@ -387,18 +387,16 @@ func (m *BeaconClientManager) runFunction0(function bcFunction0) error {
 				m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
 				m.fallbackReady = false
 				return fmt.Errorf("all Beacon clients failed")
-			} else {
-				// If it's a different error, just return it
-				return err
 			}
-		} else {
-			// If there's no error, return the result
-			return nil
+
+			// If it's a different error, just return it
+			return err
 		}
-	} else {
-		return fmt.Errorf("no Beacon clients were ready")
+		// If there's no error, return the result
+		return nil
 	}
 
+	return fmt.Errorf("no Beacon clients were ready")
 }
 
 // Attempts to run a function progressively through each client until one succeeds or they all fail.
@@ -414,15 +412,15 @@ func (m *BeaconClientManager) runFunction1(function bcFunction1) (interface{}, e
 				m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
 				m.primaryReady = false
 				return m.runFunction1(function)
-			} else {
-				// If it's a different error, just return it
-				return nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result, nil
+			// If it's a different error, just return it
+			return nil, err
 		}
-	} else if m.fallbackReady {
+		// If there's no error, return the result
+		return result, nil
+	}
+
+	if m.fallbackReady {
 		// Try to run the function on the fallback
 		result, err := function(m.fallbackBc)
 		if err != nil {
@@ -431,17 +429,15 @@ func (m *BeaconClientManager) runFunction1(function bcFunction1) (interface{}, e
 				m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
 				m.fallbackReady = false
 				return nil, fmt.Errorf("all Beacon clients failed")
-			} else {
-				// If it's a different error, just return it
-				return nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result, nil
+			// If it's a different error, just return it
+			return nil, err
 		}
-	} else {
-		return nil, fmt.Errorf("no Beacon clients were ready")
+		// If there's no error, return the result
+		return result, nil
 	}
+
+	return nil, fmt.Errorf("no Beacon clients were ready")
 
 }
 
@@ -458,15 +454,15 @@ func (m *BeaconClientManager) runFunction2(function bcFunction2) (interface{}, i
 				m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
 				m.primaryReady = false
 				return m.runFunction2(function)
-			} else {
-				// If it's a different error, just return it
-				return nil, nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result1, result2, nil
+			// If it's a different error, just return it
+			return nil, nil, err
 		}
-	} else if m.fallbackReady {
+		// If there's no error, return the result
+		return result1, result2, nil
+	}
+
+	if m.fallbackReady {
 		// Try to run the function on the fallback
 		result1, result2, err := function(m.fallbackBc)
 		if err != nil {
@@ -475,17 +471,15 @@ func (m *BeaconClientManager) runFunction2(function bcFunction2) (interface{}, i
 				m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
 				m.fallbackReady = false
 				return nil, nil, fmt.Errorf("all Beacon clients failed")
-			} else {
-				// If it's a different error, just return it
-				return nil, nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result1, result2, nil
+			// If it's a different error, just return it
+			return nil, nil, err
 		}
-	} else {
-		return nil, nil, fmt.Errorf("no Beacon clients were ready")
+		// If there's no error, return the result
+		return result1, result2, nil
 	}
+
+	return nil, nil, fmt.Errorf("no Beacon clients were ready")
 
 }
 

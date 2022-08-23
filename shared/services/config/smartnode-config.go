@@ -475,49 +475,49 @@ func (cfg *SmartnodeConfig) GetChainID() uint {
 func (cfg *SmartnodeConfig) GetWalletPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "wallet")
-	} else {
-		return filepath.Join(DaemonDataPath, "wallet")
 	}
+
+	return filepath.Join(DaemonDataPath, "wallet")
 }
 
 func (cfg *SmartnodeConfig) GetPasswordPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "password")
-	} else {
-		return filepath.Join(DaemonDataPath, "password")
 	}
+
+	return filepath.Join(DaemonDataPath, "password")
 }
 
 func (cfg *SmartnodeConfig) GetValidatorKeychainPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "validators")
-	} else {
-		return filepath.Join(DaemonDataPath, "validators")
 	}
+
+	return filepath.Join(DaemonDataPath, "validators")
 }
 
 func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
 	if config.parent.IsNativeMode {
 		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder, "state.yml")
-	} else {
-		return filepath.Join(DaemonDataPath, WatchtowerFolder, "state.yml")
 	}
+
+	return filepath.Join(DaemonDataPath, WatchtowerFolder, "state.yml")
 }
 
 func (cfg *SmartnodeConfig) GetCustomKeyPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "custom-keys")
-	} else {
-		return filepath.Join(DaemonDataPath, "custom-keys")
 	}
+
+	return filepath.Join(DaemonDataPath, "custom-keys")
 }
 
 func (cfg *SmartnodeConfig) GetCustomKeyPasswordFilePath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "custom-key-passwords")
-	} else {
-		return filepath.Join(DaemonDataPath, "custom-key-passwords")
 	}
+
+	return filepath.Join(DaemonDataPath, "custom-key-passwords")
 }
 
 func (cfg *SmartnodeConfig) GetStorageAddress() string {
@@ -584,41 +584,41 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
 }
 
 func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
 }
 
 func (cfg *SmartnodeConfig) GetRegenerateRewardsTreeRequestPath(interval uint64, daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
 }
 
 func (cfg *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, WatchtowerFolder)
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder)
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder)
 }
 
 func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
 	if !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, "validators", FeeRecipientFilename)
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
 }
 
 func (cfg *SmartnodeConfig) GetLegacyRewardsPoolAddress() common.Address {

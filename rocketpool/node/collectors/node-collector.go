@@ -207,9 +207,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		stakedRplWei, err := node.GetNodeRPLStake(collector.rp, collector.nodeAddress, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total staked RPL: %w", err)
-		} else {
-			stakedRpl = eth.WeiToEth(stakedRplWei)
 		}
+
+		stakedRpl = eth.WeiToEth(stakedRplWei)
 		return nil
 	})
 
@@ -218,9 +218,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		effectiveStakedRplWei, err := node.GetNodeEffectiveRPLStake(collector.rp, collector.nodeAddress, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting effective staked RPL: %w", err)
-		} else {
-			effectiveStakedRpl = eth.WeiToEth(effectiveStakedRplWei)
 		}
+
+		effectiveStakedRpl = eth.WeiToEth(effectiveStakedRplWei)
 		return nil
 	})
 
