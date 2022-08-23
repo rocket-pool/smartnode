@@ -6,7 +6,8 @@ import (
 
 // Constants
 const (
-	mevBoostTag       string = "flashbots/mev-boost:v0.7.10"
+	//mevBoostTag       string = "flashbots/mev-boost:v0.7.10"
+	mevBoostTag       string = "rocketpool/mev-boost:v0.7.10-portable"
 	mevBoostUrlEnvVar string = "MEV_BOOST_URL"
 )
 
