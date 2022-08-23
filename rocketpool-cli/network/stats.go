@@ -9,6 +9,10 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
+const (
+	colorBlue string = "\033[36m"
+)
+
 func getStats(c *cli.Context) error {
 
 	// Get RP client
@@ -36,13 +40,13 @@ func getStats(c *cli.Context) error {
 		response.DissolvedMinipoolCount
 
 	// Print & return
-	fmt.Println("========== General Stats ==========")
+	fmt.Printf("%s========== General Stats ==========%s\n", colorGreen, colorReset)
 	fmt.Printf("Total Value Locked:      %f ETH\n", response.TotalValueLocked)
 	fmt.Printf("Staking Pool Balance:    %f ETH\n", response.DepositPoolBalance)
 	fmt.Printf("Minipool Queue Demand:   %f ETH\n", response.MinipoolCapacity)
 	fmt.Printf("Staking Pool ETH Used:   %f%%\n\n", response.StakerUtilization*100)
 
-	fmt.Println("============== Nodes ==============")
+	fmt.Printf("%s============== Nodes ==============%s\n", colorGreen, colorReset)
 	fmt.Printf("Current Commission Rate: %f%%\n", response.NodeFee*100)
 	fmt.Printf("Node Count:              %d\n", response.NodeCount)
 	fmt.Printf("Active Minipools:        %d\n", activeMinipools)
@@ -53,11 +57,12 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("    Dissolved:           %d\n", response.DissolvedMinipoolCount)
 	fmt.Printf("Inactive Minipools:      %d\n\n", response.FinalizedMinipoolCount)
 
-	fmt.Println("========== Smoothing Pool =========")
+	fmt.Printf("%s========== Smoothing Pool =========%s\n", colorGreen, colorReset)
+	fmt.Printf("Contract Address:        %s%s%s\n", colorBlue, response.SmoothingPoolAddress.Hex(), colorReset)
 	fmt.Printf("Nodes Opted in:          %d\n", response.SmoothingPoolNodes)
 	fmt.Printf("Pending Balance:         %f\n\n", response.SmoothingPoolBalance)
 
-	fmt.Println("============== Tokens =============")
+	fmt.Printf("%s============== Tokens =============%s\n", colorGreen, colorReset)
 	fmt.Printf("rETH Price (ETH / rETH): %f ETH\n", response.RethPrice)
 	fmt.Printf("RPL Price (ETH / RPL):   %f ETH\n", response.RplPrice)
 	fmt.Printf("Total RPL staked:        %f RPL\n", response.TotalRplStaked)

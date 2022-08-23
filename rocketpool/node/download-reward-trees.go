@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
@@ -92,7 +93,7 @@ func (d *downloadRewardsTrees) run() error {
 	}
 
 	// Check if the user opted into downloading rewards files
-	if d.cfg.Smartnode.RewardsTreeMode.Value.(config.RewardsMode) != config.RewardsMode_Download {
+	if d.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Download {
 		return nil
 	}
 

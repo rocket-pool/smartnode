@@ -18,10 +18,11 @@ import (
 )
 
 const (
-	colorReset  string = "\033[0m"
-	colorRed    string = "\033[31m"
-	colorGreen  string = "\033[32m"
-	colorYellow string = "\033[33m"
+	colorReset        string = "\033[0m"
+	colorRed          string = "\033[31m"
+	colorGreen        string = "\033[32m"
+	colorYellow       string = "\033[33m"
+	smoothingPoolLink string = "https://docs.rocketpool.net/guides/redstone/whats-new.html#smoothing-pool"
 )
 
 func getStatus(c *cli.Context) error {
@@ -49,6 +50,12 @@ func getStatus(c *cli.Context) error {
 	status, err := rp.NodeStatus()
 	if err != nil {
 		return err
+	}
+
+	// Get the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
 	}
 
 	// Account address & balances
@@ -192,17 +199,37 @@ func getStatus(c *cli.Context) error {
 		// Fee distributor details
 		if status.IsMergeUpdateDeployed {
 			fmt.Printf("%s=== Fee Distributor and Smoothing Pool ===%s\n", colorGreen, colorReset)
-			fmt.Printf("The node's fee distributor %s%s%s has a balance of %.6f ETH.\n", colorBlue, status.FeeDistributorAddress.Hex(), colorReset, math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
-			if !status.IsFeeDistributorInitialized {
-				fmt.Printf("%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n\n", colorYellow, colorReset)
+			if status.FeeRecipientInfo.IsInSmoothingPool {
+				fmt.Printf(
+					"The node is currently opted into the Smoothing Pool (%s%s%s).\n",
+					colorBlue,
+					status.FeeRecipientInfo.SmoothingPoolAddress.Hex(),
+					colorReset)
+				if cfg.IsNativeMode {
+					fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
+				}
+			} else if status.FeeRecipientInfo.IsInOptOutCooldown {
+				fmt.Printf(
+					"The node is currently opting out of the Smoothing Pool, but cannot safely change its fee recipient yet.\nIt must remain the Smoothing Pool's address (%s%s%s) until the opt-out process is complete.\nIt can safely be changed once Epoch %d is finalized on the Beacon Chain.\n",
+					colorBlue,
+					status.FeeRecipientInfo.SmoothingPoolAddress.Hex(),
+					colorReset,
+					status.FeeRecipientInfo.OptOutEpoch)
+				if cfg.IsNativeMode {
+					fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
+				}
+			} else {
+				fmt.Printf("The node is not opted into the Smoothing Pool.\nTo learn more about the Smoothing Pool, please visit %s.\n", smoothingPoolLink)
 			}
 
-			// Smoothing Pool
-			if status.IsInSmoothingPool {
-				fmt.Println("The node is opted into the Smoothing Pool.")
-			} else {
-				fmt.Println("The node is not opted into the Smoothing Pool.")
+			fmt.Printf("The node's fee distributor %s%s%s has a balance of %.6f ETH.\n", colorBlue, status.FeeRecipientInfo.FeeDistributorAddress.Hex(), colorReset, math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
+			if cfg.IsNativeMode && !status.FeeRecipientInfo.IsInSmoothingPool && !status.FeeRecipientInfo.IsInOptOutCooldown {
+				fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
 			}
+			if !status.IsFeeDistributorInitialized {
+				fmt.Printf("\n%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n", colorYellow, colorReset)
+			}
+
 			fmt.Println()
 		}
 

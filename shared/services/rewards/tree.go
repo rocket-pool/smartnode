@@ -785,7 +785,7 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 	r.log.Printlnf("%s Pool staker ETH:    %s (%.3f)", r.logPrefix, poolStakerShare.String(), eth.WeiToEth(truePoolStakerAmount))
 	r.log.Printlnf("%s Node Op ETH:        %s (%.3f)", r.logPrefix, nodeOpShare.String(), eth.WeiToEth(nodeOpShare))
 	r.log.Printlnf("%s Calculated NO ETH:  %s (error = %s wei)", r.logPrefix, totalEthForMinipools.String(), delta.String())
-	r.log.Printlnf("%s Adjusting pool staker ETH to %s to acount for truncation", r.logPrefix, truePoolStakerAmount.String())
+	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
 
 	return truePoolStakerAmount, totalEthForMinipools, nil
 
@@ -856,12 +856,12 @@ func (r *RewardsFile) processEpoch(getDuties bool, epoch uint64) error {
 		i := i
 		slot := epoch*r.slotsPerEpoch + i
 		wg.Go(func() error {
-			block, found, err := r.bc.GetBeaconBlock(fmt.Sprint(slot))
+			attestations, found, err := r.bc.GetAttestations(fmt.Sprint(slot))
 			if err != nil {
 				return err
 			}
 			if found {
-				attestationsPerSlot[i] = block.Attestations
+				attestationsPerSlot[i] = attestations
 			} else {
 				attestationsPerSlot[i] = []beacon.AttestationInfo{}
 			}

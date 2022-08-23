@@ -1,6 +1,8 @@
 package config
 
-import "github.com/rocket-pool/smartnode/shared/services/config"
+import (
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+)
 
 func createDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
@@ -23,7 +25,8 @@ func createDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choic
 		}
 		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 		switch cc {
-		case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Nimbus:
+			// Temp until Nimbus supports fallbacks
 			wiz.md.Config.UseFallbackClients.Value = false
 			wiz.metricsModal.show()
 		default:

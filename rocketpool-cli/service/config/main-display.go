@@ -7,6 +7,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // This represents the primary TUI for the configuration command
@@ -28,7 +29,7 @@ type mainDisplay struct {
 	PreviousConfig      *config.RocketPoolConfig
 	Config              *config.RocketPoolConfig
 	ShouldSave          bool
-	ContainersToRestart []config.ContainerID
+	ContainersToRestart []cfgtypes.ContainerID
 	ChangeNetworks      bool
 }
 

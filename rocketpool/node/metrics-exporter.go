@@ -2,7 +2,9 @@ package node
 
 import (
 	"fmt"
+	"os"
 	"net/http"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -38,7 +40,11 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger) error {
 
 	// Return if metrics are disabled
 	if cfg.EnableMetrics.Value == false {
-		return nil
+		if strings.ToLower(os.Getenv("ENABLE_METRICS")) == "true" {
+			logger.Printlnf("ENABLE_METRICS override set to true, will start Metrics exporter anyway!")
+		} else {
+			return nil
+		}
 	}
 
 	nodeAccount, err := w.GetNodeAccount()

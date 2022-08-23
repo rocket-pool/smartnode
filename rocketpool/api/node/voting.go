@@ -15,9 +15,9 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
@@ -46,7 +46,7 @@ func estimateSetSnapshotDelegateGas(c *cli.Context, address common.Address) (*ap
 	// Get the snapshot address
 	addressString := cfg.Smartnode.GetSnapshotDelegationAddress()
 	if addressString == "" {
-		return nil, fmt.Errorf("Network [%v] does not have a snapshot delegation contract.", cfg.Smartnode.Network.Value.(config.Network))
+		return nil, fmt.Errorf("Network [%v] does not have a snapshot delegation contract.", cfg.Smartnode.Network.Value.(cfgtypes.Network))
 	}
 	snapshotDelegationAddress := common.HexToAddress(addressString)
 
@@ -157,7 +157,7 @@ func estimateClearSnapshotDelegateGas(c *cli.Context) (*api.EstimateClearSnapsho
 	// Get the snapshot address
 	addressString := cfg.Smartnode.GetSnapshotDelegationAddress()
 	if addressString == "" {
-		return nil, fmt.Errorf("Network [%v] does not have a snapshot delegation contract.", cfg.Smartnode.Network.Value.(config.Network))
+		return nil, fmt.Errorf("Network [%v] does not have a snapshot delegation contract.", cfg.Smartnode.Network.Value.(cfgtypes.Network))
 	}
 	snapshotDelegationAddress := common.HexToAddress(addressString)
 

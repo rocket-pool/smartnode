@@ -15,6 +15,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -42,7 +43,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 	// Get the primary EC url
 	if cfg.IsNativeMode {
 		primaryEcUrl = cfg.Native.EcHttpUrl.Value.(string)
-	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+	} else if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		primaryEcUrl = fmt.Sprintf("http://%s:%d", config.Eth1ContainerName, cfg.ExecutionCommon.HttpPort.Value)
 	} else {
 		primaryEcUrl = cfg.ExternalExecution.HttpUrl.Value.(string)
@@ -55,7 +56,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 		} else {
 			cc, _ := cfg.GetSelectedConsensusClient()
 			switch cc {
-			case config.ConsensusClient_Prysm:
+			case cfgtypes.ConsensusClient_Prysm:
 				fallbackEcUrl = cfg.FallbackPrysm.EcHttpUrl.Value.(string)
 			default:
 				fallbackEcUrl = cfg.FallbackNormal.EcHttpUrl.Value.(string)
@@ -331,7 +332,7 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 /// Internal functions
 /// ==================
 
-func (p *ExecutionClientManager) CheckStatus(alwaysCheckFallback bool) *api.ClientManagerStatus {
+func (p *ExecutionClientManager) CheckStatus() *api.ClientManagerStatus {
 
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: p.fallbackEc != nil,
@@ -353,9 +354,7 @@ func (p *ExecutionClientManager) CheckStatus(alwaysCheckFallback bool) *api.Clie
 
 	// Get the fallback EC status if applicable
 	if status.FallbackEnabled {
-		if alwaysCheckFallback {
-			status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
-		}
+		status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
 	}
 
 	// Flag the ready clients
@@ -404,21 +403,21 @@ func checkEcStatus(client *ethclient.Client) api.ClientStatus {
 		status.SyncProgress = 1
 		return status
 
-	} else {
-		// It's not synced yet, print the progress
-		status.IsWorking = true
-		status.IsSynced = false
-
-		status.SyncProgress = float64(progress.CurrentBlock) / float64(progress.HighestBlock)
-		if status.SyncProgress > 1 {
-			status.SyncProgress = 1
-		}
-		if math.IsNaN(status.SyncProgress) {
-			status.SyncProgress = 0
-		}
-
-		return status
 	}
+
+	// It's not synced yet, print the progress
+	status.IsWorking = true
+	status.IsSynced = false
+
+	status.SyncProgress = float64(progress.CurrentBlock) / float64(progress.HighestBlock)
+	if status.SyncProgress > 1 {
+		status.SyncProgress = 1
+	}
+	if math.IsNaN(status.SyncProgress) {
+		status.SyncProgress = 0
+	}
+
+	return status
 
 }
 
@@ -435,15 +434,17 @@ func (p *ExecutionClientManager) runFunction(function ecFunction) (interface{}, 
 				p.logger.Printlnf("WARNING: Primary Execution client disconnected (%s), using fallback...", err.Error())
 				p.primaryReady = false
 				return p.runFunction(function)
-			} else {
-				// If it's a different error, just return it
-				return nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result, nil
+
+			// If it's a different error, just return it
+			return nil, err
 		}
-	} else if p.fallbackReady {
+
+		// If there's no error, return the result
+		return result, nil
+	}
+
+	if p.fallbackReady {
 		// Try to run the function on the fallback
 		result, err := function(p.fallbackEc)
 		if err != nil {
@@ -452,18 +453,17 @@ func (p *ExecutionClientManager) runFunction(function ecFunction) (interface{}, 
 				p.logger.Printlnf("WARNING: Fallback Execution client disconnected (%s)", err.Error())
 				p.fallbackReady = false
 				return nil, fmt.Errorf("all Execution clients failed")
-			} else {
-				// If it's a different error, just return it
-				return nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result, nil
+
+			// If it's a different error, just return it
+			return nil, err
 		}
-	} else {
-		return nil, fmt.Errorf("no Execution clients were ready")
+
+		// If there's no error, return the result
+		return result, nil
 	}
 
+	return nil, fmt.Errorf("no Execution clients were ready")
 }
 
 // Returns true if the error was a connection failure and a backup client is available

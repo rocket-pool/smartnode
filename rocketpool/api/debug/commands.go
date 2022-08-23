@@ -2,6 +2,7 @@ package debug
 
 import (
 	"fmt"
+
 	"github.com/urfave/cli"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
