@@ -114,7 +114,7 @@ type SmartnodeConfig struct {
 	snapshotDelegationAddress map[config.Network]string `yaml:"-"`
 
 	// The Snapshot API domain
-	snapshotApiDomain map[Network]string `yaml:"-"`
+	snapshotApiDomain map[config.Network]string `yaml:"-"`
 
 	// The contract address of rETH
 	rethAddress map[config.Network]string `yaml:"-"`
