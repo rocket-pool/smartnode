@@ -137,9 +137,9 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("\nTitle: %s\n", proposal.Title)
 			currentTimestamp := time.Now().Unix()
 			if currentTimestamp < proposal.Start {
-				fmt.Printf("Start: %s (in %s)\n", cliutils.GetDateTimeString(uint64(proposal.Start)), cliutils.GetDateTimeDiffString(uint64(proposal.Start), uint64(currentTimestamp)))
+				fmt.Printf("Start: %s (in %s)\n", cliutils.GetDateTimeString(uint64(proposal.Start)), time.Until(time.Unix(proposal.Start, 0)).Round(time.Second))
 			} else {
-				fmt.Printf("End: %s (in %s) \n", cliutils.GetDateTimeString(uint64(proposal.End)), cliutils.GetDateTimeDiffString(uint64(proposal.End), uint64(currentTimestamp)))
+				fmt.Printf("End: %s (in %s) \n", cliutils.GetDateTimeString(uint64(proposal.End)), time.Until(time.Unix(proposal.End, 0)).Round(time.Second))
 				scoresBuilder := strings.Builder{}
 				for i, score := range proposal.Scores {
 					scoresBuilder.WriteString(fmt.Sprintf("[%s = %.2f] ", proposal.Choices[i], score))

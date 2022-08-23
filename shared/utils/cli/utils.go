@@ -79,14 +79,6 @@ func GetDateTimeString(dateTime uint64) string {
 	return timeString
 }
 
-// GetDateTimeDiffString prints the difference between two Unix datetime values
-func GetDateTimeDiffString(firstDateTime uint64, secondDateTime uint64) string {
-	firstDate := time.Unix(int64(firstDateTime), 0)
-	secondDate := time.Unix(int64(secondDateTime), 0)
-	difference := firstDate.Sub(secondDate)
-	return difference.String()
-}
-
 // Gets the hex string of an address, or "none" if it was the 0x0 address
 func GetPrettyAddress(address common.Address) string {
 	addressString := address.Hex()
