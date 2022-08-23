@@ -243,11 +243,11 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 
 }
 
-func getSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
+func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
 	query := fmt.Sprintf(`query Votes{
 		votes(
 		  where: {
-			space_in: ["%s"],
+			space: "%s",
 			voter_in: ["%s", "%s"],
 		  },
 		  orderBy: "created",
@@ -283,9 +283,9 @@ func getSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 	return &votedProposals, nil
 }
 
-func getSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
+func GetSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
 	query := fmt.Sprintf(`query Proposals {
-	proposals(where: {space_in: ["%s"], state: "%s"}, orderBy: "created", orderDirection: desc) {
+	proposals(where: {space: "%s", state: "%s"}, orderBy: "created", orderDirection: desc) {
 	    id
 	    title
 	    choices

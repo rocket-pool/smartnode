@@ -128,3 +128,19 @@ func (c *Client) GenerateRewardsTree(index uint64) (api.NetworkGenerateRewardsTr
 	}
 	return response, nil
 }
+
+// GetActiveDAOProposals fetches information about active DAO proposals
+func (c *Client) GetActiveDAOProposals() (api.NetworkDAOProposalsResponse, error) {
+	responseBytes, err := c.callAPI("network dao-proposals")
+	if err != nil {
+		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("could not request active DAO proposals: %w", err)
+	}
+	var response api.NetworkDAOProposalsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("could not decode dao proposals response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NetworkDAOProposalsResponse{}, fmt.Errorf("error after requesting dao proposals: %s", response.Error)
+	}
+	return response, nil
+}

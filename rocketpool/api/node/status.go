@@ -133,7 +133,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			if err != nil {
 				return err
 			}
-			votedProposals, err := getSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
+			votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
 			if err != nil {
 				return err
 			}
@@ -143,7 +143,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	})
 	// Get snapshot active proposals
 	wg.Go(func() error {
-		snapshotResponse, err := getSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
+		snapshotResponse, err := GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
 		if err != nil {
 			return err
 		}

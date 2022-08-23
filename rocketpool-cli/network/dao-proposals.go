@@ -31,43 +31,37 @@ func getActiveDAOProposals(c *cli.Context) error {
 		return err
 	}
 
-	// Get node status
-	status, err := rp.NodeStatus()
+	// Get active DAO proposals
+	proposalsResponse, err := rp.GetActiveDAOProposals()
 	if err != nil {
 		return err
 	}
 
-	// // Get the config
-	// cfg, _, err := rp.LoadConfig()
-	// if err != nil {
-	// 	return fmt.Errorf("Error loading configuration: %w", err)
-	// }
-
 	// Voting status
 	fmt.Printf("%s=== DAO Voting ===%s\n", colorGreen, colorReset)
 	blankAddress := common.Address{}
-	if status.VotingDelegate == blankAddress {
+	if proposalsResponse.VotingDelegate == blankAddress {
 		fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool governance proposals.")
 	} else {
-		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegate.Hex(), colorReset)
+		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, proposalsResponse.VotingDelegate.Hex(), colorReset)
 	}
 
 	voteCount := 0
-	for _, activeProposal := range status.ActiveSnapshotProposals {
-		for _, votedProposal := range status.ProposalVotes {
+	for _, activeProposal := range proposalsResponse.ActiveSnapshotProposals {
+		for _, votedProposal := range proposalsResponse.ProposalVotes {
 			if votedProposal.Proposal.Id == activeProposal.Id {
 				voteCount++
 				break
 			}
 		}
 	}
-	if len(status.ActiveSnapshotProposals) == 0 {
+	if len(proposalsResponse.ActiveSnapshotProposals) == 0 {
 		fmt.Print("Rocket Pool has no governance proposals being voted.\n")
 	} else {
-		fmt.Printf("Rocket Pool has %d governance proposal(s) being voted. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.ActiveSnapshotProposals), voteCount)
+		fmt.Printf("Rocket Pool has %d governance proposal(s) being voted. You have voted on %d of those.\n", len(proposalsResponse.ActiveSnapshotProposals), voteCount)
 	}
 
-	for _, proposal := range status.ActiveSnapshotProposals {
+	for _, proposal := range proposalsResponse.ActiveSnapshotProposals {
 		fmt.Printf("\nTitle: %s\n", proposal.Title)
 		currentTimestamp := time.Now().Unix()
 		if currentTimestamp < proposal.Start {
@@ -85,10 +79,10 @@ func getActiveDAOProposals(c *cli.Context) error {
 			}
 			fmt.Printf("Quorum: %.2f of %d needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
 			voted := false
-			for _, proposalVote := range status.ProposalVotes {
+			for _, proposalVote := range proposalsResponse.ProposalVotes {
 				if proposalVote.Proposal.Id == proposal.Id {
 					voter := "Your DELEGATE"
-					if proposalVote.Voter == status.AccountAddress {
+					if proposalVote.Voter == proposalsResponse.AccountAddress {
 						voter = "YOU"
 					}
 					fmt.Printf("%s%s voted [%s] on this proposal\n%s", colorGreen, voter, proposal.Choices[proposalVote.Choice-1], colorReset)
