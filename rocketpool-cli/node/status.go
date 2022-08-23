@@ -153,7 +153,11 @@ func getStatus(c *cli.Context) error {
 				voted := false
 				for _, proposalVote := range status.ProposalVotes {
 					if proposalVote.Proposal.Id == proposal.Id {
-						fmt.Printf("%sYou voted [%s] on this proposal\n%s", colorGreen, proposal.Choices[proposalVote.Choice-1], colorReset)
+						voter := "Your DELEGATE"
+						if proposalVote.Voter == status.AccountAddress {
+							voter = "YOU"
+						}
+						fmt.Printf("%s%s voted [%s] on this proposal\n%s", colorGreen, voter, proposal.Choices[proposalVote.Choice-1], colorReset)
 						voted = true
 					}
 				}

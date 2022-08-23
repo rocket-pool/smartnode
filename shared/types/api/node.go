@@ -420,7 +420,8 @@ type SnapshotResponse struct {
 	}
 }
 type SnapshotProposalVote struct {
-	Choice   int `json:"choice"`
+	Choice   int            `json:"choice"`
+	Voter    common.Address `json:"voter"`
 	Proposal struct {
 		Id string `json:"id"`
 	} `json:"proposal"`
