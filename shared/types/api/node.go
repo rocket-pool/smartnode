@@ -43,11 +43,13 @@ type NodeStatusResponse struct {
 		CloseAvailable      int `json:"closeAvailable"`
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
+	ActiveSnapshotProposals     []SnapshotProposal        `json:"activeSnapshotProposals"`
 	IsMergeUpdateDeployed       bool                      `json:"isMergeUpdateDeployed"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
 	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
+	ProposalVotes               []SnapshotProposalVote    `json:"proposalVotes"`
 }
 
 type CanRegisterNodeResponse struct {
@@ -394,4 +396,40 @@ type SetSmoothingPoolRegistrationStatusResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
+}
+type SnapshotProposal struct {
+	Id            string    `json:"id"`
+	Title         string    `json:"title"`
+	Start         int64     `json:"start"`
+	End           int64     `json:"end"`
+	State         string    `json:"state"`
+	Snapshot      string    `json:"snapshot"`
+	Author        string    `json:"author"`
+	Choices       []string  `json:"choices"`
+	Scores        []float64 `json:"scores"`
+	ScoresTotal   float64   `json:"scores_total"`
+	ScoresUpdated int64     `json:"scores_updated"`
+	Quorum        int64     `json:"quorum"`
+	Link          string    `json:"link"`
+}
+type SnapshotResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+	Data   struct {
+		Proposals []SnapshotProposal `json:"proposals"`
+	}
+}
+type SnapshotProposalVote struct {
+	Choice   int            `json:"choice"`
+	Voter    common.Address `json:"voter"`
+	Proposal struct {
+		Id string `json:"id"`
+	} `json:"proposal"`
+}
+type SnapshotVotedProposals struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+	Data   struct {
+		Votes []SnapshotProposalVote `json:"votes"`
+	} `json:"data"`
 }

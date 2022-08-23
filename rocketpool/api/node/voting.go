@@ -1,7 +1,11 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -237,4 +241,88 @@ func clearSnapshotDelegate(c *cli.Context) (*api.ClearSnapshotDelegateResponse, 
 	// Return response
 	return &response, nil
 
+}
+
+func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress common.Address, delegate common.Address) (*api.SnapshotVotedProposals, error) {
+	query := fmt.Sprintf(`query Votes{
+		votes(
+		  where: {
+			space: "%s",
+			voter_in: ["%s", "%s"],
+		  },
+		  orderBy: "created",
+		  orderDirection: desc
+		) {
+		  choice
+		  voter
+		  proposal {id}
+		}
+	  }`, space, nodeAddress, delegate)
+	url := fmt.Sprintf("https://%s/graphql?operationName=Votes&query=%s", apiDomain, url.PathEscape(query))
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	// Check the response code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	// Get response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var votedProposals api.SnapshotVotedProposals
+	if err := json.Unmarshal(body, &votedProposals); err != nil {
+		return nil, fmt.Errorf("could not decode snapshot response: %w", err)
+
+	}
+
+	return &votedProposals, nil
+}
+
+func GetSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
+	query := fmt.Sprintf(`query Proposals {
+	proposals(where: {space: "%s", state: "%s"}, orderBy: "created", orderDirection: desc) {
+	    id
+	    title
+	    choices
+	    start
+	    end
+	    snapshot
+	    state
+	    author
+		scores
+		scores_total
+		scores_updated
+		quorum
+		link
+	  }
+    }`, space, state)
+
+	url := fmt.Sprintf("https://%s/graphql?operationName=Proposals&query=%s", apiDomain, url.PathEscape(query))
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	// Check the response code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	// Get response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var snapshotResponse api.SnapshotResponse
+	if err := json.Unmarshal(body, &snapshotResponse); err != nil {
+		return nil, fmt.Errorf("Could not decode snapshot response: %w", err)
+
+	}
+
+	return &snapshotResponse, nil
 }

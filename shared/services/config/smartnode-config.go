@@ -113,6 +113,9 @@ type SmartnodeConfig struct {
 	// The contract address for Snapshot delegation
 	snapshotDelegationAddress map[config.Network]string `yaml:"-"`
 
+	// The Snapshot API domain
+	snapshotApiDomain map[config.Network]string `yaml:"-"`
+
 	// The contract address of rETH
 	rethAddress map[config.Network]string `yaml:"-"`
 
@@ -405,6 +408,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Ropsten: "0x2588C77829015080C771359eC1C3066d2f1158Db",
 		},
 
+		snapshotApiDomain: map[config.Network]string{
+			config.Network_Mainnet: "hub.snapshot.org",
+			config.Network_Prater:  "testnet.snapshot.org",
+			config.Network_Kiln:    "",
+			config.Network_Ropsten: "",
+		},
+
 		previousRewardsPoolAddresses: map[config.Network]map[string][]common.Address{
 			config.Network_Mainnet: {},
 			config.Network_Prater: {
@@ -542,12 +552,20 @@ func (cfg *SmartnodeConfig) GetEcMigratorContainerTag() string {
 	return ecMigratorTag
 }
 
+func (cfg *SmartnodeConfig) GetSnapshotApiDomain() string {
+	return cfg.snapshotApiDomain[cfg.Network.Value.(config.Network)]
+}
+
 func (cfg *SmartnodeConfig) GetVotingSnapshotID() [32]byte {
 	// So the contract wants a Keccak'd hash of the voting ID, but Snapshot's service wants ASCII so it can display the ID in plain text; we have to do this to make it play nicely with Snapshot
 	buffer := [32]byte{}
 	idBytes := []byte(SnapshotID)
 	copy(buffer[0:], idBytes)
 	return buffer
+}
+
+func (config *SmartnodeConfig) GetSnapshotID() string {
+	return SnapshotID
 }
 
 // The the title for the config
