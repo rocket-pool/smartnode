@@ -464,11 +464,11 @@ func (c *StandardHttpClient) GetEth1DataForEth2Block(blockId string) (beacon.Eth
 
 func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
 	attestations, exists, err := c.getAttestations(blockId)
-	if !exists {
-		return nil, false, nil
-	}
 	if err != nil {
 		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
 	}
 
 	// Add attestation info
@@ -488,11 +488,11 @@ func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.Attestati
 
 func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {
 	block, exists, err := c.getBeaconBlock(blockId)
-	if !exists {
-		return beacon.BeaconBlock{}, false, nil
-	}
 	if err != nil {
 		return beacon.BeaconBlock{}, false, err
+	}
+	if !exists {
+		return beacon.BeaconBlock{}, false, nil
 	}
 
 	beaconBlock := beacon.BeaconBlock{
