@@ -1042,6 +1042,15 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		errors = append(errors, "You are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	}
 
+	// Ensure there's a MEV-boost URL
+	if cfg.EnableMevBoost.Value == true {
+		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.Relays.Value.(string) == "" {
+			errors = append(errors, "You have MEV-boost enabled in local mode but don't have a relay URL set. Please enter at least one relay URL to use MEV-boost.")
+		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
+			errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+		}
+	}
+
 	return errors
 }
 
