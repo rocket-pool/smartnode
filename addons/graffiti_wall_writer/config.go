@@ -52,7 +52,7 @@ func NewConfig() *GraffitiWallWriterConfig {
 			Name:                 "Input URL",
 			Description:          "URL or filepath for the input JSON file that contains the graffiti image to write to the wall.\n\nSee https://gist.github.com/RomiRand/dfa1b5286af3e926deff0be2746db2df for info on making your own images.\n\nNOTE: for local files, you must manually put the file into the `addons/gww` folder of your `rocketpool` directory, and then enter the name of it as `/gww/<filename>` here.",
 			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: "https://raw.githubusercontent.com/stake-house/DecentralizedGraffitiDrawing/main/rocketpool/graffiti.json"},
+			Default:              map[config.Network]interface{}{config.Network_All: "https://cdn-rocketpool.s3.us-west-2.amazonaws.com/graffiti.json"},
 			AffectsContainers:    []config.ContainerID{ContainerID_GraffitiWallWriter},
 			EnvironmentVariables: []string{"ADDON_GWW_INPUT_URL"},
 			CanBeBlank:           true,
