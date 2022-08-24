@@ -169,7 +169,8 @@ func approveRpl(c *cli.Context) (*api.JoinTNDAOApproveResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
-	if hash, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts); err != nil {
+	hash, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts)
+	if err != nil {
 		return nil, err
 	}
 
@@ -213,11 +214,12 @@ func waitForApprovalAndJoin(c *cli.Context, hash common.Hash) (*api.JoinTNDAOJoi
 	if err != nil {
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
-	if hash, err := tndao.Join(rp, opts); err != nil {
+	joinHash, err := tndao.Join(rp, opts)
+	if err != nil {
 		return nil, err
 	}
 
-	response.JoinTxHash = hash
+	response.JoinTxHash = joinHash
 
 	// Return response
 	return &response, nil

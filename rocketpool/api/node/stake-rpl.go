@@ -184,7 +184,8 @@ func approveRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveRes
 	if err != nil {
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
-	if hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts); err != nil {
+	hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts)
+	if err != nil {
 		return nil, err
 	}
 
@@ -244,7 +245,8 @@ func stakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplStakeRespons
 	if err != nil {
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
-	if hash, err := node.StakeRPL(rp, amountWei, opts); err != nil {
+	hash, err := node.StakeRPL(rp, amountWei, opts)
+	if err != nil {
 		return nil, err
 	}
 
