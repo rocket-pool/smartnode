@@ -139,9 +139,9 @@ func getStatus(c *cli.Context) error {
 			}
 		}
 		if len(status.ActiveSnapshotProposals) == 0 {
-			fmt.Print("Rocket Pool has no governance proposals being voted.\n")
+			fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
 		} else {
-			fmt.Printf("Rocket Pool has %d governance proposal(s) being voted. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.ActiveSnapshotProposals), voteCount)
+			fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.ActiveSnapshotProposals), voteCount)
 		}
 		fmt.Println("")
 
