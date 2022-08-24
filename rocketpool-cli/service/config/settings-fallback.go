@@ -4,6 +4,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // The page wrapper for the fallback config
@@ -107,7 +108,7 @@ func (configPage *FallbackConfigPage) handleUseFallbackChanged() {
 
 	cc, _ := configPage.masterConfig.GetSelectedConsensusClient()
 	switch cc {
-	case config.ConsensusClient_Prysm:
+	case cfgtypes.ConsensusClient_Prysm:
 		configPage.layout.addFormItems(configPage.fallbackPrysmItems)
 	default:
 		configPage.layout.addFormItems(configPage.fallbackNormalItems)

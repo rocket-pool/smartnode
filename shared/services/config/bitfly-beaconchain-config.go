@@ -1,5 +1,9 @@
 package config
 
+import (
+	"github.com/rocket-pool/smartnode/shared/types/config"
+)
+
 // Defaults
 const (
 	defaultBitflyNodeMetricsSecret      string = ""
@@ -11,25 +15,25 @@ const (
 type BitflyNodeMetricsConfig struct {
 	Title string `yaml:"-"`
 
-	Secret Parameter `yaml:"secret,omitempty"`
+	Secret config.Parameter `yaml:"secret,omitempty"`
 
-	Endpoint Parameter `yaml:"endpoint,omitempty"`
+	Endpoint config.Parameter `yaml:"endpoint,omitempty"`
 
-	MachineName Parameter `yaml:"machineName,omitempty"`
+	MachineName config.Parameter `yaml:"machineName,omitempty"`
 }
 
 // Generates a new Bitfly Node Metrics config
-func NewBitflyNodeMetricsConfig(config *RocketPoolConfig) *BitflyNodeMetricsConfig {
+func NewBitflyNodeMetricsConfig(cfg *RocketPoolConfig) *BitflyNodeMetricsConfig {
 	return &BitflyNodeMetricsConfig{
 		Title: "Bitfly Node Metrics Settings",
 
-		Secret: Parameter{
+		Secret: config.Parameter{
 			ID:                   "bitflySecret",
 			Name:                 "Node Metrics Secret",
 			Description:          "The secret used to authenticate your Beaconcha.in node metrics integration. Can be found in your Beaconcha.in account settings.\n\nPlease visit https://beaconcha.in/login to access your account information.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: defaultBitflyNodeMetricsSecret},
-			AffectsContainers:    []ContainerID{ContainerID_Validator, ContainerID_Eth2},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultBitflyNodeMetricsSecret},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BITFLY_NODE_METRICS_SECRET"},
 			// ensures the string is 28 characters of Base64
 			Regex:              "^[A-Za-z0-9+/]{28}$",
@@ -37,25 +41,25 @@ func NewBitflyNodeMetricsConfig(config *RocketPoolConfig) *BitflyNodeMetricsConf
 			OverwriteOnUpgrade: false,
 		},
 
-		Endpoint: Parameter{
+		Endpoint: config.Parameter{
 			ID:                   "bitflyEndpoint",
 			Name:                 "Node Metrics Endpoint",
 			Description:          "The endpoint to send your Beaconcha.in Node Metrics data to. Should be left as the default.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: defaultBitflyNodeMetricsEndpoint},
-			AffectsContainers:    []ContainerID{ContainerID_Validator, ContainerID_Eth2},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultBitflyNodeMetricsEndpoint},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BITFLY_NODE_METRICS_ENDPOINT"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		MachineName: Parameter{
+		MachineName: config.Parameter{
 			ID:                   "bitflyMachineName",
 			Name:                 "Node Metrics Machine Name",
 			Description:          "The name of the machine you are running on. This is used to identify your machine in the mobile app.\nChange this if you are running multiple Smartnodes with the same Secret.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: defaultBitflyNodeMetricsMachineName},
-			AffectsContainers:    []ContainerID{ContainerID_Validator, ContainerID_Eth2},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultBitflyNodeMetricsMachineName},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BITFLY_NODE_METRICS_MACHINE_NAME"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
@@ -64,15 +68,15 @@ func NewBitflyNodeMetricsConfig(config *RocketPoolConfig) *BitflyNodeMetricsConf
 }
 
 // Get the parameters for this config
-func (config *BitflyNodeMetricsConfig) GetParameters() []*Parameter {
-	return []*Parameter{
-		&config.Secret,
-		&config.Endpoint,
-		&config.MachineName,
+func (cfg *BitflyNodeMetricsConfig) GetParameters() []*config.Parameter {
+	return []*config.Parameter{
+		&cfg.Secret,
+		&cfg.Endpoint,
+		&cfg.MachineName,
 	}
 }
 
 // The the title for the config
-func (config *BitflyNodeMetricsConfig) GetConfigTitle() string {
-	return config.Title
+func (cfg *BitflyNodeMetricsConfig) GetConfigTitle() string {
+	return cfg.Title
 }

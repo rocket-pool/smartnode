@@ -10,14 +10,15 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/tyler-smith/go-bip39"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
-	"github.com/rocket-pool/smartnode/shared/services/wallet/fees"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
 
@@ -57,9 +58,6 @@ type Wallet struct {
 	// Keystores
 	keystores map[string]keystore.Keystore
 
-	// Fee recipient managers
-	feeRecipientManagers map[string]fees.FeeRecipientManager
-
 	// Desired gas price & limit from config
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
@@ -82,17 +80,16 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 
 	// Initialize wallet
 	w := &Wallet{
-		walletPath:           walletPath,
-		pm:                   passwordManager,
-		encryptor:            eth2ks.New(),
-		chainID:              big.NewInt(int64(chainId)),
-		validatorKeys:        map[uint]*eth2types.BLSPrivateKey{},
-		validatorKeyIndices:  map[string]uint{},
-		keystores:            map[string]keystore.Keystore{},
-		feeRecipientManagers: map[string]fees.FeeRecipientManager{},
-		maxFee:               maxFee,
-		maxPriorityFee:       maxPriorityFee,
-		gasLimit:             gasLimit,
+		walletPath:          walletPath,
+		pm:                  passwordManager,
+		encryptor:           eth2ks.New(),
+		chainID:             big.NewInt(int64(chainId)),
+		validatorKeys:       map[uint]*eth2types.BLSPrivateKey{},
+		validatorKeyIndices: map[string]uint{},
+		keystores:           map[string]keystore.Keystore{},
+		maxFee:              maxFee,
+		maxPriorityFee:      maxPriorityFee,
+		gasLimit:            gasLimit,
 	}
 
 	// Load & decrypt wallet store
@@ -114,11 +111,6 @@ func (w *Wallet) GetChainID() *big.Int {
 // Add a keystore to the wallet
 func (w *Wallet) AddKeystore(name string, ks keystore.Keystore) {
 	w.keystores[name] = ks
-}
-
-// Add a fee recipient manager to the wallet
-func (w *Wallet) AddFeeRecipientManager(name string, fm fees.FeeRecipientManager) {
-	w.feeRecipientManagers[name] = fm
 }
 
 // Check if the wallet has been initialized
@@ -289,6 +281,25 @@ func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
 	}
 
 	return signedData, nil
+}
+
+// Signs an arbitrary message using the wallet's private key
+func (w *Wallet) SignMessage(message string) ([]byte, error) {
+	// Get the wallet's private key
+	privateKey, _, err := w.getNodePrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	messageHash := accounts.TextHash([]byte(message))
+	signedMessage, err := crypto.Sign(messageHash, privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("Error signing message: %w", err)
+	}
+
+	// fix the ECDSA 'v' (see https://medium.com/mycrypto/the-magic-of-digital-signatures-on-ethereum-98fe184dc9c7#:~:text=The%20version%20number,2%E2%80%9D%20was%20introduced)
+	signedMessage[crypto.RecoveryIDOffset] += 27
+	return signedMessage, nil
 }
 
 // Reloads wallet from disk

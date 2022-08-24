@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
@@ -35,7 +36,7 @@ func createGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWi
 		}
 
 		// Check to see if it supports checkpoint sync or doppelganger detection
-		unsupportedParams := client.(config.LocalConsensusConfig).GetUnsupportedCommonParams()
+		unsupportedParams := client.(cfgtypes.LocalConsensusConfig).GetUnsupportedCommonParams()
 		supportsCheckpointSync := true
 		supportsDoppelganger := true
 		for _, param := range unsupportedParams {

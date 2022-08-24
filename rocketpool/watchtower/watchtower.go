@@ -132,76 +132,82 @@ func run(c *cli.Context) error {
 			if err != nil {
 				errorLog.Println(err)
 			} else {
-				// Run the manual rewards tree generation
-				if err := generateRewardsTree.run(); err != nil {
+				// Check the BC status
+				err := services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+				if err != nil {
 					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-
-				// Run the challenge check
-				if err := respondChallenges.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-
-				if !isUpdateDeployed {
-					// Only run auto-claims during the legacy period
-					isUpdateDeployed, err = claimRplRewards.run()
-					if err != nil {
+				} else {
+					// Run the manual rewards tree generation
+					if err := generateRewardsTree.run(); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
-				}
 
-				if isUpdateDeployed {
-					// Run the rewards tree submission check
-					if err := submitRewardsTree.run(); err != nil {
+					// Run the challenge check
+					if err := respondChallenges.run(); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)
-				}
 
-				// Run the price submission check
-				if err := submitRplPrice.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
+					if !isUpdateDeployed {
+						// Only run auto-claims during the legacy period
+						isUpdateDeployed, err = claimRplRewards.run()
+						if err != nil {
+							errorLog.Println(err)
+						}
+						time.Sleep(taskCooldown)
+					}
 
-				// Run the network balance submission check
-				if err := submitNetworkBalances.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
+					if isUpdateDeployed {
+						// Run the rewards tree submission check
+						if err := submitRewardsTree.run(); err != nil {
+							errorLog.Println(err)
+						}
+						time.Sleep(taskCooldown)
+					}
 
-				// Run the withdrawable status submission check
-				if err := submitWithdrawableMinipools.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
+					// Run the price submission check
+					if err := submitRplPrice.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 
-				// Run the minipool dissolve check
-				if err := dissolveTimedOutMinipools.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
+					// Run the network balance submission check
+					if err := submitNetworkBalances.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 
-				// Run the withdrawal processing check
-				if err := processWithdrawals.run(); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
+					// Run the withdrawable status submission check
+					if err := submitWithdrawableMinipools.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 
-				// Run the minipool scrub check
-				if err := submitScrubMinipools.run(); err != nil {
-					errorLog.Println(err)
-				}
-				/*time.Sleep(taskCooldown)
+					// Run the minipool dissolve check
+					if err := dissolveTimedOutMinipools.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
 
-				// Run the fee recipient penalty check
-				if err := processPenalties.run(); err != nil {
-					errorLog.Println(err)
-				}*/
-				// DISABLED until MEV Boost can support it
+					// Run the withdrawal processing check
+					if err := processWithdrawals.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+
+					// Run the minipool scrub check
+					if err := submitScrubMinipools.run(); err != nil {
+						errorLog.Println(err)
+					}
+					/*time.Sleep(taskCooldown)
+
+					// Run the fee recipient penalty check
+					if err := processPenalties.run(); err != nil {
+						errorLog.Println(err)
+					}*/
+					// DISABLED until MEV-Boost can support it
+				}
 			}
 			time.Sleep(interval)
 		}

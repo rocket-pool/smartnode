@@ -41,6 +41,10 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 	s, err := services.GetSnapshotDelegation(c)
 	if err != nil {
 		return nil, err
@@ -126,8 +130,25 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		if cfg.Smartnode.GetSnapshotDelegationAddress() != "" {
 			idHash := cfg.Smartnode.GetVotingSnapshotID()
 			response.VotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
+			if err != nil {
+				return err
+			}
+			votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
+			if err != nil {
+				return err
+			}
+			response.ProposalVotes = votedProposals.Data.Votes
 		}
 		return err
+	})
+	// Get snapshot active proposals
+	wg.Go(func() error {
+		snapshotResponse, err := GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
+		if err != nil {
+			return err
+		}
+		response.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
+		return nil
 	})
 
 	// Get node minipool counts
@@ -177,19 +198,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		})
 		wg.Go(func() error {
 			var err error
-			response.FeeDistributorAddress, err = node.GetDistributorAddress(rp, nodeAccount.Address, nil)
-			if err != nil {
-				return err
+			feeRecipientInfo, err := rputils.GetFeeRecipientInfo(rp, bc, nodeAccount.Address)
+			if err == nil {
+				response.FeeRecipientInfo = *feeRecipientInfo
+				response.FeeDistributorBalance, err = rp.Client.BalanceAt(context.Background(), feeRecipientInfo.FeeDistributorAddress, nil)
 			}
-			response.FeeDistributorBalance, err = rp.Client.BalanceAt(context.Background(), response.FeeDistributorAddress, nil)
 			return err
 		})
-		// Get Smoothing Pool registration status
-		wg.Go(func() error {
-			var err error
-			response.IsInSmoothingPool, err = node.GetSmoothingPoolRegistrationState(rp, nodeAccount.Address, nil)
-			return err
-		})
+
 	}
 
 	// Wait for data

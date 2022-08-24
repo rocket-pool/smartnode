@@ -36,6 +36,7 @@ const (
 	RequestForkPath                  = "/eth/v1/beacon/states/%s/fork"
 	RequestValidatorsPath            = "/eth/v1/beacon/states/%s/validators"
 	RequestVoluntaryExitPath         = "/eth/v1/beacon/pool/voluntary_exits"
+	RequestAttestationsPath          = "/eth/v1/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath           = "/eth/v2/beacon/blocks/%s"
 	RequestValidatorSyncDuties       = "/eth/v1/validator/duties/sync/%s"
 	RequestValidatorProposerDuties   = "/eth/v1/validator/duties/proposer/%s"
@@ -308,7 +309,8 @@ func (c *StandardHttpClient) GetValidatorSyncDuties(indices []uint64, epoch uint
 
 	if err != nil {
 		return nil, fmt.Errorf("Could not get validator sync duties: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return nil, fmt.Errorf("Could not get validator sync duties: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 
@@ -341,7 +343,8 @@ func (c *StandardHttpClient) GetValidatorProposerDuties(indices []uint64, epoch 
 
 	if err != nil {
 		return nil, fmt.Errorf("Could not get validator proposer duties: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return nil, fmt.Errorf("Could not get validator proposer duties: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 
@@ -459,13 +462,37 @@ func (c *StandardHttpClient) GetEth1DataForEth2Block(blockId string) (beacon.Eth
 
 }
 
+func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
+	attestations, exists, err := c.getAttestations(blockId)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+
+	// Add attestation info
+	attestationInfo := make([]beacon.AttestationInfo, len(attestations.Data))
+	for i, attestation := range attestations.Data {
+		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
+		attestationInfo[i].SlotIndex = uint64(attestation.Data.Slot)
+		attestationInfo[i].CommitteeIndex = uint64(attestation.Data.Index)
+		attestationInfo[i].AggregationBits, err = hex.DecodeString(bitString)
+		if err != nil {
+			return nil, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
+		}
+	}
+
+	return attestationInfo, true, nil
+}
+
 func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock, bool, error) {
 	block, exists, err := c.getBeaconBlock(blockId)
-	if !exists {
-		return beacon.BeaconBlock{}, false, nil
-	}
 	if err != nil {
 		return beacon.BeaconBlock{}, false, err
+	}
+	if !exists {
+		return beacon.BeaconBlock{}, false, nil
 	}
 
 	beaconBlock := beacon.BeaconBlock{
@@ -527,7 +554,8 @@ func (c *StandardHttpClient) getSyncStatus() (SyncStatusResponse, error) {
 	responseBody, status, err := c.getRequest(RequestSyncStatusPath)
 	if err != nil {
 		return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return SyncStatusResponse{}, fmt.Errorf("Could not get node sync status: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var syncStatus SyncStatusResponse
@@ -542,7 +570,8 @@ func (c *StandardHttpClient) getEth2Config() (Eth2ConfigResponse, error) {
 	responseBody, status, err := c.getRequest(RequestEth2ConfigPath)
 	if err != nil {
 		return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return Eth2ConfigResponse{}, fmt.Errorf("Could not get eth2 config: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var eth2Config Eth2ConfigResponse
@@ -557,7 +586,8 @@ func (c *StandardHttpClient) getEth2DepositContract() (Eth2DepositContractRespon
 	responseBody, status, err := c.getRequest(RequestEth2DepositContractMethod)
 	if err != nil {
 		return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return Eth2DepositContractResponse{}, fmt.Errorf("Could not get eth2 deposit contract: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var eth2DepositContract Eth2DepositContractResponse
@@ -572,7 +602,8 @@ func (c *StandardHttpClient) getGenesis() (GenesisResponse, error) {
 	responseBody, status, err := c.getRequest(RequestGenesisPath)
 	if err != nil {
 		return GenesisResponse{}, fmt.Errorf("Could not get genesis data: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return GenesisResponse{}, fmt.Errorf("Could not get genesis data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var genesis GenesisResponse
@@ -587,7 +618,8 @@ func (c *StandardHttpClient) getFinalityCheckpoints(stateId string) (FinalityChe
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestFinalityCheckpointsPath, stateId))
 	if err != nil {
 		return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return FinalityCheckpointsResponse{}, fmt.Errorf("Could not get finality checkpoints: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var finalityCheckpoints FinalityCheckpointsResponse
@@ -602,7 +634,8 @@ func (c *StandardHttpClient) getFork(stateId string) (ForkResponse, error) {
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
 	if err != nil {
 		return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var fork ForkResponse
@@ -621,7 +654,8 @@ func (c *StandardHttpClient) getValidators(stateId string, pubkeys []string) (Va
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId) + query)
 	if err != nil {
 		return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return ValidatorsResponse{}, fmt.Errorf("Could not get validators: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var validators ValidatorsResponse
@@ -690,10 +724,30 @@ func (c *StandardHttpClient) postVoluntaryExit(request VoluntaryExitRequest) err
 	responseBody, status, err := c.postRequest(RequestVoluntaryExitPath, request)
 	if err != nil {
 		return fmt.Errorf("Could not broadcast exit for validator at index %d: %w", request.Message.ValidatorIndex, err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return fmt.Errorf("Could not broadcast exit for validator at index %d: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
 	}
 	return nil
+}
+
+// Get the target beacon block
+func (c *StandardHttpClient) getAttestations(blockId string) (AttestationsResponse, bool, error) {
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestAttestationsPath, blockId))
+	if err != nil {
+		return AttestationsResponse{}, false, fmt.Errorf("Could not get attestations data for slot %s: %w", blockId, err)
+	}
+	if status == http.StatusNotFound {
+		return AttestationsResponse{}, false, nil
+	}
+	if status != http.StatusOK {
+		return AttestationsResponse{}, false, fmt.Errorf("Could not get attestations data for slot %s: HTTP status %d; response body: '%s'", blockId, status, string(responseBody))
+	}
+	var attestations AttestationsResponse
+	if err := json.Unmarshal(responseBody, &attestations); err != nil {
+		return AttestationsResponse{}, false, fmt.Errorf("Could not decode attestations data for slot %s: %w", blockId, err)
+	}
+	return attestations, true, nil
 }
 
 // Get the target beacon block
@@ -701,9 +755,11 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
 	if err != nil {
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: %w", err)
-	} else if status == http.StatusNotFound {
+	}
+	if status == http.StatusNotFound {
 		return BeaconBlockResponse{}, false, nil
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var beaconBlock BeaconBlockResponse
@@ -722,7 +778,8 @@ func (c *StandardHttpClient) getCommittees(stateId string, epoch *uint64) (Commi
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestCommitteePath, stateId) + query)
 	if err != nil {
 		return CommitteesResponse{}, fmt.Errorf("Could not get committees: %w", err)
-	} else if status != http.StatusOK {
+	}
+	if status != http.StatusOK {
 		return CommitteesResponse{}, fmt.Errorf("Could not get committees: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
 	var committees CommitteesResponse

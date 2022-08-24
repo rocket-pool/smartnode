@@ -4,6 +4,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // The page wrapper for the metrics config
@@ -132,8 +133,8 @@ func (configPage *MetricsConfigPage) handleLayoutChanged() {
 		configPage.layout.addFormItems(configPage.exporterItems)
 	}
 
-	switch configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient) {
-	case config.ConsensusClient_Teku, config.ConsensusClient_Lighthouse:
+	switch configPage.masterConfig.ConsensusClient.Value.(cfgtypes.ConsensusClient) {
+	case cfgtypes.ConsensusClient_Teku, cfgtypes.ConsensusClient_Lighthouse:
 		configPage.layout.form.AddFormItem(configPage.enableBitflyNodeMetricsBox.item)
 		if configPage.masterConfig.EnableBitflyNodeMetrics.Value == true {
 			configPage.layout.addFormItems(configPage.bitflyNodeMetricsItems)

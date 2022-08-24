@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // The page wrapper for the EC config
@@ -114,9 +115,9 @@ func (configPage *ConsensusConfigPage) createContent() {
 			return
 		}
 		configPage.masterConfig.ConsensusClient.Value = configPage.masterConfig.ConsensusClient.Options[index].Value
-		switch configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient) {
-		case config.ConsensusClient_Nimbus, config.ConsensusClient_Teku:
-			// Temp until Nimbus and Teku support fallbacks
+		switch configPage.masterConfig.ConsensusClient.Value.(cfgtypes.ConsensusClient) {
+		case cfgtypes.ConsensusClient_Nimbus:
+			// Temp until Nimbus supports fallbacks
 			configPage.home.md.Config.UseFallbackClients.Value = false
 			configPage.home.refresh()
 		}
@@ -140,13 +141,13 @@ func (configPage *ConsensusConfigPage) handleCcModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.ccModeDropdown.item)
 
-	selectedMode := configPage.masterConfig.ConsensusClientMode.Value.(config.Mode)
+	selectedMode := configPage.masterConfig.ConsensusClientMode.Value.(cfgtypes.Mode)
 	switch selectedMode {
-	case config.Mode_Local:
+	case cfgtypes.Mode_Local:
 		// Local (Docker mode)
 		configPage.handleLocalCcChanged()
 
-	case config.Mode_External:
+	case cfgtypes.Mode_External:
 		// External (Hybrid mode)
 		configPage.handleExternalCcChanged()
 	}
@@ -157,16 +158,16 @@ func (configPage *ConsensusConfigPage) handleLocalCcChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.ccModeDropdown.item)
 	configPage.layout.form.AddFormItem(configPage.ccDropdown.item)
-	selectedCc := configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient)
+	selectedCc := configPage.masterConfig.ConsensusClient.Value.(cfgtypes.ConsensusClient)
 
 	switch selectedCc {
-	case config.ConsensusClient_Lighthouse:
+	case cfgtypes.ConsensusClient_Lighthouse:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.lighthouseItems, configPage.masterConfig.Lighthouse.UnsupportedCommonParams)
-	case config.ConsensusClient_Nimbus:
+	case cfgtypes.ConsensusClient_Nimbus:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.nimbusItems, configPage.masterConfig.Nimbus.UnsupportedCommonParams)
-	case config.ConsensusClient_Prysm:
+	case cfgtypes.ConsensusClient_Prysm:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.prysmItems, configPage.masterConfig.Prysm.UnsupportedCommonParams)
-	case config.ConsensusClient_Teku:
+	case cfgtypes.ConsensusClient_Teku:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.tekuItems, configPage.masterConfig.Teku.UnsupportedCommonParams)
 	}
 
@@ -178,14 +179,14 @@ func (configPage *ConsensusConfigPage) handleExternalCcChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.ccModeDropdown.item)
 	configPage.layout.form.AddFormItem(configPage.externalCcDropdown.item)
-	selectedCc := configPage.masterConfig.ExternalConsensusClient.Value.(config.ConsensusClient)
+	selectedCc := configPage.masterConfig.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient)
 
 	switch selectedCc {
-	case config.ConsensusClient_Lighthouse:
+	case cfgtypes.ConsensusClient_Lighthouse:
 		configPage.layout.addFormItems(configPage.externalLighthouseItems)
-	case config.ConsensusClient_Prysm:
+	case cfgtypes.ConsensusClient_Prysm:
 		configPage.layout.addFormItems(configPage.externalPrysmItems)
-	case config.ConsensusClient_Teku:
+	case cfgtypes.ConsensusClient_Teku:
 		configPage.layout.addFormItems(configPage.externalTekuItems)
 	}
 

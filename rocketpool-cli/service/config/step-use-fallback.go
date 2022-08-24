@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createUseFallbackStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -22,7 +22,7 @@ func createUseFallbackStep(wiz *wizard, currentStep int, totalSteps int) *choice
 			wiz.md.Config.UseFallbackClients.Value = true
 			cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 			switch cc {
-			case config.ConsensusClient_Prysm:
+			case cfgtypes.ConsensusClient_Prysm:
 				wiz.fallbackPrysmModal.show()
 			default:
 				wiz.fallbackNormalModal.show()

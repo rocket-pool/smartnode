@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const colorReset string = "\033[0m"
@@ -45,20 +45,18 @@ func PrintMultiTransactionNonceWarning() {
 // Implementation of PrintTransactionHash and PrintTransactionHashNoCancel
 func printTransactionHashImpl(rp *rocketpool.Client, hash common.Hash, finalMessage string) {
 
-	txWatchUrl := ""
-
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
 		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
 		return
-	} else {
-		txWatchUrl = cfg.Smartnode.GetTxWatchUrl()
 	}
+
 	if isNew {
 		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 		return
 	}
 
+	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
 	hashString := hash.String()
 
 	fmt.Printf("Transaction has been submitted with hash %s.\n", hashString)
@@ -140,15 +138,15 @@ func PrintNetwork(rp *rocketpool.Client) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
-	currentNetwork := cfg.Smartnode.Network.Value.(config.Network)
+	currentNetwork := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 	switch currentNetwork {
-	case config.Network_Mainnet:
+	case cfgtypes.Network_Mainnet:
 		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
-	case config.Network_Prater:
+	case cfgtypes.Network_Prater:
 		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", colorLightBlue, colorReset)
-	case config.Network_Kiln:
+	case cfgtypes.Network_Kiln:
 		fmt.Printf("Your Smartnode is currently using the %sKiln Test Network.%s\n\n", colorYellow, colorReset)
-	case config.Network_Ropsten:
+	case cfgtypes.Network_Ropsten:
 		fmt.Printf("Your Smartnode is currently using the %sRopsten Test Network.%s\n\n", colorYellow, colorReset)
 	default:
 		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", colorYellow, currentNetwork, colorReset)

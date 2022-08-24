@@ -117,6 +117,24 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "dao-proposals",
+				Aliases:   []string{"d"},
+				Usage:     "Get the currently active DAO proposals",
+				UsageText: "rocketpool network dao-proposals",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return getActiveDAOProposals(c)
+
+				},
+			},
 		},
 	})
 }

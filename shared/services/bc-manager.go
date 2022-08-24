@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -37,20 +38,20 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 
 	// Primary CC
 	var primaryProvider string
-	var selectedCC config.ConsensusClient
+	var selectedCC cfgtypes.ConsensusClient
 	if cfg.IsNativeMode {
 		primaryProvider = cfg.Native.CcHttpUrl.Value.(string)
-		selectedCC = cfg.Native.ConsensusClient.Value.(config.ConsensusClient)
-	} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+		selectedCC = cfg.Native.ConsensusClient.Value.(cfgtypes.ConsensusClient)
+	} else if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		primaryProvider = fmt.Sprintf("http://%s:%d", BnContainerName, cfg.ConsensusCommon.ApiPort.Value.(uint16))
-		selectedCC = cfg.ConsensusClient.Value.(config.ConsensusClient)
-	} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External {
+		selectedCC = cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient)
+	} else if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
 		selectedConsensusConfig, err := cfg.GetSelectedConsensusClientConfig()
 		if err != nil {
 			return nil, err
 		}
-		primaryProvider = selectedConsensusConfig.(config.ExternalConsensusConfig).GetApiUrl()
-		selectedCC = cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+		primaryProvider = selectedConsensusConfig.(cfgtypes.ExternalConsensusConfig).GetApiUrl()
+		selectedCC = cfg.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient)
 	} else {
 		return nil, fmt.Errorf("Unknown Consensus client mode '%v'", cfg.ConsensusClientMode.Value)
 	}
@@ -62,7 +63,7 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 			fallbackProvider = cfg.FallbackNormal.CcHttpUrl.Value.(string)
 		} else {
 			switch selectedCC {
-			case config.ConsensusClient_Prysm:
+			case cfgtypes.ConsensusClient_Prysm:
 				fallbackProvider = cfg.FallbackPrysm.CcHttpUrl.Value.(string)
 			default:
 				fallbackProvider = cfg.FallbackNormal.CcHttpUrl.Value.(string)
@@ -73,7 +74,7 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 	var primaryBc beacon.Client
 	var fallbackBc beacon.Client
 	switch selectedCC {
-	case config.ConsensusClient_Nimbus:
+	case cfgtypes.ConsensusClient_Nimbus:
 		primaryBc = client.NewNimbusClient(primaryProvider)
 		if fallbackProvider != "" {
 			fallbackBc = client.NewNimbusClient(fallbackProvider)
@@ -141,6 +142,17 @@ func (m *BeaconClientManager) GetEth2DepositContract() (beacon.Eth2DepositContra
 		return beacon.Eth2DepositContract{}, err
 	}
 	return result.(beacon.Eth2DepositContract), nil
+}
+
+// Get the attestations in a Beacon chain block
+func (m *BeaconClientManager) GetAttestations(blockId string) ([]beacon.AttestationInfo, bool, error) {
+	result1, result2, err := m.runFunction2(func(client beacon.Client) (interface{}, interface{}, error) {
+		return client.GetAttestations(blockId)
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return result1.([]beacon.AttestationInfo), result2.(bool), nil
 }
 
 // Get a Beacon chain block
@@ -284,7 +296,7 @@ func (m *BeaconClientManager) GetCommitteesForEpoch(epoch *uint64) ([]beacon.Com
 /// Internal Functions
 /// ==================
 
-func (m *BeaconClientManager) CheckStatus(alwaysCheckFallback bool) *api.ClientManagerStatus {
+func (m *BeaconClientManager) CheckStatus() *api.ClientManagerStatus {
 
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: m.fallbackBc != nil,
@@ -306,9 +318,7 @@ func (m *BeaconClientManager) CheckStatus(alwaysCheckFallback bool) *api.ClientM
 
 	// Get the fallback BC status if applicable
 	if status.FallbackEnabled {
-		if alwaysCheckFallback {
-			status.FallbackClientStatus = checkBcStatus(m.fallbackBc)
-		}
+		status.FallbackClientStatus = checkBcStatus(m.fallbackBc)
 	}
 
 	// Flag the ready clients
@@ -360,15 +370,15 @@ func (m *BeaconClientManager) runFunction0(function bcFunction0) error {
 				m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
 				m.primaryReady = false
 				return m.runFunction0(function)
-			} else {
-				// If it's a different error, just return it
-				return err
 			}
-		} else {
-			// If there's no error, return the result
-			return nil
+			// If it's a different error, just return it
+			return err
 		}
-	} else if m.fallbackReady {
+		// If there's no error, return the result
+		return nil
+	}
+
+	if m.fallbackReady {
 		// Try to run the function on the fallback
 		err := function(m.fallbackBc)
 		if err != nil {
@@ -377,18 +387,16 @@ func (m *BeaconClientManager) runFunction0(function bcFunction0) error {
 				m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
 				m.fallbackReady = false
 				return fmt.Errorf("all Beacon clients failed")
-			} else {
-				// If it's a different error, just return it
-				return err
 			}
-		} else {
-			// If there's no error, return the result
-			return nil
+
+			// If it's a different error, just return it
+			return err
 		}
-	} else {
-		return fmt.Errorf("no Beacon clients were ready")
+		// If there's no error, return the result
+		return nil
 	}
 
+	return fmt.Errorf("no Beacon clients were ready")
 }
 
 // Attempts to run a function progressively through each client until one succeeds or they all fail.
@@ -404,15 +412,15 @@ func (m *BeaconClientManager) runFunction1(function bcFunction1) (interface{}, e
 				m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
 				m.primaryReady = false
 				return m.runFunction1(function)
-			} else {
-				// If it's a different error, just return it
-				return nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result, nil
+			// If it's a different error, just return it
+			return nil, err
 		}
-	} else if m.fallbackReady {
+		// If there's no error, return the result
+		return result, nil
+	}
+
+	if m.fallbackReady {
 		// Try to run the function on the fallback
 		result, err := function(m.fallbackBc)
 		if err != nil {
@@ -421,17 +429,15 @@ func (m *BeaconClientManager) runFunction1(function bcFunction1) (interface{}, e
 				m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
 				m.fallbackReady = false
 				return nil, fmt.Errorf("all Beacon clients failed")
-			} else {
-				// If it's a different error, just return it
-				return nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result, nil
+			// If it's a different error, just return it
+			return nil, err
 		}
-	} else {
-		return nil, fmt.Errorf("no Beacon clients were ready")
+		// If there's no error, return the result
+		return result, nil
 	}
+
+	return nil, fmt.Errorf("no Beacon clients were ready")
 
 }
 
@@ -448,15 +454,15 @@ func (m *BeaconClientManager) runFunction2(function bcFunction2) (interface{}, i
 				m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
 				m.primaryReady = false
 				return m.runFunction2(function)
-			} else {
-				// If it's a different error, just return it
-				return nil, nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result1, result2, nil
+			// If it's a different error, just return it
+			return nil, nil, err
 		}
-	} else if m.fallbackReady {
+		// If there's no error, return the result
+		return result1, result2, nil
+	}
+
+	if m.fallbackReady {
 		// Try to run the function on the fallback
 		result1, result2, err := function(m.fallbackBc)
 		if err != nil {
@@ -465,17 +471,15 @@ func (m *BeaconClientManager) runFunction2(function bcFunction2) (interface{}, i
 				m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
 				m.fallbackReady = false
 				return nil, nil, fmt.Errorf("all Beacon clients failed")
-			} else {
-				// If it's a different error, just return it
-				return nil, nil, err
 			}
-		} else {
-			// If there's no error, return the result
-			return result1, result2, nil
+			// If it's a different error, just return it
+			return nil, nil, err
 		}
-	} else {
-		return nil, nil, fmt.Errorf("no Beacon clients were ready")
+		// If there's no error, return the result
+		return result1, result2, nil
 	}
+
+	return nil, nil, fmt.Errorf("no Beacon clients were ready")
 
 }
 

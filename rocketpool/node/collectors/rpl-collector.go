@@ -80,9 +80,9 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		rplPrice, err := network.GetRPLPrice(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting RPL price: %w", err)
-		} else {
-			rplPriceFloat = eth.WeiToEth(rplPrice)
 		}
+
+		rplPriceFloat = eth.WeiToEth(rplPrice)
 		return nil
 	})
 
@@ -91,9 +91,9 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		totalValueStaked, err := node.GetTotalRPLStake(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total amount of RPL staked on the network: %w", err)
-		} else {
-			totalValueStakedFloat = eth.WeiToEth(totalValueStaked)
 		}
+
+		totalValueStakedFloat = eth.WeiToEth(totalValueStaked)
 		return nil
 	})
 
@@ -102,9 +102,9 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		totalEffectiveStaked, err := node.GetTotalEffectiveRPLStake(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total effective amount of RPL staked on the network: %w", err)
-		} else {
-			totalEffectiveStakedFloat = eth.WeiToEth(totalEffectiveStaked)
 		}
+
+		totalEffectiveStakedFloat = eth.WeiToEth(totalEffectiveStaked)
 		return nil
 	})
 
@@ -113,9 +113,9 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		_lastCheckpoint, err := rewards.GetClaimIntervalTimeStart(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting the previous rewards claim time: %w", err)
-		} else {
-			lastCheckpoint = _lastCheckpoint
 		}
+
+		lastCheckpoint = _lastCheckpoint
 		return err
 	})
 
@@ -124,9 +124,9 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		_rewardsInterval, err := rewards.GetClaimIntervalTime(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting the rewards interval: %w", err)
-		} else {
-			rewardsInterval = _rewardsInterval
 		}
+
+		rewardsInterval = _rewardsInterval
 		return err
 	})
 

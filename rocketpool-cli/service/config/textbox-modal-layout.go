@@ -75,9 +75,8 @@ func newTextBoxModalLayout(app *tview.Application, title string, width int, text
 			if layout.back != nil {
 				layout.back()
 				return nil
-			} else {
-				return event
 			}
+			return event
 		default:
 			return event
 		}

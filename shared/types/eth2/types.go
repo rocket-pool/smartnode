@@ -4,14 +4,14 @@ package eth2
 type DepositDataNoSignature struct {
 	PublicKey             []byte `json:"pubkey" ssz-size:"48"`
 	WithdrawalCredentials []byte `json:"withdrawal_credentials" ssz-size:"32"`
-	Amount                uint64   `json:"amount"`
+	Amount                uint64 `json:"amount"`
 }
 
 // Deposit data (including signature)
 type DepositData struct {
 	PublicKey             []byte `json:"pubkey" ssz-size:"48"`
 	WithdrawalCredentials []byte `json:"withdrawal_credentials" ssz-size:"32"`
-	Amount                uint64   `json:"amount"`
+	Amount                uint64 `json:"amount"`
 	Signature             []byte `json:"signature" ssz-size:"96"`
 }
 

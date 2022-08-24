@@ -20,7 +20,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/ferranbt/fastssz v0.0.0-20220103083642-bc5fefefa28b
 	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1
-	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e
+	github.com/glendc/go-external-ip v0.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.4.0
 	github.com/herumi/bls-eth-go-binary v0.0.0-20211108015406-b5186ba08dc7 // indirect

@@ -114,7 +114,7 @@ func leaveSmoothingPool(c *cli.Context) error {
 	}
 
 	// Print some info
-	fmt.Println("You are about to opt out of the Smoothing Pool.\nYour fee recipient will be changed back to your node's distributor contract.\nAll priority fees and MEV you earn via proposals will go directly to your distributor and will not be shared by the Smoothing Pool members.\n\nIf you desire, you can opt back in after one full rewards interval has passed.\n")
+	fmt.Println("You are about to opt out of the Smoothing Pool.\nYour fee recipient will be changed back to your node's distributor contract once the next Epoch has been finalized.\nAll priority fees and MEV you earn via proposals will go directly to your distributor and will not be shared by the Smoothing Pool members.\n\nIf you desire, you can opt back in after one full rewards interval has passed.\n")
 
 	// Get the gas estimate
 	canResponse, err := rp.CanNodeSetSmoothingPoolStatus(false)
@@ -148,7 +148,7 @@ func leaveSmoothingPool(c *cli.Context) error {
 
 	// Log & return
 	fmt.Println("Successfully left the Smoothing Pool.")
-	fmt.Printf("%sNOTE: Your validator client will restart soon to change its fee recipient back to your node's distributor.\nYou may miss an attestation when this happens; this is normal.%s\n", colorYellow, colorReset)
+	fmt.Printf("%sNOTE: Your validator client will restart to change its fee recipient back to your node's distributor once the next Epoch has been finalized.\nYou may miss an attestation when this happens (or multiple if you have Doppelganger Protection enabled); this is normal.%s\n", colorYellow, colorReset)
 	return nil
 
 }

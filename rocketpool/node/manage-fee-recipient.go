@@ -5,13 +5,13 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -94,31 +94,22 @@ func (m *manageFeeRecipient) run() error {
 		return err
 	}
 
-	// Get the distributor address for the node
-	distributor, err := node.GetDistributorAddress(m.rp, nodeAccount.Address, nil)
+	// Get the fee recipient info for the node
+	feeRecipientInfo, err := rputils.GetFeeRecipientInfo(m.rp, m.bc, nodeAccount.Address)
 	if err != nil {
-		return fmt.Errorf("error getting distributor address: %w", err)
+		return fmt.Errorf("error getting fee recipient info: %w", err)
 	}
 
-	// Check Smoothing Pool registration status
-	isInSmoothingPool, err := node.GetSmoothingPoolRegistrationState(m.rp, nodeAccount.Address, nil)
-	if err != nil {
-		return fmt.Errorf("error getting smoothing pool opt-in status: %w", err)
-	}
-	smoothingPoolContract, err := m.rp.GetContract("rocketSmoothingPool")
-	if err != nil {
-		return fmt.Errorf("error getting smoothing pool contract: %w", err)
-	}
-
+	// Get the correct fee recipient address
 	var correctFeeRecipient common.Address
-	if isInSmoothingPool {
-		correctFeeRecipient = *smoothingPoolContract.Address
+	if feeRecipientInfo.IsInSmoothingPool || feeRecipientInfo.IsInOptOutCooldown {
+		correctFeeRecipient = feeRecipientInfo.SmoothingPoolAddress
 	} else {
-		correctFeeRecipient = distributor
+		correctFeeRecipient = feeRecipientInfo.FeeDistributorAddress
 	}
 
 	// Check if the VC is using the correct fee recipient
-	fileExists, correctAddress, err := m.w.CheckFeeRecipientFile(correctFeeRecipient)
+	fileExists, correctAddress, err := rpsvc.CheckFeeRecipientFile(correctFeeRecipient, m.cfg)
 	if err != nil {
 		return fmt.Errorf("error validating fee recipient files: %w", err)
 	}
@@ -133,7 +124,7 @@ func (m *manageFeeRecipient) run() error {
 	}
 
 	// Regenerate the fee recipient files
-	err = m.w.UpdateFeeRecipientFile(correctFeeRecipient)
+	err = rpsvc.UpdateFeeRecipientFile(correctFeeRecipient, m.cfg)
 	if err != nil {
 		m.log.Println("***ERROR***")
 		m.log.Printlnf("Error updating fee recipient files: %s", err.Error())

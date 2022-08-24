@@ -67,6 +67,9 @@ type ForkResponse struct {
 		Epoch           uinteger  `json:"epoch"`
 	} `json:"data"`
 }
+type AttestationsResponse struct {
+	Data []Attestation `json:"data"`
+}
 type BeaconBlockResponse struct {
 	Data struct {
 		Message struct {

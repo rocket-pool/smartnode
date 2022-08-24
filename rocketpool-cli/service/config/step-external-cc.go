@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -28,14 +28,14 @@ func createExternalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceW
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		selectedClient := clients[buttonIndex].Value.(config.ConsensusClient)
+		selectedClient := clients[buttonIndex].Value.(cfgtypes.ConsensusClient)
 		wiz.md.Config.ExternalConsensusClient.Value = selectedClient
 		switch selectedClient {
-		case config.ConsensusClient_Lighthouse:
+		case cfgtypes.ConsensusClient_Lighthouse:
 			wiz.lighthouseExternalSettingsModal.show()
-		case config.ConsensusClient_Prysm:
+		case cfgtypes.ConsensusClient_Prysm:
 			wiz.prysmExternalSettingsModal.show()
-		case config.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Teku:
 			wiz.tekuExternalSettingsModal.show()
 		}
 	}

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/pbnjay/memory"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const localCcStepID string = "step-local-cc"
@@ -18,10 +18,10 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	// Create the button names and descriptions from the config
 	clientNames := []string{"Random (Recommended)"}
 	clientDescriptions := []string{"Select a client randomly to help promote the diversity of the Beacon Chain. We recommend you do this unless you have a strong reason to pick a specific client. To learn more about why client diversity is important, please visit https://clientdiversity.org for an explanation."}
-	clients := []config.ParameterOption{}
+	clients := []cfgtypes.ParameterOption{}
 	for _, client := range wiz.md.Config.ConsensusClient.Options {
 		clientNames = append(clientNames, client.Name)
-		clientDescriptions = append(clientDescriptions, getAugmentedCcDescription(client.Value.(config.ConsensusClient), client.Description))
+		clientDescriptions = append(clientDescriptions, getAugmentedCcDescription(client.Value.(cfgtypes.ConsensusClient), client.Description))
 		clients = append(clients, client)
 	}
 
@@ -55,21 +55,21 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 			selectRandomCC(clients, true, wiz, currentStep, totalSteps)
 		} else {
 			buttonLabel = strings.TrimSpace(buttonLabel)
-			selectedClient := config.ConsensusClient_Unknown
+			selectedClient := cfgtypes.ConsensusClient_Unknown
 			for _, client := range wiz.md.Config.ConsensusClient.Options {
 				if client.Name == buttonLabel {
-					selectedClient = client.Value.(config.ConsensusClient)
+					selectedClient = client.Value.(cfgtypes.ConsensusClient)
 					break
 				}
 			}
-			if selectedClient == config.ConsensusClient_Unknown {
+			if selectedClient == cfgtypes.ConsensusClient_Unknown {
 				panic(fmt.Sprintf("Local CC selection buttons didn't match any known clients, buttonLabel = %s\n", buttonLabel))
 			}
 			wiz.md.Config.ConsensusClient.Value = selectedClient
 			switch selectedClient {
 			//case config.ConsensusClient_Prysm:
 			//	wiz.consensusLocalPrysmWarning.show()
-			case config.ConsensusClient_Teku:
+			case cfgtypes.ConsensusClient_Teku:
 				totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 				if runtime.GOARCH == "arm64" || totalMemoryGB < 15 {
 					wiz.consensusLocalTekuWarning.show()
@@ -105,18 +105,18 @@ func createLocalCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 }
 
 // Get a random client compatible with the user's hardware and EC choices.
-func selectRandomCC(goodOptions []config.ParameterOption, includeSupermajority bool, wiz *wizard, currentStep int, totalSteps int) {
+func selectRandomCC(goodOptions []cfgtypes.ParameterOption, includeSupermajority bool, wiz *wizard, currentStep int, totalSteps int) {
 
 	// Get system specs
 	totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 	isLowPower := (totalMemoryGB < 15 || runtime.GOARCH == "arm64")
 
 	// Filter out the clients based on system specs
-	filteredClients := []config.ConsensusClient{}
+	filteredClients := []cfgtypes.ConsensusClient{}
 	for _, clientOption := range goodOptions {
-		client := clientOption.Value.(config.ConsensusClient)
+		client := clientOption.Value.(cfgtypes.ConsensusClient)
 		switch client {
-		case config.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Teku:
 			if !isLowPower {
 				filteredClients = append(filteredClients, client)
 			}
@@ -152,14 +152,14 @@ func selectRandomCC(goodOptions []config.ParameterOption, includeSupermajority b
 }
 
 // Get a more verbose client description, including warnings
-func getAugmentedCcDescription(client config.ConsensusClient, originalDescription string) string {
+func getAugmentedCcDescription(client cfgtypes.ConsensusClient, originalDescription string) string {
 
 	switch client {
 	/*
 		case config.ConsensusClient_Prysm:
 			return fmt.Sprintf("%s\n\n[orange]NOTE: Prysm currently has a very high representation of the Beacon Chain. For the health of the network and the overall safety of your funds, please consider choosing a client with a lower representation. Please visit https://clientdiversity.org to learn more.", originalDescription)
 	*/
-	case config.ConsensusClient_Teku:
+	case cfgtypes.ConsensusClient_Teku:
 		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
 		if runtime.GOARCH == "arm64" || totalMemoryGB < 15 {
 			return fmt.Sprintf("%s\n\n[orange]WARNING: Teku is a resource-heavy client and will likely not perform well on your system given your CPU power or amount of available RAM. We recommend you pick a lighter client instead.", originalDescription)

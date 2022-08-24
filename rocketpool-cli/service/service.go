@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/shirou/gopsutil/v3/disk"
 )
@@ -50,6 +51,7 @@ const (
 
 // Install the Rocket Pool service
 func installService(c *cli.Context) error {
+	dataPath := ""
 
 	if c.String("network") != "" {
 		fmt.Printf("%sNOTE: The --network flag is deprecated. You no longer need to specify it.%s\n\n", colorLightBlue, colorReset)
@@ -71,8 +73,21 @@ func installService(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Attempt to load the config to see if any settings need to be passed along to the install script
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading old configuration: %w", err)
+	}
+	if !isNew {
+		dataPath = cfg.Smartnode.DataPath.Value.(string)
+		dataPath, err = homedir.Expand(dataPath)
+		if err != nil {
+			return fmt.Errorf("error getting data path from old configuration: %w", err)
+		}
+	}
+
 	// Install service
-	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("network"), c.String("version"), c.String("path"))
+	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("network"), c.String("version"), c.String("path"), dataPath)
 	if err != nil {
 		return err
 	}
@@ -83,8 +98,8 @@ func installService(c *cli.Context) error {
 
 	printPatchNotes(c)
 
-	// Check if this is a new installation
-	_, isNew, err := rp.LoadConfig()
+	// Reload the config after installation
+	_, isNew, err = rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading new configuration: %w", err)
 	}
@@ -139,7 +154,10 @@ ______           _        _    ______           _
 	fmt.Println("In preparation for The Merge, light clients (Infura and Pocket) are no longer supported.\nYou will need to switch to a Full Execution client before The Merge in order to continue validating!\n")
 
 	fmt.Printf("%s=== New Fallback System ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.")
+	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.\n")
+
+	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
+	fmt.Println("`rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -160,12 +178,6 @@ func installUpdateTracker(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Get the container prefix
-	prefix, err := getContainerPrefix(rp)
-	if err != nil {
-		return fmt.Errorf("Error getting validator container prefix: %w", err)
-	}
-
 	// Install service
 	err = rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
 	if err != nil {
@@ -178,7 +190,7 @@ func installUpdateTracker(c *cli.Context) error {
 	fmt.Println("")
 	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
 	fmt.Println("")
-	fmt.Printf("%sNOTE:\nPlease run 'docker restart %s%s' to enable update tracking on the metrics dashboard.%s\n", colorYellow, prefix, ExporterContainerSuffix, colorReset)
+	fmt.Printf("%sNOTE:\nPlease restart the Smartnode stack to enable update tracking on the metrics dashboard.%s\n", colorYellow, colorReset)
 	fmt.Println("")
 	return nil
 
@@ -321,9 +333,8 @@ func configureService(c *cli.Context) error {
 			if !cliutils.Confirm("Would you like to start the Smartnode services automatically now?") {
 				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
 				return nil
-			} else {
-				return startService(c, true)
 			}
+			return startService(c, true)
 		}
 
 		// Query for service start if this is old and there are containers to change
@@ -383,7 +394,7 @@ func configureHeadless(c *cli.Context, cfg *config.RocketPoolConfig) error {
 }
 
 // Updates a config parameter from a CLI flag
-func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *config.Parameter, cfg *config.RocketPoolConfig) error {
+func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgtypes.Parameter, cfg *config.RocketPoolConfig) error {
 
 	var paramName string
 	if sectionName == "" {
@@ -394,23 +405,23 @@ func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *conf
 
 	if c.IsSet(paramName) {
 		switch param.Type {
-		case config.ParameterType_Bool:
+		case cfgtypes.ParameterType_Bool:
 			param.Value = c.Bool(paramName)
-		case config.ParameterType_Int:
+		case cfgtypes.ParameterType_Int:
 			param.Value = c.Int(paramName)
-		case config.ParameterType_Float:
+		case cfgtypes.ParameterType_Float:
 			param.Value = c.Float64(paramName)
-		case config.ParameterType_String:
+		case cfgtypes.ParameterType_String:
 			setting := c.String(paramName)
 			if param.MaxLength > 0 && len(setting) > param.MaxLength {
 				return fmt.Errorf("error setting value for %s: [%s] is too long (max length %d)", paramName, setting, param.MaxLength)
 			}
 			param.Value = c.String(paramName)
-		case config.ParameterType_Uint:
+		case cfgtypes.ParameterType_Uint:
 			param.Value = c.Uint(paramName)
-		case config.ParameterType_Uint16:
+		case cfgtypes.ParameterType_Uint16:
 			param.Value = uint16(c.Uint(paramName))
-		case config.ParameterType_Choice:
+		case cfgtypes.ParameterType_Choice:
 			selection := c.String(paramName)
 			found := false
 			for _, option := range param.Options {
@@ -512,22 +523,22 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	}
 
 	// Check for unsupported clients
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
-		selectedEc := cfg.ExecutionClient.Value.(config.ExecutionClient)
+	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+		selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 		switch selectedEc {
-		case config.ExecutionClient_Obs_Infura:
+		case cfgtypes.ExecutionClient_Obs_Infura:
 			fmt.Printf("%sYou currently have Infura configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge.\nPlease run `rocketpool service config` and select a full Execution client.%s\n", colorRed, colorReset)
 			return nil
-		case config.ExecutionClient_Obs_Pocket:
+		case cfgtypes.ExecutionClient_Obs_Pocket:
 			fmt.Printf("%sYou currently have Pocket configured as your primary Execution client, but it is no longer supported because it is not compatible with the upcoming Ethereum Merge.\nPlease run `rocketpool service config` and select a full Execution client.%s\n", colorRed, colorReset)
 			return nil
 		}
 	}
 
 	// Force all Docker or all Hybrid
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External {
+	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
 		fmt.Printf("%sYou are using a locally-managed Execution client and an externally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.%s\n", colorRed, colorReset)
-	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_External && cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+	} else if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External && cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		fmt.Printf("%sYou are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.%s\n", colorRed, colorReset)
 	}
 
@@ -597,8 +608,8 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	}
 
 	// Force a delay if using Teku and upgrading from v1.3.0 or below because of the slashing protection DB migration in v1.3.1+
-	isLocalTeku := (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)
-	isExternalTeku := (cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_External && cfg.ExternalConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku)
+	isLocalTeku := (cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient) == cfgtypes.ConsensusClient_Teku)
+	isExternalTeku := (cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External && cfg.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient) == cfgtypes.ConsensusClient_Teku)
 	if isUpdate && !isNew && !cfg.IsNativeMode && (isLocalTeku || isExternalTeku) && !c.Bool("ignore-slash-timer") {
 		previousVersion := "0.0.0"
 		backupCfg, err := rp.LoadBackupConfig()
@@ -819,9 +830,9 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 
 	if CurrentValidatorClientName == "nimbus" {
 		return prefix + BeaconContainerSuffix, nil
-	} else {
-		return prefix + ValidatorContainerSuffix, nil
 	}
+
+	return prefix + ValidatorContainerSuffix, nil
 
 }
 
@@ -900,16 +911,16 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	// Sanity checks
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_External {
+	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
 		fmt.Println("You are using an externally managed Execution client.\nThe Smartnode cannot prune it for you.")
 		return nil
 	}
 	if cfg.IsNativeMode {
 		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
 	}
-	selectedEc := cfg.ExecutionClient.Value.(config.ExecutionClient)
+	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 	switch selectedEc {
-	case config.ExecutionClient_Besu:
+	case cfgtypes.ExecutionClient_Besu:
 		fmt.Println("You are using Besu as your Execution client.\nBesu does not need pruning.")
 		return nil
 	}
@@ -965,9 +976,9 @@ func pruneExecutionClient(c *cli.Context) error {
 	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
 	if diskUsage.Free < PruneFreeSpaceRequired {
 		return fmt.Errorf("%sYour disk must have 50 GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, freeSpaceHuman, colorReset)
-	} else {
-		fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 	}
+
+	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 
 	fmt.Printf("Stopping %s...\n", executionContainerName)
 	result, err := rp.StopContainer(executionContainerName)
@@ -1001,7 +1012,7 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Unexpected output while starting main execution client: %s", result)
 	}
 
-	if selectedEc == config.ExecutionClient_Nethermind {
+	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
 		err = rp.RunNethermindPruneStarter(executionContainerName)
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
@@ -1159,23 +1170,23 @@ func serviceVersion(c *cli.Context) error {
 
 	// Get the execution client string
 	var eth1ClientString string
-	eth1ClientMode := cfg.ExecutionClientMode.Value.(config.Mode)
+	eth1ClientMode := cfg.ExecutionClientMode.Value.(cfgtypes.Mode)
 	switch eth1ClientMode {
-	case config.Mode_Local:
-		eth1Client := cfg.ExecutionClient.Value.(config.ExecutionClient)
+	case cfgtypes.Mode_Local:
+		eth1Client := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 		format := "%s (Locally managed)\n\tImage: %s"
 		switch eth1Client {
-		case config.ExecutionClient_Geth:
+		case cfgtypes.ExecutionClient_Geth:
 			eth1ClientString = fmt.Sprintf(format, "Geth", cfg.Geth.ContainerTag.Value.(string))
-		case config.ExecutionClient_Nethermind:
+		case cfgtypes.ExecutionClient_Nethermind:
 			eth1ClientString = fmt.Sprintf(format, "Nethermind", cfg.Nethermind.ContainerTag.Value.(string))
-		case config.ExecutionClient_Besu:
+		case cfgtypes.ExecutionClient_Besu:
 			eth1ClientString = fmt.Sprintf(format, "Besu", cfg.Besu.ContainerTag.Value.(string))
 		default:
 			return fmt.Errorf("unknown local execution client [%v]", eth1Client)
 		}
 
-	case config.Mode_External:
+	case cfgtypes.Mode_External:
 		eth1ClientString = "Externally managed"
 
 	default:
@@ -1184,34 +1195,34 @@ func serviceVersion(c *cli.Context) error {
 
 	// Get the consensus client string
 	var eth2ClientString string
-	eth2ClientMode := cfg.ConsensusClientMode.Value.(config.Mode)
+	eth2ClientMode := cfg.ConsensusClientMode.Value.(cfgtypes.Mode)
 	switch eth2ClientMode {
-	case config.Mode_Local:
-		eth2Client := cfg.ConsensusClient.Value.(config.ConsensusClient)
+	case cfgtypes.Mode_Local:
+		eth2Client := cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient)
 		format := "%s (Locally managed)\n\tImage: %s"
 		switch eth2Client {
-		case config.ConsensusClient_Lighthouse:
+		case cfgtypes.ConsensusClient_Lighthouse:
 			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.Lighthouse.ContainerTag.Value.(string))
-		case config.ConsensusClient_Nimbus:
+		case cfgtypes.ConsensusClient_Nimbus:
 			eth2ClientString = fmt.Sprintf(format, "Nimbus", cfg.Nimbus.ContainerTag.Value.(string))
-		case config.ConsensusClient_Prysm:
+		case cfgtypes.ConsensusClient_Prysm:
 			// Prysm is a special case, as the BN and VC image versions may differ
 			eth2ClientString = fmt.Sprintf(format+"\n\tVC image: %s", "Prysm", cfg.Prysm.BnContainerTag.Value.(string), cfg.Prysm.VcContainerTag.Value.(string))
-		case config.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Teku:
 			eth2ClientString = fmt.Sprintf(format, "Teku", cfg.Teku.ContainerTag.Value.(string))
 		default:
 			return fmt.Errorf("unknown local consensus client [%v]", eth2Client)
 		}
 
-	case config.Mode_External:
-		eth2Client := cfg.ExternalConsensusClient.Value.(config.ConsensusClient)
+	case cfgtypes.Mode_External:
+		eth2Client := cfg.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient)
 		format := "%s (Externally managed)\n\tVC Image: %s"
 		switch eth2Client {
-		case config.ConsensusClient_Lighthouse:
+		case cfgtypes.ConsensusClient_Lighthouse:
 			eth2ClientString = fmt.Sprintf(format, "Lighthouse", cfg.ExternalLighthouse.ContainerTag.Value.(string))
-		case config.ConsensusClient_Prysm:
+		case cfgtypes.ConsensusClient_Prysm:
 			eth2ClientString = fmt.Sprintf(format, "Prysm", cfg.ExternalPrysm.ContainerTag.Value.(string))
-		case config.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Teku:
 			eth2ClientString = fmt.Sprintf(format, "Teku", cfg.ExternalTeku.ContainerTag.Value.(string))
 		default:
 			return fmt.Errorf("unknown external consensus client [%v]", eth2Client)
@@ -1344,17 +1355,17 @@ func resyncEth2(c *cli.Context) error {
 	// Get the parameters that the selected client doesn't support
 	var unsupportedParams []string
 	var clientName string
-	eth2ClientMode := cfg.ConsensusClientMode.Value.(config.Mode)
+	eth2ClientMode := cfg.ConsensusClientMode.Value.(cfgtypes.Mode)
 	switch eth2ClientMode {
-	case config.Mode_Local:
+	case cfgtypes.Mode_Local:
 		selectedClientConfig, err := cfg.GetSelectedConsensusClientConfig()
 		if err != nil {
 			return fmt.Errorf("error getting selected consensus client config: %w", err)
 		}
-		unsupportedParams = selectedClientConfig.(config.LocalConsensusConfig).GetUnsupportedCommonParams()
+		unsupportedParams = selectedClientConfig.(cfgtypes.LocalConsensusConfig).GetUnsupportedCommonParams()
 		clientName = selectedClientConfig.GetName()
 
-	case config.Mode_External:
+	case cfgtypes.Mode_External:
 		fmt.Println("You use an externally-managed Consensus client. Rocket Pool cannot resync it for you.")
 		return nil
 
@@ -1523,9 +1534,9 @@ func exportEcData(c *cli.Context, targetDir string) error {
 			fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 			if targetFree < volumeBytes {
 				return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
-			} else {
-				fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 			}
+
+			fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 		}
 	}
 
@@ -1639,9 +1650,9 @@ func importEcData(c *cli.Context, sourceDir string) error {
 				fmt.Printf("%sDocker drive free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 				if targetFree < sourceBytes {
 					return fmt.Errorf("%sYour Docker drive does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
-				} else {
-					fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 				}
+
+				fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 			}
 		}
 	}

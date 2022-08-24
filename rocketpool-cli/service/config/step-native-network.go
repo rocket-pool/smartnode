@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createNativeNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -30,7 +30,7 @@ func createNativeNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choi
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		newNetwork := networks[buttonIndex].Value.(config.Network)
+		newNetwork := networks[buttonIndex].Value.(cfgtypes.Network)
 		wiz.md.Config.ChangeNetwork(newNetwork)
 		wiz.nativeEcModal.show()
 	}

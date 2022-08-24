@@ -76,9 +76,9 @@ func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 		blockNumber, err := collector.rp.Client.BlockNumber(context.Background())
 		if err != nil {
 			return fmt.Errorf("Error getting latest ETH1 block: %w", err)
-		} else {
-			blockNumberFloat = float64(blockNumber)
 		}
+
+		blockNumberFloat = float64(blockNumber)
 		return nil
 	})
 
@@ -87,10 +87,10 @@ func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 		pricesBlock, err := network.GetPricesBlock(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting ETH1 prices block: %w", err)
-		} else {
-			pricesBlockFloat = float64(pricesBlock)
-			effectiveRplStakeBlockFloat = float64(pricesBlock)
 		}
+
+		pricesBlockFloat = float64(pricesBlock)
+		effectiveRplStakeBlockFloat = float64(pricesBlock)
 		return nil
 	})
 
@@ -99,9 +99,9 @@ func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 		latestReportableBlock, err := network.GetLatestReportablePricesBlock(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting ETH1 latest reportable block: %w", err)
-		} else {
-			latestReportableBlockFloat = float64(latestReportableBlock.Uint64())
 		}
+
+		latestReportableBlockFloat = float64(latestReportableBlock.Uint64())
 		return nil
 	})
 
