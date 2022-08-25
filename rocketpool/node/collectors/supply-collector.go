@@ -89,9 +89,9 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		nodeCountUint, err := node.GetNodeCount(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total number of Rocket Pool nodes: %w", err)
-		} else {
-			nodeCount = float64(nodeCountUint)
 		}
+
+		nodeCount = float64(nodeCountUint)
 		return nil
 	})
 
@@ -100,9 +100,9 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		_nodeFee, err := network.GetNodeFee(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting current node fee for new minipools: %w", err)
-		} else {
-			nodeFee = _nodeFee
 		}
+
+		nodeFee = _nodeFee
 		return nil
 	})
 
@@ -111,20 +111,21 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		minipoolCounts, err := minipool.GetMinipoolCountPerStatus(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
-		} else {
-			initializedCount = float64(minipoolCounts.Initialized.Uint64())
-			prelaunchCount = float64(minipoolCounts.Prelaunch.Uint64())
-			stakingCount = float64(minipoolCounts.Staking.Uint64())
-			withdrawableCount = float64(minipoolCounts.Withdrawable.Uint64())
-			dissolvedCount = float64(minipoolCounts.Dissolved.Uint64())
 		}
+
+		initializedCount = float64(minipoolCounts.Initialized.Uint64())
+		prelaunchCount = float64(minipoolCounts.Prelaunch.Uint64())
+		stakingCount = float64(minipoolCounts.Staking.Uint64())
+		withdrawableCount = float64(minipoolCounts.Withdrawable.Uint64())
+		dissolvedCount = float64(minipoolCounts.Dissolved.Uint64())
+
 		finalizedCountUint, err := minipool.GetFinalisedMinipoolCount(collector.rp, nil)
 		if err != nil {
 			return fmt.Errorf("Error getting total number of Rocket Pool minipools: %w", err)
-		} else {
-			finalizedCount = float64(finalizedCountUint)
-			withdrawableCount -= finalizedCount
 		}
+
+		finalizedCount = float64(finalizedCountUint)
+		withdrawableCount -= finalizedCount
 		return nil
 	})
 

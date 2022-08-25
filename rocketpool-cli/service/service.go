@@ -150,14 +150,24 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== The Redstone Update ===%s\n", colorGreen, colorReset)
 	fmt.Println("The Redstone update has happened on Ropsten and Prater, and is scheduled for August 29th on Mainnet\n**A LOT** has changed. Too much to fit into these notes!\nPlease see the guide for all of the details, including the new \"eternal\" rewards claim system and the Smoothing Pool:\nhttps://docs.rocketpool.net/guides/redstone/whats-new.html\n")
 
+	fmt.Printf("%s=== The Merge ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Merge of the Execution and Consensus layers is happening between September 10th and 20th! This version of the Smartnode fully supports it.\n")
+
 	fmt.Printf("%s=== Light Client Removal ===%s\n", colorGreen, colorReset)
 	fmt.Println("In preparation for The Merge, light clients (Infura and Pocket) are no longer supported.\nYou will need to switch to a Full Execution client before The Merge in order to continue validating!\n")
 
 	fmt.Printf("%s=== New Fallback System ===%s\n", colorGreen, colorReset)
 	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.\n")
 
+	fmt.Printf("%s=== Graffiti Wall Addon ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode's first addon has been published! The Graffiti Wall Writer will let you draw on the Beaconcha.in Graffiti Wall (https://beaconcha.in/graffitiwall) whenever you get a proposal. See the Addons page in the `service config` TUI to enable it.\n")
+
+	fmt.Printf("%s=== MEV-Boost ===%s\n", colorGreen, colorReset)
+	fmt.Println("MEV-Boost has been enabled for Mainnet! Once The Merge occurs, you can opt into it to receive extra rewards on your block proposals. Note that it's optional for now, and doesn't come with any relays by default, See the MEV-Boost page in the `service config` TUI to enable it.\n")
+
 	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
-	fmt.Println("`rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
+	fmt.Println("- `rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
+	fmt.Println("- `rocketpool network dao-proposals` shows you the status of the active governance proposals within Rocket Pool's DAO. Go out and vote! See https://vote.rocketpool.net for more info.")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -333,9 +343,8 @@ func configureService(c *cli.Context) error {
 			if !cliutils.Confirm("Would you like to start the Smartnode services automatically now?") {
 				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
 				return nil
-			} else {
-				return startService(c, true)
 			}
+			return startService(c, true)
 		}
 
 		// Query for service start if this is old and there are containers to change
@@ -837,9 +846,9 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 
 	if CurrentValidatorClientName == "nimbus" {
 		return prefix + BeaconContainerSuffix, nil
-	} else {
-		return prefix + ValidatorContainerSuffix, nil
 	}
+
+	return prefix + ValidatorContainerSuffix, nil
 
 }
 
@@ -935,10 +944,12 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
 
-	if cfg.UseFallbackClients.Value == false {
-		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
-	} else {
-		fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
+	if selectedEc == cfgtypes.ExecutionClient_Geth {
+		if cfg.UseFallbackClients.Value == false {
+			fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+		} else {
+			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
+		}
 	}
 
 	// Get the container prefix
@@ -983,9 +994,9 @@ func pruneExecutionClient(c *cli.Context) error {
 	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
 	if diskUsage.Free < PruneFreeSpaceRequired {
 		return fmt.Errorf("%sYour disk must have 50 GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, freeSpaceHuman, colorReset)
-	} else {
-		fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 	}
+
+	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
 
 	fmt.Printf("Stopping %s...\n", executionContainerName)
 	result, err := rp.StopContainer(executionContainerName)
@@ -1545,9 +1556,9 @@ func exportEcData(c *cli.Context, targetDir string) error {
 			fmt.Printf("%sTarget dir free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 			if targetFree < volumeBytes {
 				return fmt.Errorf("%sYour target directory does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
-			} else {
-				fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 			}
+
+			fmt.Printf("%sYour target directory has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 		}
 	}
 
@@ -1661,9 +1672,9 @@ func importEcData(c *cli.Context, sourceDir string) error {
 				fmt.Printf("%sDocker drive free space: %s%s\n", colorLightBlue, freeSpaceHuman, colorReset)
 				if targetFree < sourceBytes {
 					return fmt.Errorf("%sYour Docker drive does not have enough space to hold the chain data. Please free up more space and try again.%s", colorRed, colorReset)
-				} else {
-					fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 				}
+
+				fmt.Printf("%sYour Docker drive has enough space to store the chain data.%s\n\n", colorGreen, colorReset)
 			}
 		}
 	}

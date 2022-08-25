@@ -6,8 +6,8 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:22.7.0-openjdk-latest"
-	besuTagProd          string = "hyperledger/besu:22.7.0-openjdk-latest"
+	besuTagTest          string = "hyperledger/besu:22.7.1-openjdk-latest"
+	besuTagProd          string = "hyperledger/besu:22.7.1-openjdk-latest"
 	besuEventLogInterval int    = 25000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"

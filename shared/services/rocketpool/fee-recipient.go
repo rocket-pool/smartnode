@@ -67,8 +67,8 @@ func getFeeRecipientFileContents(feeRecipient common.Address, cfg *config.Rocket
 	if !cfg.IsNativeMode {
 		// Docker mode
 		return feeRecipient.Hex()
-	} else {
-		// Native mode
-		return fmt.Sprintf("%s=%s", config.FeeRecipientEnvVar, feeRecipient.Hex())
 	}
+
+	// Native mode
+	return fmt.Sprintf("%s=%s", config.FeeRecipientEnvVar, feeRecipient.Hex())
 }

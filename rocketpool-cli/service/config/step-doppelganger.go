@@ -25,7 +25,8 @@ func createDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int) *choic
 		}
 		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 		switch cc {
-		case cfgtypes.ConsensusClient_Nimbus, cfgtypes.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Nimbus:
+			// Temp until Nimbus supports fallbacks
 			wiz.md.Config.UseFallbackClients.Value = false
 			wiz.metricsModal.show()
 		default:

@@ -130,8 +130,25 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		if cfg.Smartnode.GetSnapshotDelegationAddress() != "" {
 			idHash := cfg.Smartnode.GetVotingSnapshotID()
 			response.VotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
+			if err != nil {
+				return err
+			}
+			votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
+			if err != nil {
+				return err
+			}
+			response.ProposalVotes = votedProposals.Data.Votes
 		}
 		return err
+	})
+	// Get snapshot active proposals
+	wg.Go(func() error {
+		snapshotResponse, err := GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
+		if err != nil {
+			return err
+		}
+		response.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
+		return nil
 	})
 
 	// Get node minipool counts

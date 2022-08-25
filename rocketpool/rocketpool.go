@@ -41,7 +41,7 @@ func main() {
 			Email: "kane@rocketpool.net",
 		},
 	}
-	app.Copyright = "(c) 2021 Rocket Pool Pty Ltd"
+	app.Copyright = "(c) 2022 Rocket Pool Pty Ltd"
 
 	// Set application flags
 	app.Flags = []cli.Flag{

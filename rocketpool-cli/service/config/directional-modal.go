@@ -228,14 +228,14 @@ func (m *DirectionalModal) Focus(delegate func(p tview.Primitive)) {
 func (m *DirectionalModal) HasFocus() bool {
 	if m.direction == DirectionalModalHorizontal {
 		return m.forms[0].HasFocus()
-	} else {
-		for _, form := range m.forms {
-			if form.HasFocus() {
-				return true
-			}
-		}
-		return false
 	}
+
+	for _, form := range m.forms {
+		if form.HasFocus() {
+			return true
+		}
+	}
+	return false
 }
 
 // Draw draws this primitive onto the screen.

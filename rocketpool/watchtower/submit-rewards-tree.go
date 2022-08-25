@@ -266,12 +266,12 @@ func (t *submitRewardsTree) isExistingFileValid(rewardsTreePath string, interval
 		if err != nil {
 			t.log.Printlnf("WARNING: failed to read %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
 			return false
-		} else {
-			err = json.Unmarshal(fileBytes, &proofWrapper)
-			if err != nil {
-				t.log.Printlnf("WARNING: failed to deserialize %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
-				return false
-			}
+		}
+
+		err = json.Unmarshal(fileBytes, &proofWrapper)
+		if err != nil {
+			t.log.Printlnf("WARNING: failed to deserialize %s: %s\nRegenerating file...\n", rewardsTreePath, err.Error())
+			return false
 		}
 
 		// Compare the number of intervals in it with the current number of intervals

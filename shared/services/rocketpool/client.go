@@ -1381,22 +1381,19 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
 	}
 
-	// Check MEV Boost
-	switch cfg.Smartnode.Network.Value.(cfgtypes.Network) {
-	case cfgtypes.Network_Kiln, cfgtypes.Network_Ropsten, cfgtypes.Network_Prater:
-		if cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-			contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
-			if err != nil {
-				return []string{}, fmt.Errorf("error reading and substituting MEV Boost container template: %w", err)
-			}
-			mevBoostComposePath := filepath.Join(runtimeFolder, config.MevBoostContainerName+composeFileSuffix)
-			err = ioutil.WriteFile(mevBoostComposePath, contents, 0664)
-			if err != nil {
-				return []string{}, fmt.Errorf("could not write MEV Boost container file to %s: %w", mevBoostComposePath, err)
-			}
-			deployedContainers = append(deployedContainers, mevBoostComposePath)
-			deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))
+	// Check MEV-Boost
+	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting MEV-Boost container template: %w", err)
 		}
+		mevBoostComposePath := filepath.Join(runtimeFolder, config.MevBoostContainerName+composeFileSuffix)
+		err = ioutil.WriteFile(mevBoostComposePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write MEV-Boost container file to %s: %w", mevBoostComposePath, err)
+		}
+		deployedContainers = append(deployedContainers, mevBoostComposePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))
 	}
 
 	// Create the custom keys dir

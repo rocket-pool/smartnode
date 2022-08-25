@@ -61,6 +61,9 @@ type SmartnodeConfig struct {
 	// Which network we're on
 	Network config.Parameter `yaml:"network,omitempty"`
 
+	// The terminal total difficulty override for the Merge
+	TTD config.Parameter `yaml:"ttd,omitempty"`
+
 	// Manual max fee override
 	ManualMaxFee config.Parameter `yaml:"manualMaxFee,omitempty"`
 
@@ -110,6 +113,9 @@ type SmartnodeConfig struct {
 	// The contract address for Snapshot delegation
 	snapshotDelegationAddress map[config.Network]string `yaml:"-"`
 
+	// The Snapshot API domain
+	snapshotApiDomain map[config.Network]string `yaml:"-"`
+
 	// The contract address of rETH
 	rethAddress map[config.Network]string `yaml:"-"`
 
@@ -148,6 +154,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
 			EnvironmentVariables: []string{"COMPOSE_PROJECT_NAME"},
 			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		TTD: config.Parameter{
+			ID:                   "ttd",
+			Name:                 "TTD Override",
+			Description:          "Use this to manually override the terminal total difficulty value for the network. This is the number used by the Execution and Consensus clients to know when to trigger The Merge.\n\nNOTE: This should only be used in special situations where the Core Developers have felt it necessary to change the TTD from the previously-agreed-upon value.",
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Eth2},
+			EnvironmentVariables: []string{"TTD_OVERRIDE"},
+			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
@@ -390,6 +408,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Ropsten: "0x2588C77829015080C771359eC1C3066d2f1158Db",
 		},
 
+		snapshotApiDomain: map[config.Network]string{
+			config.Network_Mainnet: "hub.snapshot.org",
+			config.Network_Prater:  "testnet.snapshot.org",
+			config.Network_Kiln:    "",
+			config.Network_Ropsten: "",
+		},
+
 		previousRewardsPoolAddresses: map[config.Network]map[string][]common.Address{
 			config.Network_Mainnet: {},
 			config.Network_Prater: {
@@ -420,6 +445,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.Network,
+		&cfg.TTD,
 		&cfg.ProjectName,
 		&cfg.DataPath,
 		&cfg.ManualMaxFee,
@@ -449,49 +475,49 @@ func (cfg *SmartnodeConfig) GetChainID() uint {
 func (cfg *SmartnodeConfig) GetWalletPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "wallet")
-	} else {
-		return filepath.Join(DaemonDataPath, "wallet")
 	}
+
+	return filepath.Join(DaemonDataPath, "wallet")
 }
 
 func (cfg *SmartnodeConfig) GetPasswordPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "password")
-	} else {
-		return filepath.Join(DaemonDataPath, "password")
 	}
+
+	return filepath.Join(DaemonDataPath, "password")
 }
 
 func (cfg *SmartnodeConfig) GetValidatorKeychainPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "validators")
-	} else {
-		return filepath.Join(DaemonDataPath, "validators")
 	}
+
+	return filepath.Join(DaemonDataPath, "validators")
 }
 
 func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
 	if config.parent.IsNativeMode {
 		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder, "state.yml")
-	} else {
-		return filepath.Join(DaemonDataPath, WatchtowerFolder, "state.yml")
 	}
+
+	return filepath.Join(DaemonDataPath, WatchtowerFolder, "state.yml")
 }
 
 func (cfg *SmartnodeConfig) GetCustomKeyPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "custom-keys")
-	} else {
-		return filepath.Join(DaemonDataPath, "custom-keys")
 	}
+
+	return filepath.Join(DaemonDataPath, "custom-keys")
 }
 
 func (cfg *SmartnodeConfig) GetCustomKeyPasswordFilePath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "custom-key-passwords")
-	} else {
-		return filepath.Join(DaemonDataPath, "custom-key-passwords")
 	}
+
+	return filepath.Join(DaemonDataPath, "custom-key-passwords")
 }
 
 func (cfg *SmartnodeConfig) GetStorageAddress() string {
@@ -526,12 +552,20 @@ func (cfg *SmartnodeConfig) GetEcMigratorContainerTag() string {
 	return ecMigratorTag
 }
 
+func (cfg *SmartnodeConfig) GetSnapshotApiDomain() string {
+	return cfg.snapshotApiDomain[cfg.Network.Value.(config.Network)]
+}
+
 func (cfg *SmartnodeConfig) GetVotingSnapshotID() [32]byte {
 	// So the contract wants a Keccak'd hash of the voting ID, but Snapshot's service wants ASCII so it can display the ID in plain text; we have to do this to make it play nicely with Snapshot
 	buffer := [32]byte{}
 	idBytes := []byte(SnapshotID)
 	copy(buffer[0:], idBytes)
 	return buffer
+}
+
+func (config *SmartnodeConfig) GetSnapshotID() string {
+	return SnapshotID
 }
 
 // The the title for the config
@@ -550,41 +584,41 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
 }
 
 func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
 }
 
 func (cfg *SmartnodeConfig) GetRegenerateRewardsTreeRequestPath(interval uint64, daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder, fmt.Sprintf(RegenerateRewardsTreeRequestFormat, interval))
 }
 
 func (cfg *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, WatchtowerFolder)
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder)
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder)
 }
 
 func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
 	if !cfg.parent.IsNativeMode {
 		return filepath.Join(DaemonDataPath, "validators", FeeRecipientFilename)
-	} else {
-		return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
 	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
 }
 
 func (cfg *SmartnodeConfig) GetLegacyRewardsPoolAddress() common.Address {

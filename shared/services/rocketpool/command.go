@@ -21,16 +21,16 @@ func (c *Client) newCommand(cmdText string) (*command, error) {
 			cmd:     exec.Command("sh", "-c", cmdText),
 			cmdText: cmdText,
 		}, nil
-	} else {
-		session, err := c.client.NewSession()
-		if err != nil {
-			return nil, err
-		}
-		return &command{
-			session: session,
-			cmdText: cmdText,
-		}, nil
 	}
+
+	session, err := c.client.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	return &command{
+		session: session,
+		cmdText: cmdText,
+	}, nil
 }
 
 // Close the command session
@@ -45,54 +45,53 @@ func (c *command) Close() error {
 func (c *command) Run() error {
 	if c.cmd != nil {
 		return c.cmd.Run()
-	} else {
-		return c.session.Run(c.cmdText)
 	}
+
+	return c.session.Run(c.cmdText)
 }
 
 // Start executes the command. Don't forget to call Wait
 func (c *command) Start() error {
 	if c.cmd != nil {
 		return c.cmd.Start()
-	} else {
-		return c.session.Start(c.cmdText)
 	}
+
+	return c.session.Start(c.cmdText)
 }
 
 // Wait for the command to exit
 func (c *command) Wait() error {
 	if c.cmd != nil {
 		return c.cmd.Wait()
-	} else {
-		return c.session.Wait()
 	}
+
+	return c.session.Wait()
 }
 
 // Run the command and return its output
 func (c *command) Output() ([]byte, error) {
 	if c.cmd != nil {
 		return c.cmd.Output()
-	} else {
-		return c.session.Output(c.cmdText)
 	}
+
+	return c.session.Output(c.cmdText)
 }
 
 // Get a pipe to the command's stdout
 func (c *command) StdoutPipe() (io.Reader, error) {
 	if c.cmd != nil {
 		return c.cmd.StdoutPipe()
-	} else {
-		return c.session.StdoutPipe()
 	}
+	return c.session.StdoutPipe()
 }
 
 // Get a pipe to the command's stderr
 func (c *command) StderrPipe() (io.Reader, error) {
 	if c.cmd != nil {
 		return c.cmd.StderrPipe()
-	} else {
-		return c.session.StderrPipe()
 	}
+
+	return c.session.StderrPipe()
 }
 
 // OutputPipes pipes for stdout and stderr

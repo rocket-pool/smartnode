@@ -20,18 +20,38 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
+const RedstoneText string = `
+      .
+     / \
+    |.'.|
+    |'.'|
+  ,'|   |'.
+ |,-'-|-'-.|
+  __|_| |         _        _      _____           _
+ | ___ \|        | |      | |    | ___ \         | |
+ | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
+ |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
+ | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
+ \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
++---------------------------------------------------+
+|    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
+|               v1.1: REDSTONE UPDATE               |
++---------------------------------------------------+
+`
+
 // Claim RPL rewards task
 type claimRplRewards struct {
-	c                     *cli.Context
-	log                   log.ColorLogger
-	cfg                   *config.RocketPoolConfig
-	w                     *wallet.Wallet
-	rp                    *rocketpool.RocketPool
-	gasThreshold          float64
-	maxFee                *big.Int
-	maxPriorityFee        *big.Int
-	gasLimit              uint64
-	isMergeUpdateDeployed bool
+	c                      *cli.Context
+	log                    log.ColorLogger
+	cfg                    *config.RocketPoolConfig
+	w                      *wallet.Wallet
+	rp                     *rocketpool.RocketPool
+	gasThreshold           float64
+	maxFee                 *big.Int
+	maxPriorityFee         *big.Int
+	gasLimit               uint64
+	isMergeUpdateDeployed  bool
+	wasAliveBeforeRedstone bool
 }
 
 // Create claim RPL rewards task
@@ -78,16 +98,17 @@ func newClaimRplRewards(c *cli.Context, logger log.ColorLogger) (*claimRplReward
 
 	// Return task
 	return &claimRplRewards{
-		c:                     c,
-		log:                   logger,
-		cfg:                   cfg,
-		w:                     w,
-		rp:                    rp,
-		gasThreshold:          gasThreshold,
-		maxFee:                maxFee,
-		maxPriorityFee:        priorityFee,
-		gasLimit:              0,
-		isMergeUpdateDeployed: false,
+		c:                      c,
+		log:                    logger,
+		cfg:                    cfg,
+		w:                      w,
+		rp:                     rp,
+		gasThreshold:           gasThreshold,
+		maxFee:                 maxFee,
+		maxPriorityFee:         priorityFee,
+		gasLimit:               0,
+		isMergeUpdateDeployed:  false,
+		wasAliveBeforeRedstone: false,
 	}, nil
 
 }
@@ -119,10 +140,14 @@ func (t *claimRplRewards) run() error {
 		return fmt.Errorf("error checking if merge update has been deployed: %w", err)
 	}
 	if isMergeUpdateDeployed {
+		if t.wasAliveBeforeRedstone {
+			t.log.Println(RedstoneText)
+		}
 		t.log.Println("The merge update contracts have been deployed! Auto-claiming is no longer necessary. Enjoy the new rewards system!")
 		t.isMergeUpdateDeployed = true
 		return nil
 	}
+	t.wasAliveBeforeRedstone = true
 
 	// Log
 	t.log.Println("Checking for RPL rewards to claim...")

@@ -116,8 +116,9 @@ type RocketPoolConfig struct {
 	// Native mode
 	Native *NativeConfig `yaml:"native,omitempty"`
 
-	// MEV Boost
-	MevBoost *MevBoostConfig `yaml:"mevBoost,omitempty"`
+	// MEV-Boost
+	EnableMevBoost config.Parameter `yaml:"enableMevBoost,omitempty"`
+	MevBoost       *MevBoostConfig  `yaml:"mevBoost,omitempty"`
 
 	// Addons
 	GraffitiWallWriter addontypes.SmartnodeAddon `yaml:"addon-gww,omitempty"`
@@ -405,6 +406,18 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
+
+		EnableMevBoost: config.Parameter{
+			ID:                   "enableMevBoost",
+			Name:                 "Enable MEV-Boost",
+			Description:          "Enable MEV-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract MEV opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
+			EnvironmentVariables: []string{"ENABLE_MEV_BOOST"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
 	}
 
 	// Set the defaults for choices
@@ -499,6 +512,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.NodeMetricsPort,
 		&cfg.ExporterMetricsPort,
 		&cfg.WatchtowerMetricsPort,
+		&cfg.EnableMevBoost,
 	}
 }
 
@@ -733,9 +747,8 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 			paramType := reflect.TypeOf(network)
 			if !valueType.ConvertibleTo(paramType) {
 				return fmt.Errorf("can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
-			} else {
-				network = reflect.ValueOf(networkString).Convert(paramType).Interface().(config.Network)
 			}
+			network = reflect.ValueOf(networkString).Convert(paramType).Interface().(config.Network)
 		}
 	}
 
@@ -942,10 +955,12 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		config.AddParametersToEnvVars(cfg.BitflyNodeMetrics.GetParameters(), envVars)
 	}
 
-	// MEV Boost
-	config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
-	if cfg.MevBoost.Mode.Value == config.Mode_Local {
-		envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
+	// MEV-Boost
+	if cfg.EnableMevBoost.Value == true {
+		config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
+		if cfg.MevBoost.Mode.Value == config.Mode_Local {
+			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
+		}
 	}
 
 	// Addons
@@ -1052,6 +1067,15 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		errors = append(errors, "You are using a locally-managed Execution client and an externally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_External && cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
 		errors = append(errors, "You are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
+	}
+
+	// Ensure there's a MEV-boost URL
+	if cfg.EnableMevBoost.Value == true {
+		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.Relays.Value.(string) == "" {
+			errors = append(errors, "You have MEV-boost enabled in local mode but don't have a relay URL set. Please enter at least one relay URL to use MEV-boost.")
+		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
+			errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+		}
 	}
 
 	return errors
