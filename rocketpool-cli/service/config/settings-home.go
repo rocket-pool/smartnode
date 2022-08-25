@@ -5,7 +5,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const settingsHomeID string = "settings-home"
@@ -46,7 +46,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	home.fallbackPage = NewFallbackConfigPage(home)
 	home.mevBoostPage = NewMevBoostConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
-	home.addonsPage = NewAddonsPage(home.md)
+	home.addonsPage = NewAddonsPage(home)
 	settingsSubpages := []settingsPage{
 		home.smartnodePage,
 		home.ecPage,
@@ -78,17 +78,11 @@ func (home *settingsHome) createContent() {
 	categoryList := tview.NewList().
 		SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 			if mainText == home.fallbackPage.page.title {
-				// Temp block of Teku for the fallback page until it supports fallback
+				// Temp block of Lodestar for the fallback page until it supports fallback
 				cc, _ := home.md.Config.GetSelectedConsensusClient()
 				switch cc {
-				case config.ConsensusClient_Teku:
-					layout.descriptionBox.SetText("You have Teku selected for your Consensus client.\n\nTeku does not support fallback clients at this time, so this option is disabled.")
-					return
-				}
-			} else if mainText == home.mevBoostPage.page.title {
-				switch home.md.Config.Smartnode.Network.Value.(config.Network) {
-				case config.Network_Mainnet:
-					layout.descriptionBox.SetText("MEV Boost is currently not available on Mainnet.")
+				case cfgtypes.ConsensusClient_Lodestar:
+					layout.descriptionBox.SetText("You have Lodestar selected for your Consensus client.\n\nLodestar does not support fallback clients at this time, so this option is disabled.")
 					return
 				}
 			}
@@ -113,15 +107,10 @@ func (home *settingsHome) createContent() {
 	}
 	categoryList.SetSelectedFunc(func(i int, s1, s2 string, r rune) {
 		if s1 == home.fallbackPage.page.title {
-			// Temp block of Teku for the fallback page until it supports fallback
+			// Temp block of Lodestar for the fallback page until it supports fallback
 			cc, _ := home.md.Config.GetSelectedConsensusClient()
 			switch cc {
-			case config.ConsensusClient_Teku:
-				return
-			}
-		} else if s1 == home.mevBoostPage.page.title {
-			switch home.md.Config.Smartnode.Network.Value.(config.Network) {
-			case config.Network_Mainnet:
+			case cfgtypes.ConsensusClient_Lodestar:
 				return
 			}
 		}

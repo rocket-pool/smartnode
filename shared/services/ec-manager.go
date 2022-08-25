@@ -15,6 +15,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -42,7 +43,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 	// Get the primary EC url
 	if cfg.IsNativeMode {
 		primaryEcUrl = cfg.Native.EcHttpUrl.Value.(string)
-	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+	} else if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		primaryEcUrl = fmt.Sprintf("http://%s:%d", config.Eth1ContainerName, cfg.ExecutionCommon.HttpPort.Value)
 	} else {
 		primaryEcUrl = cfg.ExternalExecution.HttpUrl.Value.(string)
@@ -55,7 +56,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 		} else {
 			cc, _ := cfg.GetSelectedConsensusClient()
 			switch cc {
-			case config.ConsensusClient_Prysm:
+			case cfgtypes.ConsensusClient_Prysm:
 				fallbackEcUrl = cfg.FallbackPrysm.EcHttpUrl.Value.(string)
 			default:
 				fallbackEcUrl = cfg.FallbackNormal.EcHttpUrl.Value.(string)

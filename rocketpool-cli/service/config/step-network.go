@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -30,7 +30,7 @@ func createNetworkStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		newNetwork := networks[buttonIndex].Value.(config.Network)
+		newNetwork := networks[buttonIndex].Value.(cfgtypes.Network)
 		wiz.md.Config.ChangeNetwork(newNetwork)
 		wiz.modeModal.show()
 	}

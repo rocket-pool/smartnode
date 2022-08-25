@@ -105,11 +105,10 @@ func recoverRplFromLot(c *cli.Context) error {
 		canResponse, err := rp.CanRecoverUnclaimedRPLFromLot(lot.Details.Index)
 		if err != nil {
 			return fmt.Errorf("Error checking if recovering lot %d is possible: %w", lot.Details.Index, err)
-		} else {
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
 		}
+		gasInfo = canResponse.GasInfo
+		totalGas += canResponse.GasInfo.EstGasLimit
+		totalSafeGas += canResponse.GasInfo.SafeGasLimit
 	}
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas

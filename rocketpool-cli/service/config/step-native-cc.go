@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createNativeCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
@@ -12,7 +12,7 @@ func createNativeCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	clientDescriptions := []string{}
 	for _, client := range clients {
 		clientNames = append(clientNames, client.Name)
-		clientDescriptions = append(clientDescriptions, getAugmentedCcDescription(client.Value.(config.ConsensusClient), client.Description))
+		clientDescriptions = append(clientDescriptions, getAugmentedCcDescription(client.Value.(cfgtypes.ConsensusClient), client.Description))
 	}
 
 	helperText := "Please select the Consensus client you are / will be using.\n\nIf you're still deciding on one, highlight each one below to see a brief description of it, or go to https://docs.rocketpool.net/guides/node/eth-clients.html#eth2-clients to learn more about them."
@@ -32,7 +32,7 @@ func createNativeCcStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		selectedClient := clients[buttonIndex].Value.(config.ConsensusClient)
+		selectedClient := clients[buttonIndex].Value.(cfgtypes.ConsensusClient)
 		wiz.md.Config.Native.ConsensusClient.Value = selectedClient
 		wiz.nativeCcUrlModal.show()
 	}

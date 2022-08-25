@@ -26,8 +26,9 @@ import (
 	"github.com/blang/semver/v4"
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/mitchellh/go-homedir"
-	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -307,12 +308,12 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 
 	// Network
 	chainID := legacyCfg.Chains.Eth1.ChainID
-	var network config.Network
+	var network cfgtypes.Network
 	switch chainID {
 	case "1":
-		network = config.Network_Mainnet
+		network = cfgtypes.Network_Mainnet
 	case "5":
-		network = config.Network_Prater
+		network = cfgtypes.Network_Prater
 	default:
 		return nil, fmt.Errorf("legacy config had an unknown chain ID [%s]", chainID)
 	}
@@ -346,7 +347,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	cfg.ConsensusClientMode.Value = ccMode
 
 	selectedCC := legacyCfg.Chains.Eth2.Client.Selected
-	if ccMode == config.Mode_Local {
+	if ccMode == cfgtypes.Mode_Local {
 		err = c.migrateCcSelection(selectedCC, &cfg.ConsensusClient)
 		if err != nil {
 			return nil, fmt.Errorf("error migrating local eth2 client selection: %w", err)
@@ -364,20 +365,20 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 
 	for _, param := range legacyCfg.Chains.Eth2.Client.Params {
 		switch param.Env {
-		case "CUSTOM_GRAFFITI":
+		case config.CustomGraffitiEnvVar:
 			cfg.ConsensusCommon.Graffiti.Value = param.Value
 			cfg.ExternalLighthouse.Graffiti.Value = param.Value
 			cfg.ExternalPrysm.Graffiti.Value = param.Value
 			cfg.ExternalTeku.Graffiti.Value = param.Value
 		case "ETH2_MAX_PEERS":
-			switch cfg.ConsensusClient.Value.(config.ConsensusClient) {
-			case config.ConsensusClient_Lighthouse:
+			switch cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient) {
+			case cfgtypes.ConsensusClient_Lighthouse:
 				convertUintParam(param, &cfg.Lighthouse.MaxPeers, network, 16)
-			case config.ConsensusClient_Nimbus:
+			case cfgtypes.ConsensusClient_Nimbus:
 				convertUintParam(param, &cfg.Nimbus.MaxPeers, network, 16)
-			case config.ConsensusClient_Prysm:
+			case cfgtypes.ConsensusClient_Prysm:
 				convertUintParam(param, &cfg.Prysm.MaxPeers, network, 16)
-			case config.ConsensusClient_Teku:
+			case cfgtypes.ConsensusClient_Teku:
 				convertUintParam(param, &cfg.Teku.MaxPeers, network, 16)
 			}
 		case "ETH2_P2P_PORT":
@@ -427,7 +428,7 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	// Top-level parameters
 	cfg.ReconnectDelay.Value = legacyCfg.Chains.Eth1.ReconnectDelay
 	if cfg.ReconnectDelay.Value == "" {
-		cfg.ReconnectDelay.Value = cfg.ReconnectDelay.Default[config.Network_All]
+		cfg.ReconnectDelay.Value = cfg.ReconnectDelay.Default[cfgtypes.Network_All]
 	}
 
 	// Smartnode settings
@@ -953,7 +954,7 @@ func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool)
 }
 
 // Get the provider mode and port from a legacy config's provider URL
-func (c *Client) migrateProviderInfo(provider string, wsProvider string, localHostname string, clientMode *config.Parameter, httpPortParam *config.Parameter, wsPortParam *config.Parameter, externalHttpUrlParam *config.Parameter, externalWsUrlParam *config.Parameter) error {
+func (c *Client) migrateProviderInfo(provider string, wsProvider string, localHostname string, clientMode *cfgtypes.Parameter, httpPortParam *cfgtypes.Parameter, wsPortParam *cfgtypes.Parameter, externalHttpUrlParam *cfgtypes.Parameter, externalWsUrlParam *cfgtypes.Parameter) error {
 
 	// Get HTTP provider
 	mode, port, err := c.getLegacyProviderInfo(provider, localHostname)
@@ -963,7 +964,7 @@ func (c *Client) migrateProviderInfo(provider string, wsProvider string, localHo
 
 	// Set the mode, provider, port, and/or URL
 	clientMode.Value = mode
-	if mode == config.Mode_Local {
+	if mode == cfgtypes.Mode_Local {
 		httpPortParam.Value = port
 	} else {
 		externalHttpUrlParam.Value = provider
@@ -975,7 +976,7 @@ func (c *Client) migrateProviderInfo(provider string, wsProvider string, localHo
 		if err != nil {
 			return fmt.Errorf("error parsing %s websocket provider: %w", localHostname, err)
 		}
-		if mode == config.Mode_Local {
+		if mode == cfgtypes.Mode_Local {
 			wsPortParam.Value = wsPort
 		} else {
 			externalWsUrlParam.Value = wsProvider
@@ -987,20 +988,20 @@ func (c *Client) migrateProviderInfo(provider string, wsProvider string, localHo
 }
 
 // Get the provider mode and port from a legacy config's provider URL
-func (c *Client) getLegacyProviderInfo(provider string, localHostname string) (config.Mode, uint16, error) {
+func (c *Client) getLegacyProviderInfo(provider string, localHostname string) (cfgtypes.Mode, uint16, error) {
 
 	providerUrl, err := url.Parse(provider)
 	if err != nil {
-		return config.Mode_Unknown, 0, fmt.Errorf("error parsing %s provider: %w", localHostname, err)
+		return cfgtypes.Mode_Unknown, 0, fmt.Errorf("error parsing %s provider: %w", localHostname, err)
 	}
 
-	var mode config.Mode
+	var mode cfgtypes.Mode
 	if providerUrl.Hostname() == localHostname {
 		// This is Docker mode
-		mode = config.Mode_Local
+		mode = cfgtypes.Mode_Local
 	} else {
 		// This is Hybrid mode
-		mode = config.Mode_External
+		mode = cfgtypes.Mode_External
 	}
 
 	var port uint16
@@ -1012,12 +1013,12 @@ func (c *Client) getLegacyProviderInfo(provider string, localHostname string) (c
 		case "https", "wss":
 			port = 443
 		default:
-			return config.Mode_Unknown, 0, fmt.Errorf("provider [%s] doesn't provide port info and it can't be inferred from the scheme", provider)
+			return cfgtypes.Mode_Unknown, 0, fmt.Errorf("provider [%s] doesn't provide port info and it can't be inferred from the scheme", provider)
 		}
 	} else {
 		parsedPort, err := strconv.ParseUint(portString, 0, 16)
 		if err != nil {
-			return config.Mode_Unknown, 0, fmt.Errorf("invalid port [%s] in %s provider [%s]", portString, localHostname, provider)
+			return cfgtypes.Mode_Unknown, 0, fmt.Errorf("invalid port [%s] in %s provider [%s]", portString, localHostname, provider)
 		}
 		port = uint16(parsedPort)
 	}
@@ -1027,17 +1028,17 @@ func (c *Client) getLegacyProviderInfo(provider string, localHostname string) (c
 }
 
 // Sets a modern config's selected EC / mode based on a legacy config
-func (c *Client) migrateEcSelection(legacySelectedClient string, ecParam *config.Parameter, ecModeParam *config.Parameter) error {
+func (c *Client) migrateEcSelection(legacySelectedClient string, ecParam *cfgtypes.Parameter, ecModeParam *cfgtypes.Parameter) error {
 	// EC selection
 	switch legacySelectedClient {
 	case "geth":
-		ecParam.Value = config.ExecutionClient_Geth
+		ecParam.Value = cfgtypes.ExecutionClient_Geth
 	case "infura":
-		ecParam.Value = config.ExecutionClient_Geth
+		ecParam.Value = cfgtypes.ExecutionClient_Geth
 	case "pocket":
-		ecParam.Value = config.ExecutionClient_Geth
+		ecParam.Value = cfgtypes.ExecutionClient_Geth
 	case "custom":
-		ecModeParam.Value = config.Mode_External
+		ecModeParam.Value = cfgtypes.Mode_External
 	case "":
 		break
 	default:
@@ -1048,17 +1049,17 @@ func (c *Client) migrateEcSelection(legacySelectedClient string, ecParam *config
 }
 
 // Sets a modern config's selected CC / mode based on a legacy config
-func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *config.Parameter) error {
+func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *cfgtypes.Parameter) error {
 	// CC selection
 	switch legacySelectedClient {
 	case "lighthouse":
-		ccParam.Value = config.ConsensusClient_Lighthouse
+		ccParam.Value = cfgtypes.ConsensusClient_Lighthouse
 	case "nimbus":
-		ccParam.Value = config.ConsensusClient_Nimbus
+		ccParam.Value = cfgtypes.ConsensusClient_Nimbus
 	case "prysm":
-		ccParam.Value = config.ConsensusClient_Prysm
+		ccParam.Value = cfgtypes.ConsensusClient_Prysm
 	case "teku":
-		ccParam.Value = config.ConsensusClient_Teku
+		ccParam.Value = cfgtypes.ConsensusClient_Teku
 	default:
 		return fmt.Errorf("unknown eth2 client [%s]", legacySelectedClient)
 	}
@@ -1067,7 +1068,7 @@ func (c *Client) migrateCcSelection(legacySelectedClient string, ccParam *config
 }
 
 // Migrates the parameters from a legacy eth1 config to a modern one
-func (c *Client) migrateEth1Params(client string, network config.Network, params []config.UserParam, ecCommon *config.ExecutionCommonConfig, geth *config.GethConfig, externalEc *config.ExternalExecutionConfig) error {
+func (c *Client) migrateEth1Params(client string, network cfgtypes.Network, params []config.UserParam, ecCommon *config.ExecutionCommonConfig, geth *config.GethConfig, externalEc *config.ExternalExecutionConfig) error {
 	for _, param := range params {
 		switch param.Env {
 		case "ETHSTATS_LABEL":
@@ -1105,7 +1106,7 @@ func (c *Client) migrateEth1Params(client string, network config.Network, params
 }
 
 // Stores a legacy parameter's value in a new parameter, replacing blank values with the appropriate default.
-func convertUintParam(oldParam config.UserParam, newParam *config.Parameter, network config.Network, bitsize int) error {
+func convertUintParam(oldParam config.UserParam, newParam *cfgtypes.Parameter, network cfgtypes.Network, bitsize int) error {
 	if newParam == nil {
 		return nil
 	}
@@ -1163,14 +1164,14 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Check config
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Unknown {
+	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Unknown {
 		return "", fmt.Errorf("You haven't selected local or external mode for your Execution (ETH1) client.\nPlease run 'rocketpool service config' before running this command.")
-	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ExecutionClient.Value.(config.ExecutionClient) == config.ExecutionClient_Unknown {
+	} else if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient) == cfgtypes.ExecutionClient_Unknown {
 		return "", errors.New("No Execution (ETH1) client selected. Please run 'rocketpool service config' before running this command.")
 	}
-	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Unknown {
+	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Unknown {
 		return "", fmt.Errorf("You haven't selected local or external mode for your Consensus (ETH2) client.\nPlease run 'rocketpool service config' before running this command.")
-	} else if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local && cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Unknown {
+	} else if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClient.Value.(cfgtypes.ConsensusClient) == cfgtypes.ConsensusClient_Unknown {
 		return "", errors.New("No Consensus (ETH2) client selected. Please run 'rocketpool service config' before running this command.")
 	}
 
@@ -1190,7 +1191,6 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	// Set up environment variables and deploy the template config files
 	settings := cfg.GenerateEnvironmentVariables()
 	settings["EXTERNAL_IP"] = shellescape.Quote(externalIP)
-	settings["ROCKET_POOL_VERSION"] = fmt.Sprintf("v%s", shared.RocketPoolVersion)
 
 	// Deploy the templates and run environment variable substitution on them
 	deployedContainers, err := c.deployTemplates(cfg, expandedConfigPath, settings)
@@ -1310,7 +1310,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.ValidatorContainerName+composeFileSuffix))
 
 	// Check the EC mode to see if it needs to be deployed
-	if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.Eth1ContainerName+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting execution client container template: %w", err)
@@ -1325,7 +1325,7 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	}
 
 	// Check the Consensus mode
-	if cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+	if cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.Eth2ContainerName+templateSuffix))
 		if err != nil {
 			return []string{}, fmt.Errorf("error reading and substituting consensus client container template: %w", err)
@@ -1381,22 +1381,19 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.PrometheusContainerName+composeFileSuffix))
 	}
 
-	// Check MEV Boost
-	switch cfg.Smartnode.Network.Value.(config.Network) {
-	case config.Network_Kiln, config.Network_Ropsten, config.Network_Prater:
-		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
-			contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
-			if err != nil {
-				return []string{}, fmt.Errorf("error reading and substituting MEV Boost container template: %w", err)
-			}
-			mevBoostComposePath := filepath.Join(runtimeFolder, config.MevBoostContainerName+composeFileSuffix)
-			err = ioutil.WriteFile(mevBoostComposePath, contents, 0664)
-			if err != nil {
-				return []string{}, fmt.Errorf("could not write MEV Boost container file to %s: %w", mevBoostComposePath, err)
-			}
-			deployedContainers = append(deployedContainers, mevBoostComposePath)
-			deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))
+	// Check MEV-Boost
+	if cfg.EnableMevBoost.Value == true && cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+		contents, err = envsubst.ReadFile(filepath.Join(templatesFolder, config.MevBoostContainerName+templateSuffix))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting MEV-Boost container template: %w", err)
 		}
+		mevBoostComposePath := filepath.Join(runtimeFolder, config.MevBoostContainerName+composeFileSuffix)
+		err = ioutil.WriteFile(mevBoostComposePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write MEV-Boost container file to %s: %w", mevBoostComposePath, err)
+		}
+		deployedContainers = append(deployedContainers, mevBoostComposePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, config.MevBoostContainerName+composeFileSuffix))
 	}
 
 	// Create the custom keys dir
@@ -1420,6 +1417,38 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	err = os.MkdirAll(rewardsFileDir, 0775)
 	if err != nil {
 		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), rewardsFileDir, colorReset)
+	}
+
+	return c.composeAddons(cfg, rocketpoolDir, settings, deployedContainers)
+
+}
+
+// Handle composing for addons
+func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir string, settings map[string]string, deployedContainers []string) ([]string, error) {
+
+	// GWW
+	if cfg.GraffitiWallWriter.GetEnabledParameter().Value == true {
+		runtimeFolder := filepath.Join(rocketpoolDir, runtimeDir, "addons", "gww")
+		templatesFolder := filepath.Join(rocketpoolDir, templatesDir, "addons", "gww")
+		overrideFolder := filepath.Join(rocketpoolDir, overrideDir, "addons", "gww")
+
+		// Make the addon folder
+		err := os.MkdirAll(runtimeFolder, 0775)
+		if err != nil {
+			return []string{}, fmt.Errorf("error creating addon runtime folder (%s): %w", runtimeFolder, err)
+		}
+
+		contents, err := envsubst.ReadFile(filepath.Join(templatesFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+templateSuffix))
+		if err != nil {
+			return []string{}, fmt.Errorf("error reading and substituting GWW addon container template: %w", err)
+		}
+		composePath := filepath.Join(runtimeFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+composeFileSuffix)
+		err = ioutil.WriteFile(composePath, contents, 0664)
+		if err != nil {
+			return []string{}, fmt.Errorf("could not write GWW addon container file to %s: %w", composePath, err)
+		}
+		deployedContainers = append(deployedContainers, composePath)
+		deployedContainers = append(deployedContainers, filepath.Join(overrideFolder, graffiti_wall_writer.GraffitiWallWriterContainerName+composeFileSuffix))
 	}
 
 	return deployedContainers, nil

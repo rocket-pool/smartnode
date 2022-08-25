@@ -128,6 +128,21 @@ func getStatus(c *cli.Context) error {
 		} else {
 			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegate.Hex(), colorReset)
 		}
+
+		voteCount := 0
+		for _, activeProposal := range status.ActiveSnapshotProposals {
+			for _, votedProposal := range status.ProposalVotes {
+				if votedProposal.Proposal.Id == activeProposal.Id {
+					voteCount++
+					break
+				}
+			}
+		}
+		if len(status.ActiveSnapshotProposals) == 0 {
+			fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
+		} else {
+			fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.ActiveSnapshotProposals), voteCount)
+		}
 		fmt.Println("")
 
 		// Withdrawal address & balances

@@ -74,3 +74,12 @@ type NetworkGenerateRewardsTreeResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
 }
+
+type NetworkDAOProposalsResponse struct {
+	Status                  string                 `json:"status"`
+	Error                   string                 `json:"error"`
+	AccountAddress          common.Address         `json:"accountAddress"`
+	VotingDelegate          common.Address         `json:"votingDelegate"`
+	ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
+	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
+}

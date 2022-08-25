@@ -1,5 +1,9 @@
 package config
 
+import (
+	"github.com/rocket-pool/smartnode/shared/types/config"
+)
+
 // Constants
 const exporterTag string = "prom/node-exporter:v1.3.1"
 
@@ -11,51 +15,51 @@ type ExporterConfig struct {
 	Title string `yaml:"-"`
 
 	// Toggle for enabling access to the root filesystem (for multiple disk usage metrics)
-	RootFs Parameter `yaml:"rootFs,omitempty"`
+	RootFs config.Parameter `yaml:"rootFs,omitempty"`
 
 	// The Docker Hub tag for Prometheus
-	ContainerTag Parameter `yaml:"containerTag,omitempty"`
+	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags
-	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
+	AdditionalFlags config.Parameter `yaml:"additionalFlags,omitempty"`
 }
 
 // Generates a new Exporter config
-func NewExporterConfig(config *RocketPoolConfig) *ExporterConfig {
+func NewExporterConfig(cfg *RocketPoolConfig) *ExporterConfig {
 	return &ExporterConfig{
 		Title: "Node Exporter Settings",
 
-		RootFs: Parameter{
+		RootFs: config.Parameter{
 			ID:                   "enableRootFs",
 			Name:                 "Allow Root Filesystem Access",
 			Description:          "Give Prometheus's Node Exporter permission to view your root filesystem instead of being limited to its own Docker container.\nThis is needed if you want the Grafana dashboard to report the used disk space of a second SSD.",
-			Type:                 ParameterType_Bool,
-			Default:              map[Network]interface{}{Network_All: defaultExporterRootFs},
-			AffectsContainers:    []ContainerID{ContainerID_Exporter},
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultExporterRootFs},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Exporter},
 			EnvironmentVariables: []string{"EXPORTER_ROOT_FS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		ContainerTag: Parameter{
+		ContainerTag: config.Parameter{
 			ID:                   "containerTag",
 			Name:                 "Exporter Container Tag",
 			Description:          "The tag name of the Prometheus Node Exporter container you want to use on Docker Hub.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: exporterTag},
-			AffectsContainers:    []ContainerID{ContainerID_Exporter},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: exporterTag},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Exporter},
 			EnvironmentVariables: []string{"EXPORTER_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalFlags: Parameter{
+		AdditionalFlags: config.Parameter{
 			ID:                   "additionalFlags",
 			Name:                 "Additional Exporter Flags",
 			Description:          "Additional custom command line flags you want to pass to the Node Exporter, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Grafana},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Grafana},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
@@ -64,15 +68,15 @@ func NewExporterConfig(config *RocketPoolConfig) *ExporterConfig {
 }
 
 // Get the parameters for this config
-func (config *ExporterConfig) GetParameters() []*Parameter {
-	return []*Parameter{
-		&config.RootFs,
-		&config.ContainerTag,
-		&config.AdditionalFlags,
+func (cfg *ExporterConfig) GetParameters() []*config.Parameter {
+	return []*config.Parameter{
+		&cfg.RootFs,
+		&cfg.ContainerTag,
+		&cfg.AdditionalFlags,
 	}
 }
 
 // The the title for the config
-func (config *ExporterConfig) GetConfigTitle() string {
-	return config.Title
+func (cfg *ExporterConfig) GetConfigTitle() string {
+	return cfg.Title
 }

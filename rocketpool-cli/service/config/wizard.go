@@ -16,6 +16,7 @@ type wizard struct {
 	doppelgangerDetectionModal      *choiceWizardStep
 	lighthouseExternalSettingsModal *textBoxWizardStep
 	nimbusExternalSettingsModal     *textBoxWizardStep
+	lodestarExternalSettingsModal   *textBoxWizardStep
 	prysmExternalSettingsModal      *textBoxWizardStep
 	tekuExternalSettingsModal       *textBoxWizardStep
 	externalGraffitiModal           *textBoxWizardStep
@@ -68,6 +69,7 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.doppelgangerDetectionModal = createDoppelgangerStep(wiz, 5, totalDockerSteps)
 	wiz.lighthouseExternalSettingsModal = createExternalLhStep(wiz, 5, totalDockerSteps)
 	wiz.nimbusExternalSettingsModal = createExternalNimbusStep(wiz, 5, totalDockerSteps)
+	wiz.lodestarExternalSettingsModal = createExternalLodestarStep(wiz, 5, totalDockerSteps)
 	wiz.prysmExternalSettingsModal = createExternalPrysmStep(wiz, 5, totalDockerSteps)
 	wiz.tekuExternalSettingsModal = createExternalTekuStep(wiz, 5, totalDockerSteps)
 	wiz.externalGraffitiModal = createExternalGraffitiStep(wiz, 5, totalDockerSteps)

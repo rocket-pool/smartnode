@@ -1,6 +1,8 @@
 package config
 
-import "github.com/rocket-pool/smartnode/shared/services/config"
+import (
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+)
 
 func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
@@ -27,10 +29,10 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 	back := func() {
 		cc, _ := wiz.md.Config.GetSelectedConsensusClient()
 		switch cc {
-		case config.ConsensusClient_Teku:
-			// Temp until Teku supports fallback clients
+		case cfgtypes.ConsensusClient_Lodestar:
+			// Temp until Lodestar supports fallback clients
 			wiz.md.Config.UseFallbackClients.Value = false
-			if wiz.md.Config.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+			if wiz.md.Config.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 				wiz.consensusLocalModal.show()
 			} else {
 				wiz.consensusExternalSelectModal.show()

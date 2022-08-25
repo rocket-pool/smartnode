@@ -856,12 +856,12 @@ func (r *RewardsFile) processEpoch(getDuties bool, epoch uint64) error {
 		i := i
 		slot := epoch*r.slotsPerEpoch + i
 		wg.Go(func() error {
-			block, found, err := r.bc.GetBeaconBlock(fmt.Sprint(slot))
+			attestations, found, err := r.bc.GetAttestations(fmt.Sprint(slot))
 			if err != nil {
 				return err
 			}
 			if found {
-				attestationsPerSlot[i] = block.Attestations
+				attestationsPerSlot[i] = attestations
 			} else {
 				attestationsPerSlot[i] = []beacon.AttestationInfo{}
 			}

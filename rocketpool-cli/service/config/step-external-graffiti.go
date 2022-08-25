@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWizardStep {
@@ -14,38 +14,41 @@ func createExternalGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *t
 	show := func(modal *textBoxModalLayout) {
 		wiz.md.setPage(modal.page)
 		modal.focus()
-		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
-		case config.ConsensusClient_Lighthouse:
+		switch wiz.md.Config.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient) {
+		case cfgtypes.ConsensusClient_Lighthouse:
 			modal.textboxes[graffitiLabel].SetText(wiz.md.Config.ExternalLighthouse.Graffiti.Value.(string))
-		case config.ConsensusClient_Prysm:
+		case cfgtypes.ConsensusClient_Lodestar:
+			modal.textboxes[graffitiLabel].SetText(wiz.md.Config.ExternalLodestar.Graffiti.Value.(string))
+		case cfgtypes.ConsensusClient_Prysm:
 			modal.textboxes[graffitiLabel].SetText(wiz.md.Config.ExternalPrysm.Graffiti.Value.(string))
-		case config.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Teku:
 			modal.textboxes[graffitiLabel].SetText(wiz.md.Config.ExternalTeku.Graffiti.Value.(string))
 		}
 	}
 
 	done := func(text map[string]string) {
 		// Get the selected client
-		switch wiz.md.Config.ExternalConsensusClient.Value.(config.ConsensusClient) {
-		case config.ConsensusClient_Lighthouse:
+		switch wiz.md.Config.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient) {
+		case cfgtypes.ConsensusClient_Lighthouse:
 			wiz.md.Config.ExternalLighthouse.Graffiti.Value = text[graffitiLabel]
 			wiz.externalDoppelgangerModal.show()
-		case config.ConsensusClient_Nimbus:
+		case cfgtypes.ConsensusClient_Nimbus:
 			wiz.md.Config.ExternalNimbus.Graffiti.Value = text[graffitiLabel]
 			wiz.externalDoppelgangerModal.show()
-		case config.ConsensusClient_Prysm:
+		case cfgtypes.ConsensusClient_Lodestar:
+			wiz.md.Config.ExternalLodestar.Graffiti.Value = text[graffitiLabel]
+			wiz.externalDoppelgangerModal.show()
+		case cfgtypes.ConsensusClient_Prysm:
 			wiz.md.Config.ExternalPrysm.Graffiti.Value = text[graffitiLabel]
 			wiz.externalDoppelgangerModal.show()
-		case config.ConsensusClient_Teku:
+		case cfgtypes.ConsensusClient_Teku:
 			wiz.md.Config.ExternalTeku.Graffiti.Value = text[graffitiLabel]
-			// Temp until Teku supports fallback clients
-			wiz.md.Config.UseFallbackClients.Value = false
-			wiz.metricsModal.show()
+			wiz.externalDoppelgangerModal.show()
 		}
 	}
 
 	back := func() {
-		if wiz.md.Config.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
+		if wiz.md.Config.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 			wiz.consensusLocalModal.show()
 		} else {
 			wiz.consensusExternalSelectModal.show()

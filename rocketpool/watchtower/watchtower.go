@@ -206,7 +206,7 @@ func run(c *cli.Context) error {
 					if err := processPenalties.run(); err != nil {
 						errorLog.Println(err)
 					}*/
-					// DISABLED until MEV Boost can support it
+					// DISABLED until MEV-Boost can support it
 				}
 			}
 			time.Sleep(interval)

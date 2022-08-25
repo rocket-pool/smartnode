@@ -1,8 +1,12 @@
 package config
 
+import (
+	"github.com/rocket-pool/smartnode/shared/types/config"
+)
+
 const (
-	lighthouseTagTest string = "sigp/lighthouse:v2.5.1"
-	lighthouseTagProd string = "sigp/lighthouse:v2.5.1"
+	lighthouseTagTest string = "sigp/lighthouse:v3.0.0"
+	lighthouseTagProd string = "sigp/lighthouse:v3.0.0"
 	defaultLhMaxPeers uint16 = 80
 )
 
@@ -11,74 +15,74 @@ type LighthouseConfig struct {
 	Title string `yaml:"-"`
 
 	// The max number of P2P peers to connect to
-	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
+	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
 
 	// Common parameters that Lighthouse doesn't support and should be hidden
 	UnsupportedCommonParams []string `yaml:"-"`
 
 	// The Docker Hub tag for Lighthouse
-	ContainerTag Parameter `yaml:"containerTag,omitempty"`
+	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags for the BN
-	AdditionalBnFlags Parameter `yaml:"additionalBnFlags,omitempty"`
+	AdditionalBnFlags config.Parameter `yaml:"additionalBnFlags,omitempty"`
 
 	// Custom command line flags for the VC
-	AdditionalVcFlags Parameter `yaml:"additionalVcFlags,omitempty"`
+	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
 // Generates a new Lighthouse configuration
-func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
+func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 	return &LighthouseConfig{
 		Title: "Lighthouse Settings",
 
-		MaxPeers: Parameter{
+		MaxPeers: config.Parameter{
 			ID:                   "maxPeers",
 			Name:                 "Max Peers",
 			Description:          "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
-			Type:                 ParameterType_Uint16,
-			Default:              map[Network]interface{}{Network_All: defaultLhMaxPeers},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			Type:                 config.ParameterType_Uint16,
+			Default:              map[config.Network]interface{}{config.Network_All: defaultLhMaxPeers},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		ContainerTag: Parameter{
+		ContainerTag: config.Parameter{
 			ID:          "containerTag",
 			Name:        "Container Tag",
 			Description: "The tag name of the Lighthouse container you want to use from Docker Hub.",
-			Type:        ParameterType_String,
-			Default: map[Network]interface{}{
-				Network_Mainnet: lighthouseTagProd,
-				Network_Prater:  lighthouseTagTest,
-				Network_Kiln:    lighthouseTagTest,
-				Network_Ropsten: lighthouseTagTest,
+			Type:        config.ParameterType_String,
+			Default: map[config.Network]interface{}{
+				config.Network_Mainnet: lighthouseTagProd,
+				config.Network_Prater:  lighthouseTagTest,
+				config.Network_Kiln:    lighthouseTagTest,
+				config.Network_Ropsten: lighthouseTagTest,
 			},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2, ContainerID_Validator},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalBnFlags: Parameter{
+		AdditionalBnFlags: config.Parameter{
 			ID:                   "additionalBnFlags",
 			Name:                 "Additional Beacon Client Flags",
 			Description:          "Additional custom command line flags you want to pass Lighthouse's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Eth2},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
 
-		AdditionalVcFlags: Parameter{
+		AdditionalVcFlags: config.Parameter{
 			ID:                   "additionalVcFlags",
 			Name:                 "Additional Validator Client Flags",
 			Description:          "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Validator},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
@@ -87,31 +91,31 @@ func NewLighthouseConfig(config *RocketPoolConfig) *LighthouseConfig {
 }
 
 // Get the parameters for this config
-func (config *LighthouseConfig) GetParameters() []*Parameter {
-	return []*Parameter{
-		&config.MaxPeers,
-		&config.ContainerTag,
-		&config.AdditionalBnFlags,
-		&config.AdditionalVcFlags,
+func (cfg *LighthouseConfig) GetParameters() []*config.Parameter {
+	return []*config.Parameter{
+		&cfg.MaxPeers,
+		&cfg.ContainerTag,
+		&cfg.AdditionalBnFlags,
+		&cfg.AdditionalVcFlags,
 	}
 }
 
 // Get the common params that this client doesn't support
-func (config *LighthouseConfig) GetUnsupportedCommonParams() []string {
-	return config.UnsupportedCommonParams
+func (cfg *LighthouseConfig) GetUnsupportedCommonParams() []string {
+	return cfg.UnsupportedCommonParams
 }
 
 // Get the Docker container name of the validator client
-func (config *LighthouseConfig) GetValidatorImage() string {
-	return config.ContainerTag.Value.(string)
+func (cfg *LighthouseConfig) GetValidatorImage() string {
+	return cfg.ContainerTag.Value.(string)
 }
 
 // Get the name of the client
-func (config *LighthouseConfig) GetName() string {
+func (cfg *LighthouseConfig) GetName() string {
 	return "Lighthouse"
 }
 
 // The the title for the config
-func (config *LighthouseConfig) GetConfigTitle() string {
-	return config.Title
+func (cfg *LighthouseConfig) GetConfigTitle() string {
+	return cfg.Title
 }

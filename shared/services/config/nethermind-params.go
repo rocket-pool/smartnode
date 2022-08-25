@@ -5,12 +5,13 @@ import (
 	"runtime"
 
 	"github.com/pbnjay/memory"
+	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Constants
 const (
-	nethermindTagAmd64         string = "nethermind/nethermind:1.13.6"
-	nethermindTagArm64         string = "nethermind/nethermind:1.13.6"
+	nethermindTagAmd64         string = "nethermind/nethermind:1.14.0"
+	nethermindTagArm64         string = "nethermind/nethermind:1.14.0"
 	nethermindEventLogInterval int    = 25000
 	nethermindStopSignal       string = "SIGTERM"
 )
@@ -23,98 +24,99 @@ type NethermindConfig struct {
 	UnsupportedCommonParams []string `yaml:"-"`
 
 	// Compatible consensus clients
-	CompatibleConsensusClients []ConsensusClient `yaml:"-"`
+	CompatibleConsensusClients []config.ConsensusClient `yaml:"-"`
 
 	// The max number of events to query in a single event log query
 	EventLogInterval int `yaml:"-"`
 
 	// Nethermind's cache memory hint
-	CacheSize Parameter `yaml:"cacheSize,omitempty"`
+	CacheSize config.Parameter `yaml:"cacheSize,omitempty"`
 
 	// Max number of P2P peers to connect to
-	MaxPeers Parameter `yaml:"maxPeers,omitempty"`
+	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
 
 	// Nethermind's memory for pruning
-	PruneMemSize Parameter `yaml:"pruneMemSize,omitempty"`
+	PruneMemSize config.Parameter `yaml:"pruneMemSize,omitempty"`
 
 	// The Docker Hub tag for Nethermind
-	ContainerTag Parameter `yaml:"containerTag,omitempty"`
+	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
 	// Custom command line flags
-	AdditionalFlags Parameter `yaml:"additionalFlags,omitempty"`
+	AdditionalFlags config.Parameter `yaml:"additionalFlags,omitempty"`
 }
 
 // Generates a new Nethermind configuration
-func NewNethermindConfig(config *RocketPoolConfig) *NethermindConfig {
+func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 	return &NethermindConfig{
 		Title: "Nethermind Settings",
 
 		UnsupportedCommonParams: []string{},
 
-		CompatibleConsensusClients: []ConsensusClient{
-			ConsensusClient_Lighthouse,
-			ConsensusClient_Nimbus,
-			ConsensusClient_Prysm,
-			ConsensusClient_Teku,
+		CompatibleConsensusClients: []config.ConsensusClient{
+			config.ConsensusClient_Lighthouse,
+			config.ConsensusClient_Lodestar,
+			config.ConsensusClient_Nimbus,
+			config.ConsensusClient_Prysm,
+			config.ConsensusClient_Teku,
 		},
 
 		EventLogInterval: nethermindEventLogInterval,
 
-		CacheSize: Parameter{
+		CacheSize: config.Parameter{
 			ID:                   "cache",
 			Name:                 "Cache (Memory Hint) Size",
 			Description:          "The amount of RAM (in MB) you want to suggest for Nethermind's cache. While there is no guarantee that Nethermind will stay under this limit, lower values are preferred for machines with less RAM.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
-			Type:                 ParameterType_Uint,
-			Default:              map[Network]interface{}{Network_All: calculateNethermindCache()},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			Type:                 config.ParameterType_Uint,
+			Default:              map[config.Network]interface{}{config.Network_All: calculateNethermindCache()},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CACHE_SIZE"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		MaxPeers: Parameter{
+		MaxPeers: config.Parameter{
 			ID:                   "maxPeers",
 			Name:                 "Max Peers",
-			Description:          "The maximum number of peers Nethermind should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
-			Type:                 ParameterType_Uint16,
-			Default:              map[Network]interface{}{Network_All: calculateNethermindPeers()},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			Description:          "The maximum number of peers Nethermind should connect to. This can be lowered to improve performance on low-power systems or constrained config.Networks. We recommend keeping it at 12 or higher.",
+			Type:                 config.ParameterType_Uint16,
+			Default:              map[config.Network]interface{}{config.Network_All: calculateNethermindPeers()},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_MAX_PEERS"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		PruneMemSize: Parameter{
+		PruneMemSize: config.Parameter{
 			ID:                   "pruneMemSize",
 			Name:                 "In-Memory Pruning Cache Size",
 			Description:          "The amount of RAM (in MB) you want to dedicate to Nethermind for its in-memory pruning system. Higher values mean less writes to your SSD and slower overall database growth.\n\nThe default value for this will be calculated dynamically based on your system's available RAM, but you can adjust it manually.",
-			Type:                 ParameterType_Uint,
-			Default:              map[Network]interface{}{Network_All: calculateNethermindPruneMemSize()},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			Type:                 config.ParameterType_Uint,
+			Default:              map[config.Network]interface{}{config.Network_All: calculateNethermindPruneMemSize()},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"NETHERMIND_PRUNE_MEM_SIZE"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
 
-		ContainerTag: Parameter{
+		ContainerTag: config.Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
 			Description:          "The tag name of the Nethermind container you want to use on Docker Hub.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: getNethermindTag()},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: getNethermindTag()},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   true,
 		},
 
-		AdditionalFlags: Parameter{
+		AdditionalFlags: config.Parameter{
 			ID:                   "additionalFlags",
 			Name:                 "Additional Flags",
 			Description:          "Additional custom command line flags you want to pass to Nethermind, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			Type:                 ParameterType_String,
-			Default:              map[Network]interface{}{Network_All: ""},
-			AffectsContainers:    []ContainerID{ContainerID_Eth1},
+			Type:                 config.ParameterType_String,
+			Default:              map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_ADDITIONAL_FLAGS"},
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
@@ -184,17 +186,17 @@ func getNethermindTag() string {
 }
 
 // Get the parameters for this config
-func (config *NethermindConfig) GetParameters() []*Parameter {
-	return []*Parameter{
-		&config.CacheSize,
-		&config.MaxPeers,
-		&config.PruneMemSize,
-		&config.ContainerTag,
-		&config.AdditionalFlags,
+func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
+	return []*config.Parameter{
+		&cfg.CacheSize,
+		&cfg.MaxPeers,
+		&cfg.PruneMemSize,
+		&cfg.ContainerTag,
+		&cfg.AdditionalFlags,
 	}
 }
 
 // The the title for the config
-func (config *NethermindConfig) GetConfigTitle() string {
-	return config.Title
+func (cfg *NethermindConfig) GetConfigTitle() string {
+	return cfg.Title
 }

@@ -100,6 +100,7 @@ type Client interface {
 	GetSyncStatus() (SyncStatus, error)
 	GetEth2Config() (Eth2Config, error)
 	GetEth2DepositContract() (Eth2DepositContract, error)
+	GetAttestations(blockId string) ([]AttestationInfo, bool, error)
 	GetBeaconBlock(blockId string) (BeaconBlock, bool, error)
 	GetBeaconHead() (BeaconHead, error)
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)

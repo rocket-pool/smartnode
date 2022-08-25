@@ -43,14 +43,13 @@ func nodeClaimRewards(c *cli.Context) error {
 		return fmt.Errorf("error checking if the merge updates have been deployed: %w", err)
 	}
 
-	if updateStatusResponse.IsUpdateDeployed {
-		// Handle the new system
-		return nodeClaimRewardsModern(c, rp)
-	} else {
+	if !updateStatusResponse.IsUpdateDeployed {
 		// Handle the old system
 		return nodeClaimRewardsLegacy(c, rp)
 	}
 
+	// Handle the new system
+	return nodeClaimRewardsModern(c, rp)
 }
 
 func nodeClaimRewardsModern(c *cli.Context, rp *rocketpool.Client) error {
@@ -439,9 +438,9 @@ func nodeClaimRewardsLegacy(c *cli.Context, rp *rocketpool.Client) error {
 	if canClaim.RplAmount.Cmp(big.NewInt(0)) == 0 {
 		fmt.Println("The node does not have any available RPL rewards to claim.")
 		return nil
-	} else {
-		fmt.Printf("%.6f RPL is available to claim.\n", math.RoundDown(eth.WeiToEth(canClaim.RplAmount), 6))
 	}
+
+	fmt.Printf("%.6f RPL is available to claim.\n", math.RoundDown(eth.WeiToEth(canClaim.RplAmount), 6))
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canClaim.GasInfo, rp, c.Bool("yes"))

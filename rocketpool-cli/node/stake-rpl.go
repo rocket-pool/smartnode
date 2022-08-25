@@ -79,7 +79,7 @@ func nodeStakeRpl(c *cli.Context) error {
 				}
 
 				// Prompt for confirmation
-				if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Do you want to let the new RPL contract interact with your legacy RPL?"))) {
+				if !(c.Bool("yes") || cliutils.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -261,7 +261,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Do you want to let the staking contract interact with your RPL?"))) {
+		if !(c.Bool("yes") || cliutils.Confirm("Do you want to let the staking contract interact with your RPL?")) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

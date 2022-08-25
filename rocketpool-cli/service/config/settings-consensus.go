@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // The page wrapper for the EC config
@@ -16,11 +17,13 @@ type ConsensusConfigPage struct {
 	externalCcDropdown      *parameterizedFormItem
 	ccCommonItems           []*parameterizedFormItem
 	lighthouseItems         []*parameterizedFormItem
+	lodestarItems           []*parameterizedFormItem
 	nimbusItems             []*parameterizedFormItem
 	prysmItems              []*parameterizedFormItem
 	tekuItems               []*parameterizedFormItem
 	externalLighthouseItems []*parameterizedFormItem
 	externalNimbusItems     []*parameterizedFormItem
+	externalLodestarItems   []*parameterizedFormItem
 	externalPrysmItems      []*parameterizedFormItem
 	externalTekuItems       []*parameterizedFormItem
 }
@@ -83,11 +86,13 @@ func (configPage *ConsensusConfigPage) createContent() {
 	configPage.externalCcDropdown = createParameterizedDropDown(&configPage.masterConfig.ExternalConsensusClient, configPage.layout.descriptionBox)
 	configPage.ccCommonItems = createParameterizedFormItems(configPage.masterConfig.ConsensusCommon.GetParameters(), configPage.layout.descriptionBox)
 	configPage.lighthouseItems = createParameterizedFormItems(configPage.masterConfig.Lighthouse.GetParameters(), configPage.layout.descriptionBox)
+	configPage.lodestarItems = createParameterizedFormItems(configPage.masterConfig.Lodestar.GetParameters(), configPage.layout.descriptionBox)
 	configPage.nimbusItems = createParameterizedFormItems(configPage.masterConfig.Nimbus.GetParameters(), configPage.layout.descriptionBox)
 	configPage.prysmItems = createParameterizedFormItems(configPage.masterConfig.Prysm.GetParameters(), configPage.layout.descriptionBox)
 	configPage.tekuItems = createParameterizedFormItems(configPage.masterConfig.Teku.GetParameters(), configPage.layout.descriptionBox)
 	configPage.externalLighthouseItems = createParameterizedFormItems(configPage.masterConfig.ExternalLighthouse.GetParameters(), configPage.layout.descriptionBox)
 	configPage.externalNimbusItems = createParameterizedFormItems(configPage.masterConfig.ExternalNimbus.GetParameters(), configPage.layout.descriptionBox)
+	configPage.externalLodestarItems = createParameterizedFormItems(configPage.masterConfig.ExternalLodestar.GetParameters(), configPage.layout.descriptionBox)
 	configPage.externalPrysmItems = createParameterizedFormItems(configPage.masterConfig.ExternalPrysm.GetParameters(), configPage.layout.descriptionBox)
 	configPage.externalTekuItems = createParameterizedFormItems(configPage.masterConfig.ExternalTeku.GetParameters(), configPage.layout.descriptionBox)
 
@@ -95,11 +100,13 @@ func (configPage *ConsensusConfigPage) createContent() {
 	configPage.layout.mapParameterizedFormItems(configPage.ccModeDropdown, configPage.ccDropdown, configPage.externalCcDropdown)
 	configPage.layout.mapParameterizedFormItems(configPage.ccCommonItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.lighthouseItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.lodestarItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.nimbusItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.prysmItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.tekuItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalLighthouseItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalNimbusItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.externalLodestarItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalPrysmItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalTekuItems...)
 
@@ -117,9 +124,9 @@ func (configPage *ConsensusConfigPage) createContent() {
 			return
 		}
 		configPage.masterConfig.ConsensusClient.Value = configPage.masterConfig.ConsensusClient.Options[index].Value
-		switch configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient) {
-		case config.ConsensusClient_Teku:
-			// Temp until Nimbus and Teku support fallbacks
+		switch configPage.masterConfig.ConsensusClient.Value.(cfgtypes.ConsensusClient) {
+		case cfgtypes.ConsensusClient_Lodestar:
+			// Temp until Lodestar support fallbacks
 			configPage.home.md.Config.UseFallbackClients.Value = false
 			configPage.home.refresh()
 		}
@@ -143,13 +150,13 @@ func (configPage *ConsensusConfigPage) handleCcModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.ccModeDropdown.item)
 
-	selectedMode := configPage.masterConfig.ConsensusClientMode.Value.(config.Mode)
+	selectedMode := configPage.masterConfig.ConsensusClientMode.Value.(cfgtypes.Mode)
 	switch selectedMode {
-	case config.Mode_Local:
+	case cfgtypes.Mode_Local:
 		// Local (Docker mode)
 		configPage.handleLocalCcChanged()
 
-	case config.Mode_External:
+	case cfgtypes.Mode_External:
 		// External (Hybrid mode)
 		configPage.handleExternalCcChanged()
 	}
@@ -160,16 +167,18 @@ func (configPage *ConsensusConfigPage) handleLocalCcChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.ccModeDropdown.item)
 	configPage.layout.form.AddFormItem(configPage.ccDropdown.item)
-	selectedCc := configPage.masterConfig.ConsensusClient.Value.(config.ConsensusClient)
+	selectedCc := configPage.masterConfig.ConsensusClient.Value.(cfgtypes.ConsensusClient)
 
 	switch selectedCc {
-	case config.ConsensusClient_Lighthouse:
+	case cfgtypes.ConsensusClient_Lighthouse:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.lighthouseItems, configPage.masterConfig.Lighthouse.UnsupportedCommonParams)
-	case config.ConsensusClient_Nimbus:
+	case cfgtypes.ConsensusClient_Lodestar:
+		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.lodestarItems, configPage.masterConfig.Lodestar.UnsupportedCommonParams)
+	case cfgtypes.ConsensusClient_Nimbus:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.nimbusItems, configPage.masterConfig.Nimbus.UnsupportedCommonParams)
-	case config.ConsensusClient_Prysm:
+	case cfgtypes.ConsensusClient_Prysm:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.prysmItems, configPage.masterConfig.Prysm.UnsupportedCommonParams)
-	case config.ConsensusClient_Teku:
+	case cfgtypes.ConsensusClient_Teku:
 		configPage.layout.addFormItemsWithCommonParams(configPage.ccCommonItems, configPage.tekuItems, configPage.masterConfig.Teku.UnsupportedCommonParams)
 	}
 
@@ -181,16 +190,18 @@ func (configPage *ConsensusConfigPage) handleExternalCcChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.ccModeDropdown.item)
 	configPage.layout.form.AddFormItem(configPage.externalCcDropdown.item)
-	selectedCc := configPage.masterConfig.ExternalConsensusClient.Value.(config.ConsensusClient)
+	selectedCc := configPage.masterConfig.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient)
 
 	switch selectedCc {
-	case config.ConsensusClient_Lighthouse:
+	case cfgtypes.ConsensusClient_Lighthouse:
 		configPage.layout.addFormItems(configPage.externalLighthouseItems)
-	case config.ConsensusClient_Nimbus:
+	case cfgtypes.ConsensusClient_Nimbus:
 		configPage.layout.addFormItems(configPage.externalNimbusItems)
-	case config.ConsensusClient_Prysm:
+	case cfgtypes.ConsensusClient_Lodestar:
+		configPage.layout.addFormItems(configPage.externalLodestarItems)
+	case cfgtypes.ConsensusClient_Prysm:
 		configPage.layout.addFormItems(configPage.externalPrysmItems)
-	case config.ConsensusClient_Teku:
+	case cfgtypes.ConsensusClient_Teku:
 		configPage.layout.addFormItems(configPage.externalTekuItems)
 	}
 
