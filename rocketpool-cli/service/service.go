@@ -938,10 +938,12 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 	fmt.Println("Once pruning is complete, your execution client will restart automatically.\n")
 
-	if cfg.UseFallbackClients.Value == false {
-		fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
-	} else {
-		fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
+	if selectedEc == cfgtypes.ExecutionClient_Geth {
+		if cfg.UseFallbackClients.Value == false {
+			fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+		} else {
+			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
+		}
 	}
 
 	// Get the container prefix
