@@ -916,11 +916,15 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		}
 		identifier = fmt.Sprintf("-%s%s", ecInitial, ccInitial)
 	}
+
+	graffitiPrefix := fmt.Sprintf("RP%s %s", identifier, versionString)
+	envVars["GRAFFITI_PREFIX"] = graffitiPrefix
+
 	customGraffiti := envVars[CustomGraffitiEnvVar]
 	if customGraffiti == "" {
-		envVars["GRAFFITI"] = fmt.Sprintf("RP%s %s", identifier, versionString)
+		envVars["GRAFFITI"] = graffitiPrefix
 	} else {
-		envVars["GRAFFITI"] = fmt.Sprintf("RP%s %s (%s)", identifier, versionString, customGraffiti)
+		envVars["GRAFFITI"] = fmt.Sprintf("%s (%s)", graffitiPrefix, customGraffiti)
 	}
 
 	// Get the hostname of the Consensus client, necessary for Prometheus to work in hybrid mode
