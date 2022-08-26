@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	lodestarTagTest         string = "chainsafe/lodestar:v0.42.0-rc.1"
-	lodestarTagProd         string = "chainsafe/lodestar:v0.41.0"
-	defaultLodestarMaxPeers uint16 = 55
+	lodestarTagTest         string = "chainsafe/lodestar:v1.0.0"
+	lodestarTagProd         string = "chainsafe/lodestar:v1.0.0"
+	defaultLodestarMaxPeers uint16 = 50
 )
 
 // Configuration for Lodestar
