@@ -164,6 +164,22 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 	return response, nil
 }
 
+// Rebuild wallet
+func (c *Client) PurgeKeys() (api.PurgeKeysResponse, error) {
+	responseBytes, err := c.callAPI("wallet purge-keys")
+	if err != nil {
+		return api.PurgeKeysResponse{}, fmt.Errorf("Could not purge keys: %w", err)
+	}
+	var response api.PurgeKeysResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PurgeKeysResponse{}, fmt.Errorf("Could not decode purge-keys response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PurgeKeysResponse{}, fmt.Errorf("Could not purge keys: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Export wallet
 func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
 	responseBytes, err := c.callAPI("wallet export")

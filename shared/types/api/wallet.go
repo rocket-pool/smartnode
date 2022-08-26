@@ -73,3 +73,8 @@ type TestMnemonicResponse struct {
 	CurrentAddress   common.Address `json:"currentAddress"`
 	RecoveredAddress common.Address `json:"recoveredAddress"`
 }
+
+type PurgeKeysResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}

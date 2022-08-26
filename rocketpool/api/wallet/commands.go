@@ -261,6 +261,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "purge-keys",
+				Aliases:   []string{"pk"},
+				Usage:     "Deletes all files related to validator keys",
+				UsageText: "rocketpool api wallet purge-keys",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(purgeKeys(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }
