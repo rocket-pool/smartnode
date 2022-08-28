@@ -53,45 +53,48 @@ func purgeKeys(c *cli.Context) (*api.PurgeKeysResponse, error) {
 	// Load custom validator keys
 	customKeyDir := cfg.Smartnode.GetCustomKeyPath()
 	info, err := os.Stat(customKeyDir)
-	if !os.IsNotExist(err) && info.IsDir() {
+	if os.IsNotExist(err) || !info.IsDir() {
+		// There are no custom keys, so exit early
+		return &response, nil
+	}
 
-		// Get the custom keystore files
-		files, err := ioutil.ReadDir(customKeyDir)
+	// Get the custom keystore files
+	files, err := ioutil.ReadDir(customKeyDir)
+	if err != nil {
+		return nil, fmt.Errorf("error enumerating custom keystores: %w", err)
+	}
+
+	if len(files) == 0 {
+		return &response, nil
+	}
+
+	// Process every custom key found
+	for _, file := range files {
+		// Read the file
+		bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
 		if err != nil {
-			return nil, fmt.Errorf("error enumerating custom keystores: %w", err)
+			return nil, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
 		}
 
-		if len(files) > 0 {
+		// Deserialize it
+		keystore := api.ValidatorKeystore{}
+		err = json.Unmarshal(bytes, &keystore)
+		if err != nil {
+			return nil, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
+		}
 
-			// Process every custom key found
-			for _, file := range files {
-				// Read the file
-				bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
-				if err != nil {
-					return nil, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
-				}
-
-				// Deserialize it
-				keystore := api.ValidatorKeystore{}
-				err = json.Unmarshal(bytes, &keystore)
-				if err != nil {
-					return nil, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
-				}
-
-				// Check if it's one of the pubkeys for the minipool
-				_, exists := pubkeyMap[keystore.Pubkey.Hex()]
-				if !exists {
-					// This pubkey isn't for any of this node's minipools so ignore it
-					continue
-				}
-				customKeyPath := filepath.Join(customKeyDir, file.Name())
-				err = os.RemoveAll(customKeyPath)
-				if err != nil {
-					return nil, fmt.Errorf("error removing file %s: %w", file.Name(), err)
-				}
-
-			}
+		// Check if it's one of the pubkeys for the minipool
+		_, exists := pubkeyMap[keystore.Pubkey.Hex()]
+		if !exists {
+			// This pubkey isn't for any of this node's minipools so ignore it
+			continue
+		}
+		customKeyPath := filepath.Join(customKeyDir, file.Name())
+		err = os.RemoveAll(customKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("error removing file %s: %w", file.Name(), err)
 		}
 	}
+
 	return &response, nil
 }
