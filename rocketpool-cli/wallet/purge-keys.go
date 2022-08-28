@@ -28,17 +28,18 @@ func purgeKeys(c *cli.Context) error {
 		return nil
 	}
 
-	if cliutils.Confirm("WARNING:\n This command will delete all files related to validator keys. Do you want to continue?") {
-		// Rebuild wallet
-		_, err := rp.PurgeKeys()
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("Deleted all validator keys.")
-
+	if !cliutils.Confirm("WARNING:\n This command will delete all files related to validator keys. Do you want to continue?") {
+		fmt.Println("No action was taken.")
+		return nil
 	}
 
+	// Rebuild wallet
+	_, err := rp.PurgeKeys()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Deleted all validator keys.")
 	return nil
 
 }
