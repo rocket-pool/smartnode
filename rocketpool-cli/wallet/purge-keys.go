@@ -18,23 +18,13 @@ func purgeKeys(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Get & check wallet status
-	status, err := rp.WalletStatus()
-	if err != nil {
-		return err
-	}
-	if !status.WalletInitialized {
-		fmt.Println("The node wallet is not initialized.")
-		return nil
-	}
-
 	if !cliutils.Confirm("WARNING:\n This command will delete all files related to validator keys. Do you want to continue?") {
 		fmt.Println("No action was taken.")
 		return nil
 	}
 
-	// Rebuild wallet
-	_, err := rp.PurgeKeys()
+	// Delete validator keys
+	_, err = rp.PurgeKeys()
 	if err != nil {
 		return err
 	}

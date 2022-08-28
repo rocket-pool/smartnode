@@ -164,7 +164,7 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 	return response, nil
 }
 
-// Rebuild wallet
+// PurgeKeys will delete all validator keys
 func (c *Client) PurgeKeys() (api.PurgeKeysResponse, error) {
 	responseBytes, err := c.callAPI("wallet purge-keys")
 	if err != nil {
