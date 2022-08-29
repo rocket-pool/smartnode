@@ -92,25 +92,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "merge-update-status",
-				Aliases:   []string{"u"},
-				Usage:     "Check if the contract upgrades for the merge have been deployed yet",
-				UsageText: "rocketpool api network merge-update-status",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(mergeUpdateStatus(c))
-					return nil
-
-				},
-			},
-
-			{
 				Name:      "can-generate-rewards-tree",
 				Usage:     "Check if the rewards tree for the provided interval can be generated",
 				UsageText: "rocketpool api network can-generate-rewards-tree index",

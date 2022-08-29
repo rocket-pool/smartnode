@@ -55,9 +55,6 @@ func generateRewardsTree(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if !canResponse.IsUpgraded {
-		return fmt.Errorf("The Rocket Pool contracts have not been upgraded to the new rewards system yet.")
-	}
 	if canResponse.CurrentIndex <= index {
 		return fmt.Errorf("The current active rewards period is interval %d. You cannot generate the tree for interval %d until the active interval is past it.", canResponse.CurrentIndex, index)
 	}

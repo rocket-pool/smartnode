@@ -44,7 +44,6 @@ type NodeStatusResponse struct {
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
 	ActiveSnapshotProposals     []SnapshotProposal        `json:"activeSnapshotProposals"`
-	IsMergeUpdateDeployed       bool                      `json:"isMergeUpdateDeployed"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
 	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
@@ -275,7 +274,6 @@ type NodeRewardsResponse struct {
 	UnclaimedEthRewards         float64       `json:"unclaimedEthRewards"`
 	UnclaimedTrustedRplRewards  float64       `json:"unclaimedTrustedRplRewards"`
 	BeaconRewards               float64       `json:"beaconRewards"`
-	IsMergeUpdateDeployed       bool          `json:"isMergeUpdateDeployed"`
 	TxHash                      common.Hash   `json:"txHash"`
 }
 

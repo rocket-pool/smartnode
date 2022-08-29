@@ -36,20 +36,14 @@ func getRewards(c *cli.Context) error {
 		return nil
 	}
 
-	colorReset := "\033[0m"
-	colorYellow := "\033[33m"
-
 	fmt.Println("=== ETH ===")
 	fmt.Printf("You have earned %.4f ETH from the Beacon Chain (including your commissions) so far.\n", rewards.BeaconRewards)
-	if rewards.IsMergeUpdateDeployed {
-		fmt.Printf("You have claimed %.4f ETH from the Smoothing Pool.\n", rewards.CumulativeEthRewards)
-		fmt.Printf("You still have %.4f ETH in unclaimed Smoothing Pool rewards.\n", rewards.UnclaimedEthRewards)
-	}
+	fmt.Printf("You have claimed %.4f ETH from the Smoothing Pool.\n", rewards.CumulativeEthRewards)
+	fmt.Printf("You still have %.4f ETH in unclaimed Smoothing Pool rewards.\n", rewards.UnclaimedEthRewards)
 
 	nextRewardsTime := rewards.LastCheckpoint.Add(rewards.RewardsInterval)
 	nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
 	timeToCheckpointString := time.Until(nextRewardsTime).Round(time.Second).String()
-	docsUrl := "https://docs.rocketpool.net/guides/node/rewards.html#claiming-rpl-rewards"
 
 	// Assume 365 days in a year, 24 hours per day
 	rplApr := rewards.EstimatedRewards / rewards.TotalRplStake / rewards.RewardsInterval.Hours() * (24 * 365) * 100
@@ -59,20 +53,10 @@ func getRewards(c *cli.Context) error {
 	fmt.Printf("It will end on %s (%s from now).\n", nextRewardsTimeString, timeToCheckpointString)
 
 	if rewards.UnclaimedRplRewards > 0 {
-		if rewards.IsMergeUpdateDeployed {
-			fmt.Printf("You currently have %f unclaimed RPL from staking rewards.\n", rewards.UnclaimedRplRewards)
-		} else {
-			fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle. If you don't claim them before the above date, you will lose them!%s\n",
-				colorYellow, rewards.UnclaimedRplRewards, colorReset)
-		}
+		fmt.Printf("You currently have %f unclaimed RPL from staking rewards.\n", rewards.UnclaimedRplRewards)
 	}
 	if rewards.UnclaimedTrustedRplRewards > 0 {
-		if rewards.IsMergeUpdateDeployed {
-			fmt.Printf("You currently have %f unclaimed RPL from Oracle DAO duties.\n", rewards.UnclaimedTrustedRplRewards)
-		} else {
-			fmt.Printf("%s**WARNING**: you currently have %f RPL unclaimed from the previous cycle's Oracle DAO duties. If you don't claim them before the above date, you will lose them!%s\n",
-				colorYellow, rewards.UnclaimedTrustedRplRewards, colorReset)
-		}
+		fmt.Printf("You currently have %f unclaimed RPL from Oracle DAO duties.\n", rewards.UnclaimedTrustedRplRewards)
 	}
 
 	fmt.Println()
@@ -90,12 +74,7 @@ func getRewards(c *cli.Context) error {
 	}
 
 	fmt.Println()
-	if !rewards.IsMergeUpdateDeployed {
-		fmt.Println("These rewards will be claimed automatically when the checkpoint ends, unless you have disabled auto-claims.")
-		fmt.Printf("Refer to the Claiming Node Operator Rewards guide at %s for more information.", docsUrl)
-	} else {
-		fmt.Println("You may claim these rewards at any time. You no longer need to claim them within this interval.")
-	}
+	fmt.Println("You may claim these rewards at any time. You no longer need to claim them within this interval.")
 
 	// Return
 	return nil
