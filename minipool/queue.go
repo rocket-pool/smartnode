@@ -6,11 +6,12 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/storage"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
 
 // Minipool queue lengths
@@ -181,13 +182,52 @@ func GetQueueNextCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 }
 
 // Get a minipools position in queue
-func (mp *Minipool) GetMinipoolPositionInQueue(opts *bind.CallOpts) (uint64, error) {
+func GetMinipoolPositionInQueue(opts *bind.CallOpts, mp *Minipool) (uint64, error) {
+	depositType, err := mp.GetDepositType(opts)
+	if err != nil {
+		return 0, fmt.Errorf("Could not get deposit type: %w", err)
+	}
+	if depositType == rptypes.None {
+		return 0, fmt.Errorf("Minipool address %s has no deposit type", mp.Address)
+	}
 
-	index, err := storage.GetAddressQueueIndexOf(mp.RocketPool, opts, [32]byte("minipools.available.half"), mp.Address);
+	queryIndex := func(key string) (uint64, error) {
+		return storage.GetAddressQueueIndexOf(mp.RocketPool, opts, crypto.Keccak256Hash([]byte(key)), mp.Address)
+	}
+
+	position := uint64(0)
+
+	// half cleared first
+	if depositType != rptypes.Half {
+		position, err = GetQueueLength(mp.RocketPool, rptypes.Half, opts)
+		if err != nil {
+			return 0, fmt.Errorf("Could not get queue length of type %s: %w", rptypes.MinipoolDepositTypes[rptypes.Empty], err)
+		}
+	} else {
+		return queryIndex("minipools.available.half")
+	}
+
+	// full deposits next
+	if depositType != rptypes.Full {
+		length, err := GetQueueLength(mp.RocketPool, rptypes.Full, opts)
+		if err != nil {
+			return 0, fmt.Errorf("Could not get queue length of type %s: %w", rptypes.MinipoolDepositTypes[rptypes.Empty], err)
+		}
+		position += length
+	} else {
+		index, err := queryIndex("minipools.available.full")
+		if err != nil {
+			return 0, err
+		}
+		return position + index, nil
+	}
+
+	// must be empty type now
+	index, err := queryIndex("minipools.available.empty")
 	if err != nil {
 		return 0, err
 	}
-	return index, nil
+	return position + index, nil
 }
 
 // Get contracts
