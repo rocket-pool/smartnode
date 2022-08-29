@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/storage"
 )
 
 // Minipool queue lengths
@@ -177,6 +178,16 @@ func GetQueueNextCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 		return nil, fmt.Errorf("Could not get minipool queue next item capacity: %w", err)
 	}
 	return *capacity, nil
+}
+
+// Get a minipools position in queue
+func (mp *Minipool) GetMinipoolPositionInQueue(opts *bind.CallOpts) (uint64, error) {
+
+	index, err := storage.GetAddressQueueIndexOf(mp.RocketPool, opts, [32]byte("minipools.available.half"), mp.Address);
+	if err != nil {
+		return 0, err
+	}
+	return index, nil
 }
 
 // Get contracts
