@@ -70,9 +70,6 @@ type SmartnodeConfig struct {
 	// Manual priority fee override
 	PriorityFee config.Parameter `yaml:"priorityFee,omitempty"`
 
-	// Threshold for auto RPL claims
-	RplClaimGasThreshold config.Parameter `yaml:"rplClaimGasThreshold,omitempty"`
-
 	// Threshold for auto minipool stakes
 	MinipoolStakeGasThreshold config.Parameter `yaml:"minipoolStakeGasThreshold,omitempty"`
 
@@ -241,18 +238,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description:          "The default value for the priority fee (in gwei) for all of your transactions. This describes how much you're willing to pay *above the network's current base fee* - the higher this is, the more ETH you give to the miners for including your transaction, which generally means it will be mined faster (as long as your max fee is sufficiently high to cover the current network conditions).\n\nMust be larger than 0.",
 			Type:                 config.ParameterType_Float,
 			Default:              map[config.Network]interface{}{config.Network_All: float64(2)},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
-			EnvironmentVariables: []string{},
-			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
-		},
-
-		RplClaimGasThreshold: config.Parameter{
-			ID:                   "rplClaimGasThreshold",
-			Name:                 "RPL Claim Gas Threshold",
-			Description:          "Automatic RPL rewards claims will use the `Rapid` suggestion from the gas estimator, based on current network conditions. This threshold is a limit (in gwei) you can put on that suggestion; your node will not try to claim RPL rewards automatically until the suggestion is below this limit.",
-			Type:                 config.ParameterType_Float,
-			Default:              map[config.Network]interface{}{config.Network_All: float64(150)},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
@@ -450,7 +435,6 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.DataPath,
 		&cfg.ManualMaxFee,
 		&cfg.PriorityFee,
-		&cfg.RplClaimGasThreshold,
 		&cfg.MinipoolStakeGasThreshold,
 		&cfg.RewardsTreeMode,
 		&cfg.ArchiveECUrl,

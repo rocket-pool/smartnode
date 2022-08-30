@@ -435,7 +435,6 @@ func (c *Client) MigrateLegacyConfig(legacyConfigFilePath string, legacySettings
 	cfg.Smartnode.ProjectName.Value = legacyCfg.Smartnode.ProjectName
 	cfg.Smartnode.ManualMaxFee.Value = legacyCfg.Smartnode.MaxFee
 	cfg.Smartnode.PriorityFee.Value = legacyCfg.Smartnode.MaxPriorityFee
-	cfg.Smartnode.RplClaimGasThreshold.Value = legacyCfg.Smartnode.RplClaimGasThreshold
 	cfg.Smartnode.MinipoolStakeGasThreshold.Value = legacyCfg.Smartnode.MinipoolStakeGasThreshold
 
 	// Docker images

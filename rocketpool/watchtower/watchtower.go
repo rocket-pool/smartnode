@@ -71,10 +71,6 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	claimRplRewards, err := newClaimRplRewards(c, log.NewColorLogger(ClaimRplRewardsColor))
-	if err != nil {
-		return err
-	}
 	submitRplPrice, err := newSubmitRplPrice(c, log.NewColorLogger(SubmitRplPriceColor))
 	if err != nil {
 		return err
@@ -120,7 +116,6 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
-	isUpdateDeployed := false
 	go func() {
 		for {
 			// Randomize the next interval
@@ -149,22 +144,11 @@ func run(c *cli.Context) error {
 					}
 					time.Sleep(taskCooldown)
 
-					if !isUpdateDeployed {
-						// Only run auto-claims during the legacy period
-						isUpdateDeployed, err = claimRplRewards.run()
-						if err != nil {
-							errorLog.Println(err)
-						}
-						time.Sleep(taskCooldown)
+					// Run the rewards tree submission check
+					if err := submitRewardsTree.run(); err != nil {
+						errorLog.Println(err)
 					}
-
-					if isUpdateDeployed {
-						// Run the rewards tree submission check
-						if err := submitRewardsTree.run(); err != nil {
-							errorLog.Println(err)
-						}
-						time.Sleep(taskCooldown)
-					}
+					time.Sleep(taskCooldown)
 
 					// Run the price submission check
 					if err := submitRplPrice.run(); err != nil {

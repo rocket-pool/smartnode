@@ -8,7 +8,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/urfave/cli"
 )
 
@@ -31,16 +30,6 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 
 	// Response
 	response := api.CanNetworkGenerateRewardsTreeResponse{}
-
-	// Check if the contracts have been upgraded yet
-	isUpdated, err := rputils.IsMergeUpdateDeployed(rp)
-	if err != nil {
-		return nil, err
-	}
-	response.IsUpgraded = isUpdated
-	if !isUpdated {
-		return &response, nil
-	}
 
 	// Get the current interval
 	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)

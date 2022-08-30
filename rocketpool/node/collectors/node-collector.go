@@ -22,7 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -195,13 +194,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	var beaconHead beacon.BeaconHead
 	unclaimedRewards := float64(0)
 
-	// Handle update checking and new rewards status
-	isMergeUpdateDeployed, err := rp.IsMergeUpdateDeployed(collector.rp)
-	if err != nil {
-		log.Printf("Error checking for merge contract update deployment: %s\n", err.Error())
-		return
-	}
-
 	// Get the total staked RPL
 	wg.Go(func() error {
 		stakedRplWei, err := node.GetNodeRPLStake(collector.rp, collector.nodeAddress, nil)
@@ -236,48 +228,39 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
 		}
 
-		// Modern rewards
-		if isMergeUpdateDeployed {
-			// Get the claimed and unclaimed intervals
-			unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
+		// Get the claimed and unclaimed intervals
+		unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)
+		if err != nil {
+			return err
+		}
+
+		// Get the info for each claimed interval
+		for _, claimedInterval := range claimed {
+			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval)
 			if err != nil {
 				return err
 			}
-
-			// Get the info for each claimed interval
-			for _, claimedInterval := range claimed {
-				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, claimedInterval)
-				if err != nil {
-					return err
-				}
-				if !intervalInfo.TreeFileExists {
-					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
-				}
-				_, exists := collector.handledIntervals[claimedInterval]
-				if !exists {
-					newRewards.Add(newRewards, &intervalInfo.CollateralRplAmount.Int)
-					collector.handledIntervals[claimedInterval] = true
-				}
+			if !intervalInfo.TreeFileExists {
+				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 			}
-
-			// Get the unclaimed rewards
-			for _, unclaimedInterval := range unclaimed {
-				intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
-				if err != nil {
-					return err
-				}
-				if !intervalInfo.TreeFileExists {
-					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
-				}
-				if intervalInfo.NodeExists {
-					unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
-				}
+			_, exists := collector.handledIntervals[claimedInterval]
+			if !exists {
+				newRewards.Add(newRewards, &intervalInfo.CollateralRplAmount.Int)
+				collector.handledIntervals[claimedInterval] = true
 			}
-		} else {
-			// Check if legacy rewards are currently available from the previous checkpoint
-			unclaimedRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(collector.rp, collector.nodeAddress, nil, &legacyClaimNodeAddress)
+		}
+
+		// Get the unclaimed rewards
+		for _, unclaimedInterval := range unclaimed {
+			intervalInfo, err := rprewards.GetIntervalInfo(collector.rp, collector.cfg, collector.nodeAddress, unclaimedInterval)
 			if err != nil {
-				return fmt.Errorf("Error getting unclaimed rewards: %w", err)
+				return err
+			}
+			if !intervalInfo.TreeFileExists {
+				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+			}
+			if intervalInfo.NodeExists {
+				unclaimedRewardsWei.Add(unclaimedRewardsWei, &intervalInfo.CollateralRplAmount.Int)
 			}
 		}
 

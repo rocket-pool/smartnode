@@ -75,16 +75,6 @@ func (m *manageFeeRecipient) run() error {
 		return err
 	}
 
-	// Check if the merge update scripts have been deployed yet
-	isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(m.rp)
-	if err != nil {
-		return fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
-	}
-
-	if !isMergeUpdateDeployed {
-		return nil
-	}
-
 	// Log
 	m.log.Println("Checking for correct fee recipient...")
 

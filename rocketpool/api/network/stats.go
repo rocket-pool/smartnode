@@ -15,7 +15,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
@@ -27,11 +26,6 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
-	}
-
-	isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(rp)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking if merge update has been deployed: %w", err)
 	}
 
 	// Response
@@ -142,34 +136,32 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		return err
 	})
 
-	if isMergeUpdateDeployed {
-		// Get smoothing pool status
-		wg.Go(func() error {
-			smoothingPoolNodes, err := node.GetSmoothingPoolRegisteredNodeCount(rp, nil)
-			if err == nil {
-				response.SmoothingPoolNodes = smoothingPoolNodes
-			}
-			return err
-		})
+	// Get smoothing pool status
+	wg.Go(func() error {
+		smoothingPoolNodes, err := node.GetSmoothingPoolRegisteredNodeCount(rp, nil)
+		if err == nil {
+			response.SmoothingPoolNodes = smoothingPoolNodes
+		}
+		return err
+	})
 
-		// Get smoothing pool balance
-		wg.Go(func() error {
-			// Get the Smoothing Pool contract's balance
-			smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
-			if err != nil {
-				return fmt.Errorf("error getting smoothing pool contract: %w", err)
-			}
-			response.SmoothingPoolAddress = *smoothingPoolContract.Address
+	// Get smoothing pool balance
+	wg.Go(func() error {
+		// Get the Smoothing Pool contract's balance
+		smoothingPoolContract, err := rp.GetContract("rocketSmoothingPool")
+		if err != nil {
+			return fmt.Errorf("error getting smoothing pool contract: %w", err)
+		}
+		response.SmoothingPoolAddress = *smoothingPoolContract.Address
 
-			smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, nil)
-			if err != nil {
-				return fmt.Errorf("error getting smoothing pool balance: %w", err)
-			}
+		smoothingPoolBalance, err := rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, nil)
+		if err != nil {
+			return fmt.Errorf("error getting smoothing pool balance: %w", err)
+		}
 
-			response.SmoothingPoolBalance = eth.WeiToEth(smoothingPoolBalance)
-			return nil
-		})
-	}
+		response.SmoothingPoolBalance = eth.WeiToEth(smoothingPoolBalance)
+		return nil
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
