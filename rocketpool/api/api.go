@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/rocketpool/api/debug"
+	"github.com/rocket-pool/smartnode/rocketpool/api/supernode"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/rocketpool-go/utils"
@@ -67,6 +68,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	queue.RegisterSubcommands(&command, "queue", []string{"q"})
 	wallet.RegisterSubcommands(&command, "wallet", []string{"w"})
 	apiservice.RegisterSubcommands(&command, "service", []string{"s"})
+	supernode.RegisterSubcommands(&command, "supernode", []string{"u"})
 	debug.RegisterSubcommands(&command, "debug", []string{"d"})
 
 	// Append a general wait-for-transaction command to support async operations

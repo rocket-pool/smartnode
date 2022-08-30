@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, error) {
+func GetDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, error) {
 
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {

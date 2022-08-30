@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/odao"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/supernode"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -148,6 +149,7 @@ ______           _        _    ______           _
 	odao.RegisterCommands(app, "odao", []string{"o"})
 	queue.RegisterCommands(app, "queue", []string{"q"})
 	service.RegisterCommands(app, "service", []string{"s"})
+	supernode.RegisterCommands(app, "supernode", []string{"u"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
 	app.Before = func(c *cli.Context) error {

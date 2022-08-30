@@ -1,4 +1,4 @@
-package node
+package supernode
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/prysmaticlabs/prysm/v2/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -16,8 +17,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/rocketpool-go/supernode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils"
+	rpnode "github.com/rocket-pool/smartnode/rocketpool/api/node"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -37,7 +40,7 @@ type minipoolCreated struct {
 	Time     *big.Int
 }
 
-func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int) (*api.CanNodeDepositResponse, error) {
+func canNodeDeposit(c *cli.Context, amountWei *big.Int, supernodeAddress common.Address, salt *big.Int) (*api.CanNodeDepositResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -159,8 +162,11 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 			return err
 		}
 
+		// Get the supernode salt
+		salt = getSupernodeSalt(salt, nodeAccount.Address)
+
 		// Get the next minipool address and withdrawal credentials
-		minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+		minipoolAddress, err = utils.GenerateAddress(rp, supernodeAddress, depositType, salt, nil)
 		if err != nil {
 			return err
 		}
@@ -202,7 +208,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		}
 
 		// Run the deposit gas estimator
-		gasInfo, err := node.EstimateDepositGas(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		gasInfo, err := supernode.EstimateDepositGas(rp, supernodeAddress, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
@@ -255,7 +261,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 }
 
-func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int) (*api.NodeDepositResponse, error) {
+func nodeDeposit(c *cli.Context, amountWei *big.Int, supernodeAddress common.Address, salt *big.Int) (*api.NodeDepositResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -303,7 +309,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := GetDepositContractInfo(c)
+	depositContractInfo, err := rpnode.GetDepositContractInfo(c)
 	if err != nil {
 		return nil, err
 	}
@@ -343,8 +349,11 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, err
 	}
 
+	// Get the supernode salt
+	salt = getSupernodeSalt(salt, nodeAccount.Address)
+
 	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
+	minipoolAddress, err := utils.GenerateAddress(rp, supernodeAddress, depositType, salt, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +415,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Deposit
-	hash, err := node.Deposit(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	hash, err := supernode.Deposit(rp, supernodeAddress, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -444,4 +453,26 @@ func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pub
 	err = prdeposit.VerifyDepositSignature(depositData, depositDomain)
 	return err
 
+}
+
+// Gets the special salt for supernode deposits
+func getSupernodeSalt(salt *big.Int, nodeAddress common.Address) *big.Int {
+	// Get the uint256 limit of 2^256 - 1
+	uint256Limit := big.NewInt(1)
+	uint256Limit.Lsh(uint256Limit, 256)
+	uint256Limit.Sub(uint256Limit, big.NewInt(1))
+
+	// Create a new salt, using (salt + nodeAddress) % uint256Limit
+	nodeAddressAsInt := big.NewInt(0).SetBytes(nodeAddress[:])
+	augmentedSalt := big.NewInt(0).Add(salt, nodeAddressAsInt)
+	augmentedSalt.Mod(augmentedSalt, uint256Limit)
+
+	// Hash this number
+	buffer := make([]byte, 32)
+	augmentedSalt.FillBytes(buffer)
+	finalSaltHash := crypto.Keccak256(buffer)
+
+	// Convert the hash into a number and return it
+	finalSalt := big.NewInt(0).SetBytes(finalSaltHash)
+	return finalSalt
 }

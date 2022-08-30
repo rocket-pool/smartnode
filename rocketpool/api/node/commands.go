@@ -767,7 +767,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(getDepositContractInfo(c))
+					api.PrintResponse(GetDepositContractInfo(c))
 					return nil
 
 				},
