@@ -234,6 +234,11 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 		details.Penalties, err = minipool.GetMinipoolPenaltyCount(rp, minipoolAddress, nil)
 		return err
 	})
+	wg.Go(func() error {
+		var err error
+		details.QueuePosition, err = minipool.GetMinipoolPositionInQueue(mp, nil)
+		return err
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
