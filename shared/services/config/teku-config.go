@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	tekuTag             string = "consensys/teku:22.8.1"
+	tekuTag             string = "consensys/teku:22.8.2"
 	defaultTekuMaxPeers uint16 = 100
 )
 
