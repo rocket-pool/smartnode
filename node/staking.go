@@ -56,11 +56,23 @@ func GetNodeEffectiveRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addr
 	if err != nil {
 		return nil, err
 	}
-	nodeEffectiveRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeEffectiveRplStake, "getNodeEffectiveRPLStake", nodeAddress); err != nil {
+	nodeEffectiveRplStakeWrapper := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, nodeEffectiveRplStakeWrapper, "getNodeEffectiveRPLStake", nodeAddress); err != nil {
 		return nil, fmt.Errorf("Could not get effective node RPL stake: %w", err)
 	}
-	return *nodeEffectiveRplStake, nil
+
+	minimumStake, err := GetNodeMinimumRPLStake(rp, nodeAddress, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get minimum node RPL stake to verify effective stake: %w", err)
+	}
+
+	nodeEffectiveRplStake := *nodeEffectiveRplStakeWrapper
+	if nodeEffectiveRplStake.Cmp(minimumStake) == -1 {
+		// Effective stake should be zero if it's less than the minimum RPL stake
+		return big.NewInt(0), nil
+	}
+
+	return nodeEffectiveRplStake, nil
 }
 
 // Get a node's minimum RPL stake to collateralize their minipools
