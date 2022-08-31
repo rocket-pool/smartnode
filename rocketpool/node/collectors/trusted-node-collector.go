@@ -42,6 +42,9 @@ type TrustedNodeCollector struct {
 	// The prices submission participation of the ODAO members
 	pricesParticipation *prometheus.Desc
 
+	// Whether or not ODAO collection is enabled
+	enabled bool
+
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
@@ -95,6 +98,7 @@ func NewTrustedNodeCollector(rp *rocketpool.RocketPool, bc beacon.Client, nodeAd
 			"Whether each member has participated in the current prices update interval",
 			[]string{"member"}, nil,
 		),
+		enabled:          cfg.EnableODaoMetrics.Value.(bool),
 		rp:               rp,
 		bc:               bc,
 		nodeAddress:      nodeAddress,
@@ -114,6 +118,10 @@ func (collector *TrustedNodeCollector) Describe(channel chan<- *prometheus.Desc)
 
 // Caches slow to process metrics so it doesn't have to be processed every second
 func (collector *TrustedNodeCollector) collectSlowMetrics(memberIds map[common.Address]string) {
+
+	if !collector.enabled {
+		return
+	}
 
 	// Create a new cached metrics array to populate
 	collector.cachedMetrics = make([]prometheus.Metric, 0)
@@ -171,6 +179,10 @@ func (collector *TrustedNodeCollector) collectSlowMetrics(memberIds map[common.A
 
 // Collect the latest metric values and pass them to Prometheus
 func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric) {
+
+	if !collector.enabled {
+		return
+	}
 
 	// Sync
 	var wg errgroup.Group
