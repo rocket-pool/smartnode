@@ -236,7 +236,7 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	})
 	wg.Go(func() error {
 		var err error
-		details.QueuePosition, err = minipool.GetMinipoolPositionInQueue(mp, nil)
+		details.Queue, err = minipool.GetQueueDetails(rp, mp, nil)
 		return err
 	})
 
