@@ -136,9 +136,6 @@ func (t *generateRewardsTree) run() error {
 }
 
 func (t *generateRewardsTree) generateRewardsTree(index uint64) {
-	var rp *rocketpool.RocketPool
-	var err error
-
 	// Begin generation of the tree
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
@@ -151,7 +148,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Find the event for this interval
-	rewardsEvent, err := rprewards.GetUpgradedRewardSnapshotEvent(t.cfg, rp, index, big.NewInt(int64(eventLogInterval)), nil)
+	rewardsEvent, err := rprewards.GetUpgradedRewardSnapshotEvent(t.cfg, t.rp, index, big.NewInt(int64(eventLogInterval)), nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return
