@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -27,6 +28,12 @@ type QueueCapacity struct {
 	Total        *big.Int
 	Effective    *big.Int
 	NextMinipool *big.Int
+}
+
+// Minipools queue status details
+type QueueDetails struct {
+	Position uint64
+	TimeLeft time.Duration
 }
 
 // Get minipool queue lengths
@@ -181,8 +188,69 @@ func GetQueueNextCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 	return *capacity, nil
 }
 
-// Get a minipools position in queue
-func GetMinipoolPositionInQueue(opts *bind.CallOpts, mp *Minipool) (uint64, error) {
+// Get Queue position details of a minipool
+func GetQueueDetails(rp *rocketpool.RocketPool, mp *Minipool, opts *bind.CallOpts) (QueueDetails, error) {
+	// Data
+	var wg errgroup.Group
+	var position uint64
+	var timeLeft time.Duration
+
+	// Load data
+	wg.Go(func() error {
+		var err error
+		position, err = GetQueuePositionOfMinipool(mp, opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		timeLeft, err = GetQueueDurationLeftEstimation(rp, mp, opts)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return QueueDetails{}, err
+	}
+
+	// Return
+	return QueueDetails{
+		Position: position,
+		TimeLeft: timeLeft,
+	}, nil
+}
+
+// Get an estimate for how long a minipool is left in the queue. Based on the minipool at the first position.
+func GetQueueDurationLeftEstimation(rp *rocketpool.RocketPool, mp *Minipool, opts *bind.CallOpts) (time.Duration, error) {
+	length, err := GetQueueTotalLength(rp, opts)
+	if err != nil {
+		return 0, fmt.Errorf("Could not get total queue length: %w", err)
+	}
+	if length <= 1 {
+		return 0, nil
+	}
+
+	// get our minipool
+	MPDepositTimestamp, err := mp.GetStatusTime(opts)
+	if err != nil {
+		return 0, fmt.Errorf("Could not get status time of minipool %s: %w", mp.Address.String(), err)
+	}
+
+	// get first minipool in queue
+	firstMP, err := GetQueueMinipoolAtPosition(rp, 0, opts)
+	if err != nil {
+		return 0, fmt.Errorf("Could not get minipool at queue position %d: %w", 0, err)
+	}
+	firstMPDepositTimestamp, err := firstMP.GetStatusTime(opts)
+	if err != nil {
+		return 0, fmt.Errorf("Could not get status time of minipool %s: %w", firstMP.Address.String(), err)
+	}
+
+	// estimate
+	return MPDepositTimestamp.Sub(firstMPDepositTimestamp), nil
+}
+
+// Get a minipools position in queue (1-indexed). 0 means it is currently not queued.
+func GetQueuePositionOfMinipool(mp *Minipool, opts *bind.CallOpts) (uint64, error) {
 	depositType, err := mp.GetDepositType(opts)
 	if err != nil {
 		return 0, fmt.Errorf("Could not get deposit type: %w", err)
@@ -192,7 +260,11 @@ func GetMinipoolPositionInQueue(opts *bind.CallOpts, mp *Minipool) (uint64, erro
 	}
 
 	queryIndex := func(key string) (uint64, error) {
-		return storage.GetAddressQueueIndexOf(mp.RocketPool, opts, crypto.Keccak256Hash([]byte(key)), mp.Address)
+		index, err := storage.GetAddressQueueIndexOf(mp.RocketPool, opts, crypto.Keccak256Hash([]byte(key)), mp.Address)
+		if err != nil {
+			return 0, fmt.Errorf("Could not get queue index for address %s: %w", mp.Address, err)
+		}
+		return uint64(index + 1), nil
 	}
 
 	position := uint64(0)
@@ -216,7 +288,7 @@ func GetMinipoolPositionInQueue(opts *bind.CallOpts, mp *Minipool) (uint64, erro
 		position += length
 	} else {
 		index, err := queryIndex("minipools.available.full")
-		if err != nil {
+		if err != nil || index == 0 {
 			return 0, err
 		}
 		return position + index, nil
@@ -224,10 +296,44 @@ func GetMinipoolPositionInQueue(opts *bind.CallOpts, mp *Minipool) (uint64, erro
 
 	// must be empty type now
 	index, err := queryIndex("minipools.available.empty")
-	if err != nil {
+	if err != nil || index == 0 {
 		return 0, err
 	}
 	return position + index, nil
+}
+
+// Get the minipool at the specified position in queue (0-indexed).
+func GetQueueMinipoolAtPosition(rp *rocketpool.RocketPool, position uint64, opts *bind.CallOpts) (*Minipool, error) {
+	totalLength, err := GetQueueTotalLength(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get total queue length: %w", err)
+	}
+	if position >= totalLength {
+		return nil, fmt.Errorf("Could not get index %d beyond queue length %d", position, totalLength)
+	}
+	lengths, err := GetQueueLengths(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get queue lengths: %w", err)
+	}
+
+	getMinipool := func(key string) (*Minipool, error) {
+		pos := big.NewInt(int64(position))
+		address, err := storage.GetAddressQueueItem(rp, opts, crypto.Keccak256Hash([]byte(key)), pos)
+		if err != nil {
+			return nil, fmt.Errorf("Could not get address in queue at position %d: %w", position, err)
+		}
+		return NewMinipool(rp, address)
+	}
+
+	if position < lengths.HalfDeposit {
+		return getMinipool("minipools.available.half")
+	}
+	position -= lengths.HalfDeposit
+	if position < lengths.FullDeposit {
+		return getMinipool("minipools.available.full")
+	}
+	position -= lengths.FullDeposit
+	return getMinipool("minipools.available.empty")
 }
 
 // Get contracts

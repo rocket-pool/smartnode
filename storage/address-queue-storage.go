@@ -20,35 +20,35 @@ func GetAddressQueueLength(rp *rocketpool.RocketPool, opts *bind.CallOpts, key [
 	}
 	length := new(*big.Int)
 	if err := addressQueueStorage.Call(opts, length, "getIndexOf", key); err != nil {
-		return 0, fmt.Errorf("Could not get address queue length for key %s: %w", key, err)
+		return 0, fmt.Errorf("Could not get address queue length for key: %w", key, err)
 	}
 	return (*length).Uint64(), nil
 }
 
 // Return address item at index for the given key
-func GetAddressQueueItem(rp *rocketpool.RocketPool, opts *bind.CallOpts, key [32]byte, index uint64) (common.Address, error) {
+func GetAddressQueueItem(rp *rocketpool.RocketPool, opts *bind.CallOpts, key [32]byte, index *big.Int) (common.Address, error) {
 	addressQueueStorage, err := getAddressQueueStorage(rp)
 	if err != nil {
 		return common.Address{}, err
 	}
 	address := new(common.Address)
 	if err := addressQueueStorage.Call(opts, address, "getItem", key, index); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get address item at index %d for key %s: %w", index, key, err)
+		return common.Address{}, fmt.Errorf("Could not get address item at index %d: %w", index, key, err)
 	}
 	return *address, nil
 }
 
-// Return index of the input address for the given key
-func GetAddressQueueIndexOf(rp *rocketpool.RocketPool, opts *bind.CallOpts, key [32]byte, address common.Address) (uint64, error) {
+// Return index of the input address for the given key. -1 if not present.
+func GetAddressQueueIndexOf(rp *rocketpool.RocketPool, opts *bind.CallOpts, key [32]byte, address common.Address) (int64, error) {
 	addressQueueStorage, err := getAddressQueueStorage(rp)
 	if err != nil {
 		return 0, err
 	}
 	index := new(*big.Int)
 	if err := addressQueueStorage.Call(opts, index, "getIndexOf", key, address); err != nil {
-		return 0, fmt.Errorf("Could not get index for address %s for key %s: %w", address.String(), key, err)
+		return 0, fmt.Errorf("Could not get index for address %s: %w", address.String(), err)
 	}
-	return (*index).Uint64(), nil
+	return (*index).Int64(), nil
 }
 
 // Get contracts
