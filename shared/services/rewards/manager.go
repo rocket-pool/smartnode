@@ -167,9 +167,9 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 		return GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(1), blockNumber, blockNumber)
 	} else {
 		// Grab the latest known one - there will always be at least one of these
-		latestInterval := len(prerecordedIntervals) - 1
-		latestBlock := prerecordedIntervals[latestInterval]
-		numberOfIntervalsPassed := interval - uint64(latestInterval)
+		latestKnownInterval := len(prerecordedIntervals) - 1
+		latestKnownBlock := prerecordedIntervals[latestKnownInterval]
+		numberOfIntervalsPassed := interval - uint64(latestKnownInterval)
 
 		var currentBlock *types.Header
 		currentBlock, err = rp.Client.HeaderByNumber(context.Background(), nil)
@@ -186,15 +186,15 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 		}
 
 		// Get the time of the latest block
-		var latestBlockHeader *types.Header
-		latestBlockHeader, err = rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(latestBlock)))
+		var latestKnownBlockHeader *types.Header
+		latestKnownBlockHeader, err = rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(latestKnownBlock)))
 		if err != nil {
 			return event, err
 		}
 
 		// Traverse multiples of the interval until we find it
-		headerToCheck := latestBlockHeader
-		timeToCheck := time.Unix(int64(latestBlockHeader.Time), 0).Add(intervalTime * time.Duration(numberOfIntervalsPassed))
+		headerToCheck := latestKnownBlockHeader
+		timeToCheck := time.Unix(int64(latestKnownBlockHeader.Time), 0).Add(intervalTime * time.Duration(numberOfIntervalsPassed))
 		scanningWindow := big.NewInt(0).SetUint64(scanningWindowSize)
 		found := false
 
@@ -210,7 +210,7 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 			event, err = GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(int64(eventLogInterval)), startBlock, endBlock)
 			if err != nil {
 				if err.Error() == fmt.Sprintf("reward snapshot for interval %d not found", interval) {
-					// This isn't a great way to check the an event wasn't found, but it'll do for now
+					// This isn't a great way to check if an event wasn't found, but it'll do for now
 					err = nil
 					timeToCheck = timeToCheck.Add(intervalTime) // Try the next interval
 					continue

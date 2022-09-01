@@ -158,7 +158,10 @@ ______           _        _    ______           _
 
 	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
 	fmt.Println("- `rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
-	fmt.Println("- `rocketpool network dao-proposals` shows you the status of the active governance proposals within Rocket Pool's DAO. Go out and vote! See https://vote.rocketpool.net for more info.")
+	fmt.Println("- `rocketpool network dao-proposals` shows you the status of the active governance proposals within Rocket Pool's DAO. Go out and vote! See https://vote.rocketpool.net for more info.\n")
+
+	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
+	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
