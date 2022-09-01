@@ -24,6 +24,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
+const (
+	scanningWindowSize uint64 = 10000
+)
+
 // Gets the intervals the node can claim and the intervals that have already been claimed
 func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (unclaimed []uint64, claimed []uint64, err error) {
 	// Get the current interval
@@ -77,20 +81,14 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (uncl
 // Gets the information for an interval including the file status, the validity, and the node's rewards
 func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, interval uint64) (info IntervalInfo, err error) {
 	info.Index = interval
-
-	// Get the event log interval
-	var eventLogInterval int
-	eventLogInterval, err = cfg.GetEventLogInterval()
-	if err != nil {
-		return
-	}
+	var event rewards.RewardsEvent
 
 	// Get the event details for this interval
-	var event rewards.RewardsEvent
-	event, err = GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(int64(eventLogInterval)), nil)
+	event, err = GetRewardSnapshotEvent(rp, cfg, interval)
 	if err != nil {
 		return
 	}
+
 	info.CID = event.MerkleTreeCID
 	info.StartTime = event.IntervalStartTime
 	info.EndTime = event.IntervalEndTime
@@ -145,6 +143,95 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	}
 
 	return
+}
+
+// Get the event for a rewards snapshot
+func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64) (rewards.RewardsEvent, error) {
+
+	var event rewards.RewardsEvent
+	var err error
+
+	// Get the event log interval
+	eventLogInterval, err := cfg.GetEventLogInterval()
+	if err != nil {
+		return rewards.RewardsEvent{}, err
+	}
+
+	// Check if the interval is already recorded
+	prerecordedIntervals := cfg.Smartnode.GetRewardsSubmissionBlockMaps()
+	if uint64(len(prerecordedIntervals)) > interval {
+		// This already recorded so just use that block number
+		blockNumber := big.NewInt(0).SetUint64(prerecordedIntervals[interval])
+
+		// Get the event details for this interval
+		return GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(1), blockNumber, blockNumber)
+	} else {
+		// Grab the latest known one - there will always be at least one of these
+		latestInterval := len(prerecordedIntervals) - 1
+		latestBlock := prerecordedIntervals[latestInterval]
+		numberOfIntervalsPassed := interval - uint64(latestInterval)
+
+		var currentBlock *types.Header
+		currentBlock, err = rp.Client.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			return event, err
+		}
+
+		// Get the current interval time
+		var intervalTime time.Duration
+		intervalTime, err = rewards.GetClaimIntervalTime(rp, nil)
+		if err != nil {
+			err = fmt.Errorf("error getting claim interval time: %w", err)
+			return event, err
+		}
+
+		// Get the time of the latest block
+		var latestBlockHeader *types.Header
+		latestBlockHeader, err = rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(latestBlock)))
+		if err != nil {
+			return event, err
+		}
+
+		// Traverse multiples of the interval until we find it
+		headerToCheck := latestBlockHeader
+		timeToCheck := time.Unix(int64(latestBlockHeader.Time), 0).Add(intervalTime * time.Duration(numberOfIntervalsPassed))
+		scanningWindow := big.NewInt(0).SetUint64(scanningWindowSize)
+		found := false
+
+		for headerToCheck.Number.Uint64() < currentBlock.Number.Uint64() {
+			// Get the approximate next header to check
+			headerToCheck, err = GetELBlockHeaderForTime(timeToCheck, rp.Client)
+			if err != nil {
+				return event, err
+			}
+			// Scan the window around that block
+			startBlock := big.NewInt(0).Sub(headerToCheck.Number, scanningWindow)
+			endBlock := big.NewInt(0).Add(headerToCheck.Number, scanningWindow)
+			event, err = GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(int64(eventLogInterval)), startBlock, endBlock)
+			if err != nil {
+				if err.Error() == fmt.Sprintf("reward snapshot for interval %d not found", interval) {
+					// This isn't a great way to check the an event wasn't found, but it'll do for now
+					err = nil
+					timeToCheck = timeToCheck.Add(intervalTime) // Try the next interval
+					continue
+				} else {
+					return event, err
+				}
+			} else {
+				found = true
+				break
+			}
+
+		}
+
+		if !found {
+			err = fmt.Errorf("Rewards event for interval %d could not be found.", interval)
+			return event, err
+		}
+	}
+
+	return event, nil
+
 }
 
 // Get the number of the latest EL block that was created before the given timestamp

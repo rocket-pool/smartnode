@@ -133,6 +133,9 @@ type SmartnodeConfig struct {
 
 	// The RocketOvmPriceMessenger address for each network
 	optimismPriceMessengerAddress map[config.Network]string `yaml:"-"`
+
+	// Rewards submission block maps
+	rewardsSubmissionBlockMaps map[config.Network][]uint64 `yaml:"-"`
 }
 
 // Generates a new Smartnode configuration
@@ -422,6 +425,28 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Kiln:    "",
 			config.Network_Ropsten: "",
 		},
+
+		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
+			config.Network_Mainnet: {
+				15451165,
+			},
+			config.Network_Prater: {
+				7287326,
+				7297026,
+				7314231,
+				7331462,
+				7387271,
+				7412366,
+				7420574,
+				7436546,
+				7456423,
+				7473017,
+				7489726,
+				7506706,
+			},
+			config.Network_Kiln:    {},
+			config.Network_Ropsten: {},
+		},
 	}
 
 }
@@ -627,4 +652,8 @@ func (cfg *SmartnodeConfig) GetPreviousRewardsPoolAddresses() map[string][]commo
 
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {
 	return cfg.optimismPriceMessengerAddress[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetRewardsSubmissionBlockMaps() []uint64 {
+	return cfg.rewardsSubmissionBlockMaps[cfg.Network.Value.(config.Network)]
 }
