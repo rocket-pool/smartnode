@@ -36,6 +36,8 @@ func getRewards(c *cli.Context) error {
 		return nil
 	}
 
+	fmt.Printf("%sNOTE: Legacy rewards from pre-Redstone are temporarily not being included in the below figures. They will be added back in a future release. We apologize for the inconvenience!%s\n\n", colorYellow, colorReset)
+
 	fmt.Println("=== ETH ===")
 	fmt.Printf("You have earned %.4f ETH from the Beacon Chain (including your commissions) so far.\n", rewards.BeaconRewards)
 	fmt.Printf("You have claimed %.4f ETH from the Smoothing Pool.\n", rewards.CumulativeEthRewards)
