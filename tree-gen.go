@@ -88,7 +88,7 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	// Get the current interval
 	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting current reward index: %w", err)
 	}
 	currentIndex := currentIndexBig.Uint64()
 
@@ -117,7 +117,7 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	// Get the latest finalized Beacon block
 	snapshotBeaconBlock, elBlockNumber, beaconBlockTime, err := getLatestFinalizedSlot(log, bn)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting latest finalized slot: %w", err)
 	}
 
 	// Get the number of the EL block matching the CL snapshot block
@@ -125,11 +125,14 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	if elBlockNumber == 0 {
 		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
 		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(beaconBlockTime, rp.Client)
+		if err != nil {
+			return fmt.Errorf("error getting EL block for time %s: %w", beaconBlockTime, err)
+		}
 	} else {
 		snapshotElBlockHeader, err = rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting EL block %d: %w", elBlockNumber, err)
+		}
 	}
 	elBlockIndex := snapshotElBlockHeader.Number.Uint64()
 
