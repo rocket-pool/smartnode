@@ -74,10 +74,10 @@ func GenerateTree(c *cli.Context) error {
 		return fmt.Errorf("error creating Rocket Pool wrapper: %w", err)
 	}
 
-	if currentIndex == -1 {
+	if currentIndex < 0 {
 		return generateCurrentTree(log, rp, cfg, bn, c.Bool("pretty-print"))
 	} else {
-		return generatePastTree(log, rp, cfg, bn, c.Bool("pretty-print"))
+		return generatePastTree(log, rp, cfg, bn, uint64(currentIndex), c.Bool("pretty-print"))
 	}
 
 }
@@ -174,7 +174,6 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	rewardsFile.MinipoolPerformanceFileCID = "---"
 
 	// Serialize the rewards tree to JSON
-
 	var wrapperBytes []byte
 	if prettyPrint {
 		wrapperBytes, err = json.MarshalIndent(rewardsFile, "", "\t")
@@ -199,8 +198,85 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 }
 
 // Recreates an existing tree for a past interval
-func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, prettyPrint bool) error {
-	return fmt.Errorf("past tree generation is not yet implemented")
+func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, index uint64, prettyPrint bool) error {
+
+	// Find the event for this interval
+	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(rp, cfg, index)
+	if err != nil {
+		return fmt.Errorf("error getting rewards submission event for interval %d: %w", index, err)
+	}
+	log.Printlnf("Found rewards submission event: Beacon block %s, execution block %s", rewardsEvent.ConsensusBlock.String(), rewardsEvent.ExecutionBlock.String())
+
+	// Get the EL block
+	elBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), rewardsEvent.ExecutionBlock)
+	if err != nil {
+		return fmt.Errorf("error getting execution block: %w", err)
+	}
+
+	// Generate the rewards file
+	start := time.Now()
+	rewardsFile := rprewards.NewRewardsFile(log, "", index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
+	err = rewardsFile.GenerateTree(rp, cfg, bn)
+	if err != nil {
+		return fmt.Errorf("error generating Merkle tree: %w", err)
+	}
+	for address, network := range rewardsFile.InvalidNetworkNodes {
+		log.Printlnf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network)
+	}
+	log.Printlnf("Finished in %s", time.Since(start).String())
+
+	// Validate the Merkle root
+	root := common.BytesToHash(rewardsFile.MerkleTree.Root())
+	if root != rewardsEvent.MerkleRoot {
+		log.Printlnf("WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", root.Hex(), rewardsEvent.MerkleRoot.Hex())
+	} else {
+		log.Printlnf("Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", rewardsFile.MerkleRoot)
+	}
+
+	// Create the JSON files
+	rewardsFile.MinipoolPerformanceFileCID = "---"
+	log.Printlnf("Saving JSON files...")
+	var minipoolPerformanceBytes []byte
+	if prettyPrint {
+		minipoolPerformanceBytes, err = json.MarshalIndent(rewardsFile.MinipoolPerformanceFile, "", "\t")
+	} else {
+		minipoolPerformanceBytes, err = json.Marshal(rewardsFile.MinipoolPerformanceFile)
+	}
+	if err != nil {
+		return fmt.Errorf("error serializing minipool performance file into JSON: %w", err)
+	}
+
+	var wrapperBytes []byte
+	if prettyPrint {
+		wrapperBytes, err = json.MarshalIndent(rewardsFile, "", "\t")
+	} else {
+		wrapperBytes, err = json.Marshal(rewardsFile)
+	}
+	if err != nil {
+		return fmt.Errorf("error serializing proof wrapper into JSON: %w", err)
+	}
+
+	// Get the output paths
+	rewardsTreePath := fmt.Sprintf(config.RewardsTreeFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), index)
+	minipoolPerformancePath := fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), index)
+
+	// Write the files
+	err = ioutil.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	if err != nil {
+		return fmt.Errorf("error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
+	}
+	log.Printlnf("Saved minipool performance file to %s", minipoolPerformancePath)
+
+	err = ioutil.WriteFile(rewardsTreePath, wrapperBytes, 0644)
+	if err != nil {
+		return fmt.Errorf("error saving rewards file to %s: %w", rewardsTreePath, err)
+	}
+	log.Printlnf("Saved rewards snapshot file to %s", rewardsTreePath)
+
+	log.Printlnf("Successfully generated rewards snapshot for interval %d.\n", index)
+
+	return nil
+
 }
 
 // Get the latest finalized slot
