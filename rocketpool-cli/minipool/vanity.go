@@ -122,7 +122,7 @@ func findVanitySalt(c *cli.Context) error {
 
 	// Set up some variables
 	nodeAddress := vanityArtifacts.NodeAddress.Bytes()
-	minipoolManagerAddress := vanityArtifacts.MinipoolManagerAddress
+	minipoolManagerAddress := vanityArtifacts.MinipoolFactoryAddress
 	initHash := vanityArtifacts.InitHash.Bytes()
 	shiftAmount := uint(42 - len(prefix))
 

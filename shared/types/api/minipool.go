@@ -210,6 +210,6 @@ type GetVanityArtifactsResponse struct {
 	Status                 string         `json:"status"`
 	Error                  string         `json:"error"`
 	NodeAddress            common.Address `json:"nodeAddress"`
-	MinipoolManagerAddress common.Address `json:"minipoolManagerAddress"`
+	MinipoolFactoryAddress common.Address `json:"minipoolFactoryAddress"`
 	InitHash               common.Hash    `json:"initHash"`
 }
