@@ -124,7 +124,7 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	var snapshotElBlockHeader *types.Header
 	if elBlockNumber == 0 {
 		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
-		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(beaconBlockTime, rp.Client)
+		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(beaconBlockTime, rp)
 		if err != nil {
 			return fmt.Errorf("error getting EL block for time %s: %w", beaconBlockTime, err)
 		}
