@@ -200,7 +200,7 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 
 		for headerToCheck.Number.Uint64() < currentBlock.Number.Uint64() {
 			// Get the approximate next header to check
-			headerToCheck, err = GetELBlockHeaderForTime(timeToCheck, rp.Client)
+			headerToCheck, err = GetELBlockHeaderForTime(timeToCheck, rp)
 			if err != nil {
 				return event, err
 			}
@@ -225,7 +225,7 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 		}
 
 		if !found {
-			err = fmt.Errorf("Rewards event for interval %d could not be found.", interval)
+			err = fmt.Errorf("rewards event for interval %d could not be found", interval)
 			return event, err
 		}
 	}
@@ -235,20 +235,31 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 }
 
 // Get the number of the latest EL block that was created before the given timestamp
-func GetELBlockHeaderForTime(targetTime time.Time, ec rocketpool.ExecutionClient) (*types.Header, error) {
+func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*types.Header, error) {
 
 	// Get the latest block's timestamp
-	latestBlockHeader, err := ec.HeaderByNumber(context.Background(), nil)
+	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting latest block header: %w", err)
 	}
 	latestBlock := latestBlockHeader.Number
 
-	// Start at the halfway point
-	candidateBlockNumber := big.NewInt(0).Div(latestBlock, big.NewInt(2))
-	candidateBlock, err := ec.HeaderByNumber(context.Background(), candidateBlockNumber)
+	// Get the block that Rocket Pool deployed to the chain on, use that as the search start
+	deployBlockHash := crypto.Keccak256Hash([]byte("deploy.block"))
+	deployBlock, err := rp.RocketStorage.GetUint(nil, deployBlockHash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting Rocket Pool deployment block: %w", err)
+	}
+
+	// Get half the distance between the protocol deployment and right now
+	delta := big.NewInt(0).Sub(latestBlock, deployBlock)
+	delta.Div(delta, big.NewInt(2))
+
+	// Start at the halfway point
+	candidateBlockNumber := big.NewInt(0).Sub(latestBlock, delta)
+	candidateBlock, err := rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
+	if err != nil {
+		return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
 	}
 	bestBlock := candidateBlock
 	pivotSize := candidateBlock.Number.Uint64()
@@ -270,9 +281,9 @@ func GetELBlockHeaderForTime(targetTime time.Time, ec rocketpool.ExecutionClient
 			for candidateTime > targetTimeUnix {
 				// Get the previous block if this one happened after the target time
 				candidateBlockNumber.Sub(candidateBlockNumber, big.NewInt(1))
-				candidateBlock, err = ec.HeaderByNumber(context.Background(), candidateBlockNumber)
+				candidateBlock, err = rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
 				}
 				candidateTime = float64(candidateBlock.Time)
 				bestBlock = candidateBlock
@@ -295,9 +306,9 @@ func GetELBlockHeaderForTime(targetTime time.Time, ec rocketpool.ExecutionClient
 			candidateBlockNumber.SetUint64(latestBlock.Uint64() - 1)
 		}
 
-		candidateBlock, err = ec.HeaderByNumber(context.Background(), candidateBlockNumber)
+		candidateBlock, err = rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
 		}
 	}
 }
@@ -308,7 +319,7 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 	// Determine file name and path
 	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
 	if err != nil {
-		return fmt.Errorf("Error expanding rewards tree path: %w", err)
+		return fmt.Errorf("error expanding rewards tree path: %w", err)
 	}
 	rewardsTreeFilename := filepath.Base(rewardsTreePath)
 	ipfsFilename := rewardsTreeFilename + config.RewardsTreeIpfsExtension
@@ -350,7 +361,7 @@ func DownloadRewardsFile(cfg *config.RocketPoolConfig, interval uint64, cid stri
 			// Write the file
 			err = ioutil.WriteFile(rewardsTreePath, decompressedBytes, 0644)
 			if err != nil {
-				return fmt.Errorf("Error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
+				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}
 			return nil
 		}
