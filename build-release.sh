@@ -12,6 +12,8 @@ build_docker() {
     echo -n "Building Docker images... "
     docker buildx build --platform=linux/amd64 -t rocketpool/treegen:$VERSION-amd64 --load .
     docker buildx build --platform=linux/arm64 -t rocketpool/treegen:$VERSION-arm64 --load .
+    docker push rocketpool/treegen:$VERSION-amd64
+    docker push rocketpool/treegen:$VERSION-arm64
     echo "done!"
 }
 
@@ -19,10 +21,13 @@ build_docker() {
 build_manifest() {
     echo -n "Building Docker manifest... "
     rm -f ~/.docker/manifests/docker.io_rocketpool_treegen-$VERSION
+    rm -f ~/.docker/manifests/docker.io_rocketpool_treegen-latest
     docker manifest create rocketpool/treegen:$VERSION --amend rocketpool/treegen:$VERSION-amd64 --amend rocketpool/treegen:$VERSION-arm64
+    docker manifest create rocketpool/treegen:latest --amend rocketpool/treegen:$VERSION-amd64 --amend rocketpool/treegen:$VERSION-arm64
     echo "done!"
     echo -n "Pushing to Docker Hub... "
     docker manifest push --purge rocketpool/treegen:$VERSION
+    docker manifest push --purge rocketpool/treegen:latest
     echo "done!"
 }
 
