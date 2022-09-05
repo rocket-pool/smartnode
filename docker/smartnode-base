@@ -1,9 +1,0 @@
-# This image provides the base layer for Smartnode images
-
-# Start from Alpine image
-FROM alpine:latest
-
-# Add C libraries and updates
-RUN apk update
-RUN apk upgrade
-RUN apk add --no-cache libgcc libstdc++ gcompat

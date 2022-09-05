@@ -1,42 +1,7 @@
-###
-# Builder
-###
+FROM debian:bullseye-slim
 
-
-# Start from golang image
-FROM golang:alpine AS builder
-
-# Copy source files
-ADD ./rocketpool /src/rocketpool
-ADD ./shared /src/shared
-ADD ./addons /src/addons
-ADD ./go.mod /src/go.mod
-ADD ./go.sum /src/go.sum
-
-# Compile & install
-WORKDIR /src
-RUN apk update
-RUN apk add --no-cache build-base linux-headers
-RUN apk upgrade
-ARG CGO_CFLAGS="-O -D__BLST_PORTABLE__"
-RUN go install ./rocketpool
-
-
-###
-# Process
-###
-
-
-# Start from Alpine image
-FROM alpine:latest
-
-# Add C libraries and updates
-RUN apk update
-RUN apk add --no-cache libgcc libstdc++
-RUN apk upgrade
-
-# Copy binary
-COPY --from=builder /go/bin/rocketpool /go/bin/rocketpool
+ARG TARGETARCH
+COPY ./rocketpool/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
 
 # Container entry point
 ENTRYPOINT ["/go/bin/rocketpool"]
