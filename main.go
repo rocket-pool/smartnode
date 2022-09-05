@@ -50,6 +50,11 @@ func main() {
 			Usage:   "The URL of the Beacon Node's REST API. Note that for past interval generation, this must have Archive capability (ability to replay arbitrary historical states).",
 			Value:   "http://localhost:5052",
 		},
+		&cli.StringFlag{
+			Name:    "output-dir",
+			Aliases: []string{"o"},
+			Usage:   "Output directory to save generated files.",
+		},
 		&cli.BoolFlag{
 			Name:    "pretty-print",
 			Aliases: []string{"p"},

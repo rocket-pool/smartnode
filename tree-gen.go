@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"path/filepath"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -75,15 +76,15 @@ func GenerateTree(c *cli.Context) error {
 	}
 
 	if currentIndex < 0 {
-		return generateCurrentTree(log, rp, cfg, bn, c.Bool("pretty-print"))
+		return generateCurrentTree(log, rp, cfg, bn, c.String("output-dir"), c.Bool("pretty-print"))
 	} else {
-		return generatePastTree(log, rp, cfg, bn, uint64(currentIndex), c.Bool("pretty-print"))
+		return generatePastTree(log, rp, cfg, bn, uint64(currentIndex), c.String("output-dir"), c.Bool("pretty-print"))
 	}
 
 }
 
 // Generates a preview / dry run of the tree for the current interval, using the latest finalized state as the endpoint instead of whatever the actual endpoint will end up being
-func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, prettyPrint bool) error {
+func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, outputDir string, prettyPrint bool) error {
 
 	// Get the current interval
 	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
@@ -150,8 +151,8 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 	}
 
 	// Get the output paths
-	rewardsTreePath := fmt.Sprintf(config.RewardsTreeFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), currentIndex)
-	minipoolPerformancePath := fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), currentIndex)
+	rewardsTreePath := filepath.Join(outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), currentIndex))
+	minipoolPerformancePath := filepath.Join(outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), currentIndex))
 
 	// Serialize the minipool performance file
 	var minipoolPerformanceBytes []byte
@@ -198,7 +199,7 @@ func generateCurrentTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *co
 }
 
 // Recreates an existing tree for a past interval
-func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, index uint64, prettyPrint bool) error {
+func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bn beacon.Client, index uint64, outputDir string, prettyPrint bool) error {
 
 	// Find the event for this interval
 	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(rp, cfg, index)
@@ -257,8 +258,8 @@ func generatePastTree(log log.ColorLogger, rp *rocketpool.RocketPool, cfg *confi
 	}
 
 	// Get the output paths
-	rewardsTreePath := fmt.Sprintf(config.RewardsTreeFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), index)
-	minipoolPerformancePath := fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), index)
+	rewardsTreePath := filepath.Join(outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), index))
+	minipoolPerformancePath := filepath.Join(outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), index))
 
 	// Write the files
 	err = ioutil.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
