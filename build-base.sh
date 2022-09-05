@@ -3,8 +3,8 @@
 # Build the images
 build_docker() {
     echo -n "Building Docker images... "
-    docker buildx build --platform=linux/amd64 -t rocketpool/smartnode-base:$VERSION-amd64 --load -f smartnode-base .
-    docker buildx build --platform=linux/arm64 -t rocketpool/smartnode-base:$VERSION-arm64 --load -f smartnode-base .
+    docker buildx build --platform=linux/amd64 -t rocketpool/smartnode-base:$VERSION-amd64 --load -f docker/smartnode-base .
+    docker buildx build --platform=linux/arm64 -t rocketpool/smartnode-base:$VERSION-arm64 --load -f docker/smartnode-base .
     docker push rocketpool/smartnode-base:$VERSION-amd64
     docker push rocketpool/smartnode-base:$VERSION-arm64
     echo "done!"
