@@ -805,7 +805,7 @@ func (r *RewardsFile) processAttestationsForInterval() error {
 	for epoch := startEpoch; epoch < endEpoch+1; epoch++ {
 		if epochsDone == 100 {
 			timeTaken := time.Since(reportStartTime)
-			r.log.Printlnf("%s On Epoch %d... (%s so far)", r.logPrefix, epoch, timeTaken)
+			r.log.Printlnf("%s On Epoch %d of %d (%.2f%%)... (%s so far)", r.logPrefix, epoch, endEpoch, float64(epoch-startEpoch)/float64(endEpoch-startEpoch)*100.0, timeTaken)
 			epochsDone = 0
 		}
 
