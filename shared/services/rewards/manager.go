@@ -207,6 +207,9 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 			// Scan the window around that block
 			startBlock := big.NewInt(0).Sub(headerToCheck.Number, scanningWindow)
 			endBlock := big.NewInt(0).Add(headerToCheck.Number, scanningWindow)
+			if endBlock.Uint64() > currentBlock.Number.Uint64() {
+				endBlock = big.NewInt(0).Set(currentBlock.Number)
+			}
 			event, err = GetUpgradedRewardSnapshotEvent(cfg, rp, interval, big.NewInt(int64(eventLogInterval)), startBlock, endBlock)
 			if err != nil {
 				if err.Error() == fmt.Sprintf("reward snapshot for interval %d not found", interval) {
