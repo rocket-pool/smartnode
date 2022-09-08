@@ -132,7 +132,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			Description:          "Expose the API port to your local network, so other local machines can access MEV-Boost's API.",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
 			EnvironmentVariables: []string{},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
