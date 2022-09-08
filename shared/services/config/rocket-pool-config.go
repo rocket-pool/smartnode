@@ -950,6 +950,27 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 	if cfg.EnableMevBoost.Value == true {
 		config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
 		if cfg.MevBoost.Mode.Value == config.Mode_Local {
+			relays := []string{}
+			if cfg.MevBoost.FlashbotsRelay.Value == true {
+				url := cfg.MevBoost.flashbotsUrls[cfg.Smartnode.Network.Value.(config.Network)]
+				if url != "" {
+					relays = append(relays, url)
+				}
+			}
+			if cfg.MevBoost.BloxRouteEthicalRelay.Value == true {
+				url := cfg.MevBoost.bloxRouteEthicalUrls[cfg.Smartnode.Network.Value.(config.Network)]
+				if url != "" {
+					relays = append(relays, url)
+				}
+			}
+			if cfg.MevBoost.BloxRouteMaxProfitRelay.Value == true {
+				url := cfg.MevBoost.bloxRouteMaxProfitUrls[cfg.Smartnode.Network.Value.(config.Network)]
+				if url != "" {
+					relays = append(relays, url)
+				}
+			}
+			relayString := strings.Join(relays, ",")
+			envVars[mevBoostRelaysEnvVar] = relayString
 			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
 		}
 	}
@@ -1062,8 +1083,10 @@ func (cfg *RocketPoolConfig) Validate() []string {
 
 	// Ensure there's a MEV-boost URL
 	if cfg.EnableMevBoost.Value == true {
-		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.Relays.Value.(string) == "" {
-			errors = append(errors, "You have MEV-boost enabled in local mode but don't have a relay URL set. Please enter at least one relay URL to use MEV-boost.")
+		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
+			if cfg.MevBoost.FlashbotsRelay.Value == false && cfg.MevBoost.BloxRouteEthicalRelay.Value == false && cfg.MevBoost.BloxRouteMaxProfitRelay.Value == false {
+				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any relays enabled. Please select at least one relay to use MEV-boost.")
+			}
 		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
 			errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
 		}
