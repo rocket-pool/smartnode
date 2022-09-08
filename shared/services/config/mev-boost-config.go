@@ -28,6 +28,9 @@ type MevBoostConfig struct {
 	// bloXroute max profit relay
 	BloxRouteMaxProfitRelay config.Parameter `yaml:"bloxRouteMaxProfitEnabled,omitempty"`
 
+	// bloXroute regulated relay
+	BloxRouteRegulatedRelay config.Parameter `yaml:"bloxRouteRegulatedEnabled,omitempty"`
+
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
 
@@ -50,6 +53,7 @@ type MevBoostConfig struct {
 	flashbotsUrls          map[config.Network]string `yaml:"-"`
 	bloxRouteEthicalUrls   map[config.Network]string `yaml:"-"`
 	bloxRouteMaxProfitUrls map[config.Network]string `yaml:"-"`
+	bloxRouteRegulatedUrls map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new MEV-Boost configuration
@@ -106,6 +110,18 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			ID:                   "bloxRouteMaxProfitEnabled",
 			Name:                 "Use bloXroute Max Profit Relay",
 			Description:          "Select this to enable the \"max profit\" relay from bloXroute. You can enable multiple relays.\n\nThis relay does not include a blacklist, and allows for all types of MEV which includes sandwiching and front-running bundles.\n\nUses Address Blacklist: NO\nIncludes Frontrunning: YES",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		BloxRouteRegulatedRelay: config.Parameter{
+			ID:                   "bloxRouteRegulatedEnabled",
+			Name:                 "Use bloXroute Regulated Relay",
+			Description:          "Select this to enable the \"regulated\" relay from bloXroute. You can enable multiple relays.\n\nThis relay allows for all types of MEV which includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -192,7 +208,14 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
 			config.Network_Prater:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.goerli.blxrbdn.com?id=rocketpool",
 			config.Network_Kiln:    "",
-			config.Network_Ropsten: "http://0xb8a0bad3f3a4f0b35418c03357c6d42017582437924a1e1ca6aee2072d5c38d321d1f8b22cd36c50b0c29187b6543b6e@builder-relay.virginia.ropsten.blxrbdn.com?id=rocketpool",
+			config.Network_Ropsten: "https://0xb8a0bad3f3a4f0b35418c03357c6d42017582437924a1e1ca6aee2072d5c38d321d1f8b22cd36c50b0c29187b6543b6e@builder-relay.virginia.ropsten.blxrbdn.com?id=rocketpool",
+		},
+
+		bloxRouteRegulatedUrls: map[config.Network]string{
+			config.Network_Mainnet: "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool",
+			config.Network_Prater:  "",
+			config.Network_Kiln:    "",
+			config.Network_Ropsten: "",
 		},
 	}
 }
@@ -204,6 +227,7 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.FlashbotsRelay,
 		&cfg.BloxRouteEthicalRelay,
 		&cfg.BloxRouteMaxProfitRelay,
+		&cfg.BloxRouteRegulatedRelay,
 		&cfg.Port,
 		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,

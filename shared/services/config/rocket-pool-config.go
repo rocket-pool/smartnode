@@ -969,6 +969,12 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 					relays = append(relays, url)
 				}
 			}
+			if cfg.MevBoost.BloxRouteRegulatedRelay.Value == true {
+				url := cfg.MevBoost.bloxRouteRegulatedUrls[cfg.Smartnode.Network.Value.(config.Network)]
+				if url != "" {
+					relays = append(relays, url)
+				}
+			}
 			relayString := strings.Join(relays, ",")
 			envVars[mevBoostRelaysEnvVar] = relayString
 			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
@@ -1090,7 +1096,7 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	// Ensure there's a MEV-boost URL
 	if cfg.EnableMevBoost.Value == true {
 		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
-			if cfg.MevBoost.FlashbotsRelay.Value == false && cfg.MevBoost.BloxRouteEthicalRelay.Value == false && cfg.MevBoost.BloxRouteMaxProfitRelay.Value == false {
+			if cfg.MevBoost.FlashbotsRelay.Value == false && cfg.MevBoost.BloxRouteEthicalRelay.Value == false && cfg.MevBoost.BloxRouteMaxProfitRelay.Value == false && cfg.MevBoost.BloxRouteRegulatedRelay.Value == false {
 				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any relays enabled. Please select at least one relay to use MEV-boost.")
 			}
 		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
