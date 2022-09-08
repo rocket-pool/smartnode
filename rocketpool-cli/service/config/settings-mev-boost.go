@@ -81,6 +81,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 		&configPage.masterConfig.MevBoost.BloxRouteEthicalRelay,
 		&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay,
 		&configPage.masterConfig.MevBoost.Port,
+		&configPage.masterConfig.MevBoost.OpenRpcPort,
 		&configPage.masterConfig.MevBoost.ContainerTag,
 		&configPage.masterConfig.MevBoost.AdditionalFlags,
 	}
@@ -88,6 +89,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 		&configPage.masterConfig.MevBoost.FlashbotsRelay,
 		&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay,
 		&configPage.masterConfig.MevBoost.Port,
+		&configPage.masterConfig.MevBoost.OpenRpcPort,
 		&configPage.masterConfig.MevBoost.ContainerTag,
 		&configPage.masterConfig.MevBoost.AdditionalFlags,
 	}

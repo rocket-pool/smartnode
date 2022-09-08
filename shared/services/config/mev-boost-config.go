@@ -31,6 +31,9 @@ type MevBoostConfig struct {
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
 
+	// Toggle for forwarding the HTTP port outside of Docker
+	OpenRpcPort config.Parameter `yaml:"openRpcPort,omitempty"`
+
 	// The Docker Hub tag for MEV-Boost
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -123,6 +126,18 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		OpenRpcPort: config.Parameter{
+			ID:                   "openRpcPort",
+			Name:                 "Expose API Port",
+			Description:          "Expose the API port to your local network, so other local machines can access MEV-Boost's API.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		ContainerTag: config.Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
@@ -190,6 +205,7 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.BloxRouteEthicalRelay,
 		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.Port,
+		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
 		&cfg.ExternalUrl,

@@ -972,6 +972,12 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 			relayString := strings.Join(relays, ",")
 			envVars[mevBoostRelaysEnvVar] = relayString
 			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
+
+			// Handle open API port
+			if cfg.MevBoost.OpenRpcPort.Value == true {
+				port := cfg.MevBoost.Port.Value.(uint16)
+				envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf(", \"%d:%d/tcp\"", port, port)
+			}
 		}
 	}
 
