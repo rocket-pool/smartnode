@@ -150,15 +150,8 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== The Merge ===%s\n", colorGreen, colorReset)
 	fmt.Println("The Merge of the Execution and Consensus layers is happening between September 10th and 20th! This version of the Smartnode fully supports it.\n")
 
-	fmt.Printf("%s=== Graffiti Wall Addon ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode's first addon has been published! The Graffiti Wall Writer will let you draw on the Beaconcha.in Graffiti Wall (https://beaconcha.in/graffitiwall) whenever you get a proposal. See the Addons page in the `service config` TUI to enable it.\n")
-
 	fmt.Printf("%s=== MEV-Boost ===%s\n", colorGreen, colorReset)
-	fmt.Println("MEV-Boost has been enabled for Mainnet! Once The Merge occurs, you can opt into it to receive extra rewards on your block proposals. Note that it's optional for now, and doesn't come with any relays by default, See the MEV-Boost page in the `service config` TUI to enable it.\n")
-
-	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
-	fmt.Println("- `rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
-	fmt.Println("- `rocketpool network dao-proposals` shows you the status of the active governance proposals within Rocket Pool's DAO. Go out and vote! See https://vote.rocketpool.net for more info.\n")
+	fmt.Println("MEV-Boost has been enabled for Mainnet, and four relays from Flashbots and bloXroute have been bundled with the Smartnode! You can now choose one or more of them and opt in if you'd like to earn extra MEV rewards on your proposals after the Merge.\n")
 
 	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
 	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
