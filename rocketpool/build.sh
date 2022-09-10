@@ -1,22 +1,10 @@
 #!/bin/bash
 
-GO_VERSION=1.19
-
-# Get CPU architecture
-UNAME_VAL=$(uname -m)
-ARCH=""
-case $UNAME_VAL in
-    x86_64)  ARCH="amd64" ;;
-    aarch64) ARCH="arm64" ;;
-    *)       fail "CPU architecture not supported: $UNAME_VAL" ;;
-esac
-
-apt update
-apt dist-upgrade -y
-apt install build-essential git wget -y
-cd /tmp
-wget https://golang.org/dl/go${GO_VERSION}.linux-$ARCH.tar.gz
-rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_VERSION}.linux-$ARCH.tar.gz
-export PATH=$PATH:/usr/local/go/bin
+export CGO_ENABLED=1
 cd /smartnode/rocketpool
-CGO_CFLAGS="-O -D__BLST_PORTABLE__" go build -o rocketpool-daemon-linux-$ARCH rocketpool.go
+
+# Build x64 version
+CGO_CFLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build -o rocketpool-daemon-linux-amd64 rocketpool.go
+
+# Build the arm64 version
+CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_CFLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build -o rocketpool-daemon-linux-arm64 rocketpool.go

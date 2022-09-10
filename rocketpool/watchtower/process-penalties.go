@@ -30,7 +30,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Number of slots to go back in time and scan for penalties if state is empty (400k is approx. 8 weeks)
@@ -219,21 +218,13 @@ func (t *processPenalties) run() error {
 		t.lock.Unlock()
 		checkPrefix := "[Fee Recipients]"
 
-		// Check if the contract upgrade has happened yet
-		smoothingPoolAddress := common.Address{}
-		isMergeUpdateDeployed, err := rp.IsMergeUpdateDeployed(t.rp)
+		// Get the Smoothing Pool address
+		smoothingPoolContract, err := t.rp.GetContract("rocketSmoothingPool")
 		if err != nil {
-			t.handleError(fmt.Errorf("%s Error checking if merge update has been deployed: %w", checkPrefix, err))
+			t.handleError(fmt.Errorf("%s Error getting smoothing pool contract: %w", checkPrefix, err))
 			return
 		}
-		if isMergeUpdateDeployed {
-			smoothingPoolContract, err := t.rp.GetContract("rocketSmoothingPool")
-			if err != nil {
-				t.handleError(fmt.Errorf("%s Error getting smoothing pool contract: %w", checkPrefix, err))
-				return
-			}
-			smoothingPoolAddress = *smoothingPoolContract.Address
-		}
+		smoothingPoolAddress := *smoothingPoolContract.Address
 
 		// Get latest block
 		head, headExists, err := t.bc.GetBeaconBlock("finalized")

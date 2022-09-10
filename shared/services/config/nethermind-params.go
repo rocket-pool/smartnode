@@ -10,8 +10,8 @@ import (
 
 // Constants
 const (
-	nethermindTagAmd64         string = "nethermind/nethermind:1.14.0"
-	nethermindTagArm64         string = "nethermind/nethermind:1.14.0"
+	nethermindTagAmd64         string = "nethermind/nethermind:1.14.1"
+	nethermindTagArm64         string = "nethermind/nethermind:1.14.1"
 	nethermindEventLogInterval int    = 25000
 	nethermindStopSignal       string = "SIGTERM"
 )

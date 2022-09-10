@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	legacyrewards "github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/rewards"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -22,7 +21,6 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
@@ -64,22 +62,15 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	}
 
 	// Get the event log interval
-	eventLogInterval, err := cfg.GetEventLogInterval()
+	/*eventLogInterval, err := cfg.GetEventLogInterval()
 	if err != nil {
 		return nil, err
-	}
-
-	// Check if the merge upgrades are deployed
-	isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
-	}
-	response.IsMergeUpdateDeployed = isMergeUpdateDeployed
+	}*/
 
 	// Legacy contract addresses
-	legacyRocketRewardsAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()
-	legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
-	legacyClaimTrustedNodeAddress := cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
+	//legacyRocketRewardsAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()
+	//legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
+	//legacyClaimTrustedNodeAddress := cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
 
 	var totalEffectiveStake *big.Int
 	var totalRplSupply *big.Int
@@ -108,12 +99,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	wg.Go(func() error {
 		var time time.Time
 		var err error
-		// Not totally necessary because these both end up getting the same value out of RocketStorage, but it's tidy
-		if !isMergeUpdateDeployed {
-			time, err = legacyrewards.GetNodeRegistrationTime(rp, nodeAccount.Address, nil, &legacyRocketRewardsAddress)
-		} else {
-			time, err = node.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
-		}
+		time, err = node.GetNodeRegistrationTime(rp, nodeAccount.Address, nil)
 
 		if err == nil {
 			response.NodeRegistrationTime = time
@@ -134,48 +120,45 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	wg.Go(func() error {
 		// Legacy rewards
 		unclaimedRplRewardsWei := big.NewInt(0)
-		rplRewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimNodeAddress)
+		rplRewards := big.NewInt(0)
+		// TEMP removal of the legacy rewards crawler for now, TODO performance improvements here
+		/*
+			rplRewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimNodeAddress)*/
 		unclaimedEthRewardsWei := big.NewInt(0)
 		ethRewards := big.NewInt(0)
 
-		// Modern rewards
-		if isMergeUpdateDeployed {
-			// Get the claimed and unclaimed intervals
-			unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
+		// Get the claimed and unclaimed intervals
+		unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
+		if err != nil {
+			return err
+		}
+
+		// Get the info for each claimed interval
+		for _, claimedInterval := range claimed {
+			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval)
 			if err != nil {
 				return err
 			}
-
-			// Get the info for each claimed interval
-			for _, claimedInterval := range claimed {
-				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval)
-				if err != nil {
-					return err
-				}
-				if !intervalInfo.TreeFileExists {
-					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
-				}
-				rplRewards.Add(rplRewards, &intervalInfo.CollateralRplAmount.Int)
-				ethRewards.Add(ethRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+			if !intervalInfo.TreeFileExists {
+				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 			}
+			rplRewards.Add(rplRewards, &intervalInfo.CollateralRplAmount.Int)
+			ethRewards.Add(ethRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+		}
 
-			// Get the unclaimed rewards
-			for _, unclaimedInterval := range unclaimed {
-				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
-				if err != nil {
-					return err
-				}
-				if !intervalInfo.TreeFileExists {
-					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
-				}
-				if intervalInfo.NodeExists {
-					unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.CollateralRplAmount.Int)
-					unclaimedEthRewardsWei.Add(unclaimedEthRewardsWei, &intervalInfo.SmoothingPoolEthAmount.Int)
-				}
+		// Get the unclaimed rewards
+		for _, unclaimedInterval := range unclaimed {
+			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
+			if err != nil {
+				return err
 			}
-		} else {
-			// Check if legacy rewards are currently available from the previous checkpoint
-			unclaimedRplRewardsWei, err = legacyrewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimNodeAddress)
+			if !intervalInfo.TreeFileExists {
+				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+			}
+			if intervalInfo.NodeExists {
+				unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.CollateralRplAmount.Int)
+				unclaimedEthRewardsWei.Add(unclaimedEthRewardsWei, &intervalInfo.SmoothingPoolEthAmount.Int)
+			}
 		}
 
 		if err == nil {
@@ -319,44 +302,40 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		wg2.Go(func() error {
 			// Legacy rewards
 			unclaimedRplRewardsWei := big.NewInt(0)
-			rplRewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimTrustedNodeAddress)
+			rplRewards := big.NewInt(0)
+			// TODO: PERFORMANCE IMPROVEMENTS
+			//rplRewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimTrustedNodeAddress)
 
-			// Modern rewards
-			if isMergeUpdateDeployed {
-				// Get the claimed and unclaimed intervals
-				unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
+			// Get the claimed and unclaimed intervals
+			unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)
+			if err != nil {
+				return err
+			}
+
+			// Get the info for each claimed interval
+			for _, claimedInterval := range claimed {
+				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval)
 				if err != nil {
 					return err
 				}
-
-				// Get the info for each claimed interval
-				for _, claimedInterval := range claimed {
-					intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval)
-					if err != nil {
-						return err
-					}
-					if !intervalInfo.TreeFileExists {
-						return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
-					}
-					rplRewards.Add(rplRewards, &intervalInfo.ODaoRplAmount.Int)
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 				}
+				rplRewards.Add(rplRewards, &intervalInfo.ODaoRplAmount.Int)
+			}
 
-				// Get the unclaimed rewards
-				for _, unclaimedInterval := range unclaimed {
-					intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
-					if err != nil {
-						return err
-					}
-					if !intervalInfo.TreeFileExists {
-						return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
-					}
-					if intervalInfo.NodeExists {
-						unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.ODaoRplAmount.Int)
-					}
+			// Get the unclaimed rewards
+			for _, unclaimedInterval := range unclaimed {
+				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, unclaimedInterval)
+				if err != nil {
+					return err
 				}
-			} else {
-				// Check if legacy rewards are currently available from the previous checkpoint
-				unclaimedRplRewardsWei, err = legacyrewards.GetTrustedNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimTrustedNodeAddress)
+				if !intervalInfo.TreeFileExists {
+					return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimedInterval)
+				}
+				if intervalInfo.NodeExists {
+					unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.ODaoRplAmount.Int)
+				}
 			}
 
 			if err == nil {

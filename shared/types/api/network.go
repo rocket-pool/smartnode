@@ -56,16 +56,9 @@ type NetworkTimezonesResponse struct {
 	NodeTotal      uint64            `json:"nodeTotal"`
 }
 
-type NetworkMergeUpdateStatusResponse struct {
-	Status           string `json:"status"`
-	Error            string `json:"error"`
-	IsUpdateDeployed bool   `json:"isUpdateDeployed"`
-}
-
 type CanNetworkGenerateRewardsTreeResponse struct {
 	Status         string `json:"status"`
 	Error          string `json:"error"`
-	IsUpgraded     bool   `json:"isUpgraded"`
 	CurrentIndex   uint64 `json:"currentIndex"`
 	TreeFileExists bool   `json:"treeFileExists"`
 }

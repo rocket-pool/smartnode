@@ -156,7 +156,7 @@ func (t *submitRewardsTree) run() error {
 	var snapshotElBlockHeader *types.Header
 	if elBlockNumber == 0 {
 		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
-		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(nextIntervalEpochTime, t.ec)
+		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(nextIntervalEpochTime, t.rp)
 	} else {
 		snapshotElBlockHeader, err = t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 	}
@@ -359,6 +359,7 @@ func (t *submitRewardsTree) generateTree(intervalsPassed time.Duration, nodeTrus
 
 }
 
+// Implementation for rewards tree generation using a viable EC
 func (t *submitRewardsTree) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
 
 	// Log

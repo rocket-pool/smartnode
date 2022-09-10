@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -13,8 +12,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -136,36 +139,8 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
 
-	var rp *rocketpool.RocketPool
-	var err error
-	archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
-	if archiveEcUrl == "" {
-		t.log.Printlnf("%s WARNING: you do not have an archive Execution client node specified. If your primary EC is not in archive-mode, rewards tree generation may fail! Please specify an archive-capable EC in the Smartnode section of the `rocketpool service config` Terminal UI.\n", generationPrefix)
-		rp = t.rp
-	} else {
-		t.log.Printlnf("%s Using archive EC [%s]", generationPrefix, archiveEcUrl)
-		ec, err := ethclient.Dial(archiveEcUrl)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s Error connecting to archive EC: %w", generationPrefix, err))
-			return
-		}
-
-		rp, err = rocketpool.NewRocketPool(ec, *t.rp.RocketStorageContract.Address)
-		if err != nil {
-			t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", generationPrefix, err))
-			return
-		}
-	}
-
-	// Get the event log interval
-	eventLogInterval, err := t.cfg.GetEventLogInterval()
-	if err != nil {
-		t.handleError(fmt.Errorf("%s Error getting event log interval: %w", generationPrefix, err))
-		return
-	}
-
 	// Find the event for this interval
-	rewardsEvent, err := rprewards.GetUpgradedRewardSnapshotEvent(t.cfg, rp, index, big.NewInt(int64(eventLogInterval)), nil)
+	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, index)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return
@@ -179,10 +154,66 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		return
 	}
 
+	// Try getting the rETH address as a canary to see if the block is available
+	client := t.rp
+	opts := &bind.CallOpts{
+		BlockNumber: elBlockHeader.Number,
+	}
+	address, err := client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
+	if err != nil {
+		errMessage := err.Error()
+		t.log.Printlnf("%s Error getting state for block %d: %s", generationPrefix, elBlockHeader.Number.Uint64(), errMessage)
+		if strings.Contains(errMessage, "missing trie node") || // Geth
+			strings.Contains(errMessage, "No state available for block") || // Nethermind
+			strings.Contains(errMessage, "Internal error") { // Besu
+
+			// The state was missing so fall back to the archive node
+			archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
+			if archiveEcUrl != "" {
+				t.log.Printlnf("%s Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", generationPrefix, elBlockHeader.Number.Uint64(), archiveEcUrl)
+				ec, err := ethclient.Dial(archiveEcUrl)
+				if err != nil {
+					t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
+					return
+				}
+				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()))
+				if err != nil {
+					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err))
+					return
+				}
+
+				// Get the rETH address from the archive EC
+				address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
+				if err != nil {
+					t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err))
+					return
+				}
+			} else {
+				// No archive node specified
+				t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", elBlockHeader.Number.Uint64()))
+				return
+			}
+
+		}
+	}
+
+	// Sanity check the rETH address to make sure the client is working right
+	if address != t.cfg.Smartnode.GetRethAddress() {
+		t.handleError(fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s!", address.Hex(), t.cfg.Smartnode.GetRethAddress().Hex()))
+		return
+	}
+
+	// Generate the tree
+	t.generateRewardsTreeImpl(client, index, generationPrefix, rewardsEvent, elBlockHeader)
+}
+
+// Implementation for rewards tree generation using a viable EC
+func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header) {
+
 	// Generate the rewards file
 	start := time.Now()
 	rewardsFile := rprewards.NewRewardsFile(t.log, generationPrefix, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64())
-	err = rewardsFile.GenerateTree(rp, t.cfg, t.bc)
+	err := rewardsFile.GenerateTree(rp, t.cfg, t.bc)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 		return
@@ -232,6 +263,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	t.lock.Lock()
 	t.isRunning = false
 	t.lock.Unlock()
+
 }
 
 func (t *generateRewardsTree) handleError(err error) {

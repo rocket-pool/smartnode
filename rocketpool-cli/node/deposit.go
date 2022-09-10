@@ -50,21 +50,14 @@ func nodeDeposit(c *cli.Context) error {
 
 	fmt.Println("Your eth2 client is on the correct network.\n")
 
-	// Check if the merge update has been deployed yet
-	mergeUpdateResponse, err := rp.MergeUpdateStatus()
+	// Check if the fee distributor has been initialized
+	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {
 		return err
 	}
-	if mergeUpdateResponse.IsUpdateDeployed {
-		// Check if the fee distributor has been initialized
-		isInitializedResponse, err := rp.IsFeeDistributorInitialized()
-		if err != nil {
-			return err
-		}
-		if !isInitializedResponse.IsInitialized {
-			fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
-			return nil
-		}
+	if !isInitializedResponse.IsInitialized {
+		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
+		return nil
 	}
 
 	// Get deposit amount
