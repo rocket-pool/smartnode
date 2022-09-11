@@ -30,7 +30,7 @@ func NewBitflyNodeMetricsConfig(cfg *RocketPoolConfig) *BitflyNodeMetricsConfig 
 		Secret: config.Parameter{
 			ID:                   "bitflySecret",
 			Name:                 "Beaconcha.in API Key",
-			Description:          "The API used to authenticate your Beaconcha.in node metrics integration. Can be found in your Beaconcha.in account settings.\n\nPlease visit https://beaconcha.in/user/settings#api to access your account information.",
+			Description:          "The API key used to authenticate your Beaconcha.in node metrics integration. Can be found in your Beaconcha.in account settings.\n\nPlease visit https://beaconcha.in/user/settings#api to access your account information.",
 			Type:                 config.ParameterType_String,
 			Default:              map[config.Network]interface{}{config.Network_All: defaultBitflyNodeMetricsSecret},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Eth2},
