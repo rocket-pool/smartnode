@@ -18,7 +18,7 @@ import (
 // Transaction settings
 const (
 	GasLimitMultiplier float64 = 1.5
-	MaxGasLimit                = 12000000
+	MaxGasLimit        uint64  = 30000000
 )
 
 // Contract type wraps go-ethereum bound contract
@@ -148,7 +148,7 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
 	// Pad and return gas limit
 	safeGasLimit := uint64(float64(gasLimit) * GasLimitMultiplier)
 	if gasLimit > MaxGasLimit {
-		gasLimit = MaxGasLimit
+		return 0, 0, fmt.Errorf("estimated gas of %d is greater than the max gas limit of %d", gasLimit, MaxGasLimit)
 	}
 	if safeGasLimit > MaxGasLimit {
 		safeGasLimit = MaxGasLimit
