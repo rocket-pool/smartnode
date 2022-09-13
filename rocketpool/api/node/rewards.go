@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	legacyrewards "github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/rewards"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -63,15 +62,15 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	}
 
 	// Get the event log interval
-	eventLogInterval, err := cfg.GetEventLogInterval()
+	/*eventLogInterval, err := cfg.GetEventLogInterval()
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	// Legacy contract addresses
-	legacyRocketRewardsAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()
-	legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
-	legacyClaimTrustedNodeAddress := cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
+	//legacyRocketRewardsAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()
+	//legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
+	//legacyClaimTrustedNodeAddress := cfg.Smartnode.GetLegacyClaimTrustedNodeAddress()
 
 	var totalEffectiveStake *big.Int
 	var totalRplSupply *big.Int
@@ -121,7 +120,10 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	wg.Go(func() error {
 		// Legacy rewards
 		unclaimedRplRewardsWei := big.NewInt(0)
-		rplRewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimNodeAddress)
+		rplRewards := big.NewInt(0)
+		// TEMP removal of the legacy rewards crawler for now, TODO performance improvements here
+		/*
+			rplRewards, err := legacyrewards.CalculateLifetimeNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimNodeAddress)*/
 		unclaimedEthRewardsWei := big.NewInt(0)
 		ethRewards := big.NewInt(0)
 
@@ -300,7 +302,9 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		wg2.Go(func() error {
 			// Legacy rewards
 			unclaimedRplRewardsWei := big.NewInt(0)
-			rplRewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimTrustedNodeAddress)
+			rplRewards := big.NewInt(0)
+			// TODO: PERFORMANCE IMPROVEMENTS
+			//rplRewards, err := legacyrewards.CalculateLifetimeTrustedNodeRewards(rp, nodeAccount.Address, big.NewInt(int64(eventLogInterval)), nil, &legacyRocketRewardsAddress, &legacyClaimTrustedNodeAddress)
 
 			// Get the claimed and unclaimed intervals
 			unclaimed, claimed, err := rprewards.GetClaimStatus(rp, nodeAccount.Address)

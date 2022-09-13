@@ -147,27 +147,14 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== The Redstone Update ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Redstone update has happened on Ropsten and Prater, and is scheduled for August 29th on Mainnet\n**A LOT** has changed. Too much to fit into these notes!\nPlease see the guide for all of the details, including the new \"eternal\" rewards claim system and the Smoothing Pool:\nhttps://docs.rocketpool.net/guides/redstone/whats-new.html\n")
-
 	fmt.Printf("%s=== The Merge ===%s\n", colorGreen, colorReset)
 	fmt.Println("The Merge of the Execution and Consensus layers is happening between September 10th and 20th! This version of the Smartnode fully supports it.\n")
 
-	fmt.Printf("%s=== Light Client Removal ===%s\n", colorGreen, colorReset)
-	fmt.Println("In preparation for The Merge, light clients (Infura and Pocket) are no longer supported.\nYou will need to switch to a Full Execution client before The Merge in order to continue validating!\n")
-
-	fmt.Printf("%s=== New Fallback System ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.\n")
-
-	fmt.Printf("%s=== Graffiti Wall Addon ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode's first addon has been published! The Graffiti Wall Writer will let you draw on the Beaconcha.in Graffiti Wall (https://beaconcha.in/graffitiwall) whenever you get a proposal. See the Addons page in the `service config` TUI to enable it.\n")
-
 	fmt.Printf("%s=== MEV-Boost ===%s\n", colorGreen, colorReset)
-	fmt.Println("MEV-Boost has been enabled for Mainnet! Once The Merge occurs, you can opt into it to receive extra rewards on your block proposals. Note that it's optional for now, and doesn't come with any relays by default, See the MEV-Boost page in the `service config` TUI to enable it.\n")
+	fmt.Println("MEV-Boost has been enabled for Mainnet, and four relays from Flashbots and bloXroute have been bundled with the Smartnode! You can now choose one or more of them and opt in if you'd like to earn extra MEV rewards on your proposals after the Merge.\n")
 
-	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
-	fmt.Println("- `rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
-	fmt.Println("- `rocketpool network dao-proposals` shows you the status of the active governance proposals within Rocket Pool's DAO. Go out and vote! See https://vote.rocketpool.net for more info.")
+	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
+	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard

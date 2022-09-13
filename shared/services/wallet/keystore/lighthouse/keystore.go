@@ -24,8 +24,8 @@ const (
 	SecretsDir    = "secrets"
 	ValidatorsDir = "validators"
 	KeyFileName   = "voting-keystore.json"
-	DirMode       = 0700
-	FileMode      = 0600
+	DirMode       = 0750
+	FileMode      = 0640
 )
 
 // Lighthouse keystore

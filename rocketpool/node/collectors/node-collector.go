@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
-	legacyrewards "github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/rewards"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -218,15 +217,17 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get the cumulative claimed and unclaimed RPL rewards
 	wg.Go(func() error {
-		legacyClaimNodeAddress := collector.cfg.Smartnode.GetLegacyClaimNodeAddress()
-		legacyRewardsPoolAddress := collector.cfg.Smartnode.GetLegacyRewardsPoolAddress()
+		//legacyClaimNodeAddress := collector.cfg.Smartnode.GetLegacyClaimNodeAddress()
+		//legacyRewardsPoolAddress := collector.cfg.Smartnode.GetLegacyRewardsPoolAddress()
 
 		// Legacy rewards
 		unclaimedRewardsWei := big.NewInt(0)
-		newRewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock, &legacyRewardsPoolAddress, &legacyClaimNodeAddress)
+		newRewards := big.NewInt(0)
+		// TODO: PERFORMANCE IMPROVEMENTS
+		/*newRewards, err := legacyrewards.CalculateLifetimeNodeRewards(collector.rp, collector.nodeAddress, collector.eventLogInterval, collector.nextRewardsStartBlock, &legacyRewardsPoolAddress, &legacyClaimNodeAddress)
 		if err != nil {
 			return fmt.Errorf("Error getting cumulative RPL rewards: %w", err)
-		}
+		}*/
 
 		// Get the claimed and unclaimed intervals
 		unclaimed, claimed, err := rprewards.GetClaimStatus(collector.rp, collector.nodeAddress)

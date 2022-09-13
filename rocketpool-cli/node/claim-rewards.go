@@ -279,12 +279,13 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 		maxRplRequired := activeMinipools * 16.0 * 1.5 / rplPrice // NOTE: Assumes the max is 150%
 		rplToMaxCollateral = maxRplRequired - currentRplStake
 
+		bestTotal = availableRpl + currentRplStake
+		bestCollateral = rplPrice * bestTotal / (activeMinipools * 16.0)
+
 		fmt.Printf("You currently have %.6f RPL staked (%.2f%% collateral).\n", currentRplStake, currentCollateral*100)
 		if rplToMaxCollateral <= 0 {
 			fmt.Println("You are already at maximum collateral. Restaking more RPL will not lead to more rewards.")
 		} else if availableRpl < rplToMaxCollateral {
-			bestTotal = availableRpl + currentRplStake
-			bestCollateral = rplPrice * bestTotal / (activeMinipools * 16.0)
 			fmt.Printf("You can restake a max of %.6f RPL which will bring you to a total of %.6f RPL staked (%.2f%% collateral).\n", availableRpl, bestTotal, bestCollateral*100)
 		} else {
 			total := rplToMaxCollateral + currentRplStake

@@ -12,8 +12,7 @@ import (
 
 // Config
 const (
-	FileMode fs.FileMode = 0600
-	DirMode  fs.FileMode = 0700
+	FileMode fs.FileMode = 0644
 )
 
 // Checks if the fee recipient file exists and has the correct distributor address in it.

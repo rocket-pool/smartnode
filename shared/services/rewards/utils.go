@@ -14,7 +14,7 @@ import (
 )
 
 // This retrieves the rewards snapshot event from a set of contracts, upgrading it to the latest struct version
-func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int) (rewards.RewardsEvent, error) {
+func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, index uint64, intervalSize *big.Int, startBlock *big.Int, endBlock *big.Int) (rewards.RewardsEvent, error) {
 
 	// Get the version map
 	versionMap := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
@@ -23,7 +23,7 @@ func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool
 	for version, addresses := range versionMap {
 		switch version {
 		case "v1.5.0-rc1":
-			found, oldRewardsEvent, err := rewards_v150rc1.GetRewardSnapshotEventWithUpgrades(rp, index, intervalSize, startBlock, addresses)
+			found, oldRewardsEvent, err := rewards_v150rc1.GetRewardSnapshotEventWithUpgrades(rp, index, intervalSize, startBlock, endBlock, addresses)
 			if err != nil {
 				return rewards.RewardsEvent{}, fmt.Errorf("error checking %s contracts for rewards event %d: %w", version, index, err)
 			}
@@ -34,7 +34,7 @@ func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool
 	}
 
 	// Check the current contract
-	return rewards.GetRewardSnapshotEvent(rp, index, intervalSize, startBlock)
+	return rewards.GetRewardSnapshotEvent(rp, index, intervalSize, startBlock, endBlock)
 
 }
 

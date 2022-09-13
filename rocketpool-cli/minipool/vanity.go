@@ -122,7 +122,7 @@ func findVanitySalt(c *cli.Context) error {
 
 	// Set up some variables
 	nodeAddress := vanityArtifacts.NodeAddress.Bytes()
-	minipoolManagerAddress := vanityArtifacts.MinipoolManagerAddress
+	minipoolFactoryAddress := vanityArtifacts.MinipoolFactoryAddress
 	initHash := vanityArtifacts.InitHash.Bytes()
 	shiftAmount := uint(42 - len(prefix))
 
@@ -141,7 +141,7 @@ func findVanitySalt(c *cli.Context) error {
 		workerSalt := big.NewInt(0).Add(salt, saltOffset)
 
 		go func(i int) {
-			foundSalt, foundAddress := runWorker(i == 0, stopPtr, targetPrefix, nodeAddress, minipoolManagerAddress, initHash, workerSalt, int64(threads), shiftAmount)
+			foundSalt, foundAddress := runWorker(i == 0, stopPtr, targetPrefix, nodeAddress, minipoolFactoryAddress, initHash, workerSalt, int64(threads), shiftAmount)
 			if foundSalt != nil {
 				fmt.Printf("Found on thread %d: salt 0x%x = %s\n", i, foundSalt, foundAddress.Hex())
 				*stopPtr = true

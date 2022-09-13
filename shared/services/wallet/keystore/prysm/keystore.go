@@ -26,8 +26,8 @@ const (
 	KeystoreFileName         = "all-accounts.keystore.json"
 	ConfigFileName           = "keymanageropts.json"
 	KeystorePasswordFileName = "secret"
-	DirMode                  = 0700
-	FileMode                 = 0600
+	DirMode                  = 0750
+	FileMode                 = 0640
 
 	DirectEIPVersion = "EIP-2335"
 )
