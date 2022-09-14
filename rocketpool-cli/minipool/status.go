@@ -13,8 +13,6 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-
-	durafmt "github.com/hako/durafmt"
 )
 
 const colorReset string = "\033[0m"
@@ -149,10 +147,9 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	fmt.Printf("Node fee:             %f%%\n", minipool.Node.Fee*100)
 	fmt.Printf("Node deposit:         %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
 
-	// initialized minipools for half deposits or any state (?) for full deposits
+	// Queue position
 	if minipool.Queue.Position != 0 {
 		fmt.Printf("Queue position:       %d\n", minipool.Queue.Position)
-		fmt.Printf("Queue time (est.):    %s\n", durafmt.Parse(minipool.Queue.TimeLeft).String())
 	}
 
 	// RP ETH deposit details - prelaunch & staking minipools
