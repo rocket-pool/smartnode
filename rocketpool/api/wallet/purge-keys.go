@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	"github.com/urfave/cli"
 )
 
@@ -32,6 +33,14 @@ func purgeKeys(c *cli.Context) (*api.PurgeKeysResponse, error) {
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
+	d, err := services.GetDocker(c)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +102,11 @@ func purgeKeys(c *cli.Context) (*api.PurgeKeysResponse, error) {
 		err = os.RemoveAll(customKeyPath)
 		if err != nil {
 			return nil, fmt.Errorf("error removing file %s: %w", file.Name(), err)
+		}
+
+		err = validator.RestartValidator(cfg, bc, nil, d)
+		if err != nil {
+			return nil, fmt.Errorf("error restarting validator: %w", err)
 		}
 	}
 
