@@ -147,6 +147,11 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	fmt.Printf("Node fee:             %f%%\n", minipool.Node.Fee*100)
 	fmt.Printf("Node deposit:         %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
 
+	// Queue position
+	if minipool.Queue.Position != 0 {
+		fmt.Printf("Queue position:       %d\n", minipool.Queue.Position)
+	}
+
 	// RP ETH deposit details - prelaunch & staking minipools
 	if minipool.Status.Status == types.Prelaunch || minipool.Status.Status == types.Staking {
 		if minipool.User.DepositAssigned {
