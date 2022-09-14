@@ -130,7 +130,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 func (configPage *MevBoostConfigPage) handleModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableBox.item)
-	if configPage.masterConfig.EnableMevBoost.Value == true {
+	if configPage.masterConfig.EnableMevBoost.Value == true && configPage.masterConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		configPage.layout.form.AddFormItem(configPage.modeBox.item)
 
 		selectedMode := configPage.masterConfig.MevBoost.Mode.Value.(cfgtypes.Mode)
