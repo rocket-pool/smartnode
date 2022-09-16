@@ -263,10 +263,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "purge-keys",
-				Aliases:   []string{"pk"},
-				Usage:     "Deletes all files related to validator keys",
-				UsageText: "rocketpool api wallet purge-keys",
+				Name:      "purge",
+				Usage:     "Deletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!",
+				UsageText: "rocketpool api wallet purge",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -275,7 +274,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(purgeKeys(c))
+					api.PrintResponse(purge(c))
 					return nil
 
 				},

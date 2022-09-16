@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -213,10 +215,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "purge-keys",
-				Aliases:   []string{"pk"},
-				Usage:     "Deletes all files related to validator keys",
-				UsageText: "rocketpool wallet purge-keys",
+				Name:      "purge",
+				Usage:     fmt.Sprintf("%sDeletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!%s", colorRed, colorReset),
+				UsageText: "rocketpool wallet purge",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -225,7 +226,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return purgeKeys(c)
+					return purge(c)
 
 				},
 			},

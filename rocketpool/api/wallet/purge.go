@@ -14,7 +14,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func purgeKeys(c *cli.Context) (*api.PurgeKeysResponse, error) {
+func purge(c *cli.Context) (*api.PurgeResponse, error) {
 
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -27,6 +27,11 @@ func purgeKeys(c *cli.Context) (*api.PurgeKeysResponse, error) {
 	}
 
 	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+
+	pm, err := services.GetPasswordManager(c)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +50,7 @@ func purgeKeys(c *cli.Context) (*api.PurgeKeysResponse, error) {
 		return nil, err
 	}
 
-	response := api.PurgeKeysResponse{}
+	response := api.PurgeResponse{}
 
 	// Get the node's validating pubkeys
 	pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAccount.Address, nil)
@@ -103,11 +108,22 @@ func purgeKeys(c *cli.Context) (*api.PurgeKeysResponse, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error removing file %s: %w", file.Name(), err)
 		}
+	}
 
-		err = validator.RestartValidator(cfg, bc, nil, d)
-		if err != nil {
-			return nil, fmt.Errorf("error restarting validator: %w", err)
-		}
+	// Delete the wallet and password
+	err = w.Delete()
+	if err != nil {
+		return nil, fmt.Errorf("error deleting wallet: %w", err)
+	}
+	err = pm.DeletePassword()
+	if err != nil {
+		return nil, fmt.Errorf("error deleting password: %w", err)
+	}
+
+	// Restart the VC once cleanup is done
+	err = validator.RestartValidator(cfg, bc, nil, d)
+	if err != nil {
+		return nil, fmt.Errorf("error restarting validator client: %w", err)
 	}
 
 	return &response, nil

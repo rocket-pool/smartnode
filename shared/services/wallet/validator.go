@@ -137,7 +137,7 @@ func (w *Wallet) DeleteValidatorKey(key types.ValidatorPubkey) error {
 
 	for name := range w.keystores {
 		if err := w.keystores[name].DeleteValidatorKey(key); err != nil {
-			return fmt.Errorf("Could not delete %s validator key: %w", name, err)
+			return fmt.Errorf("Could not delete %s validator key %s: %w", name, key.Hex(), err)
 		}
 	}
 

@@ -164,18 +164,18 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 	return response, nil
 }
 
-// PurgeKeys will delete all validator keys
-func (c *Client) PurgeKeys() (api.PurgeKeysResponse, error) {
-	responseBytes, err := c.callAPI("wallet purge-keys")
+// Purge the node wallet and validator keys
+func (c *Client) Purge() (api.PurgeResponse, error) {
+	responseBytes, err := c.callAPI("wallet purge")
 	if err != nil {
-		return api.PurgeKeysResponse{}, fmt.Errorf("Could not purge keys: %w", err)
+		return api.PurgeResponse{}, fmt.Errorf("Could not purge wallet and keys: %w", err)
 	}
-	var response api.PurgeKeysResponse
+	var response api.PurgeResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PurgeKeysResponse{}, fmt.Errorf("Could not decode purge-keys response: %w", err)
+		return api.PurgeResponse{}, fmt.Errorf("Could not decode purge response: %w", err)
 	}
 	if response.Error != "" {
-		return api.PurgeKeysResponse{}, fmt.Errorf("Could not purge keys: %s", response.Error)
+		return api.PurgeResponse{}, fmt.Errorf("Could not purge wallet and keys: %s", response.Error)
 	}
 	return response, nil
 }
