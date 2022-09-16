@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 // Config
@@ -64,5 +65,20 @@ func (pm *PasswordManager) SetPassword(password string) error {
 
 	// Return
 	return nil
+
+}
+
+// Delete the password
+func (pm *PasswordManager) DeletePassword() error {
+
+	// Check if it exists
+	_, err := os.Stat(pm.passwordPath)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
+	// Delete it
+	err = os.Remove(pm.passwordPath)
+	return err
 
 }
