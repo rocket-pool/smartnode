@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"os"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
@@ -252,6 +253,21 @@ func (w *Wallet) Save() error {
 
 	// Return
 	return nil
+
+}
+
+// Delete the wallet store from disk
+func (w *Wallet) Delete() error {
+
+	// Check if it exists
+	_, err := os.Stat(w.walletPath)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
+	// Write wallet store to disk
+	err = os.Remove(w.walletPath)
+	return err
 
 }
 

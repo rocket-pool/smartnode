@@ -9,14 +9,15 @@ import (
 
 // The page wrapper for the MEV-boost config
 type MevBoostConfigPage struct {
-	home          *settingsHome
-	page          *page
-	layout        *standardLayout
-	masterConfig  *config.RocketPoolConfig
-	enableBox     *parameterizedFormItem
-	modeBox       *parameterizedFormItem
-	localItems    []*parameterizedFormItem
-	externalItems []*parameterizedFormItem
+	home              *settingsHome
+	page              *page
+	layout            *standardLayout
+	masterConfig      *config.RocketPoolConfig
+	enableBox         *parameterizedFormItem
+	modeBox           *parameterizedFormItem
+	localItemsMainnet []*parameterizedFormItem
+	localItemsTestnet []*parameterizedFormItem
+	externalItems     []*parameterizedFormItem
 }
 
 // Creates a new page for the MEV-Boost settings
@@ -75,15 +76,34 @@ func (configPage *MevBoostConfigPage) createContent() {
 	configPage.enableBox = createParameterizedCheckbox(&configPage.masterConfig.EnableMevBoost)
 	configPage.modeBox = createParameterizedDropDown(&configPage.masterConfig.MevBoost.Mode, configPage.layout.descriptionBox)
 
-	localParams := []*cfgtypes.Parameter{&configPage.masterConfig.MevBoost.Relays, &configPage.masterConfig.MevBoost.Port, &configPage.masterConfig.MevBoost.ContainerTag, &configPage.masterConfig.MevBoost.AdditionalFlags}
+	localParamsMainnet := []*cfgtypes.Parameter{
+		&configPage.masterConfig.MevBoost.FlashbotsRelay,
+		&configPage.masterConfig.MevBoost.BloxRouteEthicalRelay,
+		&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay,
+		&configPage.masterConfig.MevBoost.BloxRouteRegulatedRelay,
+		&configPage.masterConfig.MevBoost.Port,
+		&configPage.masterConfig.MevBoost.OpenRpcPort,
+		&configPage.masterConfig.MevBoost.ContainerTag,
+		&configPage.masterConfig.MevBoost.AdditionalFlags,
+	}
+	localParamsTestnet := []*cfgtypes.Parameter{
+		&configPage.masterConfig.MevBoost.FlashbotsRelay,
+		&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay,
+		&configPage.masterConfig.MevBoost.Port,
+		&configPage.masterConfig.MevBoost.OpenRpcPort,
+		&configPage.masterConfig.MevBoost.ContainerTag,
+		&configPage.masterConfig.MevBoost.AdditionalFlags,
+	}
 	externalParams := []*cfgtypes.Parameter{&configPage.masterConfig.MevBoost.ExternalUrl}
 
-	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout.descriptionBox)
+	configPage.localItemsMainnet = createParameterizedFormItems(localParamsMainnet, configPage.layout.descriptionBox)
+	configPage.localItemsTestnet = createParameterizedFormItems(localParamsTestnet, configPage.layout.descriptionBox)
 	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout.descriptionBox)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.localItemsMainnet...)
+	configPage.layout.mapParameterizedFormItems(configPage.localItemsTestnet...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
 
 	// Set up the setting callbacks
@@ -110,13 +130,17 @@ func (configPage *MevBoostConfigPage) createContent() {
 func (configPage *MevBoostConfigPage) handleModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableBox.item)
-	if configPage.masterConfig.EnableMevBoost.Value == true {
+	if configPage.masterConfig.EnableMevBoost.Value == true && configPage.masterConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 		configPage.layout.form.AddFormItem(configPage.modeBox.item)
 
 		selectedMode := configPage.masterConfig.MevBoost.Mode.Value.(cfgtypes.Mode)
 		switch selectedMode {
 		case cfgtypes.Mode_Local:
-			configPage.layout.addFormItems(configPage.localItems)
+			if configPage.masterConfig.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Mainnet {
+				configPage.layout.addFormItems(configPage.localItemsMainnet)
+			} else {
+				configPage.layout.addFormItems(configPage.localItemsTestnet)
+			}
 		case cfgtypes.Mode_External:
 			configPage.layout.addFormItems(configPage.externalItems)
 		}

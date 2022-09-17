@@ -77,10 +77,6 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	claimRplRewards, err := newClaimRplRewards(c, log.NewColorLogger(ClaimRplRewardsColor))
-	if err != nil {
-		return err
-	}
 	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
 	if err != nil {
 		return err
@@ -112,12 +108,6 @@ func run(c *cli.Context) error {
 				} else {
 					// Manage the fee recipient for the node
 					if err := manageFeeRecipient.run(); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-
-					// Run auto-claims during the legacy period
-					if err := claimRplRewards.run(); err != nil {
 						errorLog.Println(err)
 					}
 					time.Sleep(taskCooldown)

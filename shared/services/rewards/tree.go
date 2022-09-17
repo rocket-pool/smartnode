@@ -573,13 +573,6 @@ func (r *RewardsFile) calculateEthRewards() error {
 		return nil
 	}
 
-	// Get the event log interval
-	var eventLogInterval int
-	eventLogInterval, err = r.cfg.GetEventLogInterval()
-	if err != nil {
-		return err
-	}
-
 	// Get the Beacon config
 	r.beaconConfig, err = r.bc.GetEth2Config()
 	if err != nil {
@@ -588,7 +581,7 @@ func (r *RewardsFile) calculateEthRewards() error {
 	r.slotsPerEpoch = r.beaconConfig.SlotsPerEpoch
 
 	// Get the start time of this interval based on the event from the previous one
-	previousIntervalEvent, err := GetUpgradedRewardSnapshotEvent(r.cfg, r.rp, r.Index-1, big.NewInt(int64(eventLogInterval)), nil)
+	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.Index-1)
 	if err != nil {
 		return err
 	}
@@ -812,7 +805,7 @@ func (r *RewardsFile) processAttestationsForInterval() error {
 	for epoch := startEpoch; epoch < endEpoch+1; epoch++ {
 		if epochsDone == 100 {
 			timeTaken := time.Since(reportStartTime)
-			r.log.Printlnf("%s On Epoch %d... (%s so far)", r.logPrefix, epoch, timeTaken)
+			r.log.Printlnf("%s On Epoch %d of %d (%.2f%%)... (%s so far)", r.logPrefix, epoch, endEpoch, float64(epoch-startEpoch)/float64(endEpoch-startEpoch)*100.0, timeTaken)
 			epochsDone = 0
 		}
 

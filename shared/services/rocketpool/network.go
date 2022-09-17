@@ -81,22 +81,6 @@ func (c *Client) TimezoneMap() (api.NetworkTimezonesResponse, error) {
 	return response, nil
 }
 
-// Check the status of the merge contract update deployment
-func (c *Client) MergeUpdateStatus() (api.NetworkMergeUpdateStatusResponse, error) {
-	responseBytes, err := c.callAPI("network merge-update-status")
-	if err != nil {
-		return api.NetworkMergeUpdateStatusResponse{}, fmt.Errorf("Could not get merge update deployment status: %w", err)
-	}
-	var response api.NetworkMergeUpdateStatusResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkMergeUpdateStatusResponse{}, fmt.Errorf("Could not decode merge update deployment status response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NetworkMergeUpdateStatusResponse{}, fmt.Errorf("Could not get merge update deployment status: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Check if the rewards tree for the provided interval can be generated
 func (c *Client) CanGenerateRewardsTree(index uint64) (api.CanNetworkGenerateRewardsTreeResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("network can-generate-rewards-tree %d", index))

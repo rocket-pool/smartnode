@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	tekuTag             string = "consensys/teku:22.8.1"
+	tekuTag             string = "consensys/teku:22.9.0"
 	defaultTekuMaxPeers uint16 = 100
 )
 
@@ -22,6 +22,9 @@ type TekuConfig struct {
 
 	// The max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
+
+	// The archive mode flag
+	ArchiveMode config.Parameter `yaml:"archiveMode,omitempty"`
 
 	// The Docker Hub tag for Lighthouse
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
@@ -62,6 +65,18 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			Default:              map[config.Network]interface{}{config.Network_All: defaultTekuMaxPeers},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_MAX_PEERS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		ArchiveMode: config.Parameter{
+			ID:                   "archiveMode",
+			Name:                 "Enable Archive Mode",
+			Description:          "When enabled, Teku will run in \"archive\" mode which means it can recreate the state of the Beacon chain for a previous block. This is required for manually generating the Merkle rewards tree.\n\nIf you are sure you will never be manually generating a tree, you can disable archive mode.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
+			EnvironmentVariables: []string{"TEKU_ARCHIVE_MODE"},
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 		},
@@ -109,6 +124,7 @@ func (cfg *TekuConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.JvmHeapSize,
 		&cfg.MaxPeers,
+		&cfg.ArchiveMode,
 		&cfg.ContainerTag,
 		&cfg.AdditionalBnFlags,
 		&cfg.AdditionalVcFlags,

@@ -20,16 +20,6 @@ func initializeFeeDistributor(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check if the merge update has been deployed yet
-	mergeUpdateResponse, err := rp.MergeUpdateStatus()
-	if err != nil {
-		return err
-	}
-	if !mergeUpdateResponse.IsUpdateDeployed {
-		fmt.Println("The Rocket Pool contracts have not been updated to support the merge yet, so fee distributors are currently unavailable.")
-		return nil
-	}
-
 	// Check if it's already initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {
@@ -88,16 +78,6 @@ func distribute(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-
-	// Check if the merge update has been deployed yet
-	mergeUpdateResponse, err := rp.MergeUpdateStatus()
-	if err != nil {
-		return err
-	}
-	if !mergeUpdateResponse.IsUpdateDeployed {
-		fmt.Println("The Rocket Pool contracts have not been updated to support the merge yet, so fee distributors are currently unavailable.")
-		return nil
-	}
 
 	// Check if it's already initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()

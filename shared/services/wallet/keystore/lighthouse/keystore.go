@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/rocket-pool/rocketpool-go/types"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -23,8 +24,8 @@ const (
 	SecretsDir    = "secrets"
 	ValidatorsDir = "validators"
 	KeyFileName   = "voting-keystore.json"
-	DirMode       = 0700
-	FileMode      = 0600
+	DirMode       = 0750
+	FileMode      = 0640
 )
 
 // Lighthouse keystore
@@ -55,6 +56,27 @@ func NewKeystore(keystorePath string, passwordManager *passwords.PasswordManager
 // Get the keystore directory
 func (ks *Keystore) GetKeystoreDir() string {
 	return filepath.Join(ks.keystorePath, KeystoreDir)
+}
+
+// DeleteValidatorKey will delete all files related to a validator key
+func (ks *Keystore) DeleteValidatorKey(key types.ValidatorPubkey) error {
+
+	// Get secret file path
+	secretFilePath := filepath.Join(ks.keystorePath, KeystoreDir, SecretsDir, hexutil.AddPrefix(key.Hex()))
+	// Delete the secrets dir
+	err := os.RemoveAll(secretFilePath)
+	if err != nil {
+		return fmt.Errorf("could not delete the secrets dir: %w", err)
+	}
+
+	// Get key file path
+	keyFilePath := filepath.Join(ks.keystorePath, KeystoreDir, ValidatorsDir, hexutil.AddPrefix(key.Hex()))
+	// Delete the key file path
+	err = os.RemoveAll(keyFilePath)
+	if err != nil {
+		return fmt.Errorf("could not delete the key file path: %w", err)
+	}
+	return nil
 }
 
 // Store a validator key

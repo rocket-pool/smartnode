@@ -73,6 +73,7 @@ type RocketPoolConfig struct {
 
 	// Metrics settings
 	EnableMetrics           config.Parameter `yaml:"enableMetrics,omitempty"`
+	EnableODaoMetrics       config.Parameter `yaml:"enableODaoMetrics,omitempty"`
 	EcMetricsPort           config.Parameter `yaml:"ecMetricsPort,omitempty"`
 	BnMetricsPort           config.Parameter `yaml:"bnMetricsPort,omitempty"`
 	VcMetricsPort           config.Parameter `yaml:"vcMetricsPort,omitempty"`
@@ -313,6 +314,18 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		EnableODaoMetrics: config.Parameter{
+			ID:                   "enableODaoMetrics",
+			Name:                 "Enable Oracle DAO Metrics",
+			Description:          "Enable the tracking of Oracle DAO performance metrics, such as prices and balances submission participation.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_Node},
+			EnvironmentVariables: []string{"ENABLE_ODAO_METRICS"},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		EnableBitflyNodeMetrics: config.Parameter{
 			ID:                   "enableBitflyNodeMetrics",
 			Name:                 "Enable Beaconcha.in Node Metrics",
@@ -493,6 +506,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.ConsensusClient,
 		&cfg.ExternalConsensusClient,
 		&cfg.EnableMetrics,
+		&cfg.EnableODaoMetrics,
 		&cfg.EnableBitflyNodeMetrics,
 		&cfg.EcMetricsPort,
 		&cfg.BnMetricsPort,
@@ -787,6 +801,7 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		envVars["EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.HttpPort.Value)
 		envVars["EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.WsPort.Value)
 		envVars["EC_ENGINE_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
+		envVars["EC_ENGINE_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
 
 		// Handle open API ports
 		if cfg.ExecutionCommon.OpenRpcPorts.Value == true {
@@ -876,11 +891,15 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		ccInitial := strings.ToUpper(string(envVars["CC_CLIENT"][0]))
 		identifier = fmt.Sprintf("-%s%s", ecInitial, ccInitial)
 	}
+
+	graffitiPrefix := fmt.Sprintf("RP%s %s", identifier, versionString)
+	envVars["GRAFFITI_PREFIX"] = graffitiPrefix
+
 	customGraffiti := envVars[CustomGraffitiEnvVar]
 	if customGraffiti == "" {
-		envVars["GRAFFITI"] = fmt.Sprintf("RP%s %s", identifier, versionString)
+		envVars["GRAFFITI"] = graffitiPrefix
 	} else {
-		envVars["GRAFFITI"] = fmt.Sprintf("RP%s %s (%s)", identifier, versionString, customGraffiti)
+		envVars["GRAFFITI"] = fmt.Sprintf("%s (%s)", graffitiPrefix, customGraffiti)
 	}
 
 	// Get the hostname of the Consensus client, necessary for Prometheus to work in hybrid mode
@@ -932,7 +951,40 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 	if cfg.EnableMevBoost.Value == true {
 		config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
 		if cfg.MevBoost.Mode.Value == config.Mode_Local {
+			relays := []string{}
+			if cfg.MevBoost.FlashbotsRelay.Value == true {
+				url := cfg.MevBoost.flashbotsUrls[cfg.Smartnode.Network.Value.(config.Network)]
+				if url != "" {
+					relays = append(relays, url)
+				}
+			}
+			if cfg.MevBoost.BloxRouteEthicalRelay.Value == true {
+				url := cfg.MevBoost.bloxRouteEthicalUrls[cfg.Smartnode.Network.Value.(config.Network)]
+				if url != "" {
+					relays = append(relays, url)
+				}
+			}
+			if cfg.MevBoost.BloxRouteMaxProfitRelay.Value == true {
+				url := cfg.MevBoost.bloxRouteMaxProfitUrls[cfg.Smartnode.Network.Value.(config.Network)]
+				if url != "" {
+					relays = append(relays, url)
+				}
+			}
+			if cfg.MevBoost.BloxRouteRegulatedRelay.Value == true {
+				url := cfg.MevBoost.bloxRouteRegulatedUrls[cfg.Smartnode.Network.Value.(config.Network)]
+				if url != "" {
+					relays = append(relays, url)
+				}
+			}
+			relayString := strings.Join(relays, ",")
+			envVars[mevBoostRelaysEnvVar] = relayString
 			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
+
+			// Handle open API port
+			if cfg.MevBoost.OpenRpcPort.Value == true {
+				port := cfg.MevBoost.Port.Value.(uint16)
+				envVars["MEV_BOOST_OPEN_API_PORT"] = fmt.Sprintf("\"%d:%d/tcp\"", port, port)
+			}
 		}
 	}
 
@@ -1042,11 +1094,13 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		errors = append(errors, "You are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	}
 
-	// Ensure there's a MEV-boost URL
+	// Ensure there's a MEV-boost URL for Docker mode
 	if cfg.EnableMevBoost.Value == true {
-		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.Relays.Value.(string) == "" {
-			errors = append(errors, "You have MEV-boost enabled in local mode but don't have a relay URL set. Please enter at least one relay URL to use MEV-boost.")
-		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
+		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
+			if cfg.MevBoost.FlashbotsRelay.Value == false && cfg.MevBoost.BloxRouteEthicalRelay.Value == false && cfg.MevBoost.BloxRouteMaxProfitRelay.Value == false && cfg.MevBoost.BloxRouteRegulatedRelay.Value == false {
+				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any relays enabled. Please select at least one relay to use MEV-boost.")
+			}
+		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
 			errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
 		}
 	}

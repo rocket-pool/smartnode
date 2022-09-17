@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v2/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	utils_v1_0_0 "github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/utils"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -28,7 +27,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
@@ -58,10 +56,6 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return nil, err
 	}
 	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
 	}
@@ -166,16 +160,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		}
 
 		// Get the next minipool address and withdrawal credentials
-		isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(rp)
-		if err != nil {
-			return fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
-		}
-		if isMergeUpdateDeployed {
-			minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
-		} else {
-			legacyMinipoolManagerAddress := cfg.Smartnode.GetLegacyMinipoolManagerAddress()
-			minipoolAddress, err = utils_v1_0_0.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, &legacyMinipoolManagerAddress)
-		}
+		minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
 		if err != nil {
 			return err
 		}
@@ -292,10 +277,6 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
 
 	// Get eth2 config
 	eth2Config, err := bc.GetEth2Config()
@@ -363,17 +344,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 
 	// Get the next minipool address and withdrawal credentials
-	var minipoolAddress common.Address
-	isMergeUpdateDeployed, err := rputils.IsMergeUpdateDeployed(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error determining if merge update contracts have been deployed: %w", err)
-	}
-	if isMergeUpdateDeployed {
-		minipoolAddress, err = utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
-	} else {
-		legacyMinipoolManagerAddress := cfg.Smartnode.GetLegacyMinipoolManagerAddress()
-		minipoolAddress, err = utils_v1_0_0.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil, &legacyMinipoolManagerAddress)
-	}
+	minipoolAddress, err := utils.GenerateAddress(rp, nodeAccount.Address, depositType, salt, nil)
 	if err != nil {
 		return nil, err
 	}

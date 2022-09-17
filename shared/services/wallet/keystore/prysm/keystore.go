@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/rocket-pool/rocketpool-go/types"
 	rpkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -25,8 +26,8 @@ const (
 	KeystoreFileName         = "all-accounts.keystore.json"
 	ConfigFileName           = "keymanageropts.json"
 	KeystorePasswordFileName = "secret"
-	DirMode                  = 0700
-	FileMode                 = 0600
+	DirMode                  = 0750
+	FileMode                 = 0640
 
 	DirectEIPVersion = "EIP-2335"
 )
@@ -69,6 +70,28 @@ func NewKeystore(keystorePath string, passwordManager *passwords.PasswordManager
 // Get the keystore directory
 func (ks *Keystore) GetKeystoreDir() string {
 	return filepath.Join(ks.keystorePath, KeystoreDir)
+}
+
+// DeleteValidatorKey will delete all files related to a validator key
+func (ks *Keystore) DeleteValidatorKey(key types.ValidatorPubkey) error {
+
+	// Get file paths
+	keystoreFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, AccountsDir, KeystoreFileName)
+	configFilePath := filepath.Join(ks.keystorePath, KeystoreDir, WalletDir, ConfigFileName)
+
+	// Delete the keystore
+	err := os.RemoveAll(keystoreFilePath)
+	if err != nil {
+		return fmt.Errorf("could not delete the keystore file: %w", err)
+	}
+
+	// Delete the wallet config
+	err = os.RemoveAll(configFilePath)
+	if err != nil {
+		return fmt.Errorf("could not delete the config file: %w", err)
+	}
+
+	return nil
 }
 
 // Store a validator key
