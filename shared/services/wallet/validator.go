@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
-	"github.com/rocket-pool/rocketpool-go/types"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
@@ -133,11 +133,14 @@ func (w *Wallet) StoreValidatorKey(key *eth2types.BLSPrivateKey, path string) er
 
 }
 
-func (w *Wallet) DeleteValidatorKey(key types.ValidatorPubkey) error {
+// Deletes all of the keystore directories and persistent VC storage
+func (w *Wallet) DeleteValidatorStores() error {
 
 	for name := range w.keystores {
-		if err := w.keystores[name].DeleteValidatorKey(key); err != nil {
-			return fmt.Errorf("Could not delete %s validator key %s: %w", name, key.Hex(), err)
+		keystorePath := w.keystores[name].GetKeystoreDir()
+		err := os.RemoveAll(keystorePath)
+		if err != nil {
+			return fmt.Errorf("error deleting validator directory for %s: %w", name, err)
 		}
 	}
 

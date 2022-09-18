@@ -75,6 +75,8 @@ func (pm *PasswordManager) DeletePassword() error {
 	_, err := os.Stat(pm.passwordPath)
 	if os.IsNotExist(err) {
 		return nil
+	} else if err != nil {
+		return fmt.Errorf("error checking password file path: %w", err)
 	}
 
 	// Delete it

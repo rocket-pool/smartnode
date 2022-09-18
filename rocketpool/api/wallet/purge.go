@@ -1,13 +1,8 @@
 package wallet
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 
-	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
@@ -17,11 +12,6 @@ import (
 func purge(c *cli.Context) (*api.PurgeResponse, error) {
 
 	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-
-	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
 	}
@@ -36,15 +26,11 @@ func purge(c *cli.Context) (*api.PurgeResponse, error) {
 		return nil, err
 	}
 
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
+
 	d, err := services.GetDocker(c)
 	if err != nil {
 		return nil, err
@@ -52,62 +38,16 @@ func purge(c *cli.Context) (*api.PurgeResponse, error) {
 
 	response := api.PurgeResponse{}
 
-	// Get the node's validating pubkeys
-	pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAccount.Address, nil)
+	// Stop the VC to unlock keystores and slashing DBs
+	err = validator.StopValidator(cfg, bc, nil, d)
 	if err != nil {
-		return nil, err
-	}
-	pubkeyMap := map[string]bool{}
-	for _, pubkey := range pubkeys {
-		pubkeyMap[pubkey.Hex()] = true
-		// Delete the key
-		w.DeleteValidatorKey(pubkey)
+		return nil, fmt.Errorf("error stopping validator client: %w", err)
 	}
 
-	// Load custom validator keys
-	customKeyDir := cfg.Smartnode.GetCustomKeyPath()
-	info, err := os.Stat(customKeyDir)
-	if os.IsNotExist(err) || !info.IsDir() {
-		// There are no custom keys, so exit early
-		return &response, nil
-	}
-
-	// Get the custom keystore files
-	files, err := ioutil.ReadDir(customKeyDir)
+	// Delete the VC directories
+	err = w.DeleteValidatorStores()
 	if err != nil {
-		return nil, fmt.Errorf("error enumerating custom keystores: %w", err)
-	}
-
-	if len(files) == 0 {
-		return &response, nil
-	}
-
-	// Process every custom key found
-	for _, file := range files {
-		// Read the file
-		bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
-		if err != nil {
-			return nil, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
-		}
-
-		// Deserialize it
-		keystore := api.ValidatorKeystore{}
-		err = json.Unmarshal(bytes, &keystore)
-		if err != nil {
-			return nil, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
-		}
-
-		// Check if it's one of the pubkeys for the minipool
-		_, exists := pubkeyMap[keystore.Pubkey.Hex()]
-		if !exists {
-			// This pubkey isn't for any of this node's minipools so ignore it
-			continue
-		}
-		customKeyPath := filepath.Join(customKeyDir, file.Name())
-		err = os.RemoveAll(customKeyPath)
-		if err != nil {
-			return nil, fmt.Errorf("error removing file %s: %w", file.Name(), err)
-		}
+		return nil, fmt.Errorf("error deleting validator storage: %w", err)
 	}
 
 	// Delete the wallet and password
