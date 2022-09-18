@@ -409,6 +409,40 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "eth-to-reth",
+				Aliases:   []string{"e2r"},
+				Usage:     "Swap ETH to rETH",
+				UsageText: "rocketpool node eth-to-reth [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "amount, a",
+						Usage: "The amount of ETH to swap to rETH (or 'max' which keeps ~0.1 ETH in your wallet to pay for gas in future transactions)",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm ETH conversion",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("amount") != "" && c.String("amount") != "all" {
+						if _, err := cliutils.ValidatePositiveEthAmount("swap amount", c.String("amount")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return nodeSwapToReth(c)
+				},
+			},
+
+			{
 				Name:      "set-voting-delegate",
 				Aliases:   []string{"sv"},
 				Usage:     "Set the address you want to use when voting on Rocket Pool governance proposals, or the address you want to delegate your voting power to.",
