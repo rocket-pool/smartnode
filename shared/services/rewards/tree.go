@@ -193,7 +193,7 @@ func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.Rocket
 	}
 
 	// Calculate the ETH rewards
-	err = r.calculateEthRewards()
+	err = r.calculateEthRewards(true)
 	if err != nil {
 		return fmt.Errorf("Error calculating ETH rewards: %w", err)
 	}
@@ -216,6 +216,22 @@ func (r *RewardsFile) GenerateTree(rp *rocketpool.RocketPool, cfg *config.Rocket
 
 	return nil
 
+}
+
+// Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
+// Used for approximate returns in the rETH ratio update
+func (r *RewardsFile) ApproximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
+	r.rp = rp
+	r.cfg = cfg
+	r.bc = bc
+
+	// Calculate the ETH rewards
+	err := r.calculateEthRewards(false)
+	if err != nil {
+		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
+	}
+
+	return &r.TotalRewards.PoolStakerSmoothingPoolEth.Int, nil
 }
 
 // Generates a merkle tree from the provided rewards map
@@ -548,7 +564,7 @@ func (r *RewardsFile) calculateRplRewards() error {
 }
 
 // Calculates the ETH rewards for the given interval
-func (r *RewardsFile) calculateEthRewards() error {
+func (r *RewardsFile) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
 	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool")
@@ -613,9 +629,21 @@ func (r *RewardsFile) calculateEthRewards() error {
 		Index: r.Index,
 		Slots: map[uint64]*SlotInfo{},
 	}
-	err = r.processAttestationsForInterval()
-	if err != nil {
-		return err
+	if checkBeaconPerformance {
+		err = r.processAttestationsForInterval()
+		if err != nil {
+			return err
+		}
+	} else {
+		// Attestation processing is disabled, just give each minipool 1 good attestation so they're all scored the same
+		// Used for approximating rETH's share during balances calculation
+		for _, nodeInfo := range r.nodeDetails {
+			if nodeInfo.IsEligible {
+				for _, minipool := range nodeInfo.Minipools {
+					minipool.GoodAttestations = 1
+				}
+			}
+		}
 	}
 
 	// Determine how much ETH each node gets and how much the pool stakers get
