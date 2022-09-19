@@ -418,6 +418,19 @@ func GetNodeAverageFee(rp *rocketpool.RocketPool, nodeAddress common.Address, op
 	return eth.WeiToEth(*avgFee), nil
 }
 
+// Get a node's average minipool fee
+func GetNodeAverageFeeRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp)
+	if err != nil {
+		return nil, err
+	}
+	avgFee := new(*big.Int)
+	if err := rocketNodeManager.Call(opts, avgFee, "getAverageNodeFee", nodeAddress); err != nil {
+		return nil, fmt.Errorf("Could not get node %s average fee: %w", nodeAddress.Hex(), err)
+	}
+	return *avgFee, nil
+}
+
 // Get the time that the user registered as a claimer
 func GetNodeRegistrationTime(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (time.Time, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp)
