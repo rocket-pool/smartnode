@@ -130,7 +130,7 @@ func (configPage *MevBoostConfigPage) createContent() {
 func (configPage *MevBoostConfigPage) handleModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableBox.item)
-	if configPage.masterConfig.EnableMevBoost.Value == true && configPage.masterConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+	if configPage.masterConfig.EnableMevBoost.Value == true {
 		configPage.layout.form.AddFormItem(configPage.modeBox.item)
 
 		selectedMode := configPage.masterConfig.MevBoost.Mode.Value.(cfgtypes.Mode)
@@ -142,7 +142,10 @@ func (configPage *MevBoostConfigPage) handleModeChanged() {
 				configPage.layout.addFormItems(configPage.localItemsTestnet)
 			}
 		case cfgtypes.Mode_External:
-			configPage.layout.addFormItems(configPage.externalItems)
+			if configPage.masterConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+				// Only show these to Docker users, not Hybrid users
+				configPage.layout.addFormItems(configPage.externalItems)
+			}
 		}
 	}
 

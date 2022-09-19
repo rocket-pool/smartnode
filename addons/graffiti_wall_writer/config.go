@@ -6,7 +6,7 @@ import (
 
 // Constants
 const (
-	containerTag string = "rocketpool/graffiti-wall-addon:v1.0.0"
+	containerTag string = "rocketpool/graffiti-wall-addon:v1.0.1"
 )
 
 // Configuration for the Graffiti Wall Writer

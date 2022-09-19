@@ -263,6 +263,8 @@ func (w *Wallet) Delete() error {
 	_, err := os.Stat(w.walletPath)
 	if os.IsNotExist(err) {
 		return nil
+	} else if err != nil {
+		return fmt.Errorf("error checking wallet file path: %w", err)
 	}
 
 	// Write wallet store to disk

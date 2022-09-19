@@ -1094,14 +1094,20 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		errors = append(errors, "You are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	}
 
-	// Ensure there's a MEV-boost URL for Docker mode
+	// Ensure there's a MEV-boost URL
 	if cfg.EnableMevBoost.Value == true {
-		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
-			if cfg.MevBoost.FlashbotsRelay.Value == false && cfg.MevBoost.BloxRouteEthicalRelay.Value == false && cfg.MevBoost.BloxRouteMaxProfitRelay.Value == false && cfg.MevBoost.BloxRouteRegulatedRelay.Value == false {
+		switch cfg.MevBoost.Mode.Value.(config.Mode) {
+		case config.Mode_Local:
+			// In local MEV-boost mode, the user has to have at least one relay
+			relays := cfg.MevBoost.GetEnabledMevRelays()
+			if len(relays) == 0 {
 				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any relays enabled. Please select at least one relay to use MEV-boost.")
 			}
-		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
-			errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+		case config.Mode_External:
+			// In external MEV-boost mode, the user has to have an external URL if they're running Docker mode
+			if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
+				errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+			}
 		}
 	}
 
