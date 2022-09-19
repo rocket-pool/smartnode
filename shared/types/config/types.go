@@ -7,6 +7,7 @@ type ParameterType string
 type ExecutionClient string
 type ConsensusClient string
 type RewardsMode string
+type MevRelay string
 
 // Enum to describe which container(s) a parameter impacts, so the Smartnode knows which
 // ones to restart upon a settings change
@@ -78,6 +79,15 @@ const (
 	RewardsMode_Unknown  RewardsMode = ""
 	RewardsMode_Download RewardsMode = "download"
 	RewardsMode_Generate RewardsMode = "generate"
+)
+
+// Enum to describe MEV-boost relays
+const (
+	MevRelay_Unknown            MevRelay = ""
+	MevRelay_Flashbots          MevRelay = "flashbots"
+	MevRelay_BloxrouteEthical   MevRelay = "bloxrouteEthical"
+	MevRelay_BloxrouteMaxProfit MevRelay = "bloxrouteMaxProfit"
+	MevRelay_BloxrouteRegulated MevRelay = "bloxrouteRegulated"
 )
 
 type Config interface {

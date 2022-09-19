@@ -1095,13 +1095,17 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	}
 
 	// Ensure there's a MEV-boost URL for Docker mode
-	if cfg.EnableMevBoost.Value == true {
-		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
-			if cfg.MevBoost.FlashbotsRelay.Value == false && cfg.MevBoost.BloxRouteEthicalRelay.Value == false && cfg.MevBoost.BloxRouteMaxProfitRelay.Value == false && cfg.MevBoost.BloxRouteRegulatedRelay.Value == false {
+	if cfg.EnableMevBoost.Value == true && cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local {
+		switch cfg.MevBoost.Mode.Value.(config.Mode) {
+		case config.Mode_Local:
+			relays := cfg.MevBoost.GetEnabledMevRelays()
+			if len(relays) == 0 {
 				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any relays enabled. Please select at least one relay to use MEV-boost.")
 			}
-		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
-			errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+		case config.Mode_External:
+			if cfg.MevBoost.ExternalUrl.Value.(string) == "" {
+				errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+			}
 		}
 	}
 

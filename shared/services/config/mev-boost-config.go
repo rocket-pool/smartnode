@@ -236,6 +236,26 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 }
 
 // The the title for the config
-func (config *MevBoostConfig) GetConfigTitle() string {
-	return config.Title
+func (cfg *MevBoostConfig) GetConfigTitle() string {
+	return cfg.Title
+}
+
+// Get which MEV-boost relays are enabled
+func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
+	relays := []config.MevRelay{}
+
+	if cfg.FlashbotsRelay.Value == true {
+		relays = append(relays, config.MevRelay_Flashbots)
+	}
+	if cfg.BloxRouteEthicalRelay.Value == true {
+		relays = append(relays, config.MevRelay_BloxrouteEthical)
+	}
+	if cfg.BloxRouteMaxProfitRelay.Value == true {
+		relays = append(relays, config.MevRelay_BloxrouteMaxProfit)
+	}
+	if cfg.BloxRouteRegulatedRelay.Value == true {
+		relays = append(relays, config.MevRelay_BloxrouteRegulated)
+	}
+
+	return relays
 }
