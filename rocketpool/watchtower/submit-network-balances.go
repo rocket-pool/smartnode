@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -49,16 +50,20 @@ type submitNetworkBalances struct {
 
 // Network balance info
 type networkBalances struct {
-	Block            uint64
-	DepositPool      *big.Int
-	MinipoolsTotal   *big.Int
-	MinipoolsStaking *big.Int
-	RETHContract     *big.Int
-	RETHSupply       *big.Int
+	Block                 uint64
+	DepositPool           *big.Int
+	MinipoolsTotal        *big.Int
+	MinipoolsStaking      *big.Int
+	DistributorShareTotal *big.Int
+	SmoothingPoolShare    *big.Int
+	RETHContract          *big.Int
+	RETHSupply            *big.Int
 }
 type minipoolBalanceDetails struct {
 	IsStaking   bool
 	UserBalance *big.Int
+	NodeAddress common.Address
+	NodeFee     *big.Int
 }
 
 // Create submit network balances task
@@ -194,6 +199,8 @@ func (t *submitNetworkBalances) run() error {
 	t.log.Printlnf("Deposit pool balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.DepositPool), 6))
 	t.log.Printlnf("Total minipool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.MinipoolsTotal), 6))
 	t.log.Printlnf("Staking minipool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.MinipoolsStaking), 6))
+	t.log.Printlnf("Fee distributor user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.DistributorShareTotal), 6))
+	t.log.Printlnf("Smoothing pool user balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.SmoothingPoolShare), 6))
 	t.log.Printlnf("rETH contract balance: %.6f ETH", math.RoundDown(eth.WeiToEth(balances.RETHContract), 6))
 	t.log.Printlnf("rETH token supply: %.6f rETH", math.RoundDown(eth.WeiToEth(balances.RETHSupply), 6))
 
@@ -261,6 +268,8 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	totalEth.Add(totalEth, balances.DepositPool)
 	totalEth.Add(totalEth, balances.MinipoolsTotal)
 	totalEth.Add(totalEth, balances.RETHContract)
+	totalEth.Add(totalEth, balances.DistributorShareTotal)
+	totalEth.Add(totalEth, balances.SmoothingPoolShare)
 
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
@@ -290,6 +299,8 @@ func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkB
 	var wg errgroup.Group
 	var depositPoolBalance *big.Int
 	var minipoolBalanceDetails []minipoolBalanceDetails
+	var distributorShares []*big.Int
+	var smoothingPoolShare *big.Int
 	var rethContractBalance *big.Int
 	var rethTotalSupply *big.Int
 
@@ -300,11 +311,51 @@ func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkB
 		return err
 	})
 
-	// Get minipool balance details
 	wg.Go(func() error {
+		// Get minipool balance details
 		var err error
 		minipoolBalanceDetails, err = t.getNetworkMinipoolBalanceDetails(opts)
+		if err != nil {
+			return err
+		}
+
+		// Calculate average node fee
+		minipoolFees := map[common.Address][]*big.Int{}
+		for _, details := range minipoolBalanceDetails {
+			fees, exists := minipoolFees[details.NodeAddress]
+			if !exists {
+				fees = []*big.Int{}
+			}
+			fees = append(fees, details.NodeFee)
+			minipoolFees[details.NodeAddress] = fees
+		}
+
+		avgNodeFees := map[common.Address]*big.Int{}
+		for nodeAddress, fees := range minipoolFees {
+			feeCount := len(fees)
+			if feeCount == 0 {
+				// Shouldn't happen but just in case to prevent divide by zeros
+				continue
+			}
+
+			// Get the average fee
+			sum := big.NewInt(0)
+			for _, fee := range fees {
+				sum.Add(sum, fee)
+			}
+			sum.Div(sum, big.NewInt(int64(feeCount)))
+			avgNodeFees[nodeAddress] = sum
+		}
+
+		// Get distributor balance details
+		distributorShares, err = t.getFeeDistributorBalances(opts, avgNodeFees)
 		return err
+	})
+
+	// Get the smoothing pool user share
+	wg.Go(func() error {
+		// TODO
+		return nil
 	})
 
 	// Get rETH contract balance
@@ -331,12 +382,14 @@ func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkB
 
 	// Balances
 	balances := networkBalances{
-		Block:            blockNumber,
-		DepositPool:      depositPoolBalance,
-		MinipoolsTotal:   big.NewInt(0),
-		MinipoolsStaking: big.NewInt(0),
-		RETHContract:     rethContractBalance,
-		RETHSupply:       rethTotalSupply,
+		Block:                 blockNumber,
+		DepositPool:           depositPoolBalance,
+		MinipoolsTotal:        big.NewInt(0),
+		MinipoolsStaking:      big.NewInt(0),
+		DistributorShareTotal: big.NewInt(0),
+		SmoothingPoolShare:    smoothingPoolShare,
+		RETHContract:          rethContractBalance,
+		RETHSupply:            rethTotalSupply,
 	}
 
 	// Add minipool balances
@@ -345,6 +398,11 @@ func (t *submitNetworkBalances) getNetworkBalances(blockNumber uint64) (networkB
 		if mp.IsStaking {
 			balances.MinipoolsStaking.Add(balances.MinipoolsStaking, mp.UserBalance)
 		}
+	}
+
+	// Add distributor shares
+	for _, share := range distributorShares {
+		balances.DistributorShareTotal.Add(balances.DistributorShareTotal, share)
 	}
 
 	// Return
@@ -462,6 +520,8 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	var status types.MinipoolStatus
 	var userDepositBalance *big.Int
 	var userDepositTime uint64
+	var nodeFee *big.Int
+	var nodeAddress common.Address
 
 	// Load data
 	wg.Go(func() error {
@@ -481,6 +541,16 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 		}
 		return err
 	})
+	wg.Go(func() error {
+		var err error
+		nodeFee, err = mp.GetNodeFeeRaw(opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		nodeAddress, err = mp.GetNodeAddress(opts)
+		return err
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
@@ -491,6 +561,8 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	if userDepositBalance.Cmp(big.NewInt(0)) == 0 {
 		return minipoolBalanceDetails{
 			UserBalance: big.NewInt(0),
+			NodeAddress: nodeAddress,
+			NodeFee:     nodeFee,
 		}, nil
 	}
 
@@ -498,6 +570,8 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	if status == types.Initialized || status == types.Prelaunch {
 		return minipoolBalanceDetails{
 			UserBalance: userDepositBalance,
+			NodeAddress: nodeAddress,
+			NodeFee:     nodeFee,
 		}, nil
 	}
 
@@ -505,6 +579,8 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
 		return minipoolBalanceDetails{
 			UserBalance: userDepositBalance,
+			NodeAddress: nodeAddress,
+			NodeFee:     nodeFee,
 		}, nil
 	}
 
@@ -549,7 +625,78 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	return minipoolBalanceDetails{
 		IsStaking:   (validator.ExitEpoch > blockEpoch),
 		UserBalance: userBalance,
+		NodeAddress: nodeAddress,
+		NodeFee:     nodeFee,
 	}, nil
+
+}
+
+// Get the fee distributor balances
+func (t *submitNetworkBalances) getFeeDistributorBalances(opts *bind.CallOpts, avgNodeFees map[common.Address]*big.Int) ([]*big.Int, error) {
+
+	// Get all of the nodes
+	nodeAddresses, err := node.GetNodeAddresses(t.rp, opts)
+	if err != nil {
+		return []*big.Int{}, fmt.Errorf("error getting node addresses: %w", err)
+	}
+
+	// Load balances in batches
+	balances := make([]*big.Int, len(nodeAddresses))
+	for bsi := 0; bsi < len(nodeAddresses); bsi += MinipoolBalanceDetailsBatchSize {
+		// Get batch start & end index
+		nsi := bsi
+		nei := bsi + MinipoolBalanceDetailsBatchSize
+		if nei > len(nodeAddresses) {
+			nei = len(nodeAddresses)
+		}
+
+		// Load details
+		var wg errgroup.Group
+		for ni := nsi; ni < nei; ni++ {
+			ni := ni
+			wg.Go(func() error {
+				// Get the fee distributor's balance
+				address := nodeAddresses[ni]
+				distributor, err := node.GetDistributorAddress(t.rp, address, opts)
+				if err != nil {
+					return fmt.Errorf("error getting distributor for node %s: %w", address.Hex(), err)
+				}
+				distributorBalance, err := t.ec.BalanceAt(context.Background(), distributor, opts.BlockNumber)
+				if err != nil {
+					return fmt.Errorf("error getting distributor balance for distributor %s, node %s: %w", distributor.Hex(), address.Hex(), err)
+				}
+
+				// Get the node's average fee
+				// TODO: fix after update, manual calculation for now
+				/*
+					averageFee, err := node.GetNodeAverageFeeRaw(t.rp, address, opts)
+					if err != nil {
+						return fmt.Errorf("error getting average fee for node %s: %w", address.Hex(), err)
+					}
+				*/
+
+				// Calculate the rETH share of the balance
+				if distributorBalance.Cmp(big.NewInt(0)) > 0 {
+					avgFee, exists := avgNodeFees[address]
+					if !exists {
+						// If a node doesn't have any minipools, there's no fee; it's split 50/50
+						avgFee = eth.EthToWei(0.5)
+					}
+					one := big.NewInt(1e18)
+					distributorBalance.Mul(distributorBalance, avgFee)
+					distributorBalance.Div(distributorBalance, one)
+				}
+
+				balances[ni] = distributorBalance
+				return nil
+			})
+		}
+		if err := wg.Wait(); err != nil {
+			return []*big.Int{}, err
+		}
+	}
+
+	return balances, nil
 
 }
 
@@ -564,6 +711,8 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	totalEth.Add(totalEth, balances.DepositPool)
 	totalEth.Add(totalEth, balances.MinipoolsTotal)
 	totalEth.Add(totalEth, balances.RETHContract)
+	totalEth.Add(totalEth, balances.DistributorShareTotal)
+	totalEth.Add(totalEth, balances.SmoothingPoolShare)
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
