@@ -397,13 +397,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
-					toAddress, err := cliutils.ValidateAddress("to address", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
 
 					// Run
-					return nodeSend(c, amount, token, toAddress)
+					return nodeSend(c, amount, token, c.Args().Get(2))
 
 				},
 			},
@@ -425,7 +421,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					delegate:= c.Args().Get(0)
+					delegate := c.Args().Get(0)
 
 					// Run
 					return nodeSetVotingDelegate(c, delegate)
