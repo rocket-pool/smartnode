@@ -88,6 +88,7 @@ const (
 	MevRelay_BloxrouteEthical   MevRelay = "bloxrouteEthical"
 	MevRelay_BloxrouteMaxProfit MevRelay = "bloxrouteMaxProfit"
 	MevRelay_BloxrouteRegulated MevRelay = "bloxrouteRegulated"
+	MevRelay_Blocknative        MevRelay = "blocknative"
 )
 
 type Config interface {

@@ -30,6 +30,9 @@ type MevBoostConfig struct {
 	// bloXroute regulated relay
 	BloxRouteRegulatedRelay config.Parameter `yaml:"bloxRouteRegulatedEnabled,omitempty"`
 
+	// Blocknative relay
+	BlocknativeRelay config.Parameter `yaml:"blocknativeEnabled,omitempty"`
+
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
 
@@ -53,6 +56,7 @@ type MevBoostConfig struct {
 	bloxRouteEthicalUrls   map[config.Network]string `yaml:"-"`
 	bloxRouteMaxProfitUrls map[config.Network]string `yaml:"-"`
 	bloxRouteRegulatedUrls map[config.Network]string `yaml:"-"`
+	blocknativeUrls        map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new MEV-Boost configuration
@@ -121,6 +125,18 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			ID:                   "bloxRouteRegulatedEnabled",
 			Name:                 "Use bloXroute Regulated Relay",
 			Description:          "Select this to enable the \"regulated\" relay from bloXroute. You can enable multiple relays.\n\nThis relay allows for all types of MEV which includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		BlocknativeRelay: config.Parameter{
+			ID:                   "blocknativeEnabled",
+			Name:                 "Use Blocknative Relay",
+			Description:          "Select this to enable the Blocknative relay. You can enable multiple relays.\n\nBlocknative is a large blockchain infrastructure company that provides a popular MEV relay. It does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -216,6 +232,13 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			config.Network_Kiln:    "",
 			config.Network_Ropsten: "",
 		},
+
+		blocknativeUrls: map[config.Network]string{
+			config.Network_Mainnet: "https://0x9000009807ed12c1f08bf4e81c6da3ba8e3fc3d953898ce0102433094e5f22f21102ec057841fcb81978ed1ea0fa8246@builder-relay-mainnet.blocknative.com?id=rocketpool",
+			config.Network_Prater:  "https://0x8f7b17a74569b7a57e9bdafd2e159380759f5dc3ccbd4bf600414147e8c4e1dc6ebada83c0139ac15850eb6c975e82d0@builder-relay-goerli.blocknative.com?id=rocketpool",
+			config.Network_Kiln:    "",
+			config.Network_Ropsten: "http://0xaef7ec27ca8ca24205aab89f6595a5ad60d649c533fd7e7be692c9bd02780a93b68adae3e3b8ea0d5f9723f2790b1a90@builder-relay-ropsten.blocknative.com?id=rocketpool",
+		},
 	}
 }
 
@@ -255,6 +278,9 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 	}
 	if cfg.BloxRouteRegulatedRelay.Value == true {
 		relays = append(relays, config.MevRelay_BloxrouteRegulated)
+	}
+	if cfg.BlocknativeRelay.Value == true {
+		relays = append(relays, config.MevRelay_Blocknative)
 	}
 
 	return relays
