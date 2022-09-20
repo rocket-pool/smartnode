@@ -33,6 +33,9 @@ type MevBoostConfig struct {
 	// Blocknative relay
 	BlocknativeRelay config.Parameter `yaml:"blocknativeEnabled,omitempty"`
 
+	// Eden relay
+	EdenRelay config.Parameter `yaml:"edenEnabled,omitempty"`
+
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
 
@@ -57,6 +60,7 @@ type MevBoostConfig struct {
 	bloxRouteMaxProfitUrls map[config.Network]string `yaml:"-"`
 	bloxRouteRegulatedUrls map[config.Network]string `yaml:"-"`
 	blocknativeUrls        map[config.Network]string `yaml:"-"`
+	edenUrls               map[config.Network]string `yaml:"-"`
 }
 
 // Generates a new MEV-Boost configuration
@@ -137,6 +141,18 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			ID:                   "blocknativeEnabled",
 			Name:                 "Use Blocknative Relay",
 			Description:          "Select this to enable the Blocknative relay. You can enable multiple relays.\n\nBlocknative is a large blockchain infrastructure company that provides a popular MEV relay. It does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
+		EdenRelay: config.Parameter{
+			ID:                   "edenEnabled",
+			Name:                 "Use Eden Relay",
+			Description:          "Select this to enable the Eden Network relay. You can enable multiple relays.\n\nEden is a transaction network aimed at protecting its users from value extraction. It does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -239,6 +255,13 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			config.Network_Kiln:    "",
 			config.Network_Ropsten: "http://0xaef7ec27ca8ca24205aab89f6595a5ad60d649c533fd7e7be692c9bd02780a93b68adae3e3b8ea0d5f9723f2790b1a90@builder-relay-ropsten.blocknative.com?id=rocketpool",
 		},
+
+		edenUrls: map[config.Network]string{
+			config.Network_Mainnet: "https://0xb3ee7afcf27f1f1259ac1787876318c6584ee353097a50ed84f51a1f21a323b3736f271a895c7ce918c038e4265918be@relay.edennetwork.io?id=rocketpool",
+			config.Network_Prater:  "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-goerli.edennetwork.io?id=rocketpool",
+			config.Network_Kiln:    "",
+			config.Network_Ropsten: "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-ropsten.edennetwork.io?id=rocketpool",
+		},
 	}
 }
 
@@ -250,6 +273,8 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.BloxRouteEthicalRelay,
 		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.BloxRouteRegulatedRelay,
+		&cfg.BlocknativeRelay,
+		&cfg.EdenRelay,
 		&cfg.Port,
 		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
@@ -281,6 +306,9 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 	}
 	if cfg.BlocknativeRelay.Value == true {
 		relays = append(relays, config.MevRelay_Blocknative)
+	}
+	if cfg.EdenRelay.Value == true {
+		relays = append(relays, config.MevRelay_Eden)
 	}
 
 	return relays

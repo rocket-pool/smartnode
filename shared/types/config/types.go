@@ -89,6 +89,7 @@ const (
 	MevRelay_BloxrouteMaxProfit MevRelay = "bloxrouteMaxProfit"
 	MevRelay_BloxrouteRegulated MevRelay = "bloxrouteRegulated"
 	MevRelay_Blocknative        MevRelay = "blocknative"
+	MevRelay_Eden               MevRelay = "eden"
 )
 
 type Config interface {
