@@ -1,6 +1,8 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -55,6 +57,7 @@ type MevBoostConfig struct {
 	// Non-editable settings //
 	///////////////////////////
 
+	parentConfig           *RocketPoolConfig         `yaml:"-"`
 	flashbotsUrls          map[config.Network]string `yaml:"-"`
 	bloxRouteEthicalUrls   map[config.Network]string `yaml:"-"`
 	bloxRouteMaxProfitUrls map[config.Network]string `yaml:"-"`
@@ -67,6 +70,8 @@ type MevBoostConfig struct {
 func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 	return &MevBoostConfig{
 		Title: "MEV-Boost Settings",
+
+		parentConfig: cfg,
 
 		Mode: config.Parameter{
 			ID:                   "mode",
@@ -312,4 +317,53 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 	}
 
 	return relays
+}
+
+func (cfg *MevBoostConfig) GetRelayString() string {
+	relays := []string{}
+	network := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
+	if cfg.FlashbotsRelay.Value == true {
+		url := cfg.flashbotsUrls[network]
+		if url != "" {
+			relays = append(relays, url)
+		}
+	}
+	if cfg.BloxRouteEthicalRelay.Value == true {
+		url := cfg.bloxRouteEthicalUrls[network]
+		if url != "" {
+			relays = append(relays, url)
+		}
+	}
+	if cfg.BloxRouteMaxProfitRelay.Value == true {
+		url := cfg.bloxRouteMaxProfitUrls[network]
+		if url != "" {
+			relays = append(relays, url)
+		}
+	}
+	if cfg.BloxRouteRegulatedRelay.Value == true {
+		url := cfg.bloxRouteRegulatedUrls[network]
+		if url != "" {
+			relays = append(relays, url)
+		}
+	}
+	if cfg.BloxRouteRegulatedRelay.Value == true {
+		url := cfg.bloxRouteRegulatedUrls[network]
+		if url != "" {
+			relays = append(relays, url)
+		}
+	}
+	if cfg.BlocknativeRelay.Value == true {
+		url := cfg.blocknativeUrls[network]
+		if url != "" {
+			relays = append(relays, url)
+		}
+	}
+	if cfg.EdenRelay.Value == true {
+		url := cfg.edenUrls[network]
+		if url != "" {
+			relays = append(relays, url)
+		}
+	}
+	relayString := strings.Join(relays, ",")
+	return relayString
 }
