@@ -43,12 +43,15 @@ type NodeStatusResponse struct {
 		CloseAvailable      int `json:"closeAvailable"`
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
-	ActiveSnapshotProposals     []SnapshotProposal        `json:"activeSnapshotProposals"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
 	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
-	ProposalVotes               []SnapshotProposalVote    `json:"proposalVotes"`
+	SnapshotResponse            struct {
+		Error                   string                 `json:"error"`
+		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
+		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
+	} `json:"snapshotResponse"`
 }
 
 type CanRegisterNodeResponse struct {
