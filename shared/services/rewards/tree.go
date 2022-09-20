@@ -224,9 +224,34 @@ func (r *RewardsFile) ApproximateStakerShareOfSmoothingPool(rp *rocketpool.Rocke
 	r.rp = rp
 	r.cfg = cfg
 	r.bc = bc
+	r.validNetworkCache = map[uint64]bool{
+		0: true,
+	}
+
+	// Set the network name
+	r.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.MinipoolPerformanceFile.Network = r.Network
+
+	// Get the addresses for all nodes
+	r.opts = &bind.CallOpts{
+		BlockNumber: r.elSnapshotHeader.Number,
+	}
+	nodeAddresses, err := node.GetNodeAddresses(rp, r.opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting node addresses: %w", err)
+	}
+	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(nodeAddresses))
+	r.nodeAddresses = nodeAddresses
+
+	// Get the minipool count - this will be used for an error epsilon due to division truncation
+	minipoolCount, err := minipool.GetMinipoolCount(rp, r.opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting minipool count: %w", err)
+	}
+	r.epsilon = big.NewInt(int64(minipoolCount))
 
 	// Calculate the ETH rewards
-	err := r.calculateEthRewards(false)
+	err = r.calculateEthRewards(false)
 	if err != nil {
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}

@@ -580,7 +580,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	var wg errgroup.Group
 	var status rptypes.MinipoolStatus
 	var userDepositBalance *big.Int
-	var userDepositTime uint64
+	var mpType rptypes.MinipoolDeposit
 	var nodeFee *big.Int
 	var nodeAddress common.Address
 
@@ -596,10 +596,8 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 		return err
 	})
 	wg.Go(func() error {
-		userDepositAssignedTime, err := mp.GetUserDepositAssignedTime(opts)
-		if err == nil {
-			userDepositTime = uint64(userDepositAssignedTime.Unix())
-		}
+		var err error
+		mpType, err = mp.GetDepositType(opts)
 		return err
 	})
 	wg.Go(func() error {
@@ -616,15 +614,6 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return minipoolBalanceDetails{}, err
-	}
-
-	// No balance if no user deposit assigned
-	if userDepositBalance.Cmp(big.NewInt(0)) == 0 {
-		return minipoolBalanceDetails{
-			UserBalance: big.NewInt(0),
-			NodeAddress: nodeAddress,
-			NodeFee:     nodeFee,
-		}, nil
 	}
 
 	// Use user deposit balance if initialized or prelaunch
@@ -645,50 +634,29 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 		}, nil
 	}
 
-	// Get start epoch for node balance calculation
-	startEpoch := eth2.EpochAt(eth2Config, userDepositTime)
-	if startEpoch < validator.ActivationEpoch {
-		startEpoch = validator.ActivationEpoch
-	} else if startEpoch > blockEpoch {
-		startEpoch = blockEpoch
-	}
-
 	// Get user balance at block
 	blockBalance := eth.GweiToWei(float64(validator.Balance))
 	userBalance, err := mp.CalculateUserShare(blockBalance, opts)
 	if err != nil {
 		return minipoolBalanceDetails{}, err
 	}
-	/*
-	   nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
-	   if err != nil {
-	       return minipoolBalanceDetails{}, err
-	   }
-
-	   // Log debug details
-	   finalised, err := mp.GetFinalised(opts)
-	   if err != nil {
-	       return minipoolBalanceDetails{}, err
-	   }
-	   t.log.Printlnf("%s %s %s %d %s %s %s %t",
-	       minipoolAddress.Hex(),
-	       validator.Pubkey.Hex(),
-	       blockBalance.String(),
-	       blockEpoch,
-	       nodeBalance.String(),
-	       userBalance.String(),
-	       types.MinipoolStatuses[status],
-	       finalised,
-	   )
-	*/
 
 	// Return
-	return minipoolBalanceDetails{
-		IsStaking:   (validator.ExitEpoch > blockEpoch),
-		UserBalance: userBalance,
-		NodeAddress: nodeAddress,
-		NodeFee:     nodeFee,
-	}, nil
+	if userDepositBalance.Cmp(big.NewInt(0)) == 0 && mpType == rptypes.Full {
+		return minipoolBalanceDetails{
+			IsStaking:   (validator.ExitEpoch > blockEpoch),
+			UserBalance: big.NewInt(0).Sub(userBalance, eth.EthToWei(16)), // Remove 16 ETH from the user balance for full minipools in the refund queue
+			NodeAddress: nodeAddress,
+			NodeFee:     nodeFee,
+		}, nil
+	} else {
+		return minipoolBalanceDetails{
+			IsStaking:   (validator.ExitEpoch > blockEpoch),
+			UserBalance: userBalance,
+			NodeAddress: nodeAddress,
+			NodeFee:     nodeFee,
+		}, nil
+	}
 
 }
 
