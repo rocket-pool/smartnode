@@ -891,6 +891,20 @@ func (c *Client) ResolveEnsName(name string) (api.ResolveEnsNameResponse, error)
 	}
 	return response, nil
 }
+func (c *Client) ReverseResolveEnsName(name string) (api.ResolveEnsNameResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node reverse-resolve-ens-name %s", name))
+	if err != nil {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not reverse resolve ENS name: %w", err)
+	}
+	var response api.ResolveEnsNameResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not decode reverse-resolve-ens-name: %w", err)
+	}
+	if response.Error != "" {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not reverse resolve ENS name: %w", response.Error)
+	}
+	return response, nil
+}
 
 // Use the node private key to sign an arbitrary message
 func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {

@@ -30,6 +30,7 @@ type NodeStatusResponse struct {
 	MaximumRplStake          *big.Int        `json:"maximumRplStake"`
 	CollateralRatio          float64         `json:"collateralRatio"`
 	VotingDelegate           common.Address  `json:"votingDelegate"`
+	VotingDelegateFormatted  string          `json:"votingDelegateFormatted"`
 	MinipoolLimit            uint64          `json:"minipoolLimit"`
 	MinipoolCounts           struct {
 		Total               int `json:"total"`
@@ -402,6 +403,7 @@ type ResolveEnsNameResponse struct {
 	Status  string         `json:"status"`
 	Error   string         `json:"error"`
 	Address common.Address `json:"address"`
+	EnsName string         `json:"EnsName"`
 }
 type SnapshotProposal struct {
 	Id            string    `json:"id"`

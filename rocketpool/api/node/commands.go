@@ -1217,6 +1217,27 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "reverse-resolve-ens-name",
+				Usage:     "Reverse resolve an address to an ENS name",
+				UsageText: "rocketpool api node reverse-resolve-ens-name address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(reverseResolveEnsName(c, address))
+					return nil
+
+				},
+			},
 		},
 	})
 }
