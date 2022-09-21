@@ -148,16 +148,19 @@ func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.Colo
 		}
 		if validatorContainerId == "" {
 			// TODO: return here if the container doesn't exist? Is erroring out necessary?
-			return errors.New("Validator container not found")
+			return fmt.Errorf("Validator container %s not found", containerName)
 		}
 
 		// Stop validator container
 		if err := d.ContainerPause(context.Background(), validatorContainerId); err != nil {
 			if strings.Contains(err.Error(), "is not running") {
 				// Handle situations where the container is already stopped
+				if log != nil {
+					log.Printlnf("Validator container %s was not running.", containerName)
+				}
 				return nil
 			}
-			return fmt.Errorf("Could not stop validator container: %w", err)
+			return fmt.Errorf("Could not stop validator container %s: %w", containerName, err)
 		}
 
 	} else {
