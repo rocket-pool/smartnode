@@ -39,3 +39,16 @@ func reverseResolveEnsName(c *cli.Context, address common.Address) (*api.Resolve
 	response.EnsName = name
 	return &response, nil
 }
+
+func formatResolvedAddress(c *cli.Context, address common.Address) string {
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return address.Hex()
+	}
+
+	name, err := ens.ReverseResolve(rp.Client, address)
+	if err != nil {
+		return address.Hex()
+	}
+	return name
+}
