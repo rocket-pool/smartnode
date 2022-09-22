@@ -951,33 +951,7 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 	if cfg.EnableMevBoost.Value == true {
 		config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
 		if cfg.MevBoost.Mode.Value == config.Mode_Local {
-			relays := []string{}
-			if cfg.MevBoost.FlashbotsRelay.Value == true {
-				url := cfg.MevBoost.flashbotsUrls[cfg.Smartnode.Network.Value.(config.Network)]
-				if url != "" {
-					relays = append(relays, url)
-				}
-			}
-			if cfg.MevBoost.BloxRouteEthicalRelay.Value == true {
-				url := cfg.MevBoost.bloxRouteEthicalUrls[cfg.Smartnode.Network.Value.(config.Network)]
-				if url != "" {
-					relays = append(relays, url)
-				}
-			}
-			if cfg.MevBoost.BloxRouteMaxProfitRelay.Value == true {
-				url := cfg.MevBoost.bloxRouteMaxProfitUrls[cfg.Smartnode.Network.Value.(config.Network)]
-				if url != "" {
-					relays = append(relays, url)
-				}
-			}
-			if cfg.MevBoost.BloxRouteRegulatedRelay.Value == true {
-				url := cfg.MevBoost.bloxRouteRegulatedUrls[cfg.Smartnode.Network.Value.(config.Network)]
-				if url != "" {
-					relays = append(relays, url)
-				}
-			}
-			relayString := strings.Join(relays, ",")
-			envVars[mevBoostRelaysEnvVar] = relayString
+			envVars[mevBoostRelaysEnvVar] = cfg.MevBoost.GetRelayString()
 			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
 
 			// Handle open API port

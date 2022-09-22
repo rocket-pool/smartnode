@@ -142,9 +142,26 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 		}
 	}
 
+	// Create an array of remaining keys that preserves the minipool order (required for the recovery offset to work)
+	var remainingPubkeys []types.ValidatorPubkey
+
+	if len(pubkeyMap) == len(pubkeys) {
+		// If there were no custom keys, run the whole thing on the original set
+		remainingPubkeys = pubkeys
+	} else {
+		// Go through each original key in order; if it's still in the pubkey map, add it
+		remainingPubkeys = make([]types.ValidatorPubkey, 0, len(pubkeyMap))
+		for _, pubkey := range pubkeys {
+			_, exists := pubkeyMap[pubkey]
+			if exists {
+				remainingPubkeys = append(remainingPubkeys, pubkey)
+			}
+		}
+	}
+
 	// Recover remaining validator keys normally
 	index := uint(0)
-	for pubkey := range pubkeyMap {
+	for _, pubkey := range remainingPubkeys {
 		if testOnly {
 			index, err = w.TestRecoverValidatorKey(pubkey, index)
 			index++
