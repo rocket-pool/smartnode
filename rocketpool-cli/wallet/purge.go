@@ -57,7 +57,8 @@ func purge(c *cli.Context) error {
 		fmt.Printf("%sNOTE: As you are in Native mode, please restart your node and watchtower services manually to remove the cached wallet information.%s\n\n", colorYellow, colorReset)
 	}
 
-	fmt.Println("Deleted the node wallet and all validator keys.")
+	fmt.Printf("Deleted the node wallet and all validator keys.\n**Please verify that the keys have been removed by looking at your validator logs before continuing.**\n\n")
+	fmt.Printf("%sWARNING: If you intend to use these keys for validating again on this or any other machine, you must wait **at least fifteen minutes** after running this command before you can safely begin validating with them again.\nFailure to wait **could cause you to be slashed!**%s\n", colorYellow, colorReset)
 	return nil
 
 }

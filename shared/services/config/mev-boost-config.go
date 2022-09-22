@@ -97,7 +97,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		FlashbotsRelay: config.Parameter{
 			ID:                   "flashbotsEnabled",
 			Name:                 "Use Flashbots Relay",
-			Description:          "Select this to enable the official Flashbots relay. You can enable multiple relays.\n\nFlashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space. It does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
+			Description:          "Select this to enable the official Flashbots relay. [gold]You can enable multiple relays.[white]\n\nFlashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space.\n\nThis relay does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -109,7 +109,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		BloxRouteEthicalRelay: config.Parameter{
 			ID:                   "bloxRouteEthicalEnabled",
 			Name:                 "Use bloXroute Ethical Relay",
-			Description:          "Select this to enable the \"ethical\" relay from bloXroute. You can enable multiple relays.\n\nThis relay does not include a blacklist, and ignores bundles that extract value from Ethereum users by frontrunning their transactions (\"sandwich attacks\").\n\nUses Address Blacklist: NO\nIncludes Frontrunning: NO",
+			Description:          "Select this to enable the \"ethical\" relay from bloXroute. [gold]You can enable multiple relays.[white]\n\nThis relay does not include a blacklist, and ignores bundles that extract value from Ethereum users by frontrunning their transactions (\"sandwich attacks\").\n\nUses Address Blacklist: NO\nIncludes Frontrunning: NO",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -121,7 +121,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		BloxRouteMaxProfitRelay: config.Parameter{
 			ID:                   "bloxRouteMaxProfitEnabled",
 			Name:                 "Use bloXroute Max Profit Relay",
-			Description:          "Select this to enable the \"max profit\" relay from bloXroute. You can enable multiple relays.\n\nThis relay does not include a blacklist, and allows for all types of MEV which includes sandwiching and front-running bundles.\n\nUses Address Blacklist: NO\nIncludes Frontrunning: YES",
+			Description:          "Select this to enable the \"max profit\" relay from bloXroute. [gold]You can enable multiple relays.[white]\n\nThis relay does not include a blacklist, and allows for all types of MEV which includes sandwiching and front-running bundles.\n\nUses Address Blacklist: NO\nIncludes Frontrunning: YES",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -133,7 +133,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		BloxRouteRegulatedRelay: config.Parameter{
 			ID:                   "bloxRouteRegulatedEnabled",
 			Name:                 "Use bloXroute Regulated Relay",
-			Description:          "Select this to enable the \"regulated\" relay from bloXroute. You can enable multiple relays.\n\nThis relay allows for all types of MEV which includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
+			Description:          "Select this to enable the \"regulated\" relay from bloXroute. [gold]You can enable multiple relays.[white]\n\nThis relay allows for all types of MEV which includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -145,7 +145,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		BlocknativeRelay: config.Parameter{
 			ID:                   "blocknativeEnabled",
 			Name:                 "Use Blocknative Relay",
-			Description:          "Select this to enable the Blocknative relay. You can enable multiple relays.\n\nBlocknative is a large blockchain infrastructure company that provides a popular MEV relay. It does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
+			Description:          "Select this to enable the Blocknative relay. [gold]You can enable multiple relays.[white]\n\nBlocknative is a large blockchain infrastructure company that provides a popular MEV relay.\n\nThis relay does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
@@ -157,7 +157,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		EdenRelay: config.Parameter{
 			ID:                   "edenEnabled",
 			Name:                 "Use Eden Relay",
-			Description:          "Select this to enable the Eden Network relay. You can enable multiple relays.\n\nEden is a transaction network aimed at protecting its users from value extraction. It does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
+			Description:          "Select this to enable the Eden Network relay. [gold]You can enable multiple relays.[white]\n\nEden Network is the home of Eden Relay, a block building hub focused on optimising block rewards for validators.\n\nThis relay does not filter on MEV type, so it includes sandwiching and front-running bundles.\n\nNote that this relay obeys some government sanctions lists (e.g., OFAC compliance), and will not include transactions from blacklisted addresses.\n\nUses Address Blacklist: YES\nIncludes Frontrunning: YES",
 			Type:                 config.ParameterType_Bool,
 			Default:              map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},

@@ -147,11 +147,11 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== The Merge ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Merge of the Execution and Consensus layers is happening between September 10th and 20th! This version of the Smartnode fully supports it.\n")
+	fmt.Printf("%s=== New MEV-Boost Relays ===%s\n", colorGreen, colorReset)
+	fmt.Println("Two new relays have been added to MEV-Boost: Blocknative and Eden. Run `rocketpool service config` and visit the MEV-Boost section to enable them!\n")
 
-	fmt.Printf("%s=== MEV-Boost ===%s\n", colorGreen, colorReset)
-	fmt.Println("MEV-Boost has been enabled for Mainnet, and four relays from Flashbots and bloXroute have been bundled with the Smartnode! You can now choose one or more of them and opt in if you'd like to earn extra MEV rewards on your proposals after the Merge.\n")
+	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
+	fmt.Println("- `rocketpool wallet purge` can be used to delete your node wallet and password, as well as all of your Validator Client artifacts (i.e. your validator keys and its slashing database). It's useful for people that want to remove the node from their wallet to prevent attesting, but want to preserve the chain data.\n")
 
 	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
 	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
