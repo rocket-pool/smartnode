@@ -38,8 +38,6 @@ import (
 
 // Settings
 const MinipoolBalanceDetailsBatchSize = 20
-const SubmitFollowDistanceBalances = 2
-const ConfirmDistanceBalances = 30
 
 // Submit network balances task
 type submitNetworkBalances struct {
