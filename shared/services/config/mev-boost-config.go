@@ -346,12 +346,6 @@ func (cfg *MevBoostConfig) GetRelayString() string {
 			relays = append(relays, url)
 		}
 	}
-	if cfg.BloxRouteRegulatedRelay.Value == true {
-		url := cfg.bloxRouteRegulatedUrls[network]
-		if url != "" {
-			relays = append(relays, url)
-		}
-	}
 	if cfg.BlocknativeRelay.Value == true {
 		url := cfg.blocknativeUrls[network]
 		if url != "" {
