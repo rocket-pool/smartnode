@@ -405,7 +405,7 @@ type ResolveEnsNameResponse struct {
 	Status  string         `json:"status"`
 	Error   string         `json:"error"`
 	Address common.Address `json:"address"`
-	EnsName string         `json:"EnsName"`
+	EnsName string         `json:"ensName"`
 }
 type SnapshotProposal struct {
 	Id            string    `json:"id"`
