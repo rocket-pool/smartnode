@@ -30,6 +30,7 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -311,12 +312,23 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 
 }
 
+// Prints a message to the log
+func (t *submitNetworkBalances) printMessage(message string) {
+	t.log.Println(message)
+}
+
 // Get the network balances at a specific block
 func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, beaconBlock uint64) (networkBalances, error) {
 
 	// Initialize call options
 	opts := &bind.CallOpts{
 		BlockNumber: elBlockHeader.Number,
+	}
+
+	// Get a client with the block number available
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
+	if err != nil {
+		return networkBalances{}, err
 	}
 
 	// Data
@@ -331,14 +343,14 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	// Get deposit pool balance
 	wg.Go(func() error {
 		var err error
-		depositPoolBalance, err = deposit.GetBalance(t.rp, opts)
+		depositPoolBalance, err = deposit.GetBalance(client, opts)
 		return err
 	})
 
 	wg.Go(func() error {
 		// Get minipool balance details
 		var err error
-		minipoolBalanceDetails, err = t.getNetworkMinipoolBalanceDetails(opts)
+		minipoolBalanceDetails, err = t.getNetworkMinipoolBalanceDetails(client, opts)
 		if err != nil {
 			return err
 		}
@@ -372,7 +384,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		}
 
 		// Get distributor balance details
-		distributorShares, err = t.getFeeDistributorBalances(opts, avgNodeFees)
+		distributorShares, err = t.getFeeDistributorBalances(client, opts, avgNodeFees)
 		return err
 	})
 
@@ -380,18 +392,18 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	wg.Go(func() error {
 
 		// Get the current interval
-		currentIndexBig, err := rewards.GetRewardIndex(t.rp, opts)
+		currentIndexBig, err := rewards.GetRewardIndex(client, opts)
 		if err != nil {
 			return fmt.Errorf("error getting current reward index: %w", err)
 		}
 		currentIndex := currentIndexBig.Uint64()
 
 		// Get the start time for the current interval, and how long an interval is supposed to take
-		startTime, err := rewards.GetClaimIntervalTimeStart(t.rp, opts)
+		startTime, err := rewards.GetClaimIntervalTimeStart(client, opts)
 		if err != nil {
 			return fmt.Errorf("error getting claim interval start time: %w", err)
 		}
-		intervalTime, err := rewards.GetClaimIntervalTime(t.rp, opts)
+		intervalTime, err := rewards.GetClaimIntervalTime(client, opts)
 		if err != nil {
 			return fmt.Errorf("error getting claim interval time: %w", err)
 		}
@@ -408,7 +420,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 		// Approximate the staker's share of the smoothing pool balance
 		rewardsFile := rprewards.NewRewardsFile(t.log, "[Balances]", currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed))
-		smoothingPoolShare, err = rewardsFile.ApproximateStakerShareOfSmoothingPool(t.rp, t.cfg, t.bc)
+		smoothingPoolShare, err = rewardsFile.ApproximateStakerShareOfSmoothingPool(client, t.cfg, t.bc)
 		if err != nil {
 			return fmt.Errorf("error getting approximate share of smoothing pool: %w", err)
 		}
@@ -470,7 +482,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 }
 
 // Get all minipool balance details
-func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(client *rocketpool.RocketPool, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
 
 	// Data
 	var wg1 errgroup.Group
@@ -482,7 +494,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 	// Get minipool addresses
 	wg1.Go(func() error {
 		var err error
-		addresses, err = minipool.GetMinipoolAddresses(t.rp, opts)
+		addresses, err = minipool.GetMinipoolAddresses(client, opts)
 		return err
 	})
 
@@ -502,7 +514,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 
 	// Get block time
 	wg1.Go(func() error {
-		header, err := t.ec.HeaderByNumber(context.Background(), opts.BlockNumber)
+		header, err := client.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
 		if err == nil {
 			blockTime = header.Time
 		}
@@ -521,7 +533,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 	}
 
 	// Get minipool validator statuses
-	validators, err := rp.GetMinipoolValidators(t.rp, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
+	validators, err := rp.GetMinipoolValidators(client, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
 	if err != nil {
 		return []minipoolBalanceDetails{}, err
 	}
@@ -547,7 +559,7 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 			wg.Go(func() error {
 				address := addresses[mi]
 				validator := validators[address]
-				mpDetails, err := t.getMinipoolBalanceDetails(address, opts, validator, eth2Config, blockEpoch)
+				mpDetails, err := t.getMinipoolBalanceDetails(client, address, opts, validator, eth2Config, blockEpoch)
 				if err == nil {
 					details[mi] = mpDetails
 				}
@@ -566,10 +578,10 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 }
 
 // Get minipool balance details
-func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
+func (t *submitNetworkBalances) getMinipoolBalanceDetails(client *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(client, minipoolAddress)
 	if err != nil {
 		return minipoolBalanceDetails{}, err
 	}

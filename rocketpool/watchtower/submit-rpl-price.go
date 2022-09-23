@@ -29,6 +29,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -315,8 +316,20 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 		BlockNumber: big.NewInt(int64(blockNumber)),
 	}
 
+	// Get a client with the block number available
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate an OIO wrapper using the client
+	oio, err := contracts.NewOneInchOracle(common.HexToAddress(t.cfg.Smartnode.GetOneInchOracleAddress()), client.Client)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get RPL price
-	rplPrice, err := t.oio.GetRateToEth(opts, rplAddress, true)
+	rplPrice, err := oio.GetRateToEth(opts, rplAddress, true)
 	if err != nil {
 		return nil, fmt.Errorf("Could not get RPL price at block %d: %w", blockNumber, err)
 	}
@@ -324,6 +337,10 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 	// Return
 	return rplPrice, nil
 
+}
+
+func (t *submitRplPrice) printMessage(message string) {
+	t.log.Println(message)
 }
 
 // Submit RPL price and total effective RPL stake
