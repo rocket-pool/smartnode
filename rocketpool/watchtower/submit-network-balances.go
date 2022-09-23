@@ -431,7 +431,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	// Get rETH contract balance
 	wg.Go(func() error {
-		rethContractAddress, err := t.rp.GetAddress("rocketTokenRETH")
+		rethContractAddress, err := client.GetAddress("rocketTokenRETH")
 		if err != nil {
 			return err
 		}
@@ -442,7 +442,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	// Get rETH token supply
 	wg.Go(func() error {
 		var err error
-		rethTotalSupply, err = tokens.GetRETHTotalSupply(t.rp, opts)
+		rethTotalSupply, err = tokens.GetRETHTotalSupply(client, opts)
 		return err
 	})
 
