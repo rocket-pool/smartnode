@@ -44,6 +44,8 @@ The following commands are available via the smart node client:
 - `rocketpool wallet recover` - Recover a node wallet from a mnemonic phrase
 - `rocketpool wallet rebuild` - Rebuild validator keystores from derived keys
 - `rocketpool wallet export` - Export the node's wallet information
+- `rocketpool wallet purge` - Delete your node wallet, password, as well as all of your Validator Client artifacts (chain data is not deleted) 
+- `rocketpool wallet set-ens-name` - Send a transaction from the node wallet to configure it's ENS name
 
 - `rocketpool node status` - Display the current status of the node
 - `rocketpool node register` - Register the node with the Rocket Pool network
