@@ -344,7 +344,10 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	wg.Go(func() error {
 		var err error
 		depositPoolBalance, err = deposit.GetBalance(client, opts)
-		return fmt.Errorf("error getting deposit pool balance: %w", err)
+		if err != nil {
+			return fmt.Errorf("error getting deposit pool balance: %w", err)
+		}
+		return nil
 	})
 
 	wg.Go(func() error {
