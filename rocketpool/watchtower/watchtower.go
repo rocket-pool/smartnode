@@ -1,6 +1,7 @@
 package watchtower
 
 import (
+	"fmt"
 	"math/rand"
 	"net/http"
 	"sync"
@@ -69,43 +70,43 @@ func run(c *cli.Context) error {
 	// Initialize tasks
 	respondChallenges, err := newRespondChallenges(c, log.NewColorLogger(RespondChallengesColor))
 	if err != nil {
-		return err
+		return fmt.Errorf("error during respond-to-challenges check: %w", err)
 	}
 	submitRplPrice, err := newSubmitRplPrice(c, log.NewColorLogger(SubmitRplPriceColor))
 	if err != nil {
-		return err
+		return fmt.Errorf("error during rpl price check: %w", err)
 	}
 	submitNetworkBalances, err := newSubmitNetworkBalances(c, log.NewColorLogger(SubmitNetworkBalancesColor))
 	if err != nil {
-		return err
+		return fmt.Errorf("error during network balances check: %w", err)
 	}
 	submitWithdrawableMinipools, err := newSubmitWithdrawableMinipools(c, log.NewColorLogger(SubmitWithdrawableMinipoolsColor))
 	if err != nil {
-		return err
+		return fmt.Errorf("error during withdrawable minipools check: %w", err)
 	}
 	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	if err != nil {
-		return err
+		return fmt.Errorf("error during timed-out minipools check: %w", err)
 	}
 	processWithdrawals, err := newProcessWithdrawals(c, log.NewColorLogger(ProcessWithdrawalsColor))
 	if err != nil {
-		return err
+		return fmt.Errorf("error during withdrawal processing check: %w", err)
 	}
 	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
 	if err != nil {
-		return err
+		return fmt.Errorf("error during scrub check: %w", err)
 	}
 	submitRewardsTree, err := newSubmitRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
 	if err != nil {
-		return err
+		return fmt.Errorf("error during rewards tree check: %w", err)
 	}
 	/*processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
-		return err
+		return fmt.Errorf("error during penalties check: %w", err)
 	}*/
 	generateRewardsTree, err := newGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
 	if err != nil {
-		return err
+		return fmt.Errorf("error during manual tree generation check: %w", err)
 	}
 
 	intervalDelta := maxTasksInterval - minTasksInterval
