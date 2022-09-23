@@ -38,7 +38,7 @@ import (
 )
 
 // Settings
-const MinipoolBalanceDetailsBatchSize = 20
+const MinipoolBalanceDetailsBatchSize = 8
 
 // Submit network balances task
 type submitNetworkBalances struct {
@@ -671,10 +671,10 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(client *rocketpool.Roc
 }
 
 // Get the fee distributor balances
-func (t *submitNetworkBalances) getFeeDistributorBalances(opts *bind.CallOpts, avgNodeFees map[common.Address]*big.Int) ([]*big.Int, error) {
+func (t *submitNetworkBalances) getFeeDistributorBalances(client *rocketpool.RocketPool, opts *bind.CallOpts, avgNodeFees map[common.Address]*big.Int) ([]*big.Int, error) {
 
 	// Get all of the nodes
-	nodeAddresses, err := node.GetNodeAddresses(t.rp, opts)
+	nodeAddresses, err := node.GetNodeAddresses(client, opts)
 	if err != nil {
 		return []*big.Int{}, fmt.Errorf("error getting node addresses: %w", err)
 	}
@@ -696,11 +696,11 @@ func (t *submitNetworkBalances) getFeeDistributorBalances(opts *bind.CallOpts, a
 			wg.Go(func() error {
 				// Get the fee distributor's balance
 				address := nodeAddresses[ni]
-				distributor, err := node.GetDistributorAddress(t.rp, address, opts)
+				distributor, err := node.GetDistributorAddress(client, address, opts)
 				if err != nil {
 					return fmt.Errorf("error getting distributor for node %s: %w", address.Hex(), err)
 				}
-				distributorBalance, err := t.ec.BalanceAt(context.Background(), distributor, opts.BlockNumber)
+				distributorBalance, err := client.Client.BalanceAt(context.Background(), distributor, opts.BlockNumber)
 				if err != nil {
 					return fmt.Errorf("error getting distributor balance for distributor %s, node %s: %w", distributor.Hex(), address.Hex(), err)
 				}
