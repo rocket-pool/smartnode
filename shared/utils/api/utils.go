@@ -54,7 +54,7 @@ func PrintAndCheckGasInfo(gasInfo rocketpool.GasInfo, checkThreshold bool, gasTh
 	return true
 }
 
-// Print a TX's details to the logger and waits for it to be mined.
+// Print a TX's details to the logger and waits for it to be included in a block.
 func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, ec rocketpool.ExecutionClient, logger log.ColorLogger) error {
 
 	txWatchUrl := cfg.Smartnode.GetTxWatchUrl()
@@ -65,11 +65,11 @@ func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, 
 		logger.Printlnf("You may follow its progress by visiting:")
 		logger.Printlnf("%s/%s\n", txWatchUrl, hashString)
 	}
-	logger.Println("Waiting for the transaction to be mined...")
+	logger.Println("Waiting for the transaction to be included in a block...")
 
-	// Wait for the TX to be mined
+	// Wait for the TX to be included in a block
 	if _, err := utils.WaitForTransaction(ec, hash); err != nil {
-		return fmt.Errorf("Error mining transaction: %w", err)
+		return fmt.Errorf("Error waiting for transaction: %w", err)
 	}
 
 	return nil

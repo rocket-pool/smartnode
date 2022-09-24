@@ -276,7 +276,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "wait-and-swap-rpl",
 				Aliases:   []string{"p2"},
-				Usage:     "Swap old RPL for new RPL, waiting for the approval TX hash to be mined first",
+				Usage:     "Swap old RPL for new RPL, waiting for the approval TX hash to be include in a block first",
 				UsageText: "rocketpool api node wait-and-swap-rpl amount tx-hash",
 				Action: func(c *cli.Context) error {
 
@@ -406,7 +406,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "wait-and-stake-rpl",
 				Aliases:   []string{"k2"},
-				Usage:     "Stake RPL against the node, waiting for approval tx-hash to be mined first",
+				Usage:     "Stake RPL against the node, waiting for approval tx-hash to be included in a block first",
 				UsageText: "rocketpool api node wait-and-stake-rpl amount tx-hash",
 				Action: func(c *cli.Context) error {
 

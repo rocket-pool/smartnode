@@ -19,7 +19,7 @@ const colorLightBlue string = "\033[36m"
 // Print a TX's details to the console.
 func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
 
-	finalMessage := "Waiting for the transaction to be mined... you may wait here for it, or press CTRL+C to exit and return to the terminal.\n\n"
+	finalMessage := "Waiting for the transaction to be included in a block... you may wait here for it, or press CTRL+C to exit and return to the terminal.\n\n"
 	printTransactionHashImpl(rp, hash, finalMessage)
 
 }
@@ -27,7 +27,7 @@ func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
 // Print a TX's details to the console, but inform the user NOT to cancel it.
 func PrintTransactionHashNoCancel(rp *rocketpool.Client, hash common.Hash) {
 
-	finalMessage := "Waiting for the transaction to be mined... **DO NOT EXIT!** This transaction is one of several that must be completed.\n\n"
+	finalMessage := "Waiting for the transaction to be included in a block... **DO NOT EXIT!** This transaction is one of several that must be completed.\n\n"
 	printTransactionHashImpl(rp, hash, finalMessage)
 
 }

@@ -44,15 +44,15 @@ func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
 			return fmt.Errorf("Can't use nonce %s because it's greater than the next available nonce (%d).", customNonceString, nextNonceUint)
 		}
 
-		// Make sure the nonce hasn't already been mined
-		latestMinedNonceUint, err := ec.NonceAt(context.Background(), opts.From, nil)
+		// Make sure the nonce hasn't already been included in a block
+		latestProposedNonceUint, err := ec.NonceAt(context.Background(), opts.From, nil)
 		if err != nil {
 			return fmt.Errorf("Could not get latest nonce: %w", err)
 		}
 
-		latestMinedNonce := big.NewInt(0).SetUint64(latestMinedNonceUint)
-		if customNonce.Cmp(latestMinedNonce) == -1 {
-			return fmt.Errorf("Can't use nonce %s because it has already been mined.", customNonceString)
+		latestProposedNonce := big.NewInt(0).SetUint64(latestProposedNonceUint)
+		if customNonce.Cmp(latestProposedNonce) == -1 {
+			return fmt.Errorf("Can't use nonce %s because it has already been included in a block.", customNonceString)
 		}
 
 		// It points to a pending transaction, so this is a valid thing to do

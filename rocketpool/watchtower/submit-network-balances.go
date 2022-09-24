@@ -821,7 +821,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 		return fmt.Errorf("error submitting balances: %w", err)
 	}
 
-	// Print TX info and wait for it to be mined
+	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return fmt.Errorf("error waiting for transaction: %w", err)
