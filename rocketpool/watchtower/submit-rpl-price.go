@@ -378,7 +378,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 		return err
 	}
 
-	// Print TX info and wait for it to be mined
+	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return err
@@ -518,7 +518,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 			return fmt.Errorf("Failed to submit rate: %q", err)
 		}
 
-		// Print TX info and wait for it to be mined
+		// Print TX info and wait for it to be included in a block
 		err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 		if err != nil {
 			return err

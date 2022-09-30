@@ -237,7 +237,7 @@ func (c *Client) NodeSwapRplApprove(amountWei *big.Int) (api.NodeSwapRplApproveR
 	return response, nil
 }
 
-// Swap node's old RPL tokens for new RPL tokens, waiting for the approval to be mined first
+// Swap node's old RPL tokens for new RPL tokens, waiting for the approval to be included in a block first
 func (c *Client) NodeWaitAndSwapRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeSwapRplSwapResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-swap-rpl %s %s", amountWei.String(), approvalTxHash.String()))
 	if err != nil {
@@ -333,7 +333,7 @@ func (c *Client) NodeStakeRplApprove(amountWei *big.Int) (api.NodeStakeRplApprov
 	return response, nil
 }
 
-// Stake RPL against the node waiting for approvalTxHash to be mined first
+// Stake RPL against the node waiting for approvalTxHash to be included in a block first
 func (c *Client) NodeWaitAndStakeRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeStakeRplStakeResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-stake-rpl %s %s", amountWei.String(), approvalTxHash.String()))
 	if err != nil {

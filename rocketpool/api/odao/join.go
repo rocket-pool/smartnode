@@ -196,7 +196,7 @@ func waitForApprovalAndJoin(c *cli.Context, hash common.Hash) (*api.JoinTNDAOJoi
 		return nil, err
 	}
 
-	// Wait for the RPL approval TX to successfully get mined
+	// Wait for the RPL approval TX to successfully get included in a block
 	_, err = utils.WaitForTransaction(rp.Client, hash)
 	if err != nil {
 		return nil, err

@@ -67,9 +67,9 @@ func PrintAndWaitForTransaction(cfg *config.RocketPoolConfig, hash common.Hash, 
 	}
 	logger.Println("Waiting for the transaction to be validated...")
 
-	// Wait for the TX to be validated
+	// Wait for the TX to be included in a block
 	if _, err := utils.WaitForTransaction(ec, hash); err != nil {
-		return fmt.Errorf("Error validating transaction: %w", err)
+		return fmt.Errorf("Error waiting for transaction: %w", err)
 	}
 
 	return nil
