@@ -927,7 +927,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	if selectedEc == cfgtypes.ExecutionClient_Geth {
 		if cfg.UseFallbackClients.Value == false {
-			fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}

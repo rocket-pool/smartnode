@@ -55,9 +55,6 @@ type SmartnodeConfig struct {
 	// The path of the watchtower's persistent state storage
 	WatchtowerStatePath config.Parameter `yaml:"watchtowerStatePath"`
 
-	// The command for restarting the validator container in native mode
-	ValidatorRestartCommand config.Parameter `yaml:"validatorRestartCommand,omitempty"`
-
 	// Which network we're on
 	Network config.Parameter `yaml:"network,omitempty"`
 
