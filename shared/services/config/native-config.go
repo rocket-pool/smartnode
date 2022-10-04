@@ -128,7 +128,7 @@ func getDefaultValidatorRestartCommand(config *RocketPoolConfig) string {
 }
 
 func getDefaultValidatorStopCommand(config *RocketPoolConfig) string {
-	return filepath.Join(config.RocketPoolDirectory, "stop-vc.sh")
+	return filepath.Join(config.RocketPoolDirectory, "stop-validator.sh")
 }
 
 // The the title for the config
