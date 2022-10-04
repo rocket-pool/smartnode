@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	nimbusTagTest            string = "statusim/nimbus-eth2:multiarch-v22.9.1"
-	nimbusTagProd            string = "statusim/nimbus-eth2:multiarch-v22.9.1"
+	nimbusTagTest            string = "statusim/nimbus-eth2:multiarch-v22.10.0"
+	nimbusTagProd            string = "statusim/nimbus-eth2:multiarch-v22.10.0"
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
 )
