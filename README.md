@@ -6,25 +6,29 @@
 
 ---
 
-Rocket Pool is a next generation Ethereum proof of stake (PoS) infrastructure service designed to be highly decentralised, distributed, and compatible with Ethereum's new consensus protocol.
+Rocket Pool is a next generation Ethereum Proof-of-Stake (PoS) infrastructure service designed to be highly decentralised, distributed, and compatible with Ethereum's new consensus protocol.
 
-Running a Rocket Pool smart node allows you to stake on Ethereum with only 16 ETH and 1.6 ETH worth of Rocket Pool's RPL token. You can earn a higher return than you would outside the network by capturing an additional 15% commission on staked ETH as well as RPL rewards.
+Running a Rocket Pool smart node allows you to stake on Ethereum with only 16 ETH and 1.6 ETH worth of Rocket Pool's RPL token.
+You can earn a higher return than you would outside the network by capturing an additional 15% commission on staked ETH as well as RPL rewards.
 
 This repository contains the source code for:
 
-* The Rocket Pool smart node client (CLI), which is used to manage a smart node either locally or remotely (over SSH)
-* The Rocket Pool smart node service, which provides an API for client communication and performs background node tasks
+* The Rocket Pool Smartnode client (CLI), which is used to manage a smart node either locally or remotely (over SSH)
+* The Rocket Pool Smartnode service, which provides an API for client communication and performs background node tasks
 
-The smart node service is designed to be run as part of a docker stack and generally does not need to be installed manually.
-See the [Rocket Pool dockerhub](https://hub.docker.com/u/rocketpool) page for a complete list of docker images.
+The Smartnode service is designed to be run as part of a Docker stack and generally does not need to be installed manually.
+See the [Rocket Pool dockerhub](https://hub.docker.com/u/rocketpool) page for a complete list of Docker images.
+
 
 ## Installation
 
-See the [Smart Node Installer](https://github.com/rocket-pool/smartnode-install) repository for supported platforms and installation instructions.
+See the [Smartnode Installer](https://github.com/rocket-pool/smartnode-install) repository for supported platforms and installation instructions.
+
 
 ## CLI Commands
 
-The following commands are available via the smart node client:
+The following commands are available via the Smartnode client:
+
 
 ### COMMANDS:
 - **auction**, a - Manage Rocket Pool RPL auctions
