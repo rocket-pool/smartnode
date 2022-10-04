@@ -134,7 +134,7 @@ func leaveSmoothingPool(c *cli.Context) error {
 		return nil
 	}
 
-	// Set the fee recipient to the Smoothing Pool
+	// Set the fee recipient to the Fee Distributor
 	response, err := rp.NodeSetSmoothingPoolStatus(false)
 	if err != nil {
 		return err
