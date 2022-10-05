@@ -153,6 +153,9 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
 	fmt.Println("- `rocketpool wallet purge` can be used to delete your node wallet and password, as well as all of your Validator Client artifacts (i.e. your validator keys and its slashing database). It's useful for people that want to remove the node from their wallet to prevent attesting, but want to preserve the chain data.\n")
 
+	fmt.Printf("%s=== Native Mode Update ===%s\n", colorGreen, colorReset)
+	fmt.Println("Native Mode has gone through a significant update to improve the ease-of-use and resolve some permissions problems.\nIf you're a Native Mode user, please check out the new guide at https://docs.rocketpool.net/guides/node/native.html.\n")
+
 	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
 	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
 }
