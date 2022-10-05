@@ -22,7 +22,7 @@ const (
 	KeystoreDir   = "teku"
 	SecretsDir    = "passwords"
 	ValidatorsDir = "keys"
-	DirMode       = 0750
+	DirMode       = 0770
 	FileMode      = 0640
 )
 

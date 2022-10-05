@@ -23,7 +23,7 @@ const (
 	SecretsDir    = "secrets"
 	ValidatorsDir = "validators"
 	KeyFileName   = "voting-keystore.json"
-	DirMode       = 0750
+	DirMode       = 0770
 	FileMode      = 0640
 )
 
