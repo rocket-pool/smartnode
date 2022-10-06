@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/prysmaticlabs/prysm/v2/beacon-chain/core/signing"
+	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -21,8 +21,8 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	prdeposit "github.com/prysmaticlabs/prysm/v2/contracts/deposit"
-	ethpb "github.com/prysmaticlabs/prysm/v2/proto/prysm/v1alpha1"
+	prdeposit "github.com/prysmaticlabs/prysm/v3/contracts/deposit"
+	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"

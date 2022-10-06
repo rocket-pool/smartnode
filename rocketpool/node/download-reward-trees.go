@@ -2,11 +2,10 @@ package node
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"os"
 
 	"github.com/docker/docker/client"
-	"github.com/klauspost/compress/zstd"
+	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/urfave/cli"
 
@@ -90,22 +89,24 @@ func (d *downloadRewardsTrees) run() error {
 		return err
 	}
 
-	// Get the unclaimed intervals
-	unclaimed, _, err := rprewards.GetClaimStatus(d.rp, nodeAccount.Address)
+	// Get the current interval
+	currentIndexBig, err := rewards.GetRewardIndex(d.rp, nil)
 	if err != nil {
 		return err
 	}
+	currentIndex := currentIndexBig.Uint64()
 
 	// Check for missing intervals
-	missingIntervals := []rprewards.IntervalInfo{}
-	for _, interval := range unclaimed {
-		intervalInfo, err := rprewards.GetIntervalInfo(d.rp, d.cfg, nodeAccount.Address, interval)
-		if err != nil {
-			return err
-		}
-		if !intervalInfo.TreeFileExists {
-			d.log.Printlnf("You are missing the rewards tree file for interval %d.", intervalInfo.Index)
-			missingIntervals = append(missingIntervals, intervalInfo)
+	missingIntervals := []uint64{}
+	for i := uint64(0); i < currentIndex; i++ {
+		// Check if the tree file exists
+		treeFilePath := d.cfg.Smartnode.GetRewardsTreePath(i, true)
+		_, err = os.Stat(treeFilePath)
+		if os.IsNotExist(err) {
+			d.log.Printlnf("You are missing the rewards tree file for interval %d.", i)
+			missingIntervals = append(missingIntervals, i)
+		} else if err != nil {
+			return fmt.Errorf("error checking if rewards interval %d file exists: %w", i, err)
 		}
 	}
 
@@ -115,8 +116,12 @@ func (d *downloadRewardsTrees) run() error {
 
 	// Download missing intervals
 	for _, missingInterval := range missingIntervals {
-		fmt.Printf("Downloading interval %d file... ", missingInterval.Index)
-		err := rprewards.DownloadRewardsFile(d.cfg, missingInterval.Index, missingInterval.CID, true)
+		fmt.Printf("Downloading interval %d file... ", missingInterval)
+		intervalInfo, err := rprewards.GetIntervalInfo(d.rp, d.cfg, nodeAccount.Address, missingInterval)
+		if err != nil {
+			return fmt.Errorf("error getting interval %d info: %w", missingInterval, err)
+		}
+		err = rprewards.DownloadRewardsFile(d.cfg, missingInterval, intervalInfo.CID, true)
 		if err != nil {
 			fmt.Println()
 			return err
@@ -126,85 +131,4 @@ func (d *downloadRewardsTrees) run() error {
 
 	return nil
 
-}
-
-// Downloads a single rewards file
-func (d *downloadRewardsTrees) downloadRewardsFile(interval uint64, cid string, compressedUrls []string, uncompressedUrls []string) ([]byte, error) {
-
-	for i, url := range compressedUrls {
-		d.log.Printf("Downloading %s... ", url)
-		resp, err := http.Get(url)
-		if err != nil {
-			d.log.Printlnf("failed (%s)", err)
-			continue
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusNotFound {
-			// Not found, try the uncompressed URL
-			// NOTE: this can go after Kiln
-			uncompressedUrl := uncompressedUrls[i]
-			d.log.Printf("not found, trying uncompressed URL (%s)... ", uncompressedUrl)
-			resp, err = http.Get(url)
-			if err != nil {
-				d.log.Printlnf("failed (%s)", err)
-				continue
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK {
-				d.log.Println("failed with status %s", resp.Status)
-				continue
-			} else {
-				// Got it uncompressed, return the body
-				bytes, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					d.log.Printlnf("error reading response bytes: %s", err.Error())
-					continue
-				}
-
-				d.log.Println("done!")
-				return bytes, nil
-			}
-
-		} else if resp.StatusCode != http.StatusOK {
-			d.log.Printlnf("failed with status %s", resp.Status)
-			continue
-		} else {
-			// If we got here, we have a successful download
-			bytes, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				d.log.Printlnf("error reading response bytes: %s", err.Error())
-				continue
-			}
-
-			// Decompress it
-			decompressedBytes, err := d.decompressFile(bytes)
-			if err != nil {
-				d.log.Println(err.Error())
-				continue
-			}
-
-			d.log.Println("done!")
-			return decompressedBytes, nil
-		}
-	}
-
-	return nil, fmt.Errorf("Error downloading rewards file for interval %d: all URLs failed.", interval)
-
-}
-
-// Decompresses a rewards file
-func (d *downloadRewardsTrees) decompressFile(compressedBytes []byte) ([]byte, error) {
-	decoder, err := zstd.NewReader(nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating compression decoder: %w", err)
-	}
-
-	decompressedBytes, err := decoder.DecodeAll(compressedBytes, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error decompressing rewards file: %w", err)
-	}
-
-	return decompressedBytes, nil
 }

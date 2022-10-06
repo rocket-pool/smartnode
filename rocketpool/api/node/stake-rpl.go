@@ -207,7 +207,7 @@ func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.
 		return nil, err
 	}
 
-	// Wait for the RPL approval TX to successfully get mined
+	// Wait for the RPL approval TX to successfully get included in a block
 	_, err = utils.WaitForTransaction(rp.Client, hash)
 	if err != nil {
 		return nil, err

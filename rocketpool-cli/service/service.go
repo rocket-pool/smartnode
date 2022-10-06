@@ -153,6 +153,9 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
 	fmt.Println("- `rocketpool wallet purge` can be used to delete your node wallet and password, as well as all of your Validator Client artifacts (i.e. your validator keys and its slashing database). It's useful for people that want to remove the node from their wallet to prevent attesting, but want to preserve the chain data.\n")
 
+	fmt.Printf("%s=== Native Mode Update ===%s\n", colorGreen, colorReset)
+	fmt.Println("Native Mode has gone through a significant update to improve the ease-of-use and resolve some permissions problems.\nIf you're a Native Mode user, please check out the new guide at https://docs.rocketpool.net/guides/node/native.html.\n")
+
 	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
 	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
 }
@@ -927,7 +930,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	if selectedEc == cfgtypes.ExecutionClient_Geth {
 		if cfg.UseFallbackClients.Value == false {
-			fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}

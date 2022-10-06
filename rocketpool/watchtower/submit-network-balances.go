@@ -30,6 +30,7 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -37,7 +38,7 @@ import (
 )
 
 // Settings
-const MinipoolBalanceDetailsBatchSize = 20
+const MinipoolBalanceDetailsBatchSize = 8
 
 // Submit network balances task
 type submitNetworkBalances struct {
@@ -311,12 +312,23 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 
 }
 
+// Prints a message to the log
+func (t *submitNetworkBalances) printMessage(message string) {
+	t.log.Println(message)
+}
+
 // Get the network balances at a specific block
 func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, beaconBlock uint64) (networkBalances, error) {
 
 	// Initialize call options
 	opts := &bind.CallOpts{
 		BlockNumber: elBlockHeader.Number,
+	}
+
+	// Get a client with the block number available
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
+	if err != nil {
+		return networkBalances{}, err
 	}
 
 	// Data
@@ -331,16 +343,19 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	// Get deposit pool balance
 	wg.Go(func() error {
 		var err error
-		depositPoolBalance, err = deposit.GetBalance(t.rp, opts)
-		return err
+		depositPoolBalance, err = deposit.GetBalance(client, opts)
+		if err != nil {
+			return fmt.Errorf("error getting deposit pool balance: %w", err)
+		}
+		return nil
 	})
 
 	wg.Go(func() error {
 		// Get minipool balance details
 		var err error
-		minipoolBalanceDetails, err = t.getNetworkMinipoolBalanceDetails(opts)
+		minipoolBalanceDetails, err = t.getNetworkMinipoolBalanceDetails(client, opts)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting minipool balance details: %w", err)
 		}
 
 		// Calculate average node fee
@@ -372,32 +387,36 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		}
 
 		// Get distributor balance details
-		distributorShares, err = t.getFeeDistributorBalances(opts, avgNodeFees)
-		return err
+		distributorShares, err = t.getFeeDistributorBalances(client, opts, avgNodeFees)
+		if err != nil {
+			return fmt.Errorf("error getting fee distributor balances: %w", err)
+		}
+
+		return nil
 	})
 
 	// Get the smoothing pool user share
 	wg.Go(func() error {
 
 		// Get the current interval
-		currentIndexBig, err := rewards.GetRewardIndex(t.rp, opts)
+		currentIndexBig, err := rewards.GetRewardIndex(client, opts)
 		if err != nil {
 			return fmt.Errorf("error getting current reward index: %w", err)
 		}
 		currentIndex := currentIndexBig.Uint64()
 
 		// Get the start time for the current interval, and how long an interval is supposed to take
-		startTime, err := rewards.GetClaimIntervalTimeStart(t.rp, opts)
+		startTime, err := rewards.GetClaimIntervalTimeStart(client, opts)
 		if err != nil {
 			return fmt.Errorf("error getting claim interval start time: %w", err)
 		}
-		intervalTime, err := rewards.GetClaimIntervalTime(t.rp, opts)
+		intervalTime, err := rewards.GetClaimIntervalTime(client, opts)
 		if err != nil {
 			return fmt.Errorf("error getting claim interval time: %w", err)
 		}
 
 		// Calculate the intervals passed
-		blockHeader, err := t.ec.HeaderByNumber(context.Background(), opts.BlockNumber)
+		blockHeader, err := client.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
 		if err != nil {
 			return fmt.Errorf("error getting latest block header: %w", err)
 		}
@@ -408,7 +427,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 		// Approximate the staker's share of the smoothing pool balance
 		rewardsFile := rprewards.NewRewardsFile(t.log, "[Balances]", currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed))
-		smoothingPoolShare, err = rewardsFile.ApproximateStakerShareOfSmoothingPool(t.rp, t.cfg, t.bc)
+		smoothingPoolShare, err = rewardsFile.ApproximateStakerShareOfSmoothingPool(client, t.cfg, t.bc)
 		if err != nil {
 			return fmt.Errorf("error getting approximate share of smoothing pool: %w", err)
 		}
@@ -419,19 +438,25 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	// Get rETH contract balance
 	wg.Go(func() error {
-		rethContractAddress, err := t.rp.GetAddress("rocketTokenRETH")
+		rethContractAddress, err := client.GetAddress("rocketTokenRETH")
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting rETH contract address: %w", err)
 		}
-		rethContractBalance, err = t.ec.BalanceAt(context.Background(), *rethContractAddress, opts.BlockNumber)
-		return err
+		rethContractBalance, err = client.Client.BalanceAt(context.Background(), *rethContractAddress, opts.BlockNumber)
+		if err != nil {
+			return fmt.Errorf("error getting rETH contract balance: %w", err)
+		}
+		return nil
 	})
 
 	// Get rETH token supply
 	wg.Go(func() error {
 		var err error
-		rethTotalSupply, err = tokens.GetRETHTotalSupply(t.rp, opts)
-		return err
+		rethTotalSupply, err = tokens.GetRETHTotalSupply(client, opts)
+		if err != nil {
+			return fmt.Errorf("error getting total rETH supply: %w", err)
+		}
+		return nil
 	})
 
 	// Wait for data
@@ -470,7 +495,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 }
 
 // Get all minipool balance details
-func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(client *rocketpool.RocketPool, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
 
 	// Data
 	var wg1 errgroup.Group
@@ -482,31 +507,41 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 	// Get minipool addresses
 	wg1.Go(func() error {
 		var err error
-		addresses, err = minipool.GetMinipoolAddresses(t.rp, opts)
-		return err
+		addresses, err = minipool.GetMinipoolAddresses(client, opts)
+		if err != nil {
+			return fmt.Errorf("error getting minipool addresses: %w", err)
+		}
+		return nil
 	})
 
 	// Get eth2 config
 	wg1.Go(func() error {
 		var err error
 		eth2Config, err = t.bc.GetEth2Config()
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting Beacon config: %w", err)
+		}
+		return nil
 	})
 
 	// Get beacon head
 	wg1.Go(func() error {
 		var err error
 		beaconHead, err = t.bc.GetBeaconHead()
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting Beacon head: %w", err)
+		}
+		return nil
 	})
 
 	// Get block time
 	wg1.Go(func() error {
-		header, err := t.ec.HeaderByNumber(context.Background(), opts.BlockNumber)
-		if err == nil {
-			blockTime = header.Time
+		header, err := client.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
+		if err != nil {
+			return fmt.Errorf("error getting block header for block %s: %w", opts.BlockNumber.String(), err)
 		}
-		return err
+		blockTime = header.Time
+		return nil
 	})
 
 	// Wait for data
@@ -521,9 +556,9 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 	}
 
 	// Get minipool validator statuses
-	validators, err := rp.GetMinipoolValidators(t.rp, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
+	validators, err := rp.GetMinipoolValidators(client, t.bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &blockEpoch})
 	if err != nil {
-		return []minipoolBalanceDetails{}, err
+		return []minipoolBalanceDetails{}, fmt.Errorf("error getting minipool validators: %w", err)
 	}
 
 	// Load details in batches
@@ -547,11 +582,12 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 			wg.Go(func() error {
 				address := addresses[mi]
 				validator := validators[address]
-				mpDetails, err := t.getMinipoolBalanceDetails(address, opts, validator, eth2Config, blockEpoch)
-				if err == nil {
-					details[mi] = mpDetails
+				mpDetails, err := t.getMinipoolBalanceDetails(client, address, opts, validator, eth2Config, blockEpoch)
+				if err != nil {
+					return fmt.Errorf("error getting balance details for minipool %s: %w", address.Hex(), err)
 				}
-				return err
+				details[mi] = mpDetails
+				return nil
 			})
 		}
 		if err := wg.Wait(); err != nil {
@@ -566,10 +602,10 @@ func (t *submitNetworkBalances) getNetworkMinipoolBalanceDetails(opts *bind.Call
 }
 
 // Get minipool balance details
-func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
+func (t *submitNetworkBalances) getMinipoolBalanceDetails(client *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, eth2Config beacon.Eth2Config, blockEpoch uint64) (minipoolBalanceDetails, error) {
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(t.rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(client, minipoolAddress)
 	if err != nil {
 		return minipoolBalanceDetails{}, err
 	}
@@ -586,27 +622,42 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	wg.Go(func() error {
 		var err error
 		status, err = mp.GetStatus(opts)
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting minipool %s status: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 	wg.Go(func() error {
 		var err error
 		userDepositBalance, err = mp.GetUserDepositBalance(opts)
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting user deposit balance for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 	wg.Go(func() error {
 		var err error
 		mpType, err = mp.GetDepositType(opts)
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting user deposit type for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 	wg.Go(func() error {
 		var err error
 		nodeFee, err = mp.GetNodeFeeRaw(opts)
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting node fee for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 	wg.Go(func() error {
 		var err error
 		nodeAddress, err = mp.GetNodeAddress(opts)
-		return err
+		if err != nil {
+			return fmt.Errorf("error getting node address for minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+		return nil
 	})
 
 	// Wait for data
@@ -636,7 +687,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 	blockBalance := eth.GweiToWei(float64(validator.Balance))
 	userBalance, err := mp.CalculateUserShare(blockBalance, opts)
 	if err != nil {
-		return minipoolBalanceDetails{}, err
+		return minipoolBalanceDetails{}, fmt.Errorf("error calculating user share for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 
 	// Return
@@ -659,10 +710,10 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(minipoolAddress common
 }
 
 // Get the fee distributor balances
-func (t *submitNetworkBalances) getFeeDistributorBalances(opts *bind.CallOpts, avgNodeFees map[common.Address]*big.Int) ([]*big.Int, error) {
+func (t *submitNetworkBalances) getFeeDistributorBalances(client *rocketpool.RocketPool, opts *bind.CallOpts, avgNodeFees map[common.Address]*big.Int) ([]*big.Int, error) {
 
 	// Get all of the nodes
-	nodeAddresses, err := node.GetNodeAddresses(t.rp, opts)
+	nodeAddresses, err := node.GetNodeAddresses(client, opts)
 	if err != nil {
 		return []*big.Int{}, fmt.Errorf("error getting node addresses: %w", err)
 	}
@@ -684,11 +735,11 @@ func (t *submitNetworkBalances) getFeeDistributorBalances(opts *bind.CallOpts, a
 			wg.Go(func() error {
 				// Get the fee distributor's balance
 				address := nodeAddresses[ni]
-				distributor, err := node.GetDistributorAddress(t.rp, address, opts)
+				distributor, err := node.GetDistributorAddress(client, address, opts)
 				if err != nil {
 					return fmt.Errorf("error getting distributor for node %s: %w", address.Hex(), err)
 				}
-				distributorBalance, err := t.ec.BalanceAt(context.Background(), distributor, opts.BlockNumber)
+				distributorBalance, err := client.Client.BalanceAt(context.Background(), distributor, opts.BlockNumber)
 				if err != nil {
 					return fmt.Errorf("error getting distributor balance for distributor %s, node %s: %w", distributor.Hex(), address.Hex(), err)
 				}
@@ -744,7 +795,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting node transactor: %w", err)
 	}
 
 	// Get the gas limit
@@ -767,13 +818,13 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	// Submit balances
 	hash, err := network.SubmitBalances(t.rp, balances.Block, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("error submitting balances: %w", err)
 	}
 
-	// Print TX info and wait for it to be mined
+	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
-		return err
+		return fmt.Errorf("error waiting for transaction: %w", err)
 	}
 
 	// Log
