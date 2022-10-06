@@ -415,11 +415,11 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Name:                 "Enable MEV-Boost",
 			Description:          "Enable MEV-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract MEV opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
 			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
+			Default:              map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
 			EnvironmentVariables: []string{"ENABLE_MEV_BOOST"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			OverwriteOnUpgrade:   true,
 		},
 	}
 
