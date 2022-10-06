@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/prysmaticlabs/prysm/v2/beacon-chain/core/signing"
-	prdeposit "github.com/prysmaticlabs/prysm/v2/contracts/deposit"
+	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
+	prdeposit "github.com/prysmaticlabs/prysm/v3/contracts/deposit"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -19,7 +19,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
-	ethpb "github.com/prysmaticlabs/prysm/v2/proto/prysm/v1alpha1"
+	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
