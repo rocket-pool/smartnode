@@ -1075,7 +1075,7 @@ func (cfg *RocketPoolConfig) Validate() []string {
 			// In local MEV-boost mode, the user has to have at least one relay
 			relays := cfg.MevBoost.GetEnabledMevRelays()
 			if len(relays) == 0 {
-				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any relays enabled. Please select at least one relay to use MEV-boost.")
+				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any profiles or relays enabled. Please select at least one profile or relay to use MEV-boost.")
 			}
 		case config.Mode_External:
 			// In external MEV-boost mode, the user has to have an external URL if they're running Docker mode

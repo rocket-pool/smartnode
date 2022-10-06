@@ -75,13 +75,18 @@ type MevBoostConfig struct {
 	///////////////////////////
 
 	parentConfig *RocketPoolConfig                     `yaml:"-"`
-	relays       map[config.MevRelayID]config.MevRelay `yaml:"-"`
+	relays       []config.MevRelay                     `yaml:"-"`
+	relayMap     map[config.MevRelayID]config.MevRelay `yaml:"-"`
 }
 
 // Generates a new MEV-Boost configuration
 func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 	// Generate the relays
 	relays := createDefaultRelays()
+	relayMap := map[config.MevRelayID]config.MevRelay{}
+	for _, relay := range relays {
+		relayMap[relay.ID] = relay
+	}
 
 	return &MevBoostConfig{
 		Title: "MEV-Boost Settings",
@@ -136,12 +141,12 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		EnableUnregulatedNoSandwich: generateProfileParameter("enableUnregulatedNoSandwich", relays, false, true),
 
 		// Explicit relay params
-		FlashbotsRelay:          generateRelayParameter("flashbotsEnabled", relays[config.MevRelayID_Flashbots]),
-		BloxRouteMaxProfitRelay: generateRelayParameter("bloxRouteMaxProfitEnabled", relays[config.MevRelayID_BloxrouteMaxProfit]),
-		BloxRouteEthicalRelay:   generateRelayParameter("bloxRouteEthicalEnabled", relays[config.MevRelayID_BloxrouteEthical]),
-		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relays[config.MevRelayID_BloxrouteRegulated]),
-		BlocknativeRelay:        generateRelayParameter("blocknativeEnabled", relays[config.MevRelayID_Blocknative]),
-		EdenRelay:               generateRelayParameter("edenEnabled", relays[config.MevRelayID_Eden]),
+		FlashbotsRelay:          generateRelayParameter("flashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
+		BloxRouteMaxProfitRelay: generateRelayParameter("bloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
+		BloxRouteEthicalRelay:   generateRelayParameter("bloxRouteEthicalEnabled", relayMap[config.MevRelayID_BloxrouteEthical]),
+		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
+		BlocknativeRelay:        generateRelayParameter("blocknativeEnabled", relayMap[config.MevRelayID_Blocknative]),
+		EdenRelay:               generateRelayParameter("edenEnabled", relayMap[config.MevRelayID_Eden]),
 
 		Port: config.Parameter{
 			ID:                   "port",
@@ -230,9 +235,46 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *MevBoostConfig) GetConfigTitle() string {
 	return cfg.Title
+}
+
+// Get the profiles that are available for the current network
+func (cfg *MevBoostConfig) GetAvailableProfiles() (bool, bool, bool, bool) {
+	regulatedAllMev := false
+	regulatedNoSandwich := false
+	unregulatedAllMev := false
+	unregulatedNoSandwich := false
+
+	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
+	for _, relay := range cfg.relays {
+		_, exists := relay.Urls[currentNetwork]
+		if !exists {
+			continue
+		}
+		regulatedAllMev = regulatedAllMev || (relay.Regulated && !relay.NoSandwiching)
+		regulatedNoSandwich = regulatedNoSandwich || (relay.Regulated && relay.NoSandwiching)
+		unregulatedAllMev = unregulatedAllMev || (!relay.Regulated && !relay.NoSandwiching)
+		unregulatedNoSandwich = unregulatedNoSandwich || (!relay.Regulated && relay.NoSandwiching)
+	}
+
+	return regulatedAllMev, regulatedNoSandwich, unregulatedAllMev, unregulatedNoSandwich
+}
+
+// Get the relays that are available for the current network
+func (cfg *MevBoostConfig) GetAvailableRelays() []config.MevRelay {
+	relays := []config.MevRelay{}
+	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
+	for _, relay := range cfg.relays {
+		_, exists := relay.Urls[currentNetwork]
+		if !exists {
+			continue
+		}
+		relays = append(relays, relay)
+	}
+
+	return relays
 }
 
 // Get which MEV-boost relays are enabled
@@ -273,22 +315,22 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 
 	case config.MevSelectionMode_Relay:
 		if cfg.FlashbotsRelay.Value == true {
-			relays = append(relays, cfg.relays[config.MevRelayID_Flashbots])
+			relays = append(relays, cfg.relayMap[config.MevRelayID_Flashbots])
 		}
 		if cfg.BloxRouteEthicalRelay.Value == true {
-			relays = append(relays, cfg.relays[config.MevRelayID_BloxrouteEthical])
+			relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteEthical])
 		}
 		if cfg.BloxRouteMaxProfitRelay.Value == true {
-			relays = append(relays, cfg.relays[config.MevRelayID_BloxrouteMaxProfit])
+			relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteMaxProfit])
 		}
 		if cfg.BloxRouteRegulatedRelay.Value == true {
-			relays = append(relays, cfg.relays[config.MevRelayID_BloxrouteRegulated])
+			relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteRegulated])
 		}
 		if cfg.BlocknativeRelay.Value == true {
-			relays = append(relays, cfg.relays[config.MevRelayID_Blocknative])
+			relays = append(relays, cfg.relayMap[config.MevRelayID_Blocknative])
 		}
 		if cfg.EdenRelay.Value == true {
-			relays = append(relays, cfg.relays[config.MevRelayID_Eden])
+			relays = append(relays, cfg.relayMap[config.MevRelayID_Eden])
 		}
 	}
 
@@ -309,10 +351,10 @@ func (cfg *MevBoostConfig) GetRelayString() string {
 }
 
 // Create the default MEV relays
-func createDefaultRelays() map[config.MevRelayID]config.MevRelay {
-	relays := map[config.MevRelayID]config.MevRelay{
+func createDefaultRelays() []config.MevRelay {
+	relays := []config.MevRelay{
 		// Flashbots
-		config.MevRelayID_Flashbots: {
+		{
 			ID:          config.MevRelayID_Flashbots,
 			Name:        "Flashbots",
 			Description: "Flashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space.",
@@ -327,9 +369,9 @@ func createDefaultRelays() map[config.MevRelayID]config.MevRelay {
 		},
 
 		// bloXroute Max Profit
-		config.MevRelayID_BloxrouteMaxProfit: {
+		{
 			ID:          config.MevRelayID_BloxrouteMaxProfit,
-			Name:        "bloXroute Regulated",
+			Name:        "bloXroute Max Profit",
 			Description: "Select this to enable the \"max profit\" relay from bloXroute.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
@@ -341,7 +383,7 @@ func createDefaultRelays() map[config.MevRelayID]config.MevRelay {
 		},
 
 		// bloXroute Ethical
-		config.MevRelayID_BloxrouteEthical: {
+		{
 			ID:          config.MevRelayID_BloxrouteEthical,
 			Name:        "bloXroute Ethical",
 			Description: "Select this to enable the \"ethical\" relay from bloXroute.",
@@ -353,7 +395,7 @@ func createDefaultRelays() map[config.MevRelayID]config.MevRelay {
 		},
 
 		// bloXroute Regulated
-		config.MevRelayID_BloxrouteRegulated: {
+		{
 			ID:          config.MevRelayID_BloxrouteRegulated,
 			Name:        "bloXroute Regulated",
 			Description: "Select this to enable the \"regulated\" relay from bloXroute.",
@@ -365,7 +407,7 @@ func createDefaultRelays() map[config.MevRelayID]config.MevRelay {
 		},
 
 		// Blocknative
-		config.MevRelayID_Blocknative: {
+		{
 			ID:          config.MevRelayID_Blocknative,
 			Name:        "Blocknative",
 			Description: "Blocknative is a large blockchain infrastructure company that provides a popular MEV relay.",
@@ -379,7 +421,7 @@ func createDefaultRelays() map[config.MevRelayID]config.MevRelay {
 		},
 
 		// Eden
-		config.MevRelayID_Eden: {
+		{
 			ID:          config.MevRelayID_Eden,
 			Name:        "Eden Network",
 			Description: "Eden Network is the home of Eden Relay, a block building hub focused on optimising block rewards for validators.",
@@ -397,7 +439,7 @@ func createDefaultRelays() map[config.MevRelayID]config.MevRelay {
 }
 
 // Generate one of the profile parameters
-func generateProfileParameter(id string, relays map[config.MevRelayID]config.MevRelay, regulated bool, noSandwiching bool) config.Parameter {
+func generateProfileParameter(id string, relays []config.MevRelay, regulated bool, noSandwiching bool) config.Parameter {
 	name := "Enable "
 	description := fmt.Sprintf("[lime]NOTE: You can enable multiple options.\n\nTo learn more about MEV, please visit %s.\n\n[white]", mevDocsUrl)
 
