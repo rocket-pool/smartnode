@@ -98,11 +98,6 @@ func (configPage *MevBoostConfigPage) createContent() {
 	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout.descriptionBox)
 	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout.descriptionBox)
 
-	configPage.regulatedAllMevBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableRegulatedAllMev)
-	configPage.regulatedNoSandwichBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableRegulatedNoSandwich)
-	configPage.unregulatedAllMevBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableUnregulatedAllMev)
-	configPage.unregulatedNoSandwichBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableUnregulatedNoSandwich)
-
 	configPage.flashbotsBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.FlashbotsRelay)
 	configPage.bloxrouteMaxProfitBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay)
 	configPage.bloxrouteEthicalBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteEthicalRelay)
@@ -112,7 +107,6 @@ func (configPage *MevBoostConfigPage) createContent() {
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.regulatedAllMevBox, configPage.regulatedNoSandwichBox, configPage.unregulatedAllMevBox, configPage.unregulatedNoSandwichBox)
 	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteEthicalBox, configPage.bloxrouteRegulatedBox, configPage.blocknativeBox, configPage.edenBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
@@ -215,6 +209,13 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 
 // Handle a bulk redraw request
 func (configPage *MevBoostConfigPage) handleLayoutChanged() {
+	// Rebuild the profile boxes with the new descriptions
+	configPage.regulatedAllMevBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableRegulatedAllMev)
+	configPage.regulatedNoSandwichBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableRegulatedNoSandwich)
+	configPage.unregulatedAllMevBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableUnregulatedAllMev)
+	configPage.unregulatedNoSandwichBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EnableUnregulatedNoSandwich)
+	configPage.layout.mapParameterizedFormItems(configPage.regulatedAllMevBox, configPage.regulatedNoSandwichBox, configPage.unregulatedAllMevBox, configPage.unregulatedNoSandwichBox)
+
 	// Rebuild the parameter maps based on the selected network
 	configPage.handleModeChanged()
 }

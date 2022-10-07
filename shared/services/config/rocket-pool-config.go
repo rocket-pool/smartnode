@@ -479,9 +479,14 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
 	newConfig := NewRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
 
+	// Set the network
+	network := cfg.Smartnode.Network.Value.(config.Network)
+	newConfig.Smartnode.Network.Value = network
+
 	newParams := newConfig.GetParameters()
 	for i, param := range cfg.GetParameters() {
 		newParams[i].Value = param.Value
+		newParams[i].UpdateDescription(network)
 	}
 
 	newSubconfigs := newConfig.GetSubconfigs()
@@ -489,6 +494,7 @@ func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
 		newParams := newSubconfigs[name].GetParameters()
 		for i, param := range subConfig.GetParameters() {
 			newParams[i].Value = param.Value
+			newParams[i].UpdateDescription(network)
 		}
 	}
 
@@ -737,7 +743,7 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 
 	// Get the network
 	network := config.Network_Mainnet
-	smartnodeConfig, exists := masterMap[cfg.Smartnode.Title]
+	smartnodeConfig, exists := masterMap["smartnode"]
 	if exists {
 		networkString, exists := smartnodeConfig[cfg.Smartnode.Network.ID]
 		if exists {

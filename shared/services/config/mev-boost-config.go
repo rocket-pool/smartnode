@@ -459,23 +459,44 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		description += "and allow for all types of MEV (including sandwich attacks)."
 	}
 
-	description += "\n\nRelays:"
+	// Generate the Mainnet description
+	mainnetDescription := description + "\n\nRelays:"
 	for _, relay := range relays {
+		_, exists := relay.Urls[config.Network_Mainnet]
+		if !exists {
+			continue
+		}
 		if relay.Regulated == regulated && relay.NoSandwiching == noSandwiching {
-			description += fmt.Sprintf("\n  - %s", relay.Name)
+			mainnetDescription += fmt.Sprintf("\n  - %s", relay.Name)
+		}
+	}
+
+	// Generate the Prater description
+	praterDescription := description + "\n\nRelays:"
+	for _, relay := range relays {
+		_, exists := relay.Urls[config.Network_Prater]
+		if !exists {
+			continue
+		}
+		if relay.Regulated == regulated && relay.NoSandwiching == noSandwiching {
+			praterDescription += fmt.Sprintf("\n  - %s", relay.Name)
 		}
 	}
 
 	return config.Parameter{
 		ID:                   id,
 		Name:                 name,
-		Description:          description,
+		Description:          mainnetDescription,
 		Type:                 config.ParameterType_Bool,
 		Default:              map[config.Network]interface{}{config.Network_All: false},
 		AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
 		EnvironmentVariables: []string{},
 		CanBeBlank:           false,
 		OverwriteOnUpgrade:   false,
+		DescriptionsByNetwork: map[config.Network]string{
+			config.Network_Mainnet: mainnetDescription,
+			config.Network_Prater:  praterDescription,
+		},
 	}
 }
 
