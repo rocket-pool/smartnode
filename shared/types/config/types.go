@@ -7,7 +7,8 @@ type ParameterType string
 type ExecutionClient string
 type ConsensusClient string
 type RewardsMode string
-type MevRelay string
+type MevRelayID string
+type MevSelectionMode string
 
 // Enum to describe which container(s) a parameter impacts, so the Smartnode knows which
 // ones to restart upon a settings change
@@ -81,15 +82,21 @@ const (
 	RewardsMode_Generate RewardsMode = "generate"
 )
 
-// Enum to describe MEV-boost relays
+// Enum to identify MEV-boost relays
 const (
-	MevRelay_Unknown            MevRelay = ""
-	MevRelay_Flashbots          MevRelay = "flashbots"
-	MevRelay_BloxrouteEthical   MevRelay = "bloxrouteEthical"
-	MevRelay_BloxrouteMaxProfit MevRelay = "bloxrouteMaxProfit"
-	MevRelay_BloxrouteRegulated MevRelay = "bloxrouteRegulated"
-	MevRelay_Blocknative        MevRelay = "blocknative"
-	MevRelay_Eden               MevRelay = "eden"
+	MevRelayID_Unknown            MevRelayID = ""
+	MevRelayID_Flashbots          MevRelayID = "flashbots"
+	MevRelayID_BloxrouteEthical   MevRelayID = "bloxrouteEthical"
+	MevRelayID_BloxrouteMaxProfit MevRelayID = "bloxrouteMaxProfit"
+	MevRelayID_BloxrouteRegulated MevRelayID = "bloxrouteRegulated"
+	MevRelayID_Blocknative        MevRelayID = "blocknative"
+	MevRelayID_Eden               MevRelayID = "eden"
+)
+
+// Enum to describe MEV-Boost relay selection mode
+const (
+	MevSelectionMode_Profile MevSelectionMode = "profile"
+	MevSelectionMode_Relay   MevSelectionMode = "relay"
 )
 
 type Config interface {
@@ -119,4 +126,14 @@ type ChangedSetting struct {
 	OldValue           string
 	NewValue           string
 	AffectedContainers map[ContainerID]bool
+}
+
+// A MEV relay
+type MevRelay struct {
+	ID            MevRelayID
+	Name          string
+	Description   string
+	Urls          map[Network]string
+	Regulated     bool
+	NoSandwiching bool
 }
