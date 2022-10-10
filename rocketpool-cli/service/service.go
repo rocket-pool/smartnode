@@ -561,6 +561,17 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smartnode before running it.")
 	}
 
+	// Validate the config
+	errors := cfg.Validate()
+	if len(errors) > 0 {
+		fmt.Printf("%sYour configuration encountered errors. You must correct the following in order to start Rocket Pool:\n\n", colorRed)
+		for _, err := range errors {
+			fmt.Printf("%s\n\n", err)
+		}
+		fmt.Println(colorReset)
+		return nil
+	}
+
 	// Check if this is a new install
 	isUpdate, err := rp.IsFirstRun()
 	if err != nil {
