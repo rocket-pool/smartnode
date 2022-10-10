@@ -208,7 +208,8 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		relays: relays,
+		relays:   relays,
+		relayMap: relayMap,
 	}
 }
 
