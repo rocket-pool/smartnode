@@ -760,9 +760,13 @@ func (t *submitNetworkBalances) getFeeDistributorBalances(client *rocketpool.Roc
 						// If a node doesn't have any minipools, there's no fee; it's split 50/50
 						avgFee = eth.EthToWei(0.5)
 					}
+
+					// avgFee describes a node operator's average commission, so we need to take it out of the rEth holder's half
 					one := big.NewInt(1e18)
-					distributorBalance.Mul(distributorBalance, avgFee)
-					distributorBalance.Div(distributorBalance, one)
+					two := big.NewInt(2e18)
+					avgFee.Sub(one, avgFee)                            // avgFee = 1 - avgFee
+					distributorBalance.Mul(distributorBalance, avgFee) // balance *= avgFee
+					distributorBalance.Div(distributorBalance, two)    // balance /= 2
 				}
 
 				balances[ni] = distributorBalance
