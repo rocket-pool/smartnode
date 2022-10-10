@@ -61,7 +61,7 @@ func getStatus(c *cli.Context) error {
 	fmt.Printf(
 		"The node %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
 		colorBlue,
-		status.AccountAddress.Hex(),
+		status.AccountAddressFormatted,
 		colorReset,
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6),
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6))
@@ -126,7 +126,7 @@ func getStatus(c *cli.Context) error {
 		if status.VotingDelegate == blankAddress {
 			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool governance proposals.")
 		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegate.Hex(), colorReset)
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegateFormatted, colorReset)
 		}
 
 		if status.SnapshotResponse.Error != "" {
@@ -155,7 +155,7 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf(
 				"The node's withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
 				colorBlue,
-				status.WithdrawalAddress.Hex(),
+				status.WithdrawalAddressFormatted,
 				colorReset,
 				math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
 				math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6))

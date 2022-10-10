@@ -59,6 +59,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return nil, err
 	}
 	response.AccountAddress = nodeAccount.Address
+	response.AccountAddressFormatted = formatResolvedAddress(c, response.AccountAddress)
 
 	// Sync
 	var wg errgroup.Group
@@ -78,6 +79,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		if err == nil {
 			response.Registered = details.Exists
 			response.WithdrawalAddress = details.WithdrawalAddress
+			response.WithdrawalAddressFormatted = formatResolvedAddress(c, response.WithdrawalAddress)
 			response.PendingWithdrawalAddress = details.PendingWithdrawalAddress
 			response.TimezoneLocation = details.TimezoneLocation
 		}
@@ -129,6 +131,11 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 				r.Error = err.Error()
 				return nil
 			}
+			blankAddress := common.Address{}
+			if response.VotingDelegate != blankAddress {
+				response.VotingDelegateFormatted = formatResolvedAddress(c, response.VotingDelegate)
+			}
+
 			votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
 			if err != nil {
 				r.Error = err.Error()

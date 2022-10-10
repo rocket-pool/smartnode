@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
@@ -13,7 +14,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) error {
+func setWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
@@ -26,6 +27,22 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
+	}
+
+	var withdrawalAddress common.Address
+	if strings.Contains(withdrawalAddressOrENS, ".") {
+		response, err := rp.ResolveEnsName(withdrawalAddressOrENS)
+		if err != nil {
+			return err
+		}
+		withdrawalAddress = response.Address
+		withdrawalAddressOrENS = fmt.Sprintf(" (%s)", withdrawalAddressOrENS)
+	} else {
+		withdrawalAddress, err = cliutils.ValidateAddress("withdrawal address", withdrawalAddressOrENS)
+		if err != nil {
+			return err
+		}
+		withdrawalAddressOrENS = ""
 	}
 
 	// Print the "pending" disclaimer
@@ -55,7 +72,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 	if confirm {
 		// Prompt for a test transaction
 		if cliutils.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
-			inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddress), "^\\d+(\\.\\d+)?$", "Invalid amount")
+			inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s%s:", withdrawalAddress, withdrawalAddressOrENS), "^\\d+(\\.\\d+)?$", "Invalid amount")
 			testAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
 				return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
@@ -72,7 +89,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 				return err
 			}
 
-			if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddress)) {
+			if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s%s.", testAmount, withdrawalAddress, withdrawalAddressOrENS)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -82,7 +99,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 				return err
 			}
 
-			fmt.Printf("Sending ETH to %s...\n", withdrawalAddress.Hex())
+			fmt.Printf("Sending ETH to %s%s...\n", withdrawalAddress.Hex(), withdrawalAddressOrENS)
 			cliutils.PrintTransactionHash(rp, sendResponse.TxHash)
 			if _, err = rp.WaitForTransaction(sendResponse.TxHash); err != nil {
 				return err
@@ -99,7 +116,7 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s?", withdrawalAddress.Hex()))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's withdrawal address to %s%s?", withdrawalAddress.Hex(), withdrawalAddressOrENS))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -124,14 +141,14 @@ func setWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address) erro
 			stakeUrl = config.Smartnode.GetStakeUrl()
 		}
 		if stakeUrl != "" {
-			fmt.Printf("The node's withdrawal address update to %s is now pending.\n"+
-				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddress.Hex(), stakeUrl)
+			fmt.Printf("The node's withdrawal address update to %s%s is now pending.\n"+
+				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddress.Hex(), withdrawalAddressOrENS, stakeUrl)
 		} else {
-			fmt.Printf("The node's withdrawal address update to %s is now pending.\n"+
-				"To confirm it, please visit the Rocket Pool website.", withdrawalAddress.Hex())
+			fmt.Printf("The node's withdrawal address update to %s%s is now pending.\n"+
+				"To confirm it, please visit the Rocket Pool website.", withdrawalAddress.Hex(), withdrawalAddressOrENS)
 		}
 	} else {
-		fmt.Printf("The node's withdrawal address was successfully set to %s.\n", withdrawalAddress.Hex())
+		fmt.Printf("The node's withdrawal address was successfully set to %s%s.\n", withdrawalAddress.Hex(), withdrawalAddressOrENS)
 	}
 	return nil
 
