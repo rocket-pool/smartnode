@@ -3,13 +3,17 @@ package wallet
 import (
 	"fmt"
 
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/urfave/cli"
 	ens "github.com/wealdtech/go-ens/v3"
 )
 
-const GasLimitMultiplier float64 = 1.5
+const (
+	GasLimitMultiplier float64 = 1.5
+	MaxGasLimit        uint64  = 30000000
+)
 
 // Set a name to the node wallet's ENS reverse record.
 func setEnsName(c *cli.Context, name string, onlyEstimateGas bool) (*api.SetEnsNameResponse, error) {
@@ -64,11 +68,22 @@ func setEnsName(c *cli.Context, name string, onlyEstimateGas bool) (*api.SetEnsN
 	if err != nil {
 		return nil, err
 	}
-	response := api.SetEnsNameResponse{}
-	response.Address = account.Address
-	response.EnsName = name
-	response.TxHash = tx.Hash()
-	response.GasInfo.EstGasLimit = tx.Gas()
-	response.GasInfo.SafeGasLimit = uint64(float64(tx.Gas()) * GasLimitMultiplier)
+	response := api.SetEnsNameResponse{
+		Address: account.Address,
+		EnsName: name,
+		TxHash:  tx.Hash(),
+		GasInfo: rocketpool.GasInfo{
+			EstGasLimit:  tx.Gas(),
+			SafeGasLimit: uint64(float64(tx.Gas()) * GasLimitMultiplier),
+		},
+	}
+
+	if response.GasInfo.EstGasLimit > MaxGasLimit {
+		return nil, fmt.Errorf("estimated gas of %d is greater than the max gas limit of %d", response.GasInfo.EstGasLimit, MaxGasLimit)
+	}
+	if response.GasInfo.SafeGasLimit > MaxGasLimit {
+		response.GasInfo.SafeGasLimit = MaxGasLimit
+	}
+
 	return &response, nil
 }

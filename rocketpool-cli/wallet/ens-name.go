@@ -18,12 +18,12 @@ func setEnsName(c *cli.Context, name string) error {
 	}
 	defer rp.Close()
 
-	if !cliutils.Confirm(fmt.Sprintf("%sWARNING: This will send a transaction from the node wallet to configure it's ENS name as '%s' \n\n%sDo you want to continue?", colorYellow, name, colorReset)) {
+	if !cliutils.Confirm(fmt.Sprintf("%sNOTE:\nThis will send a transaction from the node wallet to configure its ENS name as '%s'.\n\n%sDo you want to continue?", colorYellow, name, colorReset)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
-	// Get  gas estimate
+	// Get gas estimate
 	estimateGasSetName, err := rp.EstimateGasSetEnsName(name)
 	if err != nil {
 		return err
@@ -41,13 +41,13 @@ func setEnsName(c *cli.Context, name string) error {
 		return err
 	}
 
-	fmt.Printf("Waiting on transaction ...\n")
+	fmt.Printf("Setting ENS name...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
-	fmt.Printf("The ENS name associated to the node account is now '%s'.\n\n", name)
+	fmt.Printf("The ENS name associated with your node account is now '%s'.\n\n", name)
 	return nil
 
 }
