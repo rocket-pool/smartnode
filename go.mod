@@ -38,6 +38,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.9
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli v1.22.10
+	github.com/wealdtech/go-ens/v3 v3.5.5
 	github.com/wealdtech/go-eth2-types/v2 v2.7.0
 	github.com/wealdtech/go-eth2-util v1.7.0
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.3.0

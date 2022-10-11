@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -13,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Address) error {
+func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS string) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
@@ -43,17 +44,32 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddress common.Add
 		}
 		return nil
 	}
+	var toAddress common.Address
+	if strings.Contains(toAddressOrENS, ".") {
+		response, err := rp.ResolveEnsName(toAddressOrENS)
+		if err != nil {
+			return err
+		}
+		toAddress = response.Address
+		toAddressOrENS = fmt.Sprintf(" (%s)", toAddressOrENS)
+	} else {
+		toAddress, err = cliutils.ValidateAddress("to address", toAddressOrENS)
+		if err != nil {
+			return err
+		}
+		toAddressOrENS = ""
+	}
+
+	// Prompt for confirmation
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s%s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddress.Hex(), toAddressOrENS))) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddress.Hex()))) {
-		fmt.Println("Cancelled.")
-		return nil
 	}
 
 	// Send tokens

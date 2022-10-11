@@ -117,7 +117,9 @@ The following commands are available via the Smartnode client:
   - `rocketpool wallet test-recovery, t` - Test recovering a node wallet without actually generating any of the node wallet or validator key files to ensure the process works as expected
   - `rocketpool wallet export, e` - Export the node wallet in JSON format
   - `rocketpool wallet purge` - Deletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!
+  - `rocketpool wallet set-ens-name` - Send a transaction from the node wallet to configure it's ENS name
 - **help**, h - Shows a list of commands or help for one command
+
 
 ### GLOBAL OPTIONS:
  - `rocketpool --allow-root, -r` - Allow rocketpool to be run as the root user

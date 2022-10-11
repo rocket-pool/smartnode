@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
@@ -11,8 +12,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func nodeSetVotingDelegate(c *cli.Context, address common.Address) error {
-
+func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
@@ -24,6 +24,19 @@ func nodeSetVotingDelegate(c *cli.Context, address common.Address) error {
 	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
+	}
+	var address common.Address
+	if strings.Contains(nameOrAddress, ".") {
+		response, err := rp.ResolveEnsName(nameOrAddress)
+		if err != nil {
+			return err
+		}
+		address = response.Address
+	} else {
+		address, err = cliutils.ValidateAddress("delegate", nameOrAddress)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Get the gas estimation

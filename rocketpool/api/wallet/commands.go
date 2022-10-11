@@ -279,6 +279,40 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "estimate-gas-set-ens-name",
+				Usage:     "Estimate the gas required to set the name for the node wallet's ENS reverse record",
+				UsageText: "rocketpool api node estimate-gas-set-ens-name name",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setEnsName(c, c.Args().Get(0), true))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-ens-name",
+				Usage:     "Set a name to the node wallet's ENS reverse record",
+				UsageText: "rocketpool api node set-ens-name name",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setEnsName(c, c.Args().Get(0), false))
+					return nil
+
+				},
+			},
 		},
 	})
 }
