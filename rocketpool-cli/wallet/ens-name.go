@@ -18,10 +18,7 @@ func setEnsName(c *cli.Context, name string) error {
 	}
 	defer rp.Close()
 
-	if !cliutils.Confirm(fmt.Sprintf("%sNOTE:\nThis will send a transaction from the node wallet to configure its ENS name as '%s'.\n\n%sDo you want to continue?", colorYellow, name, colorReset)) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
+	fmt.Printf("This will confirm the node's ENS name as '%s'.\n\n%sNOTE: to confirm your name, you must first register it with the ENS application at https://app.ens.domains.\nWe recommend using a hardware wallet as the base domain, and registering your node as a subdomain of it.%s\n\n", name, colorYellow, colorReset)
 
 	// Get gas estimate
 	estimateGasSetName, err := rp.EstimateGasSetEnsName(name)
@@ -33,6 +30,11 @@ func setEnsName(c *cli.Context, name string) error {
 	err = gas.AssignMaxFeeAndLimit(estimateGasSetName.GasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
+	}
+
+	if !cliutils.Confirm("Are you sure you want to confirm your node's ENS name?") {
+		fmt.Println("Cancelled.")
+		return nil
 	}
 
 	// Set the name

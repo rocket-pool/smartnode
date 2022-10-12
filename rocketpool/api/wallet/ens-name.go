@@ -21,7 +21,6 @@ func setEnsName(c *cli.Context, name string, onlyEstimateGas bool) (*api.SetEnsN
 	if err != nil {
 		return nil, err
 	}
-
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -31,24 +30,28 @@ func setEnsName(c *cli.Context, name string, onlyEstimateGas bool) (*api.SetEnsN
 		return nil, err
 	}
 
+	// Name validation
+	if name == "" {
+		return nil, fmt.Errorf("name cannot be blank")
+	}
+
 	// The ENS name must resolve to the wallet address
 	resolvedAddress, err := ens.Resolve(rp.Client, name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error resolving '%s' to an address: %w", name, err)
 	}
 
 	if resolvedAddress != account.Address {
-		return nil, fmt.Errorf("Error: %s currently resolves to the address %s instead of the node wallet address %s", name, resolvedAddress.Hex(), account.Address.Hex())
+		return nil, fmt.Errorf("error: %s currently resolves to the address %s instead of the node wallet address %s", name, resolvedAddress.Hex(), account.Address.Hex())
 	}
 
+	// Check if the name is already in use
 	resolvedName, err := ens.ReverseResolve(rp.Client, account.Address)
-	if err != nil {
-		return nil, err
-	}
-
-	// If the resolved name match with the requested name, the ENS record has already been set before
-	if resolvedName == name {
-		return nil, fmt.Errorf("Error: the ENS record already points to the name '%s'", name)
+	if err != nil && err.Error() != "not a resolver" {
+		// Handle errors unrelated to the address not being an ENS resolver
+		return nil, fmt.Errorf("error reverse resolving %s to an ENS name: %w", account.Address.Hex(), err)
+	} else if resolvedName == name {
+		return nil, fmt.Errorf("error: the ENS record already points to the name '%s'", name)
 	}
 
 	// Get transactor
@@ -62,11 +65,11 @@ func setEnsName(c *cli.Context, name string, onlyEstimateGas bool) (*api.SetEnsN
 
 	registrar, err := ens.NewReverseRegistrar(rp.Client)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating reverse registrar binding: %w", err)
 	}
 	tx, err := registrar.SetName(opts, name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error setting ENS name: %w", err)
 	}
 	response := api.SetEnsNameResponse{
 		Address: account.Address,
