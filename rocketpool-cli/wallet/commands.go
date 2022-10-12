@@ -217,7 +217,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "set-ens-name",
 				Aliases:   []string{"ens"},
 				Usage:     "Set a name to the node wallet's ENS reverse record",
-				UsageText: "rocketpool wallet set-ens-name",
+				UsageText: "rocketpool wallet set-ens-name name",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
