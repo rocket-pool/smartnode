@@ -887,7 +887,7 @@ func (c *Client) ResolveEnsName(name string) (api.ResolveEnsNameResponse, error)
 		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not decode resolve-ens-name: %w", err)
 	}
 	if response.Error != "" {
-		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not resolve ENS name: %w", response.Error)
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not resolve ENS name: %s", response.Error)
 	}
 	return response, nil
 }
@@ -901,7 +901,7 @@ func (c *Client) ReverseResolveEnsName(name string) (api.ResolveEnsNameResponse,
 		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not decode reverse-resolve-ens-name: %w", err)
 	}
 	if response.Error != "" {
-		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not reverse resolve ENS name: %w", response.Error)
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not reverse resolve ENS name: %s", response.Error)
 	}
 	return response, nil
 }

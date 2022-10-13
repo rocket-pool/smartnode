@@ -45,23 +45,24 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 		return nil
 	}
 	var toAddress common.Address
+	var toAddressString string
 	if strings.Contains(toAddressOrENS, ".") {
 		response, err := rp.ResolveEnsName(toAddressOrENS)
 		if err != nil {
 			return err
 		}
 		toAddress = response.Address
-		toAddressOrENS = fmt.Sprintf(" (%s)", toAddressOrENS)
+		toAddressString = fmt.Sprintf("%s (%s)", toAddressOrENS, toAddress.Hex())
 	} else {
 		toAddress, err = cliutils.ValidateAddress("to address", toAddressOrENS)
 		if err != nil {
 			return err
 		}
-		toAddressOrENS = ""
+		toAddressString = toAddress.Hex()
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s%s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddress.Hex(), toAddressOrENS))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -78,14 +79,14 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 		return err
 	}
 
-	fmt.Printf("Sending %s to %s...\n", token, toAddress.Hex())
+	fmt.Printf("Sending %s to %s...\n", token, toAddressString)
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully sent %.6f %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddress.Hex())
+	fmt.Printf("Successfully sent %.6f %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString)
 	return nil
 
 }

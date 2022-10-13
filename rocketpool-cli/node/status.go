@@ -165,7 +165,7 @@ func getStatus(c *cli.Context) error {
 		}
 		fmt.Println("")
 		if status.PendingWithdrawalAddress.Hex() != blankAddress.Hex() {
-			fmt.Printf("%sThe node's withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingWithdrawalAddress.Hex())
+			fmt.Printf("%sThe node's withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingWithdrawalAddressFormatted)
 			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
 			fmt.Println("")
 		}

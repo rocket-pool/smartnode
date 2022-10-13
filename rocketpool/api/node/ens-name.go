@@ -54,5 +54,5 @@ func formatResolvedAddress(c *cli.Context, address common.Address) string {
 	if err != nil {
 		return address.Hex()
 	}
-	return fmt.Sprintf("%s (%s)", address.Hex(), name)
+	return fmt.Sprintf("%s (%s)", name, address.Hex())
 }
