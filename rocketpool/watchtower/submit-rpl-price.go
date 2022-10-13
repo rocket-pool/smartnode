@@ -513,13 +513,13 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		t.log.Println("Submitting rate to Optimism...")
 
 		// Submit rates
-		hash, err := priceMessenger.Transact(opts, "submitRate")
+		tx, err := priceMessenger.Transact(opts, "submitRate")
 		if err != nil {
 			return fmt.Errorf("Failed to submit rate: %q", err)
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}

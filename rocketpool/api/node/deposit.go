@@ -255,7 +255,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 }
 
-func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int) (*api.NodeDepositResponse, error) {
+func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, submit bool) (*api.NodeDepositResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -405,8 +405,11 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
+	// Do not send transaction unless requested
+	opts.NoSend = !submit
+
 	// Deposit
-	hash, err := node.Deposit(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	tx, err := node.Deposit(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +419,16 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, err
 	}
 
-	response.TxHash = hash
+	// Print transaction if requested
+	if !submit {
+		b, err := tx.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("%x\n", b)
+	}
+
+	response.TxHash = tx.Hash()
 	response.MinipoolAddress = minipoolAddress
 	response.ValidatorPubkey = pubKey
 
