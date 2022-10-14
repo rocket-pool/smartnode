@@ -326,11 +326,11 @@ func (mp *Minipool) EstimateRefundGas(opts *bind.TransactOpts) (rocketpool.GasIn
 
 // Refund node ETH from the minipool
 func (mp *Minipool) Refund(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "refund")
+	tx, err := mp.Contract.Transact(opts, "refund")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not refund from minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of DistributeBalance
@@ -343,11 +343,11 @@ func (mp *Minipool) EstimateDistributeBalanceGas(opts *bind.TransactOpts) (rocke
 // DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
 // and the balance has been deposited into the minipool!
 func (mp *Minipool) DistributeBalance(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "distributeBalance")
+	tx, err := mp.Contract.Transact(opts, "distributeBalance")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not process withdrawal for minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of DistributeBalanceAndFinalise
@@ -361,11 +361,11 @@ func (mp *Minipool) EstimateDistributeBalanceAndFinaliseGas(opts *bind.TransactO
 // DO NOT CALL THIS until the minipool's validator has exited from the Beacon Chain
 // and the balance has been deposited into the minipool!
 func (mp *Minipool) DistributeBalanceAndFinalise(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "distributeBalanceAndFinalise")
+	tx, err := mp.Contract.Transact(opts, "distributeBalanceAndFinalise")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not process withdrawal for and finalise minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of Stake
@@ -375,11 +375,11 @@ func (mp *Minipool) EstimateStakeGas(validatorSignature rptypes.ValidatorSignatu
 
 // Progress the prelaunch minipool to staking
 func (mp *Minipool) Stake(validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "stake", validatorSignature[:], depositDataRoot)
+	tx, err := mp.Contract.Transact(opts, "stake", validatorSignature[:], depositDataRoot)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not stake minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of Dissolve
@@ -389,11 +389,11 @@ func (mp *Minipool) EstimateDissolveGas(opts *bind.TransactOpts) (rocketpool.Gas
 
 // Dissolve the initialized or prelaunch minipool
 func (mp *Minipool) Dissolve(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "dissolve")
+	tx, err := mp.Contract.Transact(opts, "dissolve")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not dissolve minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of Close
@@ -403,11 +403,11 @@ func (mp *Minipool) EstimateCloseGas(opts *bind.TransactOpts) (rocketpool.GasInf
 
 // Withdraw node balances from the dissolved minipool and close it
 func (mp *Minipool) Close(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "close")
+	tx, err := mp.Contract.Transact(opts, "close")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not close minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of Finalise
@@ -417,11 +417,11 @@ func (mp *Minipool) EstimateFinaliseGas(opts *bind.TransactOpts) (rocketpool.Gas
 
 // Finalise a minipool to get the RPL stake back
 func (mp *Minipool) Finalise(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "finalise")
+	tx, err := mp.Contract.Transact(opts, "finalise")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not finalise minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of DelegateUpgrade
@@ -431,11 +431,11 @@ func (mp *Minipool) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketp
 
 // Upgrade this minipool to the latest network delegate contract
 func (mp *Minipool) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "delegateUpgrade")
+	tx, err := mp.Contract.Transact(opts, "delegateUpgrade")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not upgrade delegate for minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of DelegateRollback
@@ -445,11 +445,11 @@ func (mp *Minipool) EstimateDelegateRollbackGas(opts *bind.TransactOpts) (rocket
 
 // Rollback to previous delegate contract
 func (mp *Minipool) DelegateRollback(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "delegateRollback")
+	tx, err := mp.Contract.Transact(opts, "delegateRollback")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not rollback delegate for minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of SetUseLatestDelegate
@@ -459,11 +459,11 @@ func (mp *Minipool) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.Tra
 
 // If set to true, will automatically use the latest delegate contract
 func (mp *Minipool) SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "setUseLatestDelegate", setting)
+	tx, err := mp.Contract.Transact(opts, "setUseLatestDelegate", setting)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not set use latest delegate for minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Getter for useLatestDelegate setting
@@ -527,11 +527,11 @@ func (mp *Minipool) EstimateVoteScrubGas(opts *bind.TransactOpts) (rocketpool.Ga
 
 // Vote to scrub a minipool
 func (mp *Minipool) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := mp.Contract.Transact(opts, "voteScrub")
+	tx, err := mp.Contract.Transact(opts, "voteScrub")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not vote to scrub minipool %s: %w", mp.Address.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get the data from this minipool's MinipoolPrestaked event

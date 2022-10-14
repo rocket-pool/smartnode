@@ -227,11 +227,11 @@ func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, o
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrustedProposals.Transact(opts, "propose", message, payload)
+	tx, err := rocketDAONodeTrustedProposals.Transact(opts, "propose", message, payload)
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("Could not submit trusted node DAO proposal: %w", err)
 	}
-	return proposalCount + 1, hash, nil
+	return proposalCount + 1, tx.Hash(), nil
 }
 
 // Estimate the gas of CancelProposal
@@ -249,11 +249,11 @@ func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tra
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrustedProposals.Transact(opts, "cancel", big.NewInt(int64(proposalId)))
+	tx, err := rocketDAONodeTrustedProposals.Transact(opts, "cancel", big.NewInt(int64(proposalId)))
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not cancel trusted node DAO proposal %d: %w", proposalId, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of VoteOnProposal
@@ -271,11 +271,11 @@ func VoteOnProposal(rp *rocketpool.RocketPool, proposalId uint64, support bool, 
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrustedProposals.Transact(opts, "vote", big.NewInt(int64(proposalId)), support)
+	tx, err := rocketDAONodeTrustedProposals.Transact(opts, "vote", big.NewInt(int64(proposalId)), support)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not vote on trusted node DAO proposal %d: %w", proposalId, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of ExecuteProposal
@@ -293,11 +293,11 @@ func ExecuteProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tr
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrustedProposals.Transact(opts, "execute", big.NewInt(int64(proposalId)))
+	tx, err := rocketDAONodeTrustedProposals.Transact(opts, "execute", big.NewInt(int64(proposalId)))
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not execute trusted node DAO proposal %d: %w", proposalId, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

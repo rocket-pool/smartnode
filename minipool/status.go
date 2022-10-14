@@ -25,11 +25,11 @@ func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress commo
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketMinipoolStatus.Transact(opts, "submitMinipoolWithdrawable", minipoolAddress)
+	tx, err := rocketMinipoolStatus.Transact(opts, "submitMinipoolWithdrawable", minipoolAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not submit minipool withdrawable event: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

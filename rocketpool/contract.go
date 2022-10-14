@@ -66,17 +66,17 @@ func (c *Contract) GetTransactionGasInfo(opts *bind.TransactOpts, method string,
 }
 
 // Transact on a contract method and wait for a receipt
-func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (common.Hash, error) {
+func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 
 	// Estimate gas limit
 	if opts.GasLimit == 0 {
 		input, err := c.ABI.Pack(method, params...)
 		if err != nil {
-			return common.Hash{}, fmt.Errorf("Could not encode input data: %w", err)
+			return nil, fmt.Errorf("Could not encode input data: %w", err)
 		}
 		_, safeGasLimit, err := c.estimateGasLimit(opts, input)
 		if err != nil {
-			return common.Hash{}, err
+			return nil, err
 		}
 		opts.GasLimit = safeGasLimit
 	}
@@ -84,10 +84,10 @@ func (c *Contract) Transact(opts *bind.TransactOpts, method string, params ...in
 	// Send transaction
 	tx, err := c.Contract.Transact(opts, method, params...)
 	if err != nil {
-		return common.Hash{}, err
+		return nil, err
 	}
 
-	return tx.Hash(), nil
+	return tx, nil
 
 }
 

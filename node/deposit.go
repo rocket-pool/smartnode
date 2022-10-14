@@ -28,11 +28,11 @@ func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, validatorPubkey 
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketNodeDeposit.Transact(opts, "deposit", eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	tx, err := rocketNodeDeposit.Transact(opts, "deposit", eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not make node deposit: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get the type of a deposit based on the amount

@@ -27,11 +27,11 @@ func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, 
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingBool", contractName, settingPath, value)
+	tx, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingBool", contractName, settingPath, value)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not bootstrap protocol setting %s.%s: %w", contractName, settingPath, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of BootstrapUint
@@ -49,11 +49,11 @@ func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
+	tx, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not bootstrap protocol setting %s.%s: %w", contractName, settingPath, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of BootstrapAddress
@@ -71,11 +71,11 @@ func BootstrapAddress(rp *rocketpool.RocketPool, contractName, settingPath strin
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingAddress", contractName, settingPath, value)
+	tx, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingAddress", contractName, settingPath, value)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not bootstrap protocol setting %s.%s: %w", contractName, settingPath, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of BootstrapClaimer
@@ -93,11 +93,11 @@ func BootstrapClaimer(rp *rocketpool.RocketPool, contractName string, amount flo
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingClaimer", contractName, eth.EthToWei(amount))
+	tx, err := rocketDAOProtocol.Transact(opts, "bootstrapSettingClaimer", contractName, eth.EthToWei(amount))
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not bootstrap protocol rewards claimer %s: %w", contractName, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

@@ -51,11 +51,11 @@ func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDistributorMainnet.Transact(opts, "claim", address, indices, amountRPL, amountETH, merkleProofs)
+	tx, err := rocketDistributorMainnet.Transact(opts, "claim", address, indices, amountRPL, amountETH, merkleProofs)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not claim rewards: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate claim and restake rewards gas
@@ -73,11 +73,11 @@ func ClaimAndStake(rp *rocketpool.RocketPool, address common.Address, indices []
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDistributorMainnet.Transact(opts, "claimAndStake", address, indices, amountRPL, amountETH, merkleProofs, stakeAmount)
+	tx, err := rocketDistributorMainnet.Transact(opts, "claimAndStake", address, indices, amountRPL, amountETH, merkleProofs, stakeAmount)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not claim rewards: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

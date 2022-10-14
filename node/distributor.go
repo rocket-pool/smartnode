@@ -54,11 +54,11 @@ func (d *Distributor) EstimateDistributeGas(opts *bind.TransactOpts) (rocketpool
 
 // Distribute the contract's balance to the rETH contract and the user
 func (d *Distributor) Distribute(opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := d.Contract.Transact(opts, "distribute")
+	tx, err := d.Contract.Transact(opts, "distribute")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not distribute fee distributor balance: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

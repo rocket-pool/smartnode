@@ -166,11 +166,11 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", submission)
+	tx, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", submission)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not submit rewards snapshot: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get the event info for a rewards snapshot

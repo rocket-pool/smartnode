@@ -84,11 +84,11 @@ func estimateClaimGas(claimsContract *rocketpool.Contract, opts *bind.TransactOp
 
 // Claim rewards
 func claim(claimsContract *rocketpool.Contract, claimsName string, opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := claimsContract.Transact(opts, "claim")
+	tx, err := claimsContract.Transact(opts, "claim")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not claim %s rewards: %w", claimsName, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get the timestamp that the current rewards interval started
