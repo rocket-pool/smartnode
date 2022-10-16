@@ -99,7 +99,7 @@ The following commands are available via the Smartnode client:
   - `rocketpool service stop, o` - Pause the Rocket Pool service (alias of 'rocketpool service pause')
   - `rocketpool service logs, l` - View the Rocket Pool service logs
   - `rocketpool service stats, a` - View the Rocket Pool service stats
-  - `rocketpool service compose` - View the Rocket Pool service docker-compose config
+  - `rocketpool service compose` - View the Rocket Pool service docker compose config
   - `rocketpool service version, v` - View the Rocket Pool service version information
   - `rocketpool service prune-eth1, n` - Shuts down the main ETH1 client and prunes its database, freeing up disk space, then restarts it when it's done.
   - `rocketpool service install-update-tracker, d` - Install the update tracker that provides the available system update count to the metrics dashboard
