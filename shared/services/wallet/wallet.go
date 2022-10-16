@@ -287,7 +287,7 @@ func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
 		return nil, fmt.Errorf("Error unmarshalling TX: %w", err)
 	}
 
-	signer := types.NewEIP155Signer(w.chainID)
+	signer := types.NewLondonSigner(w.chainID)
 	signedTx, err := types.SignTx(&tx, signer, privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("Error signing TX: %w", err)
