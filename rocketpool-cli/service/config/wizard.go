@@ -19,6 +19,7 @@ type wizard struct {
 	tekuExternalSettingsModal       *textBoxWizardStep
 	externalGraffitiModal           *textBoxWizardStep
 	metricsModal                    *choiceWizardStep
+	mevLocalModal                   *checkBoxWizardStep
 	finishedModal                   *choiceWizardStep
 	consensusLocalRandomModal       *choiceWizardStep
 	consensusLocalRandomPrysmModal  *choiceWizardStep
@@ -49,7 +50,7 @@ func newWizard(md *mainDisplay) *wizard {
 		md: md,
 	}
 
-	totalDockerSteps := 8
+	totalDockerSteps := 9
 	totalNativeSteps := 9
 
 	// Docker mode
@@ -74,7 +75,8 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.fallbackNormalModal = createFallbackNormalStep(wiz, 6, totalDockerSteps)
 	wiz.fallbackPrysmModal = createFallbackPrysmStep(wiz, 6, totalDockerSteps)
 	wiz.metricsModal = createMetricsStep(wiz, 7, totalDockerSteps)
-	wiz.finishedModal = createFinishedStep(wiz, 8, totalDockerSteps)
+	wiz.mevLocalModal = createMevLocalStep(wiz, 8, totalDockerSteps)
+	wiz.finishedModal = createFinishedStep(wiz, 9, totalDockerSteps)
 
 	// Native mode
 	wiz.nativeWelcomeModal = createNativeWelcomeStep(wiz, 1, totalNativeSteps)

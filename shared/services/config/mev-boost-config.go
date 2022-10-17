@@ -9,10 +9,14 @@ import (
 
 // Constants
 const (
-	mevBoostTag          string = "flashbots/mev-boost:v1.3.2-portable"
-	mevBoostUrlEnvVar    string = "MEV_BOOST_URL"
-	mevBoostRelaysEnvVar string = "MEV_BOOST_RELAYS"
-	mevDocsUrl           string = "https://docs.rocketpool.net/guides/node/mev.html"
+	mevBoostTag                 string = "flashbots/mev-boost:v1.3.2-portable"
+	mevBoostUrlEnvVar           string = "MEV_BOOST_URL"
+	mevBoostRelaysEnvVar        string = "MEV_BOOST_RELAYS"
+	mevDocsUrl                  string = "https://docs.rocketpool.net/guides/node/mev.html"
+	RegulatedRelayDescription   string = "Select this to enable the relays that comply with government regulations (e.g. OFAC sanctions), "
+	UnregulatedRelayDescription string = "Select this to enable the relays that do not follow any sanctions lists (do not censor transactions), "
+	NoSandwichRelayDescription  string = "and do not allow front-running or sandwich attacks."
+	AllMevRelayDescription      string = "and allow for all types of MEV (including sandwich attacks)."
 )
 
 // Configuration for MEV-Boost
@@ -446,43 +450,47 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 
 	if regulated {
 		name += "Regulated "
-		description += "Select this to enable the relays that comply with government regulations (e.g. OFAC sanctions), "
+		description += RegulatedRelayDescription
 	} else {
 		name += "Unregulated "
-		description += "Select this to enable the relays that do not follow any sanctions lists (do not censor transactions), "
+		description += UnregulatedRelayDescription
 	}
 
 	if noSandwiching {
 		name += "(No Sandwiching)"
-		description += "and do not allow front-running or sandwich attacks."
+		description += NoSandwichRelayDescription
 	} else {
 		name += "(All MEV Types)"
-		description += "and allow for all types of MEV (including sandwich attacks)."
+		description += AllMevRelayDescription
 	}
 
 	// Generate the Mainnet description
-	mainnetDescription := description + "\n\nRelays:"
+	mainnetRelays := []string{}
+	mainnetDescription := description + "\n\nRelays: "
 	for _, relay := range relays {
 		_, exists := relay.Urls[config.Network_Mainnet]
 		if !exists {
 			continue
 		}
 		if relay.Regulated == regulated && relay.NoSandwiching == noSandwiching {
-			mainnetDescription += fmt.Sprintf("\n  - %s", relay.Name)
+			mainnetRelays = append(mainnetRelays, relay.Name)
 		}
 	}
+	mainnetDescription += strings.Join(mainnetRelays, ", ")
 
 	// Generate the Prater description
-	praterDescription := description + "\n\nRelays:"
+	praterRelays := []string{}
+	praterDescription := description + "\n\nRelays:\n"
 	for _, relay := range relays {
 		_, exists := relay.Urls[config.Network_Prater]
 		if !exists {
 			continue
 		}
 		if relay.Regulated == regulated && relay.NoSandwiching == noSandwiching {
-			praterDescription += fmt.Sprintf("\n  - %s", relay.Name)
+			praterRelays = append(praterRelays, relay.Name)
 		}
 	}
+	praterDescription += strings.Join(praterRelays, ", ")
 
 	return config.Parameter{
 		ID:                   id,
