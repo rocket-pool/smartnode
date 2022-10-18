@@ -19,7 +19,7 @@ func createNativeMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choi
 		} else {
 			wiz.md.Config.EnableMetrics.Value = false
 		}
-		wiz.nativeFinishedModal.show()
+		wiz.nativeMevModal.show()
 	}
 
 	back := func() {

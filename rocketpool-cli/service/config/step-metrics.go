@@ -23,7 +23,7 @@ func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiza
 		} else {
 			wiz.md.Config.EnableMetrics.Value = false
 		}
-		wiz.mevLocalModal.show()
+		wiz.mevModeModal.show()
 	}
 
 	back := func() {

@@ -7,7 +7,7 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-func createMevLocalStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxWizardStep {
+func createLocalMevStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxWizardStep {
 
 	// Create the labels
 	regulatedAllLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableRegulatedAllMev.Name, "Enable ")
@@ -15,7 +15,7 @@ func createMevLocalStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 	unregulatedAllLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableUnregulatedAllMev.Name, "Enable ")
 	unregulatedNoSandwichLabel := strings.TrimPrefix(wiz.md.Config.MevBoost.EnableUnregulatedNoSandwich.Name, "Enable ")
 
-	helperText := "By default, your Smartnode has MEV-Boost enabled. This allows you to capture extra profits from block proposals. Select the profiles you would like to enable below. Leave all options unchecked if you wish to opt out of MEV-Boost for now, [orange]but it will be required in the future.[white]\n\n[lime]Please read our guide to learn more about MEV:\nhttps://docs.rocketpool.net/guides/node/mev.html\n"
+	helperText := "Select the profiles you would like to enable below. Read the descriptions carefully! Leave all options unchecked if you wish to opt out of MEV-Boost for now, [orange]but it will be required in the future.[white]\n\n[lime]Please read our guide to learn more about MEV:\nhttps://docs.rocketpool.net/guides/node/mev.html\n"
 
 	show := func(modal *checkBoxModalLayout) {
 		labels, descriptions, selections := getMevChoices(wiz.md.Config.MevBoost)
@@ -26,6 +26,7 @@ func createMevLocalStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 	}
 
 	done := func(choices map[string]bool) {
+		wiz.md.Config.MevBoost.Mode.Value = cfgtypes.Mode_Local
 		wiz.md.Config.MevBoost.SelectionMode.Value = cfgtypes.MevSelectionMode_Profile
 		wiz.md.Config.EnableMevBoost.Value = false
 
@@ -56,7 +57,7 @@ func createMevLocalStep(wiz *wizard, currentStep int, totalSteps int) *checkBoxW
 	}
 
 	back := func() {
-		wiz.metricsModal.show()
+		wiz.mevModeModal.show()
 	}
 
 	return newCheckBoxStep(
@@ -81,18 +82,6 @@ func getMevChoices(config *config.MevBoostConfig) ([]string, []string, []bool) {
 
 	regulatedAllMev, regulatedNoSandwich, unregulatedAllMev, unregulatedNoSandwich := config.GetAvailableProfiles()
 
-	if regulatedAllMev {
-		label := strings.TrimPrefix(config.EnableRegulatedAllMev.Name, "Enable ")
-		labels = append(labels, label)
-		descriptions = append(descriptions, getDescriptionBody(config.EnableRegulatedAllMev.Description))
-		settings = append(settings, config.EnableRegulatedAllMev.Value.(bool))
-	}
-	if regulatedNoSandwich {
-		label := strings.TrimPrefix(config.EnableRegulatedNoSandwich.Name, "Enable ")
-		labels = append(labels, label)
-		descriptions = append(descriptions, getDescriptionBody(config.EnableRegulatedNoSandwich.Description))
-		settings = append(settings, config.EnableRegulatedNoSandwich.Value.(bool))
-	}
 	if unregulatedAllMev {
 		label := strings.TrimPrefix(config.EnableUnregulatedAllMev.Name, "Enable ")
 		labels = append(labels, label)
@@ -104,6 +93,18 @@ func getMevChoices(config *config.MevBoostConfig) ([]string, []string, []bool) {
 		labels = append(labels, label)
 		descriptions = append(descriptions, getDescriptionBody(config.EnableUnregulatedNoSandwich.Description))
 		settings = append(settings, config.EnableUnregulatedNoSandwich.Value.(bool))
+	}
+	if regulatedAllMev {
+		label := strings.TrimPrefix(config.EnableRegulatedAllMev.Name, "Enable ")
+		labels = append(labels, label)
+		descriptions = append(descriptions, getDescriptionBody(config.EnableRegulatedAllMev.Description))
+		settings = append(settings, config.EnableRegulatedAllMev.Value.(bool))
+	}
+	if regulatedNoSandwich {
+		label := strings.TrimPrefix(config.EnableRegulatedNoSandwich.Name, "Enable ")
+		labels = append(labels, label)
+		descriptions = append(descriptions, getDescriptionBody(config.EnableRegulatedNoSandwich.Description))
+		settings = append(settings, config.EnableRegulatedNoSandwich.Value.(bool))
 	}
 
 	return labels, descriptions, settings

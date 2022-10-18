@@ -1075,7 +1075,7 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	}
 
 	// Ensure there's a MEV-boost URL
-	if cfg.EnableMevBoost.Value == true {
+	if !cfg.IsNativeMode && cfg.EnableMevBoost.Value == true {
 		switch cfg.MevBoost.Mode.Value.(config.Mode) {
 		case config.Mode_Local:
 			// In local MEV-boost mode, the user has to have at least one relay
