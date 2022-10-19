@@ -178,17 +178,24 @@ func (w *Wallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex 
 		return 0, errors.New("Wallet is not initialized")
 	}
 
+	fmt.Printf("Attempting to recover a key from index %v up to index %v\n", startIndex, startIndex+MaxValidatorKeyRecoverAttempts)
+
 	// Find matching validator key
 	var index uint
 	var validatorKey *eth2types.BLSPrivateKey
 	var derivationPath string
 	for index = 0; index < MaxValidatorKeyRecoverAttempts; index++ {
 		if key, path, err := w.getValidatorPrivateKey(index + startIndex); err != nil {
+			fmt.Printf("Unable to derive key at index %v\n", index)
 			return 0, err
 		} else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
 			validatorKey = key
 			derivationPath = path
 			break
+		}
+
+		if index == MaxValidatorKeyRecoverAttempts-1 {
+			fmt.Println("Key not found in range")
 		}
 	}
 
@@ -224,15 +231,23 @@ func (w *Wallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIn
 		return 0, errors.New("Wallet is not initialized")
 	}
 
+	fmt.Printf("Attempting to recover a key from index %v up to index %v\n", startIndex, startIndex+MaxValidatorKeyRecoverAttempts)
+
 	// Find matching validator key
 	var index uint
 	var validatorKey *eth2types.BLSPrivateKey
 	for index = 0; index < MaxValidatorKeyRecoverAttempts; index++ {
 		if key, _, err := w.getValidatorPrivateKey(index + startIndex); err != nil {
+			fmt.Printf("Unable to derive key at index %v\n", index)
 			return 0, err
 		} else if bytes.Equal(pubkey.Bytes(), key.PublicKey().Marshal()) {
+			fmt.Printf("Found key at index %v\n", index)
 			validatorKey = key
 			break
+		}
+
+		if index == MaxValidatorKeyRecoverAttempts-1 {
+			fmt.Println("Key not found in range")
 		}
 	}
 
@@ -254,6 +269,7 @@ func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, s
 
 	// Check for cached validator key
 	if validatorKey, ok := w.validatorKeys[index]; ok {
+		fmt.Printf("Found private key cached at index %v\n", index)
 		return validatorKey, derivationPath, nil
 	}
 
@@ -266,6 +282,10 @@ func (w *Wallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, s
 	privateKey, err := eth2util.PrivateKeyFromSeedAndPath(w.seed, derivationPath)
 	if err != nil {
 		return nil, "", fmt.Errorf("Could not get validator %d private key: %w", index, err)
+	}
+
+	if privateKey == nil {
+		fmt.Printf("Derived nil private key for index %v\n", index)
 	}
 
 	// Cache validator key

@@ -24,6 +24,8 @@ import (
 
 func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address common.Address, w *wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 
+	fmt.Printf("Recovering minipool keys. testOnly: %v\n", testOnly)
+
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
@@ -34,6 +36,9 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("Node has %v pubkeys\n", len(pubkeys))
+
 	pubkeyMap := map[types.ValidatorPubkey]bool{}
 	for _, pubkey := range pubkeys {
 		pubkeyMap[pubkey] = true
@@ -58,6 +63,8 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 
 		if len(files) > 0 {
 
+			fmt.Printf("Node has %v custom keys\n", len(files))
+
 			// Deserialize the password file
 			passwordFile := cfg.Smartnode.GetCustomKeyPasswordFilePath()
 			fileBytes, err := ioutil.ReadFile(passwordFile)
@@ -72,6 +79,9 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 
 			// Process every custom key
 			for _, file := range files {
+
+				fmt.Printf("Reading custom key %s\n", file.Name())
+
 				// Read the file
 				bytes, err := ioutil.ReadFile(filepath.Join(customKeyDir, file.Name()))
 				if err != nil {
@@ -89,6 +99,7 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 				_, exists := pubkeyMap[keystore.Pubkey]
 				if !exists {
 					// This pubkey isn't for any of this node's minipools so ignore it
+					fmt.Printf("Custom key %s did not match a validator owned by the node\n", file.Name())
 					continue
 				}
 
@@ -136,6 +147,7 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 					}
 				}
 
+				fmt.Println("Custom key loaded.")
 				// Remove the pubkey from pending minipools to handle
 				delete(pubkeyMap, reconstructedPubkey)
 			}
@@ -150,6 +162,7 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 		remainingPubkeys = pubkeys
 	} else {
 		// Go through each original key in order; if it's still in the pubkey map, add it
+		fmt.Printf("%v validators remaining out of %v after custom key loading\n", len(pubkeyMap), len(pubkeys))
 		remainingPubkeys = make([]types.ValidatorPubkey, 0, len(pubkeyMap))
 		for _, pubkey := range pubkeys {
 			_, exists := pubkeyMap[pubkey]
@@ -162,6 +175,7 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 	// Recover remaining validator keys normally
 	index := uint(0)
 	for _, pubkey := range remainingPubkeys {
+		fmt.Printf("Attempting to recover key %v of %v\n", index, len(remainingPubkeys))
 		if testOnly {
 			index, err = w.TestRecoverValidatorKey(pubkey, index)
 			index++
