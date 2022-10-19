@@ -160,14 +160,11 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 	}
 
 	// Recover remaining validator keys normally
-	index := uint(0)
 	for _, pubkey := range remainingPubkeys {
 		if testOnly {
-			index, err = w.TestRecoverValidatorKey(pubkey, index)
-			index++
+			_, err = w.TestRecoverValidatorKey(pubkey, 0)
 		} else {
-			index, err = w.RecoverValidatorKey(pubkey, index)
-			index++
+			_, err = w.RecoverValidatorKey(pubkey, 0)
 		}
 		if err != nil {
 			return nil, err
