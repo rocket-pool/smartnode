@@ -22,6 +22,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	bucketSize  uint = 20
+	bucketLimit uint = 2000
+)
+
 func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address common.Address, w *wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 
 	cfg, err := services.GetConfig(c)
@@ -142,36 +147,43 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 		}
 	}
 
-	// Create an array of remaining keys that preserves the minipool order (required for the recovery offset to work)
-	var remainingPubkeys []types.ValidatorPubkey
-
-	if len(pubkeyMap) == len(pubkeys) {
-		// If there were no custom keys, run the whole thing on the original set
-		remainingPubkeys = pubkeys
-	} else {
-		// Go through each original key in order; if it's still in the pubkey map, add it
-		remainingPubkeys = make([]types.ValidatorPubkey, 0, len(pubkeyMap))
-		for _, pubkey := range pubkeys {
-			_, exists := pubkeyMap[pubkey]
-			if exists {
-				remainingPubkeys = append(remainingPubkeys, pubkey)
-			}
+	// Recover conventionally generated keys
+	bucketStart := uint(0)
+	for {
+		if bucketStart >= bucketLimit {
+			return nil, fmt.Errorf("attempt limit exceeded (%d keys)", bucketLimit)
 		}
-	}
-
-	// Recover remaining validator keys normally
-	index := uint(0)
-	for _, pubkey := range remainingPubkeys {
-		if testOnly {
-			index, err = w.TestRecoverValidatorKey(pubkey, index)
-			index++
-		} else {
-			index, err = w.RecoverValidatorKey(pubkey, index)
-			index++
+		bucketEnd := bucketStart + bucketSize
+		if bucketEnd > bucketLimit {
+			bucketEnd = bucketLimit
 		}
+
+		// Get the keys for this bucket
+		keys, err := w.GetValidatorKeys(bucketStart, bucketEnd-bucketStart)
 		if err != nil {
 			return nil, err
 		}
+		for _, validatorKey := range keys {
+			_, exists := pubkeyMap[validatorKey.PublicKey]
+			if exists {
+				// Found one!
+				delete(pubkeyMap, validatorKey.PublicKey)
+				if !testOnly {
+					err := w.SaveValidatorKey(validatorKey)
+					if err != nil {
+						return nil, fmt.Errorf("error recovering validator keys: %w", err)
+					}
+				}
+			}
+		}
+
+		if len(pubkeyMap) == 0 {
+			// All keys recovered!
+			break
+		}
+
+		// Run another iteration with the next bucket
+		bucketStart = bucketEnd
 	}
 
 	return pubkeys, nil

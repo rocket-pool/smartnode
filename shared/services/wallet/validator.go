@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/rocket-pool/rocketpool-go/types"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2util "github.com/wealdtech/go-eth2-util"
@@ -17,6 +18,14 @@ const (
 	ValidatorKeyPath               string = "m/12381/3600/%d/0/0"
 	MaxValidatorKeyRecoverAttempts uint   = 1000
 )
+
+// A validator private/public key pair
+type ValidatorKey struct {
+	PublicKey      types.ValidatorPubkey
+	PrivateKey     *eth2types.BLSPrivateKey
+	DerivationPath string
+	WalletIndex    uint
+}
 
 // Get the number of validator keys recorded in the wallet
 func (w *Wallet) GetValidatorKeyCount() (uint, error) {
@@ -167,6 +176,54 @@ func (w *Wallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
 
 	// Return validator key
 	return key, nil
+
+}
+
+// Recover a set of validator keys by their public key
+func (w *Wallet) GetValidatorKeys(startIndex uint, length uint) ([]ValidatorKey, error) {
+
+	// Check wallet is initialized
+	if !w.IsInitialized() {
+		return nil, errors.New("Wallet is not initialized")
+	}
+
+	validatorKeys := make([]ValidatorKey, 0, length)
+	for index := startIndex; index < startIndex+length; index++ {
+		key, path, err := w.getValidatorPrivateKey(index)
+		if err != nil {
+			return nil, fmt.Errorf("error getting validator key for index %d: %w", index, err)
+		}
+		validatorKey := ValidatorKey{
+			PublicKey:      types.BytesToValidatorPubkey(key.PublicKey().Marshal()),
+			PrivateKey:     key,
+			DerivationPath: path,
+			WalletIndex:    index,
+		}
+		validatorKeys = append(validatorKeys, validatorKey)
+	}
+
+	return validatorKeys, nil
+
+}
+
+// Save a validator key
+func (w *Wallet) SaveValidatorKey(key ValidatorKey) error {
+
+	// Update account index
+	if key.WalletIndex > w.ws.NextAccount {
+		w.ws.NextAccount = key.WalletIndex
+	}
+
+	// Update keystores
+	for name := range w.keystores {
+		// Update the keystore in the wallet - using an iterator variable only runs it on the local copy
+		if err := w.keystores[name].StoreValidatorKey(key.PrivateKey, key.DerivationPath); err != nil {
+			return fmt.Errorf("could not store validator key %s in %s keystore: %w", key.PublicKey.Hex(), name, err)
+		}
+	}
+
+	// Return
+	return nil
 
 }
 
