@@ -682,11 +682,7 @@ func (r *RewardsFile) calculateEthRewards(checkBeaconPerformance bool) error {
 		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(big.NewInt(0)) > 0 {
 			rewardsForNode, exists := r.NodeRewards[nodeInfo.Address]
 			if !exists {
-				// Get the network the rewards should go to
-				network, err := node.GetRewardNetwork(r.rp, nodeInfo.Address, r.opts)
-				if err != nil {
-					return err
-				}
+				network := nodeInfo.RewardsNetwork
 				validNetwork, err := r.validateNetwork(network)
 				if err != nil {
 					return err
@@ -1077,6 +1073,12 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 					Address:          r.nodeAddresses[iterationIndex],
 					Minipools:        []*MinipoolInfo{},
 					SmoothingPoolEth: big.NewInt(0),
+				}
+
+				// Get the node's rewards network
+				nodeDetails.RewardsNetwork, err = node.GetRewardNetwork(r.rp, nodeDetails.Address, r.opts)
+				if err != nil {
+					return fmt.Errorf("Error getting rewards network for node %s: %w", nodeDetails.Address.Hex(), err)
 				}
 
 				// Check if the node is opted into the smoothing pool
