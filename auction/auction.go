@@ -523,11 +523,11 @@ func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (uint64, comm
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	hash, err := rocketAuctionManager.Transact(opts, "createLot")
+	tx, err := rocketAuctionManager.Transact(opts, "createLot")
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("Could not create lot: %w", err)
 	}
-	return lotCount, hash, nil
+	return lotCount, tx.Hash(), nil
 }
 
 // Estimate the gas of PlaceBid
@@ -545,11 +545,11 @@ func PlaceBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpt
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketAuctionManager.Transact(opts, "placeBid", big.NewInt(int64(lotIndex)))
+	tx, err := rocketAuctionManager.Transact(opts, "placeBid", big.NewInt(int64(lotIndex)))
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not place bid on lot %d: %w", lotIndex, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of ClaimBid
@@ -567,11 +567,11 @@ func ClaimBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpt
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketAuctionManager.Transact(opts, "claimBid", big.NewInt(int64(lotIndex)))
+	tx, err := rocketAuctionManager.Transact(opts, "claimBid", big.NewInt(int64(lotIndex)))
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not claim bid from lot %d: %w", lotIndex, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of RecoverUnclaimedRPL
@@ -589,11 +589,11 @@ func RecoverUnclaimedRPL(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketAuctionManager.Transact(opts, "recoverUnclaimedRPL", big.NewInt(int64(lotIndex)))
+	tx, err := rocketAuctionManager.Transact(opts, "recoverUnclaimedRPL", big.NewInt(int64(lotIndex)))
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not recover unclaimed RPL from lot %d: %w", lotIndex, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

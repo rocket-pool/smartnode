@@ -33,11 +33,11 @@ func EstimateSetWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress comm
 
 // Set a node's withdrawal address
 func SetWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := rp.RocketStorageContract.Transact(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
+	tx, err := rp.RocketStorageContract.Transact(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of ConfirmWithdrawalAddress
@@ -47,9 +47,9 @@ func EstimateConfirmWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress 
 
 // Set a node's withdrawal address
 func ConfirmWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	hash, err := rp.RocketStorageContract.Transact(opts, "confirmWithdrawalAddress", nodeAddress)
+	tx, err := rp.RocketStorageContract.Transact(opts, "confirmWithdrawalAddress", nodeAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }

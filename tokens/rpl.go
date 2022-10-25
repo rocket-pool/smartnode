@@ -115,11 +115,11 @@ func MintInflationRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketTokenRPL.Transact(opts, "inflationMintTokens")
+	tx, err := rocketTokenRPL.Transact(opts, "inflationMintTokens")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not mint RPL tokens from inflation: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of SwapFixedSupplyRPLForRPL
@@ -137,11 +137,11 @@ func SwapFixedSupplyRPLForRPL(rp *rocketpool.RocketPool, amount *big.Int, opts *
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketTokenRPL.Transact(opts, "swapTokens", amount)
+	tx, err := rocketTokenRPL.Transact(opts, "swapTokens", amount)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not swap fixed-supply RPL for new RPL: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get the RPL inflation interval rate

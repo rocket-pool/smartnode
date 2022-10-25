@@ -26,11 +26,11 @@ func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, erro
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionJoin")
+	tx, err := rocketDAONodeTrustedActions.Transact(opts, "actionJoin")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not join the trusted node DAO: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of Leave
@@ -49,11 +49,11 @@ func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts 
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", rplBondRefundAddress)
+	tx, err := rocketDAONodeTrustedActions.Transact(opts, "actionLeave", rplBondRefundAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not leave the trusted node DAO: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of MakeChallenge
@@ -71,11 +71,11 @@ func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeMake", memberAddress)
+	tx, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeMake", memberAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not challenge trusted node DAO member %s: %w", memberAddress.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of DecideChallenge
@@ -93,11 +93,11 @@ func DecideChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, op
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeDecide", memberAddress)
+	tx, err := rocketDAONodeTrustedActions.Transact(opts, "actionChallengeDecide", memberAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not decide the challenge against trusted node DAO member %s: %w", memberAddress.Hex(), err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

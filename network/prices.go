@@ -52,11 +52,11 @@ func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice, effectiveRp
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), rplPrice, effectiveRplStake)
+	tx, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), rplPrice, effectiveRplStake)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not submit network prices: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Check if the network is currently in consensus about the RPL price, or if it is still reaching consensus

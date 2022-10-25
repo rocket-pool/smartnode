@@ -368,11 +368,11 @@ func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, 
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingBool", contractName, settingPath, value)
+	tx, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingBool", contractName, settingPath, value)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of BootstrapUint
@@ -390,11 +390,11 @@ func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, 
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
+	tx, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of BootstrapMember
@@ -414,11 +414,11 @@ func BootstrapMember(rp *rocketpool.RocketPool, id, url string, nodeAddress comm
 		return common.Hash{}, err
 	}
 	url = strings.Sanitize(url)
-	hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, url, nodeAddress)
+	tx, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, url, nodeAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node member %s: %w", id, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of BootstrapUpgrade
@@ -444,11 +444,11 @@ func BootstrapUpgrade(rp *rocketpool.RocketPool, upgradeType, contractName, cont
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDAONodeTrusted.Transact(opts, "bootstrapUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
+	tx, err := rocketDAONodeTrusted.Transact(opts, "bootstrapUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not bootstrap contract '%s' upgrade (%s): %w", contractName, upgradeType, err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

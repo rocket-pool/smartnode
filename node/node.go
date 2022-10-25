@@ -320,11 +320,11 @@ func RegisterNode(rp *rocketpool.RocketPool, timezoneLocation string, opts *bind
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
 	}
-	hash, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
+	tx, err := rocketNodeManager.Transact(opts, "registerNode", timezoneLocation)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not register node: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of SetTimezoneLocation
@@ -350,11 +350,11 @@ func SetTimezoneLocation(rp *rocketpool.RocketPool, timezoneLocation string, opt
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not verify timezone [%s]: %w", timezoneLocation, err)
 	}
-	hash, err := rocketNodeManager.Transact(opts, "setTimezoneLocation", timezoneLocation)
+	tx, err := rocketNodeManager.Transact(opts, "setTimezoneLocation", timezoneLocation)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not set node timezone location: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get the network ID for a node's rewards
@@ -398,11 +398,11 @@ func InitializeFeeDistributor(rp *rocketpool.RocketPool, opts *bind.TransactOpts
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketNodeManager.Transact(opts, "initialiseFeeDistributor")
+	tx, err := rocketNodeManager.Transact(opts, "initialiseFeeDistributor")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not initialize fee distributor: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get a node's average minipool fee
@@ -873,11 +873,11 @@ func SetSmoothingPoolRegistrationState(rp *rocketpool.RocketPool, optIn bool, op
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketNodeManager.Transact(opts, "setSmoothingPoolRegistrationState", optIn)
+	tx, err := rocketNodeManager.Transact(opts, "setSmoothingPoolRegistrationState", optIn)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not set smoothing pool registration state: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get the number of nodes in the Smoothing Pool

@@ -142,11 +142,11 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketNodeStaking.Transact(opts, "stakeRPL", rplAmount)
+	tx, err := rocketNodeStaking.Transact(opts, "stakeRPL", rplAmount)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not stake RPL: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of WithdrawRPL
@@ -164,11 +164,11 @@ func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Trans
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketNodeStaking.Transact(opts, "withdrawRPL", rplAmount)
+	tx, err := rocketNodeStaking.Transact(opts, "withdrawRPL", rplAmount)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not withdraw staked RPL: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Calculate total effective RPL stake

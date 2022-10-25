@@ -190,11 +190,11 @@ func BurnRETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpt
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketTokenRETH.Transact(opts, "burn", amount)
+	tx, err := rocketTokenRETH.Transact(opts, "burn", amount)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not burn rETH: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 //

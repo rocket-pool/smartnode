@@ -52,11 +52,11 @@ func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, e
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDepositPool.Transact(opts, "deposit")
+	tx, err := rocketDepositPool.Transact(opts, "deposit")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not deposit: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Estimate the gas of AssignDeposits
@@ -74,11 +74,11 @@ func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketDepositPool.Transact(opts, "assignDeposits")
+	tx, err := rocketDepositPool.Transact(opts, "assignDeposits")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not assign deposits: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Get contracts

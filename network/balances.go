@@ -92,11 +92,11 @@ func SubmitBalances(rp *rocketpool.RocketPool, block uint64, totalEth, stakingEt
 	if err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
+	tx, err := rocketNetworkBalances.Transact(opts, "submitBalances", big.NewInt(int64(block)), totalEth, stakingEth, rethSupply)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not submit network balances: %w", err)
 	}
-	return hash, nil
+	return tx.Hash(), nil
 }
 
 // Returns the latest block number that oracles should be reporting balances for
