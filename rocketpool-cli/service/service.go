@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/sys"
 	"github.com/shirou/gopsutil/v3/disk"
 )
 
@@ -1741,4 +1742,21 @@ func getPartitionFreeSpace(rp *rocketpool.Client, targetDir string) (uint64, err
 		return 0, fmt.Errorf("error getting free disk space available: %w", err)
 	}
 	return diskUsage.Free, nil
+}
+
+// Get the list of features required for modern client containers but not supported by the CPU
+func checkCpuFeatures() error {
+	unsupportedFeatures := sys.GetMissingModernCpuFeatures()
+	if len(unsupportedFeatures) > 0 {
+		fmt.Println("Your CPU is missing support for the following features:")
+		for _, name := range unsupportedFeatures {
+			fmt.Printf("  - %s\n", name)
+		}
+
+		fmt.Println("\nYou must use the 'portable' image.")
+		return nil
+	}
+
+	fmt.Println("Your CPU supports all required features for 'modern' images.")
+	return nil
 }

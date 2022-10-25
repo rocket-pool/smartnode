@@ -2109,6 +2109,7 @@ github.com/wealdtech/go-eth2-wallet-types/v2 v2.9.0 h1:XqWgsONVqsPvciuEXxM/QU4hY
 github.com/wealdtech/go-eth2-wallet-types/v2 v2.9.0/go.mod h1:7Ad2xp27vOQRQWQsIeHBdU/YiyEt6klBeh5gwnNnlwE=
 github.com/wealdtech/go-multicodec v1.4.0 h1:iq5PgxwssxnXGGPTIK1srvt6U5bJwIp7k6kBrudIWxg=
 github.com/wealdtech/go-multicodec v1.4.0/go.mod h1:aedGMaTeYkIqi/KCPre1ho5rTb3hGpu/snBOS3GQLw4=
+github.com/wealdtech/go-string2eth v1.1.0 h1:USJQmysUrBYYmZs7d45pMb90hRSyEwizP7lZaOZLDAw=
 github.com/wealdtech/go-string2eth v1.1.0/go.mod h1:RUzsLjJtbZaJ/3UKn9kY19a/vCCUHtEWoUW3uiK6yGU=
 github.com/wercker/journalhook v0.0.0-20180428041537-5d0a5ae867b3/go.mod h1:XCsSkdKK4gwBMNrOCZWww0pX6AOt+2gYc5Z6jBRrNVg=
 github.com/whyrusleeping/cbor v0.0.0-20171005072247-63513f603b11 h1:5HZfQkwe0mIfyDmc1Em5GqlNRzcdtlv4HTNmdpt7XH0=

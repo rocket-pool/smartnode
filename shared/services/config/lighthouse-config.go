@@ -2,12 +2,15 @@ package config
 
 import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils/sys"
 )
 
 const (
-	lighthouseTagTest string = "sigp/lighthouse:v3.1.2"
-	lighthouseTagProd string = "sigp/lighthouse:v3.1.2"
-	defaultLhMaxPeers uint16 = 80
+	lighthouseTagPortableTest string = "sigp/lighthouse:v3.1.2"
+	lighthouseTagPortableProd string = "sigp/lighthouse:v3.1.2"
+	lighthouseTagModernTest   string = "sigp/lighthouse:v3.1.2-modern"
+	lighthouseTagModernProd   string = "sigp/lighthouse:v3.1.2-modern"
+	defaultLhMaxPeers         uint16 = 80
 )
 
 // Configuration for Lighthouse
@@ -53,10 +56,10 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 			Description: "The tag name of the Lighthouse container you want to use from Docker Hub.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: lighthouseTagProd,
-				config.Network_Prater:  lighthouseTagTest,
-				config.Network_Kiln:    lighthouseTagTest,
-				config.Network_Ropsten: lighthouseTagTest,
+				config.Network_Mainnet: getLighthouseTagProd(),
+				config.Network_Prater:  getLighthouseTagTest(),
+				config.Network_Kiln:    getLighthouseTagTest(),
+				config.Network_Ropsten: getLighthouseTagTest(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},
@@ -118,4 +121,22 @@ func (cfg *LighthouseConfig) GetName() string {
 // The the title for the config
 func (cfg *LighthouseConfig) GetConfigTitle() string {
 	return cfg.Title
+}
+
+// Get the appropriate LH default tag for production
+func getLighthouseTagProd() string {
+	missingFeatures := sys.GetMissingModernCpuFeatures()
+	if len(missingFeatures) > 0 {
+		return lighthouseTagPortableProd
+	}
+	return lighthouseTagModernProd
+}
+
+// Get the appropriate LH default tag for testnets
+func getLighthouseTagTest() string {
+	missingFeatures := sys.GetMissingModernCpuFeatures()
+	if len(missingFeatures) > 0 {
+		return lighthouseTagPortableTest
+	}
+	return lighthouseTagModernTest
 }

@@ -23,6 +23,7 @@ require (
 	github.com/herumi/bls-eth-go-binary v1.28.1 // indirect
 	github.com/imdario/mergo v0.3.13
 	github.com/klauspost/compress v1.15.11
+	github.com/klauspost/cpuid/v2 v2.1.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/term v0.0.0-20220808134915-39b0c02b01ae // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
