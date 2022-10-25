@@ -430,8 +430,8 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.In
 }
 
 // Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int) (api.NodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s", amountWei.String(), minFee, salt.String()))
+func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, submit bool) (api.NodeDepositResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t", amountWei.String(), minFee, salt.String(), submit))
 	if err != nil {
 		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
 	}

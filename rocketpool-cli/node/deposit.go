@@ -260,7 +260,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Make deposit
-	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt)
+	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, true)
 	if err != nil {
 		return err
 	}
