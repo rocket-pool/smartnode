@@ -400,7 +400,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return checkCpuFeatures(c)
+					return checkCpuFeatures()
 
 				},
 			},
