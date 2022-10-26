@@ -148,14 +148,14 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== New MEV-Boost Relays ===%s\n", colorGreen, colorReset)
-	fmt.Println("Two new relays have been added to MEV-Boost: Blocknative and Eden. Run `rocketpool service config` and visit the MEV-Boost section to enable them!\n")
+	fmt.Printf("%s=== MEV-Boost Updates ===%s\n", colorGreen, colorReset)
+	fmt.Println("MEV-Boost is now opt-out instead of opt-in. Furthermore, there is a new way to select relays: you can now select \"profiles\" instead of individual relays. As new relays are added to the Smartnode, any that belong to the profiles you've selected will automatically be enabled for you.\nNOTE: everyone will have to configure either profile-mode or individual-relay mode when first upgrading from v1.6, even if you had previously configured MEV-Boost.\n")
 
-	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
-	fmt.Println("- `rocketpool wallet purge` can be used to delete your node wallet and password, as well as all of your Validator Client artifacts (i.e. your validator keys and its slashing database). It's useful for people that want to remove the node from their wallet to prevent attesting, but want to preserve the chain data.\n")
+	fmt.Printf("%s=== ENS Support ===%s\n", colorGreen, colorReset)
+	fmt.Println("`rocketpool node set-withdrawal-address`, `rocketpool node send`, and `rocketpool node set-voting-delegate` can now use ENS names instead of addresses! This requires your Execution Client to be online and synced.\nAlso, use the `rocketpool wallet set-ens-name` command to confirm an ENS domain or subdomain name that you assign to your node wallet. Once you do this, you can refer to your node's address by its ENS name on explorers like Etherscan.\n")
 
-	fmt.Printf("%s=== Native Mode Update ===%s\n", colorGreen, colorReset)
-	fmt.Println("Native Mode has gone through a significant update to improve the ease-of-use and resolve some permissions problems.\nIf you're a Native Mode user, please check out the new guide at https://docs.rocketpool.net/guides/node/native.html.\n")
+	fmt.Printf("%s=== Modern vs. Portable ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode now automatically checks your node's CPU features and defaults to either the \"modern\" optimized version of certain clients, or the more generic \"portable\" version based on what your machine supports. This only applies to MEV-Boost and Lighthouse.\n")
 
 	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
 	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")

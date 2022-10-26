@@ -13,8 +13,8 @@ func GetMissingModernCpuFeatures() []string {
 	switch runtime.GOARCH {
 	case "amd64":
 		features = map[cpuid.FeatureID]string{
-			cpuid.ADX:   "adx",
-			cpuid.AESNI: "aes",
+			cpuid.ADX: "adx",
+			//cpuid.AESNI: "aes",
 			cpuid.AVX:   "avx",
 			cpuid.AVX2:  "avx2",
 			cpuid.BMI1:  "bmi1",
