@@ -322,22 +322,40 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 
 	case config.MevSelectionMode_Relay:
 		if cfg.FlashbotsRelay.Value == true {
-			relays = append(relays, cfg.relayMap[config.MevRelayID_Flashbots])
+			_, exists := cfg.relayMap[config.MevRelayID_Flashbots].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_Flashbots])
+			}
 		}
 		if cfg.BloxRouteEthicalRelay.Value == true {
-			relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteEthical])
+			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteEthical].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteEthical])
+			}
 		}
 		if cfg.BloxRouteMaxProfitRelay.Value == true {
-			relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteMaxProfit])
+			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteMaxProfit].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteMaxProfit])
+			}
 		}
 		if cfg.BloxRouteRegulatedRelay.Value == true {
-			relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteRegulated])
+			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteRegulated].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteRegulated])
+			}
 		}
 		if cfg.BlocknativeRelay.Value == true {
-			relays = append(relays, cfg.relayMap[config.MevRelayID_Blocknative])
+			_, exists := cfg.relayMap[config.MevRelayID_Blocknative].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_Blocknative])
+			}
 		}
 		if cfg.EdenRelay.Value == true {
-			relays = append(relays, cfg.relayMap[config.MevRelayID_Eden])
+			_, exists := cfg.relayMap[config.MevRelayID_Eden].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_Eden])
+			}
 		}
 	}
 
