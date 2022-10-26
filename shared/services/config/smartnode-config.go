@@ -310,7 +310,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Prater:  "0xd8Cd47263414aFEca62d6e2a3917d6600abDceB3",
+			config.Network_Prater:  "0x6A18E47f8CcB453Dd0894AC003f74BEE7e47A368",
 			config.Network_Kiln:    "0x340b8bB313B9d5d79cA82c7b7416Ee1A8485326c",
 			config.Network_Ropsten: "0x2b43C0b8e44FD03aa5C2866ba380fBcB646A1D42",
 		},
@@ -324,56 +324,56 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Prater:  "0x5e932688e81a182e3de211db6544f98b8e4f89c7",
+			config.Network_Prater:  "0x09b6aEF57B580f5CB46746BA59ed312Ba80E8Ad4",
 			config.Network_Kiln:    "0xb4efd85c19999d84251304bda99e90b92300bd93",
 			config.Network_Ropsten: "0xb4efd85c19999d84251304bda99e90b92300bd93",
 		},
 
 		rplFaucetAddress: map[config.Network]string{
 			config.Network_Mainnet: "",
-			config.Network_Prater:  "0x95D6b8E2106E3B30a72fC87e2B56ce15E37853F9",
+			config.Network_Prater:  "0x44f273f388f37618b2d5e122aAF9906f9f40c880",
 			config.Network_Kiln:    "0xE200d83cE0534fB28F12813617abCE01258b6673",
 			config.Network_Ropsten: "0x94e840CD58FF0F387117869A28035903a51502aa",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Prater:  "0x178E141a0E3b34152f73Ff610437A7bf9B83267A",
+			config.Network_Prater:  "0x2DF914425da6d0067EF1775AfDBDd7B24fc8100E",
 			config.Network_Kiln:    "0xBCAB713355D265B3e3D64F02bc1Eb4F7717b4B14",
 			config.Network_Ropsten: "0x00651FC69eFd13F76fC7dEBC2540F2662A09fa8c",
 		},
 
 		legacyRewardsPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
-			config.Network_Prater:  "0xf9aE18eB0CE4930Bc3d7d1A5E33e4286d4FB0f8B",
+			config.Network_Prater:  "0x4A1b5Ab9F6C36E7168dE5F994172028Ca8554e02",
 			config.Network_Kiln:    "0xFb62F3B5AF8099Bbd19d5d46084Bb152ECDE25A6",
 			config.Network_Ropsten: "0x401e46fA6cBC9e1E6Cc3E9666C10329f938aE1B3",
 		},
 
 		legacyClaimNodeAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
-			config.Network_Prater:  "0xc05b7A2a03A6d2736d1D0ebf4d4a0aFE2cc32cE1",
+			config.Network_Prater:  "",
 			config.Network_Kiln:    "0xF98086202F8F58dad8120055Fdd6e2f36De2c6Fb",
 			config.Network_Ropsten: "0xA55F65219d7254DFde4021E4f534a7a55750C4a1",
 		},
 
 		legacyClaimTrustedNodeAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
-			config.Network_Prater:  "0x730982F4439E5AC30292333ff7d0C478907f2219",
+			config.Network_Prater:  "",
 			config.Network_Kiln:    "0x2DFD22dD4474C306824d3014C6FC664012577807",
 			config.Network_Ropsten: "0x097664F6B68564B3AFEad72662fCA557350aE7Bf",
 		},
 
 		legacyMinipoolManagerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a",
-			config.Network_Prater:  "0xB815a94430f08dD2ab61143cE1D5739Ac81D3C6d",
+			config.Network_Prater:  "",
 			config.Network_Kiln:    "0x6230e0180bc24cA59D20c56F964C81DcE4fe8df6",
 			config.Network_Ropsten: "0xcE2Fc66c58e35bF4c156ab13085826B8d26c4B7A",
 		},
 
 		snapshotDelegationAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
-			config.Network_Prater:  "0xD0897D68Cd66A710dDCecDe30F7557972181BEDc",
+			config.Network_Prater:  "",
 			config.Network_Kiln:    "",
 			config.Network_Ropsten: "0x2588C77829015080C771359eC1C3066d2f1158Db",
 		},
@@ -389,7 +389,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: {},
 			config.Network_Prater: {
 				"v1.5.0-rc1": []common.Address{
-					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
+					common.HexToAddress(""),
 				},
 			},
 			config.Network_Kiln: {},
@@ -403,7 +403,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		optimismPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xdddcf2c25d50ec22e67218e873d46938650d03a7",
-			config.Network_Prater:  "0x87E2deCE7d0A080D579f63cbcD7e1629BEcd7E7d",
+			config.Network_Prater:  "",
 			config.Network_Kiln:    "",
 			config.Network_Ropsten: "",
 		},

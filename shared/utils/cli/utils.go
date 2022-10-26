@@ -143,7 +143,7 @@ func PrintNetwork(rp *rocketpool.Client) error {
 	case cfgtypes.Network_Mainnet:
 		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
 	case cfgtypes.Network_Prater:
-		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network.%s\n\n", colorLightBlue, colorReset)
+		fmt.Printf("Your Smartnode is currently using the %sPrater Test Network (DevNet.%s\n\n", colorYellow, colorReset)
 	case cfgtypes.Network_Kiln:
 		fmt.Printf("Your Smartnode is currently using the %sKiln Test Network.%s\n\n", colorYellow, colorReset)
 	case cfgtypes.Network_Ropsten:

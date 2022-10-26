@@ -1210,7 +1210,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Return command
-	return fmt.Sprintf("%s docker compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+	return fmt.Sprintf("%s docker-compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
 
 }
 
