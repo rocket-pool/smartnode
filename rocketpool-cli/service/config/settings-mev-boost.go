@@ -171,17 +171,17 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 	switch selectedMode {
 	case cfgtypes.MevSelectionMode_Profile:
 		regulatedAllMev, regulatedNoSandwich, unregulatedAllMev, unregulatedNoSandwich := configPage.masterConfig.MevBoost.GetAvailableProfiles()
-		if regulatedAllMev {
-			configPage.layout.form.AddFormItem(configPage.regulatedAllMevBox.item)
-		}
-		if regulatedNoSandwich {
-			configPage.layout.form.AddFormItem(configPage.regulatedNoSandwichBox.item)
-		}
 		if unregulatedAllMev {
 			configPage.layout.form.AddFormItem(configPage.unregulatedAllMevBox.item)
 		}
 		if unregulatedNoSandwich {
 			configPage.layout.form.AddFormItem(configPage.unregulatedNoSandwichBox.item)
+		}
+		if regulatedAllMev {
+			configPage.layout.form.AddFormItem(configPage.regulatedAllMevBox.item)
+		}
+		if regulatedNoSandwich {
+			configPage.layout.form.AddFormItem(configPage.regulatedNoSandwichBox.item)
 		}
 
 	case cfgtypes.MevSelectionMode_Relay:
