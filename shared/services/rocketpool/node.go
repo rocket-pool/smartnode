@@ -237,7 +237,7 @@ func (c *Client) NodeSwapRplApprove(amountWei *big.Int) (api.NodeSwapRplApproveR
 	return response, nil
 }
 
-// Swap node's old RPL tokens for new RPL tokens, waiting for the approval to be mined first
+// Swap node's old RPL tokens for new RPL tokens, waiting for the approval to be included in a block first
 func (c *Client) NodeWaitAndSwapRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeSwapRplSwapResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-swap-rpl %s %s", amountWei.String(), approvalTxHash.String()))
 	if err != nil {
@@ -333,7 +333,7 @@ func (c *Client) NodeStakeRplApprove(amountWei *big.Int) (api.NodeStakeRplApprov
 	return response, nil
 }
 
-// Stake RPL against the node waiting for approvalTxHash to be mined first
+// Stake RPL against the node waiting for approvalTxHash to be included in a block first
 func (c *Client) NodeWaitAndStakeRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeStakeRplStakeResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-stake-rpl %s %s", amountWei.String(), approvalTxHash.String()))
 	if err != nil {
@@ -430,8 +430,8 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.In
 }
 
 // Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int) (api.NodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s", amountWei.String(), minFee, salt.String()))
+func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, submit bool) (api.NodeDepositResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t", amountWei.String(), minFee, salt.String(), submit))
 	if err != nil {
 		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
 	}
@@ -873,6 +873,35 @@ func (c *Client) NodeSetSmoothingPoolStatus(status bool) (api.SetSmoothingPoolRe
 	}
 	if response.Error != "" {
 		return api.SetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not set smoothing pool status: %s", response.Error)
+	}
+	return response, nil
+}
+
+func (c *Client) ResolveEnsName(name string) (api.ResolveEnsNameResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node resolve-ens-name %s", name))
+	if err != nil {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not resolve ENS name: %w", err)
+	}
+	var response api.ResolveEnsNameResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not decode resolve-ens-name: %w", err)
+	}
+	if response.Error != "" {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not resolve ENS name: %s", response.Error)
+	}
+	return response, nil
+}
+func (c *Client) ReverseResolveEnsName(name string) (api.ResolveEnsNameResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node reverse-resolve-ens-name %s", name))
+	if err != nil {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not reverse resolve ENS name: %w", err)
+	}
+	var response api.ResolveEnsNameResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not decode reverse-resolve-ens-name: %w", err)
+	}
+	if response.Error != "" {
+		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not reverse resolve ENS name: %s", response.Error)
 	}
 	return response, nil
 }

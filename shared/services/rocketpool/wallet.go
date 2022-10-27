@@ -164,6 +164,54 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 	return response, nil
 }
 
+// Purge the node wallet and validator keys
+func (c *Client) Purge() (api.PurgeResponse, error) {
+	responseBytes, err := c.callAPI("wallet purge")
+	if err != nil {
+		return api.PurgeResponse{}, fmt.Errorf("Could not purge wallet and keys: %w", err)
+	}
+	var response api.PurgeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PurgeResponse{}, fmt.Errorf("Could not decode purge response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PurgeResponse{}, fmt.Errorf("Could not purge wallet and keys: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Estimate the gas required to set an ENS reverse record to a name
+func (c *Client) EstimateGasSetEnsName(name string) (api.SetEnsNameResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("wallet estimate-gas-set-ens-name %s", name))
+	if err != nil {
+		return api.SetEnsNameResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-name response: %w", err)
+	}
+	var response api.SetEnsNameResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetEnsNameResponse{}, fmt.Errorf("Could not decode estimate-gas-set-ens-name response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetEnsNameResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-name response: %s", response.Error)
+	}
+	return response, nil
+}
+
+//  Set an ENS reverse record to a name
+func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-ens-name %s", name))
+	if err != nil {
+		return api.SetEnsNameResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
+	}
+	var response api.SetEnsNameResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.SetEnsNameResponse{}, fmt.Errorf("Could not decode set-ens-name response: %w", err)
+	}
+	if response.Error != "" {
+		return api.SetEnsNameResponse{}, fmt.Errorf("Could not update ENS record: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Export wallet
 func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
 	responseBytes, err := c.callAPI("wallet export")

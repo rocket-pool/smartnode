@@ -32,7 +32,7 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 	}
 
 	back := func() {
-		wiz.nativeMetricsModal.show()
+		wiz.nativeMevModal.show()
 	}
 
 	return newChoiceStep(

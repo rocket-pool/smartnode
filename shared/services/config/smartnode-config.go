@@ -55,14 +55,8 @@ type SmartnodeConfig struct {
 	// The path of the watchtower's persistent state storage
 	WatchtowerStatePath config.Parameter `yaml:"watchtowerStatePath"`
 
-	// The command for restarting the validator container in native mode
-	ValidatorRestartCommand config.Parameter `yaml:"validatorRestartCommand,omitempty"`
-
 	// Which network we're on
 	Network config.Parameter `yaml:"network,omitempty"`
-
-	// The terminal total difficulty override for the Merge
-	TTD config.Parameter `yaml:"ttd,omitempty"`
 
 	// Manual max fee override
 	ManualMaxFee config.Parameter `yaml:"manualMaxFee,omitempty"`
@@ -157,18 +151,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
-		TTD: config.Parameter{
-			ID:                   "ttd",
-			Name:                 "TTD Override",
-			Description:          "Use this to manually override the terminal total difficulty value for the network. This is the number used by the Execution and Consensus clients to know when to trigger The Merge.\n\nNOTE: This should only be used in special situations where the Core Developers have felt it necessary to change the TTD from the previously-agreed-upon value.",
-			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: ""},
-			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Eth2},
-			EnvironmentVariables: []string{"TTD_OVERRIDE"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   false,
-		},
-
 		DataPath: config.Parameter{
 			ID:                   "dataPath",
 			Name:                 "Data Path",
@@ -238,7 +220,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		PriorityFee: config.Parameter{
 			ID:                   "priorityFee",
 			Name:                 "Priority Fee",
-			Description:          "The default value for the priority fee (in gwei) for all of your transactions. This describes how much you're willing to pay *above the network's current base fee* - the higher this is, the more ETH you give to the miners for including your transaction, which generally means it will be mined faster (as long as your max fee is sufficiently high to cover the current network conditions).\n\nMust be larger than 0.",
+			Description:          "The default value for the priority fee (in gwei) for all of your transactions. This describes how much you're willing to pay *above the network's current base fee* - the higher this is, the more ETH you give to the validators for including your transaction, which generally means it will be included in a block faster (as long as your max fee is sufficiently high to cover the current network conditions).\n\nMust be larger than 0.",
 			Type:                 config.ParameterType_Float,
 			Default:              map[config.Network]interface{}{config.Network_All: float64(2)},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
@@ -428,21 +410,14 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rewardsSubmissionBlockMaps: map[config.Network][]uint64{
 			config.Network_Mainnet: {
-				15451165,
+				15451165, 15637542,
 			},
 			config.Network_Prater: {
-				7287326,
-				7297026,
-				7314231,
-				7331462,
-				7387271,
-				7412366,
-				7420574,
-				7436546,
-				7456423,
-				7473017,
-				7489726,
-				7506706,
+				7287326, 7297026, 7314231, 7331462, 7387271, 7412366,
+				7420574, 7436546, 7456423, 7473017, 7489726, 7506706,
+				7525902, 7544630, 7562851, 7581623, 7600343, 7618815,
+				7636720, 7654452, 7672147, 7689735, 7707617, 7725232,
+				7742548, 7760702, 7777078,
 			},
 			config.Network_Kiln:    {},
 			config.Network_Ropsten: {},
@@ -455,7 +430,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.Network,
-		&cfg.TTD,
 		&cfg.ProjectName,
 		&cfg.DataPath,
 		&cfg.ManualMaxFee,

@@ -430,11 +430,11 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Name:                 "Enable MEV-Boost",
 			Description:          "Enable MEV-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract MEV opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
 			Type:                 config.ParameterType_Bool,
-			Default:              map[config.Network]interface{}{config.Network_All: false},
+			Default:              map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
 			EnvironmentVariables: []string{"ENABLE_MEV_BOOST"},
 			CanBeBlank:           false,
-			OverwriteOnUpgrade:   false,
+			OverwriteOnUpgrade:   true,
 		},
 	}
 
@@ -497,9 +497,14 @@ func getAugmentedEcDescription(client config.ExecutionClient, originalDescriptio
 func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
 	newConfig := NewRocketPoolConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
 
+	// Set the network
+	network := cfg.Smartnode.Network.Value.(config.Network)
+	newConfig.Smartnode.Network.Value = network
+
 	newParams := newConfig.GetParameters()
 	for i, param := range cfg.GetParameters() {
 		newParams[i].Value = param.Value
+		newParams[i].UpdateDescription(network)
 	}
 
 	newSubconfigs := newConfig.GetSubconfigs()
@@ -507,6 +512,7 @@ func (cfg *RocketPoolConfig) CreateCopy() *RocketPoolConfig {
 		newParams := newSubconfigs[name].GetParameters()
 		for i, param := range subConfig.GetParameters() {
 			newParams[i].Value = param.Value
+			newParams[i].UpdateDescription(network)
 		}
 	}
 
@@ -764,7 +770,7 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 
 	// Get the network
 	network := config.Network_Mainnet
-	smartnodeConfig, exists := masterMap[cfg.Smartnode.Title]
+	smartnodeConfig, exists := masterMap["smartnode"]
 	if exists {
 		networkString, exists := smartnodeConfig[cfg.Smartnode.Network.ID]
 		if exists {
@@ -828,6 +834,7 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 		envVars["EC_HTTP_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.HttpPort.Value)
 		envVars["EC_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.WsPort.Value)
 		envVars["EC_ENGINE_ENDPOINT"] = fmt.Sprintf("http://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
+		envVars["EC_ENGINE_WS_ENDPOINT"] = fmt.Sprintf("ws://%s:%d", Eth1ContainerName, cfg.ExecutionCommon.EnginePort.Value)
 
 		// Handle open API ports
 		if cfg.ExecutionCommon.OpenRpcPorts.Value == true {
@@ -990,33 +997,7 @@ func (cfg *RocketPoolConfig) GenerateEnvironmentVariables() map[string]string {
 	if cfg.EnableMevBoost.Value == true {
 		config.AddParametersToEnvVars(cfg.MevBoost.GetParameters(), envVars)
 		if cfg.MevBoost.Mode.Value == config.Mode_Local {
-			relays := []string{}
-			if cfg.MevBoost.FlashbotsRelay.Value == true {
-				url := cfg.MevBoost.flashbotsUrls[cfg.Smartnode.Network.Value.(config.Network)]
-				if url != "" {
-					relays = append(relays, url)
-				}
-			}
-			if cfg.MevBoost.BloxRouteEthicalRelay.Value == true {
-				url := cfg.MevBoost.bloxRouteEthicalUrls[cfg.Smartnode.Network.Value.(config.Network)]
-				if url != "" {
-					relays = append(relays, url)
-				}
-			}
-			if cfg.MevBoost.BloxRouteMaxProfitRelay.Value == true {
-				url := cfg.MevBoost.bloxRouteMaxProfitUrls[cfg.Smartnode.Network.Value.(config.Network)]
-				if url != "" {
-					relays = append(relays, url)
-				}
-			}
-			if cfg.MevBoost.BloxRouteRegulatedRelay.Value == true {
-				url := cfg.MevBoost.bloxRouteRegulatedUrls[cfg.Smartnode.Network.Value.(config.Network)]
-				if url != "" {
-					relays = append(relays, url)
-				}
-			}
-			relayString := strings.Join(relays, ",")
-			envVars[mevBoostRelaysEnvVar] = relayString
+			envVars[mevBoostRelaysEnvVar] = cfg.MevBoost.GetRelayString()
 			envVars[mevBoostUrlEnvVar] = fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
 
 			// Handle open API port
@@ -1134,13 +1115,21 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	}
 
 	// Ensure there's a MEV-boost URL
-	if cfg.EnableMevBoost.Value == true {
-		if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_Local {
-			if cfg.MevBoost.FlashbotsRelay.Value == false && cfg.MevBoost.BloxRouteEthicalRelay.Value == false && cfg.MevBoost.BloxRouteMaxProfitRelay.Value == false && cfg.MevBoost.BloxRouteRegulatedRelay.Value == false {
-				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any relays enabled. Please select at least one relay to use MEV-boost.")
+	if !cfg.IsNativeMode && cfg.EnableMevBoost.Value == true {
+		switch cfg.MevBoost.Mode.Value.(config.Mode) {
+		case config.Mode_Local:
+			// In local MEV-boost mode, the user has to have at least one relay
+			relays := cfg.MevBoost.GetEnabledMevRelays()
+			if len(relays) == 0 {
+				errors = append(errors, "You have MEV-boost enabled in local mode but don't have any profiles or relays enabled. Please select at least one profile or relay to use MEV-boost.")
 			}
-		} else if cfg.MevBoost.Mode.Value.(config.Mode) == config.Mode_External && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
-			errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+		case config.Mode_External:
+			// In external MEV-boost mode, the user has to have an external URL if they're running Docker mode
+			if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.MevBoost.ExternalUrl.Value.(string) == "" {
+				errors = append(errors, "You have MEV-boost enabled in external mode but don't have a URL set. Please enter the external MEV-boost server URL to use it.")
+			}
+		default:
+			errors = append(errors, "You do not have a MEV-Boost mode configured. You must either select a mode in the `rocketpool service config` UI, or disable MEV-Boost.\nNote that MEV-Boost will be required in a future update, at which point you can no longer disable it.")
 		}
 	}
 

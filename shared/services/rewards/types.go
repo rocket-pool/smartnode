@@ -64,6 +64,7 @@ type NodeSmoothingDetails struct {
 	Minipools        []*MinipoolInfo
 	EligibleSeconds  *big.Int
 	SmoothingPoolEth *big.Int
+	RewardsNetwork   uint64
 }
 
 type QuotedBigInt struct {

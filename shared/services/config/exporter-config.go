@@ -5,7 +5,7 @@ import (
 )
 
 // Constants
-const exporterTag string = "prom/node-exporter:v1.3.1"
+const exporterTag string = "prom/node-exporter:v1.4.0"
 
 // Defaults
 const defaultExporterRootFs bool = false

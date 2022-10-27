@@ -59,6 +59,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return nil, err
 	}
 	response.AccountAddress = nodeAccount.Address
+	response.AccountAddressFormatted = formatResolvedAddress(c, response.AccountAddress)
 
 	// Sync
 	var wg errgroup.Group
@@ -78,7 +79,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		if err == nil {
 			response.Registered = details.Exists
 			response.WithdrawalAddress = details.WithdrawalAddress
+			response.WithdrawalAddressFormatted = formatResolvedAddress(c, response.WithdrawalAddress)
 			response.PendingWithdrawalAddress = details.PendingWithdrawalAddress
+			response.PendingWithdrawalAddressFormatted = formatResolvedAddress(c, response.PendingWithdrawalAddress)
 			response.TimezoneLocation = details.TimezoneLocation
 		}
 		return err
@@ -117,29 +120,36 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		response.MinipoolLimit, err = node.GetNodeMinipoolLimit(rp, nodeAccount.Address, nil)
 		return err
 	})
+
+	// Get active and past votes from Snapshot, but treat errors as non-Fatal
 	wg.Go(func() error {
 		var err error
+		r := &response.SnapshotResponse
 		if cfg.Smartnode.GetSnapshotDelegationAddress() != "" {
 			idHash := cfg.Smartnode.GetVotingSnapshotID()
 			response.VotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
 			if err != nil {
-				return err
+				r.Error = err.Error()
+				return nil
 			}
+			blankAddress := common.Address{}
+			if response.VotingDelegate != blankAddress {
+				response.VotingDelegateFormatted = formatResolvedAddress(c, response.VotingDelegate)
+			}
+
 			votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
 			if err != nil {
-				return err
+				r.Error = err.Error()
+				return nil
 			}
-			response.ProposalVotes = votedProposals.Data.Votes
+			r.ProposalVotes = votedProposals.Data.Votes
 		}
-		return err
-	})
-	// Get snapshot active proposals
-	wg.Go(func() error {
 		snapshotResponse, err := GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
 		if err != nil {
-			return err
+			r.Error = err.Error()
+			return nil
 		}
-		response.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
+		r.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
 		return nil
 	})
 

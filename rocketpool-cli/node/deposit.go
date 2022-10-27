@@ -60,6 +60,12 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
+	// Post a warning about fee distribution
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
 	// Get deposit amount
 	/*
 		var amount float64
@@ -254,7 +260,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Make deposit
-	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt)
+	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, true)
 	if err != nil {
 		return err
 	}

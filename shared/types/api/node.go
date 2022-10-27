@@ -14,24 +14,28 @@ import (
 )
 
 type NodeStatusResponse struct {
-	Status                   string          `json:"status"`
-	Error                    string          `json:"error"`
-	AccountAddress           common.Address  `json:"accountAddress"`
-	WithdrawalAddress        common.Address  `json:"withdrawalAddress"`
-	PendingWithdrawalAddress common.Address  `json:"pendingWithdrawalAddress"`
-	Registered               bool            `json:"registered"`
-	Trusted                  bool            `json:"trusted"`
-	TimezoneLocation         string          `json:"timezoneLocation"`
-	AccountBalances          tokens.Balances `json:"accountBalances"`
-	WithdrawalBalances       tokens.Balances `json:"withdrawalBalances"`
-	RplStake                 *big.Int        `json:"rplStake"`
-	EffectiveRplStake        *big.Int        `json:"effectiveRplStake"`
-	MinimumRplStake          *big.Int        `json:"minimumRplStake"`
-	MaximumRplStake          *big.Int        `json:"maximumRplStake"`
-	CollateralRatio          float64         `json:"collateralRatio"`
-	VotingDelegate           common.Address  `json:"votingDelegate"`
-	MinipoolLimit            uint64          `json:"minipoolLimit"`
-	MinipoolCounts           struct {
+	Status                            string          `json:"status"`
+	Error                             string          `json:"error"`
+	AccountAddress                    common.Address  `json:"accountAddress"`
+	AccountAddressFormatted           string          `json:"accountAddressFormatted"`
+	WithdrawalAddress                 common.Address  `json:"withdrawalAddress"`
+	WithdrawalAddressFormatted        string          `json:"withdrawalAddressFormatted"`
+	PendingWithdrawalAddress          common.Address  `json:"pendingWithdrawalAddress"`
+	PendingWithdrawalAddressFormatted string          `json:"pendingWithdrawalAddressFormatted"`
+	Registered                        bool            `json:"registered"`
+	Trusted                           bool            `json:"trusted"`
+	TimezoneLocation                  string          `json:"timezoneLocation"`
+	AccountBalances                   tokens.Balances `json:"accountBalances"`
+	WithdrawalBalances                tokens.Balances `json:"withdrawalBalances"`
+	RplStake                          *big.Int        `json:"rplStake"`
+	EffectiveRplStake                 *big.Int        `json:"effectiveRplStake"`
+	MinimumRplStake                   *big.Int        `json:"minimumRplStake"`
+	MaximumRplStake                   *big.Int        `json:"maximumRplStake"`
+	CollateralRatio                   float64         `json:"collateralRatio"`
+	VotingDelegate                    common.Address  `json:"votingDelegate"`
+	VotingDelegateFormatted           string          `json:"votingDelegateFormatted"`
+	MinipoolLimit                     uint64          `json:"minipoolLimit"`
+	MinipoolCounts                    struct {
 		Total               int `json:"total"`
 		Initialized         int `json:"initialized"`
 		Prelaunch           int `json:"prelaunch"`
@@ -43,12 +47,15 @@ type NodeStatusResponse struct {
 		CloseAvailable      int `json:"closeAvailable"`
 		Finalised           int `json:"finalised"`
 	} `json:"minipoolCounts"`
-	ActiveSnapshotProposals     []SnapshotProposal        `json:"activeSnapshotProposals"`
 	IsFeeDistributorInitialized bool                      `json:"isFeeDistributorInitialized"`
 	FeeRecipientInfo            rp.FeeRecipientInfo       `json:"feeRecipientInfo"`
 	FeeDistributorBalance       *big.Int                  `json:"feeDistributorBalance"`
 	PenalizedMinipools          map[common.Address]uint64 `json:"penalizedMinipools"`
-	ProposalVotes               []SnapshotProposalVote    `json:"proposalVotes"`
+	SnapshotResponse            struct {
+		Error                   string                 `json:"error"`
+		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
+		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
+	} `json:"snapshotResponse"`
 }
 
 type CanRegisterNodeResponse struct {
@@ -394,6 +401,12 @@ type SetSmoothingPoolRegistrationStatusResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
+}
+type ResolveEnsNameResponse struct {
+	Status  string         `json:"status"`
+	Error   string         `json:"error"`
+	Address common.Address `json:"address"`
+	EnsName string         `json:"ensName"`
 }
 type SnapshotProposal struct {
 	Id            string    `json:"id"`

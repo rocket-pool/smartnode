@@ -332,7 +332,7 @@ func (t *stakePrelaunchMinipools) stakeMinipool(mp *minipool.Minipool, eth2Confi
 		return false, err
 	}
 
-	// Print TX info and wait for it to be mined
+	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return false, err

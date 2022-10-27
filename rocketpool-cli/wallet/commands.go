@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -208,6 +210,40 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return exportWallet(c)
+
+				},
+			},
+			{
+				Name:      "set-ens-name",
+				Aliases:   []string{"ens"},
+				Usage:     "Set a name to the node wallet's ENS reverse record",
+				UsageText: "rocketpool wallet set-ens-name name",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Run
+					return setEnsName(c, c.Args().Get(0))
+
+				},
+			},
+
+			{
+				Name:      "purge",
+				Usage:     fmt.Sprintf("%sDeletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!%s", colorRed, colorReset),
+				UsageText: "rocketpool wallet purge",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return purge(c)
 
 				},
 			},

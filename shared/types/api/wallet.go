@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -67,9 +68,23 @@ type ExportWalletResponse struct {
 	AccountPrivateKey string `json:"accountPrivateKey"`
 }
 
+type SetEnsNameResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	Address common.Address     `json:"address"`
+	EnsName string             `json:"ensName"`
+	TxHash  common.Hash        `json:"txHash"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+
 type TestMnemonicResponse struct {
 	Status           string         `json:"status"`
 	Error            string         `json:"error"`
 	CurrentAddress   common.Address `json:"currentAddress"`
 	RecoveredAddress common.Address `json:"recoveredAddress"`
+}
+
+type PurgeResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
 }

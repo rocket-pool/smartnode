@@ -21,6 +21,9 @@ type wizard struct {
 	tekuExternalSettingsModal       *textBoxWizardStep
 	externalGraffitiModal           *textBoxWizardStep
 	metricsModal                    *choiceWizardStep
+	mevModeModal                    *choiceWizardStep
+	localMevModal                   *checkBoxWizardStep
+	externalMevModal                *textBoxWizardStep
 	finishedModal                   *choiceWizardStep
 	consensusLocalRandomModal       *choiceWizardStep
 	consensusLocalRandomPrysmModal  *choiceWizardStep
@@ -42,6 +45,7 @@ type wizard struct {
 	nativeUseFallbackModal *choiceWizardStep
 	nativeFallbackModal    *textBoxWizardStep
 	nativeMetricsModal     *choiceWizardStep
+	nativeMevModal         *choiceWizardStep
 	nativeFinishedModal    *choiceWizardStep
 }
 
@@ -51,8 +55,8 @@ func newWizard(md *mainDisplay) *wizard {
 		md: md,
 	}
 
-	totalDockerSteps := 8
-	totalNativeSteps := 9
+	totalDockerSteps := 9
+	totalNativeSteps := 10
 
 	// Docker mode
 	wiz.welcomeModal = createWelcomeStep(wiz, 1, totalDockerSteps)
@@ -78,7 +82,10 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.fallbackNormalModal = createFallbackNormalStep(wiz, 6, totalDockerSteps)
 	wiz.fallbackPrysmModal = createFallbackPrysmStep(wiz, 6, totalDockerSteps)
 	wiz.metricsModal = createMetricsStep(wiz, 7, totalDockerSteps)
-	wiz.finishedModal = createFinishedStep(wiz, 8, totalDockerSteps)
+	wiz.mevModeModal = createMevModeStep(wiz, 8, totalDockerSteps)
+	wiz.localMevModal = createLocalMevStep(wiz, 8, totalDockerSteps)
+	wiz.externalMevModal = createExternalMevStep(wiz, 8, totalDockerSteps)
+	wiz.finishedModal = createFinishedStep(wiz, 9, totalDockerSteps)
 
 	// Native mode
 	wiz.nativeWelcomeModal = createNativeWelcomeStep(wiz, 1, totalNativeSteps)
@@ -90,7 +97,8 @@ func newWizard(md *mainDisplay) *wizard {
 	wiz.nativeUseFallbackModal = createNativeUseFallbackStep(wiz, 7, totalNativeSteps)
 	wiz.nativeFallbackModal = createNativeFallbackStep(wiz, 7, totalNativeSteps)
 	wiz.nativeMetricsModal = createNativeMetricsStep(wiz, 8, totalNativeSteps)
-	wiz.nativeFinishedModal = createNativeFinishedStep(wiz, 9, totalNativeSteps)
+	wiz.nativeMevModal = createNativeMevStep(wiz, 9, totalNativeSteps)
+	wiz.nativeFinishedModal = createNativeFinishedStep(wiz, 10, totalNativeSteps)
 
 	return wiz
 

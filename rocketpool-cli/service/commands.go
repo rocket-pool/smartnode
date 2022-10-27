@@ -101,7 +101,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Flags: []cli.Flag{
 			cli.StringSliceFlag{
 				Name:  "compose-file, f",
-				Usage: "Optional compose files to override the standard Rocket Pool docker-compose.yml; this flag may be defined multiple times",
+				Usage: "Optional compose files to override the standard Rocket Pool docker compose YAML files; this flag may be defined multiple times",
 			},
 		},
 		Subcommands: []cli.Command{
@@ -303,7 +303,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 			{
 				Name:      "compose",
-				Usage:     "View the Rocket Pool service docker-compose config",
+				Usage:     "View the Rocket Pool service docker compose config",
 				UsageText: "rocketpool service compose",
 				Action: func(c *cli.Context) error {
 
@@ -383,6 +383,24 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run command
 					return installUpdateTracker(c)
+
+				},
+			},
+
+			{
+				Name:      "check-cpu-features",
+				Aliases:   []string{"ccf"},
+				Usage:     "Checks if your CPU supports all of the features required by the \"modern\" version of certain client images. If not, it prints what features are missing.",
+				UsageText: "rocketpool service check-cpu-features",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run command
+					return checkCpuFeatures()
 
 				},
 			},

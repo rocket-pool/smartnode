@@ -33,7 +33,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	back := func() {
-		wiz.metricsModal.show()
+		wiz.mevModeModal.show()
 	}
 
 	return newChoiceStep(

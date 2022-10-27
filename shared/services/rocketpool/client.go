@@ -1138,7 +1138,7 @@ func convertUintParam(oldParam config.UserParam, newParam *cfgtypes.Parameter, n
 	return nil
 }
 
-// Build a docker-compose command
+// Build a docker compose command
 func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	// Cancel if running in non-docker mode
@@ -1210,11 +1210,11 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	// Return command
-	return fmt.Sprintf("%s docker-compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
+	return fmt.Sprintf("%s docker compose --project-directory %s %s %s", strings.Join(env, " "), shellescape.Quote(expandedConfigPath), strings.Join(composeFileFlags, " "), args), nil
 
 }
 
-// Deploys all of the appropriate docker-compose template files and provisions them based on the provided configuration
+// Deploys all of the appropriate docker compose template files and provisions them based on the provided configuration
 func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir string, settings map[string]string) ([]string, error) {
 
 	// Check for the folders

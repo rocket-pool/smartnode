@@ -61,7 +61,7 @@ func getStatus(c *cli.Context) error {
 	fmt.Printf(
 		"The node %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
 		colorBlue,
-		status.AccountAddress.Hex(),
+		status.AccountAddressFormatted,
 		colorReset,
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6),
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6))
@@ -126,24 +126,28 @@ func getStatus(c *cli.Context) error {
 		if status.VotingDelegate == blankAddress {
 			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool governance proposals.")
 		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegate.Hex(), colorReset)
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", colorBlue, status.VotingDelegateFormatted, colorReset)
 		}
 
-		voteCount := 0
-		for _, activeProposal := range status.ActiveSnapshotProposals {
-			for _, votedProposal := range status.ProposalVotes {
-				if votedProposal.Proposal.Id == activeProposal.Id {
-					voteCount++
-					break
+		if status.SnapshotResponse.Error != "" {
+			fmt.Printf("Unable to fetch latest voting information from snapshot.org: %s\n", status.SnapshotResponse.Error)
+		} else {
+			voteCount := 0
+			for _, activeProposal := range status.SnapshotResponse.ActiveSnapshotProposals {
+				for _, votedProposal := range status.SnapshotResponse.ProposalVotes {
+					if votedProposal.Proposal.Id == activeProposal.Id {
+						voteCount++
+						break
+					}
 				}
 			}
+			if len(status.SnapshotResponse.ActiveSnapshotProposals) == 0 {
+				fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
+			} else {
+				fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.SnapshotResponse.ActiveSnapshotProposals), voteCount)
+			}
+			fmt.Println("")
 		}
-		if len(status.ActiveSnapshotProposals) == 0 {
-			fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
-		} else {
-			fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.ActiveSnapshotProposals), voteCount)
-		}
-		fmt.Println("")
 
 		// Withdrawal address & balances
 		fmt.Printf("%s=== Withdrawal Address ===%s\n", colorGreen, colorReset)
@@ -151,7 +155,7 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf(
 				"The node's withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
 				colorBlue,
-				status.WithdrawalAddress.Hex(),
+				status.WithdrawalAddressFormatted,
 				colorReset,
 				math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.ETH), 6),
 				math.RoundDown(eth.WeiToEth(status.WithdrawalBalances.RPL), 6))
@@ -161,7 +165,7 @@ func getStatus(c *cli.Context) error {
 		}
 		fmt.Println("")
 		if status.PendingWithdrawalAddress.Hex() != blankAddress.Hex() {
-			fmt.Printf("%sThe node's withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingWithdrawalAddress.Hex())
+			fmt.Printf("%sThe node's withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingWithdrawalAddressFormatted)
 			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
 			fmt.Println("")
 		}

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/prysmaticlabs/prysm/v2/beacon-chain/core/signing"
+	"github.com/prysmaticlabs/prysm/v3/beacon-chain/core/signing"
 	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -21,8 +21,8 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	prdeposit "github.com/prysmaticlabs/prysm/v2/contracts/deposit"
-	ethpb "github.com/prysmaticlabs/prysm/v2/proto/prysm/v1alpha1"
+	prdeposit "github.com/prysmaticlabs/prysm/v3/contracts/deposit"
+	ethpb "github.com/prysmaticlabs/prysm/v3/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -255,7 +255,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 }
 
-func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int) (*api.NodeDepositResponse, error) {
+func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, submit bool) (*api.NodeDepositResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -405,8 +405,11 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
+	// Do not send transaction unless requested
+	opts.NoSend = !submit
+
 	// Deposit
-	hash, err := node.Deposit(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	tx, err := node.Deposit(rp, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +419,16 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, err
 	}
 
-	response.TxHash = hash
+	// Print transaction if requested
+	if !submit {
+		b, err := tx.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("%x\n", b)
+	}
+
+	response.TxHash = tx.Hash()
 	response.MinipoolAddress = minipoolAddress
 	response.ValidatorPubkey = pubKey
 

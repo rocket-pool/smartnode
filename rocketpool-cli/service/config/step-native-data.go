@@ -7,8 +7,9 @@ func createNativeDataStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 	// Create the labels
 	dataPathLabel := wiz.md.Config.Smartnode.DataPath.Name
 	vrcLabel := wiz.md.Config.Native.ValidatorRestartCommand.Name
+	vscLabel := wiz.md.Config.Native.ValidatorStopCommand.Name
 
-	helperText := "Please enter the path of your `data` directory.\nThis folder holds your wallet and password files, and your validator key folder.\n\nAlso enter the path of the restart script which will restart your validator container after creating new minipools to load the new validator keys."
+	helperText := "Please enter the path of your `data` directory.\nThis folder holds your wallet and password files, and your validator key folder.\n\nAlso enter the path of the restart and stop scripts which will restart or stop your validator container if the Smartnode detects a configuration change or issue."
 
 	show := func(modal *textBoxModalLayout) {
 		wiz.md.setPage(modal.page)
@@ -30,6 +31,7 @@ func createNativeDataStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 	done := func(text map[string]string) {
 		wiz.md.Config.Smartnode.DataPath.Value = text[dataPathLabel]
 		wiz.md.Config.Native.ValidatorRestartCommand.Value = text[vrcLabel]
+		wiz.md.Config.Native.ValidatorStopCommand.Value = text[vscLabel]
 		wiz.nativeUseFallbackModal.show()
 	}
 
@@ -44,9 +46,9 @@ func createNativeDataStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 		helperText,
 		96,
 		"Other Settings",
-		[]string{dataPathLabel, vrcLabel},
-		[]int{wiz.md.Config.Smartnode.DataPath.MaxLength, wiz.md.Config.Native.ValidatorRestartCommand.MaxLength},
-		[]string{wiz.md.Config.Smartnode.DataPath.Regex, wiz.md.Config.Native.ValidatorRestartCommand.Regex},
+		[]string{dataPathLabel, vrcLabel, vscLabel},
+		[]int{wiz.md.Config.Smartnode.DataPath.MaxLength, wiz.md.Config.Native.ValidatorRestartCommand.MaxLength, wiz.md.Config.Native.ValidatorStopCommand.MaxLength},
+		[]string{wiz.md.Config.Smartnode.DataPath.Regex, wiz.md.Config.Native.ValidatorRestartCommand.Regex, wiz.md.Config.Native.ValidatorStopCommand.Regex},
 		show,
 		done,
 		back,

@@ -23,8 +23,8 @@ const (
 	SecretsDir    = "secrets"
 	ValidatorsDir = "validators"
 	KeyFileName   = "keystore.json"
-	DirMode       = 0700
-	FileMode      = 0600
+	DirMode       = 0770
+	FileMode      = 0640
 )
 
 // Nimbus keystore
