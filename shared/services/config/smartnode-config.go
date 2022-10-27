@@ -186,13 +186,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			CanBeBlank:           false,
 			OverwriteOnUpgrade:   false,
 			Options: []config.ParameterOption{
+				//{
+				//	Name:        "Ethereum Mainnet",
+				//	Description: "This is the real Ethereum main network, using real ETH and real RPL to make real validators.",
+				//	Value:       config.Network_Mainnet,
+				//}, {
+				//	Name:        "Prater Testnet",
+				//	Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
+				//	Value:       config.Network_Prater,
+				//},
 				{
-					Name:        "Ethereum Mainnet",
-					Description: "This is the real Ethereum main network, using real ETH and real RPL to make real validators.",
-					Value:       config.Network_Mainnet,
-				}, {
-					Name:        "Prater Testnet",
-					Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
+					Name:        "Devnet",
+					Description: "This is the Prater test network, using free fake ETH and free fake RPL to make fake validators.\nFor internal use only.",
 					Value:       config.Network_Prater,
 				}, /*{
 					Name:        "Kiln Testnet",
