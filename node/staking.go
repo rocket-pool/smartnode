@@ -11,6 +11,19 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
+// Get the version of the Node Staking contract
+func GetNodeStakingVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint8, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	if err != nil {
+		return 0, err
+	}
+	version := new(uint8)
+	if err := rocketNodeStaking.Call(opts, version, "version"); err != nil {
+		return 0, fmt.Errorf("Could not get node staking version: %w", err)
+	}
+	return *version, nil
+}
+
 // Get the total RPL staked in the network
 func GetTotalRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp)

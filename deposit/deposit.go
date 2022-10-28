@@ -24,6 +24,19 @@ func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error
 	return *balance, nil
 }
 
+// Get the deposit pool balance
+func GetUserBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp)
+	if err != nil {
+		return nil, err
+	}
+	balance := new(*big.Int)
+	if err := rocketDepositPool.Call(opts, balance, "getUserBalance"); err != nil {
+		return nil, fmt.Errorf("Could not get deposit pool user balance: %w", err)
+	}
+	return *balance, nil
+}
+
 // Get the excess deposit pool balance
 func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp)
