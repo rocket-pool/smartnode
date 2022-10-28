@@ -2,8 +2,8 @@ package node
 
 import (
 	"fmt"
-	"os"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"

@@ -1,14 +1,24 @@
 package config
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils/sys"
 )
 
 // Constants
 const (
-	//mevBoostTag       string = "flashbots/mev-boost:v0.7.10"
-	mevBoostTag       string = "rocketpool/mev-boost:v0.7.10-portable"
-	mevBoostUrlEnvVar string = "MEV_BOOST_URL"
+	mevBoostPortableTag         string = "flashbots/mev-boost:v1.3.2-portable"
+	mevBoostModernTag           string = "flashbots/mev-boost:v1.3.2"
+	mevBoostUrlEnvVar           string = "MEV_BOOST_URL"
+	mevBoostRelaysEnvVar        string = "MEV_BOOST_RELAYS"
+	mevDocsUrl                  string = "https://docs.rocketpool.net/guides/node/mev.html"
+	RegulatedRelayDescription   string = "Select this to enable the relays that comply with government regulations (e.g. OFAC sanctions), "
+	UnregulatedRelayDescription string = "Select this to enable the relays that do not follow any sanctions lists (do not censor transactions), "
+	NoSandwichRelayDescription  string = "and do not allow front-running or sandwich attacks."
+	AllMevRelayDescription      string = "and allow for all types of MEV (including sandwich attacks)."
 )
 
 // Configuration for MEV-Boost
@@ -18,11 +28,44 @@ type MevBoostConfig struct {
 	// Ownership mode
 	Mode config.Parameter `yaml:"mode,omitempty"`
 
-	// MEV-Boost relays
-	Relays config.Parameter `yaml:"relays,omitempty"`
+	// The mode for relay selection
+	SelectionMode config.Parameter `yaml:"selectionMode,omitempty"`
+
+	// Regulated, all types
+	EnableRegulatedAllMev config.Parameter `yaml:"enableRegulatedAllMev,omitempty"`
+
+	// Regulated, no sandwiching
+	EnableRegulatedNoSandwich config.Parameter `yaml:"enableRegulatedNoSandwich,omitempty"`
+
+	// Unregulated, all types
+	EnableUnregulatedAllMev config.Parameter `yaml:"enableUnregulatedAllMev,omitempty"`
+
+	// Unregulated, no sandwiching
+	EnableUnregulatedNoSandwich config.Parameter `yaml:"enableUnregulatedNoSandwich,omitempty"`
+
+	// Flashbots relay
+	FlashbotsRelay config.Parameter `yaml:"flashbotsEnabled,omitempty"`
+
+	// bloXroute ethical relay
+	BloxRouteEthicalRelay config.Parameter `yaml:"bloxRouteEthicalEnabled,omitempty"`
+
+	// bloXroute max profit relay
+	BloxRouteMaxProfitRelay config.Parameter `yaml:"bloxRouteMaxProfitEnabled,omitempty"`
+
+	// bloXroute regulated relay
+	BloxRouteRegulatedRelay config.Parameter `yaml:"bloxRouteRegulatedEnabled,omitempty"`
+
+	// Blocknative relay
+	BlocknativeRelay config.Parameter `yaml:"blocknativeEnabled,omitempty"`
+
+	// Eden relay
+	EdenRelay config.Parameter `yaml:"edenEnabled,omitempty"`
 
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
+
+	// Toggle for forwarding the HTTP port outside of Docker
+	OpenRpcPort config.Parameter `yaml:"openRpcPort,omitempty"`
 
 	// The Docker Hub tag for MEV-Boost
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
@@ -32,12 +75,29 @@ type MevBoostConfig struct {
 
 	// The URL of an external MEV-Boost client
 	ExternalUrl config.Parameter `yaml:"externalUrl"`
+
+	///////////////////////////
+	// Non-editable settings //
+	///////////////////////////
+
+	parentConfig *RocketPoolConfig                     `yaml:"-"`
+	relays       []config.MevRelay                     `yaml:"-"`
+	relayMap     map[config.MevRelayID]config.MevRelay `yaml:"-"`
 }
 
 // Generates a new MEV-Boost configuration
 func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
+	// Generate the relays
+	relays := createDefaultRelays()
+	relayMap := map[config.MevRelayID]config.MevRelay{}
+	for _, relay := range relays {
+		relayMap[relay.ID] = relay
+	}
+
 	return &MevBoostConfig{
 		Title: "MEV-Boost Settings",
+
+		parentConfig: cfg,
 
 		Mode: config.Parameter{
 			ID:                   "mode",
@@ -60,22 +120,39 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			}},
 		},
 
-		Relays: config.Parameter{
-			ID:          "relays",
-			Name:        "Relays",
-			Description: "A comma-separated list of MEV-Boost relay URLs you want to connect to",
-			Type:        config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: "",
-				config.Network_Prater:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@builder-relay-goerli.flashbots.net?id=rocketpool",
-				config.Network_Kiln:    "https://0xb5246e299aeb782fbc7c91b41b3284245b1ed5206134b0028b81dfb974e5900616c67847c2354479934fc4bb75519ee1@builder-relay-kiln.flashbots.net?id=rocketpool",
-				config.Network_Ropsten: "https://0xb124d80a00b80815397b4e7f1f05377ccc83aeeceb6be87963ba3649f1e6efa32ca870a88845917ec3f26a8e2aa25c77@builder-relay-ropsten.flashbots.net?id=rocketpool",
-			},
+		SelectionMode: config.Parameter{
+			ID:                   "selectionMode",
+			Name:                 "Selection Mode",
+			Description:          "Select how the TUI shows you the options for which MEV relays to enable.",
+			Type:                 config.ParameterType_Choice,
+			Default:              map[config.Network]interface{}{config.Network_All: config.MevSelectionMode_Profile},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
-			EnvironmentVariables: []string{"MEV_BOOST_RELAYS"},
-			CanBeBlank:           true,
-			OverwriteOnUpgrade:   true,
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+			Options: []config.ParameterOption{{
+				Name:        "Profile Mode",
+				Description: "Relays will be bundled up based on whether or not they're regulated, and whether or not they allow sandwich attacks.\nUse this if you simply want to specify which type of relay you want to use without needing to read about each individual relay.",
+				Value:       config.MevSelectionMode_Profile,
+			}, {
+				Name:        "Relay Mode",
+				Description: "Each relay will be shown, and you can enable each one individually as you see fit.\nUse this if you already know about the relays and want to customize the ones you will use.",
+				Value:       config.MevSelectionMode_Relay,
+			}},
 		},
+
+		EnableRegulatedAllMev:       generateProfileParameter("enableRegulatedAllMev", relays, true, false),
+		EnableRegulatedNoSandwich:   generateProfileParameter("enableRegulatedNoSandwich", relays, true, true),
+		EnableUnregulatedAllMev:     generateProfileParameter("enableUnregulatedAllMev", relays, false, false),
+		EnableUnregulatedNoSandwich: generateProfileParameter("enableUnregulatedNoSandwich", relays, false, true),
+
+		// Explicit relay params
+		FlashbotsRelay:          generateRelayParameter("flashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
+		BloxRouteMaxProfitRelay: generateRelayParameter("bloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
+		BloxRouteEthicalRelay:   generateRelayParameter("bloxRouteEthicalEnabled", relayMap[config.MevRelayID_BloxrouteEthical]),
+		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
+		BlocknativeRelay:        generateRelayParameter("blocknativeEnabled", relayMap[config.MevRelayID_Blocknative]),
+		EdenRelay:               generateRelayParameter("edenEnabled", relayMap[config.MevRelayID_Eden]),
 
 		Port: config.Parameter{
 			ID:                   "port",
@@ -89,12 +166,24 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			OverwriteOnUpgrade:   false,
 		},
 
+		OpenRpcPort: config.Parameter{
+			ID:                   "openRpcPort",
+			Name:                 "Expose API Port",
+			Description:          "Expose the API port to your local network, so other local machines can access MEV-Boost's API.",
+			Type:                 config.ParameterType_Bool,
+			Default:              map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
+			EnvironmentVariables: []string{},
+			CanBeBlank:           false,
+			OverwriteOnUpgrade:   false,
+		},
+
 		ContainerTag: config.Parameter{
 			ID:                   "containerTag",
 			Name:                 "Container Tag",
 			Description:          "The tag name of the MEV-Boost container you want to use on Docker Hub.",
 			Type:                 config.ParameterType_String,
-			Default:              map[config.Network]interface{}{config.Network_All: mevBoostTag},
+			Default:              map[config.Network]interface{}{config.Network_All: getMevBoostTag()},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
 			EnvironmentVariables: []string{"MEV_BOOST_CONTAINER_TAG"},
 			CanBeBlank:           false,
@@ -124,6 +213,9 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			CanBeBlank:           true,
 			OverwriteOnUpgrade:   false,
 		},
+
+		relays:   relays,
+		relayMap: relayMap,
 	}
 }
 
@@ -131,15 +223,346 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.Mode,
-		&cfg.Relays,
+		&cfg.SelectionMode,
+		&cfg.EnableRegulatedAllMev,
+		&cfg.EnableRegulatedNoSandwich,
+		&cfg.EnableUnregulatedAllMev,
+		&cfg.EnableUnregulatedNoSandwich,
+		&cfg.FlashbotsRelay,
+		&cfg.BloxRouteEthicalRelay,
+		&cfg.BloxRouteMaxProfitRelay,
+		&cfg.BloxRouteRegulatedRelay,
+		&cfg.BlocknativeRelay,
+		&cfg.EdenRelay,
 		&cfg.Port,
+		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
 		&cfg.ExternalUrl,
 	}
 }
 
-// The the title for the config
-func (config *MevBoostConfig) GetConfigTitle() string {
-	return config.Title
+// The title for the config
+func (cfg *MevBoostConfig) GetConfigTitle() string {
+	return cfg.Title
+}
+
+// Get the profiles that are available for the current network
+func (cfg *MevBoostConfig) GetAvailableProfiles() (bool, bool, bool, bool) {
+	regulatedAllMev := false
+	regulatedNoSandwich := false
+	unregulatedAllMev := false
+	unregulatedNoSandwich := false
+
+	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
+	for _, relay := range cfg.relays {
+		_, exists := relay.Urls[currentNetwork]
+		if !exists {
+			continue
+		}
+		regulatedAllMev = regulatedAllMev || (relay.Regulated && !relay.NoSandwiching)
+		regulatedNoSandwich = regulatedNoSandwich || (relay.Regulated && relay.NoSandwiching)
+		unregulatedAllMev = unregulatedAllMev || (!relay.Regulated && !relay.NoSandwiching)
+		unregulatedNoSandwich = unregulatedNoSandwich || (!relay.Regulated && relay.NoSandwiching)
+	}
+
+	return regulatedAllMev, regulatedNoSandwich, unregulatedAllMev, unregulatedNoSandwich
+}
+
+// Get the relays that are available for the current network
+func (cfg *MevBoostConfig) GetAvailableRelays() []config.MevRelay {
+	relays := []config.MevRelay{}
+	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
+	for _, relay := range cfg.relays {
+		_, exists := relay.Urls[currentNetwork]
+		if !exists {
+			continue
+		}
+		relays = append(relays, relay)
+	}
+
+	return relays
+}
+
+// Get which MEV-boost relays are enabled
+func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
+	relays := []config.MevRelay{}
+
+	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
+	switch cfg.SelectionMode.Value.(config.MevSelectionMode) {
+	case config.MevSelectionMode_Profile:
+		for _, relay := range cfg.relays {
+			_, exists := relay.Urls[currentNetwork]
+			if !exists {
+				// Skip relays that don't exist on the current network
+				continue
+			}
+			if relay.Regulated {
+				if relay.NoSandwiching {
+					if cfg.EnableRegulatedNoSandwich.Value == true {
+						relays = append(relays, relay)
+					}
+				} else {
+					if cfg.EnableRegulatedAllMev.Value == true {
+						relays = append(relays, relay)
+					}
+				}
+			} else {
+				if relay.NoSandwiching {
+					if cfg.EnableUnregulatedNoSandwich.Value == true {
+						relays = append(relays, relay)
+					}
+				} else {
+					if cfg.EnableUnregulatedAllMev.Value == true {
+						relays = append(relays, relay)
+					}
+				}
+			}
+		}
+
+	case config.MevSelectionMode_Relay:
+		if cfg.FlashbotsRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_Flashbots].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_Flashbots])
+			}
+		}
+		if cfg.BloxRouteEthicalRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteEthical].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteEthical])
+			}
+		}
+		if cfg.BloxRouteMaxProfitRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteMaxProfit].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteMaxProfit])
+			}
+		}
+		if cfg.BloxRouteRegulatedRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteRegulated].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteRegulated])
+			}
+		}
+		if cfg.BlocknativeRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_Blocknative].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_Blocknative])
+			}
+		}
+		if cfg.EdenRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_Eden].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_Eden])
+			}
+		}
+	}
+
+	return relays
+}
+
+func (cfg *MevBoostConfig) GetRelayString() string {
+	relayUrls := []string{}
+	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
+
+	relays := cfg.GetEnabledMevRelays()
+	for _, relay := range relays {
+		relayUrls = append(relayUrls, relay.Urls[currentNetwork])
+	}
+
+	relayString := strings.Join(relayUrls, ",")
+	return relayString
+}
+
+// Create the default MEV relays
+func createDefaultRelays() []config.MevRelay {
+	relays := []config.MevRelay{
+		// Flashbots
+		{
+			ID:          config.MevRelayID_Flashbots,
+			Name:        "Flashbots",
+			Description: "Flashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net?id=rocketpool",
+				config.Network_Prater:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@builder-relay-goerli.flashbots.net?id=rocketpool",
+				config.Network_Kiln:    "https://0xb5246e299aeb782fbc7c91b41b3284245b1ed5206134b0028b81dfb974e5900616c67847c2354479934fc4bb75519ee1@builder-relay-kiln.flashbots.net?id=rocketpool",
+				config.Network_Ropsten: "https://0xb124d80a00b80815397b4e7f1f05377ccc83aeeceb6be87963ba3649f1e6efa32ca870a88845917ec3f26a8e2aa25c77@builder-relay-ropsten.flashbots.net?id=rocketpool",
+			},
+			Regulated:     true,
+			NoSandwiching: false,
+		},
+
+		// bloXroute Max Profit
+		{
+			ID:          config.MevRelayID_BloxrouteMaxProfit,
+			Name:        "bloXroute Max Profit",
+			Description: "Select this to enable the \"max profit\" relay from bloXroute.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
+				config.Network_Prater:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.goerli.blxrbdn.com?id=rocketpool",
+				config.Network_Ropsten: "https://0xb8a0bad3f3a4f0b35418c03357c6d42017582437924a1e1ca6aee2072d5c38d321d1f8b22cd36c50b0c29187b6543b6e@builder-relay.virginia.ropsten.blxrbdn.com?id=rocketpool",
+			},
+			Regulated:     false,
+			NoSandwiching: false,
+		},
+
+		// bloXroute Ethical
+		{
+			ID:          config.MevRelayID_BloxrouteEthical,
+			Name:        "bloXroute Ethical",
+			Description: "Select this to enable the \"ethical\" relay from bloXroute.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xad0a8bb54565c2211cee576363f3a347089d2f07cf72679d16911d740262694cadb62d7fd7483f27afd714ca0f1b9118@bloxroute.ethical.blxrbdn.com?id=rocketpool",
+			},
+			Regulated:     false,
+			NoSandwiching: true,
+		},
+
+		// bloXroute Regulated
+		{
+			ID:          config.MevRelayID_BloxrouteRegulated,
+			Name:        "bloXroute Regulated",
+			Description: "Select this to enable the \"regulated\" relay from bloXroute.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool",
+			},
+			Regulated:     true,
+			NoSandwiching: false,
+		},
+
+		// Blocknative
+		{
+			ID:          config.MevRelayID_Blocknative,
+			Name:        "Blocknative",
+			Description: "Blocknative is a large blockchain infrastructure company that provides a popular MEV relay.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0x9000009807ed12c1f08bf4e81c6da3ba8e3fc3d953898ce0102433094e5f22f21102ec057841fcb81978ed1ea0fa8246@builder-relay-mainnet.blocknative.com?id=rocketpool",
+				config.Network_Prater:  "https://0x8f7b17a74569b7a57e9bdafd2e159380759f5dc3ccbd4bf600414147e8c4e1dc6ebada83c0139ac15850eb6c975e82d0@builder-relay-goerli.blocknative.com?id=rocketpool",
+				config.Network_Ropsten: "http://0xaef7ec27ca8ca24205aab89f6595a5ad60d649c533fd7e7be692c9bd02780a93b68adae3e3b8ea0d5f9723f2790b1a90@builder-relay-ropsten.blocknative.com?id=rocketpool",
+			},
+			Regulated:     true,
+			NoSandwiching: false,
+		},
+
+		// Eden
+		{
+			ID:          config.MevRelayID_Eden,
+			Name:        "Eden Network",
+			Description: "Eden Network is the home of Eden Relay, a block building hub focused on optimising block rewards for validators.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xb3ee7afcf27f1f1259ac1787876318c6584ee353097a50ed84f51a1f21a323b3736f271a895c7ce918c038e4265918be@relay.edennetwork.io?id=rocketpool",
+				config.Network_Prater:  "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-goerli.edennetwork.io?id=rocketpool",
+				config.Network_Ropsten: "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-ropsten.edennetwork.io?id=rocketpool",
+			},
+			Regulated:     true,
+			NoSandwiching: false,
+		},
+	}
+
+	return relays
+}
+
+// Generate one of the profile parameters
+func generateProfileParameter(id string, relays []config.MevRelay, regulated bool, noSandwiching bool) config.Parameter {
+	name := "Enable "
+	description := fmt.Sprintf("[lime]NOTE: You can enable multiple options.\n\nTo learn more about MEV, please visit %s.\n\n[white]", mevDocsUrl)
+
+	if regulated {
+		name += "Regulated "
+		description += RegulatedRelayDescription
+	} else {
+		name += "Unregulated "
+		description += UnregulatedRelayDescription
+	}
+
+	if noSandwiching {
+		name += "(No Sandwiching)"
+		description += NoSandwichRelayDescription
+	} else {
+		name += "(All MEV Types)"
+		description += AllMevRelayDescription
+	}
+
+	// Generate the Mainnet description
+	mainnetRelays := []string{}
+	mainnetDescription := description + "\n\nRelays: "
+	for _, relay := range relays {
+		_, exists := relay.Urls[config.Network_Mainnet]
+		if !exists {
+			continue
+		}
+		if relay.Regulated == regulated && relay.NoSandwiching == noSandwiching {
+			mainnetRelays = append(mainnetRelays, relay.Name)
+		}
+	}
+	mainnetDescription += strings.Join(mainnetRelays, ", ")
+
+	// Generate the Prater description
+	praterRelays := []string{}
+	praterDescription := description + "\n\nRelays:\n"
+	for _, relay := range relays {
+		_, exists := relay.Urls[config.Network_Prater]
+		if !exists {
+			continue
+		}
+		if relay.Regulated == regulated && relay.NoSandwiching == noSandwiching {
+			praterRelays = append(praterRelays, relay.Name)
+		}
+	}
+	praterDescription += strings.Join(praterRelays, ", ")
+
+	return config.Parameter{
+		ID:                   id,
+		Name:                 name,
+		Description:          mainnetDescription,
+		Type:                 config.ParameterType_Bool,
+		Default:              map[config.Network]interface{}{config.Network_All: false},
+		AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
+		EnvironmentVariables: []string{},
+		CanBeBlank:           false,
+		OverwriteOnUpgrade:   false,
+		DescriptionsByNetwork: map[config.Network]string{
+			config.Network_Mainnet: mainnetDescription,
+			config.Network_Prater:  praterDescription,
+		},
+	}
+}
+
+// Generate one of the relay parameters
+func generateRelayParameter(id string, relay config.MevRelay) config.Parameter {
+	description := fmt.Sprintf("[lime]NOTE: You can enable multiple options.\n\nTo learn more about MEV, please visit %s.\n\n[white]%s\n\n", mevDocsUrl, relay.Description)
+
+	if relay.Regulated {
+		description += "Complies with Regulations: YES\n"
+	} else {
+		description += "Complies with Regulations: NO\n"
+	}
+
+	if relay.NoSandwiching {
+		description += "Allows Sandwich Attacks: NO"
+	} else {
+		description += "Allows Sandwich Attacks: YES"
+	}
+
+	return config.Parameter{
+		ID:                   id,
+		Name:                 fmt.Sprintf("Enable %s", relay.Name),
+		Description:          description,
+		Type:                 config.ParameterType_Bool,
+		Default:              map[config.Network]interface{}{config.Network_All: false},
+		AffectsContainers:    []config.ContainerID{config.ContainerID_MevBoost},
+		EnvironmentVariables: []string{},
+		CanBeBlank:           false,
+		OverwriteOnUpgrade:   false,
+	}
+}
+
+// Get the appropriate MEV-Boost default tag
+func getMevBoostTag() string {
+	missingFeatures := sys.GetMissingModernCpuFeatures()
+	if len(missingFeatures) > 0 {
+		return mevBoostPortableTag
+	}
+	return mevBoostModernTag
 }

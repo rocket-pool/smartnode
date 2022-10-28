@@ -243,7 +243,7 @@ func (t *dissolveTimedOutMinipools) dissolveMinipool(mp *minipool.Minipool) erro
 		return err
 	}
 
-	// Print TX info and wait for it to be mined
+	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return err

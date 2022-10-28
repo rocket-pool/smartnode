@@ -9,20 +9,21 @@ import (
 
 // A parameter that can be configured by the user
 type Parameter struct {
-	ID                   string                  `yaml:"id,omitempty"`
-	Name                 string                  `yaml:"name,omitempty"`
-	Description          string                  `yaml:"description,omitempty"`
-	Type                 ParameterType           `yaml:"type,omitempty"`
-	Default              map[Network]interface{} `yaml:"default,omitempty"`
-	MaxLength            int                     `yaml:"maxLength,omitempty"`
-	Regex                string                  `yaml:"regex,omitempty"`
-	Advanced             bool                    `yaml:"advanced,omitempty"`
-	AffectsContainers    []ContainerID           `yaml:"affectsContainers,omitempty"`
-	EnvironmentVariables []string                `yaml:"environmentVariables,omitempty"`
-	CanBeBlank           bool                    `yaml:"canBeBlank,omitempty"`
-	OverwriteOnUpgrade   bool                    `yaml:"overwriteOnUpgrade,omitempty"`
-	Options              []ParameterOption       `yaml:"options,omitempty"`
-	Value                interface{}             `yaml:"-"`
+	ID                    string                  `yaml:"id,omitempty"`
+	Name                  string                  `yaml:"name,omitempty"`
+	Description           string                  `yaml:"description,omitempty"`
+	Type                  ParameterType           `yaml:"type,omitempty"`
+	Default               map[Network]interface{} `yaml:"default,omitempty"`
+	MaxLength             int                     `yaml:"maxLength,omitempty"`
+	Regex                 string                  `yaml:"regex,omitempty"`
+	Advanced              bool                    `yaml:"advanced,omitempty"`
+	AffectsContainers     []ContainerID           `yaml:"affectsContainers,omitempty"`
+	EnvironmentVariables  []string                `yaml:"environmentVariables,omitempty"`
+	CanBeBlank            bool                    `yaml:"canBeBlank,omitempty"`
+	OverwriteOnUpgrade    bool                    `yaml:"overwriteOnUpgrade,omitempty"`
+	Options               []ParameterOption       `yaml:"options,omitempty"`
+	Value                 interface{}             `yaml:"-"`
+	DescriptionsByNetwork map[Network]string      `yaml:"-"`
 }
 
 // A single option in a choice parameter
@@ -51,6 +52,8 @@ func (param *Parameter) ChangeNetwork(oldNetwork Network, newNetwork Network) {
 		param.Value = newDefault
 	}
 
+	// Update the description, if applicable
+	param.UpdateDescription(newNetwork)
 }
 
 // Serializes the parameter's value into a string
@@ -67,6 +70,9 @@ func (param *Parameter) Serialize(serializedParams map[string]string) {
 
 // Deserializes a map of settings into this parameter
 func (param *Parameter) Deserialize(serializedParams map[string]string, network Network) error {
+	// Update the description, if applicable
+	param.UpdateDescription(network)
+
 	value, exists := serializedParams[param.ID]
 	if !exists {
 		return param.SetToDefault(network)
@@ -121,6 +127,7 @@ func (param *Parameter) Deserialize(serializedParams map[string]string, network 
 	if err != nil {
 		return fmt.Errorf("cannot deserialize parameter [%s]: %w", param.ID, err)
 	}
+
 	return nil
 }
 
@@ -145,6 +152,16 @@ func (param *Parameter) GetDefault(network Network) (interface{}, error) {
 	}
 
 	return defaultSetting, nil
+}
+
+// Set the network-specific description of the parameter
+func (param *Parameter) UpdateDescription(network Network) {
+	if param.DescriptionsByNetwork != nil {
+		newDesc, exists := param.DescriptionsByNetwork[network]
+		if exists {
+			param.Description = newDesc
+		}
+	}
 }
 
 // Add the parameters to the collection of environment variabes

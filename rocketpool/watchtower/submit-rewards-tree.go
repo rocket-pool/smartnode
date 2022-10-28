@@ -9,15 +9,12 @@ import (
 	"math"
 	"math/big"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -30,6 +27,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"github.com/urfave/cli"
@@ -156,7 +154,7 @@ func (t *submitRewardsTree) run() error {
 	var snapshotElBlockHeader *types.Header
 	if elBlockNumber == 0 {
 		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
-		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(nextIntervalEpochTime, t.ec)
+		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(nextIntervalEpochTime, t.rp)
 	} else {
 		snapshotElBlockHeader, err = t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 	}
@@ -296,53 +294,10 @@ func (t *submitRewardsTree) generateTree(intervalsPassed time.Duration, nodeTrus
 		t.isRunning = true
 		t.lock.Unlock()
 
-		client := t.rp
-
-		// Try getting the rETH address as a canary to see if the block is available
-		opts := &bind.CallOpts{
-			BlockNumber: snapshotElBlockHeader.Number,
-		}
-		address, err := client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
+		// Get an appropriate client
+		client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, snapshotElBlockHeader.Number)
 		if err != nil {
-			errMessage := err.Error()
-			t.printMessage(fmt.Sprintf("Error getting state for block %d: %s", snapshotElBlockHeader.Number.Uint64(), errMessage))
-			if strings.Contains(errMessage, "missing trie node") || // Geth
-				strings.Contains(errMessage, "No state available for block") || // Nethermind
-				strings.Contains(errMessage, "Internal error") { // Besu
-
-				// The state was missing so fall back to the archive node
-				archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
-				if archiveEcUrl != "" {
-					t.printMessage(fmt.Sprintf("Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", snapshotElBlockHeader.Number.Uint64(), archiveEcUrl))
-					ec, err := ethclient.Dial(archiveEcUrl)
-					if err != nil {
-						t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
-						return
-					}
-					client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()))
-					if err != nil {
-						t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err))
-						return
-					}
-
-					// Get the rETH address from the archive EC
-					address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
-					if err != nil {
-						t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err))
-						return
-					}
-				} else {
-					// No archive node specified
-					t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", snapshotElBlockHeader.Number.Uint64()))
-					return
-				}
-
-			}
-		}
-
-		// Sanity check the rETH address to make sure the client is working right
-		if address != t.cfg.Smartnode.GetRethAddress() {
-			t.handleError(fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s!", address.Hex(), t.cfg.Smartnode.GetRethAddress().Hex()))
+			t.handleError(err)
 			return
 		}
 
@@ -514,7 +469,7 @@ func (t *submitRewardsTree) submitRewardsSnapshot(index *big.Int, consensusBlock
 		return err
 	}
 
-	// Print TX info and wait for it to be mined
+	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return err

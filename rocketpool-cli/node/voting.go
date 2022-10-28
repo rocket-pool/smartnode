@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
@@ -11,8 +12,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func nodeSetVotingDelegate(c *cli.Context, address common.Address) error {
-
+func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c)
 	if err != nil {
@@ -24,6 +24,22 @@ func nodeSetVotingDelegate(c *cli.Context, address common.Address) error {
 	err = cliutils.CheckClientStatus(rp)
 	if err != nil {
 		return err
+	}
+	var address common.Address
+	var addressString string
+	if strings.Contains(nameOrAddress, ".") {
+		response, err := rp.ResolveEnsName(nameOrAddress)
+		if err != nil {
+			return err
+		}
+		address = response.Address
+		addressString = fmt.Sprintf("%s (%s)", nameOrAddress, address.Hex())
+	} else {
+		address, err = cliutils.ValidateAddress("delegate", nameOrAddress)
+		if err != nil {
+			return err
+		}
+		addressString = address.Hex()
 	}
 
 	// Get the gas estimation
@@ -39,7 +55,7 @@ func nodeSetVotingDelegate(c *cli.Context, address common.Address) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want this address to represent your node in Rocket Pool governance proposals?")) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want %s to represent your node in Rocket Pool governance proposals?", addressString))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -57,7 +73,7 @@ func nodeSetVotingDelegate(c *cli.Context, address common.Address) error {
 	}
 
 	// Log & return
-	fmt.Printf("The node's voting delegate was successfuly set to %s.\n", address.Hex())
+	fmt.Printf("The node's voting delegate was successfuly set to %s.\n", addressString)
 	return nil
 
 }

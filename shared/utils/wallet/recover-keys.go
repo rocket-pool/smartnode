@@ -22,6 +22,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	bucketSize  uint = 20
+	bucketLimit uint = 2000
+)
+
 func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address common.Address, w *wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 
 	cfg, err := services.GetConfig(c)
@@ -142,16 +147,43 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 		}
 	}
 
-	// Recover remaining validator keys normally
-	for pubkey := range pubkeyMap {
-		if testOnly {
-			err = w.TestRecoverValidatorKey(pubkey)
-		} else {
-			err = w.RecoverValidatorKey(pubkey)
+	// Recover conventionally generated keys
+	bucketStart := uint(0)
+	for {
+		if bucketStart >= bucketLimit {
+			return nil, fmt.Errorf("attempt limit exceeded (%d keys)", bucketLimit)
 		}
+		bucketEnd := bucketStart + bucketSize
+		if bucketEnd > bucketLimit {
+			bucketEnd = bucketLimit
+		}
+
+		// Get the keys for this bucket
+		keys, err := w.GetValidatorKeys(bucketStart, bucketEnd-bucketStart)
 		if err != nil {
 			return nil, err
 		}
+		for _, validatorKey := range keys {
+			_, exists := pubkeyMap[validatorKey.PublicKey]
+			if exists {
+				// Found one!
+				delete(pubkeyMap, validatorKey.PublicKey)
+				if !testOnly {
+					err := w.SaveValidatorKey(validatorKey)
+					if err != nil {
+						return nil, fmt.Errorf("error recovering validator keys: %w", err)
+					}
+				}
+			}
+		}
+
+		if len(pubkeyMap) == 0 {
+			// All keys recovered!
+			break
+		}
+
+		// Run another iteration with the next bucket
+		bucketStart = bucketEnd
 	}
 
 	return pubkeys, nil

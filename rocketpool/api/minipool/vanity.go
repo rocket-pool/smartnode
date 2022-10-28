@@ -47,9 +47,9 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 	}
 
 	// Get some contract and ABI dependencies
-	rocketMinipoolManager, err := rp.GetContract("rocketMinipoolManager")
+	rocketMinipoolFactory, err := rp.GetContract("rocketMinipoolFactory")
 	if err != nil {
-		return nil, fmt.Errorf("Error getting MinipoolManager contract: %w", err)
+		return nil, fmt.Errorf("Error getting MinipoolFactory contract: %w", err)
 	}
 	minipoolAbi, err := rp.GetABI("rocketMinipool")
 	if err != nil {
@@ -84,7 +84,7 @@ func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr s
 
 	// Update & return response
 	response.NodeAddress = nodeAddress
-	response.MinipoolManagerAddress = *rocketMinipoolManager.Address
+	response.MinipoolFactoryAddress = *rocketMinipoolFactory.Address
 	response.InitHash = initHash
 	return &response, nil
 

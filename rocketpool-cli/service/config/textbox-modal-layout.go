@@ -7,7 +7,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-// A layout container that mimics a modal display with a series of buttons and a description box
+// A layout container that mimics a modal display with a series of textboxes and done/back buttons
 type textBoxModalLayout struct {
 	// The parent application that owns this modal (for focus changes on vertical layouts)
 	app *tview.Application

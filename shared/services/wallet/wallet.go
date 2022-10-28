@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"os"
 
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -255,6 +256,23 @@ func (w *Wallet) Save() error {
 
 }
 
+// Delete the wallet store from disk
+func (w *Wallet) Delete() error {
+
+	// Check if it exists
+	_, err := os.Stat(w.walletPath)
+	if os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("error checking wallet file path: %w", err)
+	}
+
+	// Write wallet store to disk
+	err = os.Remove(w.walletPath)
+	return err
+
+}
+
 // Signs a serialized TX using the wallet's private key
 func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
 	// Get private key
@@ -269,7 +287,7 @@ func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
 		return nil, fmt.Errorf("Error unmarshalling TX: %w", err)
 	}
 
-	signer := types.NewEIP155Signer(w.chainID)
+	signer := types.NewLondonSigner(w.chainID)
 	signedTx, err := types.SignTx(&tx, signer, privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("Error signing TX: %w", err)

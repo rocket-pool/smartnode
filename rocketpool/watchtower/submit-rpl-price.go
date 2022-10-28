@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -23,10 +24,12 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -55,8 +58,6 @@ const MessengerAbi = `[
   ]`
 
 // Settings
-const SubmitFollowDistancePrices = 2
-const ConfirmDistancePrices = 30
 const BlocksPerTurn = 75 // Approx. 15 minutes
 
 // Submit RPL price task
@@ -68,6 +69,7 @@ type submitRplPrice struct {
 	w   *wallet.Wallet
 	rp  *rocketpool.RocketPool
 	oio *contracts.OneInchOracle
+	bc  beacon.Client
 }
 
 // Create submit RPL price task
@@ -94,6 +96,10 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Return task
 	return &submitRplPrice{
@@ -104,6 +110,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
 		w:   w,
 		rp:  rp,
 		oio: oio,
+		bc:  bc,
 	}, nil
 
 }
@@ -165,15 +172,6 @@ func (t *submitRplPrice) run() error {
 		return err
 	}
 
-	// Allow some blocks to pass in case of a short reorg
-	currentBlockNumber, err := t.ec.BlockNumber(context.Background())
-	if err != nil {
-		return err
-	}
-	if blockNumber+SubmitFollowDistancePrices > currentBlockNumber {
-		return nil
-	}
-
 	// Check if a submission needs to be made
 	pricesBlock, err := network.GetPricesBlock(t.rp, nil)
 	if err != nil {
@@ -183,15 +181,32 @@ func (t *submitRplPrice) run() error {
 		return nil
 	}
 
-	// If confirm distance has passed, we just want to ensure we have submitted and then early exit
-	if blockNumber+ConfirmDistancePrices <= currentBlockNumber {
-		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, blockNumber)
-		if err != nil {
-			return err
-		}
-		if hasSubmitted {
-			return nil
-		}
+	// Get the time of the block
+	header, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(blockNumber))
+	if err != nil {
+		return err
+	}
+	blockTime := time.Unix(int64(header.Time), 0)
+
+	// Get the Beacon block corresponding to this time
+	eth2Config, err := t.bc.GetEth2Config()
+	if err != nil {
+		return err
+	}
+	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
+	timeSinceGenesis := blockTime.Sub(genesisTime)
+	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+
+	// Check if the epoch is finalized yet
+	epoch := slotNumber / eth2Config.SlotsPerEpoch
+	beaconHead, err := t.bc.GetBeaconHead()
+	if err != nil {
+		return err
+	}
+	finalizedEpoch := beaconHead.FinalizedEpoch
+	if epoch > finalizedEpoch {
+		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, epoch, finalizedEpoch)
+		return nil
 	}
 
 	// Log
@@ -301,8 +316,20 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 		BlockNumber: big.NewInt(int64(blockNumber)),
 	}
 
+	// Get a client with the block number available
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate an OIO wrapper using the client
+	oio, err := contracts.NewOneInchOracle(common.HexToAddress(t.cfg.Smartnode.GetOneInchOracleAddress()), client.Client)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get RPL price
-	rplPrice, err := t.oio.GetRateToEth(opts, rplAddress, true)
+	rplPrice, err := oio.GetRateToEth(opts, rplAddress, true)
 	if err != nil {
 		return nil, fmt.Errorf("Could not get RPL price at block %d: %w", blockNumber, err)
 	}
@@ -310,6 +337,10 @@ func (t *submitRplPrice) getRplPrice(blockNumber uint64) (*big.Int, error) {
 	// Return
 	return rplPrice, nil
 
+}
+
+func (t *submitRplPrice) printMessage(message string) {
+	t.log.Println(message)
 }
 
 // Submit RPL price and total effective RPL stake
@@ -347,7 +378,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 		return err
 	}
 
-	// Print TX info and wait for it to be mined
+	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return err
@@ -482,13 +513,13 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		t.log.Println("Submitting rate to Optimism...")
 
 		// Submit rates
-		hash, err := priceMessenger.Transact(opts, "submitRate")
+		tx, err := priceMessenger.Transact(opts, "submitRate")
 		if err != nil {
 			return fmt.Errorf("Failed to submit rate: %q", err)
 		}
 
-		// Print TX info and wait for it to be mined
-		err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
+		// Print TX info and wait for it to be included in a block
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}

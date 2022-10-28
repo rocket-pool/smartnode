@@ -276,7 +276,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "wait-and-swap-rpl",
 				Aliases:   []string{"p2"},
-				Usage:     "Swap old RPL for new RPL, waiting for the approval TX hash to be mined first",
+				Usage:     "Swap old RPL for new RPL, waiting for the approval TX hash to be included in a block first",
 				UsageText: "rocketpool api node wait-and-swap-rpl amount tx-hash",
 				Action: func(c *cli.Context) error {
 
@@ -406,7 +406,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "wait-and-stake-rpl",
 				Aliases:   []string{"k2"},
-				Usage:     "Stake RPL against the node, waiting for approval tx-hash to be mined first",
+				Usage:     "Stake RPL against the node, waiting for approval tx-hash to be included in a block first",
 				UsageText: "rocketpool api node wait-and-stake-rpl amount tx-hash",
 				Action: func(c *cli.Context) error {
 
@@ -566,12 +566,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "deposit",
 				Aliases:   []string{"d"},
-				Usage:     "Make a deposit and create a minipool",
-				UsageText: "rocketpool api node deposit amount min-fee salt",
+				Usage:     "Make a deposit and create a minipool, or just make and sign the transaction (when submit = false)",
+				UsageText: "rocketpool api node deposit amount min-fee salt submit",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
 					amountWei, err := cliutils.ValidateDepositWeiAmount("deposit amount", c.Args().Get(0))
@@ -586,9 +586,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
+					submit, err := cliutils.ValidateBool("submit", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
 
 					// Run
-					api.PrintResponse(nodeDeposit(c, amountWei, minNodeFee, salt))
+					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, submit)
+					if submit {
+						api.PrintResponse(response, err)
+					} // else nodeDeposit already printed the encoded transaction
 					return nil
 
 				},
@@ -1196,6 +1203,44 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(setSmoothingPoolStatus(c, status))
+					return nil
+
+				},
+			},
+			{
+				Name:      "resolve-ens-name",
+				Usage:     "Resolve an ENS name",
+				UsageText: "rocketpool api node resolve-ens-name name",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(resolveEnsName(c, c.Args().Get(0)))
+					return nil
+
+				},
+			},
+			{
+				Name:      "reverse-resolve-ens-name",
+				Usage:     "Reverse resolve an address to an ENS name",
+				UsageText: "rocketpool api node reverse-resolve-ens-name address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(reverseResolveEnsName(c, address))
 					return nil
 
 				},

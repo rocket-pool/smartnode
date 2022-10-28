@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/sys"
 	"github.com/shirou/gopsutil/v3/disk"
 )
 
@@ -147,27 +148,17 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== The Redstone Update ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Redstone update has happened on Ropsten and Prater, and is scheduled for August 29th on Mainnet\n**A LOT** has changed. Too much to fit into these notes!\nPlease see the guide for all of the details, including the new \"eternal\" rewards claim system and the Smoothing Pool:\nhttps://docs.rocketpool.net/guides/redstone/whats-new.html\n")
+	fmt.Printf("%s=== MEV-Boost Updates ===%s\n", colorGreen, colorReset)
+	fmt.Println("MEV-Boost is now opt-out instead of opt-in. Furthermore, there is a new way to select relays: you can now select \"profiles\" instead of individual relays. As new relays are added to the Smartnode, any that belong to the profiles you've selected will automatically be enabled for you.\nNOTE: everyone will have to configure either profile-mode or individual-relay mode when first upgrading from v1.6, even if you had previously configured MEV-Boost.\n")
 
-	fmt.Printf("%s=== The Merge ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Merge of the Execution and Consensus layers is happening between September 10th and 20th! This version of the Smartnode fully supports it.\n")
+	fmt.Printf("%s=== ENS Support ===%s\n", colorGreen, colorReset)
+	fmt.Println("`rocketpool node set-withdrawal-address`, `rocketpool node send`, and `rocketpool node set-voting-delegate` can now use ENS names instead of addresses! This requires your Execution Client to be online and synced.\nAlso, use the `rocketpool wallet set-ens-name` command to confirm an ENS domain or subdomain name that you assign to your node wallet. Once you do this, you can refer to your node's address by its ENS name on explorers like Etherscan.\n")
 
-	fmt.Printf("%s=== Light Client Removal ===%s\n", colorGreen, colorReset)
-	fmt.Println("In preparation for The Merge, light clients (Infura and Pocket) are no longer supported.\nYou will need to switch to a Full Execution client before The Merge in order to continue validating!\n")
+	fmt.Printf("%s=== Modern vs. Portable ===%s\n", colorGreen, colorReset)
+	fmt.Println("The Smartnode now automatically checks your node's CPU features and defaults to either the \"modern\" optimized version of certain clients, or the more generic \"portable\" version based on what your machine supports. This only applies to MEV-Boost and Lighthouse.\n")
 
-	fmt.Printf("%s=== New Fallback System ===%s\n", colorGreen, colorReset)
-	fmt.Println("You can now specify a pair of externally-managed Execution and Consensus clients to use as fallbacks for your primary EC and CC pair. This replaces the old Fallback system, which only let you specify an EC fallback.\n")
-
-	fmt.Printf("%s=== Graffiti Wall Addon ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode's first addon has been published! The Graffiti Wall Writer will let you draw on the Beaconcha.in Graffiti Wall (https://beaconcha.in/graffitiwall) whenever you get a proposal. See the Addons page in the `service config` TUI to enable it.\n")
-
-	fmt.Printf("%s=== MEV-Boost ===%s\n", colorGreen, colorReset)
-	fmt.Println("MEV-Boost has been enabled for Mainnet! Once The Merge occurs, you can opt into it to receive extra rewards on your block proposals. Note that it's optional for now, and doesn't come with any relays by default, See the MEV-Boost page in the `service config` TUI to enable it.\n")
-
-	fmt.Printf("%s=== New Commands ===%s\n", colorGreen, colorReset)
-	fmt.Println("- `rocketpool node sign-message` can be used to sign a message with your node wallet's private key. This can be used, for example, to assign a custom nickname to your validators on https://beaconcha.in.")
-	fmt.Println("- `rocketpool network dao-proposals` shows you the status of the active governance proposals within Rocket Pool's DAO. Go out and vote! See https://vote.rocketpool.net for more info.")
+	fmt.Printf("%s=== Cumulative RPL Rewards ===%s\n", colorGreen, colorReset)
+	fmt.Println("We have temporarily disabled the calculation of RPL you earned pre-Redstone in `rocketpool node rewards` and Grafana while we work on some performance improvemenets. They'll be back soon!")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
@@ -599,6 +590,17 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		}
 	}
 
+	// Validate the config
+	errors := cfg.Validate()
+	if len(errors) > 0 {
+		fmt.Printf("%sYour configuration encountered errors. You must correct the following in order to start Rocket Pool:\n\n", colorRed)
+		for _, err := range errors {
+			fmt.Printf("%s\n\n", err)
+		}
+		fmt.Println(colorReset)
+		return nil
+	}
+
 	if !c.Bool("ignore-slash-timer") {
 		// Do the client swap check
 		err := checkForValidatorChange(rp, cfg)
@@ -940,7 +942,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	if selectedEc == cfgtypes.ExecutionClient_Geth {
 		if cfg.UseFallbackClients.Value == false {
-			fmt.Printf("%sYou do not have a fallback execution client configured.\nYou will continue attesting while it prunes, but block proposals and most of Rocket Pool's commands will not work.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}
@@ -1740,4 +1742,21 @@ func getPartitionFreeSpace(rp *rocketpool.Client, targetDir string) (uint64, err
 		return 0, fmt.Errorf("error getting free disk space available: %w", err)
 	}
 	return diskUsage.Free, nil
+}
+
+// Get the list of features required for modern client containers but not supported by the CPU
+func checkCpuFeatures() error {
+	unsupportedFeatures := sys.GetMissingModernCpuFeatures()
+	if len(unsupportedFeatures) > 0 {
+		fmt.Println("Your CPU is missing support for the following features:")
+		for _, name := range unsupportedFeatures {
+			fmt.Printf("  - %s\n", name)
+		}
+
+		fmt.Println("\nYou must use the 'portable' image.")
+		return nil
+	}
+
+	fmt.Println("Your CPU supports all required features for 'modern' images.")
+	return nil
 }
