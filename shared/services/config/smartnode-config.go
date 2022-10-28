@@ -388,13 +388,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		previousRewardsPoolAddresses: map[config.Network]map[string][]common.Address{
 			config.Network_Mainnet: {},
 			config.Network_Prater: {
-				"v1.5.0-rc1": []common.Address{
+				"v1.1.0-rc1": []common.Address{
 					common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				},
 			},
 			config.Network_Kiln: {},
 			config.Network_Ropsten: {
-				"v1.5.0-rc1": []common.Address{
+				"v1.1.0-rc1": []common.Address{
 					common.HexToAddress("0x594fb75d3dc2dfa0150ad03f99f97817747dd4e1"),
 					common.HexToAddress("0x762e79b27feE0C0975f9caBEa9E9976006A7aD98"),
 				},

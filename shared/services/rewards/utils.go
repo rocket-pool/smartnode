@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	rewards_v150rc1 "github.com/rocket-pool/rocketpool-go/legacy/v1.5.0-rc1/rewards"
+	rewards_v110rc1 "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0-rc1/rewards"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -22,13 +22,13 @@ func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool
 	// Check old versions
 	for version, addresses := range versionMap {
 		switch version {
-		case "v1.5.0-rc1":
-			found, oldRewardsEvent, err := rewards_v150rc1.GetRewardSnapshotEventWithUpgrades(rp, index, intervalSize, startBlock, endBlock, addresses)
+		case "v1.1.0-rc1":
+			found, oldRewardsEvent, err := rewards_v110rc1.GetRewardSnapshotEventWithUpgrades(rp, index, intervalSize, startBlock, endBlock, addresses)
 			if err != nil {
 				return rewards.RewardsEvent{}, fmt.Errorf("error checking %s contracts for rewards event %d: %w", version, index, err)
 			}
 			if found {
-				return update_v150rc1_to_v150(oldRewardsEvent), nil
+				return update_v110rc1_to_v110(oldRewardsEvent), nil
 			}
 		}
 	}
@@ -38,8 +38,8 @@ func GetUpgradedRewardSnapshotEvent(cfg *config.RocketPoolConfig, rp *rocketpool
 
 }
 
-// Upgrade a rewards event from v1.5.0-RC1 to v1.5.0
-func update_v150rc1_to_v150(oldEvent rewards_v150rc1.RewardsEvent) rewards.RewardsEvent {
+// Upgrade a rewards event from v1.1.0-RC1 to v1.1.0
+func update_v110rc1_to_v110(oldEvent rewards_v110rc1.RewardsEvent) rewards.RewardsEvent {
 	newEvent := rewards.RewardsEvent{
 		Index:             oldEvent.Index,
 		ExecutionBlock:    oldEvent.ExecutionBlock,
@@ -65,13 +65,13 @@ func GetClaimIntervalTime(cfg *config.RocketPoolConfig, index uint64, rp *rocket
 	switch cfg.Smartnode.Network.Value.(cfgtypes.Network) {
 	case cfgtypes.Network_Prater:
 		if index < 2 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetClaimIntervalTime(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetClaimIntervalTime(rp, opts, &contractAddress)
 		}
 	case cfgtypes.Network_Ropsten:
 		if index < 44 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetClaimIntervalTime(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetClaimIntervalTime(rp, opts, &contractAddress)
 		}
 	}
 
@@ -83,13 +83,13 @@ func GetNodeOperatorRewardsPercent(cfg *config.RocketPoolConfig, index uint64, r
 	switch cfg.Smartnode.Network.Value.(cfgtypes.Network) {
 	case cfgtypes.Network_Prater:
 		if index < 2 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetNodeOperatorRewardsPercent(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetNodeOperatorRewardsPercent(rp, opts, &contractAddress)
 		}
 	case cfgtypes.Network_Ropsten:
 		if index < 44 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetNodeOperatorRewardsPercent(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetNodeOperatorRewardsPercent(rp, opts, &contractAddress)
 		}
 	}
 
@@ -101,13 +101,13 @@ func GetTrustedNodeOperatorRewardsPercent(cfg *config.RocketPoolConfig, index ui
 	switch cfg.Smartnode.Network.Value.(cfgtypes.Network) {
 	case cfgtypes.Network_Prater:
 		if index < 2 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetTrustedNodeOperatorRewardsPercent(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetTrustedNodeOperatorRewardsPercent(rp, opts, &contractAddress)
 		}
 	case cfgtypes.Network_Ropsten:
 		if index < 44 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetTrustedNodeOperatorRewardsPercent(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetTrustedNodeOperatorRewardsPercent(rp, opts, &contractAddress)
 		}
 	}
 
@@ -119,13 +119,13 @@ func GetProtocolDaoRewardsPercent(cfg *config.RocketPoolConfig, index uint64, rp
 	switch cfg.Smartnode.Network.Value.(cfgtypes.Network) {
 	case cfgtypes.Network_Prater:
 		if index < 2 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetProtocolDaoRewardsPercent(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetProtocolDaoRewardsPercent(rp, opts, &contractAddress)
 		}
 	case cfgtypes.Network_Ropsten:
 		if index < 44 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetProtocolDaoRewardsPercent(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetProtocolDaoRewardsPercent(rp, opts, &contractAddress)
 		}
 	}
 
@@ -137,13 +137,13 @@ func GetPendingRPLRewards(cfg *config.RocketPoolConfig, index uint64, rp *rocket
 	switch cfg.Smartnode.Network.Value.(cfgtypes.Network) {
 	case cfgtypes.Network_Prater:
 		if index < 2 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetPendingRPLRewards(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetPendingRPLRewards(rp, opts, &contractAddress)
 		}
 	case cfgtypes.Network_Ropsten:
 		if index < 44 {
-			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.5.0-rc1"][0]
-			return rewards_v150rc1.GetPendingRPLRewards(rp, opts, &contractAddress)
+			contractAddress := cfg.Smartnode.GetPreviousRewardsPoolAddresses()["v1.1.0-rc1"][0]
+			return rewards_v110rc1.GetPendingRPLRewards(rp, opts, &contractAddress)
 		}
 	}
 
