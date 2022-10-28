@@ -47,7 +47,7 @@ func EstimateSubmitPricesGas(rp *rocketpool.RocketPool, block uint64, rplPrice *
 }
 
 // Submit network prices and total effective RPL stake for an epoch
-func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice, opts *bind.TransactOpts) (common.Hash, error) {
+func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkPrices, err := getRocketNetworkPrices(rp)
 	if err != nil {
 		return common.Hash{}, err
