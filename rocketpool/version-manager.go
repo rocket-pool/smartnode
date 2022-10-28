@@ -21,7 +21,7 @@ type LegacyVersionWrapper interface {
 
 type VersionManager struct {
 	V1_0_0     LegacyVersionWrapper
-	V1_5_0_RC1 LegacyVersionWrapper
+	V1_1_0_RC1 LegacyVersionWrapper
 
 	rp *RocketPool
 }
@@ -29,7 +29,7 @@ type VersionManager struct {
 func NewVersionManager(rp *RocketPool) *VersionManager {
 	return &VersionManager{
 		V1_0_0:     newLegacyVersionWrapper_v1_0_0(rp),
-		V1_5_0_RC1: newLegacyVersionWrapper_v1_5_0_rc1(rp),
+		V1_1_0_RC1: newLegacyVersionWrapper_v1_1_0_rc1(rp),
 		rp:         rp,
 	}
 }

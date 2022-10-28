@@ -299,8 +299,8 @@ func getRocketRewardsPool(rp *rocketpool.RocketPool, address *common.Address) (*
 	rocketRewardsPoolLock.Lock()
 	defer rocketRewardsPoolLock.Unlock()
 	if address == nil {
-		return rp.VersionManager.V1_5_0_RC1.GetContract("rocketRewardsPool")
+		return rp.VersionManager.V1_1_0_RC1.GetContract("rocketRewardsPool")
 	} else {
-		return rp.VersionManager.V1_5_0_RC1.GetContractWithAddress("rocketRewardsPool", *address)
+		return rp.VersionManager.V1_1_0_RC1.GetContractWithAddress("rocketRewardsPool", *address)
 	}
 }

@@ -6,7 +6,7 @@ import (
 )
 
 // A wrapper that holds the updated contract information for this version
-type LegacyVersionWrapper_v1_5_0_rc1 struct {
+type LegacyVersionWrapper_v1_1_0_rc1 struct {
 	rp              *RocketPool
 	rpVersion       *version.Version
 	contractNameMap map[string]string
@@ -14,9 +14,9 @@ type LegacyVersionWrapper_v1_5_0_rc1 struct {
 }
 
 // Creates a new wrapper for this version
-func newLegacyVersionWrapper_v1_5_0_rc1(rp *RocketPool) *LegacyVersionWrapper_v1_5_0_rc1 {
-	rpVersion, _ := version.NewSemver("1.5.0-rc1")
-	return &LegacyVersionWrapper_v1_5_0_rc1{
+func newLegacyVersionWrapper_v1_1_0_rc1(rp *RocketPool) *LegacyVersionWrapper_v1_1_0_rc1 {
+	rpVersion, _ := version.NewSemver("1.1.0-rc1")
+	return &LegacyVersionWrapper_v1_1_0_rc1{
 		rp:        rp,
 		rpVersion: rpVersion,
 		contractNameMap: map[string]string{
@@ -29,26 +29,26 @@ func newLegacyVersionWrapper_v1_5_0_rc1(rp *RocketPool) *LegacyVersionWrapper_v1
 }
 
 // Get the version for this manager
-func (m *LegacyVersionWrapper_v1_5_0_rc1) GetVersion() *version.Version {
+func (m *LegacyVersionWrapper_v1_1_0_rc1) GetVersion() *version.Version {
 	return m.rpVersion
 }
 
 // Get the versioned name of the contract if it was upgraded as part of this deployment
-func (m *LegacyVersionWrapper_v1_5_0_rc1) GetVersionedContractName(contractName string) (string, bool) {
+func (m *LegacyVersionWrapper_v1_1_0_rc1) GetVersionedContractName(contractName string) (string, bool) {
 	legacyName, exists := m.contractNameMap[contractName]
 	return legacyName, exists
 }
 
 // Get the ABI for the provided contract
-func (m *LegacyVersionWrapper_v1_5_0_rc1) GetEncodedABI(contractName string) string {
+func (m *LegacyVersionWrapper_v1_1_0_rc1) GetEncodedABI(contractName string) string {
 	return m.abiMap[contractName]
 }
 
 // Get the contract with the provided name for this version of Rocket Pool
-func (m *LegacyVersionWrapper_v1_5_0_rc1) GetContract(contractName string) (*Contract, error) {
+func (m *LegacyVersionWrapper_v1_1_0_rc1) GetContract(contractName string) (*Contract, error) {
 	return getLegacyContract(m.rp, contractName, m)
 }
 
-func (m *LegacyVersionWrapper_v1_5_0_rc1) GetContractWithAddress(contractName string, address common.Address) (*Contract, error) {
+func (m *LegacyVersionWrapper_v1_1_0_rc1) GetContractWithAddress(contractName string, address common.Address) (*Contract, error) {
 	return getLegacyContractWithAddress(m.rp, contractName, address, m)
 }
