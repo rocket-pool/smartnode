@@ -42,13 +42,14 @@ const MinipoolBalanceDetailsBatchSize = 8
 
 // Submit network balances task
 type submitNetworkBalances struct {
-	c   *cli.Context
-	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	w   *wallet.Wallet
-	ec  rocketpool.ExecutionClient
-	rp  *rocketpool.RocketPool
-	bc  beacon.Client
+	c               *cli.Context
+	log             log.ColorLogger
+	cfg             *config.RocketPoolConfig
+	w               *wallet.Wallet
+	ec              rocketpool.ExecutionClient
+	rp              *rocketpool.RocketPool
+	bc              beacon.Client
+	isAtlasDeployed bool
 }
 
 // Network balance info
@@ -96,13 +97,14 @@ func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger) (*submitNe
 
 	// Return task
 	return &submitNetworkBalances{
-		c:   c,
-		log: logger,
-		cfg: cfg,
-		w:   w,
-		ec:  ec,
-		rp:  rp,
-		bc:  bc,
+		c:               c,
+		log:             logger,
+		cfg:             cfg,
+		w:               w,
+		ec:              ec,
+		rp:              rp,
+		bc:              bc,
+		isAtlasDeployed: false,
 	}, nil
 
 }
@@ -149,6 +151,15 @@ func (t *submitNetworkBalances) run() error {
 	// Check node trusted status & settings
 	if !(nodeTrusted && submitBalancesEnabled) {
 		return nil
+	}
+
+	// Check if Atlas is deployed
+	if !t.isAtlasDeployed {
+		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		t.isAtlasDeployed = isAtlasDeployed
 	}
 
 	// Log
@@ -343,11 +354,21 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	// Get deposit pool balance
 	wg.Go(func() error {
 		var err error
-		depositPoolBalance, err = deposit.GetBalance(client, opts)
-		if err != nil {
-			return fmt.Errorf("error getting deposit pool balance: %w", err)
+		if t.isAtlasDeployed {
+			// Atlas behavior
+			depositPoolBalance, err = deposit.GetUserBalance(client, opts)
+			if err != nil {
+				return fmt.Errorf("error getting deposit pool user balance: %w", err)
+			}
+			return nil
+		} else {
+			// Legacy behavior
+			depositPoolBalance, err = deposit.GetBalance(client, opts)
+			if err != nil {
+				return fmt.Errorf("error getting deposit pool balance: %w", err)
+			}
+			return nil
 		}
-		return nil
 	})
 
 	wg.Go(func() error {

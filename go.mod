@@ -58,4 +58,4 @@ replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a 
 
 replace github.com/web3-storage/go-w3s-client => github.com/rocket-pool/go-w3s-client v0.0.0-20221006052217-dbd9938d11d8
 
-// replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
