@@ -23,6 +23,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	network_v110 "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/network"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -32,6 +33,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	mathutils "github.com/rocket-pool/smartnode/shared/utils/math"
+	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 const MessengerAbi = `[
@@ -58,18 +60,22 @@ const MessengerAbi = `[
   ]`
 
 // Settings
-const BlocksPerTurn = 75 // Approx. 15 minutes
+const (
+	BlocksPerTurn uint64 = 75 // Approx. 15 minutes
+	SubmissionKey string = "network.prices.submitted.node"
+)
 
 // Submit RPL price task
 type submitRplPrice struct {
-	c   *cli.Context
-	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	ec  rocketpool.ExecutionClient
-	w   *wallet.Wallet
-	rp  *rocketpool.RocketPool
-	oio *contracts.OneInchOracle
-	bc  beacon.Client
+	c               *cli.Context
+	log             log.ColorLogger
+	cfg             *config.RocketPoolConfig
+	ec              rocketpool.ExecutionClient
+	w               *wallet.Wallet
+	rp              *rocketpool.RocketPool
+	oio             *contracts.OneInchOracle
+	bc              beacon.Client
+	isAtlasDeployed bool
 }
 
 // Create submit RPL price task
@@ -103,14 +109,15 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger) (*submitRplPrice,
 
 	// Return task
 	return &submitRplPrice{
-		c:   c,
-		log: logger,
-		cfg: cfg,
-		ec:  ec,
-		w:   w,
-		rp:  rp,
-		oio: oio,
-		bc:  bc,
+		c:               c,
+		log:             logger,
+		cfg:             cfg,
+		ec:              ec,
+		w:               w,
+		rp:              rp,
+		oio:             oio,
+		bc:              bc,
+		isAtlasDeployed: false,
 	}, nil
 
 }
@@ -154,6 +161,15 @@ func (t *submitRplPrice) run() error {
 	// Check node trusted status & settings
 	if !(nodeTrusted && submitPricesEnabled) {
 		return nil
+	}
+
+	// Check if Atlas is deployed
+	if !t.isAtlasDeployed {
+		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		t.isAtlasDeployed = isAtlasDeployed
 	}
 
 	// Check if Optimism rate is stale and submit
@@ -220,9 +236,12 @@ func (t *submitRplPrice) run() error {
 
 	// Calculate the total effective RPL stake on the network
 	zero := new(big.Int).SetUint64(0)
-	effectiveRplStake, err := node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil)
-	if err != nil {
-		return fmt.Errorf("Error getting total effective RPL stake: %w", err)
+	var effectiveRplStake *big.Int
+	if !t.isAtlasDeployed {
+		effectiveRplStake, err = node.CalculateTotalEffectiveRPLStake(t.rp, zero, zero, rplPrice, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting total effective RPL stake: %w", err)
+		}
 	}
 
 	// Log
@@ -280,24 +299,32 @@ func (t *submitRplPrice) hasSubmittedBlockPrices(nodeAddress common.Address, blo
 
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.prices.submitted.node"), nodeAddress.Bytes(), blockNumberBuf))
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
 
 }
 
 // Check whether specific prices for a block has already been submitted by the node
 func (t *submitRplPrice) hasSubmittedSpecificBlockPrices(nodeAddress common.Address, blockNumber uint64, rplPrice, effectiveRplStake *big.Int) (bool, error) {
+	if t.isAtlasDeployed {
+		blockNumberBuf := make([]byte, 32)
+		big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
-	blockNumberBuf := make([]byte, 32)
-	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
+		rplPriceBuf := make([]byte, 32)
+		rplPrice.FillBytes(rplPriceBuf)
 
-	rplPriceBuf := make([]byte, 32)
-	rplPrice.FillBytes(rplPriceBuf)
+		return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf))
+	} else {
+		blockNumberBuf := make([]byte, 32)
+		big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
-	effectiveRplStakeBuf := make([]byte, 32)
-	effectiveRplStake.FillBytes(effectiveRplStakeBuf)
+		rplPriceBuf := make([]byte, 32)
+		rplPrice.FillBytes(rplPriceBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.prices.submitted.node"), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf, effectiveRplStakeBuf))
+		effectiveRplStakeBuf := make([]byte, 32)
+		effectiveRplStake.FillBytes(effectiveRplStakeBuf)
 
+		return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(SubmissionKey), nodeAddress.Bytes(), blockNumberBuf, rplPriceBuf, effectiveRplStakeBuf))
+	}
 }
 
 // Get RPL price at block
@@ -355,27 +382,54 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, rplPrice, effectiveR
 		return err
 	}
 
-	// Get the gas limit
-	gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)
-	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
-	}
+	var hash common.Hash
+	if t.isAtlasDeployed {
+		// Get the gas limit
+		gasInfo, err := network.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, opts)
+		if err != nil {
+			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+		}
 
-	// Print the gas info
-	maxFee := eth.GweiToWei(WatchtowerMaxFee)
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
-		return nil
-	}
+		// Print the gas info
+		maxFee := eth.GweiToWei(WatchtowerMaxFee)
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+			return nil
+		}
 
-	// Set the gas settings
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
-	opts.GasLimit = gasInfo.SafeGasLimit
+		// Set the gas settings
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+		opts.GasLimit = gasInfo.SafeGasLimit
 
-	// Submit RPL price
-	hash, err := network.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts)
-	if err != nil {
-		return err
+		// Submit RPL price
+		hash, err = network.SubmitPrices(t.rp, blockNumber, rplPrice, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		legacyNetworkPricesAddress := t.cfg.Smartnode.GetV110NetworkPricesAddress()
+		// Get the gas limit
+		gasInfo, err := network_v110.EstimateSubmitPricesGas(t.rp, blockNumber, rplPrice, effectiveRplStake, opts, &legacyNetworkPricesAddress)
+		if err != nil {
+			return fmt.Errorf("Could not estimate the gas required to submit RPL price: %w", err)
+		}
+
+		// Print the gas info
+		maxFee := eth.GweiToWei(WatchtowerMaxFee)
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
+			return nil
+		}
+
+		// Set the gas settings
+		opts.GasFeeCap = maxFee
+		opts.GasTipCap = eth.GweiToWei(WatchtowerMaxPriorityFee)
+		opts.GasLimit = gasInfo.SafeGasLimit
+
+		// Submit RPL price
+		hash, err = network_v110.SubmitPrices(t.rp, blockNumber, rplPrice, effectiveRplStake, opts, &legacyNetworkPricesAddress)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Print TX info and wait for it to be included in a block

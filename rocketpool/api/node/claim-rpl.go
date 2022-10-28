@@ -44,8 +44,8 @@ func canNodeClaimRpl(c *cli.Context) (*api.CanNodeClaimRplResponse, error) {
 	}
 
 	// Check for rewards
-	legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
-	legacyRewardsPoolAddress := cfg.Smartnode.GetLegacyRewardsPoolAddress()
+	legacyClaimNodeAddress := cfg.Smartnode.GetV100ClaimNodeAddress()
+	legacyRewardsPoolAddress := cfg.Smartnode.GetV100RewardsPoolAddress()
 	rewardsAmountWei, err := rewards.GetNodeClaimRewardsAmount(rp, nodeAccount.Address, nil, &legacyClaimNodeAddress)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting RPL rewards amount: %w", err)
@@ -113,7 +113,7 @@ func nodeClaimRpl(c *cli.Context) (*api.NodeClaimRplResponse, error) {
 	}
 
 	// Claim rewards
-	legacyClaimNodeAddress := cfg.Smartnode.GetLegacyClaimNodeAddress()
+	legacyClaimNodeAddress := cfg.Smartnode.GetV100ClaimNodeAddress()
 	hash, err := rewards.ClaimNodeRewards(rp, opts, &legacyClaimNodeAddress)
 	if err != nil {
 		return nil, err
