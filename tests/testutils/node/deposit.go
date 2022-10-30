@@ -64,11 +64,11 @@ func Deposit(t *testing.T, rp *rocketpool.RocketPool, nodeAccount *accounts.Acco
 	minNodeFee := 0.0
 	//t.Logf("Deposit:\n\tMin Node Fee: %f\n\tValidator Pubkey: %s\n\tValidator Signature: %s\n\tDeposit Data Root: %s\n\tNode Address: %s\n\tSalt: %s\n\tExpected Minipool: %s\n",
 	//    minNodeFee, validatorPubkey.Hex(), validatorSignature.Hex(), depositDataRoot.Hex(), nodeAccount.Address.Hex(), GetDefaultSalt().String(), expectedMinipoolAddress.Hex())
-	hash, err := node.Deposit(rp, minNodeFee, validatorPubkey, validatorSignature, depositDataRoot, salt, expectedMinipoolAddress, opts)
+	tx, err := node.Deposit(rp, minNodeFee, validatorPubkey, validatorSignature, depositDataRoot, salt, expectedMinipoolAddress, opts)
 	if err != nil {
 		return common.Address{}, nil, fmt.Errorf("Error executing deposit: %w", err)
 	}
-	txReceipt, err := utils.WaitForTransaction(rp.Client, hash)
+	txReceipt, err := utils.WaitForTransaction(rp.Client, tx.Hash())
 	if err != nil {
 		return common.Address{}, nil, fmt.Errorf("Error waiting for deposit transaction: %w", err)
 	}
