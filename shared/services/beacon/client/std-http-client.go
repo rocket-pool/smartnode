@@ -215,6 +215,7 @@ func (c *StandardHttpClient) getValidatorStatus(pubkeyOrIndex string, opts *beac
 		Index:                      uint64(validator.Index),
 		WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
 		Balance:                    uint64(validator.Balance),
+		Status:                     beacon.ValidatorState(validator.Status),
 		EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
 		Slashed:                    validator.Validator.Slashed,
 		ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),

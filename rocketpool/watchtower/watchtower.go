@@ -36,6 +36,7 @@ const (
 	SubmitRewardsTreeColor           = color.FgHiCyan
 	WarningColor                     = color.FgYellow
 	ProcessPenaltiesColor            = color.FgHiMagenta
+	CancelBondsColor                 = color.FgGreen
 )
 
 // Register watchtower command
@@ -107,6 +108,10 @@ func run(c *cli.Context) error {
 	generateRewardsTree, err := newGenerateRewardsTree(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during manual tree generation check: %w", err)
+	}
+	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog)
+	if err != nil {
+		return fmt.Errorf("error during bond reduction cancel check: %w", err)
 	}
 
 	intervalDelta := maxTasksInterval - minTasksInterval
@@ -183,6 +188,12 @@ func run(c *cli.Context) error {
 
 					// Run the minipool scrub check
 					if err := submitScrubMinipools.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+
+					// Run the bond cancel check
+					if err := cancelBondReductions.run(); err != nil {
 						errorLog.Println(err)
 					}
 					/*time.Sleep(taskCooldown)
