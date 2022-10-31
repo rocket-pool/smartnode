@@ -534,6 +534,29 @@ func (mp *Minipool) VoteScrub(opts *bind.TransactOpts) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
+// Gets the time at which the MP owner started the bond reduction process
+func (mp *Minipool) GetReduceBondTime(opts *bind.CallOpts) (*big.Int, error) {
+	reduceBondTime := new(*big.Int)
+	if err := mp.Contract.Call(opts, reduceBondTime, "getReduceBondTime"); err != nil {
+		return nil, fmt.Errorf("Could not get reduce bond start time for minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return *reduceBondTime, nil
+}
+
+// Estimate the gas required to vote to cancel a minipool's bond reduction
+func (mp *Minipool) EstimateVoteCancelReductionGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "voteCancelReduction")
+}
+
+// Vote to cancel a minipool's bond reduction
+func (mp *Minipool) VoteCancelReduction(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "voteCancelReduction")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not vote to cancel bond reduction for minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get the data from this minipool's MinipoolPrestaked event
 func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts) (PrestakeData, error) {
 
