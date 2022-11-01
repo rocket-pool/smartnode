@@ -100,6 +100,9 @@ func getActiveDAOProposals(c *cli.Context) error {
 					case map[string]interface{}:
 						choice := proposalVote.Choice.(map[string]interface{})
 						for index, weight := range choice {
+							if votedChoices != "" {
+								votedChoices += ", "
+							}
 							votedChoices += fmt.Sprintf("%s: %.2f", proposal.Choices[int(choice[index].(float64))], weight)
 						}
 
