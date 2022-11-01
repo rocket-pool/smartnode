@@ -520,7 +520,7 @@ func (mp *Minipool) CalculateUserShare(balance *big.Int, opts *bind.CallOpts) (*
 	return *userAmount, nil
 }
 
-// Estimate the gas requiired to vote to scrub a minipool
+// Estimate the gas required to vote to scrub a minipool
 func (mp *Minipool) EstimateVoteScrubGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "voteScrub")
 }
@@ -553,6 +553,20 @@ func (mp *Minipool) VoteCancelReduction(opts *bind.TransactOpts) (common.Hash, e
 	tx, err := mp.Contract.Transact(opts, "voteCancelReduction")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("Could not vote to cancel bond reduction for minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
+// Estimate the gas required to promote a vacant minipool
+func (mp *Minipool) EstimatePromoteGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "promote")
+}
+
+// Promote a vacant minipool
+func (mp *Minipool) Promote(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "promote")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("Could not promote minipool %s: %w", mp.Address.Hex(), err)
 	}
 	return tx.Hash(), nil
 }

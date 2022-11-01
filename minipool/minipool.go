@@ -536,6 +536,32 @@ func GetMinipoolPenaltyCount(rp *rocketpool.RocketPool, minipoolAddress common.A
 	return penalties.Uint64(), nil
 }
 
+// Get the vacant minipool count
+func GetVacantMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	if err != nil {
+		return 0, err
+	}
+	vacantMinipoolCount := new(*big.Int)
+	if err := rocketMinipoolManager.Call(opts, vacantMinipoolCount, "getVacantMinipoolCount"); err != nil {
+		return 0, fmt.Errorf("Could not get vacant minipool count: %w", err)
+	}
+	return (*vacantMinipoolCount).Uint64(), nil
+}
+
+// Get a vacant minipool address by index
+func GetVacantMinipoolAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, error) {
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	if err != nil {
+		return common.Address{}, err
+	}
+	vacantMinipoolAddress := new(common.Address)
+	if err := rocketMinipoolManager.Call(opts, vacantMinipoolAddress, "getVacantMinipoolAt", big.NewInt(int64(index))); err != nil {
+		return common.Address{}, fmt.Errorf("Could not get vacant minipool %d address: %w", index, err)
+	}
+	return *vacantMinipoolAddress, nil
+}
+
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
 
