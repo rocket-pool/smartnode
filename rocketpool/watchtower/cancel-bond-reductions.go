@@ -34,6 +34,7 @@ type cancelBondReductions struct {
 	lock             *sync.Mutex
 	isRunning        bool
 	generationPrefix string
+	isAtlasDeployed  bool
 }
 
 // Create cancel bond reductions task
@@ -75,6 +76,7 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 		lock:             lock,
 		isRunning:        false,
 		generationPrefix: "[Bond Reduction]",
+		isAtlasDeployed:  false,
 	}, nil
 
 }
@@ -103,6 +105,18 @@ func (t *cancelBondReductions) run() error {
 	}
 	if !(nodeTrusted) {
 		return nil
+	}
+
+	// Check if Atlas is deployed
+	if !t.isAtlasDeployed {
+		isAtlasDeployed, err := rp.IsAtlasDeployed(t.rp)
+		if err != nil {
+			return fmt.Errorf("error checking if Atlas is deployed: %w", err)
+		}
+		t.isAtlasDeployed = isAtlasDeployed
+		if !t.isAtlasDeployed {
+			return nil
+		}
 	}
 
 	// Log
