@@ -18,7 +18,7 @@ import (
 // Config
 var minTasksInterval, _ = time.ParseDuration("4m")
 var maxTasksInterval, _ = time.ParseDuration("6m")
-var taskCooldown, _ = time.ParseDuration("10s")
+var taskCooldown, _ = time.ParseDuration("5s")
 
 const (
 	MaxConcurrentEth1Requests = 200
@@ -37,6 +37,7 @@ const (
 	WarningColor                     = color.FgYellow
 	ProcessPenaltiesColor            = color.FgHiMagenta
 	CancelBondsColor                 = color.FgGreen
+	CheckSoloMigrationsColor         = color.FgHiWhite
 )
 
 // Register watchtower command
@@ -112,6 +113,10 @@ func run(c *cli.Context) error {
 	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during bond reduction cancel check: %w", err)
+	}
+	checkSoloMigrations, err := newCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog)
+	if err != nil {
+		return fmt.Errorf("error during solo migration check: %w", err)
 	}
 
 	intervalDelta := maxTasksInterval - minTasksInterval
@@ -194,6 +199,12 @@ func run(c *cli.Context) error {
 
 					// Run the bond cancel check
 					if err := cancelBondReductions.run(); err != nil {
+						errorLog.Println(err)
+					}
+					time.Sleep(taskCooldown)
+
+					// Run the solo migration check
+					if err := checkSoloMigrations.run(); err != nil {
 						errorLog.Println(err)
 					}
 					/*time.Sleep(taskCooldown)

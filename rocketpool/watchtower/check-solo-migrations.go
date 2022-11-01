@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,7 +23,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type cancelBondReductions struct {
+const (
+	soloMigrationCheckThreshold time.Duration = 24 * time.Hour
+	blsPrefix                   byte          = 0x00
+	elPrefix                    byte          = 0x01
+)
+
+type checkSoloMigrations struct {
 	c                *cli.Context
 	log              log.ColorLogger
 	errLog           log.ColorLogger
@@ -37,8 +44,8 @@ type cancelBondReductions struct {
 	isAtlasDeployed  bool
 }
 
-// Create cancel bond reductions task
-func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*cancelBondReductions, error) {
+// Create check solo migrations task
+func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*checkSoloMigrations, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -64,7 +71,7 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 
 	// Return task
 	lock := &sync.Mutex{}
-	return &cancelBondReductions{
+	return &checkSoloMigrations{
 		c:                c,
 		log:              logger,
 		errLog:           errorLogger,
@@ -75,14 +82,14 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 		bc:               bc,
 		lock:             lock,
 		isRunning:        false,
-		generationPrefix: "[Bond Reduction]",
+		generationPrefix: "[Solo Migration]",
 		isAtlasDeployed:  false,
 	}, nil
 
 }
 
-// Start the bond reduction cancellation thread
-func (t *cancelBondReductions) run() error {
+// Start the solo migration checking thread
+func (t *checkSoloMigrations) run() error {
 
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
@@ -120,12 +127,12 @@ func (t *cancelBondReductions) run() error {
 	}
 
 	// Log
-	t.log.Println("Checking for bond reductions to cancel...")
+	t.log.Println("Checking for solo migrations...")
 
 	// Check if the check is already running
 	t.lock.Lock()
 	if t.isRunning {
-		t.log.Println("Bond reduction cancel check is already running in the background.")
+		t.log.Println("Solo migration check is already running in the background.")
 		t.lock.Unlock()
 		return nil
 	}
@@ -136,9 +143,9 @@ func (t *cancelBondReductions) run() error {
 		t.lock.Lock()
 		t.isRunning = true
 		t.lock.Unlock()
-		t.printMessage("Starting bond reduction cancel check in a separate thread.")
+		t.printMessage("Starting solo migration check in a separate thread.")
 
-		err := t.checkBondReductions()
+		err := t.checkSoloMigrations()
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", t.generationPrefix, err))
 			return
@@ -154,12 +161,11 @@ func (t *cancelBondReductions) run() error {
 
 }
 
-// Check for bond reductions to cancel
-func (t *cancelBondReductions) checkBondReductions() error {
+// Check for solo staker migration validity
+func (t *checkSoloMigrations) checkSoloMigrations() error {
 
 	// Data
 	var wg1 errgroup.Group
-	var addresses []common.Address
 	var eth2Config beacon.Eth2Config
 	var beaconHead beacon.BeaconHead
 
@@ -209,94 +215,54 @@ func (t *cancelBondReductions) checkBondReductions() error {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(0).SetUint64(elBlock),
 	}
+	beaconOpts := &beacon.ValidatorStatusOptions{
+		Slot: &lastSlot,
+	}
 
-	// Get minipool addresses
-	addresses, err := minipool.GetMinipoolAddresses(t.rp, opts)
+	// Get vacant count
+	vacantCount, err := minipool.GetVacantMinipoolCount(t.rp, opts)
 	if err != nil {
-		return fmt.Errorf("error getting minipool addresses: %w", err)
+		return fmt.Errorf("error getting vacant minipool count: %w", err)
 	}
 
-	// Get the bond reduction time of each MP
-	addressCount := len(addresses)
-	reductionMpTimes := make([]int64, addressCount)
-	for bsi := 0; bsi < addressCount; bsi += MinipoolBalanceDetailsBatchSize {
-		// Get batch start & end index
-		msi := bsi
-		mei := bsi + MinipoolBalanceDetailsBatchSize
-		if mei > addressCount {
-			mei = addressCount
-		}
-
-		// Load details
-		var wg errgroup.Group
-		for mi := msi; mi < mei; mi++ {
-			mi := mi
-			wg.Go(func() error {
-				address := addresses[mi]
-				mp, err := minipool.NewMinipool(t.rp, address)
-				if err != nil {
-					return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
-				}
-
-				rawTime, err := mp.GetReduceBondTime(opts)
-				if err != nil {
-					return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
-				}
-				reductionMpTimes[mi] = rawTime.Int64()
-				return nil
-			})
-		}
-		if err := wg.Wait(); err != nil {
-			return err
-		}
-	}
-
-	// Check if any of them have bond reduction requests
-	reductionMps := []common.Address{}
-	for i := 0; i < addressCount; i++ {
-		if reductionMpTimes[i] > 0 {
-			reductionMps = append(reductionMps, addresses[i])
-		}
-	}
-
-	// If there aren't any, return
-	if len(reductionMps) == 0 {
-		t.printMessage("No minipools have requested a bond reduction.")
+	if vacantCount == 0 {
 		return nil
 	}
 
-	// Get the statuses of minipools with bond reductions
-	validators, err := rp.GetMinipoolValidators(t.rp, t.bc, reductionMps, opts, &beacon.ValidatorStatusOptions{Slot: &lastSlot})
-	if err != nil {
-		return fmt.Errorf("error getting bond reduction validator statuses: %w", err)
-	}
+	// Go through each minipool
+	// TODO: does this need to be multithreaded?
+	for i := uint64(0); i < vacantCount; i++ {
+		address, err := minipool.GetVacantMinipoolAt(t.rp, i, opts)
+		if err != nil {
+			return fmt.Errorf("error getting vacant minipool %d address: %w", i, err)
+		}
 
-	// Check the status of each one
-	threshold := uint64(32000000000)
-	for address, status := range validators {
-		switch status.Status {
-		case beacon.ValidatorState_PendingInitialized,
-			beacon.ValidatorState_PendingQueued:
-			// Do nothing because this validator isn't live yet
+		pubkey, err := minipool.GetMinipoolPubkey(t.rp, address, opts)
+		if err != nil {
+			return fmt.Errorf("error getting minipool %s pubkey: %w", address.Hex(), err)
+		}
+
+		status, err := t.bc.GetValidatorStatus(pubkey, beaconOpts)
+		if err != nil {
+			return fmt.Errorf("error getting minipool %s Beacon status: %w", address.Hex(), err)
+		}
+
+		withdrawalCreds := status.WithdrawalCredentials
+		switch withdrawalCreds[0] {
+		case blsPrefix:
+			// Hasn't migrated yet, so ignore for now
+			// TODO: Handle timeouts once they're added
 			continue
-
-		case beacon.ValidatorState_ActiveOngoing:
-			// Check the balance
-			if status.Balance < threshold {
-				// Cancel because it's under-balance
-				t.cancelBondReduction(address, fmt.Sprintf("minipool balance is %d (below the threshold)", status.Balance))
+		case elPrefix:
+			expectedCreds, err := minipool.GetMinipoolWithdrawalCredentials(t.rp, address, opts)
+			if err != nil {
+				return fmt.Errorf("error getting expected withdrawal credentials for minipool %s: %w", address.Hex(), err)
 			}
-
-		case beacon.ValidatorState_ActiveExiting,
-			beacon.ValidatorState_ActiveSlashed,
-			beacon.ValidatorState_ExitedUnslashed,
-			beacon.ValidatorState_ExitedSlashed,
-			beacon.ValidatorState_WithdrawalPossible,
-			beacon.ValidatorState_WithdrawalDone:
-			t.cancelBondReduction(address, "minipool is already slashed, exiting, or exited")
-
+			if withdrawalCreds != expectedCreds {
+				t.scrubVacantMinipool(address, fmt.Sprintf("withdrawal credentials do not match (expected %s, actual %s)", expectedCreds.Hex(), withdrawalCreds.Hex()))
+			}
 		default:
-			return fmt.Errorf("unknown validator state: %v", status.Status)
+			t.scrubVacantMinipool(address, fmt.Sprintf("unexpected prefix in withdrawal credentials: %s", withdrawalCreds.Hex()))
 		}
 	}
 
@@ -304,19 +270,19 @@ func (t *cancelBondReductions) checkBondReductions() error {
 
 }
 
-// Cancel a bond reduction
-func (t *cancelBondReductions) cancelBondReduction(address common.Address, reason string) error {
+// Scrub a vacant minipool
+func (t *checkSoloMigrations) scrubVacantMinipool(address common.Address, reason string) error {
 
 	// Log
-	t.printMessage("=== CANCELLING BOND REDUCTION ===")
+	t.printMessage("=== SCRUBBING SOLO MIGRATION ===")
 	t.printMessage(fmt.Sprintf("Minipool: %s", address.Hex()))
 	t.printMessage(fmt.Sprintf("Reason:   %s", reason))
-	t.printMessage("=================================")
+	t.printMessage("================================")
 
 	// Make the binding
 	mp, err := minipool.NewMinipool(t.rp, address)
 	if err != nil {
-		return fmt.Errorf("error creating binding for minipool %s: %w", address.Hex(), err)
+		return fmt.Errorf("error scrubbing migration of minipool %s: %w", address.Hex(), err)
 	}
 
 	// Get transactor
@@ -326,9 +292,9 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	}
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimateVoteCancelReductionGas(opts)
+	gasInfo, err := mp.EstimateVoteScrubGas(opts)
 	if err != nil {
-		return fmt.Errorf("could not estimate the gas required to voteCancelReduction the minipool: %w", err)
+		return fmt.Errorf("could not estimate the gas required to scrub the minipool: %w", err)
 	}
 
 	// Print the gas info
@@ -343,7 +309,7 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Cancel the reduction
-	hash, err := mp.VoteCancelReduction(opts)
+	hash, err := mp.VoteScrub(opts)
 	if err != nil {
 		return err
 	}
@@ -355,22 +321,22 @@ func (t *cancelBondReductions) cancelBondReduction(address common.Address, reaso
 	}
 
 	// Log
-	t.log.Printlnf("Successfully voted to cancel the bond reduction of minipool %s.", mp.Address.Hex())
+	t.log.Printlnf("Successfully voted to scrub minipool %s.", mp.Address.Hex())
 
 	// Return
 	return nil
 
 }
 
-func (t *cancelBondReductions) handleError(err error) {
+func (t *checkSoloMigrations) handleError(err error) {
 	t.errLog.Println(err)
-	t.errLog.Println("*** Bond reduction cancel check failed. ***")
+	t.errLog.Println("*** Solo migration check failed. ***")
 	t.lock.Lock()
 	t.isRunning = false
 	t.lock.Unlock()
 }
 
 // Print a message from the tree generation goroutine
-func (t *cancelBondReductions) printMessage(message string) {
+func (t *checkSoloMigrations) printMessage(message string) {
 	t.log.Printlnf("%s %s", t.generationPrefix, message)
 }
