@@ -85,7 +85,32 @@ func getActiveDAOProposals(c *cli.Context) error {
 					if proposalVote.Voter == proposalsResponse.AccountAddress {
 						voter = "YOU"
 					}
-					fmt.Printf("%s%s voted [%s] on this proposal\n%s", colorGreen, voter, proposal.Choices[proposalVote.Choice-1], colorReset)
+					votedChoices := ""
+					switch proposalVote.Choice.(type) {
+					case float64:
+						votedChoices = proposal.Choices[int(proposalVote.Choice.(float64))-1]
+					case []interface{}:
+						choicesArray := proposalVote.Choice.([]interface{})
+						for i := 0; i < len(choicesArray); i++ {
+							if votedChoices != "" {
+								votedChoices += ", "
+							}
+							votedChoices += proposal.Choices[int(choicesArray[i].(float64))]
+						}
+					case map[string]interface{}:
+						choice := proposalVote.Choice.(map[string]interface{})
+						for index, weight := range choice {
+							if votedChoices != "" {
+								votedChoices += ", "
+							}
+							votedChoices += fmt.Sprintf("%s: %.2f", proposal.Choices[int(choice[index].(float64))], weight)
+						}
+
+					default:
+						votedChoices = fmt.Sprintf("%v", proposalVote.Choice)
+					}
+
+					fmt.Printf("%s%s voted [%s] on this proposal\n%s", colorGreen, voter, votedChoices, colorReset)
 					voted = true
 				}
 			}
