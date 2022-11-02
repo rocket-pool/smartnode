@@ -88,23 +88,39 @@ func getActiveDAOProposals(c *cli.Context) error {
 					votedChoices := ""
 					switch proposalVote.Choice.(type) {
 					case float64:
-						votedChoices = proposal.Choices[int(proposalVote.Choice.(float64))-1]
+						choiceFloat := proposalVote.Choice.(float64)
+						choice := int(choiceFloat) - 1
+						if choice < len(proposal.Choices) && choice >= 0 {
+							votedChoices = proposal.Choices[choice]
+						} else {
+							votedChoices = fmt.Sprintf("Unknown (%d is out of bounds)", choice)
+						}
+
 					case []interface{}:
 						choicesArray := proposalVote.Choice.([]interface{})
+						choices := []string{}
 						for i := 0; i < len(choicesArray); i++ {
-							if votedChoices != "" {
-								votedChoices += ", "
+							choice := int(choicesArray[i].(float64))
+							if choice < len(proposal.Choices) && choice >= 0 {
+								choices = append(choices, proposal.Choices[choice])
+							} else {
+								choices = append(choices, fmt.Sprintf("Unknown (%d is out of bounds)", choice))
 							}
-							votedChoices += proposal.Choices[int(choicesArray[i].(float64))]
 						}
+						votedChoices = strings.Join(choices, ", ")
+
 					case map[string]interface{}:
-						choice := proposalVote.Choice.(map[string]interface{})
-						for index, weight := range choice {
-							if votedChoices != "" {
-								votedChoices += ", "
+						choiceMap := proposalVote.Choice.(map[string]interface{})
+						choices := []string{}
+						for index, weight := range choiceMap {
+							choice := int(choiceMap[index].(float64))
+							if choice < len(proposal.Choices) && choice >= 0 {
+								choices = append(choices, fmt.Sprintf("%s: %.2f", proposal.Choices[choice], weight))
+							} else {
+								choices = append(choices, fmt.Sprintf("Unknown (%d is out of bounds)", choice))
 							}
-							votedChoices += fmt.Sprintf("%s: %.2f", proposal.Choices[int(choice[index].(float64))], weight)
 						}
+						votedChoices = strings.Join(choices, ", ")
 
 					default:
 						votedChoices = fmt.Sprintf("%v", proposalVote.Choice)
