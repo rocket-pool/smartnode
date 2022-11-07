@@ -592,7 +592,7 @@ func (r *RewardsFile) calculateRplRewards() error {
 func (r *RewardsFile) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
-	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool")
+	smoothingPoolContract, err := r.rp.GetContract("rocketSmoothingPool", r.opts)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
@@ -1118,7 +1118,7 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 				}
 				for _, mpd := range minipoolDetails {
 					if mpd.Exists {
-						mp, err := minipool.NewMinipool(r.rp, mpd.Address)
+						mp, err := minipool.NewMinipool(r.rp, mpd.Address, r.opts)
 						if err != nil {
 							return fmt.Errorf("Error creating minipool wrapper for minipool %s on node %s: %w", mpd.Address.Hex(), nodeDetails.Address.Hex(), err)
 						}

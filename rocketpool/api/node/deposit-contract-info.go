@@ -34,7 +34,7 @@ func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, e
 	response.RPNetwork = uint64(config.Smartnode.GetChainID())
 
 	// Get the deposit contract address Rocket Pool will deposit to
-	rpDepositContract, err := rp.GetContract("casperDeposit")
+	rpDepositContract, err := rp.GetContract("casperDeposit", nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting Casper deposit contract: %w", err)
 	}

@@ -31,7 +31,7 @@ func canExitMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanEx
 	response := api.CanExitMinipoolResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -188,7 +188,7 @@ func canDistribute(c *cli.Context) (*api.NodeCanDistributeResponse, error) {
 	// Get gas estimates
 	wg.Go(func() error {
 		var err error
-		distributor, err := node.NewDistributor(rp, distributorAddress)
+		distributor, err := node.NewDistributor(rp, distributorAddress, nil)
 		if err != nil {
 			return err
 		}
@@ -244,7 +244,7 @@ func distribute(c *cli.Context) (*api.NodeDistributeResponse, error) {
 	}
 
 	// Create the distributor
-	distributor, err := node.NewDistributor(rp, distributorAddress)
+	distributor, err := node.NewDistributor(rp, distributorAddress, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -31,13 +31,13 @@ func canDelegateUpgrade(c *cli.Context, minipoolAddress common.Address) (*api.Ca
 	response := api.CanDelegateUpgradeResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get latest delegate address
-	latestDelegateAddress, err := rp.GetAddress("rocketMinipoolDelegate")
+	latestDelegateAddress, err := rp.GetAddress("rocketMinipoolDelegate", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func delegateUpgrade(c *cli.Context, minipoolAddress common.Address) (*api.Deleg
 	response := api.DelegateUpgradeResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func canDelegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.C
 	response := api.CanDelegateRollbackResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func delegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.Dele
 	response := api.DelegateRollbackResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func canSetUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, set
 	response := api.CanSetUseLatestDelegateResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, settin
 	response := api.SetUseLatestDelegateResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +301,7 @@ func getUseLatestDelegate(c *cli.Context, minipoolAddress common.Address) (*api.
 	response := api.GetUseLatestDelegateResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ func getDelegate(c *cli.Context, minipoolAddress common.Address) (*api.GetDelega
 	response := api.GetDelegateResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +365,7 @@ func getPreviousDelegate(c *cli.Context, minipoolAddress common.Address) (*api.G
 	response := api.GetPreviousDelegateResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +397,7 @@ func getEffectiveDelegate(c *cli.Context, minipoolAddress common.Address) (*api.
 	response := api.GetEffectiveDelegateResponse{}
 
 	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress)
+	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
