@@ -12,7 +12,7 @@ import (
 
 // Check if the given node has already claimed rewards for the given interval
 func IsClaimed(rp *rocketpool.RocketPool, index *big.Int, claimerAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
+	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -25,7 +25,7 @@ func IsClaimed(rp *rocketpool.RocketPool, index *big.Int, claimerAddress common.
 
 // Get the Merkle root for an interval
 func MerkleRoots(rp *rocketpool.RocketPool, interval *big.Int, opts *bind.CallOpts) ([]byte, error) {
-	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
+	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func MerkleRoots(rp *rocketpool.RocketPool, interval *big.Int, opts *bind.CallOp
 
 // Estimate claim rewards gas
 func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
+	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -47,7 +47,7 @@ func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, indices
 
 // Claim rewards
 func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
+	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -60,7 +60,7 @@ func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int
 
 // Estimate claim and restake rewards gas
 func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, stakeAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
+	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -69,7 +69,7 @@ func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address,
 
 // Claim and restake rewards
 func ClaimAndStake(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, stakeAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp)
+	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -83,8 +83,8 @@ func ClaimAndStake(rp *rocketpool.RocketPool, address common.Address, indices []
 // Get contracts
 var rocketDistributorMainnetLock sync.Mutex
 
-func getRocketDistributorMainnet(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketDistributorMainnet(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDistributorMainnetLock.Lock()
 	defer rocketDistributorMainnetLock.Unlock()
-	return rp.GetContract("rocketMerkleDistributorMainnet")
+	return rp.GetContract("rocketMerkleDistributorMainnet", opts)
 }

@@ -12,7 +12,7 @@ import (
 
 // Estimate the gas of Join
 func EstimateJoinGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -22,7 +22,7 @@ func EstimateJoinGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocket
 // Join the trusted node DAO
 // Requires an executed invite proposal
 func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -35,7 +35,7 @@ func Join(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, erro
 
 // Estimate the gas of Leave
 func EstimateLeaveGas(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -45,7 +45,7 @@ func EstimateLeaveGas(rp *rocketpool.RocketPool, rplBondRefundAddress common.Add
 // Leave the trusted node DAO
 // Requires an executed leave proposal
 func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -58,7 +58,7 @@ func Leave(rp *rocketpool.RocketPool, rplBondRefundAddress common.Address, opts 
 
 // Estimate the gas of MakeChallenge
 func EstimateMakeChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -67,7 +67,7 @@ func EstimateMakeChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Ad
 
 // Make a challenge against a node
 func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -80,7 +80,7 @@ func MakeChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts
 
 // Estimate the gas of DecideChallenge
 func EstimateDecideChallengeGas(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -89,7 +89,7 @@ func EstimateDecideChallengeGas(rp *rocketpool.RocketPool, memberAddress common.
 
 // Decide a challenge against a node
 func DecideChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp)
+	rocketDAONodeTrustedActions, err := getRocketDAONodeTrustedActions(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -103,8 +103,8 @@ func DecideChallenge(rp *rocketpool.RocketPool, memberAddress common.Address, op
 // Get contracts
 var rocketDAONodeTrustedActionsLock sync.Mutex
 
-func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDAONodeTrustedActionsLock.Lock()
 	defer rocketDAONodeTrustedActionsLock.Unlock()
-	return rp.GetContract("rocketDAONodeTrustedActions")
+	return rp.GetContract("rocketDAONodeTrustedActions", opts)
 }

@@ -123,7 +123,7 @@ func GetQueueCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (QueueCapa
 
 // Get the total length of the minipool queue
 func GetQueueTotalLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -136,7 +136,7 @@ func GetQueueTotalLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 
 // Get the length of a single minipool queue
 func GetQueueLength(rp *rocketpool.RocketPool, depositType rptypes.MinipoolDeposit, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -149,7 +149,7 @@ func GetQueueLength(rp *rocketpool.RocketPool, depositType rptypes.MinipoolDepos
 
 // Get the total capacity of the minipool queue
 func GetQueueTotalCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func GetQueueTotalCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 
 // Get the total effective capacity of the minipool queue (used in node demand calculation)
 func GetQueueEffectiveCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func GetQueueEffectiveCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 
 // Get the capacity of the next minipool in the queue
 func GetQueueNextCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp)
+	rocketMinipoolQueue, err := getRocketMinipoolQueue(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +272,7 @@ func GetQueueMinipoolAtPosition(rp *rocketpool.RocketPool, position uint64, opts
 		if err != nil {
 			return nil, fmt.Errorf("Could not get address in queue at position %d: %w", position, err)
 		}
-		return NewMinipool(rp, address)
+		return NewMinipool(rp, address, opts)
 	}
 
 	if position < lengths.HalfDeposit {
@@ -289,8 +289,8 @@ func GetQueueMinipoolAtPosition(rp *rocketpool.RocketPool, position uint64, opts
 // Get contracts
 var rocketMinipoolQueueLock sync.Mutex
 
-func getRocketMinipoolQueue(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketMinipoolQueue(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketMinipoolQueueLock.Lock()
 	defer rocketMinipoolQueueLock.Unlock()
-	return rp.GetContract("rocketMinipoolQueue")
+	return rp.GetContract("rocketMinipoolQueue", opts)
 }

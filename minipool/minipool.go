@@ -139,7 +139,7 @@ func GetMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]com
 // Get the addresses of all minipools in prelaunch status
 func GetPrelaunchMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.Address, error) {
 
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return []common.Address{}, err
 	}
@@ -296,7 +296,7 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 
 // Get the minipool count
 func GetMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -309,7 +309,7 @@ func GetMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 
 // Get the number of finalised minipools in the network
 func GetFinalisedMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -322,7 +322,7 @@ func GetFinalisedMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 
 // Get the number of active minipools in the network
 func GetActiveMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -335,7 +335,7 @@ func GetActiveMinipoolCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uin
 
 // Get the minipool count by status
 func GetMinipoolCountPerStatus(rp *rocketpool.RocketPool, opts *bind.CallOpts) (MinipoolCountsPerStatus, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return MinipoolCountsPerStatus{}, err
 	}
@@ -385,7 +385,7 @@ func GetMinipoolCountPerStatus(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 
 // Get a minipool address by index
 func GetMinipoolAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (common.Address, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -398,7 +398,7 @@ func GetMinipoolAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts)
 
 // Get a node's minipool count
 func GetNodeMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -411,7 +411,7 @@ func GetNodeMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address,
 
 // Get the number of minipools owned by a node that are not finalised
 func GetNodeActiveMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -424,7 +424,7 @@ func GetNodeActiveMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Ad
 
 // Get the number of minipools owned by a node that are finalised
 func GetNodeFinalisedMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -437,7 +437,7 @@ func GetNodeFinalisedMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common
 
 // Get a node's minipool address by index
 func GetNodeMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.Address, index uint64, opts *bind.CallOpts) (common.Address, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -450,7 +450,7 @@ func GetNodeMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.Address, in
 
 // Get a node's validating minipool count
 func GetNodeValidatingMinipoolCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -463,7 +463,7 @@ func GetNodeValidatingMinipoolCount(rp *rocketpool.RocketPool, nodeAddress commo
 
 // Get a node's validating minipool address by index
 func GetNodeValidatingMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.Address, index uint64, opts *bind.CallOpts) (common.Address, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -476,7 +476,7 @@ func GetNodeValidatingMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.A
 
 // Get a minipool address by validator pubkey
 func GetMinipoolByPubkey(rp *rocketpool.RocketPool, pubkey rptypes.ValidatorPubkey, opts *bind.CallOpts) (common.Address, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -489,7 +489,7 @@ func GetMinipoolByPubkey(rp *rocketpool.RocketPool, pubkey rptypes.ValidatorPubk
 
 // Check whether a minipool exists
 func GetMinipoolExists(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -502,7 +502,7 @@ func GetMinipoolExists(rp *rocketpool.RocketPool, minipoolAddress common.Address
 
 // Get a minipool's validator pubkey
 func GetMinipoolPubkey(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (rptypes.ValidatorPubkey, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return rptypes.ValidatorPubkey{}, err
 	}
@@ -515,7 +515,7 @@ func GetMinipoolPubkey(rp *rocketpool.RocketPool, minipoolAddress common.Address
 
 // Get the 0x01-based Beacon Chain withdrawal credentials for a given minipool
 func GetMinipoolWithdrawalCredentials(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (common.Hash, error) {
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -539,8 +539,8 @@ func GetMinipoolPenaltyCount(rp *rocketpool.RocketPool, minipoolAddress common.A
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
 
-func getRocketMinipoolManager(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketMinipoolManager(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketMinipoolManagerLock.Lock()
 	defer rocketMinipoolManagerLock.Unlock()
-	return rp.GetContract("rocketMinipoolManager")
+	return rp.GetContract("rocketMinipoolManager", opts)
 }

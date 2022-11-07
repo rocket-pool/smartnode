@@ -13,7 +13,7 @@ import (
 
 // Get the deposit pool balance
 func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketDepositPool, err := getRocketDepositPool(rp)
+	rocketDepositPool, err := getRocketDepositPool(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error
 
 // Get the excess deposit pool balance
 func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketDepositPool, err := getRocketDepositPool(rp)
+	rocketDepositPool, err := getRocketDepositPool(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 
 // Estimate the gas of Deposit
 func EstimateDepositGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDepositPool, err := getRocketDepositPool(rp)
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -48,7 +48,7 @@ func EstimateDepositGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (roc
 
 // Make a deposit
 func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDepositPool, err := getRocketDepositPool(rp)
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -61,7 +61,7 @@ func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, e
 
 // Estimate the gas of AssignDeposits
 func EstimateAssignDepositsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDepositPool, err := getRocketDepositPool(rp)
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -70,7 +70,7 @@ func EstimateAssignDepositsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpt
 
 // Assign deposits
 func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDepositPool, err := getRocketDepositPool(rp)
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -84,8 +84,8 @@ func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.
 // Get contracts
 var rocketDepositPoolLock sync.Mutex
 
-func getRocketDepositPool(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketDepositPool(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDepositPoolLock.Lock()
 	defer rocketDepositPoolLock.Unlock()
-	return rp.GetContract("rocketDepositPool")
+	return rp.GetContract("rocketDepositPool", opts)
 }

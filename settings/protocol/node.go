@@ -18,7 +18,7 @@ const NodeSettingsContractName = "rocketDAOProtocolSettingsNode"
 
 // Node registrations currently enabled
 func GetNodeRegistrationEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	nodeSettingsContract, err := getNodeSettingsContract(rp)
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -34,7 +34,7 @@ func BootstrapNodeRegistrationEnabled(rp *rocketpool.RocketPool, value bool, opt
 
 // Node deposits currently enabled
 func GetNodeDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	nodeSettingsContract, err := getNodeSettingsContract(rp)
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -50,7 +50,7 @@ func BootstrapNodeDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bi
 
 // The minimum RPL stake per minipool as a fraction of assigned user ETH
 func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	nodeSettingsContract, err := getNodeSettingsContract(rp)
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -66,7 +66,7 @@ func BootstrapMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, 
 
 // The maximum RPL stake per minipool as a fraction of assigned user ETH
 func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	nodeSettingsContract, err := getNodeSettingsContract(rp)
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -83,8 +83,8 @@ func BootstrapMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value float64, 
 // Get contracts
 var nodeSettingsContractLock sync.Mutex
 
-func getNodeSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getNodeSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	nodeSettingsContractLock.Lock()
 	defer nodeSettingsContractLock.Unlock()
-	return rp.GetContract(NodeSettingsContractName)
+	return rp.GetContract(NodeSettingsContractName, opts)
 }

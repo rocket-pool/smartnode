@@ -18,7 +18,7 @@ const NetworkSettingsContractName = "rocketDAOProtocolSettingsNetwork"
 
 // The threshold of trusted nodes that must reach consensus on oracle data to commit it
 func GetNodeConsensusThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -34,7 +34,7 @@ func BootstrapNodeConsensusThreshold(rp *rocketpool.RocketPool, value float64, o
 
 // Network balance submissions currently enabled
 func GetSubmitBalancesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -50,7 +50,7 @@ func BootstrapSubmitBalancesEnabled(rp *rocketpool.RocketPool, value bool, opts 
 
 // The frequency in blocks at which network balances should be submitted by trusted nodes
 func GetSubmitBalancesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -66,7 +66,7 @@ func BootstrapSubmitBalancesFrequency(rp *rocketpool.RocketPool, value uint64, o
 
 // Network price submissions currently enabled
 func GetSubmitPricesEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -82,7 +82,7 @@ func BootstrapSubmitPricesEnabled(rp *rocketpool.RocketPool, value bool, opts *b
 
 // The frequency in blocks at which network prices should be submitted by trusted nodes
 func GetSubmitPricesFrequency(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -98,7 +98,7 @@ func BootstrapSubmitPricesFrequency(rp *rocketpool.RocketPool, value uint64, opt
 
 // Minimum node commission rate
 func GetMinimumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -114,7 +114,7 @@ func BootstrapMinimumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bin
 
 // Target node commission rate
 func GetTargetNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -130,7 +130,7 @@ func BootstrapTargetNodeFee(rp *rocketpool.RocketPool, value float64, opts *bind
 
 // Maximum node commission rate
 func GetMaximumNodeFee(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -146,7 +146,7 @@ func BootstrapMaximumNodeFee(rp *rocketpool.RocketPool, value float64, opts *bin
 
 // The range of node demand values to base fee calculations on
 func GetNodeFeeDemandRange(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func BootstrapNodeFeeDemandRange(rp *rocketpool.RocketPool, value *big.Int, opts
 
 // The target collateralization rate for the rETH contract as a fraction
 func GetTargetRethCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	networkSettingsContract, err := getNetworkSettingsContract(rp)
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -179,8 +179,8 @@ func BootstrapTargetRethCollateralRate(rp *rocketpool.RocketPool, value float64,
 // Get contracts
 var networkSettingsContractLock sync.Mutex
 
-func getNetworkSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getNetworkSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	networkSettingsContractLock.Lock()
 	defer networkSettingsContractLock.Unlock()
-	return rp.GetContract(NetworkSettingsContractName)
+	return rp.GetContract(NetworkSettingsContractName, opts)
 }

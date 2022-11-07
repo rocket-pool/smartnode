@@ -18,10 +18,10 @@ type Distributor struct {
 }
 
 // Create new distributor contract
-func NewDistributor(rp *rocketpool.RocketPool, address common.Address) (*Distributor, error) {
+func NewDistributor(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (*Distributor, error) {
 
 	// Get contract
-	contract, err := getDistributorContract(rp, address)
+	contract, err := getDistributorContract(rp, address, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func NewDistributor(rp *rocketpool.RocketPool, address common.Address) (*Distrib
 
 // Gets the deterministic address for a node's reward distributor contract
 func GetDistributorAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
-	rocketNodeDistributorFactory, err := getRocketNodeDistributorFactory(rp)
+	rocketNodeDistributorFactory, err := getRocketNodeDistributorFactory(rp, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -64,17 +64,17 @@ func (d *Distributor) Distribute(opts *bind.TransactOpts) (common.Hash, error) {
 // Get contracts
 var rocketNodeDistributorFactoryLock sync.Mutex
 
-func getRocketNodeDistributorFactory(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketNodeDistributorFactory(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNodeDistributorFactoryLock.Lock()
 	defer rocketNodeDistributorFactoryLock.Unlock()
-	return rp.GetContract("rocketNodeDistributorFactory")
+	return rp.GetContract("rocketNodeDistributorFactory", opts)
 }
 
 // Get a distributor contract
 var rocketDistributorLock sync.Mutex
 
-func getDistributorContract(rp *rocketpool.RocketPool, distributorAddress common.Address) (*rocketpool.Contract, error) {
+func getDistributorContract(rp *rocketpool.RocketPool, distributorAddress common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDistributorLock.Lock()
 	defer rocketDistributorLock.Unlock()
-	return rp.MakeContract("rocketNodeDistributorDelegate", distributorAddress)
+	return rp.MakeContract("rocketNodeDistributorDelegate", distributorAddress, opts)
 }

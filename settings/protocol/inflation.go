@@ -18,7 +18,7 @@ const InflationSettingsContractName = "rocketDAOProtocolSettingsInflation"
 
 // RPL inflation rate per interval
 func GetInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	inflationSettingsContract, err := getInflationSettingsContract(rp)
+	inflationSettingsContract, err := getInflationSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -34,7 +34,7 @@ func BootstrapInflationIntervalRate(rp *rocketpool.RocketPool, value float64, op
 
 // RPL inflation start time
 func GetInflationStartTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	inflationSettingsContract, err := getInflationSettingsContract(rp)
+	inflationSettingsContract, err := getInflationSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -51,8 +51,8 @@ func BootstrapInflationStartTime(rp *rocketpool.RocketPool, value uint64, opts *
 // Get contracts
 var inflationSettingsContractLock sync.Mutex
 
-func getInflationSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getInflationSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	inflationSettingsContractLock.Lock()
 	defer inflationSettingsContractLock.Unlock()
-	return rp.GetContract(InflationSettingsContractName)
+	return rp.GetContract(InflationSettingsContractName, opts)
 }

@@ -13,7 +13,7 @@ import (
 
 // Get the total RPL staked in the network
 func GetTotalRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func GetTotalRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 
 // Get the effective RPL staked in the network
 func GetTotalEffectiveRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func GetTotalEffectiveRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 
 // Get a node's RPL stake
 func GetNodeRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func GetNodeRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 
 // Get a node's effective RPL stake
 func GetNodeEffectiveRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func GetNodeEffectiveRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addr
 
 // Get a node's minimum RPL stake to collateralize their minipools
 func GetNodeMinimumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func GetNodeMinimumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addres
 
 // Get a node's maximum RPL stake to collateralize their minipools
 func GetNodeMaximumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func GetNodeMaximumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addres
 
 // Get the time a node last staked RPL
 func GetNodeRPLStakedTime(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -116,7 +116,7 @@ func GetNodeRPLStakedTime(rp *rocketpool.RocketPool, nodeAddress common.Address,
 
 // Get a node's minipool limit based on RPL stake
 func GetNodeMinipoolLimit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -129,7 +129,7 @@ func GetNodeMinipoolLimit(rp *rocketpool.RocketPool, nodeAddress common.Address,
 
 // Estimate the gas of Stake
 func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -138,7 +138,7 @@ func EstimateStakeGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.
 
 // Stake RPL
 func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -151,7 +151,7 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 
 // Estimate the gas of WithdrawRPL
 func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -160,7 +160,7 @@ func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts 
 
 // Withdraw staked RPL
 func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -173,7 +173,7 @@ func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Trans
 
 // Calculate total effective RPL stake
 func CalculateTotalEffectiveRPLStake(rp *rocketpool.RocketPool, offset, limit, rplPrice *big.Int, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp)
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -187,8 +187,8 @@ func CalculateTotalEffectiveRPLStake(rp *rocketpool.RocketPool, offset, limit, r
 // Get contracts
 var rocketNodeStakingLock sync.Mutex
 
-func getRocketNodeStaking(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketNodeStaking(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketNodeStakingLock.Lock()
 	defer rocketNodeStakingLock.Unlock()
-	return rp.GetContract("rocketNodeStaking")
+	return rp.GetContract("rocketNodeStaking", opts)
 }

@@ -40,7 +40,7 @@ type DepositData struct {
 func GetDeposits(rp *rocketpool.RocketPool, pubkeys map[rptypes.ValidatorPubkey]bool, startBlock *big.Int, intervalSize *big.Int, opts *bind.CallOpts) (map[rptypes.ValidatorPubkey][]DepositData, error) {
 
 	// Get the deposit contract wrapper
-	casperDeposit, err := getCasperDeposit(rp)
+	casperDeposit, err := getCasperDeposit(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -116,8 +116,8 @@ func sortDepositData(data []DepositData) {
 // Get contracts
 var casperDepositLock sync.Mutex
 
-func getCasperDeposit(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getCasperDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	casperDepositLock.Lock()
 	defer casperDepositLock.Unlock()
-	return rp.GetContract("casperDeposit")
+	return rp.GetContract("casperDeposit", opts)
 }

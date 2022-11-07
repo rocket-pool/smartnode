@@ -17,7 +17,7 @@ const DepositSettingsContractName = "rocketDAOProtocolSettingsDeposit"
 
 // Deposits currently enabled
 func GetDepositEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	depositSettingsContract, err := getDepositSettingsContract(rp)
+	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -33,7 +33,7 @@ func BootstrapDepositEnabled(rp *rocketpool.RocketPool, value bool, opts *bind.T
 
 // Deposit assignments currently enabled
 func GetAssignDepositsEnabled(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
-	depositSettingsContract, err := getDepositSettingsContract(rp)
+	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
 		return false, err
 	}
@@ -49,7 +49,7 @@ func BootstrapAssignDepositsEnabled(rp *rocketpool.RocketPool, value bool, opts 
 
 // Minimum deposit amount
 func GetMinimumDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	depositSettingsContract, err := getDepositSettingsContract(rp)
+	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func BootstrapMinimumDeposit(rp *rocketpool.RocketPool, value *big.Int, opts *bi
 
 // Maximum deposit pool size
 func GetMaximumDepositPoolSize(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	depositSettingsContract, err := getDepositSettingsContract(rp)
+	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func BootstrapMaximumDepositPoolSize(rp *rocketpool.RocketPool, value *big.Int, 
 
 // Maximum deposit assignments per transaction
 func GetMaximumDepositAssignments(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	depositSettingsContract, err := getDepositSettingsContract(rp)
+	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -98,8 +98,8 @@ func BootstrapMaximumDepositAssignments(rp *rocketpool.RocketPool, value uint64,
 // Get contracts
 var depositSettingsContractLock sync.Mutex
 
-func getDepositSettingsContract(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getDepositSettingsContract(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	depositSettingsContractLock.Lock()
 	defer depositSettingsContractLock.Unlock()
-	return rp.GetContract(DepositSettingsContractName)
+	return rp.GetContract(DepositSettingsContractName, opts)
 }

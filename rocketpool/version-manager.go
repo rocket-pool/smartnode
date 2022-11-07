@@ -15,7 +15,7 @@ type LegacyVersionWrapper interface {
 	GetVersion() *version.Version
 	GetVersionedContractName(contractName string) (string, bool)
 	GetEncodedABI(contractName string) string
-	GetContract(contractName string) (*Contract, error)
+	GetContract(contractName string, opts *bind.CallOpts) (*Contract, error)
 	GetContractWithAddress(contractName string, address common.Address) (*Contract, error)
 }
 
@@ -35,12 +35,12 @@ func NewVersionManager(rp *RocketPool) *VersionManager {
 }
 
 // Get the contract with the provided name and version wrapper
-func getLegacyContract(rp *RocketPool, contractName string, m LegacyVersionWrapper) (*Contract, error) {
+func getLegacyContract(rp *RocketPool, contractName string, m LegacyVersionWrapper, opts *bind.CallOpts) (*Contract, error) {
 
 	legacyName, exists := m.GetVersionedContractName(contractName)
 	if !exists {
 		// This wasn't upgraded in previous versions
-		return rp.GetContract(contractName)
+		return rp.GetContract(contractName, opts)
 	}
 
 	// Check for cached contract
@@ -61,7 +61,7 @@ func getLegacyContract(rp *RocketPool, contractName string, m LegacyVersionWrapp
 
 	if address == emptyAddress {
 		// Not found, so the legacy contract is still on the network - try loading the original contract name instead
-		return rp.GetContract(contractName)
+		return rp.GetContract(contractName, opts)
 	}
 
 	// If we're here, we have a legacy contract

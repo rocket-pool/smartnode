@@ -15,7 +15,7 @@ import (
 
 // Estimate the gas of ProposeInviteMember
 func EstimateProposeInviteMemberGas(rp *rocketpool.RocketPool, message string, newMemberAddress common.Address, newMemberId, newMemberUrl string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -29,7 +29,7 @@ func EstimateProposeInviteMemberGas(rp *rocketpool.RocketPool, message string, n
 
 // Submit a proposal to invite a new member to the trusted node DAO
 func ProposeInviteMember(rp *rocketpool.RocketPool, message string, newMemberAddress common.Address, newMemberId, newMemberUrl string, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
@@ -43,7 +43,7 @@ func ProposeInviteMember(rp *rocketpool.RocketPool, message string, newMemberAdd
 
 // Estimate the gas of ProposeMemberLeave
 func EstimateProposeMemberLeaveGas(rp *rocketpool.RocketPool, message string, memberAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -56,7 +56,7 @@ func EstimateProposeMemberLeaveGas(rp *rocketpool.RocketPool, message string, me
 
 // Submit a proposal for a member to leave the trusted node DAO
 func ProposeMemberLeave(rp *rocketpool.RocketPool, message string, memberAddress common.Address, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
@@ -69,7 +69,7 @@ func ProposeMemberLeave(rp *rocketpool.RocketPool, message string, memberAddress
 
 // Estimate the gas of ProposeReplaceMember
 func EstimateProposeReplaceMemberGas(rp *rocketpool.RocketPool, message string, memberAddress, newMemberAddress common.Address, newMemberId, newMemberUrl string, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -83,7 +83,7 @@ func EstimateProposeReplaceMemberGas(rp *rocketpool.RocketPool, message string, 
 
 // Submit a proposal to replace a member in the trusted node DAO
 func ProposeReplaceMember(rp *rocketpool.RocketPool, message string, memberAddress, newMemberAddress common.Address, newMemberId, newMemberUrl string, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
@@ -97,7 +97,7 @@ func ProposeReplaceMember(rp *rocketpool.RocketPool, message string, memberAddre
 
 // Estimate the gas of ProposeKickMember
 func EstimateProposeKickMemberGas(rp *rocketpool.RocketPool, message string, memberAddress common.Address, rplFineAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -110,7 +110,7 @@ func EstimateProposeKickMemberGas(rp *rocketpool.RocketPool, message string, mem
 
 // Submit a proposal to kick a member from the trusted node DAO
 func ProposeKickMember(rp *rocketpool.RocketPool, message string, memberAddress common.Address, rplFineAmount *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
@@ -123,7 +123,7 @@ func ProposeKickMember(rp *rocketpool.RocketPool, message string, memberAddress 
 
 // Estimate the gas of ProposeSetBool
 func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -136,7 +136,7 @@ func EstimateProposeSetBoolGas(rp *rocketpool.RocketPool, message, contractName,
 
 // Submit a proposal to update a bool trusted node DAO setting
 func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPath string, value bool, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
@@ -149,7 +149,7 @@ func ProposeSetBool(rp *rocketpool.RocketPool, message, contractName, settingPat
 
 // Estimate the gas of ProposeSetUint
 func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -162,7 +162,7 @@ func EstimateProposeSetUintGas(rp *rocketpool.RocketPool, message, contractName,
 
 // Submit a proposal to update a uint trusted node DAO setting
 func ProposeSetUint(rp *rocketpool.RocketPool, message, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
@@ -179,7 +179,7 @@ func EstimateProposeUpgradeContractGas(rp *rocketpool.RocketPool, message, upgra
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -196,7 +196,7 @@ func ProposeUpgradeContract(rp *rocketpool.RocketPool, message, upgradeType, con
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
@@ -209,7 +209,7 @@ func ProposeUpgradeContract(rp *rocketpool.RocketPool, message, upgradeType, con
 
 // Estimate the gas of a proposal submission
 func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -219,7 +219,7 @@ func EstimateProposalGas(rp *rocketpool.RocketPool, message string, payload []by
 // Submit a trusted node DAO proposal
 // Returns the ID of the new proposal
 func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return 0, common.Hash{}, err
 	}
@@ -236,7 +236,7 @@ func SubmitProposal(rp *rocketpool.RocketPool, message string, payload []byte, o
 
 // Estimate the gas of CancelProposal
 func EstimateCancelProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -245,7 +245,7 @@ func EstimateCancelProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opt
 
 // Cancel a submitted proposal
 func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -258,7 +258,7 @@ func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tra
 
 // Estimate the gas of VoteOnProposal
 func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, support bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -267,7 +267,7 @@ func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, sup
 
 // Vote on a submitted proposal
 func VoteOnProposal(rp *rocketpool.RocketPool, proposalId uint64, support bool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -280,7 +280,7 @@ func VoteOnProposal(rp *rocketpool.RocketPool, proposalId uint64, support bool, 
 
 // Estimate the gas of ExecuteProposal
 func EstimateExecuteProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -289,7 +289,7 @@ func EstimateExecuteProposalGas(rp *rocketpool.RocketPool, proposalId uint64, op
 
 // Execute a submitted proposal
 func ExecuteProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp)
+	rocketDAONodeTrustedProposals, err := getRocketDAONodeTrustedProposals(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -303,8 +303,8 @@ func ExecuteProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tr
 // Get contracts
 var rocketDAONodeTrustedProposalsLock sync.Mutex
 
-func getRocketDAONodeTrustedProposals(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketDAONodeTrustedProposals(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketDAONodeTrustedProposalsLock.Lock()
 	defer rocketDAONodeTrustedProposalsLock.Unlock()
-	return rp.GetContract("rocketDAONodeTrustedProposals")
+	return rp.GetContract("rocketDAONodeTrustedProposals", opts)
 }

@@ -69,10 +69,10 @@ type Minipool struct {
 }
 
 // Create new minipool contract
-func NewMinipool(rp *rocketpool.RocketPool, address common.Address) (*Minipool, error) {
+func NewMinipool(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (*Minipool, error) {
 
 	// Get contract
-	contract, err := getMinipoolContract(rp, address)
+	contract, err := getMinipoolContract(rp, address, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -606,8 +606,8 @@ func (mp *Minipool) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOpts)
 // Get a minipool contract
 var rocketMinipoolLock sync.Mutex
 
-func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Address) (*rocketpool.Contract, error) {
+func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketMinipoolLock.Lock()
 	defer rocketMinipoolLock.Unlock()
-	return rp.MakeContract("rocketMinipool", minipoolAddress)
+	return rp.MakeContract("rocketMinipool", minipoolAddress, opts)
 }

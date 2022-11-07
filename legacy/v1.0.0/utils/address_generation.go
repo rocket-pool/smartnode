@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/legacy/v1.0.0/minipool"
@@ -23,14 +24,14 @@ func GetNodeSalt(nodeAddress common.Address, salt *big.Int) common.Hash {
 
 // Precompute the address of a minipool based on the node wallet, deposit type, and unique salt
 // If you set minipoolBytecode to nil, this will retrieve it from the contracts using minipool.GetMinipoolBytecode().
-func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte, legacyRocketMinipoolManagerAddress *common.Address) (common.Address, error) {
+func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depositType rptypes.MinipoolDeposit, salt *big.Int, minipoolBytecode []byte, legacyRocketMinipoolManagerAddress *common.Address, opts *bind.CallOpts) (common.Address, error) {
 
 	// Get dependencies
-	rocketMinipoolManager, err := getRocketMinipoolManager(rp, legacyRocketMinipoolManagerAddress)
+	rocketMinipoolManager, err := getRocketMinipoolManager(rp, legacyRocketMinipoolManagerAddress, opts)
 	if err != nil {
 		return common.Address{}, err
 	}
-	minipoolAbi, err := rp.GetABI("rocketMinipool")
+	minipoolAbi, err := rp.GetABI("rocketMinipool", nil)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -63,11 +64,11 @@ func GenerateAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, depo
 // Get contracts
 var rocketMinipoolManagerLock sync.Mutex
 
-func getRocketMinipoolManager(rp *rocketpool.RocketPool, address *common.Address) (*rocketpool.Contract, error) {
+func getRocketMinipoolManager(rp *rocketpool.RocketPool, address *common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketMinipoolManagerLock.Lock()
 	defer rocketMinipoolManagerLock.Unlock()
 	if address == nil {
-		return rp.VersionManager.V1_0_0.GetContract("rocketMinipoolManager")
+		return rp.VersionManager.V1_0_0.GetContract("rocketMinipoolManager", opts)
 	} else {
 		return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketMinipoolManager", *address)
 	}

@@ -18,7 +18,7 @@ import (
 
 // Get rETH total supply
 func GetRETHTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func GetRETHTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.In
 
 // Get rETH balance
 func GetRETHBalance(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func GetRETHBalance(rp *rocketpool.RocketPool, address common.Address, opts *bin
 
 // Get rETH allowance
 func GetRETHAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func GetRETHAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, 
 
 // Estimate the gas of TransferRETH
 func EstimateTransferRETHGas(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -54,7 +54,7 @@ func EstimateTransferRETHGas(rp *rocketpool.RocketPool, to common.Address, amoun
 
 // Transfer rETH
 func TransferRETH(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -63,7 +63,7 @@ func TransferRETH(rp *rocketpool.RocketPool, to common.Address, amount *big.Int,
 
 // Estimate the gas of ApproveRETH
 func EstimateApproveRETHGas(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -72,7 +72,7 @@ func EstimateApproveRETHGas(rp *rocketpool.RocketPool, spender common.Address, a
 
 // Approve a rETH spender
 func ApproveRETH(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -81,7 +81,7 @@ func ApproveRETH(rp *rocketpool.RocketPool, spender common.Address, amount *big.
 
 // Estimate the gas of TransferFromRETH
 func EstimateTransferFromRETHGas(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -90,7 +90,7 @@ func EstimateTransferFromRETHGas(rp *rocketpool.RocketPool, from, to common.Addr
 
 // Transfer rETH from a sender
 func TransferFromRETH(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -103,7 +103,7 @@ func TransferFromRETH(rp *rocketpool.RocketPool, from, to common.Address, amount
 
 // Get the rETH contract ETH balance
 func GetRETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func GetRETHContractETHBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 
 // Get the ETH value of an amount of rETH
 func GetETHValueOfRETH(rp *rocketpool.RocketPool, rethAmount *big.Int, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func GetETHValueOfRETH(rp *rocketpool.RocketPool, rethAmount *big.Int, opts *bin
 
 // Get the rETH value of an amount of ETH
 func GetRETHValueOfETH(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func GetRETHValueOfETH(rp *rocketpool.RocketPool, ethAmount *big.Int, opts *bind
 
 // Get the current ETH : rETH exchange rate
 func GetRETHExchangeRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -151,7 +151,7 @@ func GetRETHExchangeRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float6
 
 // Get the total amount of ETH collateral available for rETH trades
 func GetRETHTotalCollateral(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func GetRETHTotalCollateral(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*bi
 
 // Get the rETH collateralization rate
 func GetRETHCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -177,7 +177,7 @@ func GetRETHCollateralRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (floa
 
 // Estimate the gas of BurnRETH
 func EstimateBurnRETHGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -186,7 +186,7 @@ func EstimateBurnRETHGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.
 
 // Burn rETH for ETH
 func BurnRETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRETH, err := getRocketTokenRETH(rp)
+	rocketTokenRETH, err := getRocketTokenRETH(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -204,8 +204,8 @@ func BurnRETH(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpt
 // Get contracts
 var rocketTokenRETHLock sync.Mutex
 
-func getRocketTokenRETH(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketTokenRETH(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketTokenRETHLock.Lock()
 	defer rocketTokenRETHLock.Unlock()
-	return rp.GetContract("rocketTokenRETH")
+	return rp.GetContract("rocketTokenRETH", opts)
 }

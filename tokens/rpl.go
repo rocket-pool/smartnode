@@ -17,7 +17,7 @@ import (
 
 // Get RPL total supply
 func GetRPLTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func GetRPLTotalSupply(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int
 
 // Get RPL balance
 func GetRPLBalance(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func GetRPLBalance(rp *rocketpool.RocketPool, address common.Address, opts *bind
 
 // Get RPL allowance
 func GetRPLAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func GetRPLAllowance(rp *rocketpool.RocketPool, owner, spender common.Address, o
 
 // Estimate the gas of TransferRPL
 func EstimateTransferRPLGas(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -53,7 +53,7 @@ func EstimateTransferRPLGas(rp *rocketpool.RocketPool, to common.Address, amount
 
 // Transfer RPL
 func TransferRPL(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -62,7 +62,7 @@ func TransferRPL(rp *rocketpool.RocketPool, to common.Address, amount *big.Int, 
 
 // Estimate the gas of ApproveRPL
 func EstimateApproveRPLGas(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -71,7 +71,7 @@ func EstimateApproveRPLGas(rp *rocketpool.RocketPool, spender common.Address, am
 
 // Approve an RPL spender
 func ApproveRPL(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -80,7 +80,7 @@ func ApproveRPL(rp *rocketpool.RocketPool, spender common.Address, amount *big.I
 
 // Estimate the gas of TransferFromRPL
 func EstimateTransferFromRPLGas(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -89,7 +89,7 @@ func EstimateTransferFromRPLGas(rp *rocketpool.RocketPool, from, to common.Addre
 
 // Transfer RPL from a sender
 func TransferFromRPL(rp *rocketpool.RocketPool, from, to common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -102,7 +102,7 @@ func TransferFromRPL(rp *rocketpool.RocketPool, from, to common.Address, amount 
 
 // Estimate the gas of MintInflationRPL
 func EstimateMintInflationRPLGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -111,7 +111,7 @@ func EstimateMintInflationRPLGas(rp *rocketpool.RocketPool, opts *bind.TransactO
 
 // Mint new RPL tokens from inflation
 func MintInflationRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -124,7 +124,7 @@ func MintInflationRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 
 // Estimate the gas of SwapFixedSupplyRPLForRPL
 func EstimateSwapFixedSupplyRPLForRPLGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
@@ -133,7 +133,7 @@ func EstimateSwapFixedSupplyRPLForRPLGas(rp *rocketpool.RocketPool, amount *big.
 
 // Swap fixed-supply RPL for new RPL tokens
 func SwapFixedSupplyRPLForRPL(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -146,7 +146,7 @@ func SwapFixedSupplyRPLForRPL(rp *rocketpool.RocketPool, amount *big.Int, opts *
 
 // Get the RPL inflation interval rate
 func GetRPLInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketTokenRPL, err := getRocketTokenRPL(rp)
+	rocketTokenRPL, err := getRocketTokenRPL(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -164,8 +164,8 @@ func GetRPLInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 // Get contracts
 var rocketTokenRPLLock sync.Mutex
 
-func getRocketTokenRPL(rp *rocketpool.RocketPool) (*rocketpool.Contract, error) {
+func getRocketTokenRPL(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketTokenRPLLock.Lock()
 	defer rocketTokenRPLLock.Unlock()
-	return rp.GetContract("rocketTokenRPL")
+	return rp.GetContract("rocketTokenRPL", opts)
 }
