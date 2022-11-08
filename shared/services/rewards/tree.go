@@ -385,7 +385,7 @@ func (r *RewardsFile) calculateRplRewards() error {
 	totalNodeEffectiveStake := big.NewInt(0)
 	trueNodeEffectiveStakes := map[common.Address]*big.Int{}
 	intervalDurationBig := big.NewInt(int64(intervalDuration.Seconds()))
-	r.log.Println("%s Calculating true total collateral rewards (progress is reported every 100 nodes)")
+	r.log.Printlnf("%s Calculating true total collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
 	nodesDone := 0
 	startTime := time.Now()
 	nodeCount := len(r.nodeAddresses)
@@ -422,7 +422,7 @@ func (r *RewardsFile) calculateRplRewards() error {
 		nodesDone++
 	}
 
-	r.log.Println("%s Calculating individual collateral rewards (progress is reported every 100 nodes)")
+	r.log.Printlnf("%s Calculating individual collateral rewards (progress is reported every 100 nodes)", r.logPrefix)
 	nodesDone = 0
 	startTime = time.Now()
 	for i, address := range r.nodeAddresses {
@@ -1088,7 +1088,7 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 			iterationEndIndex = nodeCount
 		}
 
-		if nodeCount >= 100 {
+		if nodesDone >= 100 {
 			timeTaken := time.Since(startTime)
 			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, iterationStartIndex, nodeCount, float64(iterationStartIndex)/float64(nodeCount)*100.0, timeTaken)
 			nodesDone = 0
