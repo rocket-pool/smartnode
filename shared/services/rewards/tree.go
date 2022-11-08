@@ -29,7 +29,7 @@ import (
 
 // Settings
 const (
-	SmoothingPoolDetailsBatchSize uint64 = 20
+	SmoothingPoolDetailsBatchSize uint64 = 8
 	RewardsFileVersion            uint64 = 1
 )
 
@@ -379,13 +379,22 @@ func (r *RewardsFile) calculateRplRewards() error {
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
-	r.log.Printlnf("%s Total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
+	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
 
 	// Calculate the true effective stake of each node based on their participation in this interval
 	totalNodeEffectiveStake := big.NewInt(0)
 	trueNodeEffectiveStakes := map[common.Address]*big.Int{}
 	intervalDurationBig := big.NewInt(int64(intervalDuration.Seconds()))
-	for _, address := range r.nodeAddresses {
+	r.log.Println("%s Calculating true total collateral rewards (progress is reported every 100 nodes)")
+	nodesDone := 0
+	startTime := time.Now()
+	nodeCount := len(r.nodeAddresses)
+	for i, address := range r.nodeAddresses {
+		if nodesDone == 100 {
+			timeTaken := time.Since(startTime)
+			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
+			nodesDone = 0
+		}
 		// Get the node's effective stake
 		nodeStake, err := node.GetNodeEffectiveRPLStake(r.rp, address, r.opts)
 		if err != nil {
@@ -409,9 +418,20 @@ func (r *RewardsFile) calculateRplRewards() error {
 
 		// Add it to the total
 		totalNodeEffectiveStake.Add(totalNodeEffectiveStake, nodeStake)
+
+		nodesDone++
 	}
 
-	for _, address := range r.nodeAddresses {
+	r.log.Println("%s Calculating individual collateral rewards (progress is reported every 100 nodes)")
+	nodesDone = 0
+	startTime = time.Now()
+	for i, address := range r.nodeAddresses {
+		if nodesDone == 100 {
+			timeTaken := time.Since(startTime)
+			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, i, nodeCount, float64(i)/float64(nodeCount)*100.0, timeTaken)
+			nodesDone = 0
+		}
+
 		// Get how much RPL goes to this node: (true effective stake) * (total node rewards) / (total true effective stake)
 		nodeRplRewards := big.NewInt(0)
 		nodeRplRewards.Mul(trueNodeEffectiveStakes[address], totalNodeRewards)
@@ -457,6 +477,8 @@ func (r *RewardsFile) calculateRplRewards() error {
 			}
 			rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 		}
+
+		nodesDone++
 	}
 
 	// Sanity check to make sure we arrived at the correct total
@@ -1051,6 +1073,9 @@ func (r *RewardsFile) createMinipoolIndexMap() error {
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
 func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 
+	nodesDone := uint64(0)
+	startTime := time.Now()
+
 	// For each NO, get their opt-in status and time of last change in batches
 	nodeCount := uint64(len(r.nodeAddresses))
 	r.nodeDetails = make([]*NodeSmoothingDetails, nodeCount)
@@ -1061,6 +1086,12 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 		iterationEndIndex := batchStartIndex + SmoothingPoolDetailsBatchSize
 		if iterationEndIndex > nodeCount {
 			iterationEndIndex = nodeCount
+		}
+
+		if nodeCount >= 100 {
+			timeTaken := time.Since(startTime)
+			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, iterationStartIndex, nodeCount, float64(iterationStartIndex)/float64(nodeCount)*100.0, timeTaken)
+			nodesDone = 0
 		}
 
 		// Load details
@@ -1168,6 +1199,8 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 		if err := wg.Wait(); err != nil {
 			return err
 		}
+
+		nodesDone += SmoothingPoolDetailsBatchSize
 	}
 
 	return nil
