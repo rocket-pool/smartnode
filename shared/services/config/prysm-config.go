@@ -101,8 +101,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: getPrysmBnProdTag(),
 				config.Network_Prater:  getPrysmBnTestTag(),
-				config.Network_Kiln:    getPrysmBnTestTag(),
-				config.Network_Ropsten: getPrysmBnTestTag(),
+				config.Network_Devnet:  getPrysmBnTestTag(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG"},
@@ -118,8 +117,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: getPrysmVcProdTag(),
 				config.Network_Prater:  getPrysmVcTestTag(),
-				config.Network_Kiln:    getPrysmVcTestTag(),
-				config.Network_Ropsten: getPrysmVcTestTag(),
+				config.Network_Devnet:  getPrysmVcTestTag(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Validator},
 			EnvironmentVariables: []string{"VC_CONTAINER_TAG"},

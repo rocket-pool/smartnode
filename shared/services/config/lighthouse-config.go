@@ -58,8 +58,7 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: getLighthouseTagProd(),
 				config.Network_Prater:  getLighthouseTagTest(),
-				config.Network_Kiln:    getLighthouseTagTest(),
-				config.Network_Ropsten: getLighthouseTagTest(),
+				config.Network_Devnet:  getLighthouseTagTest(),
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			EnvironmentVariables: []string{"BN_CONTAINER_TAG", "VC_CONTAINER_TAG"},

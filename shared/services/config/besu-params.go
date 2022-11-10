@@ -102,8 +102,7 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: besuTagProd,
 				config.Network_Prater:  besuTagTest,
-				config.Network_Kiln:    besuTagTest,
-				config.Network_Ropsten: besuTagTest,
+				config.Network_Devnet:  besuTagTest,
 			},
 			AffectsContainers:    []config.ContainerID{config.ContainerID_Eth1},
 			EnvironmentVariables: []string{"EC_CONTAINER_TAG"},
