@@ -42,6 +42,7 @@ type ValidatorStatus struct {
 	Index                      uint64
 	WithdrawalCredentials      common.Hash
 	Balance                    uint64
+	Status                     ValidatorState
 	EffectiveBalance           uint64
 	Slashed                    bool
 	ActivationEligibilityEpoch uint64
@@ -92,6 +93,20 @@ const (
 
 	// Unknown / missing client type
 	Unknown
+)
+
+type ValidatorState string
+
+const (
+	ValidatorState_PendingInitialized ValidatorState = "pending_initialized"
+	ValidatorState_PendingQueued      ValidatorState = "pending_queued"
+	ValidatorState_ActiveOngoing      ValidatorState = "active_ongoing"
+	ValidatorState_ActiveExiting      ValidatorState = "active_exiting"
+	ValidatorState_ActiveSlashed      ValidatorState = "active_slashed"
+	ValidatorState_ExitedUnslashed    ValidatorState = "exited_unslashed"
+	ValidatorState_ExitedSlashed      ValidatorState = "exited_slashed"
+	ValidatorState_WithdrawalPossible ValidatorState = "withdrawal_possible"
+	ValidatorState_WithdrawalDone     ValidatorState = "withdrawal_done"
 )
 
 // Beacon client interface
