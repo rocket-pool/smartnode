@@ -434,7 +434,8 @@ type SnapshotProposalVote struct {
 	Choice   interface{}    `json:"choice"`
 	Voter    common.Address `json:"voter"`
 	Proposal struct {
-		Id string `json:"id"`
+		Id    string `json:"id"`
+		State string `json:"state"`
 	} `json:"proposal"`
 }
 type SnapshotVotedProposals struct {

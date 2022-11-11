@@ -255,7 +255,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 		) {
 		  choice
 		  voter
-		  proposal {id}
+		  proposal {id, state}
 		}
 	  }`, space, nodeAddress, delegate)
 	url := fmt.Sprintf("https://%s/graphql?operationName=Votes&query=%s", apiDomain, url.PathEscape(query))
@@ -284,8 +284,12 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 }
 
 func GetSnapshotProposals(apiDomain string, space string, state string) (*api.SnapshotResponse, error) {
+	stateFilter := ""
+	if state != "" {
+		stateFilter = fmt.Sprintf(", state: %s", state)
+	}
 	query := fmt.Sprintf(`query Proposals {
-	proposals(where: {space: "%s", state: "%s"}, orderBy: "created", orderDirection: desc) {
+	proposals(where: {space: "%s"%s}, orderBy: "created", orderDirection: desc) {
 	    id
 	    title
 	    choices
@@ -300,7 +304,7 @@ func GetSnapshotProposals(apiDomain string, space string, state string) (*api.Sn
 		quorum
 		link
 	  }
-    }`, space, state)
+    }`, space, stateFilter)
 
 	url := fmt.Sprintf("https://%s/graphql?operationName=Proposals&query=%s", apiDomain, url.PathEscape(query))
 	resp, err := http.Get(url)
