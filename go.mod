@@ -34,7 +34,7 @@ require (
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v3 v3.1.1
 	github.com/rivo/tview v0.0.0-20220916081518-2e69b7385a37
-	github.com/rocket-pool/rocketpool-go v1.10.1-0.20221107074643-c7bbb1946848
+	github.com/rocket-pool/rocketpool-go v1.10.1-0.20221111060441-f2ace817313d
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.22.9
 	github.com/tyler-smith/go-bip39 v1.1.0
@@ -58,4 +58,4 @@ replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a 
 
 replace github.com/web3-storage/go-w3s-client => github.com/rocket-pool/go-w3s-client v0.0.0-20221006052217-dbd9938d11d8
 
-replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+// replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
