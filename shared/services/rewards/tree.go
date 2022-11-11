@@ -777,7 +777,7 @@ func (r *RewardsFile) calculateNodeRewards() (*big.Int, *big.Int, error) {
 	for _, nodeInfo := range r.nodeDetails {
 		if nodeInfo.IsEligible {
 			for _, minipool := range nodeInfo.Minipools {
-				if minipool.GoodAttestations+minipool.MissedAttestations == 0 {
+				if minipool.GoodAttestations+minipool.MissedAttestations == 0 || !minipool.WasActive {
 					// Ignore minipools that weren't active for the interval
 					minipool.WasActive = false
 					continue
@@ -1060,8 +1060,22 @@ func (r *RewardsFile) createMinipoolIndexMap() error {
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
-				minipoolInfo.ValidatorIndex = statusMap[minipoolInfo.ValidatorPubkey].Index
-				r.validatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+				status, exists := statusMap[minipoolInfo.ValidatorPubkey]
+				if !exists {
+					// Remove minipools that don't have indices yet since they're not actually viable
+					r.log.Printlnf("WARNING: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
+					minipoolInfo.WasActive = false
+				} else {
+					switch status.Status {
+					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
+						// Remove minipools that don't have indices yet since they're not actually viable
+						r.log.Printlnf("WARNING: minipool %s (index %d, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+						minipoolInfo.WasActive = false
+					default:
+						minipoolInfo.ValidatorIndex = statusMap[minipoolInfo.ValidatorPubkey].Index
+						r.validatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+					}
+				}
 			}
 		}
 	}
