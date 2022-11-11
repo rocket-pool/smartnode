@@ -1089,6 +1089,7 @@ func (r *RewardsFile) getSmoothingPoolNodeDetails() error {
 
 	nodesDone := uint64(0)
 	startTime := time.Now()
+	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation (progress is reported every 100 nodes)", r.logPrefix)
 
 	// For each NO, get their opt-in status and time of last change in batches
 	nodeCount := uint64(len(r.nodeAddresses))
